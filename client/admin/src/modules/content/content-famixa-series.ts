@@ -8,8 +8,20 @@ import { kfPixelsOf, loadKfPixels, rememberKfFromRuns, rememberKfPixels, saveKfP
 import { famixaCanonSeedFor } from './content-famixa-canon-seed';
 import { displayUrlForData, stripJsonDataUrls } from './content-famixa-blob-url';
 import { englishI2vMotion, I2V_VI_RE } from './content-famixa-i2v-en';
-import { ACTING_LAW_LOCK, actingI2vBrief, actingOfShot, inferActingDirection } from './content-famixa-acting-law';
+import { ACTING_LAW_LOCK, actingI2vBrief, actingI2vBriefFromLines, inferActingDirection } from './content-famixa-acting-law';
+import { mergeKeepDialoguePerformance } from './content-famixa-performance';
+import { looksLikeVoiceDirection } from './content-famixa-story-parse';
 import { setFamixaMediaScope } from './content-famixa-media-scope';
+import { mergeKeepFinalSource } from './content-famixa-final-source';
+import { compileVisualPrompt, type VisualSpec } from './content-famixa-visual-spec';
+import {
+  FAMIXA_CANON_VERSION,
+  frameCanonIds,
+  isMetaCanonSpeaker,
+  persistFamixaCanonLaw,
+  resolveCanonSpeaker,
+  seedFamixaCanon,
+} from './content-famixa-char-canon';
 
 export type SeriesShotStatus =
   | 'story_locked'
@@ -110,12 +122,16 @@ export type FamixaCharacter = {
   voiceSimilarity?: number;
   voiceStyle?: number;
   voiceSpeed?: number;
+  /** Locked Voice Bible — do not change Voice ID between episodes. */
+  voiceBible?: import('./content-famixa-performance').VoiceBible;
   line?: string;
   performance?: string;
   canonFileName?: string;
   canonLocalPath?: string;
   /** Session only — slimPilot strips this. */
   canonImageDataUrl?: string;
+  /** An / VO / extra — named in script, not a body in the still. */
+  offFrame?: boolean;
 };
 
 export type FamixaSceneDialogue = {
@@ -123,6 +139,7 @@ export type FamixaSceneDialogue = {
   characterId: string;
   text: string;
   emotion?: string;
+  performance?: import('./content-famixa-acting-law').LinePerformance;
 };
 
 /** SoT Scene — Story content thuộc Scene; Memory/Canon kế thừa theo graph. */
@@ -151,6 +168,7 @@ export type FamixaLine = {
   text: string;
   voiceId?: string;
   sceneId?: string;
+  performance?: import('./content-famixa-acting-law').LinePerformance;
 };
 
 export function localFileRef(file: File): { fileName: string; localPath: string } {
@@ -227,8 +245,8 @@ export function newSceneShot(scene: string, index: number, story = ''): FamixaSe
     seconds: 5,
     story,
     visual: '',
-    characters: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
-    characterIds: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
+    characters: [],
+    characterIds: [],
     sceneId: sceneCodeOf(scene),
     location: '',
     motionPrompt: '',
@@ -268,10 +286,13 @@ export function studioSceneTitle(lock?: SceneContinuityLock, episode?: FamixaSer
 }
 
 export function shotOneLiner(story?: string, action?: string) {
-  const t = (action || story || '').replace(/\s+/g, ' ').trim();
-  if (!t) return 'Chưa có mô tả shot';
-  const line = t.split(/(?<=[.!?])\s|\n/)[0] ?? t;
-  return line.length > 64 ? `${line.slice(0, 64)}…` : line;
+  for (const raw of [action, story]) {
+    const t = (raw ?? '').replace(/\s+/g, ' ').trim();
+    if (!t || looksLikePackHeading(t)) continue;
+    const line = t.split(/(?<=[.!?])\s|\n/)[0] ?? t;
+    return line.length > 64 ? `${line.slice(0, 64)}…` : line;
+  }
+  return 'Chưa có mô tả shot';
 }
 
 /** Split existing story/action. Does not invent beats. */
@@ -291,7 +312,11 @@ export function studioShotUi(run?: SeriesShotRun) {
   const r = run ?? { status: 'story_locked' as const };
   const hasTake = Boolean(r.previewUrl || r.localVideoPath);
   if (r.status === 'approved') {
-    return { tone: 'locked' as StudioShotTone, label: 'Đã khóa', hint: 'KF đã duyệt · Video đã khóa' };
+    return {
+      tone: 'locked' as StudioShotTone,
+      label: 'Đã khóa',
+      hint: r.lipsynced ? 'KF đã duyệt · Video đã khóa · KHỚP MÔI' : 'KF đã duyệt · Video đã khóa',
+    };
   }
   if (r.status === 'rejected' || r.turboError) {
     return { tone: 'error' as StudioShotTone, label: 'Lỗi', hint: (r.turboError || 'Cần làm lại').slice(0, 48) };
@@ -300,7 +325,11 @@ export function studioShotUi(run?: SeriesShotRun) {
     return { tone: 'on' as StudioShotTone, label: 'Đang tạo video', hint: 'Đợi take' };
   }
   if (r.status === 'reviewed' || hasTake) {
-    return { tone: 'warn' as StudioShotTone, label: 'Cần kiểm tra', hint: 'Có take · chưa khóa' };
+    return {
+      tone: 'warn' as StudioShotTone,
+      label: r.lipsynced ? 'KHỚP MÔI' : 'Cần kiểm tra',
+      hint: r.lipsynced ? 'Take đã khớp môi · chưa khóa' : 'Có take · chưa khóa',
+    };
   }
   if (r.status === 'keyframe_ready' && r.keyframeDataUrl) {
     const approved = Boolean(r.continuity && Object.values(r.continuity).some(Boolean));
@@ -379,16 +408,51 @@ export type SeriesShotRun = {
   credits?: number;
   /** Runway already billed this take; KIT ledger uses `credits` only after lock. */
   runwaySpent?: number;
+  /** Cumulative Runway cr on Start (fail still bills). */
+  runwayBilled?: number;
   model?: string;
   notes?: string;
   review?: Partial<Record<SeriesReviewAxis, boolean>>;
   previewUrl?: string;
+  /** Mute Runway take. Fal FINAL lives in lipsyncUrl — do not overwrite this. */
+  takeUrl?: string;
   /** Previous take URLs — latest generate overwrites previewUrl. */
   takeHistory?: { url: string; taskId?: string }[];
   localVideoPath?: string;
   turboTaskId?: string;
   turboStatus?: string;
   turboError?: string;
+  /** Derived I2V pipe — HTTP 200 ≠ VIDEO READY. */
+  videoPipe?: import('./content-famixa-runway-pipe').VideoPipeStatus;
+  videoVerified?: boolean;
+  videoBytes?: number;
+  videoMime?: string;
+  runwayAttempts?: import('./content-famixa-runway-pipe').RunwayAttempt[];
+  kfCheck?: import('./content-famixa-runway-pipe').KfInputCheck;
+  sentKfCheck?: import('./content-famixa-runway-pipe').KfInputCheck;
+  runwayDiagnostics?: import('./content-famixa-runway-pipe').RunwayDiagRow[];
+  /** Operator duyệt KF mới sau INTERNAL — cho đúng 1 job, không spam cùng ảnh. */
+  kfRetryOk?: boolean;
+  /** Fal sync-lipsync take — mouth follows TTS. Assemble keeps this audio. */
+  lipsynced?: boolean;
+  /** Fal output URL. Kept even if previewUrl is later replaced. */
+  lipsyncUrl?: string;
+  /** Timeline SoT — FAL keeps Fal audio; RUNWAY_TTS is preview-only. */
+  finalSource?: import('./content-famixa-final-source').FinalSource;
+  /** Operator locked Start/End after KF approve — do not re-derive. */
+  stateLocked?: boolean;
+  shotQa?: {
+    action?: boolean;
+    continuity?: boolean;
+    motion?: boolean;
+    dialogue?: boolean;
+    lipsync?: boolean;
+    /** Voice vs Face — same Performance Plan. Fail → fix KF, not Fal. */
+    voiceFace?: boolean;
+  };
+  lipsyncTaskId?: string;
+  lipsyncStatus?: string;
+  lipsyncError?: string;
   /** Scene start frame (KF01) — not a CHAR face crop. */
   keyframeDataUrl?: string;
   keyframeFileName?: string;
@@ -401,6 +465,8 @@ export type SeriesShotRun = {
   kfForceNew?: boolean;
   /** Continuity instruction after KIT rewrite — not the raw user complaint. */
   kfTechNote?: string;
+  visualSpec?: import('./content-famixa-visual-spec').VisualSpec;
+  visualQa?: import('./content-famixa-visual-spec').VisualQa;
   /** Shot dư — không sản xuất. */
   prodSkip?: boolean;
   /** What we send to Runway — not the Story pack. */
@@ -423,6 +489,8 @@ export type SeriesPilotState = {
   shorts?: FamixaShortClip[];
   stills?: FamixaCharStill[];
   sceneLocked?: boolean;
+  /** FINAL + KF + I2V share this frame. Choose before first still. */
+  outputAspect?: '16:9' | '9:16';
   sceneNotes?: string;
   packDraft?: string;
   continuity?: SceneContinuityLock;
@@ -449,8 +517,12 @@ export type SeriesPilotState = {
   voiceAssets?: Record<string, FamixaVoiceAsset>;
   /** Per-scene continuity lock. Shot inherits; Action is the only delta. */
   sceneMasters?: Record<string, import('./content-famixa-scene-first').SceneMaster>;
+  /** Famixa Character Canon version applied on load / parse. */
+  canonVersion?: number;
   /** Preview range signed off — required for full-EP Final, not for a test cut. */
   previewApproved?: boolean;
+  /** Per-scene preview sign-off. */
+  sceneApproved?: Record<string, boolean>;
 };
 
 export type FamixaVoiceAsset = {
@@ -647,6 +719,21 @@ const STORAGE_KEY = 'kit.famixaSeries.v4';
 export const PILOT_SCHEMA = 9;
 export const FAMIXA_SERIES_CODE = 'FAMIXA';
 
+export type OutputAspect = '16:9' | '9:16';
+
+export function outputAspectOf(state: Pick<SeriesPilotState, 'outputAspect'>): OutputAspect {
+  return state.outputAspect === '9:16' ? '9:16' : '16:9';
+}
+
+/** Official KF / I2V / FINAL pixels. Gemini must not invent 1344×768 or 1024×1024. */
+export function outputFrameOf(aspect?: string) {
+  return aspect === '9:16' || aspect === '720:1280' ? { width: 720, height: 1280 } : { width: 1280, height: 720 };
+}
+
+export function sceneHasKeyframe(state: SeriesPilotState) {
+  return Object.values(state.runs ?? {}).some((r) => Boolean((r.keyframeDataUrl ?? '').trim()));
+}
+
 export function emptyPilot(): SeriesPilotState {
   return {
     roles: [],
@@ -690,6 +777,7 @@ export function loadSeriesPilot(): SeriesPilotState {
       shorts: Array.isArray(v.shorts) ? v.shorts : [],
       stills: Array.isArray(v.stills) ? v.stills : [],
       sceneLocked: Boolean(v.sceneLocked),
+      outputAspect: v.outputAspect === '9:16' || v.outputAspect === '16:9' ? v.outputAspect : undefined,
       sceneNotes: v.sceneNotes,
       packDraft: typeof v.packDraft === 'string' ? v.packDraft : undefined,
       continuity: v.continuity && typeof v.continuity === 'object' ? v.continuity : undefined,
@@ -709,10 +797,14 @@ export function loadSeriesPilot(): SeriesPilotState {
       voicePreview: v.voicePreview && typeof v.voicePreview === 'object' ? v.voicePreview : undefined,
       voiceAssets: v.voiceAssets && typeof v.voiceAssets === 'object' ? v.voiceAssets : undefined,
       sceneMasters: v.sceneMasters && typeof v.sceneMasters === 'object' ? v.sceneMasters : undefined,
+      canonVersion: typeof v.canonVersion === 'number' ? v.canonVersion : undefined,
       previewApproved: Boolean(v.previewApproved),
     };
     const migrated = slimPilotForStorage(ensurePilotGraph(loaded));
-    if ((loaded.schemaVersion ?? 0) < PILOT_SCHEMA) {
+    const hadDeadLipsync = Object.values(loaded.runs ?? {}).some((r) =>
+      /404|405|504|403|exhausted|request failed/i.test(r.lipsyncError || ''),
+    );
+    if ((loaded.schemaVersion ?? 0) < PILOT_SCHEMA || hadDeadLipsync) {
       migrated.schemaVersion = PILOT_SCHEMA;
       saveSeriesPilot(migrated);
     }
@@ -725,7 +817,7 @@ export function loadSeriesPilot(): SeriesPilotState {
 export function slimPilotForStorage(state: SeriesPilotState): SeriesPilotState {
   const runs: SeriesPilotState['runs'] = {};
   for (const [id, run] of Object.entries(state.runs)) {
-    runs[id] = { ...run, keyframeDataUrl: undefined };
+    runs[id] = { ...dropDeadLipsync(run), keyframeDataUrl: undefined };
   }
   return {
     ...state,
@@ -751,6 +843,7 @@ export function saveSeriesPilot(state: SeriesPilotState, preJson?: string) {
       void saveKfPixels(id, run.keyframeDataUrl, run.keyframeFileName);
     }
   }
+  persistFamixaCanonLaw();
   const slim = slimPilotForStorage(state);
   const json = preJson ?? JSON.stringify(slim);
   if (json === lastPilotJson) return;
@@ -808,13 +901,14 @@ function charsFromContinuityBlob(text: string): { id: string; name: string }[] {
 }
 
 function upsertChar(map: Map<string, FamixaCharacter>, row: Partial<FamixaCharacter> & { id: string }) {
-  const id = normCharId(row.id);
-  if (!id) return;
+  const mapped = resolveCanonSpeaker(row.name || '') || resolveCanonSpeaker(row.id);
+  const id = mapped?.id || normCharId(row.id);
+  if (!id || isMetaCanonSpeaker(row.name) || isMetaCanonSpeaker(id)) return;
   const prev = map.get(id);
   map.set(id, {
     id,
-    name: (row.name || prev?.name || '').trim(),
-    role: row.role || prev?.role,
+    name: mapped?.name || (row.name || prev?.name || '').trim(),
+    role: mapped?.role || row.role || prev?.role,
     wardrobe: row.wardrobe || prev?.wardrobe,
     seat: row.seat || prev?.seat,
     voiceNote: row.voiceNote || prev?.voiceNote,
@@ -825,6 +919,7 @@ function upsertChar(map: Map<string, FamixaCharacter>, row: Partial<FamixaCharac
     canonFileName: row.canonFileName || prev?.canonFileName,
     canonLocalPath: row.canonLocalPath || prev?.canonLocalPath,
     canonImageDataUrl: row.canonImageDataUrl || prev?.canonImageDataUrl,
+    offFrame: mapped ? mapped.visual !== 'frame' : row.offFrame ?? prev?.offFrame,
   });
 }
 
@@ -906,16 +1001,12 @@ export function ensurePilotGraph(state: SeriesPilotState): SeriesPilotState {
       upsertChar(charMap, { id, name: '' });
     }
   }
-  const nextRoleId = () => {
-    let n = 1;
-    while (charMap.has(`CHAR-${String(n).padStart(3, '0')}`)) n += 1;
-    return `CHAR-${String(n).padStart(3, '0')}`;
-  };
+  const nextRoleId = (name?: string) => resolveCanonSpeaker(name || '')?.id;
   const roles = (state.roles ?? []).map((role) => {
     const byId = role.characterId ? charMap.get(normCharId(role.characterId)) : undefined;
     const named = byId
       ?? [...charMap.values()].find((c) => c.name && role.name && c.name.toLowerCase() === role.name.toLowerCase());
-    const id = named?.id || (role.name.trim() ? nextRoleId() : undefined);
+    const id = named?.id || (role.name.trim() ? nextRoleId(role.name) : undefined);
     if (!id) return role;
     upsertChar(charMap, {
       id,
@@ -1018,20 +1109,108 @@ export function ensurePilotGraph(state: SeriesPilotState): SeriesPilotState {
     continuity,
     storyMemory: ensureStoryMemory(state.storyMemory, characters, state.episode),
   };
-  return applyCanonToStills(next);
+  return applyCanonToStills(applyFamixaCanonToPilot(next));
+}
+
+/** Remap roster + strip off-frame bodies. Runs on every load / parse so the next pack stays correct. */
+export function applyFamixaCanonToPilot(state: SeriesPilotState): SeriesPilotState {
+  persistFamixaCanonLaw();
+  const oldById = new Map((state.characters ?? []).map((c) => [c.id, c]));
+  const characters = seedFamixaCanon(state.characters ?? []).map((s) => {
+    const old = oldById.get(s.id);
+    return {
+      ...old,
+      ...s,
+      name: s.name,
+      role: s.role || old?.role,
+      offFrame: s.offFrame,
+    } as FamixaCharacter;
+  });
+  const strip = (ids?: string[]) => frameCanonIds(ids ?? []);
+  const shots = (state.episode?.shots ?? []).map((s) => {
+    const ids = strip(shotCharacterIds(s));
+    return { ...s, characterIds: ids, characters: ids.length ? ids : s.characters };
+  });
+  const shorts = (state.shorts ?? []).map((s) => {
+    const ids = strip(shotCharacterIds({ characters: s.characters, characterIds: s.characterIds }));
+    return { ...s, characterIds: ids, characters: ids.length ? ids : s.characters };
+  });
+  const scenes = (state.scenes ?? []).map((sc) => ({
+    ...sc,
+    characterIds: strip(sc.characterIds),
+  }));
+  const roles = (state.roles ?? []).flatMap((r) => {
+    if (isMetaCanonSpeaker(r.name) || isMetaCanonSpeaker(r.title) || isMetaCanonSpeaker(r.characterId)) return [];
+    const row = resolveCanonSpeaker(r.characterId || '') || resolveCanonSpeaker(r.name) || resolveCanonSpeaker(r.title || '');
+    if (!row || row.visual === 'mention') return [];
+    return [{ ...r, characterId: row.id, name: r.name || row.name, title: r.title || row.role }];
+  });
+  return {
+    ...state,
+    characters,
+    scenes,
+    shorts,
+    roles,
+    episode: state.episode ? { ...state.episode, shots } : state.episode,
+    canonVersion: FAMIXA_CANON_VERSION,
+  };
 }
 
 function sceneIdOfShot(shot: { scene?: string; id?: string }) {
   return codeMatch(shot.scene, 'SC') || codeMatch(shot.id, 'SC') || '';
 }
 
+function sceneCodeKey(raw?: string) {
+  return (raw ?? '').replace(/\s+/g, '').toUpperCase().match(/SC\d+/)?.[0] ?? '';
+}
+
 export function sceneNodeOf(state: SeriesPilotState, shot?: FamixaSeriesShot) {
   const id = shot?.sceneId || (shot ? sceneIdOfShot(shot) : state.scenes?.[0]?.id);
-  return (state.scenes ?? []).find((s) => s.id === id);
+  const code = sceneCodeKey(id);
+  return (state.scenes ?? []).find((s) => s.id === id || sceneCodeKey(s.id) === code);
+}
+
+function sceneMasterRecord(state: SeriesPilotState, shot?: FamixaSeriesShot) {
+  const node = sceneNodeOf(state, shot);
+  const sc = sceneCodeKey(shot?.sceneId || shot?.scene || node?.id);
+  if (!sc) return undefined;
+  if (state.sceneMasters?.[sc]) return state.sceneMasters[sc];
+  return Object.values(state.sceneMasters ?? {}).find((m) => sceneCodeKey(m.sceneId) === sc);
 }
 
 export function lockFromGraph(state: SeriesPilotState, shot?: FamixaSeriesShot): SceneContinuityLock {
-  return continuityFromGraph(sceneNodeOf(state, shot), state.characters ?? [], state.episode, state.continuity);
+  const node = sceneNodeOf(state, shot);
+  const base = continuityFromGraph(node, state.characters ?? [], state.episode, state.continuity);
+  const master = sceneMasterRecord(state, shot);
+  const place = base.environment || master?.location || master?.environment || shot?.location || '';
+  return {
+    ...base,
+    environment: place || (master?.locked || base.locked ? 'same dim indoor room as the locked keyframe' : ''),
+    wardrobe: base.wardrobe || master?.wardrobe || '',
+    camera: base.camera || master?.camera || '',
+    locked: Boolean(base.locked || master?.locked),
+  };
+}
+
+/** Action / thoại for I2V. Skips pack headings. Does not invent story. */
+export function i2vActionOf(state: SeriesPilotState, shot: FamixaSeriesShot, run?: SeriesShotRun) {
+  const resolved = run ?? shotRunOf(state, shot);
+  const beat = effectiveShotAction(shot, resolved);
+  if (beat && !looksLikePackHeading(beat)) return beat;
+  const ids = shot.dialogueSegmentIds ?? [];
+  const dlg = (state.scenes ?? [])
+    .flatMap((sc) => sc.dialogue ?? [])
+    .filter((d) => ids.includes(d.id) && (d.text ?? '').trim());
+  if (dlg.length) {
+    return dlg
+      .map((d) => {
+        const name = (state.characters ?? []).find((c) => c.id === d.characterId)?.name || d.characterId;
+        return `${name}: ${d.text}`.trim();
+      })
+      .join('. ');
+  }
+  const raw = (resolved.shotAction || shot.story || shot.motionPromptVi || '').replace(/\s+/g, ' ').trim();
+  return looksLikePackHeading(raw) ? '' : raw;
 }
 
 export type SeriesBrandSlice = {
@@ -1107,7 +1286,7 @@ export function compileI2vPrompt(
   const dlg = (state.scenes ?? [])
     .flatMap((sc) => sc.dialogue ?? [])
     .filter((d) => idsDlg.includes(d.id));
-  const acting = actingI2vBrief(actingOfShot(dlg, act));
+  const acting = actingI2vBriefFromLines(dlg, act);
   const ctx = clipMem(videoContext, 280);
   const ctxEn = ctx && !I2V_VI_RE.test(ctx) ? ctx : '';
   const run = shotRunOf(state, shot);
@@ -1131,7 +1310,7 @@ export function compileI2vPrompt(
     ' ' +
     endEn +
     (shot.dialogueSegmentIds?.length
-      ? ' The character speaks this beat; mouth moves with the spoken line. '
+      ? ' Mute take: blink and breathe only. Do not animate speech — lipsync is a later step. '
       : '') +
     'Do not reset the scene.';
   return text.length <= 900 ? text : text.slice(0, 900);
@@ -1211,6 +1390,7 @@ export type FamixaListenCue = {
   name: string;
   text: string;
   voiceId?: string;
+  performance?: import('./content-famixa-acting-law').LinePerformance;
 };
 
 /** Lượt thoại Voice Script — chỉ dialogue, không cắt 80, không gộp nuốt câu. */
@@ -1316,6 +1496,19 @@ export async function hydratePilotKeyframes(state: SeriesPilotState): Promise<Se
   return state;
 }
 
+/** Gemini paints quoted lines as captions. Keep dialogue off the still prompt. */
+export const STILL_NO_TEXT =
+  'HARD BAN: zero readable letters or numbers anywhere — no subtitles, captions, logos, watermarks, UI, name tags, posters, exam papers with writing, phone screens with text, reference boards, or typography. Blank walls and blank paper. If a reference has letters, ignore them; do not copy typography.';
+
+export function stripStillLettering(raw?: string) {
+  let t = (raw ?? '').trim();
+  if (!t) return '';
+  t = t.replace(/Spoken this shot[^.]{0,500}\./gi, '');
+  t = t.replace(/(?:^|[·.|])\s*(Minh|Nam|Linh|An|Mẹ|Bố|Ba|Má)[:：]\s*["“]?[^"”\n·]{2,200}/gi, '');
+  t = t.replace(/[“"][^”"]{4,160}[”"]/g, '');
+  return t.replace(/\s+/g, ' ').trim();
+}
+
 export function seriesSceneStillPrompt(opts: {
   aspect: '9:16' | '16:9';
   visual: string;
@@ -1323,25 +1516,66 @@ export function seriesSceneStillPrompt(opts: {
   location?: string;
   refs: SeriesCanonRef[];
   continuityNote?: string;
+  peopleCount?: number;
+  peopleNames?: string;
+  atmosphere?: string;
+  lightingLock?: string;
+  speakers?: string;
+  visualSpec?: VisualSpec;
 }) {
   const people = opts.refs.filter((r) => r.role !== 'scene' && !/loi binh|narrator|voice.?over/i.test(`${r.name} ${r.role}`));
-  const who = people.map((r) => `${r.name}${r.role ? ` (${r.role})` : ''}`).join(', ');
-  const frame = opts.aspect === '9:16' ? 'vertical 9:16 phone frame' : 'widescreen 16:9 cinematic frame';
-  const action = looksLikePackHeading(opts.action) ? '' : (opts.action ?? '').trim();
-  const visual = looksLikePackHeading(opts.visual) ? '' : (opts.visual ?? '').trim();
+  const who = opts.peopleNames?.trim() || people.map((r) => `${r.name}${r.role ? ` (${r.role})` : ''}`).join(', ');
+  const count = opts.peopleCount && opts.peopleCount > 0 ? opts.peopleCount : people.length;
+  const frame =
+    opts.aspect === '9:16'
+      ? 'vertical 9:16 phone frame (720×1280). Compose as a vertical two-shot — not a cropped 16:9 table.'
+      : 'widescreen 16:9 cinematic frame (1280×720)';
+  const action = stripStillLettering(looksLikePackHeading(opts.action) ? '' : opts.action);
+  const visual = stripStillLettering(looksLikePackHeading(opts.visual) ? '' : opts.visual);
+  const speakers = stripStillLettering(opts.speakers);
+  const note = stripStillLettering(opts.continuityNote);
   return [
+    STILL_NO_TEXT,
     `Format: ${frame}. One photoreal live-action film still of the Action — not a title card.`,
-    'Attached images are FACE/WARDROBE identity only. Copy faces into the scene. NEVER reproduce a character bible, master reference, turnaround, expression grid, contact sheet, or typography.',
-    who ? `People in the scene (faces from refs): ${who}.` : '',
+    'Canon attachments are FACE identity only for anyone newly entering. NEVER reproduce a character bible, master reference, turnaround, expression grid, contact sheet, or typography. Do not change clothes already shown in PREV-SHOT.',
+    count
+      ? `CAST COUNT LOCK: exactly ${count} people in the frame${who ? `: ${who}` : ''}. Do not add another person. Do not add father/Nam unless listed. No extras.`
+      : who
+        ? `People in the scene (faces from refs): ${who}.`
+        : '',
+    opts.visualSpec?.primary
+      ? `FACE LOCK: ${opts.visualSpec.primary.name} full face — eyes, nose, mouth, hairline. ${
+          opts.visualSpec.secondary.length
+            ? `Secondary (${opts.visualSpec.secondary.map((p) => `${p.name} ${p.face}`).join(', ')}) may be partial unless they speak.`
+            : ''
+        } Forbidden: cropped primary face, back-turned primary, unreadable eyes.`
+      : count >= 2 || who
+        ? `FACE LOCK: every named person (${who || 'cast'}) must show a complete face — eyes, nose, mouth, hairline. Forbidden: faceless torso, cropped at chest, hands-only parent, mother with no head.`
+        : '',
+    opts.aspect === '9:16' && count >= 2
+      ? 'VERTICAL BLOCKING: both heads in the upper two-thirds. Over-shoulder or stacked. Do not place a parent only on the far right of a landscape table — they will be cut out of 9:16.'
+      : '',
     opts.location ? `Location: ${opts.location.slice(0, 180)}.` : '',
     visual ? `Scene lock (do not redesign): ${visual.slice(0, 360)}` : '',
     action ? `Only change the Action (must be visible): ${action.slice(0, 400)}` : '',
-    opts.refs.some((r) => r.role === 'scene')
-      ? 'Continue the exact same scene from the attached previous keyframe. Preserve character identity, wardrobe, location, lighting, props and time. Only the Action changes. Do not invent a new room or outfit.'
-      : 'Same Vietnamese family, natural indoor night light, photoreal, not anime, not illustration.',
-    opts.continuityNote
-      ? `Continuity lock (operator, already rewritten): ${opts.continuityNote.slice(0, 280)} Do not change the story action or add people.`
+    stripStillLettering(opts.atmosphere)
+      ? `SCRIPT MOOD (must show on faces): ${stripStillLettering(opts.atmosphere).slice(0, 420)}`
       : '',
+    opts.lightingLock
+      ? `LIGHTING LOCK: ${opts.lightingLock.slice(0, 160)}. Same dim evening as the locked first frame. If a later still went bright, restore dim. Forbidden: daylight, bright cheerful living room, studio softbox.`
+      : '',
+    speakers
+      ? `SPEAKER LOCK: ${speakers.slice(0, 120)}. The speaker must be on camera. Do not hide a speaking parent off-frame. Do not write their line on the image.`
+      : '',
+    'WARDROBE LOCK: copy exact clothes from PREV-SHOT. The boy in the room is Minh — same shirt as frames 1–4. Do not dress him from the Canon sheet. Do not draw classmate An. If Nam is already in PREV-SHOT, copy that exact man (face, hair, shirt).',
+    opts.refs.some((r) => r.role === 'scene')
+      ? 'Continue the exact same room from the attached PREVIOUS keyframe (not a redesigned set). Same clothes, faces already in scene, place, dim lighting, props. Do NOT copy a smile, huddle, or brightened room. Change only this Action. Not a family portrait.'
+      : 'Vietnamese family, dim warm indoor evening after dinner, photoreal, not anime, not a smiling catalog still, not a family portrait.',
+    note
+      ? `Continuity lock (operator, already rewritten): ${note.slice(0, 280)} Do not change the story action or add people.`
+      : '',
+    opts.visualSpec ? compileVisualPrompt(opts.visualSpec) : '',
+    STILL_NO_TEXT,
     actingI2vBrief(inferActingDirection({ action, text: action })),
   ]
     .filter(Boolean)
@@ -1669,6 +1903,7 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
     rememberCanonPixels(c.id, old?.canonImageDataUrl || c.canonImageDataUrl, old?.canonFileName || c.canonFileName);
     return {
       ...c,
+      voiceBible: c.voiceBible || old?.voiceBible,
       canonFileName: c.canonFileName || old?.canonFileName,
       canonLocalPath: c.canonLocalPath || old?.canonLocalPath,
       canonImageDataUrl: undefined,
@@ -1680,11 +1915,25 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
     const rem = graph.runs?.[id];
     const old = local.runs?.[id];
     rememberKfPixels(id, old?.keyframeDataUrl || rem?.keyframeDataUrl, old?.keyframeFileName || rem?.keyframeFileName);
-    runs[id] = {
-      ...(rem ?? old ?? { status: 'story_locked' }),
+    const base = {
+      ...(rem ?? old ?? { status: 'story_locked' as const }),
       keyframeDataUrl: undefined,
       keyframeFileName: old?.keyframeFileName || rem?.keyframeFileName,
       keyframePath: old?.keyframePath || rem?.keyframePath,
+    };
+    const keep = mergeKeepFinalSource(base, old);
+    runs[id] = {
+      ...base,
+      ...keep,
+      takeUrl: keep.takeUrl || base.takeUrl || old?.takeUrl,
+      lipsyncTaskId: base.lipsyncTaskId || (keep.lipsynced ? old?.lipsyncTaskId : undefined),
+      lipsyncStatus: base.lipsyncStatus || (keep.lipsynced ? old?.lipsyncStatus || 'SUCCEEDED' : undefined),
+      stateLocked: Boolean(base.stateLocked || old?.stateLocked),
+      startState: base.stateLocked ? base.startState : base.startState ?? old?.startState,
+      endState: base.stateLocked ? base.endState : base.endState ?? old?.endState,
+      shotQa: base.shotQa ?? old?.shotQa,
+      visualSpec: base.visualSpec ?? old?.visualSpec,
+      visualQa: base.visualQa ?? old?.visualQa,
     };
   }
   const stills = (graph.stills ?? []).map((s) => {
@@ -1706,6 +1955,13 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
     voiceLocked: sameEp ? Boolean(graph.voiceLocked || local.voiceLocked) : Boolean(graph.voiceLocked),
     voicePreview,
     shorts: sameEp ? mergeClipLists(graph.shorts ?? [], local.shorts ?? []) : graph.shorts,
+    scenes: sameEp
+      ? (graph.scenes ?? []).map((sc) => {
+          const old = (local.scenes ?? []).find((x) => x.id === sc.id);
+          return { ...sc, dialogue: mergeKeepDialoguePerformance(sc.dialogue, old?.dialogue) };
+        })
+      : graph.scenes,
+    sceneMasters: sameEp ? { ...local.sceneMasters, ...graph.sceneMasters } : graph.sceneMasters,
   };
 }
 
@@ -1924,6 +2180,7 @@ export function replaceStoryFromParse(
       voiceSimilarity: old?.voiceSimilarity ?? c.voiceSimilarity,
       voiceStyle: old?.voiceStyle ?? c.voiceStyle,
       voiceSpeed: old?.voiceSpeed ?? c.voiceSpeed,
+      voiceBible: old?.voiceBible || c.voiceBible,
       canonFileName: old?.canonFileName || c.canonFileName,
       canonLocalPath: old?.canonLocalPath || c.canonLocalPath,
       canonImageDataUrl: old?.canonImageDataUrl || c.canonImageDataUrl,
@@ -1978,11 +2235,12 @@ export function replaceStoryFromParse(
     voiceLocked: false,
     voicePreview: undefined,
     schemaVersion: PILOT_SCHEMA,
+    canonVersion: FAMIXA_CANON_VERSION,
   };
-  return syncVoiceOnlyRoles({
+  return ensurePilotGraph(syncVoiceOnlyRoles({
     ...next,
     castLocked: Boolean(prev.castLocked && next.roles.every((r) => roleCanonReady(next, r) && roleVoiceReady(next, r))),
-  });
+  }));
 }
 
 export function mergeShots(prev: FamixaSeriesShot[], incoming: FamixaSeriesShot[]) {
@@ -2018,8 +2276,16 @@ export function withKfPixels(id: string, run?: SeriesShotRun): SeriesShotRun {
   return pixels ? { ...base, keyframeDataUrl: pixels } : base;
 }
 
+/** Stale Fal 404/405/403 stay in local graph after key change — drop so Khớp môi POSTs new. */
+export function dropDeadLipsync(run: SeriesShotRun): SeriesShotRun {
+  if (run.lipsynced) return run;
+  const err = `${run.lipsyncError || ''} ${run.lipsyncStatus || ''}`;
+  if (!/404|405|504|403|exhausted|locked|downstream|request failed/i.test(err)) return run;
+  return { ...run, lipsyncError: undefined, lipsyncStatus: undefined, lipsyncTaskId: undefined };
+}
+
 export function shotRunOf(state: SeriesPilotState, shot: FamixaSeriesShot): SeriesShotRun {
-  return withKfPixels(shot.id, state.runs[shot.id] ?? { status: shot.status });
+  return dropDeadLipsync(withKfPixels(shot.id, state.runs[shot.id] ?? { status: shot.status }));
 }
 
 export function reviewComplete(run: SeriesShotRun) {
@@ -2102,6 +2368,12 @@ export function looksLikePackHeading(raw?: string) {
   }
   if (/^(?:#{1,3}\s*)?(?:famixa|kit marketing)\b/i.test(s)) return true;
   if (/^kịch bản\b.{0,56}$/i.test(s)) return true;
+  if (looksLikeVoiceDirection(s)) return true;
+  if (/^bối cảnh\s*:/i.test(s)) return true;
+  if (/^(#{1,3}\s*)?(phân cảnh|nhân vật)\b/i.test(s)) return true;
+  if (/phân cảnh chi tiết/i.test(s) && s.length < 64) return true;
+  if (/^giọng\b/i.test(s) && s.length < 96) return true;
+  if (/^(?:tone|thời lượng(?:\s*mục tiêu)?)\s*:/i.test(s)) return true;
   return false;
 }
 
@@ -2120,8 +2392,12 @@ export function effectiveShotAction(shot: FamixaSeriesShot, run?: SeriesShotRun)
 /** Silent OK. Empty / placeholder Action = HOLD — not reuse, not generate. */
 export function shotHasValidAction(shot: FamixaSeriesShot, run?: SeriesShotRun) {
   const raw = effectiveShotAction(shot, run) || ((run?.shotAction ?? '').trim() || shotActionFromPack(shot)).replace(/\s+/g, ' ').trim();
-  if (looksLikePackHeading(raw)) return false;
-  if (raw.length < 6) return false;
+  if (looksLikePackHeading(raw) || raw.length < 6) {
+    const beat = (shot.beatText ?? '').replace(/\s+/g, ' ').trim();
+    if (beat.length >= 6 && !looksLikePackHeading(beat)) return true;
+    if (/^(?:tone|thời lượng)\s*:/i.test(raw)) return false;
+    return (shot.dialogueSegmentIds?.length ?? 0) > 0;
+  }
   if (/^[-—–._/\\\s]+$/u.test(raw)) return false;
   if (/^(n\/a|none|null|không|chưa có( mô tả)?( shot)?)$/i.test(raw)) return false;
   return /[\p{L}\p{N}]/u.test(raw);
@@ -2259,13 +2535,14 @@ export function creditSum(state: SeriesPilotState) {
 }
 
 export function runwaySpentSum(state: SeriesPilotState) {
-  const shot = episodeShots(state).reduce((n, s) => n + (shotRunOf(state, s).runwaySpent ?? 0), 0);
-  const short = (state.shorts ?? []).reduce((n, s) => n + (shortRunOf(state, s.id).runwaySpent ?? 0), 0);
+  const of = (run: SeriesShotRun) => run.runwayBilled ?? run.runwaySpent ?? 0;
+  const shot = episodeShots(state).reduce((n, s) => n + of(shotRunOf(state, s)), 0);
+  const short = (state.shorts ?? []).reduce((n, s) => n + of(shortRunOf(state, s.id)), 0);
   return shot + short;
 }
 
 export function shortRunOf(state: SeriesPilotState, id: string): SeriesShotRun {
-  return withKfPixels(id, state.runs[id] ?? { status: 'keyframe_ready' });
+  return dropDeadLipsync(withKfPixels(id, state.runs[id] ?? { status: 'keyframe_ready' }));
 }
 
 export function approvedShortCount(state: SeriesPilotState) {
@@ -2415,7 +2692,9 @@ function parseCharLocks(text: string): { code: string; name: string; role: strin
     const name = m[2].trim();
     const rest = text.slice(m.index, m.index + 400);
     const role = rest.match(/^Role:\s*(.+)$/im)?.[1]?.trim() ?? '';
-    rows.push({ code, name, role });
+    const row = resolveCanonSpeaker(name) || resolveCanonSpeaker(code);
+    if (!row) continue;
+    rows.push({ code: row.id, name: row.name, role: row.role || role });
   }
   return rows;
 }
@@ -2635,12 +2914,6 @@ function stillsFromShortsAndRefs(
   return mergeStills([], incoming);
 }
 
-const EPISODE_CAST: { id: string; names: string[]; role: string }[] = [
-  { id: 'CHAR-001', names: ['minh', 'con'], role: 'Con' },
-  { id: 'CHAR-002', names: ['nam', 'bố', 'bo', 'ba'], role: 'Bố' },
-  { id: 'CHAR-003', names: ['linh', 'mẹ', 'me'], role: 'Mẹ' },
-];
-
 export function looksLikeShotPack(text: string) {
   return /^---\s*(SHORT|SHOT|LONG|REF|STILL)\s*---/im.test(text);
 }
@@ -2677,26 +2950,17 @@ export function stripDialogue(raw: string) {
 
 function resolveEpisodeSpeaker(raw: string, chars: FamixaCharacter[]): FamixaCharacter | undefined {
   const token = raw.replace(/\s*\(.*\)\s*$/, '').trim();
-  if (!token) return undefined;
-  const asId = /^CHAR-\d+/i.test(token) ? normCharId(token) : '';
-  if (asId) return chars.find((c) => c.id === asId);
-  const key = token.toLowerCase();
-  const known = EPISODE_CAST.find((c) => c.names.includes(key));
-  if (known) return chars.find((c) => c.id === known.id) ?? { id: known.id, name: token, role: known.role };
-  return chars.find((c) => c.name.toLowerCase() === key);
+  if (!token || isMetaCanonSpeaker(token)) return undefined;
+  const row = resolveCanonSpeaker(token);
+  if (row) return chars.find((c) => c.id === row.id) ?? { id: row.id, name: row.name, role: row.role, offFrame: row.visual !== 'frame' };
+  return chars.find((c) => c.name.toLowerCase() === token.toLowerCase());
 }
 
-export function ensureEpisodeChar(chars: FamixaCharacter[], speaker: string): FamixaCharacter {
+export function ensureEpisodeChar(chars: FamixaCharacter[], speaker: string): FamixaCharacter | undefined {
   const hit = resolveEpisodeSpeaker(speaker, chars);
-  if (hit) {
-    if (!chars.some((c) => c.id === hit.id)) chars.push(hit);
-    return hit;
-  }
-  let n = chars.length + 1;
-  while (chars.some((c) => c.id === `CHAR-${String(n).padStart(3, '0')}`)) n += 1;
-  const row: FamixaCharacter = { id: `CHAR-${String(n).padStart(3, '0')}`, name: speaker.trim() };
-  chars.push(row);
-  return row;
+  if (!hit) return undefined;
+  if (!chars.some((c) => c.id === hit.id)) chars.push(hit);
+  return hit;
 }
 
 export function isEpisodeMetaLine(line: string) {
@@ -2757,11 +3021,7 @@ export function screenplaySpeaker(line: string, chars: FamixaCharacter[]) {
   if (/^(SCENE|SC|INT|EXT|CUT|END|FADE|TITLE|SCRIPT|SHOT|BEAT|FAMIXA|SERIES|SEASON|EPISODE)$/i.test(token)) {
     return undefined;
   }
-  if (
-    resolveEpisodeSpeaker(token, chars) ||
-    EPISODE_CAST.some((c) => c.names.includes(token.toLowerCase())) ||
-    /^(MINH|NAM|LINH|BỐ|MẸ|BA|CON)$/i.test(token)
-  ) {
+  if (resolveEpisodeSpeaker(token, chars) || resolveCanonSpeaker(token) || /^(MINH|NAM|LINH|BỐ|MẸ|BA|CON)$/i.test(token)) {
     return token;
   }
   return undefined;
@@ -2794,20 +3054,14 @@ export function beatHead(line: string) {
 }
 
 export function seedEpisodeCast(text: string, characters: FamixaCharacter[]) {
-  for (const row of EPISODE_CAST) {
-    const proper = row.names[0] ?? '';
-    const named = characters.find((c) => c.id === row.id);
-    if (named) {
-      if (!named.name) named.name = proper.charAt(0).toUpperCase() + proper.slice(1);
-      if (!named.role) named.role = row.role;
-      continue;
+  const seeded = seedFamixaCanon(characters);
+  characters.length = 0;
+  characters.push(...(seeded as FamixaCharacter[]));
+  if (/\bbạn\s+an\b|\bCHAR-004\b|(?:^|\n)\s*An\s*[:：]/im.test(text)) {
+    const an = resolveCanonSpeaker('An');
+    if (an && !characters.some((c) => c.id === an.id)) {
+      characters.push({ id: an.id, name: an.name, role: an.role, offFrame: true });
     }
-    if (proper.length < 3 || !new RegExp(proper, 'i').test(text)) continue;
-    characters.push({
-      id: row.id,
-      name: proper.charAt(0).toUpperCase() + proper.slice(1),
-      role: row.role,
-    });
   }
 }
 
@@ -3127,6 +3381,9 @@ export function preflightTurboSend(opts: { prompt: string; imageDataUrl?: string
   if (!image.startsWith('data:image/') && !/^https?:\/\//i.test(image)) {
     reasons.push('Chưa có ảnh cảnh (KF).');
   }
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])/i.test(image)) {
+    reasons.push('KF là URL máy local — Runway không tải được. Gửi data-URI.');
+  }
   if (I2V_VI_RE.test(prompt) || PACK_RE.test(prompt)) {
     prompt = englishI2vMotion(prompt);
   }
@@ -3168,9 +3425,10 @@ export function studioI2vPrecheck(opts: {
   shot?: FamixaSeriesShot;
   videoContext?: string;
 }): StudioI2vPrecheck {
-  const action = (opts.action ?? '').trim();
+  const action = (
+    opts.state && opts.shot ? i2vActionOf(opts.state, opts.shot) : ''
+  ).trim() || (opts.action ?? '').trim();
   const hasKf = Boolean((opts.keyframeDataUrl ?? '').trim());
-  const kfApproved = hasKf && opts.status !== 'story_locked';
   const prompt =
     opts.state && opts.shot && opts.lock.locked && action
       ? compileI2vPrompt(opts.state, opts.shot, action, opts.videoContext)
@@ -3182,7 +3440,7 @@ export function studioI2vPrecheck(opts: {
     {
       id: 'shorts',
       ok: Boolean(opts.shortsReady),
-      label: opts.shortsReady ? 'Short đã xong / không có short' : 'Khóa hết short 9:16 trước khi dựng cảnh',
+      label: opts.shortsReady ? 'Voice + Shot Plan đã khóa' : 'Khóa kịch bản / Full Voice / cách chia Shot trước',
     },
     {
       id: 'scene',
@@ -3190,10 +3448,14 @@ export function studioI2vPrecheck(opts: {
       label: opts.sceneLocked ? 'Scene đã Final — mở khóa trên Timeline để làm lại' : 'Scene chưa Final',
     },
     { id: 'prev', ok: opts.unlocked, label: 'Shot liền trước đã khóa (I2V / LOCK)' },
-    { id: 'lock', ok: opts.lock.locked, label: 'Continuity đã khóa' },
-    { id: 'action', ok: Boolean(action), label: 'Shot Action đã nhập' },
+    {
+      id: 'lock',
+      ok: opts.lock.locked,
+      label: opts.lock.locked ? 'Scene Master / Continuity đã khóa' : 'Chưa khóa Scene Master / Continuity',
+    },
+    { id: 'action', ok: Boolean(action), label: action ? 'Shot Action / thoại đủ để I2V' : 'Thiếu Action / thoại để I2V' },
     { id: 'kf', ok: hasKf, label: 'Có ảnh keyframe cảnh' },
-    { id: 'kfa', ok: kfApproved, label: 'Đã duyệt keyframe' },
+    { id: 'kfa', ok: Boolean(hasKf && opts.status !== 'story_locked'), label: 'Đã duyệt keyframe' },
     {
       id: 'key',
       ok: opts.hasEngineKey,
@@ -3208,10 +3470,16 @@ export function studioI2vPrecheck(opts: {
       label: ids.length ? `Shot có ${ids.length} CHAR trên graph` : 'Shot chưa gắn CHAR trên graph',
     });
     const scene = sceneNodeOf(opts.state, opts.shot);
+    const place = scene?.environment || opts.lock.environment || opts.shot.location || '';
+    const placeOk = Boolean(place) || (opts.lock.locked && hasKf);
     items.push({
       id: 'graph-scene',
-      ok: Boolean(scene?.environment || opts.lock.environment),
-      label: scene?.environment || opts.lock.environment ? 'Scene Memory có bối cảnh' : 'Scene Memory thiếu bối cảnh',
+      ok: placeOk,
+      label: place
+        ? `Bối cảnh: ${place.slice(0, 48)}`
+        : placeOk
+          ? 'Bối cảnh theo Scene Master / KF đã khóa'
+          : 'Chưa khóa Scene Master — thiếu bối cảnh',
     });
     items.push({
       id: 'conflict',

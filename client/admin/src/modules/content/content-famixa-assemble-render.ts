@@ -83,11 +83,12 @@ function drawSub(ctx: CanvasRenderingContext2D, w: number, h: number, name: stri
   ctx.fillText(line, w / 2, h - pad);
 }
 
-async function loadVideo(blob: Blob) {
+async function loadVideo(blob: Blob, muted = true) {
   const url = URL.createObjectURL(blob);
   const el = document.createElement('video');
   el.src = url;
-  el.muted = true;
+  el.muted = muted;
+  el.volume = muted ? 0 : 1;
   el.playsInline = true;
   await new Promise<void>((resolve, reject) => {
     el.onloadedmetadata = () => resolve();
@@ -141,19 +142,29 @@ export async function recordAssembledCut(opts: {
       const clip = opts.clips[i]!;
       opts.onProgress?.(`${clip.code} · ${i + 1}/${opts.clips.length}`);
       const blob = await opts.videoOf(clip.shotId);
-      const { el, url } = await loadVideo(blob);
+      const keepLip = Boolean(clip.useVideoAudio);
+      const { el, url } = await loadVideo(blob, !keepLip);
       const audioBufs: { buf: AudioBuffer; start: number }[] = [];
       let local = 0;
-      for (const cue of clip.cues) {
-        const ab = await opts.audioOf(cue.lineId);
-        if (!ab) {
-          local += cue.endSec - cue.startSec;
-          continue;
+      if (keepLip) {
+        try {
+          ac.createMediaElementSource(el).connect(dest);
+        } catch {
+          /* element already routed */
         }
-        const raw = await ab.arrayBuffer();
-        const buf = await ac.decodeAudioData(raw.slice(0));
-        audioBufs.push({ buf, start: local });
-        local += buf.duration;
+        local = Number.isFinite(el.duration) ? el.duration : clip.seconds;
+      } else {
+        for (const cue of clip.cues) {
+          const ab = await opts.audioOf(cue.lineId);
+          if (!ab) {
+            local += cue.endSec - cue.startSec;
+            continue;
+          }
+          const raw = await ab.arrayBuffer();
+          const buf = await ac.decodeAudioData(raw.slice(0));
+          audioBufs.push({ buf, start: local });
+          local += buf.duration;
+        }
       }
       const dur = Math.max(clip.seconds, Number.isFinite(el.duration) ? el.duration : 0, local || 0, 1);
       const t0 = ac.currentTime + 0.08;

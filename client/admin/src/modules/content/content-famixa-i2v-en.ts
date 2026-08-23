@@ -20,7 +20,7 @@ const RULES: { re: RegExp; en: string }[] = [
   { re: /khựng|đứng lại/, en: 'Minh freezes for a beat' },
   { re: /nhìn mẹ|nhìn/, en: 'looks toward family, not the camera' },
   { re: /gọi mẹ|mẹ!/, en: 'the boy calls to his mother' },
-  { re: /nói|hỏi/, en: 'speaks a short line, mouth moves briefly' },
+  { re: /nói|hỏi/, en: 'a small face reaction, no freeze' },
 ];
 
 function secondsOf(n?: number) {
@@ -49,7 +49,7 @@ export function englishI2vMotion(action: string, seconds?: number) {
   const text =
     `Cinematic live-action. The photo is the first frame. ${cast}${beat} ` +
     `Start motion immediately: blink, breathe, small realistic movement. ` +
-    `If a line is spoken, lips and jaw move for that line then settle — no freeze-frame. ` +
+    `Mute take: do not animate spoken words. ` +
     `Continuous film cadence, gentle handheld, no snap-zoom. ` +
     `Steady lighting. No flicker, flash or strobe. ` +
     `Keep the same faces, hair, clothes, place and lighting. No looking at the camera. ` +

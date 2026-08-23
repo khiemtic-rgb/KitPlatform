@@ -132,6 +132,22 @@ const twinState = { ...state, episode: { ...state.episode!, shots: twin } } as S
 const twinPlan = buildSceneKfPlan(twinState, twin);
 if (twinPlan[1]?.lane !== 'reuse') fail.push(`same Action must REUSE, got ${twinPlan[1]?.lane}`);
 
+const lockedTpl = [
+  shot({ id: 'T01', story: 'Minh đưa bài.' }),
+  shot({ id: 'T02', story: 'Mẹ nhìn điểm, mặt nghiêm nghị không vui.' }),
+];
+const lockedState = {
+  ...state,
+  episode: { ...state.episode!, shots: lockedTpl },
+  runs: {
+    T01: { status: 'keyframe_ready' as const, keyframeDataUrl: 'data:image/png;base64,lock', kfApproved: true },
+    T02: { status: 'story_locked' as const },
+  },
+} as SeriesPilotState;
+const lockedPlan = buildSceneKfPlan(lockedState, lockedTpl);
+const lockedCopy = applySceneKfReuses(lockedState, lockedTpl, lockedPlan);
+if (lockedCopy.runs.T02?.keyframeDataUrl) fail.push('locked SH01 must not copy pixels onto SH02');
+
 if (fail.length) {
   console.error('BATCH PLAN FAIL');
   for (const f of fail) console.error(' -', f);

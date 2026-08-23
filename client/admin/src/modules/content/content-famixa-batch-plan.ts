@@ -2,6 +2,7 @@
 
 import { actionNearlySame, kfIsApprovedStill } from './content-famixa-scene-first';
 import {
+  effectiveShotAction,
   episodeShots,
   shotCharacterIds,
   shotHasValidAction,
@@ -90,7 +91,7 @@ export function buildSceneKfPlan(state: SeriesPilotState, sceneShots: FamixaSeri
   for (let i = 0; i < sceneShots.length; i++) {
     const shot = sceneShots[i]!;
     const run = shotRunOf(state, shot);
-    const action = (run.shotAction || shot.story || '').trim();
+    const action = effectiveShotAction(shot, run);
     const forceNew = Boolean(run.kfForceNew);
     const code = studioShotCode(shot, all);
     let mode: SceneKfMode = 'none';
@@ -118,7 +119,10 @@ export function buildSceneKfPlan(state: SeriesPilotState, sceneShots: FamixaSeri
     } else if (
       !forceNew &&
       i > 0 &&
-      actionNearlySame(action, sceneShots[i - 1] ? (shotRunOf(state, sceneShots[i - 1]!).shotAction || sceneShots[i - 1]!.story) : '')
+      actionNearlySame(
+        action,
+        sceneShots[i - 1] ? effectiveShotAction(sceneShots[i - 1]!, shotRunOf(state, sceneShots[i - 1]!)) : '',
+      )
     ) {
       source = sceneShots[i - 1];
       lane = 'reuse';
@@ -227,7 +231,9 @@ export function applySceneKfReuses(
     if (!dst) continue;
     if (row.lane === 'reuse' && row.sourceShotId) {
       const src = byId.get(row.sourceShotId);
-      if (!src || !shotRunOf(next, src).keyframeDataUrl) continue;
+      const srcRun = src ? shotRunOf(next, src) : undefined;
+      if (!src || !srcRun?.keyframeDataUrl) continue;
+      if (!dst.voiceChainFrom && kfIsApproved(srcRun)) continue;
       next = copyShotKeyframe(next, src, dst);
       continue;
     }

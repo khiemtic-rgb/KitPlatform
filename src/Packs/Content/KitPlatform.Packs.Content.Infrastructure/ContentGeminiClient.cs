@@ -125,6 +125,64 @@ internal sealed class ContentGeminiClient
         throw last ?? new InvalidOperationException("All Gemini text models failed");
     }
 
+    public async Task<string> GenerateJsonWithImageAsync(
+        string systemPrompt,
+        string userPrompt,
+        string mime,
+        string base64,
+        CancellationToken ct,
+        int maxOutputTokens = 1024)
+    {
+        var resolved = await ResolveConfigAsync(ct);
+        var preferred = resolved.TextModel;
+        var models = string.IsNullOrWhiteSpace(preferred)
+            ? TextFallbacks
+            : new[] { preferred }.Concat(TextFallbacks.Where(m => m != preferred)).ToArray();
+
+        Exception? last = null;
+        foreach (var model in models)
+        {
+            try
+            {
+                var body = new
+                {
+                    systemInstruction = new { parts = new[] { new { text = systemPrompt } } },
+                    contents = new[]
+                    {
+                        new
+                        {
+                            role = "user",
+                            parts = new object[]
+                            {
+                                new { text = userPrompt },
+                                new { inline_data = new { mime_type = mime, data = base64 } },
+                            },
+                        },
+                    },
+                    generationConfig = new
+                    {
+                        temperature = 0.2,
+                        responseMimeType = "application/json",
+                        maxOutputTokens,
+                        thinkingConfig = new { thinkingBudget = 0 },
+                    },
+                };
+                var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", body, ct);
+                var text = ExtractText(data);
+                if (string.IsNullOrWhiteSpace(text))
+                    throw new InvalidOperationException("Gemini returned empty QA JSON");
+                return text;
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+                _logger.LogWarning(ex, "Content Park still QA model {Model} failed", model);
+            }
+        }
+
+        throw last ?? new InvalidOperationException("Gemini still QA failed");
+    }
+
     public async Task<(byte[] Bytes, string Model)> GenerateImageAsync(string prompt, CancellationToken ct)
     {
         var resolved = await ResolveConfigAsync(ct);

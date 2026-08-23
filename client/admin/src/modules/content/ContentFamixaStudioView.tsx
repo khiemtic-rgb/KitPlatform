@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, Fragment, type ReactNode } from 'react';
 import { Alert, Button, Checkbox, Collapse, Select, Space, Tag, Typography } from 'antd';
-import { CheckOutlined, FolderOpenOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { CheckOutlined, DownloadOutlined, FolderOpenOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import {
   SERIES_STATUS_LABEL,
   groupShotsByBeat,
   memoryLine,
   shotActionBeats,
   shotOneLiner,
+  outputAspectOf,
   studioI2vPrecheck,
   studioSceneCode,
   studioSceneTitle,
@@ -25,7 +26,7 @@ import { type SceneKfPlanRow } from './content-famixa-batch-plan';
 import { type PreviewCutPlan } from './content-famixa-preview-cut';
 import { looksLikeVideoUrl } from './content-famixa-assemble';
 import { ContentFamixaProdV2 } from './ContentFamixaProdV2';
-import { canEnterProdStep, PROD_V2_STEPS, productionShorts, type ProdV2Step } from './content-famixa-prod-v2';
+import { canEnterProdStep, lipsyncVideoUrl, PROD_V2_STEPS, productionShorts, type ProdV2Step } from './content-famixa-prod-v2';
 import { voiceProductionReady } from './content-famixa-voice-script';
 import './content-famixa-studio.css';
 
@@ -78,6 +79,10 @@ export function ContentFamixaStudioView({
   onApproveKeyframe,
   onCreateVideo,
   onCreateSceneVideo,
+  onAbDiagnostic,
+  onLipsync,
+  onAttachLipsync,
+  lipsyncBusy,
   sceneBatchLabel,
   sceneBatchDisabled,
   batchSceneShots,
@@ -87,6 +92,8 @@ export function ContentFamixaStudioView({
   onRegenerateSelectedKf,
   generateSceneKfBusy,
   sceneBatchCredits,
+  runwayQuietMin,
+  onClearRunwayQuiet,
   sessionSrcOf,
   cutFrom,
   cutTo,
@@ -94,6 +101,7 @@ export function ContentFamixaStudioView({
   onCutRange,
   onCutPick,
   onLockSceneMaster,
+  onOutputAspect,
   onPatchSceneMaster,
   cutPlan,
   ttsUrlOf,
@@ -119,6 +127,8 @@ export function ContentFamixaStudioView({
   onOpenMemory,
   onLockScene,
   onApprovePreview,
+  onPatchRun,
+  onApproveScene,
   statusOf,
   runOf,
   actionOf,
@@ -141,7 +151,7 @@ export function ContentFamixaStudioView({
   shortsCount?: number;
   shortsLockedCount?: number;
   sessionSrc?: string;
-  turboBusy?: boolean;
+  turboBusy?: boolean | string;
   kitCredits: number;
   runwaySpent: number;
   expectedCost: number;
@@ -163,6 +173,10 @@ export function ContentFamixaStudioView({
   onApproveKeyframe: () => void;
   onCreateVideo: () => void;
   onCreateSceneVideo: (ids?: string[]) => void;
+  onAbDiagnostic?: (successId: string, failId: string) => void;
+  onLipsync?: (ids?: string[]) => void;
+  onAttachLipsync?: (shotId: string) => void;
+  lipsyncBusy?: boolean | string;
   sceneBatchLabel: string;
   sceneBatchDisabled: boolean;
   batchPlan?: SceneKfPlanRow[];
@@ -177,6 +191,8 @@ export function ContentFamixaStudioView({
   sceneVideoReady?: number;
   sceneVideoBlocked?: number;
   sceneBatchCredits?: number;
+  runwayQuietMin?: number;
+  onClearRunwayQuiet?: () => void;
   sessionSrcOf?: (id: string) => string | undefined;
   onPassTake?: (shot: FamixaSeriesShot) => void;
   onFailTake?: (shot: FamixaSeriesShot) => void;
@@ -186,11 +202,29 @@ export function ContentFamixaStudioView({
   onCutRange?: (fromId: string, toId: string) => void;
   onCutPick?: (ids: string[]) => void;
   onLockSceneMaster?: (sceneId: string, locked: boolean) => void;
-  onPatchSceneMaster?: (sceneId: string, patch: { location?: string; time?: string; lighting?: string; wardrobe?: string; props?: string; camera?: string; mood?: string }) => void;
+  onOutputAspect?: (aspect: '16:9' | '9:16') => void;
+  onPatchSceneMaster?: (
+    sceneId: string,
+    patch: {
+      location?: string;
+      time?: string;
+      lighting?: string;
+      wardrobe?: string;
+      props?: string;
+      camera?: string;
+      mood?: string;
+      screenDirection?: string;
+      coverage?: string;
+      lens?: string;
+      cameraHeight?: string;
+      blocking?: string;
+      pacing?: string;
+    },
+  ) => void;
   cutPlan?: PreviewCutPlan;
   ttsUrlOf?: (lineId: string) => string | undefined;
   onFillPreviewCut?: (kind: 'story' | 'motion') => void;
-  onDownloadTakes?: (ids?: string[]) => void;
+  onDownloadTakes?: (ids?: string[], kind?: 'take' | 'lipsync') => void;
   onAssembleCut?: () => void;
   onEnsureTts?: () => Promise<number>;
   assembleBusy?: boolean;
@@ -213,6 +247,8 @@ export function ContentFamixaStudioView({
   onOpenMemory: () => void;
   onLockScene?: () => void;
   onApprovePreview?: () => void;
+  onPatchRun?: (shotId: string, patch: Partial<SeriesShotRun>) => void;
+  onApproveScene?: (sceneId: string) => void;
   statusOf: (shot: FamixaSeriesShot) => SeriesShotStatus;
   runOf?: (shot: FamixaSeriesShot) => SeriesShotRun;
   actionOf: (shot: FamixaSeriesShot) => string | undefined;
@@ -302,7 +338,7 @@ export function ContentFamixaStudioView({
             ) : (
               <p className="fx-head-sub">
                 {active
-                  ? `${code} · ${shotN}/${shots.length || 0} · ${active.seconds ?? 5} giây · Shot Detail`
+                  ? `${code}${run?.lipsynced ? ' · KHỚP MÔI' : ''} · ${shotN}/${shots.length || 0} · ${active.seconds ?? 5} giây · Shot Detail`
                   : 'Chọn một shot để sửa'}
               </p>
             )}
@@ -421,6 +457,7 @@ export function ContentFamixaStudioView({
             onRange={onCutRange}
             onPickIds={onCutPick}
             onLockSceneMaster={onLockSceneMaster}
+            onOutputAspect={onOutputAspect}
             onPatchSceneMaster={onPatchSceneMaster}
             onSeconds={(id, sec) => onSeconds?.(id, sec)}
             onLockShotGraph={onLockShotGraph}
@@ -436,6 +473,10 @@ export function ContentFamixaStudioView({
             onApproveKf={onApproveSceneKf}
             onRegenerateKf={onRegenerateSelectedKf}
             onCreateVideo={(ids) => onCreateSceneVideo(ids)}
+            onAbDiagnostic={onAbDiagnostic}
+            onLipsync={onLipsync}
+            onAttachLipsync={onAttachLipsync}
+            lipsyncBusy={lipsyncBusy}
             cutPlan={cutPlan}
             ttsUrlOf={ttsUrlOf}
             sessionSrcOf={sessionSrcOf}
@@ -449,9 +490,13 @@ export function ContentFamixaStudioView({
             sceneBatchLabel={sceneBatchLabel}
             sceneBatchDisabled={sceneBatchDisabled}
             sceneBatchCredits={sceneBatchCredits}
+            runwayQuietMin={runwayQuietMin}
+            onClearRunwayQuiet={onClearRunwayQuiet}
             kitCredits={kitCredits}
             onLockScene={() => onLockScene?.()}
             onApprovePreview={onApprovePreview}
+            onPatchRun={onPatchRun}
+            onApproveScene={onApproveScene}
             sceneLocked={sceneLocked}
             sceneReady={allLocked}
           />
@@ -482,7 +527,8 @@ export function ContentFamixaStudioView({
                     <div className="fx-beat__text">{g.label}</div>
                     {g.shots.map((s) => {
                       const on = s.id === active?.id;
-                      const ui = studioShotUi(runOf?.(s) ?? { status: statusOf(s) });
+                      const rowRun = runOf?.(s);
+                      const ui = studioShotUi(rowRun ?? { status: statusOf(s) });
                       return (
                         <button
                           key={s.id}
@@ -497,6 +543,7 @@ export function ContentFamixaStudioView({
                             <span className={`fx-badge fx-badge--${ui.tone === 'locked' ? 'lock' : ui.tone === 'error' ? 'err' : ui.tone === 'warn' ? 'warn' : ui.tone === 'on' ? 'on' : 'wait'}`}>
                               {ui.label}
                             </span>
+                            {rowRun?.lipsynced ? <Tag color="green">KHỚP MÔI</Tag> : null}
                           </div>
                           <div className="fx-shot__story">{shotOneLiner(s.story, actionOf(s))}</div>
                           {ui.hint ? <div className="fx-shot__hint">{ui.hint}</div> : null}
@@ -674,7 +721,7 @@ export function ContentFamixaStudioView({
             ) : null}
             <div className="fx-create-meta">
               <Space wrap>
-                <Tag>{active?.seconds ?? 5} giây · 16:9</Tag>
+                <Tag>{active?.seconds ?? 5} giây · {outputAspectOf(pilot ?? {})}</Tag>
                 <Tag>{kfLabel}</Tag>
               </Space>
               <Collapse
@@ -761,12 +808,15 @@ export function ContentFamixaStudioView({
             {run?.turboError ? (
               <Alert type="error" showIcon style={{ marginBottom: 8 }} message={run.turboError} />
             ) : null}
+            {run?.lipsyncError && !run.lipsynced ? (
+              <Alert type="warning" showIcon style={{ marginBottom: 8 }} message={run.lipsyncError} />
+            ) : null}
             <Space wrap>
               <Button
                 type="primary"
                 icon={<ThunderboltOutlined />}
                 disabled={!precheck.ok || !active || !showVideo}
-                loading={turboBusy}
+                loading={Boolean(turboBusy)}
                 onClick={onCreateVideo}
               >
                 {precheck.ok
@@ -775,6 +825,34 @@ export function ContentFamixaStudioView({
                     : `Tạo video · xác nhận −${expectedCost} cr`
                   : 'Pre-check chưa đạt (0 cr)'}
               </Button>
+              {onLipsync && active && run?.previewUrl && !run.lipsynced ? (
+                <>
+                  <Button
+                    loading={Boolean(lipsyncBusy)}
+                    disabled={Boolean(turboBusy) || Boolean(lipsyncBusy)}
+                    onClick={() => onLipsync([active.id])}
+                  >
+                    Khớp môi · Fal
+                  </Button>
+                  {onAttachLipsync ? (
+                    <Button onClick={() => onAttachLipsync(active.id)}>Gắn Fal · 0$</Button>
+                  ) : null}
+                </>
+              ) : active && run?.lipsynced && lipsyncVideoUrl(run) ? (
+                <>
+                  <Tag color="green">KHỚP MÔI</Tag>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    loading={assembleBusy}
+                    onClick={() => onDownloadTakes?.([active.id], 'lipsync')}
+                  >
+                    Tải khớp môi
+                  </Button>
+                  <Typography.Link href={lipsyncVideoUrl(run)} target="_blank" rel="noopener noreferrer">
+                    Link
+                  </Typography.Link>
+                </>
+              ) : null}
             </Space>
           </section>
 
@@ -1006,7 +1084,10 @@ export function FamixaTimelinePane({
                 onClick={() => onOpenShot(s)}
               >
                 <span className="fx-timeline__t">{start}s</span>
-                <span className="fx-timeline__code">{studioShotCode(s, shots)}</span>
+                <span className="fx-timeline__code">
+                  {studioShotCode(s, shots)}
+                  {take.lipsynced ? ' · KHỚP MÔI' : ''}
+                </span>
                 <span className="fx-timeline__sec">{s.seconds}s</span>
                 <span className="fx-timeline__story">
                   {shotOneLiner(s.story, actionOf(s))}
@@ -1018,6 +1099,7 @@ export function FamixaTimelinePane({
                 </span>
                 <Space size={4}>
                   {hasTake ? <Tag>Take</Tag> : null}
+                  {take.lipsynced ? <Tag color="green">KHỚP MÔI</Tag> : null}
                   {cues.length ? <Tag>Thoại</Tag> : null}
                   <Tag color={lab.color}>{st === 'approved' ? 'LOCK' : lab.text}</Tag>
                 </Space>

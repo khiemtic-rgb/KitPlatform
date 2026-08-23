@@ -121,7 +121,18 @@ public sealed record ContentSeriesTurboTaskDto(
     string? Error,
     bool UsedPlaceholderImage,
     string Model,
-    int Seconds);
+    int Seconds,
+    string? FailureCode = null,
+    long? VideoBytes = null,
+    string? VideoMime = null,
+    bool VideoVerified = false);
+
+public sealed record ContentSeriesLipsyncStartRequest(
+    string ClipId,
+    string VideoUrl,
+    string AudioBase64,
+    string? Mime = null,
+    string? SyncMode = null);
 
 public sealed record ContentSeriesStillRefDto(
     string Name,
@@ -137,6 +148,17 @@ public sealed record ContentSeriesStillDto(
     string ImageDataUrl,
     string Model,
     string Aspect);
+
+public sealed record ContentSeriesStillQaRequest(
+    string ImageDataUrl,
+    string SpecJson);
+
+public sealed record ContentSeriesStillQaDto(
+    string Status,
+    int? Total,
+    IReadOnlyDictionary<string, int>? Axes,
+    IReadOnlyList<string> HardFails,
+    string? Notes);
 
 public sealed record ContentSeriesKfNoteRequest(
     string Note,
@@ -709,6 +731,10 @@ public interface IContentSeriesTurboService
         CancellationToken cancellationToken = default);
 
     Task<ContentSeriesTurboTaskDto> GetAsync(string taskId, CancellationToken cancellationToken = default);
+
+    Task<ContentSeriesTurboTaskDto> StartLipsyncAsync(
+        ContentSeriesLipsyncStartRequest request,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record ContentSeriesTakeProxyRequest(string Url);
@@ -725,7 +751,8 @@ public sealed record ContentSeriesAssembleClipDto(
     double Seconds,
     IReadOnlyList<ContentSeriesAssembleVoiceDto> Voices,
     double UsableStart = 0,
-    double? UsableEnd = null);
+    double? UsableEnd = null,
+    bool UseVideoAudio = false);
 
 public sealed record ContentSeriesAssembleRequest(
     string FileStem,
@@ -739,9 +766,19 @@ public interface IContentSeriesAssembleService
         CancellationToken cancellationToken = default);
 }
 
+public sealed record ContentSeriesTakeProbeDto(
+    bool Ok,
+    string? Mime,
+    long? Bytes,
+    string? Error);
+
 public interface IContentSeriesTakeProxyService
 {
     Task<(byte[] Bytes, string ContentType, string FileName)> FetchAsync(
+        string url,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentSeriesTakeProbeDto> ProbeAsync(
         string url,
         CancellationToken cancellationToken = default);
 }
@@ -754,6 +791,10 @@ public interface IContentSeriesStillService
 
     Task<ContentSeriesKfNoteDto> RewriteNoteAsync(
         ContentSeriesKfNoteRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ContentSeriesStillQaDto> QaAsync(
+        ContentSeriesStillQaRequest request,
         CancellationToken cancellationToken = default);
 }
 

@@ -1,6 +1,6 @@
 /** Voice Script = dialogue-only production artifact. Screenplay stays Story SoT. */
 
-import { isNonStoryLine, looksLikeSpokenLine, looksLikeVoiceDirection } from './content-famixa-story-parse';
+import { isMetaSpeakerName, isNonStoryLine, looksLikeScriptMetaHeading, looksLikeSpokenLine, looksLikeVoiceDirection } from './content-famixa-story-parse';
 import type { FamixaListenCue, FamixaSceneNode, SeriesPilotState } from './content-famixa-series';
 
 export type VoicePreviewStatus = 'idle' | 'incomplete' | 'complete';
@@ -51,6 +51,9 @@ function nameOf(state: SeriesPilotState, characterId: string) {
 export function isNotSpokenDialogue(text: string, speaker?: string) {
   const s = text.trim();
   if (!s || s.length < 1) return true;
+  if (isMetaSpeakerName(speaker) || looksLikeScriptMetaHeading(s) || looksLikeScriptMetaHeading(`${speaker ?? ''}: ${s}`)) {
+    return true;
+  }
   if (!looksLikeSpokenLine(s, speaker)) return true;
   if (isNonStoryLine(s)) return true;
   if (/^(?:SC|SCENE|SHOT|SH)\s*0*\d+\b/i.test(s)) return true;
@@ -103,6 +106,7 @@ function linesFromScenes(state: SeriesPilotState, scenes: FamixaSceneNode[]): Fa
         voiceId: voiceOf(state, d.characterId),
         sceneId: sc.id,
         order,
+        performance: d.performance,
       });
     }
   }
@@ -127,6 +131,7 @@ export function deriveVoiceScript(state: SeriesPilotState): FamixaVoiceScript {
         voiceId: voiceOf(state, l.characterId),
         sceneId: l.sceneId,
         order: 0,
+        performance: l.performance,
       });
       byScene.set(sceneId, bucket);
     }

@@ -60,6 +60,27 @@ if (!kfPixelsOf('S04')) fail.push('mergeRemote must keep local KF');
 if (!kfPixelsOf('S05')) fail.push('mergeRemote must keep local-only run KF');
 if (keep.runs.S04?.keyframeDataUrl) fail.push('mergeRemote must not put KF dataUrl on graph');
 
+const localLip = {
+  ...base,
+  runs: {
+    ...base.runs,
+    S04: {
+      status: 'turbo_testing' as const,
+      previewUrl: 'https://runway.example/raw.mp4',
+      lipsynced: true,
+      lipsyncUrl: 'https://fal.example/lip.mp4',
+    },
+  },
+} as SeriesPilotState;
+const remNoLip = {
+  ...base,
+  runs: { S04: { status: 'turbo_testing' as const, previewUrl: 'https://runway.example/raw.mp4' } },
+} as SeriesPilotState;
+const keptLip = mergeRemotePilot(remNoLip, localLip);
+if (!keptLip.runs.S04?.lipsynced || keptLip.runs.S04.lipsyncUrl !== 'https://fal.example/lip.mp4') {
+  fail.push('mergeRemote must keep local Fal lipsync when server graph lacks it');
+}
+
 function scShot(id: string, shot: string, story = 'có chuyện'): FamixaSeriesShot {
   return {
     id,

@@ -5,6 +5,8 @@ const vi = englishI2vMotion('Ngoài cổng trường — chiều. Minh gọi m�
 if (!/school gate/i.test(vi)) fail.push('school gate beat missing');
 if (!i2vPromptIsEnglish(vi)) fail.push('Vietnamese leaked into I2V prompt');
 if (!/Minh/.test(vi)) fail.push('Minh should stay in English prompt');
+if (/mouth moves|spoken line/i.test(vi)) fail.push('mute I2V must not ask Runway to lip-sync');
+if (!/Mute take|do not animate spoken/i.test(vi)) fail.push('mute take clause missing');
 
 const en = 'A boy stands at a school gate and blinks. Same clothes. 5 seconds.';
 if (englishI2vMotion(en) !== en) fail.push('English motion must pass through');

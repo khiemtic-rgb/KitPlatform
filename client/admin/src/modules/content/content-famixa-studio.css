@@ -365,6 +365,14 @@
   cursor: pointer;
 }
 
+.fx-cut-list__lip {
+  margin-left: 6px;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .fx-cut-list__on {
   border-color: #2563eb !important;
   background: #eff6ff !important;
@@ -1313,6 +1321,56 @@
   color: #334155;
   margin: 0 0 8px;
 }
+.fx-storyboard {
+  margin: 12px 0 4px;
+}
+.fx-storyboard__kicker {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+.fx-storyboard__strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.fx-storyboard__cell {
+  flex: 0 0 auto;
+  min-width: 72px;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+.fx-storyboard__cell span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0369a1;
+}
+.fx-storyboard__cell strong {
+  display: block;
+  font-size: 11px;
+}
+.fx-vqa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0 0 10px !important;
+}
+.fx-vqa span {
+  display: inline !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: #334155 !important;
+}
 .fx-shot-seq {
   display: flex;
   flex-direction: column;
@@ -1381,4 +1439,31 @@
 .fx-lanes__row strong {
   width: 88px;
   flex-shrink: 0;
+}
+
+.fx-prod-log {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.fx-prod-log th,
+.fx-prod-log td {
+  border: 1px solid #e2e8f0;
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-all;
+}
+.fx-prod-log__diff td {
+  background: #fff7ed;
+}
+.fx-prod-log__pre {
+  font-size: 12px;
+  line-height: 1.45;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 12px;
+  overflow: auto;
+  white-space: pre-wrap;
 }

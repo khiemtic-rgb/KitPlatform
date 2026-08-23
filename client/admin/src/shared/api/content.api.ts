@@ -83,6 +83,10 @@ export type ContentSeriesTurboTask = {
   usedPlaceholderImage: boolean;
   model: string;
   seconds: number;
+  failureCode?: string | null;
+  videoBytes?: number | null;
+  videoMime?: string | null;
+  videoVerified?: boolean;
 };
 
 export type ContentBudgetSnapshot = {
@@ -477,7 +481,7 @@ export async function startContentSeriesTurbo(body: {
   ratio: string;
   engine?: 'turbo' | 'wan';
 }) {
-  const { data } = await http.post<ContentSeriesTurboTask>('/content/series/turbo', body, { timeout: 60_000 });
+  const { data } = await http.post<ContentSeriesTurboTask>('/content/series/turbo', body, { timeout: 180_000 });
   return data;
 }
 
@@ -497,6 +501,17 @@ export async function rewriteContentSeriesKfNote(body: {
   return data;
 }
 
+export async function qaContentSeriesStill(body: { imageDataUrl: string; specJson: string }) {
+  const { data } = await http.post<{
+    status: string;
+    total?: number;
+    axes?: Record<string, number>;
+    hardFails: string[];
+    notes?: string;
+  }>('/content/series/still-qa', body, { timeout: 90_000 });
+  return data;
+}
+
 export async function generateContentSeriesStill(body: {
   prompt: string;
   aspect: string;
@@ -511,7 +526,20 @@ export async function generateContentSeriesStill(body: {
 }
 
 export async function getContentSeriesTurbo(taskId: string) {
-  const { data } = await http.get<ContentSeriesTurboTask>(`/content/series/turbo/${encodeURIComponent(taskId)}`);
+  const { data } = await http.get<ContentSeriesTurboTask>('/content/series/turbo', {
+    params: { taskId },
+  });
+  return data;
+}
+
+export async function startContentSeriesLipsync(body: {
+  clipId: string;
+  videoUrl: string;
+  audioBase64: string;
+  mime?: string;
+  syncMode?: 'cut_off' | 'silence' | 'loop' | 'bounce' | 'remap';
+}) {
+  const { data } = await http.post<ContentSeriesTurboTask>('/content/series/lipsync', body, { timeout: 360_000 });
   return data;
 }
 
@@ -535,6 +563,7 @@ export async function assembleContentSeriesCut(body: {
     usableStart?: number;
     usableEnd?: number;
     voices: { lineId: string; startSec: number; audioBase64: string; mime?: string }[];
+    useVideoAudio?: boolean;
   }[];
 }) {
   const { data, headers } = await http.post<Blob>('/content/series/assemble', body, {
@@ -545,6 +574,18 @@ export async function assembleContentSeriesCut(body: {
   if (type.includes('json') || data.size < 80) {
     throw new Error(await readBlobMessage(data, 'Không ghép được tập.'));
   }
+  return data;
+}
+
+export async function probeContentSeriesTake(url: string) {
+  const src = (url ?? '').trim();
+  if (!src) throw new Error('Chưa có link take.');
+  const { data } = await http.post<{
+    ok: boolean;
+    mime?: string | null;
+    bytes?: number | null;
+    error?: string | null;
+  }>('/content/series/take-probe', { url: src }, { timeout: 30_000 });
   return data;
 }
 

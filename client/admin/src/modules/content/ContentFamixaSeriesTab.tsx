@@ -40,7 +40,9 @@ import {
   fetchContentSeriesVoices,
   fetchContentSettings,
   generateContentSeriesStill,
+  qaContentSeriesStill,
   getContentSeriesTurbo,
+  startContentSeriesLipsync,
   previewContentSeriesTts,
   putContentSeriesPilot,
   fetchContentSeriesBuilds,
@@ -50,6 +52,7 @@ import {
   type ContentSeriesBuildSummary,
   assembleContentSeriesCut,
   startContentSeriesTurbo,
+  probeContentSeriesTake,
   type ContentBrand,
   type ContentSeriesVoice,
 } from '@/shared/api/content.api';
@@ -66,6 +69,8 @@ import {
   primeLongShotsOnScriptLock,
   applyShotLockToGraph,
   compileI2vPrompt,
+  outputAspectOf,
+  sceneHasKeyframe,
   formatSeriesVideoContext,
   pickFamixaBrand,
   lockFromGraph,
@@ -75,6 +80,7 @@ import {
   ensureScriptFollowsVoice,
   PILOT_SCHEMA,
   studioI2vPrecheck,
+  i2vActionOf,
   studioShotCode,
   removeSceneShots,
   insertShortClip,
@@ -122,7 +128,6 @@ import {
   hydratePilotCanon,
   hydratePilotKeyframes,
   seriesSceneStillPrompt,
-  shotCharacterIds,
   effectiveShotAction,
   looksLikePackHeading,
   roleCanonReady,
@@ -159,24 +164,49 @@ import {
   sceneKfToGenerate,
 } from './content-famixa-batch-plan';
 import { mapPreviewCut, shotsInInclusiveRange } from './content-famixa-preview-cut';
-import { productionShorts, setShortSeconds, canWorkV2Scene, v2SceneBlockReason, readyV2VideoShots, isOperatorSuppliedKf, visualLockShot } from './content-famixa-prod-v2';
+import { productionShorts, setShortSeconds, canWorkV2Scene, v2SceneBlockReason, readyV2VideoShots, isLockedTemplateKf, isOperatorSuppliedKf, visualLockShot, canRetryTurboStart, shouldResumeTurboPoll, isTurboRateLimit, isTurboDailyQuota, parseRetryAfterSec, loadRunwayQuietUntil, persistRunwayQuietUntil, clearRunwayQuietUntil, nextRunwayQuietUntil, runwayQuietRemainMin, shouldResumeLipsync, estimateFalLipsyncUsdForShots, lipsyncVideoUrl, parseFalLipsyncRef, takeVideoUrl, lipsyncQaReady } from './content-famixa-prod-v2';
+import { assembleVideoUrl, resolveFinalSource, resolveTakeUrl, stampFalFinal, stampMuteTake } from './content-famixa-final-source';
+import {
+  attemptToDiagRow,
+  canManualRetry,
+  classifyRunwayFailure,
+  classifyVideoPipe,
+  dataUriHash,
+  explainPipeError,
+  inspectKfDataUri,
+  inspectRunwayPayload,
+  kfCheckFromMeasure,
+  latestAttempt,
+  parseFailureCode,
+  patchRunwayAttempt,
+  sameKfAsInternalFail,
+  startRunwayAttempt,
+  summarizeAbDiagnostic,
+} from './content-famixa-runway-pipe';
 import {
   assembleFileStem,
   buildAssembleTimeline,
   formatSrt,
   looksLikeVideoUrl,
+  assembleConfirmCopy,
+  assembleNeedTtsOverlay,
   planWithExistingTakes,
   takeDownloadName,
+  lipsyncDownloadName,
 } from './content-famixa-assemble';
 import { englishI2vRetry } from './content-famixa-i2v-en';
 import { blobToBase64, recordAssembledCut, takeBlobFromUrl, triggerDownload } from './content-famixa-assemble-render';
 import { deleteTtsScope, loadTtsBlob, loadTtsBlobAny, measureAudioSec, saveTtsBlob, ttsLineKey, ttsTextKey } from './content-famixa-tts-store';
-import { applyContinuityChain } from './content-famixa-continuity-chain';
+import { applyContinuityChain, buildContinuityChain } from './content-famixa-continuity-chain';
 import {
   applyEditDurations,
+  applyVisibleCast,
+  compileShotSceneCard,
+  compileShotStillMood,
   continueScenePrompt,
   deriveSceneMaster,
   lockSceneMaster,
+  peopleCountLock,
   pickShots,
   previousSceneKf,
   sceneIdOfShot,
@@ -184,10 +214,23 @@ import {
   sequentialKfIds,
   unlockSceneMaster,
   upsertSceneMaster,
+  visibleFrameCast,
 } from './content-famixa-scene-first';
-import { applyDialogueMap, coverageOf } from './content-famixa-dialogue-map';
-import { actingTtsPerformText, actingTtsVoiceSettings, inferActingDirection } from './content-famixa-acting-law';
-import { shrinkStillDataUrl } from './content-famixa-still-ref';
+import {
+  approveBlockReason,
+  overlayNarrativeMark,
+  parseVisionQa,
+  seedQaChecks,
+  type VisualSpec,
+} from './content-famixa-visual-spec';
+import { applyDialogueMap, coverageOf, linesForShot, multiSpeakerBlock } from './content-famixa-dialogue-map';
+import { ACTING_EMOTIONS, actingTtsPerformText, actingTtsVoiceSettings, resolveLinePerformance } from './content-famixa-acting-law';
+import { isChildFromBible, linePerformanceOf, patchDialoguePerformance, patchVoiceBible, stampDialoguePerformances } from './content-famixa-performance';
+import {
+  measureKfImage,
+  prepareRunwayKf,
+  shrinkStillDataUrl,
+} from './content-famixa-still-ref';
 import {
   SERIES_BUILD_STATUS_VI,
   bindBuildMedia,
@@ -395,20 +438,16 @@ function fullScriptMp3Name(state: SeriesPilotState) {
 
 function explainTurboError(raw?: string | null) {
   const t = (raw ?? '').trim();
-  if (!t) return 'Runway chưa trả take.';
-  if (/moderation|safety|content.?policy/i.test(t)) {
-    return 'Runway chặn nội dung (moderation). KIT chỉ gửi English motion + KF cảnh — gửi lại đúng clip này.';
+  if (isTurboDailyQuota(t)) {
+    return 'Hết số job/ngày (không phải hết cr). Mua credit không mở khóa. Đợi cửa sổ 24h hoặc nâng tier trên dev.runwayml.com → Usage.';
   }
-  if (/429|rate.?limit|too many/i.test(t)) {
-    return 'Runway giới hạn tốc độ. Đợi rồi bấm Gửi cho Short còn thiếu — take đã có giữ nguyên.';
+  if (isTurboRateLimit(t)) {
+    return 'Runway 429: khóa số job/ngày hoặc đang chạy quá số song song — không phải hết cr. Mua credit không gỡ. Đợi rồi Hỏi lại · 0 cr.';
   }
-  if (/insufficient|quota|payment|billing|credits?/i.test(t)) {
+  if (/insufficient|quota|payment|billing|credits?/i.test(t) && !/INTERNAL/i.test(t)) {
     return 'Runway hết credit hoặc Dev chưa thanh toán. Kiểm tra tài khoản, rồi gửi nốt clip thiếu.';
   }
-  if (/unexpected error/i.test(t)) {
-    return 'Runway lỗi phía họ (unexpected). Không đụng take đã có. Gửi lại đúng Short còn thiếu; nếu lặp lại thì đợi 1 phút.';
-  }
-  return t.length > 180 ? `${t.slice(0, 180)}…` : t;
+  return explainPipeError(t);
 }
 
 function runwayCredits(seconds: number) {
@@ -581,8 +620,13 @@ export function ContentFamixaSeriesTab() {
   const [buildBusy, setBuildBusy] = useState(false);
   const [sessionClips, setSessionClips] = useState<Record<string, string>>({});
   const [turboBusy, setTurboBusy] = useState<string | undefined>();
+  const [lipsyncBusy, setLipsyncBusy] = useState<string | undefined>();
+  const turboLockRef = useRef(Promise.resolve());
+  const turboLaunchRef = useRef(new Set<string>());
+  const [runwayQuietUntil, setRunwayQuietUntil] = useState(loadRunwayQuietUntil);
+  const [, setQuietTick] = useState(0);
   const [assembleBusy, setAssembleBusy] = useState(false);
-  const [assembleAspect, setAssembleAspect] = useState<'16:9' | '9:16'>('9:16');
+  const assembleAspect = outputAspectOf(state);
   const [stillBusy, setStillBusy] = useState<string | undefined>();
   const [memOpen, setMemOpen] = useState(false);
   const [studioPane, setStudioPane] = useState<'script' | 'voice' | 'shorts' | 'studio' | 'timeline' | 'advanced'>(
@@ -648,6 +692,23 @@ export function ContentFamixaSeriesTab() {
     stateRef.current = cloned;
     queueServerSave(cloned);
     return cloned;
+  };
+
+  const setOutputAspect = (aspect: '16:9' | '9:16') => {
+    const live = stateRef.current;
+    if (aspect === live.outputAspect) return;
+    if (sceneHasKeyframe(live)) {
+      modal.confirm({
+        title: `Đổi khung ${outputAspectOf(live)} → ${aspect}`,
+        content:
+          'Đã có KF. Đổi khung lúc này crop/pad lệch ý. Tạo lại KF + I2V theo khung mới. Take cũ không tự sửa.',
+        okText: `Khóa ${aspect}`,
+        cancelText: 'Giữ khung cũ',
+        onOk: () => persistState({ ...stateRef.current, outputAspect: aspect }),
+      });
+      return;
+    }
+    persistState({ ...live, outputAspect: aspect });
   };
 
   const clearSessionTts = () => {
@@ -748,8 +809,15 @@ export function ContentFamixaSeriesTab() {
     const ch = cue.characterId
       ? (stateRef.current.characters ?? []).find((c) => c.id === cue.characterId)
       : undefined;
-    const dir = inferActingDirection({ text: cue.text, characterId: cue.characterId, name: cue.name });
-    const child = isChildVoiceLane(voiceLaneForRole({ characterId: cue.characterId, name: cue.name, title: '' }, ch));
+    const dir = resolveLinePerformance({
+      text: cue.text,
+      characterId: cue.characterId,
+      name: cue.name,
+      performance: cue.performance ?? linePerformanceOf(stateRef.current, cue.id),
+    });
+    const child =
+      isChildVoiceLane(voiceLaneForRole({ characterId: cue.characterId, name: cue.name, title: '' }, ch)) ||
+      isChildFromBible(ch);
     const pick = voices.find((v) => v.voiceId === voiceId);
     const northern = voiceSoundsNorthern(pick) || /hanoi|ha noi|northern|mien bac/i.test(`${pick?.accent || ''} ${pick?.name || ''} ${ch?.voiceName || ''}`);
     const vs = actingTtsVoiceSettings(
@@ -1067,6 +1135,12 @@ export function ContentFamixaSeriesTab() {
   }, []);
 
   useEffect(() => {
+    if (runwayQuietUntil <= Date.now()) return;
+    const t = window.setInterval(() => setQuietTick((n) => n + 1), 15_000);
+    return () => window.clearInterval(t);
+  }, [runwayQuietUntil]);
+
+  useEffect(() => {
     if (studioPane !== 'shorts') return;
     if ((state.shorts?.length ?? 0) > 0) return;
     if (!canOpenStudio(state)) return;
@@ -1335,12 +1409,18 @@ export function ContentFamixaSeriesTab() {
     try {
       const keyframeDataUrl = await readImageFile(file);
       const ref = localFileRef(file);
+      const st = stateRef.current;
+      const shot = episodeShots(st).find((s) => s.id === id);
+      const card = shot ? compileShotSceneCard(st, shot, previousSceneKf(st, shot, productionShorts(st))?.shot) : undefined;
       patchRun(id, {
         keyframeDataUrl,
         keyframeFileName: ref.fileName,
         keyframePath: ref.localPath,
         keyframeInheritedFrom: undefined,
-        kfApproved: true,
+        kfApproved: false,
+        kfRetryOk: false,
+        visualSpec: card?.visualSpec,
+        visualQa: card?.visualSpec ? seedQaChecks(card.visualSpec) : undefined,
         status: 'keyframe_ready',
       });
       const cur = stateRef.current;
@@ -1361,6 +1441,12 @@ export function ContentFamixaSeriesTab() {
     prevKfUrl?: string;
     inheritFromId?: string;
     continuityNote?: string;
+    peopleCount?: number;
+    peopleNames?: string;
+    atmosphere?: string;
+    lightingLock?: string;
+    speakers?: string;
+    visualSpec?: VisualSpec;
   }) => {
     if (!keys.gemini) {
       message.warning('Cần Gemini API key (Cấu hình AI) để vẽ KF từ Canon mặt.');
@@ -1370,7 +1456,7 @@ export function ContentFamixaSeriesTab() {
     if (st !== stateRef.current) persistState(st);
     const faces: { name: string; role?: string; imageDataUrl: string }[] = [];
     const visualIds = (opts.characterIds ?? []).filter((id) => !/^CHAR-VO$/i.test(id) && !/loi binh|narrator/i.test(id));
-    for (const row of canonStillRefs(st, visualIds).slice(0, opts.prevKfUrl ? 3 : 4)) {
+    for (const row of canonStillRefs(st, visualIds).slice(0, Math.max(1, visualIds.length))) {
       const slim = await shrinkStillDataUrl(row.imageDataUrl);
       if (slim) faces.push({ ...row, imageDataUrl: slim });
     }
@@ -1407,18 +1493,50 @@ export function ContentFamixaSeriesTab() {
           location: opts.location,
           refs,
           continuityNote: opts.continuityNote,
+          peopleCount: opts.peopleCount ?? visualIds.length,
+          peopleNames: opts.peopleNames,
+          atmosphere: opts.atmosphere,
+          lightingLock: opts.lightingLock,
+          speakers: opts.speakers,
+          visualSpec: opts.visualSpec,
         }),
         aspect: opts.aspect,
         references: refs,
       });
+      const fitted = res.imageDataUrl.startsWith('data:image')
+        ? await prepareRunwayKf(res.imageDataUrl, opts.aspect, {
+            people: opts.peopleCount ?? visualIds.length,
+          })
+        : res.imageDataUrl;
+      const marked =
+        opts.visualSpec?.overlay && fitted.startsWith('data:image')
+          ? await overlayNarrativeMark(fitted, opts.visualSpec.overlay)
+          : fitted;
+      let visualQa = opts.visualSpec ? seedQaChecks(opts.visualSpec) : undefined;
+      if (opts.visualSpec && marked.startsWith('data:image')) {
+        try {
+          const raw = await qaContentSeriesStill({
+            imageDataUrl: marked,
+            specJson: JSON.stringify(opts.visualSpec),
+          });
+          visualQa = parseVisionQa(raw, opts.visualSpec);
+        } catch {
+          /* operator ticks REQUIRED if vision QA is down */
+        }
+      }
       patchRun(opts.clipId, {
-        keyframeDataUrl: res.imageDataUrl,
-        keyframeFileName: `kf-${opts.clipId}-canon.png`,
+        keyframeDataUrl: marked,
+        keyframeFileName: `kf-${opts.clipId}-canon.jpg`,
         keyframeInheritedFrom: undefined,
         kfApproved: false,
+        visualSpec: opts.visualSpec,
+        visualQa,
         kfTechNote: opts.continuityNote?.trim() || undefined,
         status: 'keyframe_ready',
       });
+      if (visualQa?.status === 'REJECT') {
+        message.warning(`Image QA REJECT ${opts.clipId}: ${(visualQa.hardFails.join(', ') || visualQa.notes || 'hard fail').slice(0, 160)}`);
+      }
       const cur = stateRef.current;
       persistState({
         ...cur,
@@ -1597,6 +1715,8 @@ export function ContentFamixaSeriesTab() {
     if (!ready || !active) return;
     patchRun(active.id, {
       status: 'keyframe_ready',
+      kfApproved: true,
+      kfRetryOk: true,
       continuity: Object.fromEntries(CONTINUITY_GATES.map((g) => [g.id, true])),
     });
   };
@@ -1609,99 +1729,437 @@ export function ContentFamixaSeriesTab() {
     ratio: '16:9' | '9:16';
     engine: 'turbo' | 'wan';
     silent?: boolean;
+    resume?: boolean;
+    forceNew?: boolean;
+    diagnostic?: boolean;
   }) => {
-    const keyframe = shortRunOf(stateRef.current, opts.clipId).keyframeDataUrl;
-    if (!keyframe) {
+    const existing = shortRunOf(stateRef.current, opts.clipId);
+    const resume = Boolean(opts.resume || (!opts.forceNew && shouldResumeTurboPoll(existing)));
+    const keyframe = existing.keyframeDataUrl;
+    if (!resume && !keyframe) {
       message.warning('Gắn KF cảnh (cả khung hình), đừng gửi ảnh mặt CHAR.');
       return false;
     }
     const imageDataUrl = keyframe;
+    const prev = turboLockRef.current;
+    let release = () => {};
+    turboLockRef.current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await prev;
+    const quietMin = runwayQuietRemainMin(runwayQuietUntil);
+    if (quietMin && !opts.resume) {
+      message.warning(`KIT còn khóa gửi job mới (429 cũ). Bấm «Đã lên tier — mở gửi» rồi Gửi lại từng hàng. Hỏi lại · 0 cr vẫn dùng được.`);
+      release();
+      return false;
+    }
     setTurboBusy(opts.clipId);
+
+    const finishOk = (task: {
+      videoUrl?: string;
+      seconds?: number;
+      model?: string;
+      taskId?: string;
+      videoBytes?: number | null;
+      videoMime?: string | null;
+    }, wan: boolean) => {
+      const current = shortRunOf(stateRef.current, opts.clipId);
+      const sameLip = Boolean(
+        task.videoUrl &&
+          (current.lipsyncUrl === task.videoUrl || (current.lipsynced && current.previewUrl === task.videoUrl)),
+      );
+      const shotRow = (stateRef.current.episode?.shots ?? []).find((s) => s.id === opts.clipId);
+      const silentTake = shotRow ? linesForShot(stateRef.current, shotRow).length === 0 : false;
+      patchRun(opts.clipId, {
+        status: 'turbo_testing',
+        ...(sameLip
+          ? { finalSource: 'FAL' as const, takeUrl: current.takeUrl || current.previewUrl }
+          : { ...stampMuteTake(task.videoUrl || '', silentTake), lipsyncStatus: undefined }),
+        runwaySpent: wan ? 0 : runwayCredits(task.seconds || opts.seconds).credits,
+        model: task.model,
+        turboStatus: 'SUCCEEDED',
+        turboError: undefined,
+        videoPipe: 'VIDEO_READY',
+        videoVerified: true,
+        videoBytes: task.videoBytes ?? undefined,
+        videoMime: task.videoMime ?? undefined,
+        runwayAttempts: patchRunwayAttempt(current.runwayAttempts, task.taskId || current.turboTaskId, {
+          status: 'SUCCEEDED',
+          outputUrl: task.videoUrl,
+          downloadOk: true,
+          videoBytes: task.videoBytes ?? undefined,
+          videoMime: task.videoMime ?? undefined,
+        }),
+      });
+      if (!opts.silent) {
+        message.success(
+          wan
+            ? `Take Wan sẵn. Fal đã trừ ~1 đơn vị 720p — sổ KIT không ghi Runway cr.`
+            : resume
+              ? `Lấy được take từ task cũ (0 cr thêm).`
+              : `Take sẵn. Runway đã trừ ~${runwayCredits(task.seconds || opts.seconds).credits} cr — sổ KIT chỉ ghi khi khóa take đạt.`,
+        );
+      }
+      return true;
+    };
+
+    const markQuiet = (optsQuiet: { daily?: boolean; hits?: number; retryAfterSec?: number }) => {
+      const until = nextRunwayQuietUntil({ ...optsQuiet, prev: runwayQuietUntil });
+      persistRunwayQuietUntil(until);
+      setRunwayQuietUntil(until);
+    };
+
+    const pollTask = async (taskId: string) => {
+      const t0 = Date.now();
+      let waitMs = 6000;
+      let hits429 = 0;
+      while (Date.now() - t0 < 240_000) {
+        try {
+          const task = await getContentSeriesTurbo(taskId);
+          hits429 = 0;
+          const live = shortRunOf(stateRef.current, opts.clipId);
+          const pipeStatus =
+            task.status === 'SUCCEEDED'
+              ? task.videoUrl
+                ? 'VIDEO_SUCCEEDED'
+                : 'FILE_INVALID'
+              : task.status === 'RUNNING' || task.status === 'PROCESSING'
+                ? 'VIDEO_PROCESSING'
+                : task.status === 'PENDING'
+                  ? 'VIDEO_SUBMITTED'
+                  : classifyVideoPipe({ ...live, turboStatus: task.status, turboTaskId: task.taskId });
+          patchRun(opts.clipId, {
+            turboStatus: task.status,
+            turboTaskId: task.taskId,
+            turboError: undefined,
+            videoPipe: pipeStatus,
+            runwayAttempts: patchRunwayAttempt(live.runwayAttempts, task.taskId, {
+              status: task.status,
+              outputUrl: task.videoUrl ?? undefined,
+              failureCode: task.failureCode ?? parseFailureCode(task.error || ''),
+            }),
+          });
+          if (task.status === 'SUCCEEDED' && task.videoUrl) {
+            const wan = opts.engine === 'wan' || (task.model ?? '').startsWith('wan');
+            if (task.videoVerified) return finishOk(task, wan);
+            patchRun(opts.clipId, { videoPipe: 'VIDEO_DOWNLOADING' });
+            try {
+              const probed = await probeContentSeriesTake(task.videoUrl);
+              if (probed.ok) {
+                return finishOk(
+                  { ...task, videoBytes: probed.bytes, videoMime: probed.mime },
+                  wan,
+                );
+              }
+              const lastText = explainTurboError(probed.error || 'Có URL nhưng file không đọc được.');
+              const after = shortRunOf(stateRef.current, opts.clipId);
+              patchRun(opts.clipId, {
+                turboStatus: 'SUCCEEDED',
+                turboError: lastText,
+                videoPipe: 'DOWNLOAD_FAILED',
+                videoVerified: false,
+                runwayAttempts: patchRunwayAttempt(after.runwayAttempts, task.taskId, {
+                  status: 'SUCCEEDED',
+                  outputUrl: task.videoUrl,
+                  downloadOk: false,
+                  error: lastText,
+                }),
+              });
+              if (!opts.silent) message.error(lastText);
+              return false;
+            } catch (probeErr) {
+              if (looksLikeVideoUrl(task.videoUrl)) return finishOk(task, wan);
+              const lastText = explainTurboError(apiErrorMessage(probeErr, 'Không xác được file take.'));
+              patchRun(opts.clipId, { turboError: lastText, videoPipe: 'DOWNLOAD_FAILED', videoVerified: false });
+              if (!opts.silent) message.error(lastText);
+              return false;
+            }
+          }
+          if (task.status === 'SUCCEEDED' && !task.videoUrl) {
+            waitMs = 4000;
+            continue;
+          }
+          if (task.status === 'FAILED' || task.status === 'CANCELLED') {
+            const lastText = explainTurboError(task.error || `Turbo ${task.status}. Chưa có file.`);
+            const after = shortRunOf(stateRef.current, opts.clipId);
+            patchRun(opts.clipId, {
+              turboStatus: task.status,
+              turboError: lastText,
+              turboTaskId: task.taskId,
+              videoPipe: 'RUNWAY_FAILED',
+              videoVerified: false,
+              runwayAttempts: patchRunwayAttempt(after.runwayAttempts, task.taskId, {
+                status: task.status,
+                failureCode: task.failureCode ?? parseFailureCode(task.error || lastText),
+                error: lastText,
+              }),
+            });
+            if (!opts.silent) message.error(lastText);
+            return false;
+          }
+          waitMs = 6000;
+        } catch (e) {
+          const raw = apiErrorMessage(e, 'Không hỏi được task Runway.');
+          if (isTurboDailyQuota(raw)) {
+            markQuiet({ daily: true });
+            const lastText = explainTurboError(raw);
+            patchRun(opts.clipId, { turboStatus: 'RETRY', turboError: lastText, turboTaskId: taskId });
+            if (!opts.silent) message.error(lastText);
+            return false;
+          }
+          if (isTurboRateLimit(raw)) {
+            hits429 += 1;
+            const sec = parseRetryAfterSec(raw, 30);
+            if (hits429 >= 3) {
+              markQuiet({ hits: hits429, retryAfterSec: sec });
+              const lastText = `Runway chặn liên tục (429). Đợi ~${runwayQuietRemainMin(nextRunwayQuietUntil({ hits: hits429, retryAfterSec: sec, prev: runwayQuietUntil }))} phút. Không bấm thêm.`;
+              patchRun(opts.clipId, { turboStatus: 'RETRY', turboError: lastText, turboTaskId: taskId });
+              if (!opts.silent) message.error(lastText);
+              return false;
+            }
+            patchRun(opts.clipId, {
+              turboStatus: 'RETRY',
+              turboError: `Runway 429 — hỏi lại task sau ${sec}s (0 cr).`,
+              turboTaskId: taskId,
+            });
+            await new Promise((r) => setTimeout(r, sec * 1000));
+            waitMs = Math.min(Math.max(waitMs * 2, sec * 1000), 30_000);
+            continue;
+          }
+          const lastText = explainTurboError(raw);
+          patchRun(opts.clipId, { turboError: lastText, turboStatus: 'FAILED', turboTaskId: taskId });
+          if (!opts.silent) message.error(lastText);
+          return false;
+        }
+        await new Promise((r) => setTimeout(r, waitMs));
+      }
+      const lastText = 'Runway chưa trả take. Đợi hết hạn mức rồi Hỏi lại · 0 cr — đừng gửi job mới.';
+      patchRun(opts.clipId, {
+        turboError: lastText,
+        turboStatus: 'RETRY',
+        turboTaskId: taskId,
+        videoPipe: 'TIMEOUT',
+      });
+      if (!opts.silent) message.error(lastText);
+      return false;
+    };
+
     try {
+      const latest = shortRunOf(stateRef.current, opts.clipId);
+      if (resume && latest.turboTaskId?.trim()) {
+        if (!opts.silent) message.info('Hỏi lại task Runway đã gửi — 0 cr.');
+        return await pollTask(latest.turboTaskId.trim());
+      }
+      if (!imageDataUrl) {
+        message.warning('Gắn KF cảnh (cả khung hình), đừng gửi ảnh mặt CHAR.');
+        return false;
+      }
+      let sourceCheck = inspectKfDataUri(imageDataUrl);
+      if (imageDataUrl.startsWith('data:image')) {
+        try {
+          const dim = await measureKfImage(imageDataUrl);
+          sourceCheck = kfCheckFromMeasure(sourceCheck, dim.width, dim.height);
+        } catch {
+          sourceCheck = {
+            ...sourceCheck,
+            ok: false,
+            reasons: [...sourceCheck.reasons, 'Không đọc được ảnh KF.'],
+          };
+        }
+      }
+      if (!sourceCheck.ok) {
+        patchRun(opts.clipId, {
+          kfCheck: sourceCheck,
+          videoPipe: 'INPUT_INVALID',
+          turboStatus: 'FAILED',
+          turboError: sourceCheck.reasons.join(' '),
+        });
+        message.error(`Chưa gửi (0 cr): ${sourceCheck.reasons.join(' ')}`);
+        return false;
+      }
+      if (!opts.diagnostic && sameKfAsInternalFail(latest, dataUriHash(imageDataUrl))) {
+        message.warning('INTERNAL.BAD_OUTPUT — cùng KF không gửi lại. Sửa/duyệt KF mới rồi gửi 1 lần.');
+        return false;
+      }
       let lastText = '';
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const prompt = attempt === 0 ? opts.prompt : englishI2vRetry(opts.prompt);
+      for (let attempt = 0; attempt < (opts.diagnostic ? 1 : 2); attempt++) {
+        const prompt = opts.diagnostic || attempt === 0 ? opts.prompt : englishI2vRetry(opts.prompt);
         const gate = preflightTurboSend({ prompt, imageDataUrl });
         if (!gate.ok) {
           message.error(`Chưa gửi (0 cr): ${gate.reasons.join(' ')}`);
           return false;
         }
+        let createdTask = false;
         try {
           const current = shortRunOf(stateRef.current, opts.clipId);
           const takeHistory = [...(current.takeHistory ?? [])];
-          if (current.previewUrl?.trim()) {
+          if (!opts.diagnostic && current.previewUrl?.trim()) {
             takeHistory.unshift({ url: current.previewUrl.trim(), taskId: current.turboTaskId });
+          }
+          if (opts.engine !== 'wan' && !imageDataUrl.startsWith('data:image')) {
+            throw new Error('KF phải là data-URI — không gửi URL gốc vào Runway (0 cr).');
+          }
+          const shotRow = (stateRef.current.episode?.shots ?? []).find((s) => s.id === opts.clipId);
+          const peopleN = shotRow ? visibleFrameCast(stateRef.current, shotRow).count : 0;
+          const kf =
+            opts.engine === 'wan'
+              ? imageDataUrl
+              : await prepareRunwayKf(imageDataUrl, opts.ratio, { people: peopleN });
+          const sentDim = kf.startsWith('data:image')
+            ? await measureKfImage(kf).catch(() => ({ width: 0, height: 0 }))
+            : { width: 0, height: 0 };
+          let sentCheck = inspectRunwayPayload(kf, opts.ratio);
+          sentCheck = kfCheckFromMeasure(sentCheck, sentDim.width, sentDim.height);
+          sentCheck = inspectRunwayPayload(kf, opts.ratio);
+          sentCheck = {
+            ...sentCheck,
+            width: sentDim.width || sentCheck.width,
+            height: sentDim.height || sentCheck.height,
+            ok:
+              sentCheck.reasons.filter((r) => !/pixel|1280|720/i.test(r)).length === 0 &&
+              ((sentDim.width === 1280 && sentDim.height === 720) ||
+                (sentDim.width === 720 && sentDim.height === 1280)),
+            checks: [
+              ...sentCheck.checks.filter((c) => c.id !== 'pixels'),
+              {
+                id: 'pixels',
+                ok:
+                  (sentDim.width === 1280 && sentDim.height === 720) ||
+                  (sentDim.width === 720 && sentDim.height === 1280),
+                label:
+                  sentDim.width && sentDim.height
+                    ? `${sentDim.width}×${sentDim.height}`
+                    : 'chưa đo pixel',
+              },
+            ],
+          };
+          if (opts.engine !== 'wan' && !sentCheck.ok) {
+            patchRun(opts.clipId, {
+              kfCheck: sourceCheck,
+              sentKfCheck: sentCheck,
+              videoPipe: 'INPUT_INVALID',
+              turboStatus: 'FAILED',
+              turboError: sentCheck.reasons.join(' ') || 'Normalize JPEG 1280×720 thất bại.',
+            });
+            message.error(`Chưa gửi (0 cr): ${sentCheck.reasons.join(' ') || 'JPEG 1280×720 bắt buộc.'}`);
+            return false;
           }
           const started = await startContentSeriesTurbo({
             clipId: opts.clipId,
             prompt,
             negativePrompt: opts.negative,
-            imageDataUrl,
+            imageDataUrl: kf,
             seconds: opts.seconds,
             ratio: opts.ratio,
             engine: opts.engine,
           });
+          createdTask = true;
+          const billedAdd = opts.engine === 'wan' ? 0 : runwayCredits(opts.seconds).credits;
+          const sentBytes = kf.startsWith('data:') ? Math.max(0, Math.floor((kf.length * 3) / 4) - 32) : sourceCheck.bytes;
+          const keepTake = Boolean(opts.diagnostic && current.previewUrl?.trim());
+          const attempts = startRunwayAttempt(current, {
+            taskId: started.taskId,
+            submitOk: true,
+            status: started.status,
+            billed: billedAdd,
+            httpStatus: 200,
+            model: started.model || 'gen4_turbo',
+            duration: opts.seconds,
+            ratio: opts.ratio,
+            promptHash: dataUriHash(prompt),
+            diagnostic: opts.diagnostic,
+            source: {
+              mime: sourceCheck.mime,
+              bytes: sourceCheck.bytes,
+              width: sourceCheck.width,
+              height: sourceCheck.height,
+              hash: dataUriHash(imageDataUrl),
+            },
+            kf: {
+              mime: 'image/jpeg',
+              bytes: sentBytes,
+              width: sentDim.width,
+              height: sentDim.height,
+              hash: dataUriHash(kf),
+            },
+          });
+          const diagRow = attemptToDiagRow(opts.clipId, attempts.at(-1)!, {
+            kfId: current.keyframeFileName || opts.clipId,
+          });
           patchRun(opts.clipId, {
-            status: 'turbo_testing',
+            status: keepTake ? current.status : 'turbo_testing',
             model: started.model,
-            previewUrl: undefined,
+            previewUrl: keepTake ? current.previewUrl : undefined,
+            takeUrl: keepTake ? current.takeUrl : current.takeUrl,
             takeHistory: takeHistory.slice(0, 6),
             turboTaskId: started.taskId,
             turboStatus: started.status,
             turboError: undefined,
+            videoPipe: keepTake ? current.videoPipe || 'VIDEO_READY' : 'VIDEO_SUBMITTED',
+            videoVerified: keepTake ? current.videoVerified : undefined,
+            kfCheck: sourceCheck,
+            sentKfCheck: sentCheck,
+            kfRetryOk: false,
+            runwayBilled: (current.runwayBilled ?? current.runwaySpent ?? 0) + billedAdd,
+            runwayAttempts: attempts,
+            runwayDiagnostics: [...(current.runwayDiagnostics ?? []), diagRow].slice(-12),
           });
           if (started.usedPlaceholderImage) {
             message.warning('Không nhận được KF01 — gửi lại sau khi gắn ảnh cảnh.');
           }
-          let task = started;
-          const t0 = Date.now();
-          while (
-            task.status !== 'SUCCEEDED' &&
-            task.status !== 'FAILED' &&
-            task.status !== 'CANCELLED' &&
-            Date.now() - t0 < 240_000
-          ) {
-            await new Promise((r) => setTimeout(r, 4000));
-            task = await getContentSeriesTurbo(task.taskId);
-            patchRun(opts.clipId, { turboStatus: task.status, turboTaskId: task.taskId });
-          }
-          if (task.status === 'SUCCEEDED' && task.videoUrl) {
-            const wan = opts.engine === 'wan' || (task.model ?? '').startsWith('wan');
-            patchRun(opts.clipId, {
-              status: 'turbo_testing',
-              previewUrl: task.videoUrl,
-              runwaySpent: wan ? 0 : runwayCredits(task.seconds || opts.seconds).credits,
-              model: task.model,
-              turboStatus: task.status,
-              turboError: undefined,
+          const ok = await pollTask(started.taskId);
+          const after = shortRunOf(stateRef.current, opts.clipId);
+          const last = latestAttempt(after);
+          if (last) {
+            const klass = classifyRunwayFailure({
+              sentOk: true,
+              httpStatus: last.httpStatus ?? 200,
+              runwayStatus: after.turboStatus,
+              failureCode: last.failureCode,
+              error: after.turboError,
             });
-            if (!opts.silent) {
-              message.success(
-                wan
-                  ? `Take Wan sẵn. Fal đã trừ ~1 đơn vị 720p — sổ KIT không ghi Runway cr.`
-                  : `Take sẵn. Runway đã trừ ~${runwayCredits(task.seconds || opts.seconds).credits} cr — sổ KIT chỉ ghi khi khóa take đạt.`,
-              );
-            }
-            return true;
+            patchRun(opts.clipId, {
+              previewUrl: keepTake ? current.previewUrl : after.previewUrl,
+              takeUrl: keepTake ? current.takeUrl : after.takeUrl,
+              videoPipe: keepTake && current.previewUrl ? 'VIDEO_READY' : after.videoPipe,
+              videoVerified: keepTake ? current.videoVerified : after.videoVerified,
+              runwayAttempts: patchRunwayAttempt(after.runwayAttempts, started.taskId, { classification: klass }),
+              runwayDiagnostics: [...(after.runwayDiagnostics ?? [])].map((row) =>
+                row.runwayJobId === started.taskId
+                  ? {
+                      ...row,
+                      runwayStatus: after.turboStatus,
+                      outputUrl: last.outputUrl || after.previewUrl,
+                      downloadOk: last.downloadOk,
+                      videoBytes: last.videoBytes ?? after.videoBytes,
+                      errorCode: last.failureCode,
+                      errorMessage: after.turboError,
+                      classification: klass,
+                    }
+                  : row,
+              ),
+            });
           }
-          lastText = explainTurboError(task.error || `Turbo ${task.status}. Chưa có file.`);
-          const transient = /unexpected|429|rate.?limit|too many/i.test(task.error || lastText);
-          if (transient && attempt === 0) {
-            patchRun(opts.clipId, { turboStatus: 'RETRY', turboError: 'Runway lỗi tạm — gửi lại cùng clip…' });
-            await new Promise((r) => setTimeout(r, 8000));
-            continue;
-          }
-          patchRun(opts.clipId, { turboStatus: task.status, turboError: lastText, turboTaskId: task.taskId });
-          if (!opts.silent) message.error(lastText);
-          return false;
+          return ok;
         } catch (e) {
           lastText = explainTurboError(
             apiErrorMessage(e, 'Không gửi được I2V. Kiểm tra key Runway / Fal (Model AI → Video).'),
           );
-          const transient = /unexpected|429|rate.?limit|too many|502|503|timeout/i.test(lastText);
-          if (transient && attempt === 0) {
-            patchRun(opts.clipId, { turboStatus: 'RETRY', turboError: 'Runway lỗi tạm — gửi lại cùng clip…' });
-            await new Promise((r) => setTimeout(r, 8000));
+          if (isTurboDailyQuota(lastText)) {
+            const until = nextRunwayQuietUntil({ daily: true, prev: runwayQuietUntil });
+            persistRunwayQuietUntil(until);
+            setRunwayQuietUntil(until);
+            patchRun(opts.clipId, { turboError: lastText, turboStatus: 'FAILED' });
+            if (!opts.silent) message.error(lastText);
+            return false;
+          }
+          if (canRetryTurboStart(lastText, createdTask) && attempt === 0) {
+            const sec = parseRetryAfterSec(lastText, 30);
+            patchRun(opts.clipId, {
+              turboStatus: 'RETRY',
+              turboError: `Runway 429 — đợi ${sec}s rồi gửi lại (chưa tạo job, 0 cr).`,
+            });
+            await new Promise((r) => setTimeout(r, sec * 1000));
             continue;
           }
           patchRun(opts.clipId, { turboError: lastText, turboStatus: 'FAILED' });
@@ -1713,6 +2171,7 @@ export function ContentFamixaSeriesTab() {
       return false;
     } finally {
       setTurboBusy(undefined);
+      release();
     }
   };
 
@@ -1750,7 +2209,7 @@ export function ContentFamixaSeriesTab() {
     const cost = generateCost(engine, active.seconds);
     modal.confirm({
       title: engine === 'wan' ? 'Pre-check đạt · gửi Wan (Fal)' : `Pre-check đạt · gửi Turbo −${cost.credits} cr`,
-      content: `${pre.warnings.length ? `${pre.warnings.join(' ')} ` : ''}Check máy: 0 cr. ${cost.label} Họ trừ khi bấm Gửi.`,
+      content: `${pre.warnings.length ? `${pre.warnings.join(' ')} ` : ''}Check máy: 0 cr. ${cost.label} trừ ngay khi nhận job — lỗi unexpected vẫn mất cr. KIT không tự gửi lần 2.`,
       okText: engine === 'wan' ? 'Gửi Wan' : `Gửi (−${cost.credits} cr)`,
       cancelText: 'Không gửi',
       onOk: () =>
@@ -1759,7 +2218,7 @@ export function ContentFamixaSeriesTab() {
           prompt: pre.prompt,
           negative: undefined,
           seconds: active.seconds,
-          ratio: '16:9',
+          ratio: outputAspectOf(state),
           engine,
         }),
     });
@@ -1951,7 +2410,7 @@ export function ContentFamixaSeriesTab() {
       }
     }
     persistState({
-      ...state,
+      ...stampDialoguePerformances(state),
       scriptLocked: true,
       voiceLocked: true,
       voicePreview: {
@@ -2006,6 +2465,37 @@ export function ContentFamixaSeriesTab() {
           ? `Tạo video ${sceneVideo.ready.length} Short · Wan`
           : `Gửi Runway · ${sceneVideo.ready.length} Short · −${sceneBatchCredits} cr · xác nhận`;
 
+  const stillArgsFor = (s: FamixaSeriesShot, pack: FamixaSeriesShot[], continuityNote?: string) => {
+    const st = stateRef.current;
+    const loc = lockFromGraph(st, s);
+    const master = sceneMasterOf(st, sceneIdOfShot(s));
+    const prev = previousSceneKf(st, s, pack);
+    const lock = visualLockShot(st, pack);
+    const card = compileShotSceneCard(st, s, prev?.shot);
+    persistState(applyVisibleCast(st, s.id, card.cast.ids));
+    const sceneUrl = prev?.run.keyframeDataUrl?.startsWith('data:image') ? prev.run.keyframeDataUrl : undefined;
+    const fromCode = prev ? shCode(st, prev.shot) : lock ? shCode(st, lock) : undefined;
+    return {
+      clipId: s.id,
+      aspect: outputAspectOf(st),
+      visual: continueScenePrompt(master, fromCode, card.stillAction),
+      action: card.stillAction,
+      location: [master.location || loc.environment || s.location, card.lighting].filter(Boolean).join('. '),
+      characterIds: card.cast.ids,
+      prevKfUrl: sceneUrl,
+      inheritFromId: prev?.shot.id,
+      peopleCount: card.cast.count,
+      peopleNames: card.cast.names.join(', '),
+      atmosphere: compileShotStillMood(st, s, card.stillAction),
+      lightingLock: card.lighting,
+      speakers: card.speakerNames.join(', '),
+      visualSpec: card.visualSpec,
+      continuityNote: [continuityNote?.trim(), peopleCountLock(card.cast, prev ? visibleFrameCast(st, prev.shot).count : undefined)]
+        .filter(Boolean)
+        .join(' '),
+    };
+  };
+
   const generateSceneKf = (onlyIds?: string[]) => {
     if (!canOpenStudio(state)) {
       message.warning(sceneBlockReason(state) ?? 'Khóa kịch bản rồi mới dựng cảnh.');
@@ -2026,6 +2516,10 @@ export function ContentFamixaSeriesTab() {
       message.warning(`Khóa Scene Master (${unlocked.join(', ')}) trước khi tạo hình.`);
       return;
     }
+    if (state.outputAspect !== '16:9' && state.outputAspect !== '9:16') {
+      message.warning('Chọn khung xuất 16:9 hoặc 9:16 trên Scene Master trước khi vẽ KF.');
+      return;
+    }
     if (!keys.gemini) {
       message.warning('Cần Gemini API key (Cấu hình AI) để vẽ KF từ Canon.');
       return;
@@ -2036,58 +2530,54 @@ export function ContentFamixaSeriesTab() {
       st = persistState(applyContinuityChain(st, productionShorts(st)));
       const pack = productionShorts(st);
       let plan = buildSceneKfPlan(st, pack);
-      st = persistState(applySceneKfReuses(st, pack, plan));
-      plan = buildSceneKfPlan(st, pack);
       let todo = sceneKfToGenerate(pack, plan, st);
+      const lock = visualLockShot(st, pack);
       if (onlyIds?.length) {
-        todo = pack.filter((s) => onlyIds.includes(s.id) && shotHasValidAction(s, shotRunOf(st, s)));
-        const lock = visualLockShot(st, pack);
-        if (lock && isOperatorSuppliedKf(shotRunOf(st, lock))) {
-          todo = todo.filter((s) => s.id !== lock.id);
-        }
+        todo = pack.filter((s) => onlyIds.includes(s.id) && shotHasValidAction(s, shotRunOf(st, s)) && !shotRunOf(st, s).prodSkip);
       } else {
         const seq = new Set(sequentialKfIds(st, pack));
         todo = todo.filter((s) => seq.has(s.id) && shotHasValidAction(s, shotRunOf(st, s)));
+        todo = todo.filter((s) => {
+          if (lock && s.id === lock.id) return false;
+          return !isLockedTemplateKf(shotRunOf(st, s)) && !isOperatorSuppliedKf(shotRunOf(st, s));
+        });
       }
       if (todo.length === 0) {
         message.warning(
           onlyIds?.length
-            ? 'Chọn Short sau mẫu hình (không chọn lại SH đã gắn ảnh).'
+            ? 'Short này HOLD/SKIP hoặc không có Action — không vẽ KF.'
             : `Không có Short nào cần tạo hình (${plan.filter((p) => p.eligible).length} Short hợp lệ).`,
         );
         return;
       }
+      const reuseIds = new Set(plan.filter((p) => p.lane === 'reuse' && p.eligible).map((p) => p.shotId));
+      const reuseN = todo.filter((s) => reuseIds.has(s.id)).length;
+      const draw = todo.filter((s) => !reuseIds.has(s.id));
       modal.confirm({
-        title: `Tạo hình tuần tự ${todo.length} Shot`,
-        content: `Master → SH01 → SH02 từ KF01 → tiếp. Gemini từng tấm, không song song. Short rỗng không vẽ. Chưa gửi I2V.`,
-        okText: 'CONFIRM & GENERATE',
+        title: reuseN ? `REUSE ${reuseN} · vẽ ${draw.length} Shot` : `Tạo hình tuần tự ${todo.length} Shot`,
+        content: reuseN
+          ? `${reuseN} shot cùng Action/nối thoại — copy KF trước (0 Gemini). ${draw.length} shot đổi Action — vẽ mới. Chưa gửi I2V.`
+          : lock
+            ? `Bỏ ${shCode(st, lock)} đã khóa. Vẽ từ shot sau, từng tấm. Chỉ đổi Action. Chưa gửi I2V.`
+            : `Master → shot sau từ KF trước. Chỉ đổi Action. Chưa gửi I2V.`,
+        okText: reuseN ? `REUSE ${reuseN} rồi vẽ ${draw.length}` : 'CONFIRM & GENERATE',
         cancelText: 'Hủy',
         onOk: async () => {
-          for (const s of todo) {
+          persistState(applySceneKfReuses(stateRef.current, pack, plan));
+          for (const s of draw) {
             if (!shotHasValidAction(s, shotRunOf(stateRef.current, s))) continue;
-            const loc = lockFromGraph(stateRef.current, s);
-            const master = sceneMasterOf(stateRef.current, sceneIdOfShot(s));
-            const prev = previousSceneKf(stateRef.current, s, pack);
-            const runNow = shotRunOf(stateRef.current, s);
-            const action = effectiveShotAction(s, runNow);
-            if (action && looksLikePackHeading(runNow.shotAction)) patchRun(s.id, { shotAction: action });
-            const ok = await generateKfFromCanon({
-              clipId: s.id,
-              aspect: '16:9',
-              visual: continueScenePrompt(master, prev ? shCode(stateRef.current, prev.shot) : undefined, action),
-              action,
-              location: master.location || loc.environment || s.location,
-              characterIds: shotCharacterIds(s).filter((id) => id !== 'CHAR-VO'),
-              prevKfUrl: prev?.run.keyframeDataUrl,
-              inheritFromId: prev?.shot.id,
-            });
+            const ok = await generateKfFromCanon(stillArgsFor(s, pack));
             if (!ok) {
               message.error(`Dừng KF tại ${shCode(stateRef.current, s)}.`);
               return;
             }
           }
           persistState(applySceneKfReuses(stateRef.current, pack, buildSceneKfPlan(stateRef.current, pack)));
-          message.success('Đã xong KF tuần tự. Duyệt từng tấm — chưa gửi I2V.');
+          message.success(
+            reuseN
+              ? `REUSE ${reuseN} · đã vẽ ${draw.length}. Duyệt KF — chưa gửi I2V.`
+              : 'Đã xong KF tuần tự. Duyệt từng tấm — chưa gửi I2V.',
+          );
         },
       });
     })();
@@ -2106,43 +2596,31 @@ export function ContentFamixaSeriesTab() {
       let st = await hydratePilotCanon(stateRef.current);
       if (st !== stateRef.current) st = persistState(st);
       const pack = productionShorts(st);
-      const targets = pack.filter(
-        (s) => ids.includes(s.id) && shotHasValidAction(s, shotRunOf(st, s)) && !shotRunOf(st, s).prodSkip,
-      );
+      const requested = pack.filter((s) => ids.includes(s.id));
+      const targets = requested.filter((s) => shotHasValidAction(s, shotRunOf(st, s)) && !shotRunOf(st, s).prodSkip);
       if (!targets.length) {
-        message.warning('Shot đã chọn đang HOLD/SKIP — không vẽ KF.');
+        message.warning(
+          requested.length
+            ? 'Shot đã chọn đang HOLD/SKIP — không vẽ KF.'
+            : 'Không tìm thấy Short để tạo lại.',
+        );
         return;
       }
       modal.confirm({
-        title: `Tạo lại ${targets.length} KF đã chọn`,
-        content: 'Gemini vẽ lại shot đã chọn. Không trừ Runway. Không gửi I2V.',
-        okText: `Vẽ ${targets.length} KF`,
+        title: `Tạo lại ${targets.length} hình đã chọn`,
+        content: 'Gemini vẽ lại tuần tự từ khung đã khóa. Giữ đèn tối, người đang nói phải vào hình, không ôm thành ảnh gia đình. Không trừ Runway. Không gửi I2V.',
+        okText: `Tạo lại ${targets.length} hình`,
         cancelText: 'Hủy',
         onOk: async () => {
           for (const s of targets) {
             patchRun(s.id, {
               kfForceNew: true,
+              kfApproved: false,
               keyframeDataUrl: undefined,
               keyframeInheritedFrom: undefined,
               kfTechNote: continuityNote?.trim() || undefined,
             });
-            const loc = lockFromGraph(stateRef.current, s);
-            const master = sceneMasterOf(stateRef.current, sceneIdOfShot(s));
-            const prev = previousSceneKf(stateRef.current, s, pack);
-            const runNow = shotRunOf(stateRef.current, s);
-            const action = effectiveShotAction(s, runNow);
-            if (action && looksLikePackHeading(runNow.shotAction)) patchRun(s.id, { shotAction: action });
-            const ok = await generateKfFromCanon({
-              clipId: s.id,
-              aspect: '16:9',
-              visual: continueScenePrompt(master, prev ? shCode(stateRef.current, prev.shot) : undefined, action),
-              action,
-              location: master.location || loc.environment || s.location,
-              characterIds: shotCharacterIds(s).filter((id) => id !== 'CHAR-VO'),
-              prevKfUrl: prev?.run.keyframeDataUrl,
-              inheritFromId: prev?.shot.id,
-              continuityNote,
-            });
+            const ok = await generateKfFromCanon(stillArgsFor(s, pack, continuityNote));
             if (!ok) {
               message.error(`Dừng KF tại ${shCode(stateRef.current, s)}.`);
               return;
@@ -2158,26 +2636,183 @@ export function ContentFamixaSeriesTab() {
 
   const approveSceneKf = (ids?: string[]) => {
     const gates = Object.fromEntries(CONTINUITY_GATES.map((g) => [g.id, true]));
-    const runs = { ...state.runs };
-    let n = 0;
     const range = shotsInInclusiveRange(prodQueue, cutFrom, cutTo);
     const pack = ids?.length ? prodQueue.filter((s) => ids.includes(s.id)) : range;
+    const chained = applyContinuityChain(state, productionShorts(state));
+    const links = buildContinuityChain(chained, productionShorts(chained));
+    const runs = { ...chained.runs };
+    let n = 0;
+    let blocked = 0;
+    const reasons: string[] = [];
     for (const s of pack) {
-      const run = shotRunOf(state, s);
-      if (!run.keyframeDataUrl || run.status === 'approved') continue;
+      const run = shotRunOf(chained, s);
+      if (!run.keyframeDataUrl || run.status === 'approved' || run.kfApproved) continue;
+      const spec = run.visualSpec ?? compileShotSceneCard(chained, s, previousSceneKf(chained, s, productionShorts(chained))?.shot).visualSpec;
+      const qa = run.visualQa ?? seedQaChecks(spec);
+      const why = approveBlockReason(qa);
+      if (why) {
+        blocked += 1;
+        if (reasons.length < 3) reasons.push(`${shCode(chained, s)}: ${why}`);
+        runs[s.id] = { ...run, visualSpec: spec, visualQa: qa };
+        continue;
+      }
+      const link = links.find((l) => l.shotId === s.id);
       runs[s.id] = {
         ...run,
         status: run.status === 'turbo_testing' || run.status === 'reviewed' ? run.status : 'keyframe_ready',
         kfApproved: true,
+        kfRetryOk: true,
         continuity: run.continuity ?? gates,
+        startState: run.startState ?? link?.start,
+        endState: run.endState ?? link?.end,
+        transitionType: run.transitionType ?? link?.transitionType,
+        stateLocked: true,
+        visualSpec: spec,
+        visualQa: qa,
       };
       n += 1;
     }
-    persistState({ ...state, runs });
-    message.success(n ? `Đã duyệt ${n} KF cảnh.` : 'Chưa có KF để duyệt.');
+    persistState({ ...chained, runs });
+    if (blocked) {
+      message.warning(
+        n
+          ? `Duyệt ${n} KF. ${blocked} bị chặn Image QA — ${reasons.join(' · ')}`
+          : `Không duyệt KF: Image QA chưa PASS. ${reasons.join(' · ')}`,
+      );
+      return;
+    }
+    message.success(n ? `Đã duyệt ${n} KF — Start/End đã khóa.` : 'Chưa có KF để duyệt.');
+  };
+
+  const recoverTake = async (clipId: string) => {
+    const run = shortRunOf(stateRef.current, clipId);
+    const url = (latestAttempt(run)?.outputUrl || run.previewUrl || '').trim();
+    if (!url) {
+      message.warning('Không có output URL để đọc lại. Mở Nhật ký — đừng Gửi lại.');
+      return;
+    }
+    patchRun(clipId, { videoPipe: 'VIDEO_DOWNLOADING', turboError: undefined });
+    try {
+      const probed = await probeContentSeriesTake(url);
+      if (!probed.ok) {
+        const lastText = explainTurboError(probed.error || 'URL cũ không đọc được.');
+        patchRun(clipId, { videoPipe: 'DOWNLOAD_FAILED', videoVerified: false, turboError: lastText });
+        message.error(lastText);
+        return;
+      }
+      patchRun(clipId, {
+        status: 'turbo_testing',
+        previewUrl: url,
+        turboStatus: 'SUCCEEDED',
+        turboError: undefined,
+        videoPipe: 'VIDEO_READY',
+        videoVerified: true,
+        videoBytes: probed.bytes ?? undefined,
+        videoMime: probed.mime ?? undefined,
+        runwayAttempts: patchRunwayAttempt(run.runwayAttempts, run.turboTaskId, {
+          outputUrl: url,
+          downloadOk: true,
+          videoBytes: probed.bytes ?? undefined,
+          videoMime: probed.mime ?? undefined,
+        }),
+      });
+      message.success('Đã gắn file từ URL cũ — 0 cr.');
+    } catch (e) {
+      const lastText = explainTurboError(apiErrorMessage(e, 'Không đọc được URL cũ.'));
+      patchRun(clipId, { videoPipe: 'DOWNLOAD_FAILED', videoVerified: false, turboError: lastText });
+      message.error(lastText);
+    }
+  };
+
+  const startAbDiagnostic = (successId: string, failId: string) => {
+    const st = stateRef.current;
+    const pack = productionShorts(st);
+    const success = pack.find((s) => s.id === successId);
+    const fail = pack.find((s) => s.id === failId);
+    if (!success || !fail) {
+      message.warning('Chọn 1 shot READY và 1 shot INTERNAL.');
+      return;
+    }
+    const cr = generateCost('turbo', success.seconds).credits + generateCost('turbo', fail.seconds).credits;
+    const total = cr * 3;
+    modal.confirm({
+      title: 'A/B Runway · 6 job · JPEG 1280×720',
+      content: `3× ${shCode(st, success)} (READY) + 3× ${shCode(st, fail)} (lỗi). Cùng normalize JPEG, model gen4_turbo, duration, prompt từng KF. Tuần tự, không batch, không xóa take READY. Ước tính −${total} cr.`,
+      okText: `CONFIRM 6 job · −${total} cr`,
+      cancelText: 'Không gửi',
+      onOk: async () => {
+        const jobs = [success, success, success, fail, fail, fail];
+        for (let i = 0; i < jobs.length; i += 1) {
+          const shot = jobs[i]!;
+          const after = stateRef.current;
+          const run = shotRunOf(after, shot);
+          const loc = lockFromGraph(after, shot);
+          const lock = { ...loc, locked: loc.locked || Boolean(loc.environment) };
+          const pre = studioI2vPrecheck({
+            lock,
+            action: i2vActionOf(after, shot, run),
+            keyframeDataUrl: run.keyframeDataUrl,
+            status: run.status === 'story_locked' ? 'keyframe_ready' : run.status,
+            unlocked: true,
+            sceneLocked: after.sceneLocked,
+            scriptLocked: after.scriptLocked,
+            shortsReady: canWorkV2Scene(after),
+            engine: 'turbo',
+            hasEngineKey: keys.runway,
+            state: after,
+            shot,
+            videoContext,
+          });
+          if (!pre.ok) {
+            message.error(`Dừng A/B tại ${shCode(after, shot)}: ${pre.items.filter((x) => !x.ok).map((x) => x.label).join(' · ')}`);
+            break;
+          }
+          message.loading({ content: `A/B ${i + 1}/6 · ${shCode(after, shot)}`, key: 'ab-runway', duration: 0 });
+          await sendTurbo({
+            clipId: shot.id,
+            prompt: pre.prompt,
+            seconds: shot.seconds,
+            ratio: outputAspectOf(after),
+            engine: 'turbo',
+            silent: true,
+            forceNew: true,
+            diagnostic: true,
+          });
+          if (i < jobs.length - 1) await new Promise((r) => window.setTimeout(r, 8000));
+        }
+        const rows = productionShorts(stateRef.current).flatMap((s) => shotRunOf(stateRef.current, s).runwayDiagnostics ?? []).filter((r) => r.diagnostic);
+        const sum = summarizeAbDiagnostic(rows.slice(-6));
+        message.destroy('ab-runway');
+        modal.info({
+          title: sum.verdict === 'INTERMITTENT' ? 'Kết luận: Runway ngẫu nhiên' : sum.verdict === 'INPUT' ? 'Kết luận: lỗi KF/input' : 'A/B chưa đủ dữ liệu',
+          content: sum.lines.join('\n'),
+        });
+      },
+    });
   };
 
   const startSceneTurbo = (onlyIds?: string[]) => {
+    const quietMin = runwayQuietRemainMin(runwayQuietUntil);
+    if (onlyIds?.length === 1) {
+      const one = productionShorts(stateRef.current).find((s) => s.id === onlyIds[0]);
+      const retry = one ? canManualRetry(shotRunOf(stateRef.current, one)) : { ok: false, kind: 'none' as const };
+      if (retry.kind === 'recover' && one) {
+        void recoverTake(one.id);
+        return;
+      }
+      if (one && sameKfAsInternalFail(shotRunOf(stateRef.current, one))) {
+        message.warning(retry.reason || 'INTERNAL.BAD_OUTPUT — cùng KF không gửi lại.');
+        return;
+      }
+    }
+    if (quietMin) {
+      const one = onlyIds?.length === 1 ? productionShorts(stateRef.current).find((s) => s.id === onlyIds[0]) : undefined;
+      const resumeOne = Boolean(one && shouldResumeTurboPoll(shotRunOf(stateRef.current, one)));
+      if (!resumeOne) {
+        message.warning('KIT còn khóa gửi job mới vì 429 cũ. Bấm «Đã lên tier — mở gửi» trên bước Video. Hỏi lại · 0 cr không bị khóa.');
+        return;
+      }
+    }
     if (!canWorkV2Scene(state)) {
       message.warning(v2SceneBlockReason(state) ?? 'Chưa mở dựng cảnh.');
       setStudioPane(studioFallbackPane(state));
@@ -2194,6 +2829,14 @@ export function ContentFamixaSeriesTab() {
       ready = ready.filter((s) => onlyIds.includes(s.id));
       blocked = blocked.filter((b) => onlyIds.includes(b.shot.id));
     }
+    if (onlyIds?.length === 1 && turboLaunchRef.current.has(onlyIds[0]!)) {
+      message.info('Clip này đang gửi hoặc chờ Confirm.');
+      return;
+    }
+    if ((onlyIds?.length ?? 0) !== 1 && turboLaunchRef.current.size) {
+      message.warning('Đang gửi hàng loạt. Gửi lại từng hàng lỗi — KIT xếp sau clip hiện tại.');
+      return;
+    }
     const unlockedMaster = [...new Set(ready.map(sceneIdOfShot))].filter(
       (sc) => !sceneMasterOf(stateRef.current, sc).locked,
     );
@@ -2209,78 +2852,134 @@ export function ContentFamixaSeriesTab() {
       );
       return;
     }
-    const total = ready.reduce((n, s) => n + generateCost(engine, s.seconds).credits, 0);
+    const resumePack = ready.filter((s) => shouldResumeTurboPoll(shotRunOf(stateRef.current, s)));
+    const blockedInternal = ready.filter((s) => sameKfAsInternalFail(shotRunOf(stateRef.current, s)));
+    const newPack = ready.filter(
+      (s) => !shouldResumeTurboPoll(shotRunOf(stateRef.current, s)) && !sameKfAsInternalFail(shotRunOf(stateRef.current, s)),
+    );
+    if (blockedInternal.length && !newPack.length && !resumePack.length) {
+      message.warning(
+        `INTERNAL.BAD_OUTPUT trên ${blockedInternal.map((s) => shCode(stateRef.current, s)).join(', ')} — không gửi lại cùng KF. Duyệt KF mới hoặc chạy A/B 3+3.`,
+      );
+      return;
+    }
+    if (onlyIds?.length === 1 && resumePack.length === 1 && newPack.length === 0) {
+      const shot = resumePack[0]!;
+      const run = shotRunOf(stateRef.current, shot);
+      void sendTurbo({
+        clipId: shot.id,
+        prompt: i2vActionOf(stateRef.current, shot, run) || run.shotAction || shot.story || '',
+        seconds: shot.seconds,
+        ratio: outputAspectOf(stateRef.current),
+        engine,
+        resume: true,
+      });
+      return;
+    }
+    const total = newPack.reduce((n, s) => n + generateCost(engine, s.seconds).credits, 0);
     const wan = engine === 'wan';
+    const readyIds = ready.map((s) => s.id);
+    for (const id of readyIds) turboLaunchRef.current.add(id);
     modal.confirm({
       title: wan
         ? `Tạo video ${ready.length} Short · Wan`
-        : `Gửi Runway ${ready.length} Short · ước tính −${total} cr`,
+        : resumePack.length && !newPack.length
+          ? `Hỏi lại ${resumePack.length} task cũ · 0 cr`
+          : resumePack.length
+            ? `Hỏi lại ${resumePack.length} (0 cr) + gửi ${newPack.length} job · −${total} cr`
+            : `Gửi Runway ${newPack.length} Short · ước tính −${total} cr`,
       content: blocked.length
         ? `Chỉ gửi Short đã có KF. Bỏ qua: ${blocked.map((b) => shCode(stateRef.current, b.shot)).join(', ')}. Xác nhận trước khi trừ credit.`
-        : `Selected ${ready.length} Short. Mỗi Short = 1 clip 5s hoặc 10s từ KF + Action. Xác nhận để generate.`,
+        : resumePack.length && !newPack.length
+          ? 'Task cũ còn trên Runway (429 / đang chạy). KIT hỏi lại file — không POST job mới, không trừ cr.'
+          : `Selected ${ready.length} Short. Job mới: Runway trừ cr khi nhận. 429: hỏi lại task cũ (0 cr), đừng spam Gửi lại.`,
       okText: 'CONFIRM & GENERATE',
       cancelText: 'Hủy',
+      onCancel: () => {
+        for (const id of readyIds) turboLaunchRef.current.delete(id);
+      },
       onOk: async () => {
         let sent = 0;
         const failed: string[] = [];
-        for (const shot of ready) {
-          setActiveId(shot.id);
-          const after = stateRef.current;
-          const run = shotRunOf(after, shot);
-          if (run.keyframeDataUrl && run.status === 'story_locked') {
-            patchRun(shot.id, { status: 'keyframe_ready' });
+        try {
+          for (const shot of ready) {
+            try {
+              if (sameKfAsInternalFail(shotRunOf(stateRef.current, shot))) continue;
+              if (shotRunOf(stateRef.current, shot).previewUrl?.trim()) continue;
+              setActiveId(shot.id);
+              const after = stateRef.current;
+              const run = shotRunOf(after, shot);
+              if (run.keyframeDataUrl && run.status === 'story_locked') {
+                patchRun(shot.id, { status: 'keyframe_ready' });
+              }
+              const loc = lockFromGraph(stateRef.current, shot);
+              const lock = { ...loc, locked: loc.locked || Boolean(loc.environment) };
+              const pre = studioI2vPrecheck({
+                lock,
+                action: i2vActionOf(after, shot, run),
+                keyframeDataUrl: run.keyframeDataUrl,
+                status: run.status === 'story_locked' ? 'keyframe_ready' : run.status,
+                unlocked: true,
+                sceneLocked: after.sceneLocked,
+                scriptLocked: after.scriptLocked,
+                shortsReady: canWorkV2Scene(after),
+                engine,
+                hasEngineKey: engine === 'wan' ? keys.fal : keys.runway,
+                state: after,
+                shot,
+                videoContext,
+              });
+              if (!pre.ok) {
+                failed.push(shCode(after, shot));
+                message.error(
+                  `Bỏ ${shCode(after, shot)} (0 cr): ${pre.items
+                    .filter((i) => !i.ok)
+                    .map((i) => i.label)
+                    .join(' · ')}`,
+                );
+                continue;
+              }
+              const resumeShot = shouldResumeTurboPoll(run);
+              const ok = await sendTurbo({
+                clipId: shot.id,
+                prompt: pre.prompt,
+                seconds: shot.seconds,
+                ratio: outputAspectOf(stateRef.current),
+                engine,
+                silent: true,
+                resume: resumeShot,
+              });
+              if (!ok) {
+                failed.push(shCode(stateRef.current, shot));
+                const err = shotRunOf(stateRef.current, shot).turboError || '';
+                if (isTurboDailyQuota(err)) {
+                  message.error('Hết hạn mức ngày Runway — dừng hàng loạt. Hỏi lại từng task cũ (0 cr).');
+                  break;
+                }
+                await new Promise((r) => window.setTimeout(r, isTurboRateLimit(err) ? 20_000 : 8000));
+                continue;
+              }
+              sent += 1;
+              await new Promise((r) => window.setTimeout(r, 8000));
+            } finally {
+              turboLaunchRef.current.delete(shot.id);
+            }
           }
-          const loc = lockFromGraph(stateRef.current, shot);
-          const lock = { ...loc, locked: loc.locked || Boolean(loc.environment) };
-          const pre = studioI2vPrecheck({
-            lock,
-            action: run.shotAction || shot.story || shot.motionPromptVi,
-            keyframeDataUrl: run.keyframeDataUrl,
-            status: run.status === 'story_locked' ? 'keyframe_ready' : run.status,
-            unlocked: true,
-            sceneLocked: after.sceneLocked,
-            scriptLocked: after.scriptLocked,
-            shortsReady: canWorkV2Scene(after),
-            engine,
-            hasEngineKey: engine === 'wan' ? keys.fal : keys.runway,
-            state: after,
-            shot,
-            videoContext,
-          });
-          if (!pre.ok) {
-            failed.push(shCode(after, shot));
-            message.error(
-              `Bỏ ${shCode(after, shot)} (0 cr): ${pre.items
-                .filter((i) => !i.ok)
-                .map((i) => i.label)
-                .join(' · ')}`,
+          if (sent && failed.length) {
+            message.warning(
+              `Được ${sent} take. Còn ${failed.join(', ')} — Hỏi lại · 0 cr từng hàng. Đừng gửi job mới khi còn 429.`,
             );
-            continue;
+          } else if (sent) {
+            message.success(`Đã gửi ${sent} take. QC từng shot — không tự Final.`);
+          } else if (failed.length) {
+            message.warning(
+              `Chưa lấy được take (${failed.join(', ')}). Đang 429 / hạn mức — đợi rồi Hỏi lại · 0 cr từng hàng. Không CONFIRM job mới.`,
+            );
+          } else {
+            message.warning('Không gửi clip nào (0 cr). Sửa prompt/KF rồi CONFIRM lại.');
           }
-          const ok = await sendTurbo({
-            clipId: shot.id,
-            prompt: pre.prompt,
-            seconds: shot.seconds,
-            ratio: '16:9',
-            engine,
-            silent: true,
-          });
-          if (!ok) {
-            failed.push(shCode(stateRef.current, shot));
-            await new Promise((r) => window.setTimeout(r, 8000));
-            continue;
-          }
-          sent += 1;
-          await new Promise((r) => window.setTimeout(r, 5000));
-        }
-        if (sent && failed.length) {
-          message.warning(
-            `Được ${sent} take. Còn lỗi ${failed.join(', ')} — Gửi Runway nốt phần thiếu, hoặc Gửi lại từng hàng.`,
-          );
-        } else if (sent) {
-          message.success(`Đã gửi ${sent} take. QC từng shot — không tự Final.`);
-        } else {
-          message.warning('Không gửi clip nào (0 cr). Sửa prompt/KF rồi CONFIRM lại.');
+        } finally {
+          for (const id of readyIds) turboLaunchRef.current.delete(id);
         }
       },
     });
@@ -2320,6 +3019,252 @@ export function ContentFamixaSeriesTab() {
     hasVoiceFile: (id) => Boolean(ttsFiles[id] || ttsBlobs.current.has(id)),
   });
 
+  const spokenLinesOf = (shot: FamixaSeriesShot) => {
+    const item = cutPlan?.items.find((i) => i.shotId === shot.id);
+    if (item?.silent) return [];
+    if (item?.lines?.length) return item.lines;
+    if (item?.line) return [item.line];
+    return linesForShot(stateRef.current, shot);
+  };
+
+  const startLipsync = async (onlyIds?: string[], opts?: { confirmed?: boolean }) => {
+    const pack = productionShorts(stateRef.current);
+    const range = onlyIds?.length ? pack.filter((s) => onlyIds.includes(s.id)) : cutRange;
+    const need = range.filter((s) => {
+      const run = shotRunOf(stateRef.current, s);
+      return Boolean(run.previewUrl?.trim()) && !run.lipsynced && !run.prodSkip && spokenLinesOf(s).length > 0;
+    });
+    if (!need.length) {
+      message.warning('Chưa có take + thoại cần khớp môi (hoặc đã khớp). Không gửi Fal.');
+      return;
+    }
+    const qaBlock = need.filter((s) => !lipsyncQaReady(shotRunOf(stateRef.current, s)));
+    if (qaBlock.length) {
+      message.error(
+        `${qaBlock.map((s) => studioShotCode(s, pack)).join(', ')} chưa tick ACTION + CONTINUITY + VOICE/FACE. Sai mặt/giọng thì sửa KF — không gửi Fal.`,
+      );
+      return;
+    }
+    const speakerBlock = need.filter((s) => multiSpeakerBlock(spokenLinesOf(s)));
+    if (speakerBlock.length) {
+      message.error(
+        speakerBlock.map((s) => `${studioShotCode(s, pack)}: ${multiSpeakerBlock(spokenLinesOf(s))}`).join(' '),
+      );
+      return;
+    }
+    if (!keys.fal) {
+      message.error('Chưa có Fal API key (Model AI → Video). Khớp môi không trừ Runway.');
+      return;
+    }
+    if (!opts?.confirmed) {
+      const falUsd = estimateFalLipsyncUsdForShots(need);
+      const alreadyTried = need.some((s) => Boolean(shotRunOf(stateRef.current, s).lipsyncError));
+      modal.confirm({
+        title: `Khớp môi ${need.length} Short · Fal ~$${falUsd.toFixed(2)} · 0 cr Runway`,
+        content: alreadyTried
+          ? `${need.map((s) => studioShotCode(s, pack)).join(', ')}. Lần trước Fal có thể đã trừ. Confirm = job MỚI, trừ thêm ~$${falUsd.toFixed(2)}. Xem fal.ai → Usage trước — file có thể đã xong.`
+          : `${need.map((s) => studioShotCode(s, pack)).join(', ')}. Fal 1.9 ~$0.70/phút (~$0.12/clip 10s). Nhận job là trừ. KIT chỉ hiện KHỚP MÔI khi có file. Take cũ giữ lịch sử.`,
+        okText: `Confirm · trừ ~$${falUsd.toFixed(2)} Fal`,
+        cancelText: 'Hủy — 0 Fal',
+        onOk: () => void startLipsync(need.map((s) => s.id), { confirmed: true }),
+      });
+      return;
+    }
+    for (const s of need) {
+      patchRun(s.id, { lipsyncError: undefined, lipsyncStatus: undefined });
+    }
+    let ok = 0;
+    for (let i = 0; i < need.length; i++) {
+      const shot = need[i]!;
+      const run = shotRunOf(stateRef.current, shot);
+      const videoUrl = resolveTakeUrl(run) || run.previewUrl?.trim();
+      if (!videoUrl) continue;
+      const lines = spokenLinesOf(shot);
+      const line = lines[0];
+      if (!line) continue;
+      if (multiSpeakerBlock(lines)) {
+        message.error(`${studioShotCode(shot, pack)}: ${multiSpeakerBlock(lines)}`);
+        continue;
+      }
+      const blob = await resolveLineAudio(line);
+      if (!blob) {
+        message.warning(`${studioShotCode(shot, pack)}: thiếu Voice master (DIA.wav). Không tạo lại TTS khi Fal.`);
+        continue;
+      }
+      if (lines.length > 1) {
+        message.info(`${studioShotCode(shot, pack)}: cùng người — khớp câu đầu. Câu sau nên tách shot hoặc voiceChainFrom.`);
+      }
+      const prev = turboLockRef.current;
+      let release = () => {};
+      turboLockRef.current = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await prev;
+      setLipsyncBusy(shot.id);
+      try {
+        const pollLipsync = async (taskId: string) => {
+          const t0 = Date.now();
+          while (Date.now() - t0 < 240_000) {
+            const task = await getContentSeriesTurbo(taskId);
+            patchRun(shot.id, { lipsyncStatus: task.status, lipsyncTaskId: task.taskId, lipsyncError: task.error ?? undefined });
+            if (task.status === 'SUCCEEDED' && task.videoUrl) {
+              const live = shotRunOf(stateRef.current, shot);
+              patchRun(shot.id, {
+                ...stampFalFinal(live, task.videoUrl),
+                lipsyncStatus: 'SUCCEEDED',
+                lipsyncError: undefined,
+                model: task.model || 'sync-lipsync-1.9',
+                shotQa: { ...live.shotQa, lipsync: true },
+              });
+              return true;
+            }
+            if (task.status === 'FAILED' || task.status === 'CANCELLED') {
+              patchRun(shot.id, {
+                lipsyncStatus: task.status,
+                lipsyncError: task.error || 'Fal lipsync lỗi. Take cũ còn trên hàng.',
+              });
+              message.error(`${studioShotCode(shot, pack)}: ${task.error || 'Fal khớp môi lỗi.'}`);
+              return false;
+            }
+            await new Promise((r) => setTimeout(r, 6000));
+          }
+          patchRun(shot.id, {
+            lipsyncStatus: 'RETRY',
+            lipsyncError: 'Fal chưa trả take khớp môi. Hỏi lại sau — 0 cr Runway.',
+          });
+          message.warning(`${studioShotCode(shot, pack)}: Fal chưa trả file. Hỏi lại môi nếu còn task — đừng Confirm job mới.`);
+          return false;
+        };
+
+        if (shouldResumeLipsync(run)) {
+          message.loading({
+            content: `Hỏi lại khớp môi ${studioShotCode(shot, pack)} (${i + 1}/${need.length}) · 0 Fal mới`,
+            key: 'lipsync',
+            duration: 0,
+          });
+          if (await pollLipsync(run.lipsyncTaskId.trim())) ok += 1;
+          continue;
+        }
+
+        const takeHistory = [...(run.takeHistory ?? [])];
+        const muteTake = resolveTakeUrl(run) || run.previewUrl?.trim();
+        if (muteTake) {
+          takeHistory.unshift({ url: muteTake, taskId: run.turboTaskId });
+        }
+        message.loading({
+          content: `Khớp môi ${studioShotCode(shot, pack)} (${i + 1}/${need.length}) · Fal`,
+          key: 'lipsync',
+          duration: 0,
+        });
+        const started = await startContentSeriesLipsync({
+          clipId: shot.id,
+          videoUrl,
+          audioBase64: await blobToBase64(blob),
+          mime: blob.type || 'audio/mpeg',
+          syncMode: 'remap',
+        });
+        patchRun(shot.id, {
+          lipsyncTaskId: started.taskId,
+          lipsyncStatus: started.status,
+          lipsyncError: undefined,
+          lipsynced: false,
+          takeHistory: takeHistory.slice(0, 6),
+        });
+        if (started.status === 'SUCCEEDED' && started.videoUrl) {
+          const live = shotRunOf(stateRef.current, shot);
+          patchRun(shot.id, {
+            ...stampFalFinal(live, started.videoUrl),
+            lipsyncStatus: 'SUCCEEDED',
+            lipsyncError: undefined,
+            model: started.model || 'sync-lipsync-1.9',
+            shotQa: { ...live.shotQa, lipsync: true },
+          });
+          ok += 1;
+        } else if (await pollLipsync(started.taskId)) {
+          ok += 1;
+        }
+      } catch (e) {
+        const raw = apiErrorMessage(e, 'Không gửi được Fal khớp môi.');
+        const status = typeof e === 'object' && e && 'response' in e
+          ? Number((e as { response?: { status?: number } }).response?.status)
+          : 0;
+        const why =
+          status === 404
+            ? 'API :5290 chưa có khớp môi (process cũ). Restart API rồi F5. Đừng Confirm job mới nếu Fal Usage đã có file.'
+            : raw;
+        patchRun(shot.id, { lipsyncStatus: 'FAILED', lipsyncError: why });
+        message.error(`${studioShotCode(shot, pack)}: ${why}`);
+      } finally {
+        setLipsyncBusy(undefined);
+        release();
+      }
+    }
+    if (ok) {
+      message.success({ content: `Đã khớp môi ${ok}/${need.length} Short. Ghép sẽ giữ tiếng trong video.`, key: 'lipsync' });
+    } else {
+      message.destroy('lipsync');
+    }
+  };
+
+  const attachLipsync = (shotId: string) => {
+    let raw = '';
+    const shot = productionShorts(stateRef.current).find((s) => s.id === shotId);
+    const code = shot ? studioShotCode(shot, productionShorts(stateRef.current)) : shotId;
+    modal.confirm({
+      title: `Gắn file Fal ${code} · 0$`,
+      content: (
+        <div>
+          <p style={{ marginTop: 0 }}>
+            Usage đã trừ loạt v3 cho Short này. Dán URL mp4 (Assets) hoặc Request ID — KIT chỉ lấy file, không gửi job mới.
+          </p>
+          <Input.TextArea
+            rows={3}
+            placeholder="https://v3b.fal.media/…/output.mp4 hoặc request id"
+            onChange={(e) => {
+              raw = e.target.value;
+            }}
+          />
+        </div>
+      ),
+      okText: 'Gắn · 0$',
+      cancelText: 'Hủy',
+      async onOk() {
+        const ref = parseFalLipsyncRef(raw);
+        if (ref.url) {
+          const live = shotRunOf(stateRef.current, shotId);
+          patchRun(shotId, {
+            ...stampFalFinal(live, ref.url),
+            lipsyncStatus: 'SUCCEEDED',
+            lipsyncError: undefined,
+            model: 'sync-lipsync-v3',
+            shotQa: { ...live.shotQa, lipsync: true },
+          });
+          message.success(`${code}: đã gắn file Fal · 0$.`);
+          return;
+        }
+        if (!ref.taskId) {
+          message.error('Dán URL mp4 hoặc Request ID trên Fal Usage.');
+          return Promise.reject();
+        }
+        const task = await getContentSeriesTurbo(ref.taskId);
+        if (!task.videoUrl) {
+          message.error(task.error || 'Fal chưa trả file cho id này. Thử dòng Quantity lớn hơn (0.17).');
+          return Promise.reject();
+        }
+        const live = shotRunOf(stateRef.current, shotId);
+        patchRun(shotId, {
+          ...stampFalFinal(live, task.videoUrl),
+          lipsyncTaskId: task.taskId || ref.taskId,
+          lipsyncStatus: 'SUCCEEDED',
+          lipsyncError: undefined,
+          model: task.model || 'sync-lipsync-v3',
+          shotQa: { ...live.shotQa, lipsync: true },
+        });
+        message.success(`${code}: lấy lại file Fal · 0$.`);
+      },
+    });
+  };
+
   const hydrateCutVoice = async () => {
     const lines = cutPlan.items.flatMap((i) => (i.lines.length ? i.lines : i.line ? [i.line] : []));
     let n = 0;
@@ -2356,12 +3301,20 @@ export function ContentFamixaSeriesTab() {
     startSceneTurbo(cutRange.map((s) => s.id));
   };
 
-  const downloadTakes = async (ids?: string[]) => {
+  const downloadTakes = async (ids?: string[], kind?: 'take' | 'lipsync') => {
     const pack = productionShorts(stateRef.current);
     const range = ids?.length ? pack.filter((s) => ids.includes(s.id)) : cutRange;
-    const ready = range.filter((s) => shotRunOf(stateRef.current, s).previewUrl?.trim());
+    const wantLip = kind === 'lipsync';
+    const ready = range.filter((s) => {
+      const run = shotRunOf(stateRef.current, s);
+      return wantLip ? Boolean(lipsyncVideoUrl(run)) : Boolean(run.previewUrl?.trim());
+    });
     if (!ready.length) {
-      message.warning('Chưa có take trên dải đã chọn. Gửi Runway ở bước 5 Video trước.');
+      message.warning(
+        wantLip
+          ? 'Chưa có file khớp môi trên dải. Confirm Khớp môi trước — rồi mới tải.'
+          : 'Chưa có take trên dải đã chọn. Gửi Runway ở bước 5 Video trước.',
+      );
       return;
     }
     setAssembleBusy(true);
@@ -2369,22 +3322,30 @@ export function ContentFamixaSeriesTab() {
         let saved = 0;
         for (let i = 0; i < ready.length; i++) {
           const s = ready[i]!;
-          const url = shotRunOf(stateRef.current, s).previewUrl!.trim();
-          message.loading({ content: `Tải ${studioShotCode(s, pack)} (${i + 1}/${ready.length})`, key: 'take-dl', duration: 0 });
+          const run = shotRunOf(stateRef.current, s);
+          const url = (wantLip ? lipsyncVideoUrl(run) : run.previewUrl?.trim()) || '';
+          const name = wantLip ? lipsyncDownloadName(s, pack) : takeDownloadName(s, pack);
+          message.loading({
+            content: `Tải ${wantLip ? 'khớp môi ' : ''}${studioShotCode(s, pack)} (${i + 1}/${ready.length})`,
+            key: 'take-dl',
+            duration: 0,
+          });
           try {
             const blob = await takeBlobFromUrl(url);
-            triggerDownload(blob, takeDownloadName(s, pack));
+            triggerDownload(blob, name);
             saved += 1;
           } catch (e) {
             window.open(url, '_blank', 'noopener,noreferrer');
             message.warning(
-              `${studioShotCode(s, pack)}: ${e instanceof Error ? e.message : 'Không tải qua API'} — đã mở link Runway, lưu MP4 từ tab đó.`,
+              `${studioShotCode(s, pack)}: ${e instanceof Error ? e.message : 'Không tải qua API'} — đã mở link, lưu MP4 từ tab đó.`,
             );
           }
           await new Promise((r) => window.setTimeout(r, 400));
         }
         message.success({
-          content: saved === ready.length ? `Đã tải ${saved} take.` : `Tải ${saved}/${ready.length} take. Phần còn lại mở tab Runway.`,
+          content: saved === ready.length
+            ? `Đã tải ${saved} ${wantLip ? 'khớp môi' : 'take'}.`
+            : `Tải ${saved}/${ready.length}. Phần còn lại mở tab.`,
           key: 'take-dl',
         });
     } catch (e) {
@@ -2397,7 +3358,7 @@ export function ContentFamixaSeriesTab() {
     }
   };
 
-  const assembleCut = async (opts?: { resynth?: boolean }) => {
+  const assembleCut = async (opts?: { resynth?: boolean; confirmed?: boolean }) => {
     persistState(applyContinuityChain(stateRef.current, productionShorts(stateRef.current)));
     if ((stateRef.current.episode?.shots ?? []).some((s) => !Array.isArray(s.dialogueSegmentIds))) {
       persistState(applyDialogueMap(stateRef.current));
@@ -2408,18 +3369,30 @@ export function ContentFamixaSeriesTab() {
       message.warning('Chưa có take trên dải. Gửi Runway rồi ghép — không tạo ảnh mới chỉ để test tiếng.');
       return;
     }
+    const skipped = (cutPlan?.items ?? []).filter((i) => !i.hasVideo).map((i) => i.code);
+    const confirm = assembleConfirmCopy(readyPlan);
+    if (!opts?.confirmed) {
+      modal.confirm({
+        title: `Ghép ${readyPlan.items.length} take đã có · 0 cr Runway`,
+        content: `${confirm.detail}${
+          skipped.length ? ` Bỏ ${skipped.join(', ')} (chưa take / lỗi).` : ''
+        } Câu chưa gắn Short không đưa vào file. Không gửi job mới.`,
+        okText: confirm.okText,
+        cancelText: 'Hủy',
+        onOk: () => void assembleCut({ ...opts, confirmed: true }),
+      });
+      return;
+    }
     const script = deriveVoiceScript(stateRef.current);
     const cov = coverageOf(stateRef.current, cutRange, {
       hasVoiceFile: (id) => Boolean(ttsFiles[id] || ttsBlobs.current.has(id)),
     });
     if (cov.extraUnmapped.length) {
-      const sample = cov.extraUnmapped[0];
-      message.error(
-        `Chưa ghép — ${cov.extraUnmapped.length} câu chưa gắn Short (vd. ${sample?.name}: “${(sample?.text ?? '').slice(0, 48)}”). Duyệt map ở bước Shorts — không đoán file.`,
+      message.warning(
+        `${cov.extraUnmapped.length} câu chưa gắn Short — bỏ khỏi file ghép. Không đoán map, không trừ Runway.`,
       );
-      return;
     }
-    const spoken = readyPlan.items.flatMap((i) => (i.lines.length ? i.lines : i.line ? [i.line] : []));
+    const spoken = assembleNeedTtsOverlay(readyPlan).flatMap((i) => (i.lines.length ? i.lines : i.line ? [i.line] : []));
     const missing = [];
     for (const line of spoken) {
       if (!(await resolveLineAudio(line))) missing.push(line);
@@ -2495,27 +3468,33 @@ export function ContentFamixaSeriesTab() {
       const clips = [];
       for (const clip of tl.clips) {
         const shot = pack.find((s) => s.id === clip.shotId);
-        const videoUrl = shot ? shotRunOf(stateRef.current, shot).previewUrl?.trim() : '';
+        const run = shot ? shotRunOf(stateRef.current, shot) : undefined;
+        const src = resolveFinalSource(run, !clip.cues.length);
+        const videoUrl = assembleVideoUrl(run) || takeVideoUrl(run) || '';
         if (!videoUrl) throw new Error(`Thiếu link take ${clip.code}.`);
+        const keepLip = src === 'FAL' || Boolean(run?.lipsynced || run?.lipsyncUrl?.trim() || clip.useVideoAudio);
         const voices = [];
-        for (const cue of clip.cues) {
-          const vid = script.lines.find((l) => l.id === cue.lineId)?.voiceId;
-          const blob =
-            ttsBlobs.current.get(cue.lineId) ||
-            ttsBlobs.current.get(ttsTextKey(cue.text, vid)) ||
-            (await loadTtsBlob(ttsLineKey(cue.lineId, vid))) ||
-            (await loadTtsBlob(ttsTextKey(cue.text, vid)));
-          if (!blob) throw new Error(`Thiếu TTS ${cue.code}: “${cue.text.slice(0, 40)}”.`);
-          voices.push({
-            lineId: cue.lineId,
-            startSec: Math.max(0, cue.startSec - clip.startSec),
-            audioBase64: await blobToBase64(blob),
-            mime: blob.type || 'audio/mpeg',
-          });
+        if (!keepLip) {
+          for (const cue of clip.cues) {
+            const vid = script.lines.find((l) => l.id === cue.lineId)?.voiceId;
+            const blob =
+              ttsBlobs.current.get(cue.lineId) ||
+              ttsBlobs.current.get(ttsTextKey(cue.text, vid)) ||
+              (await loadTtsBlob(ttsLineKey(cue.lineId, vid))) ||
+              (await loadTtsBlob(ttsTextKey(cue.text, vid)));
+            if (!blob) throw new Error(`Thiếu TTS ${cue.code}: “${cue.text.slice(0, 40)}”.`);
+            voices.push({
+              lineId: cue.lineId,
+              startSec: Math.max(0, cue.startSec - clip.startSec),
+              audioBase64: await blobToBase64(blob),
+              mime: blob.type || 'audio/mpeg',
+            });
+          }
         }
-        clips.push({ code: clip.code, videoUrl, seconds: clip.seconds, voices });
+        clips.push({ code: clip.code, videoUrl, seconds: clip.seconds, voices, useVideoAudio: keepLip });
       }
       const voiceCount = clips.reduce((n, c) => n + c.voices.length, 0);
+      const lipN = clips.filter((c) => c.useVideoAudio).length;
       if (spoken.length && voiceCount === 0) {
         throw new Error('Không gửi được file thoại lên API. Không tải file câm.');
       }
@@ -2523,7 +3502,9 @@ export function ContentFamixaSeriesTab() {
         const mp4 = await assembleContentSeriesCut({ fileStem: stem, aspect: assembleAspect, clips });
         triggerDownload(mp4, `${stem}.mp4`);
         message.success({
-          content: `Đã ghép ${tl.clips.length} Short + ${voiceCount} câu thoại → ${stem}.mp4`,
+          content: lipN
+            ? `Đã ghép ${tl.clips.length} Short · ${lipN} khớp môi${voiceCount ? ` + ${voiceCount} câu overlay` : ''} → ${stem}.mp4`
+            : `Đã ghép ${tl.clips.length} Short + ${voiceCount} câu thoại → ${stem}.mp4`,
           key: 'assemble',
         });
         return;
@@ -2535,7 +3516,7 @@ export function ContentFamixaSeriesTab() {
         clips: tl.clips,
         videoOf: async (shotId) => {
           const shot = pack.find((s) => s.id === shotId);
-          const url = shot ? shotRunOf(stateRef.current, shot).previewUrl?.trim() : '';
+          const url = shot ? assembleVideoUrl(shotRunOf(stateRef.current, shot)) || takeVideoUrl(shotRunOf(stateRef.current, shot)) : '';
           if (!url) throw new Error('Thiếu link take.');
           return takeBlobFromUrl(url);
         },
@@ -2577,7 +3558,7 @@ export function ContentFamixaSeriesTab() {
         shortsCount={shorts.length}
         shortsLockedCount={approvedShortCount(state)}
         sessionSrc={active ? sessionClips[active.id] : undefined}
-        turboBusy={Boolean(turboBusy)}
+        turboBusy={turboBusy}
         generateKfBusy={stillBusy === active?.id}
         kitCredits={credits}
         runwaySpent={spentOnRunway}
@@ -2590,7 +3571,7 @@ export function ContentFamixaSeriesTab() {
         onVoiceProvider={persistVoice}
         statusOf={(s) => shotRunOf(state, s).status}
         runOf={(s) => shotRunOf(state, s)}
-        actionOf={(s) => shotRunOf(state, s).shotAction}
+        actionOf={(s) => effectiveShotAction(s, shotRunOf(state, s))}
         onSelectShot={selectShot}
         onLockShotGraph={lockShotGraph}
         onRemoveShots={removeShots}
@@ -2602,15 +3583,7 @@ export function ContentFamixaSeriesTab() {
         }}
         onGenerateKeyframe={() => {
           if (!active) return;
-          const loc = lockFromGraph(stateRef.current, active);
-          void generateKfFromCanon({
-            clipId: active.id,
-            aspect: '16:9',
-            visual: active.visual || active.story || '',
-            action: shotRunOf(stateRef.current, active).shotAction || active.motionPromptVi,
-            location: loc.environment || active.location,
-            characterIds: shotCharacterIds(active),
-          });
+          void generateKfFromCanon(stillArgsFor(active, productionShorts(stateRef.current)));
         }}
         onInheritKeyframe={() => {
           if (!active) return;
@@ -2632,13 +3605,18 @@ export function ContentFamixaSeriesTab() {
         }}
         onCreateVideo={startTurbo}
         onCreateSceneVideo={startSceneTurbo}
+        onAbDiagnostic={startAbDiagnostic}
+        onLipsync={startLipsync}
+        onAttachLipsync={attachLipsync}
+        lipsyncBusy={lipsyncBusy}
         sceneBatchLabel={sceneBatchLabel}
         sceneBatchDisabled={
           !hasVideoKey ||
           sceneVideo.ready.length === 0 ||
           !canWorkV2Scene(state) ||
           Boolean(state.sceneLocked) ||
-          Boolean(turboBusy)
+          Boolean(turboBusy) ||
+          runwayQuietRemainMin(runwayQuietUntil) > 0
         }
         batchPlan={sceneKfPlan}
         batchSceneShots={prodQueue}
@@ -2669,6 +3647,12 @@ export function ContentFamixaSeriesTab() {
         sceneVideoReady={sceneVideo.ready.length}
         sceneVideoBlocked={sceneVideo.blocked.length}
         sceneBatchCredits={sceneBatchCredits}
+        runwayQuietMin={runwayQuietRemainMin(runwayQuietUntil)}
+        onClearRunwayQuiet={() => {
+          clearRunwayQuietUntil();
+          setRunwayQuietUntil(0);
+          message.success('Đã mở gửi. Hỏi lại · 0 cr trước; Gửi lại từng hàng (Confirm). Không gửi hàng loạt.');
+        }}
         sessionSrcOf={(id) => sessionClips[id]}
         onPassTake={(s) => lockShotOf(s, { stay: true, autoReview: true })}
         onFailTake={(s) => {
@@ -2684,8 +3668,13 @@ export function ContentFamixaSeriesTab() {
         }}
         onCutPick={setCutPick}
         onLockSceneMaster={(sceneId, locked) => {
+          if (locked && state.outputAspect !== '16:9' && state.outputAspect !== '9:16') {
+            message.warning('Chọn khung xuất 16:9 hoặc 9:16 trước khi khóa Scene Master.');
+            return;
+          }
           persistState(locked ? lockSceneMaster(state, sceneId) : unlockSceneMaster(state, sceneId));
         }}
+        onOutputAspect={setOutputAspect}
         onPatchSceneMaster={(sceneId, patch) => {
           persistState(upsertSceneMaster(state, { sceneId, ...patch }));
         }}
@@ -2706,7 +3695,7 @@ export function ContentFamixaSeriesTab() {
         onEnsureTts={hydrateCutVoice}
         assembleBusy={assembleBusy}
         assembleAspect={assembleAspect}
-        onAssembleAspect={setAssembleAspect}
+        onAssembleAspect={setOutputAspect}
         placeHint={scenePlaceHint}
         onAcceptPlaceChange={() => {
           if (active) patchRun(active.id, { kfForceNew: true });
@@ -2729,6 +3718,10 @@ export function ContentFamixaSeriesTab() {
         onSeconds={(id, sec) => persistState(setShortSeconds(state, id, sec))}
         onLockScene={lockScene}
         onApprovePreview={() => persistState({ ...state, previewApproved: true })}
+        onPatchRun={(id, patch) => patchRun(id, patch)}
+        onApproveScene={(sceneId) =>
+          persistState({ ...state, sceneApproved: { ...state.sceneApproved, [sceneId]: true } })
+        }
         onOpenShorts={() => setStudioPane('advanced')}
         onOpenStudio={() => {
           if (!state.scriptLocked && !state.voiceLocked && !voiceProductionReady(state)) {
@@ -2764,7 +3757,7 @@ export function ContentFamixaSeriesTab() {
             sceneReady={sceneReady}
             sceneLocked={state.sceneLocked}
             statusOf={(s) => shotRunOf(state, s).status}
-            actionOf={(s) => shotRunOf(state, s).shotAction}
+            actionOf={(s) => effectiveShotAction(s, shotRunOf(state, s))}
             runOf={(s) => shotRunOf(state, s)}
             cuesOf={(s) => voiceCuesForShot(state, s)}
             kitCredits={credits}
@@ -3290,6 +4283,42 @@ export function ContentFamixaSeriesTab() {
                 disabled={state.scriptLocked}
                 onChange={(e) => patchRole(r.id, { voiceNote: e.target.value })}
               />
+              {ch ? (
+                <Space wrap style={{ marginTop: 8 }}>
+                  <Input
+                    size="small"
+                    style={{ width: 88 }}
+                    placeholder="Tuổi (11)"
+                    value={ch.voiceBible?.ageImpression ?? ''}
+                    disabled={castFrozen}
+                    onChange={(e) => persistState(patchVoiceBible(state, ch.id, { ageImpression: e.target.value }))}
+                  />
+                  <Input
+                    size="small"
+                    style={{ width: 120 }}
+                    placeholder="Tone"
+                    value={ch.voiceBible?.tone ?? ''}
+                    disabled={castFrozen}
+                    onChange={(e) => persistState(patchVoiceBible(state, ch.id, { tone: e.target.value }))}
+                  />
+                  <Input
+                    size="small"
+                    style={{ width: 140 }}
+                    placeholder="Habit (ngập…)"
+                    value={ch.voiceBible?.habit ?? ''}
+                    disabled={castFrozen}
+                    onChange={(e) => persistState(patchVoiceBible(state, ch.id, { habit: e.target.value }))}
+                  />
+                  <Input
+                    size="small"
+                    style={{ width: 120 }}
+                    placeholder="Formality"
+                    value={ch.voiceBible?.formality ?? ''}
+                    disabled={castFrozen}
+                    onChange={(e) => persistState(patchVoiceBible(state, ch.id, { formality: e.target.value }))}
+                  />
+                </Space>
+              ) : null}
               <Button
                 size="small"
                 icon={<SoundOutlined />}
@@ -3372,6 +4401,10 @@ export function ContentFamixaSeriesTab() {
             <Tag>{state.roles.length === 0 ? 'Chưa có vai' : 'Điền đủ tên vai + người'}</Tag>
           )}
         </Space>
+        <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+          Canon v{state.canonVersion || 1} lưu máy — tập sau vẫn đúng: Minh / Nam / Linh trong khung · An ngoài khung ·
+          không tự thêm người từ heading.
+        </Typography.Paragraph>
       </Card>
 
       <Card size="small" title="Full Script → Voice Script → Full Voice" style={{ marginBottom: 16 }}>
@@ -3424,7 +4457,7 @@ export function ContentFamixaSeriesTab() {
           </div>
         </div>
         {listenCues.length === 0 ? null : (
-          <div style={{ maxHeight: 160, overflow: 'auto', marginBottom: 8 }}>
+          <div style={{ maxHeight: 280, overflow: 'auto', marginBottom: 8 }}>
             {listenCues.map((cue) => (
               <div
                 key={cue.id}
@@ -3446,9 +4479,44 @@ export function ContentFamixaSeriesTab() {
                 />
                 <div style={{ flex: 1 }}>
                   <Typography.Text strong>[{cue.name}]</Typography.Text>
-                  <Tag style={{ marginLeft: 6 }}>
-                    {inferActingDirection({ text: cue.text, characterId: cue.characterId, name: cue.name }).label}
-                  </Tag>
+                  {(() => {
+                    const dir = resolveLinePerformance({
+                      text: cue.text,
+                      characterId: cue.characterId,
+                      name: cue.name,
+                      performance: cue.performance ?? linePerformanceOf(state, cue.id),
+                    });
+                    const locked = Boolean((cue.performance ?? linePerformanceOf(state, cue.id))?.locked);
+                    return (
+                      <Space size={4} wrap style={{ marginLeft: 6 }}>
+                        <Tag color={locked ? 'green' : 'default'}>{locked ? 'LOCKED' : 'DRAFT'} {dir.label}</Tag>
+                        <Select
+                          size="small"
+                          style={{ width: 110 }}
+                          value={dir.emotion}
+                          disabled={state.voiceLocked}
+                          options={ACTING_EMOTIONS.map((e) => ({ value: e, label: e }))}
+                          onChange={(emotion) => persistState(patchDialoguePerformance(state, cue.id, { emotion }))}
+                        />
+                        <Select
+                          size="small"
+                          style={{ width: 56 }}
+                          value={dir.intensity}
+                          disabled={state.voiceLocked}
+                          options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}` }))}
+                          onChange={(intensity) => persistState(patchDialoguePerformance(state, cue.id, { intensity }))}
+                        />
+                        <Select
+                          size="small"
+                          style={{ width: 88 }}
+                          value={dir.pace}
+                          disabled={state.voiceLocked}
+                          options={['slow', 'natural', 'fast'].map((p) => ({ value: p, label: p }))}
+                          onChange={(pace) => persistState(patchDialoguePerformance(state, cue.id, { pace }))}
+                        />
+                      </Space>
+                    );
+                  })()}
                   {!cue.voiceId ? <Tag style={{ marginLeft: 6 }}>Chưa Voice</Tag> : null}
                   <Typography.Paragraph style={{ margin: 0, fontSize: 12 }}>{cue.text}</Typography.Paragraph>
                 </div>

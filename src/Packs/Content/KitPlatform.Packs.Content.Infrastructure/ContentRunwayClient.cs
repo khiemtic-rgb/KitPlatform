@@ -89,8 +89,7 @@ internal sealed class ContentRunwayClient
 
         using var res = await _http.SendAsync(req, cancellationToken);
         var body = await res.Content.ReadAsStringAsync(cancellationToken);
-        if (!res.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Runway {(int)res.StatusCode}: {Truncate(body)}");
+        EnsureOk(res, body);
 
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
         if (!doc.RootElement.TryGetProperty("id", out var idEl))
@@ -101,7 +100,7 @@ internal sealed class ContentRunwayClient
         return id;
     }
 
-    public async Task<(string Status, string? VideoUrl, string? Error)> GetTaskAsync(
+    public async Task<(string Status, string? VideoUrl, string? Error, string? FailureCode)> GetTaskAsync(
         string taskId,
         CancellationToken cancellationToken)
     {
@@ -113,8 +112,7 @@ internal sealed class ContentRunwayClient
         ApplyAuth(req, key);
         using var res = await _http.SendAsync(req, cancellationToken);
         var body = await res.Content.ReadAsStringAsync(cancellationToken);
-        if (!res.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Runway {(int)res.StatusCode}: {Truncate(body)}");
+        EnsureOk(res, body);
 
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
         var root = doc.RootElement;
@@ -127,42 +125,112 @@ internal sealed class ContentRunwayClient
         };
         var video = ReadVideoUrl(root);
         string? error = null;
+        var failureCode = root.TryGetProperty("failureCode", out var code) && code.ValueKind == JsonValueKind.String
+            ? code.GetString()
+            : null;
         if (root.TryGetProperty("failure", out var fail) && fail.ValueKind == JsonValueKind.String)
             error = fail.GetString();
-        if (string.IsNullOrWhiteSpace(error) && root.TryGetProperty("failureCode", out var code)
-            && code.ValueKind == JsonValueKind.String)
-            error = code.GetString();
         if (string.IsNullOrWhiteSpace(error) && root.TryGetProperty("error", out var err))
             error = err.ValueKind == JsonValueKind.String ? err.GetString() : Truncate(err.GetRawText());
+        if (!string.IsNullOrWhiteSpace(failureCode))
+            error = string.IsNullOrWhiteSpace(error) ? failureCode : $"{failureCode}: {error}";
         if (status is "FAILED" or "CANCELLED" && string.IsNullOrWhiteSpace(error))
             error = Truncate(body);
+        if (status == "SUCCEEDED" && string.IsNullOrWhiteSpace(video))
+            error = string.IsNullOrWhiteSpace(error)
+                ? $"SUCCEEDED nhưng không đọc được output URL. {Truncate(body)}"
+                : error;
 
-        return (status, video, error);
+        return (status, video, error, failureCode);
     }
 
     private static string? ReadVideoUrl(JsonElement root)
     {
-        if (!root.TryGetProperty("output", out var output)) return null;
-        if (output.ValueKind == JsonValueKind.String) return output.GetString();
-        if (output.ValueKind == JsonValueKind.Object)
+        foreach (var name in new[] { "output", "outputs", "artifacts" })
         {
-            if (output.TryGetProperty("url", out var u) && u.ValueKind == JsonValueKind.String) return u.GetString();
-            if (output.TryGetProperty("uri", out var uri) && uri.ValueKind == JsonValueKind.String) return uri.GetString();
+            if (!root.TryGetProperty(name, out var output)) continue;
+            var url = ReadUrlNode(output);
+            if (!string.IsNullOrWhiteSpace(url)) return url;
         }
-        if (output.ValueKind != JsonValueKind.Array || output.GetArrayLength() == 0) return null;
-        var first = output[0];
-        if (first.ValueKind == JsonValueKind.String) return first.GetString();
-        if (first.ValueKind != JsonValueKind.Object) return null;
-        if (first.TryGetProperty("url", out var url) && url.ValueKind == JsonValueKind.String) return url.GetString();
-        if (first.TryGetProperty("uri", out var firstUri) && firstUri.ValueKind == JsonValueKind.String)
-            return firstUri.GetString();
+        return ReadUrlNode(root);
+    }
+
+    private static string? ReadUrlNode(JsonElement node)
+    {
+        if (node.ValueKind == JsonValueKind.String)
+        {
+            var s = node.GetString();
+            return LooksLikeMediaUrl(s) ? s : null;
+        }
+        if (node.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var key in new[] { "url", "uri", "videoUrl", "href", "video", "mp4", "downloadUrl", "signedUrl" })
+            {
+                if (node.TryGetProperty(key, out var u) && u.ValueKind == JsonValueKind.String)
+                {
+                    var s = u.GetString();
+                    if (LooksLikeMediaUrl(s)) return s;
+                }
+            }
+            return null;
+        }
+        if (node.ValueKind != JsonValueKind.Array || node.GetArrayLength() == 0) return null;
+        foreach (var item in node.EnumerateArray())
+        {
+            var url = ReadUrlNode(item);
+            if (!string.IsNullOrWhiteSpace(url)) return url;
+        }
         return null;
+    }
+
+    private static bool LooksLikeMediaUrl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return false;
+        var t = raw.Trim();
+        return t.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+               || t.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void ApplyAuth(HttpRequestMessage req, string key)
     {
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
         req.Headers.TryAddWithoutValidation("X-Runway-Version", ApiVersion);
+    }
+
+    private static void EnsureOk(HttpResponseMessage res, string body)
+    {
+        if (res.IsSuccessStatusCode) return;
+        if ((int)res.StatusCode == 429)
+        {
+            var retry = ReadRetryAfterSec(res, 30);
+            var kind = LooksLikeDailyQuota(body) ? "daily-quota" : "retry-after";
+            throw new InvalidOperationException($"Runway 429 {kind}: {retry}: {Truncate(body)}");
+        }
+        throw new InvalidOperationException($"Runway {(int)res.StatusCode}: {Truncate(body)}");
+    }
+
+    private static int ReadRetryAfterSec(HttpResponseMessage res, int fallback)
+    {
+        var ra = res.Headers.RetryAfter;
+        if (ra?.Delta is TimeSpan d)
+            return (int)Math.Clamp(d.TotalSeconds, 5, 600);
+        if (ra?.Date is DateTimeOffset when)
+        {
+            var sec = (when - DateTimeOffset.UtcNow).TotalSeconds;
+            if (sec > 0) return (int)Math.Clamp(sec, 5, 600);
+        }
+        return fallback;
+    }
+
+    private static bool LooksLikeDailyQuota(string body)
+    {
+        var t = (body ?? "").ToLowerInvariant();
+        return t.Contains("daily")
+               || t.Contains("task limit")
+               || t.Contains("generation limit")
+               || t.Contains("quota exceeded")
+               || t.Contains("usage limit")
+               || t.Contains("too many generations");
     }
 
     private static string Truncate(string? text)

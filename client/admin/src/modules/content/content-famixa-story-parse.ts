@@ -8,13 +8,13 @@ import type {
   FamixaSeriesShot,
   SeriesRoleRow,
 } from './content-famixa-series';
-
-const CAST: { id: string; names: string[]; role: string }[] = [
-  { id: 'CHAR-001', names: ['minh', 'con'], role: 'Con' },
-  { id: 'CHAR-002', names: ['nam', 'bố', 'bo', 'ba'], role: 'Bố' },
-  { id: 'CHAR-003', names: ['linh', 'mẹ', 'me'], role: 'Mẹ' },
-  { id: 'CHAR-VO', names: ['lời bình', 'voice-over', 'voice over', 'vo'], role: 'Lời bình' },
-];
+import {
+  frameCanonIds,
+  isMetaCanonSpeaker,
+  isOffFrameCanon,
+  resolveCanonSpeaker,
+  seedFamixaCanon,
+} from './content-famixa-char-canon';
 
 export type ParsedEpisodeStory = {
   episode: FamixaSeriesEpisode;
@@ -183,11 +183,29 @@ export function looksLikeVoiceDirection(text: string) {
   return false;
 }
 
+/** Pack / director heading — not a shot Action and not TTS. */
+export function looksLikeScriptMetaHeading(text: string) {
+  const s = text.trim().replace(/^["“”']+|["“”']+$/g, '');
+  if (!s) return false;
+  if (/^(?:tone|thời lượng(?:\s*mục tiêu)?|target duration|estimated duration|format|style|continuity|emotion|cảm xúc|video(?:\s*id|\s*title)?|production purpose)\s*:/i.test(s)) {
+    return true;
+  }
+  if (/^tone\s*:/i.test(s)) return true;
+  return false;
+}
+
+export function isMetaSpeakerName(name?: string) {
+  return /^(TONE|THỜI LƯỢNG|FORMAT|STYLE|NOTE|LOC|CONTINUITY|EMOTION|CẢM XÚC|TARGET|DURATION)$/i.test((name ?? '').trim());
+}
+
 /** Spoken CHAR line only. Action / SFX / SMS / memory → false. */
 export function looksLikeSpokenLine(text: string, speaker?: string) {
   const s = text.trim().replace(/^["“”']+|["“”']+$/g, '');
   if (!s) return false;
   if (isSoundSlug(s) || isSoundSlug(speaker ?? '')) return false;
+  if (isMetaSpeakerName(speaker) || looksLikeScriptMetaHeading(s) || looksLikeScriptMetaHeading(`${speaker ?? ''}: ${s}`)) {
+    return false;
+  }
   if (looksLikeVoiceDirection(s)) return false;
   if (looksLikeActionLine(s) || looksLikeUnspokenLine(s, speaker)) return false;
   return true;
@@ -204,7 +222,7 @@ function speakerHead(line: string) {
   if (!m) return undefined;
   const name = (m[1] ?? '').trim();
   if (isSoundSlug(name)) return undefined;
-  if (/^(SCENE|SC|SHOT|SH|BEAT|ROLE|VIDEO|FAMIXA|FORMAT|STYLE|NOTE|LOC|PROJECT|SEASON|EPISODE|STATUS)$/i.test(name)) {
+  if (isMetaCanonSpeaker(name) || isMetaSpeakerName(name) || /^(SCENE|SC|SHOT|SH|BEAT|ROLE|VIDEO|FAMIXA|FORMAT|STYLE|NOTE|LOC|PROJECT|SEASON|EPISODE|STATUS)$/i.test(name)) {
     return undefined;
   }
   return { name, emotion: (m[2] ?? '').trim(), rest: (m[3] ?? '').trim() };
@@ -212,26 +230,20 @@ function speakerHead(line: string) {
 
 function resolveSpeaker(raw: string, chars: FamixaCharacter[]): FamixaCharacter | undefined {
   const token = raw.replace(/\s*\(.*\)\s*$/, '').trim();
-  if (!token) return undefined;
-  const asId = /^CHAR-\d+/i.test(token) ? normId(token) : '';
-  if (asId) return chars.find((c) => c.id === asId);
-  const key = token.toLowerCase();
-  const known = CAST.find((c) => c.names.includes(key));
-  if (known) return chars.find((c) => c.id === known.id) ?? { id: known.id, name: token, role: known.role };
-  return chars.find((c) => c.name.toLowerCase() === key);
+  if (!token || isMetaCanonSpeaker(token)) return undefined;
+  const row = resolveCanonSpeaker(token);
+  if (row) {
+    return chars.find((c) => c.id === row.id) ?? { id: row.id, name: row.name, role: row.role, offFrame: row.visual !== 'frame' };
+  }
+  return chars.find((c) => c.name.toLowerCase() === token.toLowerCase());
 }
 
-function ensureChar(chars: FamixaCharacter[], speaker: string): FamixaCharacter {
+function ensureChar(chars: FamixaCharacter[], speaker: string): FamixaCharacter | undefined {
+  if (isMetaCanonSpeaker(speaker)) return undefined;
   const hit = resolveSpeaker(speaker, chars);
-  if (hit) {
-    if (!chars.some((c) => c.id === hit.id)) chars.push(hit);
-    return hit;
-  }
-  let n = chars.length + 1;
-  while (chars.some((c) => c.id === `CHAR-${String(n).padStart(3, '0')}`)) n += 1;
-  const row: FamixaCharacter = { id: `CHAR-${String(n).padStart(3, '0')}`, name: speaker.trim() };
-  chars.push(row);
-  return row;
+  if (!hit) return undefined;
+  if (!chars.some((c) => c.id === hit.id)) chars.push(hit);
+  return hit;
 }
 
 /** VOICE-OVER slug. Parenthetical = voice direction, not spoken. */
@@ -246,8 +258,10 @@ export function voiceOverHead(line: string) {
   return { speaker: 'Lời bình', direction, rest };
 }
 
-function ensureNarrator(chars: FamixaCharacter[]) {
-  return ensureChar(chars, 'Lời bình');
+function ensureNarrator(chars: FamixaCharacter[]): FamixaCharacter {
+  return (
+    ensureChar(chars, 'Lời bình') ?? { id: 'CHAR-VO', name: 'Lời bình', role: 'Lời bình', offFrame: true }
+  );
 }
 
 function screenplaySpeaker(line: string, chars: FamixaCharacter[]) {
@@ -262,11 +276,7 @@ function screenplaySpeaker(line: string, chars: FamixaCharacter[]) {
   if (/^(SCENE|SC|INT|EXT|CUT|END|FADE|TITLE|SCRIPT|SHOT|BEAT|FAMIXA|SERIES|SEASON|EPISODE)$/i.test(token)) {
     return undefined;
   }
-  if (
-    resolveSpeaker(token, chars) ||
-    CAST.some((c) => c.names.includes(token.toLowerCase())) ||
-    /^(MINH|NAM|LINH|BỐ|MẸ|BA|CON)$/i.test(token)
-  ) {
+  if (resolveSpeaker(token, chars) || resolveCanonSpeaker(token) || /^(MINH|NAM|LINH|BỐ|MẸ|BA|CON)$/i.test(token)) {
     return token;
   }
   return undefined;
@@ -274,6 +284,7 @@ function screenplaySpeaker(line: string, chars: FamixaCharacter[]) {
 
 function skipFurniture(line: string) {
   return (
+    looksLikeScriptMetaHeading(line) ||
     /^(?:#{1,3}\s*)?(?:0?7\.\s*)?SCRIPT\b/i.test(line) ||
     /^(?:CUT TO BLACK|END|FADE OUT|FADE IN|KẾT THÚC)\.?\s*$/i.test(line) ||
     /^(VIDEO[ _]?ID|VIDEO[ _]?TITLE|TARGET DURATION|FORMAT|STYLE|PROJECT|SEASON|EPISODE|SERIES|STATUS|SOURCE KEYFRAME|PRODUCTION PURPOSE|ESTIMATED DURATION)\s*:/i.test(
@@ -286,8 +297,11 @@ function skipFurniture(line: string) {
 }
 
 function isMetaLine(line: string) {
-  return /^(cuối\s*episode|mục tiêu|âm thanh|sound(?:\s*design)?|emotion|cảm xúc|nhạc|continuity|style|format|target duration|video id|video title|production purpose|season|project)\s*:?\s*$/i.test(
-    line.trim(),
+  return (
+    looksLikeScriptMetaHeading(line) ||
+    /^(cuối\s*episode|mục tiêu|âm thanh|sound(?:\s*design)?|emotion|cảm xúc|nhạc|continuity|style|format|target duration|video id|video title|production purpose|season|project|tone|thời lượng)\s*:?\s*$/i.test(
+      line.trim(),
+    )
   );
 }
 
@@ -303,34 +317,28 @@ function extractScriptBody(text: string) {
 }
 
 function seedCast(text: string, characters: FamixaCharacter[]) {
-  for (const row of CAST) {
-    const proper = row.names[0] ?? '';
-    const named = characters.find((c) => c.id === row.id);
-    if (named) {
-      if (!named.name) named.name = proper.charAt(0).toUpperCase() + proper.slice(1);
-      if (!named.role) named.role = row.role;
-      continue;
+  const seeded = seedFamixaCanon(characters);
+  characters.length = 0;
+  characters.push(...(seeded as FamixaCharacter[]));
+  if (/\bbạn\s+an\b|\bCHAR-004\b|(?:^|\n)\s*An\s*[:：]/im.test(text)) {
+    const an = resolveCanonSpeaker('An');
+    if (an && !characters.some((c) => c.id === an.id)) {
+      characters.push({ id: an.id, name: an.name, role: an.role, offFrame: true });
     }
-    const token =
-      row.names.find((n) => n.length >= 4 && new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(text)) ??
-      (proper.length >= 3 && new RegExp(proper.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(text) ? proper : '');
-    if (!token) continue;
-    characters.push({
-      id: row.id,
-      name: proper.charAt(0).toUpperCase() + proper.slice(1),
-      role: row.role,
-    });
   }
 }
 
 function parseCharLocks(text: string) {
-  const rows: { code: string; name: string; role: string }[] = [];
+  const rows: { code: string; name: string; role: string; offFrame?: boolean }[] = [];
   for (const raw of text.split(/\r?\n/)) {
     const m = raw.match(/^(CHAR-\d+)\s*[—–:-]\s*(.+)$/i);
     if (!m) continue;
     const rest = (m[2] ?? '').trim();
     const pipe = rest.split('|').map((s) => s.trim());
-    rows.push({ code: normId(m[1] ?? ''), name: pipe[0] ?? rest, role: pipe[1] ?? '' });
+    const name = pipe[0] ?? rest;
+    const row = resolveCanonSpeaker(name) || resolveCanonSpeaker(m[1] ?? '');
+    if (!row || isMetaCanonSpeaker(name)) continue;
+    rows.push({ code: row.id, name: row.name, role: row.role || pipe[1] || '', offFrame: row.visual !== 'frame' });
   }
   return rows;
 }
@@ -399,7 +407,7 @@ function decomposeSceneShots(
     const beatId = `${scene.id}-BEAT${String(beatN).padStart(2, '0')}`;
     const stories = g.actions.length ? g.actions.flatMap(splitBeatIntoShotStories) : [beatText];
     const shotIds: string[] = [];
-    const charIds = g.charIds.length ? g.charIds : [...scene.charIds];
+    const charIds = frameCanonIds(g.charIds.length ? g.charIds : [...scene.charIds]);
     for (const story of stories) {
       const action = story.replace(/\s+/g, ' ').trim();
       if (action.length < 6) continue;
@@ -449,7 +457,7 @@ function toSceneNode(draft: SceneDraft): FamixaSceneNode {
     content: draft.raw.join('\n').trim() || undefined,
     actions,
     dialogue,
-    characterIds: [...draft.charIds],
+    characterIds: frameCanonIds([...draft.charIds]),
   };
 }
 
@@ -460,7 +468,7 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
   const header = headerFields(source.slice(0, 1800));
   const characters: FamixaCharacter[] = [];
   for (const row of parseCharLocks(source)) {
-    characters.push({ id: row.code, name: row.name, role: row.role || undefined });
+    characters.push({ id: row.code, name: row.name, role: row.role || undefined, offFrame: row.offFrame });
   }
   seedCast(source, characters);
 
@@ -508,7 +516,7 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
       if (spoken) addAction(spoken);
       return;
     }
-    if (!current!.charIds.includes(ch.id)) current!.charIds.push(ch.id);
+    if (!isOffFrameCanon(ch.id, ch.name) && !current!.charIds.includes(ch.id)) current!.charIds.push(ch.id);
     current!.beats.push({ kind: 'dialogue', characterId: ch.id, name: ch.name || ch.id, text: spoken, emotion });
     current!.raw.push(`${ch.name || ch.id}: ${spoken}`);
   };
@@ -571,7 +579,8 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
       pendingSpeaker = undefined;
       pendingGotLine = false;
       ensureChar(characters, lock[1] ?? '');
-      const c = characters.find((x) => x.id === normId(lock[1] ?? ''));
+      const mapped = resolveCanonSpeaker(lock[1] ?? '');
+      const c = characters.find((x) => x.id === (mapped?.id || normId(lock[1] ?? '')));
       if (c && !c.name) c.name = (lock[2] ?? '').trim();
       continue;
     }
@@ -612,7 +621,8 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
         if (pendingUnspoken || !looksLikeSpokenLine(rest, slug)) {
           addAction(rest);
         } else {
-          addDialogue(ensureChar(characters, colon?.name || tagged?.name || slug), rest, colon?.emotion || undefined);
+          const ch = ensureChar(characters, colon?.name || tagged?.name || slug);
+          if (ch) addDialogue(ch, rest, colon?.emotion || undefined);
           pendingUnspoken = false;
         }
         pendingSpeaker = undefined;
@@ -625,7 +635,9 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
         addAction(line);
         continue;
       }
-      addDialogue(ensureChar(characters, pendingSpeaker), line);
+      const spoken = ensureChar(characters, pendingSpeaker);
+      if (spoken) addDialogue(spoken, line);
+      else addAction(line);
       pendingGotLine = true;
       pendingUnspoken = false;
       continue;
@@ -710,7 +722,7 @@ export function parseEpisodeStory(text: string): ParsedEpisodeStory | undefined 
   }
 
   const vo = characters.filter((c) => c.id === 'CHAR-VO');
-  const rest = characters.filter((c) => c.id !== 'CHAR-VO').slice(0, vo.length ? 7 : 8);
+  const rest = characters.filter((c) => c.id !== 'CHAR-VO' && !isOffFrameCanon(c.id, c.name)).slice(0, vo.length ? 7 : 8);
   const roles = [...rest, ...vo].slice(0, 8).map((c) => ({
     id: `role-${c.id}`,
     title: c.role || c.id,

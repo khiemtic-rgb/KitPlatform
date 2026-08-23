@@ -1,18 +1,43 @@
 /** Scene-first / Continuity-first. Script is SoT. Does not invent story. */
 
-import { inferActingDirection } from './content-famixa-acting-law';
+import {
+  actingOfLines,
+  compileShotBlocking,
+  inferActingDirection,
+  resolveLinePerformance,
+  stillAtmosphereFromAction,
+  stillFaceFromPerformance,
+  stillFaceFromScriptNote,
+} from './content-famixa-acting-law';
 import { linesForShot } from './content-famixa-dialogue-map';
+import { displayCanonName, isOffFrameCanon } from './content-famixa-char-canon';
+import { isMetaSpeakerName } from './content-famixa-story-parse';
 import { estimateSpokenSec, deriveVoiceScript } from './content-famixa-voice-script';
 import type { AssembleTimeline } from './content-famixa-assemble';
+import { finalSourceBlockReason, resolveFinalSource } from './content-famixa-final-source';
 import {
+  effectiveShotAction,
   episodeShots,
   lockFromGraph,
+  looksLikePackHeading,
+  normCharId,
   shotHasValidAction,
+  shotCharacterIds,
   shotRunOf,
+  type FamixaCharacter,
   type FamixaSeriesShot,
   type SeriesPilotState,
   type SeriesShotRun,
 } from './content-famixa-series';
+import { deriveVisualSpec, type VisualQa, type VisualSpec } from './content-famixa-visual-spec';
+
+export function visualSpecOf(state: SeriesPilotState, shot: FamixaSeriesShot, prevShot?: FamixaSeriesShot): VisualSpec {
+  return shotRunOf(state, shot).visualSpec ?? compileShotSceneCard(state, shot, prevShot).visualSpec;
+}
+
+export function visualQaOf(state: SeriesPilotState, shot: FamixaSeriesShot): VisualQa | undefined {
+  return shotRunOf(state, shot).visualQa;
+}
 
 export type SceneMaster = {
   sceneId: string;
@@ -29,6 +54,16 @@ export type SceneMaster = {
   continuityRules: string;
   locked: boolean;
   sourceShotId?: string;
+  screenDirection?: string;
+  coverage?: string;
+  lens?: string;
+  cameraHeight?: string;
+  blocking?: string;
+  pacing?: string;
+  /** Operator Emotion Arc — KIT warns, does not invent the next beat. */
+  emotionPrev?: string;
+  emotionNow?: string;
+  emotionNext?: string;
 };
 
 export type ShotProdStatus =
@@ -53,7 +88,7 @@ export const PROD_GATES = [
 export type ProdGateId = (typeof PROD_GATES)[number]['id'];
 
 export const SCENE_CONTINUITY_RULE =
-  'Keep the same people, faces, hair, wardrobe, age, room, time, lighting, and props. Only Action, pose, and camera may change.';
+  'Keep the same people already in the previous still, same faces, hair, wardrobe, age, room, and props. Do not redress anyone from a character sheet. Do not redesign Nam. Classmate An is off-screen. Faces and blocking follow this shot\'s script notes — do not copy a cheerful smile or catalog pose. Lighting may dim when the Action is tense or evening.';
 
 const PROP_RE = /bài kiểm tra|tờ giấy|điện thoại|cơm|nồi|cặp|bàn ăn/i;
 
@@ -77,6 +112,9 @@ function inferTime(blob: string) {
 }
 
 function inferLighting(blob: string, time: string) {
+  if (/tối|căng|áp lực|sắc lạnh|không vui|thành tích/i.test(blob)) {
+    return time === 'evening' ? 'dim warm indoor evening, not bright daylight' : 'dim indoor, not a bright catalog room';
+  }
   if (/ấm|warm/i.test(blob)) return time === 'evening' ? 'warm indoor evening' : 'warm indoor';
   if (time === 'evening') return 'warm indoor evening';
   return '';
@@ -115,6 +153,15 @@ export function deriveSceneMaster(state: SeriesPilotState, sceneId: string): Sce
     continuityRules: SCENE_CONTINUITY_RULE,
     locked: Boolean(state.sceneMasters?.[sc]?.locked || (lock.locked && sceneCodeOf(lock.scene) === sc)),
     sourceShotId: state.sceneMasters?.[sc]?.sourceShotId || lock.sourceShotId,
+    screenDirection: state.sceneMasters?.[sc]?.screenDirection || '',
+    coverage: state.sceneMasters?.[sc]?.coverage || '',
+    lens: state.sceneMasters?.[sc]?.lens || '',
+    cameraHeight: state.sceneMasters?.[sc]?.cameraHeight || '',
+    blocking: state.sceneMasters?.[sc]?.blocking || '',
+    pacing: state.sceneMasters?.[sc]?.pacing || '',
+    emotionPrev: state.sceneMasters?.[sc]?.emotionPrev || '',
+    emotionNow: state.sceneMasters?.[sc]?.emotionNow || '',
+    emotionNext: state.sceneMasters?.[sc]?.emotionNext || '',
   };
 }
 
@@ -196,6 +243,296 @@ export function kfIsApprovedStill(run: SeriesShotRun) {
 }
 
 /** Immediate previous production still in the same Scene — not a white prompt. */
+const VOICE_ONLY = /CHAR-VO|loi binh|narrator|voice.?over/i;
+
+export function isVoiceOnlyChar(id?: string, name?: string) {
+  return VOICE_ONLY.test(`${id || ''} ${name || ''}`);
+}
+
+/** An / CHAR-004 / extras / VO — named in script, not a body in the still. */
+export function isOffFrameChar(id?: string, name?: string) {
+  return isOffFrameCanon(id, name);
+}
+
+export function displayCharName(id: string, name?: string) {
+  return displayCanonName(id, name);
+}
+
+/** Parser / insert used to stamp every SH with Minh+Nam+Linh. That is not who is in frame. */
+export function isDefaultSceneCast(ids: string[]) {
+  const v = [...new Set(ids.map(normCharId).filter((id) => id && !isVoiceOnlyChar(id)))].sort();
+  return v.join() === 'CHAR-001,CHAR-002,CHAR-003';
+}
+
+function visualChar(c?: FamixaCharacter) {
+  if (!c?.id) return false;
+  if (c.offFrame || isMetaSpeakerName(c.name) || isMetaSpeakerName(c.id) || isOffFrameChar(c.id, c.name)) return false;
+  return !isVoiceOnlyChar(c.id, c.name);
+}
+
+function charAliases(c: FamixaCharacter) {
+  const out = [c.name, c.role].filter(Boolean).map((s) => s!.trim());
+  const hay = `${c.id} ${c.name} ${c.role || ''}`.toLowerCase();
+  if (/char-001|\bminh\b/.test(hay)) out.push('Minh');
+  if (/char-002|\bnam\b/.test(hay)) out.push('Nam', 'bố', 'ba');
+  if (/char-003|\blinh\b/.test(hay)) out.push('Linh', 'mẹ');
+  return [...new Set(out.filter((s) => s.length >= 2))];
+}
+
+function escapeAlias(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function mentionedCharIds(text: string, characters: FamixaCharacter[]) {
+  const blob = (text || '').replace(/\s+/g, ' ').trim();
+  if (!blob) return [] as string[];
+  const ids: string[] = [];
+  for (const c of characters) {
+    if (!visualChar(c)) continue;
+    if (/char-004|\ban\b/i.test(`${c.id} ${c.name}`) && !/\ban (bước|đứng|vào|ngồi)/i.test(blob)) continue;
+    const hit = charAliases(c).some((alias) => new RegExp(`(?:^|[^\\p{L}])${escapeAlias(alias)}(?:$|[^\\p{L}])`, 'iu').test(blob));
+    if (hit) ids.push(normCharId(c.id));
+  }
+  return [...new Set(ids)];
+}
+
+function storedVisualIds(state: SeriesPilotState, shot?: FamixaSeriesShot) {
+  if (!shot) return [] as string[];
+  const ids = shotCharacterIds(shot).filter((id) => !isVoiceOnlyChar(id) && !isOffFrameChar(id));
+  if (isDefaultSceneCast(ids)) {
+    const named = namedOnShot(state, shot).named;
+    if (kfHasPixels(shotRunOf(state, shot)) && named.includes('CHAR-002')) return ids;
+    return [];
+  }
+  if (kfHasPixels(shotRunOf(state, shot)) && ids.length) return ids;
+  return ids;
+}
+
+function namedOnShot(state: SeriesPilotState, shot: FamixaSeriesShot) {
+  const chars = (state.characters ?? []).filter(visualChar);
+  const script = deriveVoiceScript(state);
+  const lines = linesForShot(state, shot, script.lines);
+  const fromDialogue = [
+    ...new Set(
+      lines
+        .filter((l) => !isVoiceOnlyChar(l.characterId, l.name) && !isOffFrameChar(l.characterId, l.name))
+        .map((l) => normCharId(l.characterId))
+        .filter(Boolean),
+    ),
+  ];
+  const action = `${shot.story || ''} ${shot.motionPromptVi || ''} ${shot.visual || ''} ${shot.beatText || ''} ${shotRunOf(state, shot).shotAction || ''}`;
+  const fromAction = mentionedCharIds(action, chars);
+  return { fromDialogue, fromAction, named: [...new Set([...fromDialogue, ...fromAction])] };
+}
+
+export type VisibleFrameCast = {
+  ids: string[];
+  names: string[];
+  count: number;
+  fromDialogue: string[];
+  fromPrevious: string[];
+  fromAction: string[];
+};
+
+/**
+ * People allowed in the still: this shot's dialogue + Action names + previous frame.
+ * Scene roster (Minh+Nam+Linh) is not a reason to add a third person.
+ */
+export function visibleFrameCast(
+  state: SeriesPilotState, 
+  shot: FamixaSeriesShot,
+  prevShot?: FamixaSeriesShot,
+): VisibleFrameCast {
+  const chars = (state.characters ?? []).filter(visualChar);
+  const { fromDialogue, fromAction, named } = namedOnShot(state, shot);
+  const prevNamed = prevShot ? namedOnShot(state, prevShot).named : [];
+  const prevIds = (prevShot ? [...new Set([...storedVisualIds(state, prevShot), ...prevNamed])] : []).filter(
+    (id) => !isOffFrameChar(id),
+  );
+  const action = `${shot.story || ''} ${shotRunOf(state, shot).shotAction || ''}`;
+  const namEntering = /bước vào|vào nhà|về rồi|vào cửa|đứng đối diện/i.test(action) || named.includes('CHAR-002');
+  let ids: string[];
+  if (named.length) {
+    ids = [...named];
+    for (const id of prevIds) {
+      if (ids.includes(id)) continue;
+      if (id === 'CHAR-002' && !namEntering) continue;
+      ids.push(id);
+    }
+  } else {
+    ids = prevIds.length ? prevIds : storedVisualIds(state, shot);
+  }
+  const names = ids.map((id) => displayCharName(id, chars.find((c) => c.id === id)?.name));
+  return {
+    ids,
+    names,
+    count: ids.length,
+    fromDialogue,
+    fromPrevious: prevIds,
+    fromAction,
+  };
+}
+
+/** Script notes + dialogue acting → still mood. Does not invent hug/lesson. */
+export function compileShotStillMood(state: SeriesPilotState, shot: FamixaSeriesShot, action: string) {
+  const script = deriveVoiceScript(state);
+  const lines = linesForShot(state, shot, script.lines);
+  const beat = [action, effectiveShotAction(shot, shotRunOf(state, shot)), shot.beatText, shot.story]
+    .filter((t) => (t ?? '').trim() && !looksLikePackHeading(t))
+    .join(' ');
+  const dir = actingOfLines(lines, beat || action);
+  const faces: string[] = [];
+  const sceneNode = (state.scenes ?? []).find((sc) => sceneCodeOf(sc.id) === sceneIdOfShot(shot));
+  for (const c of state.characters ?? []) {
+    const note = [c.voiceNote, c.performance, c.line, sceneNode?.performances?.[c.id]].filter(Boolean).join(' ');
+    if (!note) continue;
+    const face = stillFaceFromScriptNote(c.name || c.id, note);
+    if (face) faces.push(face);
+  }
+  for (const role of state.roles ?? []) {
+    const face = stillFaceFromScriptNote(role.name, [role.voiceNote, role.performance, role.line].filter(Boolean).join(' '));
+    if (face && !faces.includes(face)) faces.push(face);
+  }
+  const draft = state.packDraft || '';
+  for (const m of draft.matchAll(/^(Minh|Nam|Linh|Mẹ|Bố)\s*[:：]\s*(Giọng[^\n]{8,80})/gim)) {
+    const face = stillFaceFromScriptNote(m[1] || '', m[2] || '');
+    if (face && !faces.includes(face)) faces.push(face);
+  }
+  for (const act of sceneNode?.actions ?? []) {
+    const face = stillFaceFromScriptNote('', act);
+    if (face && !faces.includes(face)) faces.push(face);
+  }
+  for (const line of lines) {
+    const face = stillFaceFromPerformance(line.name, resolveLinePerformance({ ...line, action: beat }));
+    if (face && !faces.includes(face)) faces.push(face);
+  }
+  const loc = shot.location || sceneMasterOf(state, sceneIdOfShot(shot)).environment;
+  const sceneNote = [sceneNode?.content, sceneNode?.performance, ...(sceneNode?.actions ?? [])].filter(Boolean).join(' ');
+  return [
+    stillAtmosphereFromAction(`${beat} ${sceneNote}`, loc),
+    stillFaceFromScriptNote('', beat),
+    ...faces,
+    `Acting ${dir.intensity}/5 ${dir.label}.`,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+export function compileShotSceneCard(
+  state: SeriesPilotState,
+  shot: FamixaSeriesShot,
+  prevShot?: FamixaSeriesShot,
+) {
+  const script = deriveVoiceScript(state);
+  const lines = linesForShot(state, shot, script.lines).filter((l) => !isVoiceOnlyChar(l.characterId, l.name));
+  const master = sceneMasterOf(state, sceneIdOfShot(shot));
+  const cast = visibleFrameCast(state, shot, prevShot);
+  const action = effectiveShotAction(shot, shotRunOf(state, shot));
+  const speakerNames = lines.map((l) => (l.name || l.characterId || '').trim()).filter(Boolean);
+  const spoken = lines.map((l) => `${l.name}: ${l.text}`).join(' · ');
+  const lighting =
+    master.lighting ||
+    (master.time === 'evening' ? 'dim warm indoor evening' : '') ||
+    'dim warm indoor evening after dinner';
+  const namIn = cast.ids.some((id) => /CHAR-002/i.test(id));
+  const namWas = cast.fromPrevious.some((id) => /CHAR-002/i.test(id));
+  const blocking = compileShotBlocking({
+    speakerNames,
+    peopleNames: cast.names,
+    action: `${action} ${spoken}`,
+    namJustEntered: namIn && !namWas,
+    namAlreadyIn: namWas,
+  });
+  const faceLock =
+    cast.count >= 2
+      ? `FACE LOCK: ${cast.names.join(', ')} each need a complete visible face. Do not crop Linh/mẹ at the chest.`
+      : '';
+  const place = master.location || shot.location || master.environment || '';
+  const stillAction = [
+    place ? `Setting: ${place}. ${lighting}.` : lighting,
+    speakerNames.length
+      ? `SPEAKER ON CAMERA: ${[...new Set(speakerNames)].join(', ')}. Mouth slightly open. Never paint dialogue, subtitles, or letters.`
+      : '',
+    action && !looksLikePackHeading(action) ? `Action: ${action}` : '',
+    blocking,
+    faceLock,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const oneLiner = [spoken, action && !looksLikePackHeading(action) ? action : '']
+    .filter(Boolean)
+    .join(' — ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const visualSpec = deriveVisualSpec({
+    shotId: shot.id,
+    action,
+    location: place,
+    lighting,
+    names: cast.names,
+    ids: cast.ids,
+    speakers: speakerNames,
+    camera: master.camera,
+    lens: master.lens,
+    prevAction: prevShot ? effectiveShotAction(prevShot, shotRunOf(state, prevShot)) : undefined,
+  });
+  return {
+    oneLiner: oneLiner ? (oneLiner.length > 88 ? `${oneLiner.slice(0, 88)}…` : oneLiner) : 'Chưa có mô tả shot',
+    stillAction,
+    spoken,
+    speakerNames,
+    lighting,
+    blocking,
+    place,
+    cast,
+    visualSpec,
+  };
+}
+
+export function peopleCountLock(cast: VisibleFrameCast, prevCount?: number) {
+  const who = cast.names.join(', ') || 'the same people as the previous frame';
+  const speakerNames = (cast.fromDialogue ?? [])
+    .map((id) => cast.names[cast.ids.indexOf(id)] || id)
+    .filter(Boolean)
+    .join(', ');
+  const prev =
+    prevCount && prevCount > 0
+      ? `Previous frame has ${prevCount} people. This shot's dialogue/action does not add anyone.`
+      : '';
+  return [
+    `CAST COUNT LOCK: exactly ${cast.count || prevCount || 0} people in the frame: ${who}.`,
+    speakerNames
+      ? `SPEAKER LOCK: ${speakerNames} must be fully visible. Do not hide a speaking parent off-camera.`
+      : '',
+    `FACE LOCK: ${who} — complete face each (eyes, nose, mouth). No faceless mother/torso crop.`,
+    prev,
+    prevCount && cast.count > prevCount
+      ? `CAST PERSIST: keep everyone from the previous still (${prevCount} people) plus any new speaker. Do not drop Minh when Nam enters.`
+      : '',
+    prevCount && cast.count < prevCount
+      ? `CAST SHRINK: only ${who} — do not keep extra people from the previous frame. Do not invent a third person.`
+      : '',
+    'Do not add another person. Do not add father/Nam/a third adult unless listed. No extras, no crowd, no passer-by. Classmate An is off-screen.',
+    'WARDROBE LOCK: same clothes as the previous still. Do not redress Minh from a character sheet.',
+    'BLOCKING LOCK: tense, stand apart. No family portrait, no huddle, no affectionate trio.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+export function applyVisibleCast(state: SeriesPilotState, shotId: string, ids: string[]): SeriesPilotState {
+  const ep = state.episode;
+  if (!ep) return state;
+  const visual = ids.filter((id) => !isVoiceOnlyChar(id));
+  return {
+    ...state,
+    episode: {
+      ...ep,
+      shots: ep.shots.map((s) => (s.id === shotId ? { ...s, characterIds: visual, characters: visual } : s)),
+    },
+  };
+}
+
 export function previousSceneKf(state: SeriesPilotState, shot: FamixaSeriesShot, queue: FamixaSeriesShot[]) {
   const scene = sceneIdOfShot(shot);
   const i = queue.findIndex((s) => s.id === shot.id);
@@ -214,7 +551,7 @@ export function sequentialKfIds(state: SeriesPilotState, shots: FamixaSeriesShot
     .filter((s) => {
       const run = shotRunOf(state, s);
       if (run.prodSkip || !shotHasValidAction(s, run)) return false;
-      if (run.status === 'approved' || run.kfApproved) return false;
+      if (run.status === 'approved' || run.kfApproved === true) return false;
       if (s.voiceChainFrom && !run.kfForceNew) return false;
       return true;
     })
@@ -267,8 +604,8 @@ export function shotProdStatus(state: SeriesPilotState, shot: FamixaSeriesShot):
   const run = shotRunOf(state, shot);
   if (run.prodSkip) return 'HOLD';
   if (!shotHasValidAction(shot, run)) return 'HOLD';
-  if (run.status === 'approved' || state.sceneLocked) return 'VIDEO APPROVED';
-  if (run.turboStatus === 'PENDING' || run.turboStatus === 'RUNNING') return 'VIDEO QUEUED';
+  if (run.previewUrl?.trim() && (run.status === 'approved' || state.sceneLocked)) return 'VIDEO APPROVED';
+  if (run.turboStatus === 'PENDING' || run.turboStatus === 'RUNNING' || run.turboStatus === 'RETRY') return 'VIDEO QUEUED';
   if (run.previewUrl?.trim()) return 'VIDEO READY';
   if (kfIsApprovedStill(run)) return 'KF APPROVED';
   if (kfHasPixels(run)) return 'KF DRAFT';
@@ -296,11 +633,32 @@ export function prodGateState(state: SeriesPilotState, shots: FamixaSeriesShot[]
   } as Record<ProdGateId, boolean>;
 }
 
-/** Full episode Final — all 7 gates. */
+/** Full episode Final — all 7 gates + FINAL_SOURCE=FAL for spoken + QA. */
 export function fullEpisodeBlockReason(state: SeriesPilotState, shots: FamixaSeriesShot[]) {
-  const g = prodGateState(state, shots);
+  const pack = shots.filter((s) => shotHasValidAction(s, shotRunOf(state, s)) && !shotRunOf(state, s).prodSkip);
+  const g = prodGateState(state, pack);
   const miss = PROD_GATES.filter((row) => !g[row.id]).map((row) => row.label);
-  return miss.length ? `Chưa đủ gate: ${miss.join(' → ')}` : undefined;
+  if (miss.length) return `Chưa đủ gate: ${miss.join(' → ')}`;
+  const script = deriveVoiceScript(state);
+  const items = pack.map((s) => {
+    const silent = linesForShot(state, s, script.lines).length === 0;
+    const run = shotRunOf(state, s);
+    return { code: s.shot || s.id, silent, finalSource: resolveFinalSource(run, silent), lipsynced: run.lipsynced };
+  });
+  const src = finalSourceBlockReason(items);
+  if (src) return src;
+  const qaMiss = pack.filter((s) => {
+    const qa = shotRunOf(state, s).shotQa;
+    const silent = linesForShot(state, s, script.lines).length === 0;
+    return !qa?.action || !qa?.continuity || !qa?.motion || (!silent && !qa?.voiceFace);
+  });
+  if (qaMiss.length) {
+    return `QA chưa PASS: ${qaMiss.map((s) => s.shot || s.id).join(', ')} (ACTION + CONTINUITY + MOTION + VOICE/FACE).`;
+  }
+  const scenes = [...new Set(pack.map(sceneIdOfShot))];
+  const sceneMiss = scenes.filter((sc) => !state.sceneApproved?.[sc] && !state.previewApproved);
+  if (sceneMiss.length) return `Duyệt Preview từng Scene: ${sceneMiss.join(', ')}.`;
+  return undefined;
 }
 
 /** Preview range: Script + Voice + Shot Plan. Scene Master before KF. KF+Voice before video. */
@@ -359,9 +717,15 @@ export function continueScenePrompt(master: SceneMaster, prevCode: string | unde
   const from = prevCode ? `from ${prevCode}` : 'from the attached previous keyframe';
   return [
     `Continue the exact same scene ${from}.`,
-    `Preserve character identity (${who}), wardrobe (${clothes}), location (${place}), lighting (${light}), props (${master.props || 'same props'}), and time (${master.time || 'same time'}).`,
+    `Preserve character identity (${who}), wardrobe from the previous still (${clothes} — do not redress from Canon), location (${place}), lighting (${light}), props (${master.props || 'same props'}), and time (${master.time || 'same time'}).`,
     master.camera ? `Camera language: ${master.camera}.` : '',
-    `Only change the action: ${action}.`,
+    master.lens || master.cameraHeight
+      ? `Lens ${master.lens || '35mm'}, height ${master.cameraHeight || 'eye-level'}.`
+      : '',
+    master.screenDirection ? `Screen direction lock: ${master.screenDirection}. Do not flip left/right.` : '',
+    master.coverage ? `Coverage: ${master.coverage}.` : '',
+    `Preserve everything unless Shot Action explicitly requires a change. Only change the action: ${action}.`,
+    'Do not copy the previous smile, huddle, or a brightened room. Faces and blocking follow this Action. Restore dim evening if the last still drifted bright.',
     SCENE_CONTINUITY_RULE,
   ]
     .filter(Boolean)

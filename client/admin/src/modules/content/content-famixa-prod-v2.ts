@@ -3,8 +3,10 @@
 import { kfIsApproved, sceneCodeOfShot } from './content-famixa-batch-plan';
 import { shotsInInclusiveRange } from './content-famixa-preview-cut';
 import { pickShots, shotProdStatus } from './content-famixa-scene-first';
+import { hasVerifiedTake } from './content-famixa-runway-pipe';
 import {
   episodeShots,
+  i2vActionOf,
   shotHasValidAction,
   shotRunOf,
   studioShotCode,
@@ -13,6 +15,7 @@ import {
   type SeriesShotRun,
 } from './content-famixa-series';
 import { needsInheritanceReview } from './content-famixa-story-memory';
+import { linesForShot, multiSpeakerBlock } from './content-famixa-dialogue-map';
 
 export type ProdV2Step = 'script' | 'voice' | 'shorts' | 'image' | 'video' | 'preview' | 'final';
 
@@ -100,7 +103,8 @@ export function shortSimpleStatus(state: SeriesPilotState, shot: FamixaSeriesSho
   const prod = shotProdStatus(state, shot);
   if (prod === 'HOLD') return 'HOLD';
   if (prod === 'VIDEO APPROVED') return 'FINAL';
-  if (prod === 'VIDEO READY' || prod === 'VIDEO QUEUED') return 'VIDEO READY';
+  if (prod === 'VIDEO READY') return hasVerifiedTake(run) ? 'VIDEO READY' : 'KF READY';
+  if (prod === 'VIDEO QUEUED') return hasVerifiedTake(run) ? 'VIDEO READY' : 'KF READY';
   if (prod === 'KF APPROVED') return 'KF READY';
   if (prod === 'KF DRAFT') return 'KF DRAFT';
   if (state.voiceLocked) return 'VOICE READY';
@@ -122,9 +126,16 @@ export function isOperatorSuppliedKf(run: SeriesShotRun) {
   return Boolean(run.keyframeFileName || run.keyframePath);
 }
 
-/** First user-attached still in the range — later Shorts draw from this frame. */
+export function isLockedTemplateKf(run: SeriesShotRun) {
+  if (!run.keyframeDataUrl?.startsWith('data:image')) return false;
+  if (run.kfApproved === true) return true;
+  return isOperatorSuppliedKf(run);
+}
+
+/** First locked / operator still — later shots draw from this frame. */
 export function visualLockShot(state: SeriesPilotState, shots: FamixaSeriesShot[]) {
   return (
+    shots.find((s) => isLockedTemplateKf(shotRunOf(state, s))) ||
     shots.find((s) => isOperatorSuppliedKf(shotRunOf(state, s))) ||
     shots.find((s) => shotRunOf(state, s).keyframeDataUrl?.startsWith('data:image'))
   );
@@ -138,7 +149,7 @@ export function kfFollowIds(state: SeriesPilotState, shots: FamixaSeriesShot[]) 
       const run = shotRunOf(state, s);
       if (!shotHasValidAction(s, run) || run.prodSkip || run.status === 'approved') return false;
       if (lock && s.id === lock.id) return false;
-      if (isOperatorSuppliedKf(run)) return false;
+      if (isLockedTemplateKf(run) || isOperatorSuppliedKf(run)) return false;
       return true;
     })
     .map((s) => s.id);
@@ -148,10 +159,118 @@ export function videoNeedIds(state: SeriesPilotState, shots: FamixaSeriesShot[])
   return shots.filter((s) => {
     const run = shotRunOf(state, s);
     if (!shotHasValidAction(s, run) || run.prodSkip) return false;
-    if (run.status === 'approved') return false;
+    if (run.status === 'approved' && run.previewUrl?.trim()) return false;
     if (!kfIsApproved(run)) return false;
     return !run.previewUrl?.trim();
   }).map((s) => s.id);
+}
+
+export function lipsyncQaReady(run: { shotQa?: { action?: boolean; continuity?: boolean; voiceFace?: boolean } }, spoken = true) {
+  if (!run.shotQa?.action || !run.shotQa?.continuity) return false;
+  if (spoken && !run.shotQa.voiceFace) return false;
+  return true;
+}
+
+/** Takes with video + not yet Fal-lipsynced. TTS is checked at send. Two speakers = split, not Fal. */
+export function lipsyncNeedIds(state: SeriesPilotState, shots: FamixaSeriesShot[]) {
+  return shots.filter((s) => {
+    const run = shotRunOf(state, s);
+    if (!shotHasValidAction(s, run) || run.prodSkip || shotKeepsLipsync(run)) return false;
+    const lines = linesForShot(state, s);
+    if (Array.isArray(s.dialogueSegmentIds) && lines.length === 0) return false;
+    if (multiSpeakerBlock(lines)) return false;
+    return Boolean(run.previewUrl?.trim() || run.takeUrl?.trim());
+  }).map((s) => s.id);
+}
+
+export function lipsyncInFlight(run: { lipsynced?: boolean; lipsyncStatus?: string; lipsyncTaskId?: string }) {
+  if (run.lipsynced) return false;
+  if (!run.lipsyncTaskId?.trim()) return false;
+  const st = (run.lipsyncStatus || '').toUpperCase();
+  return st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'IN_PROGRESS';
+}
+
+/** Paste from Fal Usage / Assets — never starts a new paid job. */
+export function parseFalLipsyncRef(raw: string): { url?: string; taskId?: string } {
+  const s = (raw || '').trim();
+  if (!s) return {};
+  if (/^https?:\/\//i.test(s) && (/fal\.media/i.test(s) || /\.(mp4|webm)(\?|#|$)/i.test(s))) {
+    return { url: s };
+  }
+  const fromPath = s.match(/requests\/([^/?#]+)/i)?.[1];
+  const id = (fromPath || s).replace(/^lipsync_(v3_|v1_|ls_)?/i, '').trim();
+  if (id.length >= 8 && !/\s/.test(id)) return { taskId: `lipsync_v3_${id}` };
+  return {};
+}
+
+/** Fal output, or preview after a successful lipsync. */
+export function lipsyncVideoUrl(run?: {
+  lipsynced?: boolean;
+  lipsyncUrl?: string;
+  previewUrl?: string;
+}) {
+  const dedicated = run?.lipsyncUrl?.trim();
+  if (dedicated) return dedicated;
+  if (run?.lipsynced) return run.previewUrl?.trim() || undefined;
+  return undefined;
+}
+
+/** Assemble / play: Fal lipsync file wins, else raw take. */
+export function takeVideoUrl(run?: {
+  lipsynced?: boolean;
+  lipsyncUrl?: string;
+  previewUrl?: string;
+}) {
+  return lipsyncVideoUrl(run) || run?.previewUrl?.trim() || undefined;
+}
+
+/** Flag may vanish after F5/merge — lipsyncUrl still means keep Fal audio. */
+export function shotKeepsLipsync(run?: {
+  lipsynced?: boolean;
+  lipsyncUrl?: string;
+}) {
+  return Boolean(run?.lipsynced || run?.lipsyncUrl?.trim());
+}
+
+/** Fal sync-lipsync 1.9 bills per output minute. 10s ≈ $0.12 — not free. */
+export const FAL_LIPSYNC_USD_PER_MIN = 0.7;
+
+export function estimateFalLipsyncUsd(seconds: number) {
+  const sec = Math.max(5, Number(seconds) || 10);
+  return Math.round((sec / 60) * FAL_LIPSYNC_USD_PER_MIN * 100) / 100;
+}
+
+export function estimateFalLipsyncUsdForShots(shots: { seconds?: number }[]) {
+  return Math.round(shots.reduce((n, s) => n + estimateFalLipsyncUsd(s.seconds ?? 10), 0) * 100) / 100;
+}
+
+/** Estimated / billed / Fal — per selected production shots. */
+export function productionCostLedger(state: SeriesPilotState, shots: FamixaSeriesShot[]) {
+  const billedRunway = shots.reduce((n, s) => n + inferRunwayBilled(shotRunOf(state, s), s.seconds), 0);
+  const needI2v = videoNeedIds(state, shots);
+  const estimatedRunway = billedRunway + needI2v.reduce((n, id) => {
+    const s = shots.find((x) => x.id === id);
+    return n + clampShortSeconds(s?.seconds ?? 5) * 5;
+  }, 0);
+  const needFal = lipsyncNeedIds(state, shots);
+  const falDone = shots.filter((s) => shotKeepsLipsync(shotRunOf(state, s)));
+  const estimatedFalUsd = estimateFalLipsyncUsdForShots([...needFal.map((id) => shots.find((s) => s.id === id)!).filter(Boolean), ...falDone]);
+  const confirmedFalUsd = estimateFalLipsyncUsdForShots(falDone);
+  return { billedRunway, estimatedRunway, estimatedFalUsd, confirmedFalUsd, needI2v: needI2v.length, needFal: needFal.length };
+}
+
+/** Dead poll (404/405) ≠ free retry. New Confirm = new Fal charge. */
+export function shouldResumeLipsync(run: {
+  lipsyncTaskId?: string;
+  lipsynced?: boolean;
+  lipsyncStatus?: string;
+  lipsyncError?: string;
+}) {
+  if (run.lipsynced || !run.lipsyncTaskId?.trim()) return false;
+  const st = (run.lipsyncStatus || '').toUpperCase();
+  if (st === 'FAILED' || st === 'CANCELLED' || st === 'SUCCEEDED') return false;
+  if (/404|405|504|downstream|quá tải|chưa có khớp môi/i.test(run.lipsyncError || '')) return false;
+  return st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'IN_PROGRESS' || st === 'RETRY';
 }
 
 /** V2 I2V: script + voice + shot graph. Does not wait for 9:16 short lock. */
@@ -181,7 +300,7 @@ export function readyV2VideoShots(state: SeriesPilotState, shots: FamixaSeriesSh
       blocked.push({ shot: s, reason: 'HOLD / không có Action' });
       continue;
     }
-    if (run.status === 'approved' || run.previewUrl?.trim()) continue;
+    if (run.previewUrl?.trim()) continue;
     const action = (run.shotAction || s.story || s.motionPromptVi || '').trim();
     if (!run.keyframeDataUrl) {
       blocked.push({ shot: s, reason: 'thiếu KF' });
@@ -191,7 +310,7 @@ export function readyV2VideoShots(state: SeriesPilotState, shots: FamixaSeriesSh
       blocked.push({ shot: s, reason: 'KF DRAFT — duyệt trước I2V' });
       continue;
     }
-    if (!action) {
+    if (!i2vActionOf(state, s, run) && !action) {
       blocked.push({ shot: s, reason: 'thiếu Action' });
       continue;
     }
@@ -202,6 +321,105 @@ export function readyV2VideoShots(state: SeriesPilotState, shots: FamixaSeriesSh
 
 export function videoCreditsFor(shots: FamixaSeriesShot[], creditsOf: (seconds: number) => number) {
   return shots.reduce((n, s) => n + creditsOf(s.seconds === 10 ? 10 : 5), 0);
+}
+
+/** New Runway POST only if the previous attempt never created a task. Failed unexpected is already billed. */
+export function canRetryTurboStart(error: string, createdTask: boolean) {
+  if (createdTask) return false;
+  if (isTurboDailyQuota(error)) return false;
+  return isTurboRateLimit(error);
+}
+
+export function isTurboRateLimit(error: string) {
+  return /429|rate.?limit|too many|giới hạn tốc độ|throttl|daily-quota|hạn mức ngày/i.test(error);
+}
+
+export function isTurboDailyQuota(error: string) {
+  return /daily-quota|hạn mức ngày|daily (generation |task )?limit|task limit has been reached|too many generations/i.test(error);
+}
+
+export function parseRetryAfterSec(error: string, fallback = 30) {
+  const m = error.match(/429[^0-9]{0,24}(\d{1,3})/) || error.match(/retry-after[:\s]+(\d+)/i) || error.match(/đợi (\d+)s/i);
+  if (m) return Math.min(600, Math.max(5, Number(m[1])));
+  return fallback;
+}
+
+const RUNWAY_QUIET_KEY = 'kit.famixa.runwayQuietUntil';
+
+export function loadRunwayQuietUntil() {
+  try {
+    return Number(sessionStorage.getItem(RUNWAY_QUIET_KEY) || 0);
+  } catch {
+    return 0;
+  }
+}
+
+export function persistRunwayQuietUntil(until: number) {
+  try {
+    sessionStorage.setItem(RUNWAY_QUIET_KEY, String(until));
+  } catch {
+    /* quota */
+  }
+}
+
+export function clearRunwayQuietUntil() {
+  try {
+    sessionStorage.removeItem(RUNWAY_QUIET_KEY);
+  } catch {
+    /* */
+  }
+}
+
+export function runwayQuietRemainMin(until: number, now = Date.now()) {
+  if (!until || until <= now) return 0;
+  return Math.max(1, Math.ceil((until - now) / 60_000));
+}
+
+export function nextRunwayQuietUntil(opts: {
+  now?: number;
+  daily?: boolean;
+  hits?: number;
+  retryAfterSec?: number;
+  prev?: number;
+}) {
+  const now = opts.now ?? Date.now();
+  const add = opts.daily
+    ? 20 * 60 * 1000
+    : (opts.hits ?? 0) >= 3
+      ? 30 * 60 * 1000
+      : Math.max((opts.retryAfterSec ?? 30) * 1000, 60_000);
+  return Math.max(opts.prev ?? 0, now + add);
+}
+
+export function turboInFlight(run: { turboStatus?: string; previewUrl?: string }) {
+  if (run.previewUrl?.trim()) return false;
+  const st = (run.turboStatus || '').toUpperCase();
+  return st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'THROTTLED' || st === 'RETRY';
+}
+
+/** 429 / throttle often means the old task is still on Runway — poll it, do not POST again. */
+export function shouldResumeTurboPoll(run: {
+  turboTaskId?: string;
+  previewUrl?: string;
+  turboStatus?: string;
+  turboError?: string;
+}) {
+  if (!run.turboTaskId?.trim() || run.previewUrl?.trim()) return false;
+  const st = (run.turboStatus || '').toUpperCase();
+  if (st === 'SUCCEEDED') return false;
+  if (st === 'PENDING' || st === 'RUNNING' || st === 'THROTTLED' || st === 'RETRY') return true;
+  if (isTurboRateLimit(run.turboError || '')) return true;
+  return false;
+}
+
+export function inferRunwayBilled(
+  run: { runwayBilled?: number; runwaySpent?: number; turboTaskId?: string; previewUrl?: string },
+  seconds: number,
+) {
+  if (typeof run.runwayBilled === 'number' && run.runwayBilled > 0) return run.runwayBilled;
+  if (typeof run.runwaySpent === 'number' && run.runwaySpent > 0) return run.runwaySpent;
+  if (run.turboTaskId?.trim() && !run.previewUrl?.trim()) return clampShortSeconds(seconds) * 5;
+  return 0;
 }
 
 export function canEnterProdStep(state: SeriesPilotState, step: ProdV2Step): string | undefined {

@@ -1,6 +1,6 @@
 /** Famixa final cut: timeline + Vietnamese SRT. Does not invent dialogue. */
 
-import { inferActingDirection } from './content-famixa-acting-law';
+import { resolveLinePerformance } from './content-famixa-acting-law';
 import { estimateSpokenSec } from './content-famixa-voice-script';
 import { studioShotCode, type FamixaSeriesShot } from './content-famixa-series';
 import type { PreviewCutPlan } from './content-famixa-preview-cut';
@@ -22,6 +22,7 @@ export type AssembleClip = {
   startSec: number;
   seconds: number;
   videoUrl?: string;
+  useVideoAudio?: boolean;
   cues: AssembleCue[];
 };
 
@@ -50,6 +51,11 @@ function srtStamp(sec: number) {
 export function takeDownloadName(shot: FamixaSeriesShot, pack: FamixaSeriesShot[]) {
   const code = studioShotCode(shot, pack).replace(/\s+/g, '');
   return `FAMIXA_${code}.mp4`;
+}
+
+export function lipsyncDownloadName(shot: FamixaSeriesShot, pack: FamixaSeriesShot[]) {
+  const code = studioShotCode(shot, pack).replace(/\s+/g, '');
+  return `FAMIXA_${code}-lipsync.mp4`;
 }
 
 export function assembleFileStem(plan: PreviewCutPlan, episode?: string, title?: string) {
@@ -92,12 +98,18 @@ export function buildAssembleTimeline(
   const spokenWithoutFile: string[] = [];
   let abs = 0;
   for (const item of plan.items) {
+    const keepFal = item.finalSource === 'FAL' || Boolean(item.lipsynced);
+    const itemFit = keepFal ? 'take' : fit;
     const lines = item.lines.length ? item.lines : item.line ? [item.line] : [];
     const local: AssembleCue[] = [];
-    let t = lines.length && fit === 'speech' ? SPEECH_PREROLL : 0;
+    let t = lines.length && itemFit === 'speech' ? SPEECH_PREROLL : 0;
     for (const line of lines) {
       const dur = cueDurSec(line, item.seconds, opts?.voiceSecOf);
-      const pause = inferActingDirection({ text: line.text, name: line.name }).pauseSec;
+      const pause = resolveLinePerformance({
+        text: line.text,
+        name: line.name,
+        performance: 'performance' in line ? line.performance : undefined,
+      }).pauseSec;
       const cue: AssembleCue = {
         lineId: line.id,
         shotId: item.shotId,
@@ -109,12 +121,12 @@ export function buildAssembleTimeline(
       };
       local.push(cue);
       cues.push(cue);
-      t += dur + (fit === 'speech' ? Math.max(SPEECH_GAP, pause) : 0);
+      t += dur + (itemFit === 'speech' ? Math.max(SPEECH_GAP, pause) : 0);
       if (opts?.hasVoiceFile && !opts.hasVoiceFile(line.id)) spokenWithoutFile.push(item.code);
     }
-    const voiceEnd = lines.length ? t - (fit === 'speech' ? SPEECH_GAP : 0) : 0;
+    const voiceEnd = lines.length ? t - (itemFit === 'speech' ? SPEECH_GAP : 0) : 0;
     const seconds =
-      fit === 'speech'
+      itemFit === 'speech'
         ? Math.max(voiceEnd + SPEECH_TAIL, lines.length ? SPEECH_PREROLL + 0.4 : Math.min(item.seconds, 1))
         : Math.max(item.seconds, voiceEnd);
     if (!item.hasVideo) missingVideo.push(item.code);
@@ -123,6 +135,7 @@ export function buildAssembleTimeline(
       code: item.code,
       startSec: abs,
       seconds,
+      useVideoAudio: keepFal,
       cues: local,
     });
     abs += seconds;
@@ -166,6 +179,30 @@ export function planWithExistingTakes(plan: PreviewCutPlan): PreviewCutPlan {
     toCode: items.at(-1)?.code ?? plan.toCode,
     motionMissingVideo: [],
     estimatedSec: items.reduce((n, i) => n + i.seconds, 0),
+  };
+}
+
+export function assembleNeedTtsOverlay(plan: PreviewCutPlan) {
+  return plan.items.filter((i) => i.finalSource !== 'FAL' && !i.lipsynced && !i.silent);
+}
+
+export function assembleConfirmCopy(plan: PreviewCutPlan) {
+  const fal = plan.items.filter((i) => i.finalSource === 'FAL' || i.lipsynced).map((i) => i.code);
+  const tts = assembleNeedTtsOverlay(plan).map((i) => i.code);
+  const bits = [`Gồm ${plan.items.map((i) => i.code).join(', ')}.`];
+  if (fal.length) bits.push(`FINAL_SOURCE=FAL: ${fal.join(', ')} — giữ tiếng khớp môi, không overlay TTS.`);
+  if (tts.length) {
+    bits.push(`Preview tạm RUNWAY_TTS: ${tts.join(', ')}.`);
+    bits.push('Hàng overlay = take Runway câm — miệng không theo lời. Không phải Final.');
+  }
+  return {
+    okText:
+      fal.length && !tts.length
+        ? 'Ghép MP4 (FINAL_SOURCE=FAL) + SRT'
+        : fal.length
+          ? `Ghép Preview · ${fal.length} FAL + thoại tạm`
+          : 'Ghép Preview tạm · MP4 + thoại',
+    detail: bits.join(' '),
   };
 }
 

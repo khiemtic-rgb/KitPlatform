@@ -56,7 +56,7 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
                 var dur = Math.Clamp(clip.Seconds, 0.4, 20);
                 if (clip.UsableEnd is > 0) dur = Math.Min(dur, Math.Max(0.4, clip.UsableEnd.Value - clip.UsableStart));
                 var outPart = Path.Combine(work, $"part{i:00}.mp4");
-                await RunFfmpeg(ffmpeg, MixArgs(src, voices, delays, clip.UsableStart, dur, outPart, request.Aspect), work, cancellationToken);
+                await RunFfmpeg(ffmpeg, MixArgs(src, voices, delays, clip.UsableStart, dur, outPart, request.Aspect, clip.UseVideoAudio), work, cancellationToken);
                 parts.Add(outPart);
             }
 
@@ -78,16 +78,28 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
         }
     }
 
-    private static string MixArgs(string video, List<string> voices, List<int> delays, double ss, double dur, string dest, string? aspect)
+    private static string MixArgs(
+        string video,
+        List<string> voices,
+        List<int> delays,
+        double ss,
+        double dur,
+        string dest,
+        string? aspect,
+        bool useVideoAudio)
     {
         var start = ss > 0.05 ? $"-ss {ss.ToString("0.###", CultureInfo.InvariantCulture)} " : "";
         var t = $"-t {dur.ToString("0.###", CultureInfo.InvariantCulture)}";
+        var keepTakeAudio = useVideoAudio;
         var inputs = new StringBuilder();
         inputs.Append(start).Append("-i \"").Append(video).Append("\" ");
-        foreach (var v in voices)
-            inputs.Append("-i \"").Append(v).Append("\" ");
-        if (voices.Count == 0)
-            inputs.Append("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 ");
+        if (!keepTakeAudio)
+        {
+            foreach (var v in voices)
+                inputs.Append("-i \"").Append(v).Append("\" ");
+            if (voices.Count == 0)
+                inputs.Append("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 ");
+        }
 
         var portrait = string.Equals(aspect?.Trim(), "9:16", StringComparison.OrdinalIgnoreCase);
         var vw = portrait ? 1080 : 1920;
@@ -97,7 +109,13 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
             : $"scale={vw}:{vh}:force_original_aspect_ratio=decrease,pad={vw}:{vh}:(ow-iw)/2:(oh-ih)/2";
         var fc = new StringBuilder();
         fc.Append("[0:v]").Append(fit).Append(",fps=30,setsar=1,format=yuv420p,tpad=stop_mode=clone:stop_duration=8[v];");
-        if (voices.Count == 0)
+        if (keepTakeAudio)
+        {
+            fc.Append("[0:a]aformat=sample_rates=48000:channel_layouts=stereo,atrim=0:")
+                .Append(dur.ToString("0.###", CultureInfo.InvariantCulture))
+                .Append(",apad[a]");
+        }
+        else if (voices.Count == 0)
         {
             fc.Append("[1:a]aformat=sample_rates=48000:channel_layouts=stereo,atrim=0:").Append(dur.ToString("0.###", CultureInfo.InvariantCulture)).Append("[a]");
         }

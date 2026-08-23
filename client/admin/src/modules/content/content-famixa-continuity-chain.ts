@@ -1,6 +1,7 @@
 /** Continuity chain on the existing shot graph. Does not invent story. */
 
-import { actingI2vBrief, inferActingDirection } from './content-famixa-acting-law';
+import { actingI2vBrief, actingI2vBriefFromLines, inferActingDirection } from './content-famixa-acting-law';
+import { linesForShot } from './content-famixa-dialogue-map';
 import { englishI2vMotion, I2V_VI_RE } from './content-famixa-i2v-en';
 import {
   lockFromGraph,
@@ -48,9 +49,10 @@ export type ContinuityLink = {
   end: ShotBeatState;
   risks: TransitionCheck[];
   blocked: boolean;
+  actingBrief?: string;
 };
 
-const PLACE_SHIFT = /bước vào|đi vào|vào lớp|ra khỏi|sang phòng|mở cửa vào|rời khỏi|vào nhà|ra đường|buổi tối/i;
+const PLACE_SHIFT = /bước vào|đi vào|vào lớp|ra khỏi|sang phòng|mở cửa vào|rời khỏi|vào nhà|ra đường/i;
 const PROP_RE = /bài kiểm tra|tờ giấy|điện thoại|cơm|nồi|cặp/i;
 const POSE_RE = /chạy|bước|đứng|khựng|cười|nhìn|ngồi|đưa|nhận/i;
 
@@ -80,6 +82,7 @@ function propOf(blob: string) {
 }
 
 function poseOf(blob: string, fallback: string) {
+  if (!/(chạy lại|bước vào|đứng dậy|ngồi xuống|khựng lại)/i.test(blob)) return fallback;
   const m = blob.match(POSE_RE);
   return m ? clip(blob, 72) : fallback;
 }
@@ -166,8 +169,10 @@ export function buildContinuityChain(state: SeriesPilotState, shots: FamixaSerie
     const shot = shots[i]!;
     const prev = i > 0 ? shots[i - 1] : undefined;
     const action = actionOf(state, shot);
-    const start = deriveStartState(state, shot, prevEnd);
-    const end = deriveEndState(state, shot, start);
+    const run = shotRunOf(state, shot);
+    const start =
+      run.stateLocked && run.startState ? run.startState : deriveStartState(state, shot, prevEnd);
+    const end = run.stateLocked && run.endState ? run.endState : deriveEndState(state, shot, start);
     const transitionType = shotRunOf(state, shot).transitionType || inferTransitionType(shot, action, prev);
     const risks = prevEnd && transitionType === 'CONTINUOUS' ? checkTransition(prevEnd, start) : [];
     const blocked = risks.some((r) => !r.ok && (r.id === 'wardrobe' || r.id === 'location' || r.id === 'character'));
@@ -182,6 +187,7 @@ export function buildContinuityChain(state: SeriesPilotState, shots: FamixaSerie
       end,
       risks,
       blocked,
+      actingBrief: actingI2vBriefFromLines(linesForShot(state, shot), action),
     });
     prevEnd = end;
   }
@@ -195,12 +201,14 @@ export function applyContinuityChain(state: SeriesPilotState, shots: FamixaSerie
     const shot = shots.find((s) => s.id === link.shotId);
     if (!shot) continue;
     const run = shotRunOf(state, shot);
-    runs[shot.id] = {
-      ...run,
-      startState: run.startState ?? link.start,
-      endState: run.endState ?? link.end,
-      transitionType: run.transitionType ?? link.transitionType,
-    };
+    runs[shot.id] = run.stateLocked
+      ? { ...run, transitionType: run.transitionType ?? link.transitionType }
+      : {
+          ...run,
+          startState: run.startState ?? link.start,
+          endState: run.endState ?? link.end,
+          transitionType: run.transitionType ?? link.transitionType,
+        };
   }
   const byId = new Map(links.map((l) => [l.shotId, l]));
   return {
@@ -246,23 +254,23 @@ function toEnglishState(raw: string) {
 
 /** I2V: START + ACTION + END. UI Action stays Vietnamese. */
 export function compileContinuityI2v(link: ContinuityLink, seconds: number) {
-  const motion = englishI2vMotion(link.action, seconds);
   const start = toEnglishState(
     [link.start.location, link.start.pose, link.start.prop, link.start.lighting].filter(Boolean).join('. '),
   );
   const end = toEnglishState([link.end.pose, link.end.prop, link.end.facing].filter(Boolean).join('. '));
-  const text = [
+  const head = [
     'Cinematic live-action. The attached still is the exact first frame.',
     start ? `START STATE: ${start}` : stateLine('START', link.start),
-    motion,
-    actingI2vBrief(inferActingDirection({ action: link.action })),
+  ].join(' ');
+  const tail = [
+    link.actingBrief || actingI2vBrief(inferActingDirection({ action: link.action })),
     end ? `END STATE: ${end}` : stateLine('END', link.end),
     'Do not reset wardrobe, place, lighting, or faces. Continue from the start state. No look at camera. No text.',
     `${seconds >= 8 ? 10 : 5} seconds.`,
-  ]
-    .filter(Boolean)
-    .join(' ');
-  return text.length <= 900 ? text : text.slice(0, 900);
+  ].join(' ');
+  const budget = Math.max(80, 900 - head.length - tail.length - 1);
+  const motion = englishI2vMotion(link.action, seconds).slice(0, budget);
+  return `${head} ${motion} ${tail}`;
 }
 
 export function previousApprovedKf(

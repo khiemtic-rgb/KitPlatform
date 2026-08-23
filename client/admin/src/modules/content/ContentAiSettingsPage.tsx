@@ -518,13 +518,9 @@ export function ContentAiSettingsPage() {
           size="small"
           title="I2V Series"
           extra={
-            i2vChoice === 'turbo' ? (
-              <Tag color={runwayConfigured ? 'success' : 'warning'}>
-                {runwayConfigured ? 'Đã có key' : 'Chưa có key'}
-              </Tag>
-            ) : (
-              <Tag color={falConfigured ? 'success' : 'warning'}>{falConfigured ? 'Đã có key' : 'Chưa có key'}</Tag>
-            )
+            <Tag color={runwayConfigured ? 'success' : 'warning'}>
+              {runwayConfigured ? 'Đã có key Runway' : 'Chưa có key Runway'}
+            </Tag>
           }
           style={{ marginBottom: 16 }}
         >
@@ -555,28 +551,39 @@ export function ContentAiSettingsPage() {
               </Form.Item>
             </>
           ) : (
-            <>
-              <Form.Item name="falApiKeySecretRef" label="Secret ref">
-                <Input placeholder="FAL_KEY" autoComplete="off" />
-              </Form.Item>
-              <Form.Item name="falApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
-                <Input.Password placeholder="Dán key Fal" autoComplete="new-password" />
-              </Form.Item>
-            </>
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 0 }}
+              message="Wan dùng key Fal ở thẻ dưới — không dán vào ô Runway."
+            />
           )}
+        </Card>
+
+        <Card
+          size="small"
+          title="Fal — Wan + khớp môi"
+          extra={<Tag color={falConfigured ? 'success' : 'warning'}>{falConfigured ? 'Đã có key Fal' : 'Chưa có key Fal'}</Tag>}
+          style={{ marginBottom: 16 }}
+        >
+          <p style={{ marginTop: 0, color: 'rgba(0,0,0,0.65)' }}>
+            Key từ fal.ai (Key / API). Khớp môi = sync-lipsync 1.9 (~$0.70/phút). Wan dùng chung. Không dán vào Runway / ElevenLabs / Creatomate.
+          </p>
+          <Form.Item name="falApiKeySecretRef" label="Secret ref">
+            <Input placeholder="FAL_KEY" autoComplete="off" />
+          </Form.Item>
+          <Form.Item name="falApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
+            <Input.Password placeholder="Dán key Fal" autoComplete="new-password" />
+          </Form.Item>
         </Card>
 
         <Card
           size="small"
           title="Giọng nói"
           extra={
-            voiceChoice === 'elevenlabs' ? (
-              <Tag color={elevenLabsConfigured ? 'success' : 'warning'}>
-                {elevenLabsConfigured ? 'Đã có key' : 'Chưa có key'}
-              </Tag>
-            ) : (
-              <Tag color={falConfigured ? 'success' : 'warning'}>{falConfigured ? 'Đã có key Fal' : 'Chưa có key'}</Tag>
-            )
+            <Tag color={elevenLabsConfigured ? 'success' : 'warning'}>
+              {elevenLabsConfigured ? 'Đã có key ElevenLabs' : 'Chưa có key ElevenLabs'}
+            </Tag>
           }
           style={{ marginBottom: 16 }}
         >
@@ -609,15 +616,8 @@ export function ContentAiSettingsPage() {
                 <Input placeholder="Voice ID" autoComplete="off" />
               </Form.Item>
             </>
-          ) : i2vChoice === 'wan' ? null : (
-            <>
-              <Form.Item name="falApiKeySecretRef" label="Secret ref">
-                <Input placeholder="FAL_KEY" autoComplete="off" />
-              </Form.Item>
-              <Form.Item name="falApiKey" label="API key (chỉ ghi — để trống nếu giữ nguyên)">
-                <Input.Password placeholder="Dán key Fal" autoComplete="new-password" />
-              </Form.Item>
-            </>
+          ) : (
+            <Alert type="info" showIcon message="F5-TTS dùng key Fal ở thẻ Fal phía trên." />
           )}
         </Card>
 

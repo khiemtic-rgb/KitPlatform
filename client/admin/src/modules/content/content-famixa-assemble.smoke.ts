@@ -6,6 +6,9 @@ import {
   planWithExistingTakes,
   rangeTakesReady,
   takeDownloadName,
+  lipsyncDownloadName,
+  assembleConfirmCopy,
+  assembleNeedTtsOverlay,
 } from './content-famixa-assemble';
 import { mapPreviewCut } from './content-famixa-preview-cut';
 import type { FamixaSeriesShot, SeriesPilotState } from './content-famixa-series';
@@ -79,6 +82,9 @@ const srt = formatSrt(tl.cues);
 if (!srt.includes('Mẹ!')) fail.push('srt missing line');
 if (!srt.includes('00:00:00,200')) fail.push(`srt start ${srt.slice(0, 40)}`);
 if (takeDownloadName(shots[0]!, shots) !== 'FAMIXA_SH01-01.mp4') fail.push(`name ${takeDownloadName(shots[0]!, shots)}`);
+if (lipsyncDownloadName(shots[0]!, shots) !== 'FAMIXA_SH01-01-lipsync.mp4') {
+  fail.push(`lipsync name ${lipsyncDownloadName(shots[0]!, shots)}`);
+}
 
 const noVid = mapPreviewCut(
   { ...state, runs: { SH01: { status: 'keyframe_ready' as const, keyframeDataUrl: 'data:image/png;base64,aa' } } } as SeriesPilotState,
@@ -104,6 +110,31 @@ if (!existingTakesReady(mixed)) fail.push('one existing take is enough to test-m
 if (planWithExistingTakes(mixed).items.map((i) => i.shotId).join() !== 'SH01') {
   fail.push('test mux keeps only existing takes');
 }
+
+const lipState = {
+  ...state,
+  runs: {
+    ...state.runs,
+    SH01: { ...state.runs.SH01!, lipsynced: true, lipsyncUrl: 'https://fal.example/lip.mp4' },
+  },
+} as SeriesPilotState;
+const lipOnly = mapPreviewCut(lipState, shots, { hasVoiceFile: () => false });
+const lipReady = planWithExistingTakes(lipOnly);
+if (!lipReady.items[0]?.lipsynced) fail.push('SH01-01 lipsync must stay on the cut');
+if (assembleNeedTtsOverlay(lipReady).map((i) => i.shotId).join() !== 'SH02') {
+  fail.push('lipsynced SH01 must not demand TTS overlay');
+}
+const lipCopy = assembleConfirmCopy(lipReady);
+if (!lipCopy.detail.includes('SH01-01') || !/khớp môi/i.test(lipCopy.detail)) {
+  fail.push(`confirm must keep lipsync audio: ${lipCopy.detail}`);
+}
+if (/Ghép MP4 \+ thoại/.test(lipCopy.okText) && !/FAL|Preview/.test(lipCopy.okText)) {
+  fail.push('mixed cut must not look like TTS-only mux');
+}
+if (!/miệng không theo lời|Preview tạm/i.test(lipCopy.detail)) fail.push('mixed cut must warn overlay has no lips');
+const lipTl = buildAssembleTimeline(lipReady, { hasVoiceFile: () => true, voiceSecOf: () => 2, fit: 'speech' });
+if (!lipTl.clips[0]?.useVideoAudio) fail.push('lipsynced clip must keep video audio');
+if (lipTl.clips[1]?.useVideoAudio) fail.push('raw take must overlay TTS');
 
 if (!looksLikeVideoUrl('https://dncdn.runwayml.com/generations/abc')) fail.push('runway url without suffix');
 if (!looksLikeVideoUrl('https://cdn.example.com/a.mp4?x=1')) fail.push('mp4 query');

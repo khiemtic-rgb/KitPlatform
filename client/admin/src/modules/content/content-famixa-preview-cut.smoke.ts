@@ -71,6 +71,16 @@ if (plan.storyMissingKf.join() !== 'SH02') fail.push(`missing KF ${plan.storyMis
 if (storyPreviewReady(plan)) fail.push('story not ready — SH02 no KF');
 if (motionPreviewReady(plan)) fail.push('full motion needs every take');
 if (!existingMotionReady(plan)) fail.push('SH03 take must allow play existing');
+if (plan.items[2]?.lipsynced) fail.push('SH03 must not look lipsynced without flag');
+const lipPlan = mapPreviewCut(
+  {
+    ...state,
+    runs: { ...state.runs, SH03: { ...state.runs.SH03!, lipsynced: true } },
+  } as SeriesPilotState,
+  range,
+  { hasVoiceFile: () => true },
+);
+if (!lipPlan.items[2]?.lipsynced) fail.push('lipsynced short must be marked on the cut');
 
 const long = mapPreviewCut(
   {

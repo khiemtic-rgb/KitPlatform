@@ -70,6 +70,23 @@ if (!/START|first frame/i.test(prompt)) fail.push('missing START');
 if (!/END/i.test(prompt)) fail.push('missing END');
 if (!/no scream|no hug/i.test(prompt)) fail.push('acting law missing on I2V');
 
+const locked = {
+  ...state,
+  runs: {
+    a: {
+      status: 'keyframe_ready' as const,
+      stateLocked: true,
+      startState: chain[0]!.start,
+      endState: { ...chain[0]!.end, prop: 'bài kiểm tra locked' },
+    },
+  },
+} as SeriesPilotState;
+const chain2 = buildContinuityChain(locked, shots);
+if (chain2[1]?.start.prop !== 'bài kiểm tra locked') {
+  fail.push(`Test 2: SH02 must inherit locked SH01 end, got ${chain2[1]?.start.prop}`);
+}
+if (chain2[0]?.end.prop !== 'bài kiểm tra locked') fail.push('locked end must stick');
+
 if (fail.length) {
   console.error('CONTINUITY CHAIN FAIL');
   for (const f of fail) console.error(' -', f);

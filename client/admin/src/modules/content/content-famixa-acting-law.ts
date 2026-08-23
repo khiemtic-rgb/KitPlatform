@@ -20,6 +20,33 @@ export type ActingDirection = {
   label: string;
 };
 
+/** Locked on a dialogue line. TTS / KF / I2V read this — do not re-infer after lock. */
+export type LinePerformance = ActingDirection & {
+  emphasis?: string;
+  locked?: boolean;
+};
+
+export const ACTING_EMOTIONS: ActingEmotion[] = [
+  'neutral',
+  'uneasy',
+  'tense',
+  'annoyed',
+  'burst',
+  'silent',
+  'hurt',
+  'soft',
+  'aftertaste',
+];
+
+export type LineActingInput = {
+  text?: string;
+  characterId?: string;
+  name?: string;
+  emotion?: string;
+  action?: string;
+  performance?: LinePerformance;
+};
+
 const MINH = /CHAR-001|minh/i;
 const LINH = /CHAR-003|linh|mẹ/i;
 const NAM = /CHAR-002|nam|bố/i;
@@ -34,6 +61,17 @@ function spokenFromAction(action?: string) {
   return { who: m[1] ?? '', text: (m[2] ?? '').trim() };
 }
 
+/** Drop stage cue after emdash — not spoken, not TTS. */
+export function stripStageDirection(text: string) {
+  let s = (text ?? '').replace(/\s+/g, ' ').trim();
+  const cue = s.match(/\s*[—–]\s+(.+)$/);
+  if (cue?.[1] && /^(?:KHOE|CHẠY|NHÌN|NGẬP|VỠ|BEAT|INSERT|CUT|\()/i.test(cue[1])) {
+    s = s.slice(0, s.length - cue[0].length).trim();
+  }
+  s = s.replace(/\s*\(\d+\s*[–\-]\s*\d+\s*s?\)\s*$/i, '').trim();
+  return s;
+}
+
 export function inferActingDirection(opts: {
   text?: string;
   characterId?: string;
@@ -42,8 +80,8 @@ export function inferActingDirection(opts: {
   action?: string;
 }): ActingDirection {
   const spoken = spokenFromAction(opts.action);
-  const text = ((opts.text ?? '').replace(/\s+/g, ' ').trim() || spoken.text).trim();
-  const blob = `${opts.emotion || ''} ${opts.action || ''} ${text}`.toLowerCase();
+  const text = stripStageDirection((opts.text ?? '').replace(/\s+/g, ' ').trim() || spoken.text).trim();
+  const blob = stripStageDirection(`${opts.emotion || ''} ${opts.action || ''} ${text}`).toLowerCase();
   const who = opts.characterId || opts.name || spoken.who || '';
   let emotion: ActingEmotion = 'neutral';
   let intensity: ActingDirection['intensity'] = 2;
@@ -69,6 +107,12 @@ export function inferActingDirection(opts: {
     pace = 'slow';
     volume = 'low';
     pauseSec = 0.4;
+  } else if (/vỡ òa|chín điểm|gỡ được|háo hức/i.test(text) && MINH.test(who)) {
+    emotion = 'burst';
+    intensity = 4;
+    pace = 'fast';
+    volume = 'high';
+    pauseSec = 0.12;
   } else if (/mẹ xem|được tám|từ năm lên tám|khoe/i.test(text) && MINH.test(who)) {
     emotion = 'uneasy';
     intensity = 2;
@@ -111,10 +155,65 @@ export function inferActingDirection(opts: {
   };
 }
 
+export function actingLabel(emotion: ActingEmotion, n: number) {
+  return labelOf(emotion, n);
+}
+
+export function asActingDirection(p: LinePerformance): ActingDirection {
+  return {
+    emotion: p.emotion,
+    intensity: p.intensity,
+    pace: p.pace,
+    volume: p.volume,
+    pauseSec: p.pauseSec,
+    label: p.label || labelOf(p.emotion, p.intensity),
+  };
+}
+
+/** Locked field wins. Regex infer is draft only. */
+export function resolveLinePerformance(opts: LineActingInput): ActingDirection {
+  if (opts.performance?.locked) return asActingDirection(opts.performance);
+  return inferActingDirection(opts);
+}
+
+export function lockLinePerformance(dir: ActingDirection, extra?: { emphasis?: string }): LinePerformance {
+  return { ...dir, ...extra, locked: true };
+}
+
+export function actingOfLines(lines: LineActingInput[], action?: string): ActingDirection {
+  if (!lines.length) return inferActingDirection({ action });
+  return resolveLinePerformance({ ...lines[0], action: action || lines[0]?.action });
+}
+
+export function actingI2vBriefFromLines(lines: LineActingInput[], action?: string) {
+  if (!lines.length) return actingI2vBrief(inferActingDirection({ action }));
+  const dirs = lines.map((l) => resolveLinePerformance({ ...l, action: action || l.action }));
+  if (dirs.length === 1) return actingI2vBrief(dirs[0]!);
+  const beats = dirs.map((d, i) => `${i + 1} ${d.label}`).join(' then ');
+  return `Acting beats: ${beats}. ${actingI2vBrief(dirs.at(-1)!)}`;
+}
+
+export function stillFaceFromPerformance(name: string, dir: ActingDirection) {
+  const who = (name || 'Speaker').trim();
+  if (dir.emotion === 'hurt' || dir.emotion === 'soft' || dir.emotion === 'silent') {
+    return `${who}: held face, eyes down a little, no cheerful smile. Intensity ${dir.intensity}/5.`;
+  }
+  if (dir.emotion === 'annoyed' || dir.emotion === 'tense') {
+    return `${who}: tight jaw, small mouth, not posing. Intensity ${dir.intensity}/5.`;
+  }
+  if (dir.emotion === 'uneasy') {
+    return `${who}: small hopeful face that can shrink; not a big grin. Intensity ${dir.intensity}/5.`;
+  }
+  if (dir.emotion === 'burst') {
+    return `${who}: brighter eyes, restrained lift — not a scream. Intensity ${dir.intensity}/5.`;
+  }
+  return `${who}: everyday restrained face. Intensity ${dir.intensity}/5.`;
+}
+
 function labelOf(emotion: ActingEmotion, n: number) {
   const vi: Record<ActingEmotion, string> = {
     neutral: 'bình thường',
-    uneasy: 'khó chịu',
+    uneasy: 'mong manh',
     tense: 'căng',
     annoyed: 'bực',
     burst: 'bùng',
@@ -169,7 +268,7 @@ export function actingTtsPerformText(spoken: string, _dir?: ActingDirection) {
 }
 
 export function spokenFromPerformText(raw: string) {
-  return raw.replace(/\[[^\]]+\]\s*/g, '').replace(/\s+/g, ' ').trim();
+  return stripStageDirection(raw.replace(/\[[^\]]+\]\s*/g, '').replace(/\s+/g, ' ').trim());
 }
 
 export function actingTtsVoiceSettings(
@@ -220,13 +319,80 @@ export function actingTtsVoiceSettings(
   };
 }
 
-export function actingOfShot(lines: { text?: string; characterId?: string; name?: string; emotion?: string }[], action?: string) {
-  const first = lines[0];
-  return inferActingDirection({
-    text: first?.text,
-    characterId: first?.characterId,
-    name: first?.name,
-    emotion: first?.emotion,
-    action,
-  });
+/** Face/mood from Script notes. Does not invent plot. */
+export function stillFaceFromScriptNote(name: string, note: string) {
+  const blob = `${name} ${note}`.toLowerCase();
+  const who = (name || 'Beat').trim();
+  if (/điện thoại|chăm chăm|bận bịu|bận/.test(blob)) {
+    return `${who}: eyes on phone, busy, not posing for a photo, not smiling.`;
+  }
+  if (/sắc lạnh|thực dụng|không vui|nghiêm nghị|nghiêm|không hài lòng|không hề nghĩ/.test(blob)) {
+    return `${who}: stern unsatisfied face, tight mouth, no warm smile.`;
+  }
+  if (/kiệt sức|bất lực|chán nản|thương con|mệt|thành tích/.test(blob)) {
+    return `${who}: weary, disappointed, slumped — not cheerful.`;
+  }
+  if (/háo hức|mong manh|khao khát/.test(blob)) {
+    return `${who}: small hopeful face that can shrink; not a big grin.`;
+  }
+  if (/tối|căng|áp lực|thành tích/.test(blob)) {
+    return `${who}: tense everyday face, dim room, no stock-photo smile.`;
+  }
+  return '';
+}
+
+export function stillAtmosphereFromAction(action: string, location?: string) {
+  const blob = `${action} ${location || ''}`.toLowerCase();
+  const bits: string[] = [];
+  if (/điện thoại|chăm chăm|bận bịu/.test(blob)) bits.push('A parent is busy on a phone, not looking warmly at the child.');
+  if (/tối|đêm|evening/.test(blob)) bits.push('Dim warm indoor evening. Not a bright sunlit catalog room.');
+  if (/nghiêm nghị|nghiêm|không vui|không hài lòng|sắc/.test(blob)) bits.push('Faces are serious and unsatisfied.');
+  if (/chán nản|thành tích/.test(blob)) bits.push('A parent looks quietly disappointed about grades — not a pep talk.');
+  bits.push('Tense ordinary family atmosphere. No cheerful stock smiles. No hug or apology.');
+  bits.push('No family portrait. No affectionate huddle. People keep distance.');
+  return bits.join(' ');
+}
+
+/** Staging from who speaks — does not invent a hug or a new plot beat. */
+export function compileShotBlocking(opts: {
+  speakerNames: string[];
+  peopleNames: string[];
+  action?: string;
+  namJustEntered?: boolean;
+  namAlreadyIn?: boolean;
+}) {
+  const speakers = opts.speakerNames.map((s) => s.trim()).filter(Boolean);
+  const people = opts.peopleNames.map((s) => s.trim()).filter(Boolean);
+  const blob = `${opts.action || ''} ${speakers.join(' ')}`.toLowerCase();
+  const bits: string[] = [];
+  if (speakers.length) {
+    bits.push(
+      `SPEAKER LOCK: ${speakers.join(', ')} ${speakers.length > 1 ? 'are' : 'is'} speaking and MUST be fully visible — face and body in frame, not cropped out, not hidden behind someone.`,
+    );
+  }
+  if (people.length >= 3) {
+    bits.push('BLOCKING: three people in one tense room, standing apart. Not a family portrait. No huddle, no arms around shoulders, no cozy group photo.');
+  } else if (people.length === 2) {
+    bits.push(
+      `BLOCKING: two people (${people.join(', ')}), physical distance, not leaning in affectionately. Both complete faces in frame — do not crop a parent to torso/hands.`,
+    );
+  }
+  if (opts.namJustEntered || ((speakers.some((n) => /nam|bố|ba/i.test(n)) || /bước vào|về rồi|cửa/.test(blob)) && !opts.namAlreadyIn)) {
+    bits.push(
+      'Nam/father ENTERS now: stand opposite Linh, talking to her. Same dim room. Same one man — not a new extra. Not behind the table as a blur.',
+    );
+  } else if (opts.namAlreadyIn) {
+    bits.push(
+      'Nam/father STAYS: same face, same shirt, same place as the previous still. Keep all three people. Do not redesign him. Do not hide him behind Linh.',
+    );
+  }
+  if (/điện thoại|chăm chăm|bận bịu/.test(blob)) {
+    bits.push('A parent stays on the phone, not facing the child warmly.');
+  }
+  bits.push('No affectionate pose. No family portrait. Distance shows tension.');
+  return bits.join(' ');
+}
+
+export function actingOfShot(lines: LineActingInput[], action?: string) {
+  return actingOfLines(lines, action);
 }

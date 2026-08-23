@@ -65,6 +65,88 @@ internal sealed class ContentSeriesTakeProxyService : IContentSeriesTakeProxySer
         return (buf.ToArray(), type.StartsWith("video/", StringComparison.OrdinalIgnoreCase) ? type : "video/mp4", name);
     }
 
+    public async Task<ContentSeriesTakeProbeDto> ProbeAsync(
+        string url,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Uri.TryCreate((url ?? "").Trim(), UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps)
+        {
+            return new ContentSeriesTakeProbeDto(false, null, null, "Chỉ đọc take HTTPS.");
+        }
+
+        if (IsBlockedHost(uri.Host))
+            return new ContentSeriesTakeProbeDto(false, null, null, "Không đọc take từ máy nội bộ.");
+
+        var client = _http.CreateClient("content-take-proxy");
+        try
+        {
+            using var head = new HttpRequestMessage(HttpMethod.Head, uri);
+            using var headRes = await client.SendAsync(head, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (headRes.IsSuccessStatusCode)
+            {
+                var mime = headRes.Content.Headers.ContentType?.MediaType;
+                var bytes = headRes.Content.Headers.ContentLength;
+                if (LooksLikeHtmlOrJson(mime))
+                    return new ContentSeriesTakeProbeDto(false, mime, bytes, "URL không trả file video.");
+                if (bytes is 0)
+                    return new ContentSeriesTakeProbeDto(false, mime, bytes, "File 0 byte.");
+                if (bytes is > MaxBytes)
+                    return new ContentSeriesTakeProbeDto(false, mime, bytes, "Take lớn hơn 80MB.");
+                if ((mime ?? "").StartsWith("video/", StringComparison.OrdinalIgnoreCase) || bytes is > 800)
+                    return new ContentSeriesTakeProbeDto(true, mime ?? "video/mp4", bytes, null);
+            }
+        }
+        catch
+        {
+            /* HEAD often blocked — fall through to ranged GET */
+        }
+
+        try
+        {
+            using var get = new HttpRequestMessage(HttpMethod.Get, uri);
+            get.Headers.TryAddWithoutValidation("Range", "bytes=0-63");
+            using var getRes = await client.SendAsync(get, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!getRes.IsSuccessStatusCode && (int)getRes.StatusCode != 206)
+                return new ContentSeriesTakeProbeDto(false, null, null, $"Không đọc được take ({(int)getRes.StatusCode}).");
+
+            var mime = getRes.Content.Headers.ContentType?.MediaType;
+            var bytes = getRes.Content.Headers.ContentLength
+                        ?? getRes.Content.Headers.ContentRange?.Length;
+            if (LooksLikeHtmlOrJson(mime))
+                return new ContentSeriesTakeProbeDto(false, mime, bytes, "URL không trả file video.");
+
+            await using var stream = await getRes.Content.ReadAsStreamAsync(cancellationToken);
+            var prefix = new byte[64];
+            var n = await stream.ReadAsync(prefix.AsMemory(0, prefix.Length), cancellationToken);
+            if (n < 12 || !LooksLikeVideoMagic(prefix.AsSpan(0, n)))
+                return new ContentSeriesTakeProbeDto(false, mime, bytes, "File không phải video.");
+            if (bytes is 0)
+                return new ContentSeriesTakeProbeDto(false, mime, bytes, "File 0 byte.");
+            return new ContentSeriesTakeProbeDto(true, mime ?? "video/mp4", bytes, null);
+        }
+        catch (Exception ex)
+        {
+            return new ContentSeriesTakeProbeDto(false, null, null, ex.Message);
+        }
+    }
+
+    private static bool LooksLikeHtmlOrJson(string? mime)
+    {
+        var t = (mime ?? "").ToLowerInvariant();
+        return t.StartsWith("text/") || t.Contains("json") || t.Contains("html");
+    }
+
+    private static bool LooksLikeVideoMagic(ReadOnlySpan<byte> b)
+    {
+        if (b.Length >= 12
+            && b[4] == (byte)'f' && b[5] == (byte)'t' && b[6] == (byte)'y' && b[7] == (byte)'p')
+            return true;
+        if (b.Length >= 4 && b[0] == 0x1A && b[1] == 0x45 && b[2] == 0xDF && b[3] == 0xA3)
+            return true;
+        return false;
+    }
+
     private static bool IsBlockedHost(string host)
     {
         if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)

@@ -8,6 +8,7 @@ import {
 } from './content-famixa-preview-cut';
 import { studioShotCode, type FamixaSeriesShot, type SeriesShotRun } from './content-famixa-series';
 import { looksLikeVideoUrl } from './content-famixa-assemble';
+import { takeVideoUrl } from './content-famixa-prod-v2';
 
 function sleep(ms: number, stop: { current: boolean }) {
   return new Promise<void>((resolve) => {
@@ -92,7 +93,7 @@ export function ContentFamixaPreviewCutCard({
   ttsUrlOf: (lineId: string) => string | undefined;
   sessionSrcOf?: (id: string) => string | undefined;
   fillBusy?: boolean;
-  turboBusy?: boolean;
+  turboBusy?: boolean | string;
   onFillMissing: (kind: 'story' | 'motion') => void;
   onOpenShot: (shot: FamixaSeriesShot) => void;
   onGoVideo?: () => void;
@@ -111,7 +112,7 @@ export function ContentFamixaPreviewCutCard({
   const shotNow = shots.find((s) => s.id === (cursor || plan.items[0]?.shotId));
   const kfSrc = shotNow ? runOf?.(shotNow)?.keyframeDataUrl : undefined;
   const vidSrc = shotNow
-    ? runOf?.(shotNow)?.previewUrl?.trim() || sessionSrcOf?.(shotNow.id)
+    ? takeVideoUrl(runOf?.(shotNow)) || sessionSrcOf?.(shotNow.id)
     : undefined;
   const showTake = Boolean(vidSrc && looksLikeVideoUrl(vidSrc) && playing !== 'story');
 
@@ -124,12 +125,16 @@ export function ContentFamixaPreviewCutCard({
     }
   }, [cursor, plan.fromCode, plan.toCode, plan.items.length]);
 
-  const opts = shots.map((s) => ({ value: s.id, label: studioShotCode(s, allShots ?? shots) }));
+  const opts = shots.map((s) => ({
+    value: s.id,
+    label: `${studioShotCode(s, allShots ?? shots)}${runOf(s)?.lipsynced ? ' · KHỚP MÔI' : ''}`,
+  }));
   const storyOk = storyPreviewReady(plan);
   const haveTakes = existingMotionReady(plan);
   const spoken = plan.items.filter((i) => !i.silent);
   const voiceFiles = spoken.filter((i) => i.hasVoiceFile).length;
-  const missingTts = spoken.length - voiceFiles;
+  const missingTts = spoken.filter((i) => !i.lipsynced && !i.hasVoiceFile).length;
+  const lipN = plan.items.filter((i) => i.lipsynced).length;
 
   const runPreview = async (kind: 'story' | 'motion') => {
     unlockPreviewAudio();
@@ -144,11 +149,12 @@ export function ContentFamixaPreviewCutCard({
         setCursor(item.shotId);
         await sleep(80, stop);
         const clip = videoRef.current;
+        const keepLip = kind === 'motion' && item.lipsynced;
         if (clip) {
-          clip.muted = true;
-          clip.volume = 0;
+          clip.muted = !keepLip;
+          clip.volume = keepLip ? 1 : 0;
         }
-        const voices = item.lines.length ? item.lines : item.line ? [item.line] : [];
+        const voices = keepLip ? [] : item.lines.length ? item.lines : item.line ? [item.line] : [];
         const ttsJob = (async () => {
           let played = 0;
           for (const line of voices) {
@@ -216,6 +222,7 @@ export function ContentFamixaPreviewCutCard({
       <p className="fx-plan">
         {plan.items.length} Shorts · {plan.estimatedSec}s · KF {kfN}/{plan.items.length} · Voice file {voiceFiles}/
         {spoken.length || 0} · Video {vidN}/{plan.items.length}
+        {lipN ? ` · Khớp môi ${lipN}` : ''}
       </p>
       <ul className="fx-cut-list">
         {plan.items.map((row) => (
@@ -226,6 +233,7 @@ export function ContentFamixaPreviewCutCard({
               onClick={() => setCursor(row.shotId)}
             >
               {row.code}
+              {row.lipsynced ? <span className="fx-cut-list__lip">KHỚP MÔI</span> : null}
               <span>{row.hasKf ? '✓' : '⚠'}</span>
             </button>
           </li>
@@ -235,7 +243,11 @@ export function ContentFamixaPreviewCutCard({
         type="info"
         showIcon
         style={{ marginBottom: 8 }}
-        message="Take Runway câm. Nghe tiếng = TTS session overlay, hoặc Ghép take đã có (MP4 + thoại). Không cần tạo ảnh / Runway mới."
+        message={
+          lipN
+            ? `${lipN} take đã khớp môi — ghép giữ tiếng trong file Fal, không overlay TTS hàng đó. Take còn lại vẫn mix thoại session.`
+            : 'Take Runway câm. Nghe tiếng = TTS session overlay, hoặc Ghép take đã có (MP4 + thoại). Không cần tạo ảnh / Runway mới.'
+        }
       />
       {missingTts > 0 ? (
         <Alert
@@ -297,7 +309,11 @@ export function ContentFamixaPreviewCutCard({
               void runPreview('motion');
             }}
           >
-            {playing === 'motion' ? 'Dừng motion' : `Phát ${vidN} take đã có + thoại`}
+            {playing === 'motion'
+              ? 'Dừng motion'
+              : lipN
+                ? `Phát ${vidN} take · ${lipN} khớp môi`
+                : `Phát ${vidN} take đã có + thoại`}
           </Button>
         ) : (
           <Button type="primary" ghost onClick={onGoVideo}>
@@ -306,17 +322,19 @@ export function ContentFamixaPreviewCutCard({
         )}
         {vidN > 0 && onAssembleCut ? (
           <Button type="primary" ghost loading={assembleBusy} disabled={assembleBusy} onClick={() => onAssembleCut()}>
-            Ghép {vidN} take đã có · MP4 + thoại
+            {lipN
+              ? `Ghép ${vidN} take · ${lipN} khớp môi`
+              : `Ghép ${vidN} take đã có · MP4 + thoại`}
           </Button>
         ) : null}
         {onAssembleAspect ? (
           <Radio.Group
             size="small"
-            value={assembleAspect ?? '9:16'}
+            value={assembleAspect ?? '16:9'}
             onChange={(e) => onAssembleAspect(e.target.value)}
           >
-            <Radio.Button value="9:16">Xuất 9:16</Radio.Button>
             <Radio.Button value="16:9">Xuất 16:9</Radio.Button>
+            <Radio.Button value="9:16">Xuất 9:16</Radio.Button>
           </Radio.Group>
         ) : null}
       </Space>
@@ -327,7 +345,7 @@ export function ContentFamixaPreviewCutCard({
             ref={videoRef}
             src={vidSrc}
             controls
-            muted
+            muted={!kfNow?.lipsynced}
             playsInline
             preload="auto"
           />

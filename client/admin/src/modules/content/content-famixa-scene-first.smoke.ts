@@ -7,14 +7,20 @@ import {
   i2vSecondsForEdit,
   kfIsApprovedStill,
   lockSceneMaster,
+  upsertSceneMaster,
+  sceneMasterOf,
   pickShots,
   planEditSeconds,
+  peopleCountLock,
   previousSceneKf,
   prodGateState,
   sequentialKfIds,
   shotProdStatus,
+  compileShotSceneCard,
+  compileShotStillMood,
+  visibleFrameCast,
 } from './content-famixa-scene-first';
-import type { FamixaSeriesShot, SeriesPilotState } from './content-famixa-series';
+import { seriesSceneStillPrompt, stripStillLettering, type FamixaSeriesShot, type SeriesPilotState } from './content-famixa-series';
 
 function shot(partial: Partial<FamixaSeriesShot> & { id: string }): FamixaSeriesShot {
   return {
@@ -37,8 +43,20 @@ function shot(partial: Partial<FamixaSeriesShot> & { id: string }): FamixaSeries
 }
 
 const shots = [
-  shot({ id: 'SH01', story: 'Minh lấy bài kiểm tra ra và đưa cho mẹ.' }),
-  shot({ id: 'SH02', story: 'Mẹ nhận bài và nhìn điểm.' }),
+  shot({
+    id: 'SH01',
+    story: 'Minh lấy bài kiểm tra ra và đưa cho mẹ.',
+    characterIds: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
+    characters: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
+    dialogueSegmentIds: ['L1'],
+  }),
+  shot({
+    id: 'SH02',
+    story: 'Mẹ nhận bài và nhìn điểm.',
+    characterIds: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
+    characters: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
+    dialogueSegmentIds: ['L2'],
+  }),
   shot({ id: 'SH02b', story: 'Mẹ nhận bài và nhìn điểm.', voiceChainFrom: 'SH02' }),
   shot({ id: 'empty', story: '' }),
 ];
@@ -54,10 +72,21 @@ const state = {
   scriptLocked: true,
   voiceLocked: true,
   shotGraphLocked: true,
-  scenes: [{ id: 'SC01', title: 'Minh khoe điểm', environment: 'Phòng ăn buổi tối ấm', characterIds: ['CHAR-001', 'CHAR-003'] }],
+  scenes: [{
+    id: 'SC01',
+    title: 'Minh khoe điểm',
+    environment: 'Phòng ăn buổi tối ấm',
+    characterIds: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
+    dialogue: [
+      { id: 'L1', characterId: 'CHAR-001', text: 'Mẹ xem bài này.' },
+      { id: 'L2', characterId: 'CHAR-003', text: 'Tám?' },
+      { id: 'L3', characterId: 'CHAR-002', text: 'Anh về rồi.' },
+    ],
+  }],
   characters: [
     { id: 'CHAR-001', name: 'Minh', wardrobe: 'polo trắng cổ xanh' },
-    { id: 'CHAR-003', name: 'Linh', wardrobe: 'áo be' },
+    { id: 'CHAR-002', name: 'Nam', wardrobe: 'sơ mi' },
+    { id: 'CHAR-003', name: 'Linh', wardrobe: 'áo be', voiceNote: 'Giọng sắc lạnh, thực dụng, mệt mỏi, không vui' },
   ],
   episode: {
     seriesCode: 'FAMIXA',
@@ -94,6 +123,9 @@ if (!sequentialKfIds(state, shots).includes('SH02')) fail.push('draft SH02 must 
 if (shotProdStatus(state, shots[0]!) !== 'KF APPROVED') fail.push('SH01 KF APPROVED');
 if (shotProdStatus(state, shots[1]!) !== 'KF DRAFT') fail.push('SH02 KF DRAFT');
 if (shotProdStatus(state, shots[3]!) !== 'HOLD') fail.push('empty HOLD');
+if (shotProdStatus({ ...state, sceneLocked: true }, shots[1]!) !== 'KF DRAFT') {
+  fail.push('sceneLocked without take must stay KF DRAFT');
+}
 if (kfIsApprovedStill(state.runs.SH02!)) fail.push('draft must not be approved');
 
 if (planEditSeconds(2.5, 0.4, 0) < 2.8 || planEditSeconds(2.5, 0.4, 0) > 3.1) {
@@ -119,7 +151,177 @@ if (!fullEpisodeBlockReason(locked, [shots[0]!, shots[1]!])) fail.push('full EP 
 const prompt = continueScenePrompt(master, 'SH01-01', 'Mẹ nhận bài và nhìn điểm.');
 if (!/continue the exact same scene/i.test(prompt)) fail.push('continue prompt');
 if (!/only change the action/i.test(prompt)) fail.push('action-only');
+if (!/do not copy the previous smile|huddle|brightened room/i.test(prompt)) fail.push('must not copy previous smile');
 if (/ôm|xin lỗi|hug|apology/i.test(prompt)) fail.push('must not invent plot');
+
+const mood = compileShotStillMood(state, shots[1]!, 'Mẹ nhận bài. Mặt nghiêm nghị không vui.');
+if (!/stern|unsatisfied|tense/i.test(mood)) fail.push(`still mood ${mood}`);
+if (/\bôm\b|xin lỗi|bài học/i.test(mood)) fail.push('mood must not invent hug');
+
+const c1 = visibleFrameCast(state, shots[0]!);
+if (c1.count !== 2 || c1.ids.includes('CHAR-002')) fail.push(`SH01 must be 2 people not Nam, got ${c1.ids.join()}`);
+const c2 = visibleFrameCast(state, shots[1]!, shots[0]!);
+if (c2.count !== 2 || c2.ids.includes('CHAR-002')) fail.push(`SH02 must stay 2 people, got ${c2.ids.join()}`);
+if (!peopleCountLock(c2, c1.count).includes('exactly 2')) fail.push('count lock text');
+if (!/FACE LOCK|complete face/i.test(peopleCountLock(c2, c1.count))) fail.push('count lock must keep both faces');
+const anState = {
+  ...state,
+  characters: [...(state.characters ?? []), { id: 'CHAR-004', name: 'An', role: 'Bạn' }],
+} as SeriesPilotState;
+const anShot = shot({
+  id: 'SH03an',
+  story: 'Minh nói với mẹ. Bạn An được nhắc.',
+  characterIds: ['CHAR-001', 'CHAR-003', 'CHAR-004'],
+  characters: ['CHAR-001', 'CHAR-003', 'CHAR-004'],
+  dialogueSegmentIds: ['L1'],
+});
+const anCast = visibleFrameCast(anState, anShot, shots[0]!);
+if (anCast.ids.includes('CHAR-004') || anCast.count !== 2) {
+  fail.push(`An/CHAR-004 is off-frame, got ${anCast.names.join()} (${anCast.count})`);
+}
+if (anCast.names.some((n) => /^CHAR-/i.test(n))) fail.push('cast UI must show names not raw CHAR ids');
+const enter = visibleFrameCast(
+  state,
+  shot({ id: 'SH03', story: 'Nam bước vào phòng ăn.', characterIds: ['CHAR-001', 'CHAR-002', 'CHAR-003'] }),
+  shots[1]!,
+);
+if (!enter.ids.includes('CHAR-002')) fail.push('Action may add Nam when named');
+
+const sh08three = shot({
+  id: 'SH08k',
+  story: 'Nam đứng đối diện Linh.',
+  characterIds: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
+  characters: ['CHAR-001', 'CHAR-002', 'CHAR-003'],
+  dialogueSegmentIds: ['L3'],
+});
+const stayState = {
+  ...state,
+  runs: {
+    ...state.runs,
+    SH08k: { status: 'keyframe_ready' as const, keyframeDataUrl: 'data:image/png;base64,nn' },
+  },
+} as SeriesPilotState;
+const sh09parents = shot({
+  id: 'SH09k',
+  story: 'Linh đáp bố.',
+  characterIds: ['CHAR-002', 'CHAR-003'],
+  characters: ['CHAR-002', 'CHAR-003'],
+  dialogueSegmentIds: ['L2'],
+});
+const stay = visibleFrameCast(stayState, sh09parents, sh08three);
+if (!stay.ids.includes('CHAR-001') || stay.count !== 3) {
+  fail.push(`after Nam entered keep 3 (Minh stays), got ${stay.ids.join()}`);
+}
+const twoAfterThree = visibleFrameCast(
+  stayState,
+  shot({
+    id: 'SH07k',
+    story: 'Minh nói với mẹ.',
+    characterIds: ['CHAR-001', 'CHAR-003'],
+    characters: ['CHAR-001', 'CHAR-003'],
+    dialogueSegmentIds: ['L1'],
+  }),
+  sh08three,
+);
+if (twoAfterThree.ids.includes('CHAR-002') || twoAfterThree.count !== 2) {
+  fail.push(`SH07 Linh+Minh must not keep Nam from prev 3, got ${twoAfterThree.ids.join()}`);
+}
+if (!/CAST SHRINK|only/i.test(peopleCountLock(twoAfterThree, 3))) {
+  fail.push('count drop must CAST SHRINK');
+}
+
+const namShot = shot({
+  id: 'SH08',
+  story: 'Nam bước vào cửa.',
+  characterIds: ['CHAR-002'],
+  characters: ['CHAR-002'],
+  dialogueSegmentIds: ['L3'],
+});
+const namCast = visibleFrameCast(state, namShot, shots[1]!);
+if (!namCast.ids.includes('CHAR-002') || !namCast.fromDialogue.includes('CHAR-002')) {
+  fail.push(`Nam speaking must be in frame, got ${namCast.ids.join()}`);
+}
+const namCard = compileShotSceneCard(state, namShot, shots[1]!);
+if (!/Nam/i.test(namCard.spoken) || !/Anh về rồi/i.test(namCard.oneLiner)) fail.push(`card ${namCard.oneLiner}`);
+if (/Anh về rồi/i.test(namCard.stillAction)) fail.push('still prompt must not include spoken line (Gemini paints captions)');
+if (!/Nam/i.test(namCard.stillAction)) fail.push('still prompt must keep speaker name');
+const glance = shot({
+  id: 'SH01-09',
+  story: 'Liếc nhìn con số 9 đúng nửa giây.',
+  visual: 'Liếc nhìn con số 9 đúng nửa giây.',
+});
+const glanceCard = compileShotSceneCard(state, glance);
+if (glanceCard.visualSpec.framing !== 'MCU') fail.push(`glance framing ${glanceCard.visualSpec.framing}`);
+if (glanceCard.visualSpec.primary?.name !== 'Minh') fail.push('glance primary Minh');
+if (!glanceCard.visualSpec.secondary.some((p) => p.name === 'Linh' && p.face === 'partial')) {
+  fail.push('glance Linh must be partial secondary');
+}
+const glancePrompt = seriesSceneStillPrompt({
+  aspect: '16:9',
+  visual: glanceCard.stillAction,
+  action: glanceCard.stillAction,
+  refs: [],
+  peopleCount: 2,
+  peopleNames: 'Minh, Linh',
+  visualSpec: glanceCard.visualSpec,
+});
+if (!/FRAMING LOCK|PRIMARY: Minh|NOT REQUIRED/i.test(glancePrompt)) fail.push('visual spec must compile into still prompt');
+if (/every named person[\s\S]*complete face/i.test(glancePrompt)) {
+  fail.push('MCU glance must not force both full faces');
+}
+if (stripStillLettering('Spoken this shot (speaker on camera): Minh: Không... đề khó mà mẹ.').includes('Không')) {
+  fail.push('stripStillLettering must drop quoted dialogue');
+}
+const stillPrompt = seriesSceneStillPrompt({
+  aspect: '16:9',
+  visual: namCard.stillAction,
+  action: namCard.stillAction,
+  refs: [],
+  speakers: namCard.speakerNames.join(', '),
+});
+if (/Anh về rồi/i.test(stillPrompt)) fail.push('Gemini still prompt must not contain the spoken line');
+if (!/HARD BAN/i.test(stillPrompt)) fail.push('still prompt must lead with text ban');
+const twoStill = seriesSceneStillPrompt({
+  aspect: '9:16',
+  visual: 'Minh and Linh in the dining room',
+  action: 'Minh glances at the phone.',
+  refs: [],
+  peopleCount: 2,
+  peopleNames: 'Minh, Linh',
+});
+if (!/FACE LOCK|complete face/i.test(twoStill)) fail.push('9:16 two-shot must lock both faces');
+if (!/VERTICAL BLOCKING|upper two-thirds/i.test(twoStill)) fail.push('9:16 two-shot must not be a cropped table');
+if (!/SPEAKER LOCK/i.test(namCard.blocking)) fail.push('card blocking must lock speaker');
+if (!/family portrait/i.test(namCard.blocking)) fail.push('card must forbid family portrait');
+if (!/dim/i.test(namCard.lighting)) fail.push(`lighting ${namCard.lighting}`);
+
+const director = upsertSceneMaster(lockSceneMaster(state, 'SC01'), {
+  sceneId: 'SC01',
+  screenDirection: 'Minh left → mẹ right',
+  coverage: 'Wide → Medium → Close',
+  lens: '35mm',
+});
+const dirMaster = sceneMasterOf(director, 'SC01');
+if (dirMaster.screenDirection !== 'Minh left → mẹ right') fail.push('Test 8: screen direction must persist');
+const cont = continueScenePrompt(dirMaster, 'SH01', 'Minh đưa bài');
+if (!/Preserve everything unless Shot Action/i.test(cont)) fail.push('Test 8: still must preserve unless action');
+if (!/Screen direction lock/i.test(cont)) fail.push('Test 8: still must lock screen direction');
+
+const finalBlock = fullEpisodeBlockReason(
+  {
+    ...state,
+    scriptLocked: true,
+    voiceLocked: true,
+    shotGraphLocked: true,
+    previewApproved: true,
+    sceneMasters: { SC01: { ...dirMaster, locked: true } },
+    runs: {
+      SH01: { status: 'turbo_testing', previewUrl: 'https://x/a.mp4', kfApproved: true, keyframeDataUrl: 'data:image/png;base64,aa' },
+    },
+  } as SeriesPilotState,
+  [shots[0]!],
+);
+if (!finalBlock) fail.push('Test 9: Final must block spoken RUNWAY_TTS');
 
 if (fail.length) {
   console.error('SCENE FIRST FAIL');

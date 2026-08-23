@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { diagnoseEpisodeStory, isNonStoryLine, parseEpisodeStory } from './content-famixa-story-parse';
+import { diagnoseEpisodeStory, isNonStoryLine, looksLikeScriptMetaHeading, parseEpisodeStory } from './content-famixa-story-parse';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const golden = readFileSync(join(here, 'content-famixa-ep01-golden.txt'), 'utf8');
@@ -20,6 +20,25 @@ Minh đặt bài kiểm tra trước mặt mẹ, đẩy nhẹ về phía Linh.
 MINH
 Mẹ ơi mẹ ơi, cô ghi cái này cho con nè!
 `);
+if (!looksLikeScriptMetaHeading('Tone: Tàn nhẫn, thực dụng, nghẹt thở')) {
+  fail.push('Tone: heading is meta');
+}
+const tonePack = parseEpisodeStory(`SC01 — BỮA CƠM
+Tone: Tàn nhẫn, thực dụng, nghẹt thở, chạm đáy tự ái của đứa trẻ.
+Thời lượng mục tiêu: 130s
+Minh chạy ùa từ cửa vào.
+MINH
+Mẹ! Con gỡ được điểm Toán rồi!
+`);
+if (tonePack?.shots.some((s) => /^tone\s*:/i.test(s.story || '') || /thời lượng/i.test(s.story || ''))) {
+  fail.push('Tone:/Thời lượng must not become SH Action');
+}
+if (tonePack?.scenes.some((sc) => (sc.dialogue ?? []).some((d) => /tàn nhẫn|thời lượng/i.test(d.text) || /tone/i.test(d.characterId + d.text)))) {
+  fail.push('Tone heading must not become TTS dialogue');
+}
+if (!tonePack?.shots.some((s) => /chạy ùa|cửa vào/i.test(s.story || ''))) {
+  fail.push('first real action must stay');
+}
 if (headingPack?.shots.some((s) => /kịch bản phim|drama voice/i.test(s.story || ''))) {
   fail.push('pack title must not become SH01 Action');
 }
@@ -83,6 +102,27 @@ if (!/không hứa những chuyện bố chưa chắc/i.test(texts('SC07'))) fai
 if (doc.lines.length !== 71) fail.push(`expected 71 spoken lines, got ${doc.lines.length}`);
 const speakers = new Set(doc.lines.map((l) => l.characterId));
 if (speakers.size < 3) fail.push(`expected 3 speakers, got ${[...speakers].join(',')}`);
+if (doc.characters.some((c) => /^CHAR-00[5-9]$/i.test(c.id))) {
+  fail.push(`golden invented extra CHAR: ${doc.characters.map((c) => c.id).join()}`);
+}
+
+const anPack = parseEpisodeStory(`SC01 — PHÒNG ĂN
+Tone: Tàn nhẫn.
+Bạn An được nhắc trong thoại, không vào khung.
+MINH
+Mẹ, bạn An được chín!
+LINH
+Bạn An chín rưỡi.
+`);
+if (anPack?.characters.some((c) => c.id === 'CHAR-005' || /tone/i.test(c.name))) {
+  fail.push('An pack must not invent Tone/CHAR-005');
+}
+if (anPack?.shots.some((s) => (s.characterIds ?? s.characters ?? []).includes('CHAR-004'))) {
+  fail.push('An mention must not land on shot characterIds');
+}
+if ((anPack?.shots[0]?.characterIds ?? []).filter((id) => id !== 'CHAR-VO').length > 2) {
+  fail.push(`An pack shot has too many bodies: ${(anPack?.shots[0]?.characterIds ?? []).join()}`);
+}
 
 fail.push(...diagnoseEpisodeStory(doc));
 if (!isNonStoryLine('SC10 — decomposition must not generate an arbitrary large number of shots.')) {

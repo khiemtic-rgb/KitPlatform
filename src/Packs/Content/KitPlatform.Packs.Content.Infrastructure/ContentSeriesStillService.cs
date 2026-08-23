@@ -19,8 +19,8 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
         CancellationToken cancellationToken = default)
     {
         var prompt = (request.Prompt ?? "").Trim();
-        if (prompt.Length is < 12 or > 4000)
-            throw new InvalidOperationException("Prompt KF cảnh 12–4000 ký tự.");
+        if (prompt.Length is < 12 or > 8000)
+            throw new InvalidOperationException("Prompt KF cảnh 12–8000 ký tự.");
 
         var aspect = NormalizeAspect(request.Aspect);
         var refs = request.References ?? Array.Empty<ContentSeriesStillRefDto>();
@@ -51,17 +51,23 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
         var hasScene = refs.Any(r =>
             string.Equals(r.Role, "scene", StringComparison.OrdinalIgnoreCase));
         var guarded = hasScene
-            ? "Photorealistic Vietnamese live-action SCENE still. Full environment + bodies in frame. "
-              + "The image marked role=scene is the PREVIOUS SHOT END FRAME. Keep the same place, clothes, lighting, bodies and camera. "
-              + "Only apply the new action. Do not reset the scene or invent a new location. "
+            ? "HARD BAN: no readable letters, numbers, captions, subtitles, logos, watermarks, UI, or typography. "
+              + "If a reference has text, ignore the letters — do not copy them. KIT may overlay narrative marks later.\n"
+              + "Photorealistic Vietnamese live-action SCENE still. Frame ONLY what FRAMING LOCK / SHOT INTENT require — "
+              + "do not force a full-body wide of every named person. Secondary may be partial.\n"
+              + "The image marked role=scene is the PREVIOUS SHOT END FRAME. Keep the same place, clothes, lighting and key props. "
+              + "Only apply the new action. Soft continuity (pose, gaze, camera distance) may change. "
               + "Other attached images are FACE/WARDROBE identity only — never copy a character bible, master reference, turnaround, or expression grid. "
-              + "No extra people, no text, no title card, no watermark.\n"
+              + "No extra people, no title card.\n"
               + prompt
-            : "Photorealistic Vietnamese live-action SCENE still. Full environment + bodies in frame. "
+            : "HARD BAN: no readable letters, numbers, captions, subtitles, logos, watermarks, UI, or typography. "
+              + "If a reference has text, ignore the letters — do not copy them. KIT may overlay narrative marks later.\n"
+              + "Photorealistic Vietnamese live-action SCENE still. Frame ONLY what FRAMING LOCK / SHOT INTENT require — "
+              + "do not force a full-body wide of every named person.\n"
               + "Attached images are FACE/WARDROBE REFERENCES only. Do NOT output a character design sheet, master reference, turnaround, expression grid, contact sheet, passport crop, or title card. "
-              + "Output one film frame of the locked Action. "
+              + "Output one film frame of the locked Action and composition. "
               + "Match each named person's face, hair, age and clothes from the matching reference. "
-              + "No extra people, no text, no subtitles, no watermark, no logo, no illustration.\n"
+              + "No extra people, no illustration.\n"
               + prompt;
 
         var (bytes, model) = await _gemini.GenerateImageWithRefsAsync(
@@ -118,14 +124,74 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
             root.TryGetProperty("inherit", out var h) && h.ValueKind == System.Text.Json.JsonValueKind.False ? false : true);
     }
 
+    public async Task<ContentSeriesStillQaDto> QaAsync(
+        ContentSeriesStillQaRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var url = (request.ImageDataUrl ?? "").Trim();
+        var spec = (request.SpecJson ?? "").Trim();
+        if (url.Length < 32 || spec.Length < 8)
+            throw new InvalidOperationException("Cần ảnh KF + Visual Spec để QA.");
+        if (!TryParseDataUrl(url, out var mime, out var b64))
+            throw new InvalidOperationException("Ảnh QA không phải data URL.");
+
+        var raw = await _gemini.GenerateJsonWithImageAsync(
+            "You are a film still QA judge. Script/spec is source of truth. Do not invent plot, hugs, apologies, or extra people. "
+            + "Score the attached still against the Visual Spec. JSON only: "
+            + "{\"total\":0-100,\"axes\":{\"character\":0-100,\"face\":0-100,\"action\":0-100,\"prop\":0-100,\"composition\":0-100,\"continuity\":0-100,\"emotion\":0-100},"
+            + "\"hardFails\":[\"MISSING_FACE\"|\"MISSING_PROP\"|\"WRONG_COUNT\"|\"WRONG_LOCATION\"|\"WRONG_WARDROBE\"|\"WRONG_ACTION\"],"
+            + "\"notes\":\"short Vietnamese\"}. "
+            + "HARD FAIL (never average away): missing required primary face, missing required prop, wrong people count, wrong place, wrong wardrobe, wrong action. "
+            + "FACE_REQUIRED: reject cropped/back-turned/unreadable primary face. Secondary may be partial if spec says so. "
+            + "Do not fail because a KIT overlay number looks graphic.",
+            $"VISUAL SPEC:\n{spec}",
+            mime,
+            b64,
+            cancellationToken,
+            768);
+
+        var t = (raw ?? "").Trim();
+        if (t.StartsWith("```", StringComparison.Ordinal))
+        {
+            var nl = t.IndexOf('\n');
+            t = nl > 0 ? t[(nl + 1)..] : t;
+            var end = t.LastIndexOf("```", StringComparison.Ordinal);
+            if (end > 0) t = t[..end];
+        }
+        using var doc = System.Text.Json.JsonDocument.Parse(t);
+        var root = doc.RootElement;
+        var fails = new List<string>();
+        if (root.TryGetProperty("hardFails", out var hf) && hf.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            foreach (var x in hf.EnumerateArray())
+            {
+                var s = (x.GetString() ?? "").Trim();
+                if (s.Length > 0) fails.Add(s);
+            }
+        }
+        var axes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (root.TryGetProperty("axes", out var ax) && ax.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            foreach (var p in ax.EnumerateObject())
+            {
+                if (p.Value.ValueKind == System.Text.Json.JsonValueKind.Number && p.Value.TryGetInt32(out var n))
+                    axes[p.Name] = n;
+            }
+        }
+        int? total = root.TryGetProperty("total", out var tot) && tot.TryGetInt32(out var tv) ? tv : null;
+        var notes = root.TryGetProperty("notes", out var nt) ? (nt.GetString() ?? "").Trim() : "";
+        var status = fails.Count > 0 || (total is < 80) ? "REJECT" : "PASS";
+        return new ContentSeriesStillQaDto(status, total, axes.Count == 0 ? null : axes, fails, notes.Length == 0 ? null : notes);
+    }
+
     private static bool ReadBool(System.Text.Json.JsonElement root, string name) =>
         root.TryGetProperty(name, out var p) && p.ValueKind == System.Text.Json.JsonValueKind.True;
 
     private static string NormalizeAspect(string? raw)
     {
         var s = (raw ?? "").Trim();
-        if (s is "9:16" or "16:9" or "1:1" or "4:3" or "3:4") return s;
-        return "9:16";
+        if (s is "9:16") return "9:16";
+        return "16:9";
     }
 
     private static bool TryParseDataUrl(string raw, out string mime, out string b64)

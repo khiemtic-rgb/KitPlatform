@@ -37,7 +37,7 @@ public static class ContentPackDependencyInjection
         services.AddHttpClient<ContentFalClient>(c =>
         {
             c.BaseAddress = new Uri("https://queue.fal.run/");
-            c.Timeout = TimeSpan.FromMinutes(3);
+            c.Timeout = TimeSpan.FromMinutes(5);
         });
         services.AddHttpClient("content-take-proxy", c =>
         {

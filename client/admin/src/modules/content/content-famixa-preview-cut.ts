@@ -10,6 +10,7 @@ import {
   type SeriesPilotState,
 } from './content-famixa-series';
 import { deriveVoiceScript, estimateSpokenSec, type FamixaVoiceLine } from './content-famixa-voice-script';
+import { resolveFinalSource, type FinalSource } from './content-famixa-final-source';
 
 export type PreviewCutStatus = 'ready' | 'need_voice' | 'need_kf' | 'need_video' | 'blocked';
 
@@ -18,13 +19,15 @@ export type PreviewCutItem = {
   code: string;
   seconds: number;
   silent: boolean;
-  line?: Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text'>;
-  lines: Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text'>[];
+  line?: Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance'>;
+  lines: Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance'>[];
   voiceSec: number;
   hasVoiceFile: boolean;
   hasKf: boolean;
   kfApproved: boolean;
   hasVideo: boolean;
+  lipsynced?: boolean;
+  finalSource?: FinalSource;
   durationIssue?: string;
   status: PreviewCutStatus;
   statusLabel: string;
@@ -55,8 +58,8 @@ function charsOf(text: string) {
   return text.replace(/\s+/g, '').length;
 }
 
-function pickLine(line: FamixaVoiceLine): Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text'> {
-  return { id: line.id, characterId: line.characterId, name: line.name, text: line.text };
+function pickLine(line: FamixaVoiceLine): Pick<FamixaVoiceLine, 'id' | 'characterId' | 'name' | 'text' | 'performance'> {
+  return { id: line.id, characterId: line.characterId, name: line.name, text: line.text, performance: line.performance };
 }
 
 /** Explicit map first. Unmapped lines stay extra — never dumped onto the last Short. */
@@ -99,7 +102,7 @@ export function mapPreviewCut(
     const durationIssue =
       !silent && voiceSec > i2v + 0.05 ? `VOICE ${voiceSec.toFixed(1)}s / I2V ${i2v.toFixed(1)}s` : undefined;
     const hasKf = Boolean(run.keyframeDataUrl);
-    const hasVideo = Boolean(run.previewUrl?.trim());
+    const hasVideo = Boolean(run.takeUrl?.trim() || run.previewUrl?.trim() || run.lipsyncUrl?.trim());
     let status: PreviewCutStatus = 'ready';
     let statusLabel = silent ? 'Voice: NONE' : 'Ready';
     if (durationIssue) {
@@ -127,6 +130,8 @@ export function mapPreviewCut(
       hasKf,
       kfApproved: kfIsApproved(run),
       hasVideo,
+      lipsynced: Boolean(run.lipsynced || run.lipsyncUrl?.trim()),
+      finalSource: resolveFinalSource(run, silent),
       durationIssue,
       status,
       statusLabel,

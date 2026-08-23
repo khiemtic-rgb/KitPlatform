@@ -120,6 +120,7 @@ public sealed class ContentController : ControllerBase
         Ok(await _settings.TestVideoAsync(cancellationToken));
 
     [HttpPost("series/turbo")]
+    [RequestSizeLimit(16_000_000)]
     public async Task<ActionResult<ContentSeriesTurboTaskDto>> StartSeriesTurbo(
         [FromBody] ContentSeriesTurboStartRequest request,
         CancellationToken cancellationToken)
@@ -157,7 +158,13 @@ public sealed class ContentController : ControllerBase
         }
     }
 
-    [HttpGet("series/turbo/{taskId}")]
+    [HttpGet("series/turbo")]
+    public Task<ActionResult<ContentSeriesTurboTaskDto>> GetSeriesTurboQuery(
+        [FromQuery] string taskId,
+        CancellationToken cancellationToken) =>
+        GetSeriesTurbo(taskId, cancellationToken);
+
+    [HttpGet("series/turbo/{*taskId}")]
     public async Task<ActionResult<ContentSeriesTurboTaskDto>> GetSeriesTurbo(
         string taskId,
         CancellationToken cancellationToken)
@@ -165,6 +172,26 @@ public sealed class ContentController : ControllerBase
         try
         {
             return Ok(await _seriesTurbo.GetAsync(taskId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("series/lipsync")]
+    [RequestSizeLimit(16_000_000)]
+    public async Task<ActionResult<ContentSeriesTurboTaskDto>> StartSeriesLipsync(
+        [FromBody] ContentSeriesLipsyncStartRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesTurbo.StartLipsyncAsync(request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
@@ -187,6 +214,25 @@ public sealed class ContentController : ControllerBase
         {
             var cut = await _seriesAssemble.AssembleAsync(request, cancellationToken);
             return File(cut.Bytes, cut.ContentType, cut.FileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("series/take-probe")]
+    public async Task<ActionResult<ContentSeriesTakeProbeDto>> ProbeSeriesTake(
+        [FromBody] ContentSeriesTakeProxyRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesTake.ProbeAsync(request.Url, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
@@ -332,6 +378,25 @@ public sealed class ContentController : ControllerBase
         try
         {
             return Ok(await _seriesStill.RewriteNoteAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("series/still-qa")]
+    public async Task<ActionResult<ContentSeriesStillQaDto>> QaSeriesStill(
+        [FromBody] ContentSeriesStillQaRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _seriesStill.QaAsync(request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

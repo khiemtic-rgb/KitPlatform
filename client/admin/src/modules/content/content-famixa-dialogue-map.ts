@@ -263,6 +263,17 @@ export function applyDialogueMap(state: SeriesPilotState): SeriesPilotState {
   return chainOverflowVoiceShots({ ...cleared, episode: { ...ep, shots } });
 }
 
+export function uniqueSpeakersOf(lines: Pick<FamixaVoiceLine, 'characterId' | 'name'>[]) {
+  return [...new Set(lines.map((l) => (l.characterId || l.name || '').trim()).filter(Boolean))];
+}
+
+/** Two speakers on one take — split shots. Do not send two wavs into one Fal job. */
+export function multiSpeakerBlock(lines: Pick<FamixaVoiceLine, 'characterId' | 'name'>[]) {
+  const u = uniqueSpeakersOf(lines);
+  if (u.length < 2) return undefined;
+  return `${u.join(' + ')} cùng một take — tách shot, Fal từng người. Không gửi 2 wav vào 1 Fal.`;
+}
+
 export function linesForShot(
   state: SeriesPilotState,
   shot: FamixaSeriesShot,
