@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-24T13:28:29.117Z",
+  "generatedAt": "2026-08-24T19:09:26.128Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 56,
-    "todayPageViews": 8,
-    "todayRequests": 119,
-    "last24hVisitors": 76,
+    "todayVisitors": 6,
+    "todayPageViews": 0,
+    "todayRequests": 26,
+    "last24hVisitors": 85,
     "last24hPageViews": 15,
-    "last24hRequests": 1469
+    "last24hRequests": 196
   },
   "hourly": [
-    {
-      "time": "2026-08-23T14:00:00Z",
-      "visitors": 2,
-      "requests": 17
-    },
-    {
-      "time": "2026-08-23T15:00:00Z",
-      "visitors": 9,
-      "requests": 1297
-    },
-    {
-      "time": "2026-08-23T16:00:00Z",
-      "visitors": 6,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-23T17:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-23T18:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-23T19:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
     {
       "time": "2026-08-23T20:00:00Z",
       "visitors": 1,
@@ -125,15 +95,34 @@
       "time": "2026-08-24T13:00:00Z",
       "visitors": 3,
       "requests": 4
+    },
+    {
+      "time": "2026-08-24T14:00:00Z",
+      "visitors": 22,
+      "requests": 32
+    },
+    {
+      "time": "2026-08-24T15:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-24T16:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-24T17:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-24T18:00:00Z",
+      "visitors": 4,
+      "requests": 24
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-18",
-      "visitors": 93,
-      "pageViews": 64,
-      "requests": 306
-    },
     {
       "date": "2026-08-19",
       "visitors": 75,
@@ -166,71 +155,77 @@
     },
     {
       "date": "2026-08-24",
-      "visitors": 91,
-      "pageViews": 9,
-      "requests": 140
+      "visitors": 84,
+      "pageViews": 15,
+      "requests": 189
+    },
+    {
+      "date": "2026-08-25",
+      "visitors": 6,
+      "pageViews": 0,
+      "requests": 26
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 21
+      "views": 18
     },
     {
       "path": "/sitemap.xml",
-      "views": 14
+      "views": 15
     },
     {
       "path": "/",
-      "views": 13
-    },
-    {
-      "path": "/wp-includes/js/jcrop/about.php",
       "views": 10
     },
     {
-      "path": "/wp-includes.bak/html-api/about.php",
-      "views": 10
+      "path": "/cdn-cgi/rum",
+      "views": 7
     },
     {
-      "path": "/wp-includes/js/tinymce/skins/lightgray/img/about.php",
-      "views": 10
+      "path": "/vi/",
+      "views": 7
     },
     {
-      "path": "/wp-admin/js/sad.php",
-      "views": 10
+      "path": "/images/blog/cach-xay-dung-niem-tin.png",
+      "views": 6
     },
     {
-      "path": "/wp-includes/class-wp-network-query-stat.php",
-      "views": 10
+      "path": "/images/loop/05-chart.png",
+      "views": 6
     },
     {
-      "path": "/wp-includes/IXR/db.php",
-      "views": 10
+      "path": "/images/blog/nuoi-day-con-trong-thoi-dai-ai.png",
+      "views": 5
     },
     {
-      "path": "/wp-admin.php",
-      "views": 10
+      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
+      "views": 5
     },
     {
-      "path": "/wp-content/themes/twentytwentyfour/content-index.php",
-      "views": 10
+      "path": "/_next/static/chunks/977-9a1479e294eb83c3.js",
+      "views": 5
     },
     {
-      "path": "/autoload_classmap/install.php",
-      "views": 10
+      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
+      "views": 5
     },
     {
-      "path": "/wp-includes/SimplePie/Parse/",
-      "views": 10
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "views": 4
     },
     {
-      "path": "/about/goods.php",
-      "views": 10
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 4
     },
     {
-      "path": "/wp-includes/certificates/index.php",
-      "views": 10
+      "path": "/images/blog/lam-sao-de-con-hop-tac-thay-vi-chong-doi.png",
+      "views": 4
+    },
+    {
+      "path": "//test/wp-includes/wlwmanifest.xml",
+      "views": 4
     }
   ]
 }
