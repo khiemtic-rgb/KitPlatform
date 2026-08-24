@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-23T18:49:23.996Z",
+  "generatedAt": "2026-08-24T01:58:54.064Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 216,
-    "last24hPageViews": 534,
-    "last24hRequests": 7784
+    "todayVisitors": 10,
+    "todayPageViews": 3,
+    "todayRequests": 1216,
+    "last24hVisitors": 173,
+    "last24hPageViews": 122,
+    "last24hRequests": 10279
   },
   "hourly": [
-    {
-      "time": "2026-08-22T19:00:00Z",
-      "visitors": 28,
-      "requests": 488
-    },
-    {
-      "time": "2026-08-22T20:00:00Z",
-      "visitors": 10,
-      "requests": 69
-    },
-    {
-      "time": "2026-08-22T21:00:00Z",
-      "visitors": 6,
-      "requests": 84
-    },
-    {
-      "time": "2026-08-22T22:00:00Z",
-      "visitors": 12,
-      "requests": 47
-    },
-    {
-      "time": "2026-08-22T23:00:00Z",
-      "visitors": 12,
-      "requests": 13
-    },
-    {
-      "time": "2026-08-23T00:00:00Z",
-      "visitors": 10,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-23T01:00:00Z",
-      "visitors": 8,
-      "requests": 14
-    },
     {
       "time": "2026-08-23T02:00:00Z",
       "visitors": 8,
@@ -128,8 +93,43 @@
     },
     {
       "time": "2026-08-23T18:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-23T19:00:00Z",
+      "visitors": 12,
+      "requests": 258
+    },
+    {
+      "time": "2026-08-23T20:00:00Z",
+      "visitors": 8,
+      "requests": 730
+    },
+    {
+      "time": "2026-08-23T21:00:00Z",
+      "visitors": 5,
+      "requests": 30
+    },
+    {
+      "time": "2026-08-23T22:00:00Z",
+      "visitors": 9,
+      "requests": 252
+    },
+    {
+      "time": "2026-08-23T23:00:00Z",
+      "visitors": 7,
+      "requests": 729
+    },
+    {
+      "time": "2026-08-24T00:00:00Z",
+      "visitors": 8,
+      "requests": 729
+    },
+    {
+      "time": "2026-08-24T01:00:00Z",
+      "visitors": 3,
+      "requests": 487
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-08-23",
-      "visitors": 156,
-      "pageViews": 107,
-      "requests": 7083
+      "visitors": 183,
+      "pageViews": 122,
+      "requests": 9087
+    },
+    {
+      "date": "2026-08-24",
+      "visitors": 10,
+      "pageViews": 3,
+      "requests": 1216
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 165
-    },
-    {
-      "path": "/graphql",
-      "views": 106
-    },
-    {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 102
+      "views": 128
     },
     {
       "path": "/web.config",
-      "views": 95
+      "views": 119
     },
     {
-      "path": "/app/settings.py",
-      "views": 87
+      "path": "/api/graphql",
+      "views": 114
     },
     {
-      "path": "/service-worker.js",
-      "views": 84
+      "path": "/.git/config",
+      "views": 105
+    },
+    {
+      "path": "/graphql",
+      "views": 103
     },
     {
       "path": "/core/settings.py",
-      "views": 81
+      "views": 102
     },
     {
-      "path": "/actuator",
-      "views": 80
-    },
-    {
-      "path": "/laravel/.env",
-      "views": 74
-    },
-    {
-      "path": "/web/.env",
-      "views": 73
-    },
-    {
-      "path": "/server/.env",
-      "views": 73
-    },
-    {
-      "path": "/id_ecdsa",
-      "views": 72
-    },
-    {
-      "path": "/.env.development",
-      "views": 70
-    },
-    {
-      "path": "/env.js",
-      "views": 70
+      "path": "/.env.test",
+      "views": 101
     },
     {
       "path": "/@fs/.env",
-      "views": 67
+      "views": 100
+    },
+    {
+      "path": "/.env.development",
+      "views": 98
+    },
+    {
+      "path": "/env.js",
+      "views": 97
+    },
+    {
+      "path": "/_health",
+      "views": 96
+    },
+    {
+      "path": "/@fs/root/.env",
+      "views": 95
+    },
+    {
+      "path": "/gcp-credentials.json",
+      "views": 94
+    },
+    {
+      "path": "/service-worker.js",
+      "views": 87
+    },
+    {
+      "path": "/src/amplifyconfiguration.json",
+      "views": 87
     }
   ]
 }
