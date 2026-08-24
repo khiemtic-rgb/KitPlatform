@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-24T07:29:54.020Z",
+  "generatedAt": "2026-08-24T13:14:58.195Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 114,
-    "todayPageViews": 62,
-    "todayRequests": 3588,
-    "last24hVisitors": 211,
-    "last24hPageViews": 105,
-    "last24hRequests": 12218
+    "todayVisitors": 155,
+    "todayPageViews": 157,
+    "todayRequests": 3774,
+    "last24hVisitors": 217,
+    "last24hPageViews": 185,
+    "last24hRequests": 8007
   },
   "hourly": [
-    {
-      "time": "2026-08-23T08:00:00Z",
-      "visitors": 8,
-      "requests": 486
-    },
-    {
-      "time": "2026-08-23T09:00:00Z",
-      "visitors": 12,
-      "requests": 492
-    },
-    {
-      "time": "2026-08-23T10:00:00Z",
-      "visitors": 10,
-      "requests": 493
-    },
-    {
-      "time": "2026-08-23T11:00:00Z",
-      "visitors": 11,
-      "requests": 970
-    },
-    {
-      "time": "2026-08-23T12:00:00Z",
-      "visitors": 11,
-      "requests": 1702
-    },
-    {
-      "time": "2026-08-23T13:00:00Z",
-      "visitors": 14,
-      "requests": 254
-    },
     {
       "time": "2026-08-23T14:00:00Z",
       "visitors": 12,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-24T07:00:00Z",
-      "visitors": 13,
-      "requests": 15
+      "visitors": 21,
+      "requests": 72
+    },
+    {
+      "time": "2026-08-24T08:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-24T09:00:00Z",
+      "visitors": 9,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-24T10:00:00Z",
+      "visitors": 9,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-24T11:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-24T12:00:00Z",
+      "visitors": 18,
+      "requests": 93
+    },
+    {
+      "time": "2026-08-24T13:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-24",
-      "visitors": 114,
-      "pageViews": 62,
-      "requests": 3588
+      "visitors": 155,
+      "pageViews": 157,
+      "requests": 3774
     }
   ],
   "topPages": [
     {
-      "path": "/api/graphql",
-      "views": 156
+      "path": "/",
+      "views": 125
     },
     {
-      "path": "/",
-      "views": 149
+      "path": "/api/graphql",
+      "views": 121
     },
     {
       "path": "/.env.test",
-      "views": 132
+      "views": 108
     },
     {
       "path": "/server.key",
-      "views": 130
+      "views": 106
     },
     {
-      "path": "/_health",
-      "views": 120
-    },
-    {
-      "path": "/web.config",
-      "views": 119
-    },
-    {
-      "path": "/graphql",
-      "views": 109
+      "path": "/secrets.json",
+      "views": 94
     },
     {
       "path": "/gcp-credentials.json",
-      "views": 108
+      "views": 87
     },
     {
       "path": "/src/aws-exports.js",
-      "views": 108
+      "views": 83
     },
     {
-      "path": "/.ssh/config",
-      "views": 105
+      "path": "/_health",
+      "views": 82
     },
     {
-      "path": "/.git/config",
-      "views": 105
+      "path": "/firebase-config.json",
+      "views": 77
     },
     {
-      "path": "/@fs/.env",
-      "views": 103
+      "path": "/.claude.json",
+      "views": 77
     },
     {
-      "path": "/core/settings.py",
-      "views": 102
+      "path": "/_profiler/open",
+      "views": 76
     },
     {
       "path": "/.env.development",
-      "views": 98
+      "views": 76
     },
     {
-      "path": "/env.js",
-      "views": 97
+      "path": "/runtime.js",
+      "views": 75
+    },
+    {
+      "path": "/_ignition/health-check",
+      "views": 75
+    },
+    {
+      "path": "/firebase-service-account.json",
+      "views": 74
     }
   ]
 }
