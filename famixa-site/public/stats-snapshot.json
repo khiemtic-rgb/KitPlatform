@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-24T02:04:51.627Z",
+  "generatedAt": "2026-08-24T07:34:42.961Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 4,
-    "todayPageViews": 2,
-    "todayRequests": 7,
-    "last24hVisitors": 63,
+    "todayVisitors": 29,
+    "todayPageViews": 3,
+    "todayRequests": 40,
+    "last24hVisitors": 58,
     "last24hPageViews": 13,
-    "last24hRequests": 1415
+    "last24hRequests": 1409
   },
   "hourly": [
-    {
-      "time": "2026-08-23T04:00:00Z",
-      "visitors": 24,
-      "requests": 29
-    },
-    {
-      "time": "2026-08-23T05:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-23T06:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-23T07:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
     {
       "time": "2026-08-23T08:00:00Z",
       "visitors": 2,
@@ -115,6 +95,36 @@
       "time": "2026-08-24T00:00:00Z",
       "visitors": 4,
       "requests": 7
+    },
+    {
+      "time": "2026-08-24T02:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-24T03:00:00Z",
+      "visitors": 18,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-24T04:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-24T05:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-24T06:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-24T07:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -156,42 +166,42 @@
     },
     {
       "date": "2026-08-24",
-      "visitors": 23,
-      "pageViews": 3,
-      "requests": 28
+      "visitors": 53,
+      "pageViews": 4,
+      "requests": 61
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 24
+      "views": 22
     },
     {
       "path": "/",
-      "views": 19
+      "views": 18
     },
     {
       "path": "/sitemap.xml",
-      "views": 16
-    },
-    {
-      "path": "/wp-includes/js/tinymce/skins/lightgray/img/about.php",
-      "views": 10
-    },
-    {
-      "path": "/wp-includes/class-wp-network-query-stat.php",
-      "views": 10
+      "views": 15
     },
     {
       "path": "/wp-includes.bak/html-api/about.php",
       "views": 10
     },
     {
-      "path": "/wp-admin.php",
+      "path": "/wp-includes/js/jcrop/about.php",
       "views": 10
     },
     {
       "path": "/wp-content/plugins/ubh/",
+      "views": 10
+    },
+    {
+      "path": "/about/goods.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-admin.php",
       "views": 10
     },
     {
@@ -203,23 +213,23 @@
       "views": 10
     },
     {
-      "path": "/about/goods.php",
+      "path": "/wp-content/themes/twentytwentyfour/content-index.php",
       "views": 10
     },
     {
-      "path": "/wp-includes/js/jcrop/about.php",
+      "path": "/wp-includes/certificates/index.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-includes/js/tinymce/skins/lightgray/img/about.php",
+      "views": 10
+    },
+    {
+      "path": "/images/news_event/",
       "views": 10
     },
     {
       "path": "/wp-includes/customize/class-wp-customize-selective-refresh-library.php",
-      "views": 10
-    },
-    {
-      "path": "/wp-admin/js/sad.php",
-      "views": 10
-    },
-    {
-      "path": "/wp-includes/SimplePie/Parse/",
       "views": 10
     }
   ]
