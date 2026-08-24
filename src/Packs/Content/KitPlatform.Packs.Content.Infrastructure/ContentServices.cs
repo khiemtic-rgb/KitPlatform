@@ -414,6 +414,15 @@ internal sealed class ContentBrandService : IContentBrandService
         return sites.First(s => s.Id == id);
     }
 
+    public async Task<bool> DeleteSiteAsync(
+        Guid brandId,
+        Guid siteId,
+        CancellationToken cancellationToken = default)
+    {
+        var n = await _repo.DeleteSiteAsync(brandId, siteId, cancellationToken);
+        return n > 0;
+    }
+
     public async Task<IReadOnlyList<ContentWritePlanDto>> ListWritePlansAsync(
         Guid? brandId = null,
         CancellationToken cancellationToken = default)
@@ -473,6 +482,15 @@ internal sealed class ContentBrandService : IContentBrandService
         }, cancellationToken);
         var channels = await ListChannelsAsync(brandId, cancellationToken);
         return channels.First(c => c.Id == id);
+    }
+
+    public async Task<bool> DeleteChannelAsync(
+        Guid brandId,
+        Guid channelId,
+        CancellationToken cancellationToken = default)
+    {
+        var n = await _repo.DeleteChannelAsync(brandId, channelId, cancellationToken);
+        return n > 0;
     }
 
     private static ContentSiteTargetDto MapSite(ContentRepository.SiteRow r)

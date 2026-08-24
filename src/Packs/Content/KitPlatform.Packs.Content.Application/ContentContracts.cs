@@ -783,8 +783,10 @@ public interface IContentBrandService
     Task<ContentBrandDto?> UpdateAsync(Guid id, UpsertContentBrandRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ContentSiteTargetDto>> ListSitesAsync(Guid brandId, CancellationToken cancellationToken = default);
     Task<ContentSiteTargetDto> UpsertSiteAsync(Guid brandId, UpsertContentSiteTargetRequest request, CancellationToken cancellationToken = default);
+    Task<bool> DeleteSiteAsync(Guid brandId, Guid siteId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ContentChannelTargetDto>> ListChannelsAsync(Guid brandId, CancellationToken cancellationToken = default);
     Task<ContentChannelTargetDto> UpsertChannelAsync(Guid brandId, UpsertContentChannelTargetRequest request, CancellationToken cancellationToken = default);
+    Task<bool> DeleteChannelAsync(Guid brandId, Guid channelId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ContentWritePlanDto>> ListWritePlansAsync(Guid? brandId = null, CancellationToken cancellationToken = default);
 }
 
