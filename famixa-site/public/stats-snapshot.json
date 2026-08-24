@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-23T18:54:13.682Z",
+  "generatedAt": "2026-08-24T02:04:51.627Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 8,
-    "todayPageViews": 1,
-    "todayRequests": 9,
-    "last24hVisitors": 82,
-    "last24hPageViews": 20,
-    "last24hRequests": 2731
+    "todayVisitors": 4,
+    "todayPageViews": 2,
+    "todayRequests": 7,
+    "last24hVisitors": 63,
+    "last24hPageViews": 13,
+    "last24hRequests": 1415
   },
   "hourly": [
-    {
-      "time": "2026-08-22T19:00:00Z",
-      "visitors": 4,
-      "requests": 1291
-    },
-    {
-      "time": "2026-08-22T20:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-22T21:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-22T22:00:00Z",
-      "visitors": 2,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-22T23:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-23T00:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-23T01:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-23T02:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
     {
       "time": "2026-08-23T04:00:00Z",
       "visitors": 24,
@@ -123,8 +83,38 @@
     },
     {
       "time": "2026-08-23T18:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-23T19:00:00Z",
       "visitors": 4,
       "requests": 4
+    },
+    {
+      "time": "2026-08-23T20:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-23T21:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-23T22:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-23T23:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-24T00:00:00Z",
+      "visitors": 4,
+      "requests": 7
     }
   ],
   "daily": [
@@ -160,77 +150,77 @@
     },
     {
       "date": "2026-08-23",
-      "visitors": 66,
+      "visitors": 69,
       "pageViews": 14,
-      "requests": 1411
+      "requests": 1423
     },
     {
       "date": "2026-08-24",
-      "visitors": 8,
-      "pageViews": 1,
-      "requests": 9
+      "visitors": 23,
+      "pageViews": 3,
+      "requests": 28
     }
   ],
   "topPages": [
     {
-      "path": "/.well-known/gecko-litespeed.php",
-      "views": 26
-    },
-    {
       "path": "/robots.txt",
-      "views": 26
-    },
-    {
-      "path": "/",
       "views": 24
     },
     {
-      "path": "/wp-content/languages/404.php",
-      "views": 20
-    },
-    {
-      "path": "/shell.php",
-      "views": 20
-    },
-    {
-      "path": "/db.php",
-      "views": 20
-    },
-    {
-      "path": "/wp-includes/rest-api/1.php",
-      "views": 18
-    },
-    {
-      "path": "/wp-includes/ID3/index.php",
-      "views": 18
-    },
-    {
-      "path": "/ab.php",
-      "views": 18
-    },
-    {
-      "path": "/wp-admin/wp-login.php",
-      "views": 18
-    },
-    {
-      "path": "/wp-includes/SimplePie/info.php",
-      "views": 18
+      "path": "/",
+      "views": 19
     },
     {
       "path": "/sitemap.xml",
-      "views": 17
+      "views": 16
+    },
+    {
+      "path": "/wp-includes/js/tinymce/skins/lightgray/img/about.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-includes/class-wp-network-query-stat.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-includes.bak/html-api/about.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-admin.php",
+      "views": 10
     },
     {
       "path": "/wp-content/plugins/ubh/",
-      "views": 16
+      "views": 10
     },
     {
-      "path": "/wp-includes/category-double.php",
-      "views": 16
+      "path": "/wp-includes/IXR/db.php",
+      "views": 10
     },
     {
-      "path": "/wp-includes/images/media/dog.php",
-      "views": 15
+      "path": "/wp-content/languages/themes/",
+      "views": 10
+    },
+    {
+      "path": "/about/goods.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-includes/js/jcrop/about.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-includes/customize/class-wp-customize-selective-refresh-library.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-admin/js/sad.php",
+      "views": 10
+    },
+    {
+      "path": "/wp-includes/SimplePie/Parse/",
+      "views": 10
     }
   ]
 }
