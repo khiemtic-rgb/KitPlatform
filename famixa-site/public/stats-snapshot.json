@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-25T13:26:33.957Z",
+  "generatedAt": "2026-08-25T19:08:06.117Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 39,
-    "todayPageViews": 15,
-    "todayRequests": 74,
-    "last24hVisitors": 81,
+    "todayVisitors": 8,
+    "todayPageViews": 4,
+    "todayRequests": 12,
+    "last24hVisitors": 55,
     "last24hPageViews": 67,
-    "last24hRequests": 3560
+    "last24hRequests": 3504
   },
   "hourly": [
-    {
-      "time": "2026-08-24T14:00:00Z",
-      "visitors": 22,
-      "requests": 32
-    },
-    {
-      "time": "2026-08-24T15:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-24T16:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-24T17:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-24T18:00:00Z",
-      "visitors": 4,
-      "requests": 24
-    },
-    {
-      "time": "2026-08-24T19:00:00Z",
-      "visitors": 1,
-      "requests": 13
-    },
     {
       "time": "2026-08-24T20:00:00Z",
       "visitors": 4,
@@ -128,17 +98,36 @@
     },
     {
       "time": "2026-08-25T13:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-25T15:00:00Z",
       "visitors": 3,
-      "requests": 3
+      "requests": 8
+    },
+    {
+      "time": "2026-08-25T16:00:00Z",
+      "visitors": 2,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-25T17:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-25T18:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-25T19:00:00Z",
+      "visitors": 1,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-19",
-      "visitors": 75,
-      "pageViews": 50,
-      "requests": 247
-    },
     {
       "date": "2026-08-20",
       "visitors": 72,
@@ -171,9 +160,15 @@
     },
     {
       "date": "2026-08-25",
-      "visitors": 66,
-      "pageViews": 60,
-      "requests": 3516
+      "visitors": 46,
+      "pageViews": 22,
+      "requests": 100
+    },
+    {
+      "date": "2026-08-26",
+      "visitors": 8,
+      "pageViews": 4,
+      "requests": 12
     }
   ],
   "topPages": [
@@ -184,6 +179,18 @@
     {
       "path": "/tmp/phpinfo.php",
       "views": 57
+    },
+    {
+      "path": "/aws%2eenv",
+      "views": 48
+    },
+    {
+      "path": "/api/revalidate%253fsecret%253d",
+      "views": 48
+    },
+    {
+      "path": "/_next/image%3furl%3dhttp%3a//127.0.0.1",
+      "views": 48
     },
     {
       "path": "/api/internal",
@@ -198,27 +205,23 @@
       "views": 48
     },
     {
-      "path": "/_next/image%3furl%3dhttp%3a//127.0.0.1",
-      "views": 48
-    },
-    {
-      "path": "/aws%2eenv",
-      "views": 48
-    },
-    {
-      "path": "/api/revalidate%253fsecret%253d",
-      "views": 48
-    },
-    {
       "path": "/aws/bucket",
       "views": 48
     },
     {
-      "path": "/%2fbeta%2f.env",
+      "path": "/uploads/phpinfo.php",
       "views": 44
     },
     {
-      "path": "/system/info%2ephp",
+      "path": "/%252ftest%252ftesting.php",
+      "views": 44
+    },
+    {
+      "path": "/%252fserver-info.php",
+      "views": 44
+    },
+    {
+      "path": "/%2fapi%2fv1%2fsecrets",
       "views": 44
     },
     {
@@ -227,14 +230,6 @@
     },
     {
       "path": "/source/%2eenv",
-      "views": 44
-    },
-    {
-      "path": "/%2fapi%2fv1%2fsecrets",
-      "views": 44
-    },
-    {
-      "path": "/%252fserver-info.php",
       "views": 44
     }
   ]
