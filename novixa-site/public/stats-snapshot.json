@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-25T07:10:05.529Z",
+  "generatedAt": "2026-08-25T13:12:50.899Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 38,
-    "todayPageViews": 19,
-    "todayRequests": 65,
-    "last24hVisitors": 115,
-    "last24hPageViews": 95,
-    "last24hRequests": 283
+    "todayVisitors": 130,
+    "todayPageViews": 55,
+    "todayRequests": 200,
+    "last24hVisitors": 166,
+    "last24hPageViews": 76,
+    "last24hRequests": 285
   },
   "hourly": [
-    {
-      "time": "2026-08-24T08:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-24T09:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-24T10:00:00Z",
-      "visitors": 9,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-24T11:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-24T12:00:00Z",
-      "visitors": 18,
-      "requests": 93
-    },
-    {
-      "time": "2026-08-24T13:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
     {
       "time": "2026-08-24T14:00:00Z",
       "visitors": 3,
@@ -125,6 +95,41 @@
       "time": "2026-08-25T06:00:00Z",
       "visitors": 8,
       "requests": 11
+    },
+    {
+      "time": "2026-08-25T07:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-25T08:00:00Z",
+      "visitors": 43,
+      "requests": 57
+    },
+    {
+      "time": "2026-08-25T09:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-25T10:00:00Z",
+      "visitors": 17,
+      "requests": 18
+    },
+    {
+      "time": "2026-08-25T11:00:00Z",
+      "visitors": 27,
+      "requests": 33
+    },
+    {
+      "time": "2026-08-25T12:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-25T13:00:00Z",
+      "visitors": 3,
+      "requests": 5
     }
   ],
   "daily": [
@@ -166,70 +171,70 @@
     },
     {
       "date": "2026-08-25",
-      "visitors": 38,
-      "pageViews": 19,
-      "requests": 65
+      "visitors": 130,
+      "pageViews": 55,
+      "requests": 200
     }
   ],
   "topPages": [
     {
-      "path": "/",
+      "path": "/robots.txt",
       "views": 41
     },
     {
-      "path": "/robots.txt",
-      "views": 39
-    },
-    {
-      "path": "/vi/",
-      "views": 22
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 16
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 16
+      "path": "/",
+      "views": 40
     },
     {
       "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 13
+      "views": 17
     },
     {
-      "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
+      "path": "/vi/",
+      "views": 17
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 15
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 15
+    },
+    {
+      "path": "/vi/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach-nen-mong-tao-dung-niem-tin-tai-nha-thuoc-hien-dai/",
       "views": 11
     },
     {
-      "path": "/media/system/js/core.js",
-      "views": 7
+      "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
+      "views": 8
     },
     {
-      "path": "/.env",
-      "views": 5
-    },
-    {
-      "path": "/wp-includes/js/jquery/jquery.js",
-      "views": 4
-    },
-    {
-      "path": "/sitemap-0.xml",
-      "views": 4
-    },
-    {
-      "path": "/administrator/manifests/files/joomla.xml",
-      "views": 3
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 3
+      "path": "/images/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach.png",
+      "views": 6
     },
     {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
-      "views": 3
+      "views": 5
     },
     {
-      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
+      "path": "/cdn-cgi/rum",
+      "views": 5
+    },
+    {
+      "path": "/.env",
+      "views": 4
+    },
+    {
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "views": 4
+    },
+    {
+      "path": "/images/logo.png",
+      "views": 4
+    },
+    {
+      "path": "/media/system/js/core.js",
       "views": 3
     }
   ]
