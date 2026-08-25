@@ -38,15 +38,28 @@ function charsOf(text: string) {
   return norm(text).replace(/\s+/g, '').length;
 }
 
-function speakerOnShot(shot: FamixaSeriesShot, characterId: string) {
+function speakerOnShot(shot: FamixaSeriesShot, characterId: string, chars?: { id?: string; name?: string }[]) {
+  const named = namedCharIdsOnShot(shot, chars);
+  if (named.length) return named.includes(normCharId(characterId));
   const ids = shotCharacterIds(shot);
   if (ids.length === 0) return true;
+  if (ids.length >= 3) return false;
   return ids.includes(normCharId(characterId));
+}
+
+function namedCharIdsOnShot(shot: FamixaSeriesShot, chars?: { id?: string; name?: string }[]) {
+  const blob = `${actionBlob(shot)} ${shot.beatText || ''}`;
+  const hits = (chars ?? [])
+    .filter((c) => c.id && c.name && new RegExp(`(?:^|[^A-Za-zÀ-ỹ])${c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|[^A-Za-zÀ-ỹ])`, 'i').test(blob))
+    .map((c) => normCharId(c.id!));
+  return [...new Set(hits.filter(Boolean))];
 }
 
 function shotLooksSilent(shot: FamixaSeriesShot) {
   const blob = `${shot.story || ''} ${shot.visual || ''} ${shot.motionPromptVi || ''} ${shot.beatText || ''}`;
-  return /câm|không thoại|\bsilent\b|voice:\s*none/i.test(blob);
+  if (/câm|không thoại|\bsilent\b|voice:\s*none/i.test(blob)) return true;
+  if (/\b(?:minh|linh|nam|mẹ|bố)\s*[:—]/i.test(blob)) return false;
+  return /nụ cười|đông cứng|hụt hẫng|không ngẩng|không trả lời|im lặng/i.test(blob);
 }
 
 function actionBlob(shot: FamixaSeriesShot) {
@@ -59,11 +72,48 @@ function lineFitsShot(shot: FamixaSeriesShot, line: FamixaVoiceLine) {
   return actionBlob(shot).includes(text);
 }
 
+function lineInBeat(shot: FamixaSeriesShot, line: FamixaVoiceLine) {
+  const beat = norm(shot.beatText || '');
+  const text = norm(line.text);
+  if (!beat || text.length < 2) return false;
+  return beat.includes(text);
+}
+
+function lineCount(byShot: Map<string, string[]>, id: string) {
+  return byShot.get(id)?.length ?? 0;
+}
+
+function pickBeatHost(
+  pack: FamixaSeriesShot[],
+  line: FamixaVoiceLine,
+  byShot: Map<string, string[]>,
+  chars?: { id?: string; name?: string }[],
+) {
+  const hosts = pack.filter(
+    (s) => !shotLooksSilent(s) && sameScene(line, s) && lineInBeat(s, line) && speakerOnShot(s, line.characterId, chars),
+  );
+  if (!hosts.length) return undefined;
+  return [...hosts].sort(
+    (a, b) => lineCount(byShot, a.id) - lineCount(byShot, b.id) || pack.indexOf(a) - pack.indexOf(b),
+  )[0];
+}
+
+function assignLine(byShot: Map<string, string[]>, used: Set<string>, shotId: string, lineId: string) {
+  const cur = byShot.get(shotId) ?? [];
+  if (!cur.includes(lineId)) cur.push(lineId);
+  byShot.set(shotId, cur);
+  used.add(lineId);
+}
+
 export function proposeDialogueMap(state: SeriesPilotState, shots = episodeShots(state)) {
   const script = deriveVoiceScript(state);
   const byShot = new Map<string, string[]>();
   const used = new Set<string>();
-  const pack = shots.filter((s) => shotHasValidAction(s, shotRunOf(state, s)));
+  const pack = shots.filter((s) => {
+    if (s.voiceChainFrom || shotLooksSilent(s)) return false;
+    if (shotHasValidAction(s, shotRunOf(state, s))) return true;
+    return ((s.story || s.beatText || '').trim().length >= 4);
+  });
 
   for (const shot of pack) {
     if (shotLooksSilent(shot)) {
@@ -74,42 +124,31 @@ export function proposeDialogueMap(state: SeriesPilotState, shots = episodeShots
   for (const line of script.lines) {
     const hit = pack.find((s) => !shotLooksSilent(s) && !used.has(line.id) && sameScene(line, s) && lineFitsShot(s, line));
     if (!hit) continue;
-    const cur = byShot.get(hit.id) ?? [];
-    cur.push(line.id);
-    byShot.set(hit.id, cur);
-    used.add(line.id);
+    assignLine(byShot, used, hit.id, line.id);
+  }
+
+  for (const line of script.lines) {
+    if (used.has(line.id)) continue;
+    const host = pickBeatHost(pack, line, byShot, state.characters);
+    if (!host) continue;
+    assignLine(byShot, used, host.id, line.id);
   }
 
   for (const shot of pack) {
     if (shotLooksSilent(shot)) continue;
-    if ((byShot.get(shot.id)?.length ?? 0) > 0) continue;
+    if (lineCount(byShot, shot.id) > 0) continue;
     const line = script.lines.find(
-      (l) => !used.has(l.id) && sameScene(l, shot) && speakerOnShot(shot, l.characterId),
+      (l) =>
+        !used.has(l.id) &&
+        sameScene(l, shot) &&
+        speakerOnShot(shot, l.characterId, state.characters) &&
+        !pack.some((s) => lineInBeat(s, l)),
     );
     if (!line) {
       byShot.set(shot.id, byShot.get(shot.id) ?? []);
       continue;
     }
-    byShot.set(shot.id, [line.id]);
-    used.add(line.id);
-  }
-
-  for (const line of script.lines) {
-    if (used.has(line.id)) continue;
-    const beatHost = [...pack]
-      .reverse()
-      .find(
-        (s) =>
-          !shotLooksSilent(s) &&
-          sameScene(line, s) &&
-          s.beatText &&
-          norm(s.beatText).includes(norm(line.text)),
-      );
-    if (!beatHost) continue;
-    const cur = byShot.get(beatHost.id) ?? [];
-    cur.push(line.id);
-    byShot.set(beatHost.id, cur);
-    used.add(line.id);
+    assignLine(byShot, used, shot.id, line.id);
   }
 
   for (const shot of pack) {
@@ -244,13 +283,36 @@ export function chainOverflowVoiceShots(state: SeriesPilotState): SeriesPilotSta
   return cur;
 }
 
+export function dialogueMapNeedsHeal(state: SeriesPilotState) {
+  const ep = state.episode;
+  if (!ep?.shots.length) return false;
+  const hosts = ep.shots.filter((s) => !s.voiceChainFrom);
+  if (hosts.some((s) => !Array.isArray(s.dialogueSegmentIds))) return true;
+  const script = deriveVoiceScript(state);
+  const ownerOf = new Map<string, FamixaSeriesShot>();
+  for (const s of ep.shots) {
+    const host = s.voiceChainFrom ? hosts.find((h) => h.id === s.voiceChainFrom) ?? s : s;
+    for (const id of s.dialogueSegmentIds ?? []) ownerOf.set(id, host);
+  }
+  return script.lines.some((line) => {
+    const home = hosts.find((s) => lineInBeat(s, line));
+    const owner = ownerOf.get(line.id);
+    if (home && !owner) return true;
+    if (home && owner && home.beatId && owner.beatId && home.beatId !== owner.beatId) return true;
+    if (owner && !speakerOnShot(owner, line.characterId, state.characters) && namedCharIdsOnShot(owner, state.characters).length) {
+      return true;
+    }
+    return false;
+  });
+}
+
 export function applyDialogueMap(state: SeriesPilotState): SeriesPilotState {
   const cleared = dropVoiceChains(state);
   const ep = cleared.episode;
   if (!ep?.shots.length) return cleared;
   const { byShot } = proposeDialogueMap(cleared, ep.shots);
   const shots = ep.shots.map((s) => {
-    const ids = s.dialogueSegmentIds ?? byShot.get(s.id) ?? [];
+    const ids = s.voiceChainFrom ? (s.dialogueSegmentIds ?? []) : (byShot.get(s.id) ?? []);
     const spoken = ids.length > 0;
     const seconds: 5 | 10 = spoken ? 10 : s.seconds === 10 ? 10 : 5;
     return {
@@ -268,6 +330,28 @@ export function uniqueSpeakersOf(lines: Pick<FamixaVoiceLine, 'characterId' | 'n
 }
 
 /** Two speakers on one take — split shots. Do not send two wavs into one Fal job. */
+/** Face on the take vs line speaker. Fal one wav — mismatch = mother on Minh. */
+export function lipsyncSpeakerMismatch(
+  shot: FamixaSeriesShot,
+  line: Pick<FamixaVoiceLine, 'characterId' | 'name'>,
+  run?: { visualSpec?: { framing?: string; primary?: { id?: string; name?: string } } },
+  chars?: { id?: string; name?: string }[],
+) {
+  const talk = normCharId(line.characterId);
+  if (!talk) return undefined;
+  const primaryId = run?.visualSpec?.primary?.id;
+  const face = primaryId ? normCharId(primaryId) : undefined;
+  if (run?.visualSpec?.framing === 'INSERT') return undefined;
+  if (face && face !== talk) {
+    return `Mặt ${run?.visualSpec?.primary?.name || face} / thoại ${line.name || talk}`;
+  }
+  const named = namedCharIdsOnShot(shot, chars);
+  if (named.length === 1 && named[0] && named[0] !== talk) {
+    return `Beat ${named[0]} / thoại ${line.name || talk}`;
+  }
+  return undefined;
+}
+
 export function multiSpeakerBlock(lines: Pick<FamixaVoiceLine, 'characterId' | 'name'>[]) {
   const u = uniqueSpeakersOf(lines);
   if (u.length < 2) return undefined;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { App, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch } from 'antd';
+import { App, Button, Drawer, Form, Input, InputNumber, Select, Space, Switch, Typography } from 'antd';
 import { CloseOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
@@ -37,11 +37,13 @@ interface CustomerFormDrawerProps {
   editing: CustomerDetail | null;
   onClose: () => void;
   onSaved: (customer: CustomerDetail) => void;
-  /** POS: chỉ họ tên + SĐT, mã tự sinh */
-  variant?: 'full' | 'quick';
+  /** POS: họ tên + SĐT (bắt buộc) + NS/giới tính/địa chỉ/ghi chú (tùy chọn); care_patch: bổ sung khi đã có khách */
+  variant?: 'full' | 'quick' | 'care_patch';
   /** Prefill when opening quick create from POS search (phone or name already typed). */
   initialPhone?: string;
   initialName?: string;
+  /** Stack above nested modals (e.g. POS consultation studio). */
+  drawerZIndex?: number;
 }
 
 function normalizeCustomerCodeInput(value: string | undefined): string | undefined {
@@ -60,6 +62,41 @@ function isCustomerCodeConflictMessage(text: string) {
   return lower.includes('mã khách') || lower.includes('customer code') || lower.includes('đã tồn tại');
 }
 
+function CareProfileFields({
+  t,
+  customerGenderOptions,
+}: {
+  t: (key: string) => string;
+  customerGenderOptions: { value: number; label: string }[];
+}) {
+  return (
+    <>
+      <Form.Item name="dateOfBirth" label={t('fields.dateOfBirth')}>
+        <PharmaDatePicker
+          placeholder={t('placeholders.dateOfBirth')}
+          style={{ width: '100%' }}
+          yearFrom={1920}
+          yearTo={new Date().getFullYear()}
+          disabledDate={(current) => !!current && current.isAfter(dayjs(), 'day')}
+        />
+      </Form.Item>
+      <Form.Item name="gender" label={t('fields.gender')}>
+        <Select allowClear placeholder={t('placeholders.gender')} options={customerGenderOptions} />
+      </Form.Item>
+      <Form.Item name="addressLine" label={t('fields.addressLine')}>
+        <Input.TextArea rows={2} placeholder={t('placeholders.addressLine')} />
+      </Form.Item>
+      <Form.Item
+        name="clinicalNotes"
+        label={t('fields.clinicalNotes')}
+        extra={t('hints.clinicalNotes')}
+      >
+        <Input.TextArea rows={3} placeholder={t('placeholders.clinicalNotes')} />
+      </Form.Item>
+    </>
+  );
+}
+
 export function CustomerFormDrawer({
   open,
   editing,
@@ -68,28 +105,39 @@ export function CustomerFormDrawer({
   variant = 'full',
   initialPhone,
   initialName,
+  drawerZIndex,
 }: CustomerFormDrawerProps) {
   const { t } = useTranslation('customer', { keyPrefix: 'formDrawer' });
   const { t: tc } = useTranslation('common');
   const { message } = App.useApp();
   const { customerGenderOptions, customerStatusOptions } = useCustomerEnums();
   const isQuick = variant === 'quick' && !editing;
+  const isCarePatch = variant === 'care_patch' && editing;
   const [form] = Form.useForm<CustomerFormValues>();
   const [saving, setSaving] = useState(false);
   const [loadingCode, setLoadingCode] = useState(false);
   const [groups, setGroups] = useState<CustomerGroup[]>([]);
 
   useEffect(() => {
-    if (!open || isQuick) return;
+    if (!open || isQuick || isCarePatch) return;
     void fetchCustomerGroups(true)
       .then(setGroups)
       .catch(() => setGroups([]));
-  }, [open, isQuick]);
+  }, [open, isQuick, isCarePatch]);
 
   useEffect(() => {
     if (!open) return;
 
     if (editing) {
+      if (isCarePatch) {
+        form.setFieldsValue({
+          dateOfBirth: editing.dateOfBirth,
+          gender: editing.gender,
+          addressLine: editing.addressLine,
+          clinicalNotes: editing.clinicalNotes,
+        });
+        return;
+      }
       form.setFieldsValue({
         customerCode: editing.customerCode.toUpperCase(),
         fullName: editing.fullName,
@@ -132,11 +180,43 @@ export function CustomerFormDrawer({
         /* gợi ý mã tùy chọn */
       })
       .finally(() => setLoadingCode(false));
-  }, [open, editing, form, isQuick, initialPhone, initialName]);
+  }, [open, editing, form, isQuick, isCarePatch, initialPhone, initialName]);
 
   const handleSave = async () => {
     try {
-      const values = await form.validateFields(isQuick ? ['fullName', 'phone'] : undefined);
+      if (isCarePatch && editing) {
+        const values = await form.validateFields(['dateOfBirth', 'gender', 'addressLine', 'clinicalNotes']);
+        setSaving(true);
+        const saved = await updateCustomer(editing.id, {
+          customerCode: editing.customerCode,
+          fullName: editing.fullName,
+          phone: editing.phone,
+          email: editing.email || undefined,
+          dateOfBirth: values.dateOfBirth || undefined,
+          gender: values.gender,
+          status: editing.status,
+          allowCredit: editing.allowCredit,
+          creditLimit: editing.allowCredit ? editing.creditLimit ?? null : null,
+          addressLine: values.addressLine?.trim() || undefined,
+          idNumber: editing.idNumber || undefined,
+          emergencyContactName: editing.emergencyContactName || undefined,
+          emergencyContactPhone: editing.emergencyContactPhone || undefined,
+          clinicalNotes: values.clinicalNotes?.trim() || undefined,
+          customerGroupId: editing.customerGroupId ?? null,
+        });
+        message.success('Đã cập nhật hồ sơ khách');
+        onSaved(saved);
+        onClose();
+        return;
+      }
+
+      let values: CustomerFormValues;
+      if (isQuick) {
+        await form.validateFields(['fullName', 'phone']);
+        values = form.getFieldsValue();
+      } else {
+        values = await form.validateFields();
+      }
       const customerCode = isQuick ? undefined : normalizeCustomerCodeInput(values.customerCode);
       setSaving(true);
       const saved = editing
@@ -190,24 +270,32 @@ export function CustomerFormDrawer({
     }
   };
 
-  const formGridStyle = isQuick
-    ? undefined
-    : ({
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        columnGap: 16,
-        rowGap: 0,
-      } as const);
+  const formGridStyle =
+    isQuick || isCarePatch
+      ? undefined
+      : ({
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          columnGap: 16,
+          rowGap: 0,
+        } as const);
+
+  const drawerTitle = isCarePatch
+    ? 'Bổ sung hồ sơ'
+    : editing
+      ? t('titleEdit')
+      : isQuick
+        ? t('titleQuickCreate')
+        : t('titleCreate');
 
   return (
     <Drawer
-      title={
-        editing ? t('titleEdit') : isQuick ? t('titleQuickCreate') : t('titleCreate')
-      }
-      width={isQuick ? 400 : 760}
+      title={drawerTitle}
+      width={isQuick || isCarePatch ? 400 : 760}
       open={open}
       onClose={onClose}
       destroyOnClose
+      zIndex={drawerZIndex}
       extra={
         <Space>
           <Button icon={<CloseOutlined />} onClick={onClose}>
@@ -220,7 +308,15 @@ export function CustomerFormDrawer({
       }
     >
       <Form form={form} layout="vertical" requiredMark="optional" style={formGridStyle}>
-        {!isQuick ? (
+        {isCarePatch && editing ? (
+          <>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
+              {editing.fullName} · {editing.phone}
+            </Typography.Paragraph>
+            <CareProfileFields t={t} customerGenderOptions={customerGenderOptions} />
+          </>
+        ) : null}
+        {!isQuick && !isCarePatch ? (
           <Form.Item
             name="customerCode"
             label={t('fields.customerCode')}
@@ -237,21 +333,33 @@ export function CustomerFormDrawer({
             />
           </Form.Item>
         ) : null}
-        <Form.Item
-          name="fullName"
-          label={t('fields.fullName')}
-          rules={[{ required: true, message: t('validation.fullNameRequired') }]}
-        >
-          <Input placeholder={t('placeholders.fullName')} autoFocus={isQuick} />
-        </Form.Item>
-        <Form.Item
-          name="phone"
-          label={t('fields.phone')}
-          rules={[{ required: true, message: t('validation.phoneRequired') }]}
-        >
-          <Input placeholder={t('placeholders.phone')} />
-        </Form.Item>
-        {!isQuick ? (
+        {!isCarePatch ? (
+          <Form.Item
+            name="fullName"
+            label={t('fields.fullName')}
+            rules={[{ required: true, message: t('validation.fullNameRequired') }]}
+          >
+            <Input placeholder={t('placeholders.fullName')} autoFocus={isQuick} />
+          </Form.Item>
+        ) : null}
+        {!isCarePatch ? (
+          <Form.Item
+            name="phone"
+            label={t('fields.phone')}
+            rules={[{ required: true, message: t('validation.phoneRequired') }]}
+          >
+            <Input placeholder={t('placeholders.phone')} />
+          </Form.Item>
+        ) : null}
+        {isQuick ? (
+          <>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 8, fontSize: 12 }}>
+              Ngày sinh, giới tính, địa chỉ và dị ứng là tùy chọn — thiếu vẫn có thể thêm khách.
+            </Typography.Paragraph>
+            <CareProfileFields t={t} customerGenderOptions={customerGenderOptions} />
+          </>
+        ) : null}
+        {!isQuick && !isCarePatch ? (
           <>
             <Form.Item name="email" label={t('fields.email')}>
               <Input placeholder={t('placeholders.email')} />
@@ -311,7 +419,7 @@ export function CustomerFormDrawer({
             </Form.Item>
           </>
         ) : null}
-        {editing ? (
+        {editing && !isCarePatch ? (
           <>
             <Form.Item name="status" label={t('fields.status')} rules={[{ required: true }]}>
               <Select options={customerStatusOptions} />

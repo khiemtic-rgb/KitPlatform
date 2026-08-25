@@ -127,7 +127,7 @@ export function ContentFamixaPreviewCutCard({
 
   const opts = shots.map((s) => ({
     value: s.id,
-    label: `${studioShotCode(s, allShots ?? shots)}${runOf(s)?.lipsynced ? ' · KHỚP MÔI' : ''}`,
+    label: `${studioShotCode(s, allShots ?? shots)}${runOf?.(s)?.lipsynced ? ' · KHỚP MÔI' : ''}`,
   }));
   const storyOk = storyPreviewReady(plan);
   const haveTakes = existingMotionReady(plan);

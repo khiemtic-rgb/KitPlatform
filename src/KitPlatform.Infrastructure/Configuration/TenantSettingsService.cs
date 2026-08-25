@@ -4,6 +4,7 @@ using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Configuration;
 using KitPlatform.Infrastructure.Data;
+using Microsoft.Extensions.Configuration;
 
 namespace KitPlatform.Infrastructure.Configuration;
 
@@ -17,11 +18,16 @@ internal sealed class TenantSettingsService : ITenantSettingsService
 
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
+    private readonly IConfiguration _configuration;
 
-    public TenantSettingsService(IDbConnectionFactory db, ITenantContext tenant)
+    public TenantSettingsService(
+        IDbConnectionFactory db,
+        ITenantContext tenant,
+        IConfiguration configuration)
     {
         _db = db;
         _tenant = tenant;
+        _configuration = configuration;
     }
 
     public async Task<TenantBatchMode> GetBatchModeAsync(CancellationToken cancellationToken = default)
@@ -391,6 +397,103 @@ internal sealed class TenantSettingsService : ITenantSettingsService
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await conn.ExecuteAsync(sql, new { TenantId = _tenant.TenantId, RxJson = rxJson });
         return new TenantRxSettingsDto(mode, request.PosBlockedAudit);
+    }
+
+    public async Task<TenantPharmacyConsultationAiSettingsDto> GetPharmacyConsultationAiSettingsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var row = await LoadPharmacyConsultationAiRowAsync(cancellationToken);
+        var secretRef = string.IsNullOrWhiteSpace(row.GeminiApiKeySecretRef)
+            ? "GEMINI_API_KEY"
+            : row.GeminiApiKeySecretRef.Trim();
+        var textModel = string.IsNullOrWhiteSpace(row.TextModel)
+            ? "gemini-2.5-flash-lite"
+            : row.TextModel.Trim();
+        var configured = !string.IsNullOrWhiteSpace(row.GeminiApiKey)
+                         || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(secretRef))
+                         || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"));
+        var envFallback = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
+                          || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(secretRef));
+        var contentKey = await ContentParkGeminiKeyResolver.ResolveAsync(_db, _configuration, cancellationToken);
+        var contentFallback = !string.IsNullOrWhiteSpace(contentKey);
+        if (contentFallback)
+            configured = true;
+
+        return new TenantPharmacyConsultationAiSettingsDto(
+            secretRef,
+            configured,
+            textModel,
+            envFallback,
+            contentFallback && string.IsNullOrWhiteSpace(row.GeminiApiKey));
+    }
+
+    public async Task<TenantPharmacyConsultationAiSettingsDto> UpdatePharmacyConsultationAiSettingsAsync(
+        UpdateTenantPharmacyConsultationAiSettingsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var current = await LoadPharmacyConsultationAiRowAsync(cancellationToken);
+        var secretRef = request.GeminiApiKeySecretRef is null
+            ? (string.IsNullOrWhiteSpace(current.GeminiApiKeySecretRef) ? "GEMINI_API_KEY" : current.GeminiApiKeySecretRef.Trim())
+            : request.GeminiApiKeySecretRef.Trim();
+        var textModel = string.IsNullOrWhiteSpace(request.TextModel)
+            ? (string.IsNullOrWhiteSpace(current.TextModel) ? "gemini-2.5-flash-lite" : current.TextModel.Trim())
+            : request.TextModel.Trim();
+
+        string? apiKey;
+        if (request.GeminiApiKey is null)
+            apiKey = current.GeminiApiKey;
+        else if (string.IsNullOrWhiteSpace(request.GeminiApiKey))
+            apiKey = null;
+        else
+            apiKey = request.GeminiApiKey.Trim();
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            gemini_api_key_secret_ref = secretRef,
+            gemini_api_key = apiKey,
+            text_model = textModel,
+        });
+
+        const string sql = """
+            UPDATE tenants
+            SET settings = jsonb_set(
+                COALESCE(settings, '{}'::jsonb),
+                '{pharmacy_consultation_ai}',
+                @Payload::jsonb,
+                true
+            ),
+            updated_at = NOW()
+            WHERE id = @TenantId
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new { TenantId = _tenant.TenantId, Payload = payload });
+        return await GetPharmacyConsultationAiSettingsAsync(cancellationToken);
+    }
+
+    public async Task<PharmacyConsultationAiResolvedDto> ResolvePharmacyConsultationAiAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var row = await LoadPharmacyConsultationAiRowAsync(cancellationToken);
+        var textModel = string.IsNullOrWhiteSpace(row.TextModel)
+            ? "gemini-2.5-flash-lite"
+            : row.TextModel.Trim();
+        return new PharmacyConsultationAiResolvedDto(row.GeminiApiKey, row.GeminiApiKeySecretRef, textModel);
+    }
+
+    private async Task<(string? GeminiApiKey, string? GeminiApiKeySecretRef, string? TextModel)> LoadPharmacyConsultationAiRowAsync(
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                settings->'pharmacy_consultation_ai'->>'gemini_api_key' AS GeminiApiKey,
+                settings->'pharmacy_consultation_ai'->>'gemini_api_key_secret_ref' AS GeminiApiKeySecretRef,
+                settings->'pharmacy_consultation_ai'->>'text_model' AS TextModel
+            FROM tenants
+            WHERE id = @TenantId
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<(string? GeminiApiKey, string? GeminiApiKeySecretRef, string? TextModel)>(
+            sql, new { TenantId = _tenant.TenantId });
     }
 
     private static IReadOnlyDictionary<string, bool> ParseGppChecklist(string? json)

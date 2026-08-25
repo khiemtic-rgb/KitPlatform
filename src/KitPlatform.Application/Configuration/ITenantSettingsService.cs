@@ -41,4 +41,14 @@ public interface ITenantSettingsService
     Task<TenantRxSettingsDto> UpdateRxSettingsAsync(
         UpdateTenantRxSettingsRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<TenantPharmacyConsultationAiSettingsDto> GetPharmacyConsultationAiSettingsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<TenantPharmacyConsultationAiSettingsDto> UpdatePharmacyConsultationAiSettingsAsync(
+        UpdateTenantPharmacyConsultationAiSettingsRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PharmacyConsultationAiResolvedDto> ResolvePharmacyConsultationAiAsync(
+        CancellationToken cancellationToken = default);
 }

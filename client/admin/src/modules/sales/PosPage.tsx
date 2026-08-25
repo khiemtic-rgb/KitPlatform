@@ -15,7 +15,7 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { DeleteOutlined, CreditCardOutlined, ClockCircleOutlined, PlusOutlined, PrinterOutlined, RollbackOutlined, SaveOutlined, SendOutlined, ShoppingCartOutlined, UnorderedListOutlined, UserAddOutlined } from '@ant-design/icons';
+import { DeleteOutlined, CreditCardOutlined, ClockCircleOutlined, MedicineBoxOutlined, PlusOutlined, PrinterOutlined, RollbackOutlined, SaveOutlined, SendOutlined, ShoppingCartOutlined, UnorderedListOutlined, UserAddOutlined } from '@ant-design/icons';
 import { fetchWarehouses, fetchActiveCountingSession } from '@/shared/api/inventory.api';
 import type { Warehouse, AdjustmentListItem } from '@/shared/api/inventory.types';
 import { fetchCustomer, markCustomerPharmacyMember } from '@/shared/api/customer-admin.api';
@@ -101,6 +101,12 @@ import { buildCustomerDraftOrderPayload } from '@/modules/sales/pos-customer-dra
 import { CustomerFormDrawer } from '@/modules/customer/CustomerFormDrawer';
 import type { CustomerDetail } from '@/shared/api/customer-admin.types';
 import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderStatusBar';
+import { PosConsultationModal } from '@/modules/sales/PosConsultationModal';
+import { PosConsultationSessionChip } from '@/modules/sales/PosConsultationSessionChip';
+import {
+  linkConsultationOrder,
+  type ConsultationSession,
+} from '@/shared/api/pharmacy-consultation.api';
 import { CustomerAppQrButton } from '@/modules/sales/CustomerAppQrButton';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZeroSuffix, moneyInputNumberStyle } from '@/shared/utils/money';
 import { useTranslation } from 'react-i18next';
@@ -164,6 +170,9 @@ export function PosPage() {
   const [orderDiscount, setOrderDiscount] = useState<OrderDiscountState>({});
   const [saving, setSaving] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [consultationOpen, setConsultationOpen] = useState(false);
+  const [activeConsultationSessionId, setActiveConsultationSessionId] = useState<string>();
+  const [activeConsultationSafetyLevel, setActiveConsultationSafetyLevel] = useState('none');
   const [lastCompletedOrder, setLastCompletedOrder] = useState<SalesOrderDetail | null>(null);
   const [openShift, setOpenShift] = useState<SalesShiftDetail | null | undefined>(undefined);
   const [openShiftModal, setOpenShiftModal] = useState(false);
@@ -221,7 +230,10 @@ export function PosPage() {
     [runCustomerSearch],
   );
 
-  const openQuickCustomer = useCallback(() => {
+  const openQuickCustomer = useCallback((searchQuery?: string) => {
+    const raw = typeof searchQuery === 'string' ? searchQuery : lastCustomerSearchRef.current;
+    const q = raw.trim();
+    if (q) lastCustomerSearchRef.current = q;
     setQuickCreatePrefill(guessPhoneOrName(lastCustomerSearchRef.current));
     setQuickCustomerOpen(true);
   }, []);
@@ -1315,6 +1327,16 @@ export function PosPage() {
           message.warning(t('pos.messages.linkReservationFailed'));
         }
       }
+      if (activeConsultationSessionId) {
+        try {
+          await linkConsultationOrder(activeConsultationSessionId, order.id);
+        } catch {
+          message.warning('Đã bán xong nhưng chưa liên kết phiên tư vấn — liên hệ IT nếu cần.');
+        } finally {
+          setActiveConsultationSessionId(undefined);
+          setActiveConsultationSafetyLevel('none');
+        }
+      }
       setCheckoutOpen(false);
       clearDraftEdit();
       resetCart();
@@ -1826,8 +1848,13 @@ export function PosPage() {
                 }))}
               />
               {canWrite && !editingDraftId ? (
+                <Tooltip title="Tư vấn triệu chứng (MVP 1)">
+                  <Button icon={<MedicineBoxOutlined />} onClick={() => setConsultationOpen(true)} />
+                </Tooltip>
+              ) : null}
+              {canWrite && !editingDraftId ? (
                 <Tooltip title={t('pos.toolbar.quickAddCustomer')}>
-                  <Button icon={<UserAddOutlined />} onClick={openQuickCustomer} />
+                  <Button icon={<UserAddOutlined />} onClick={() => openQuickCustomer()} />
                 </Tooltip>
               ) : null}
             </Space.Compact>
@@ -1849,6 +1876,16 @@ export function PosPage() {
               </Space>
             ) : null}
           </div>
+          {activeConsultationSessionId && !consultationOpen ? (
+            <PosConsultationSessionChip
+              safetyLevel={activeConsultationSafetyLevel}
+              onReopen={() => setConsultationOpen(true)}
+              onUnlink={() => {
+                setActiveConsultationSessionId(undefined);
+                setActiveConsultationSafetyLevel('none');
+              }}
+            />
+          ) : null}
           <div className="pos-page__toolbar-row pos-page__toolbar-row--scan">
             <AutoComplete
               className="pos-page__barcode-field"
@@ -2070,8 +2107,46 @@ export function PosPage() {
         variant="quick"
         initialPhone={quickCreatePrefill.phone}
         initialName={quickCreatePrefill.name}
+        drawerZIndex={consultationOpen ? 1150 : undefined}
         onClose={() => setQuickCustomerOpen(false)}
         onSaved={handleQuickCustomerSaved}
+      />
+
+      <PosConsultationModal
+        open={consultationOpen}
+        customerId={customerId}
+        warehouseId={warehouseId}
+        onCustomerChange={(id, option) => {
+          if (option) setCustomers((prev) => upsertPosCustomers(prev, option));
+          setCustomerId(id);
+        }}
+        onQuickAddCustomer={canWrite && !editingDraftId ? openQuickCustomer : undefined}
+        canPatchCustomer={canWrite && !editingDraftId}
+        onCustomerUpdated={(detail) => {
+          setCustomers((prev) =>
+            upsertPosCustomers(prev, {
+              id: detail.id,
+              customerCode: detail.customerCode,
+              fullName: detail.fullName,
+              phone: detail.phone,
+              allowCredit: detail.allowCredit,
+              creditLimit: detail.creditLimit ?? undefined,
+              customerGroupId: detail.customerGroupId,
+              customerGroupName: detail.customerGroupName,
+              groupDiscountPercent: detail.groupDiscountPercent,
+              pharmacyRelation: detail.pharmacyRelation,
+            }),
+          );
+        }}
+        onAddToCart={async (lookupCode) => {
+          await addByBarcode(lookupCode);
+        }}
+        onClose={() => setConsultationOpen(false)}
+        onConfirmed={(session: ConsultationSession) => {
+          setActiveConsultationSessionId(session.id);
+          setActiveConsultationSafetyLevel(session.safetyLevel);
+          message.success('Đã lưu phiên tư vấn — tiếp tục bán và chốt đơn để liên kết.');
+        }}
       />
       </div>
     </Spin>

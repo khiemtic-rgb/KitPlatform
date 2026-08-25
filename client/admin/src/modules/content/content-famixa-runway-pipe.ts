@@ -141,6 +141,35 @@ export function videoPipeLabel(status: VideoPipeStatus) {
   return PIPE_LABEL[status];
 }
 
+export function runwayWaitElapsedSec(run?: RunwayPipeRun, now = Date.now()) {
+  const raw = latestAttempt(run)?.at;
+  if (!raw) return 0;
+  const started = Date.parse(raw);
+  if (Number.isNaN(started)) return 0;
+  return Math.max(0, Math.floor((now - started) / 1000));
+}
+
+/** HTTP 200 ≠ file. 10s gen4_turbo often 1–3 min; KIT polls 6s / cap 4 min. */
+export function formatRunwayWaitHint(opts: {
+  seconds?: number;
+  elapsedSec?: number;
+  pipe?: VideoPipeStatus;
+}) {
+  const dur = (opts.seconds ?? 5) >= 10 ? 10 : 5;
+  const typical = dur >= 10 ? '1–3 phút' : '45–90 giây';
+  const elapsed =
+    opts.elapsedSec && opts.elapsedSec > 0
+      ? `Đã chờ ${Math.floor(opts.elapsedSec / 60)}:${String(opts.elapsedSec % 60).padStart(2, '0')}. `
+      : '';
+  const phase =
+    opts.pipe === 'VIDEO_DOWNLOADING'
+      ? 'KIT đang tải file.'
+      : opts.pipe === 'VIDEO_SUCCEEDED'
+        ? 'Có URL — KIT đang xác file.'
+        : `Runway đang render ${dur}s. HTTP 200 chỉ nhận job, chưa có file.`;
+  return `${elapsed}${phase} Thường ${typical}. KIT hỏi mỗi 6s, tối đa 4 phút — đừng Gửi lại.`;
+}
+
 export function hasVerifiedTake(run?: RunwayPipeRun) {
   const url = (run?.previewUrl || run?.localVideoPath || '').trim();
   if (!url) return false;
@@ -208,7 +237,6 @@ export function classifyVideoPipe(run?: RunwayPipeRun): VideoPipeStatus {
   }
   if (st === 'RETRY') return /timeout|hết giờ|chưa trả take/i.test(err) ? 'TIMEOUT' : 'VIDEO_QUEUED';
   if (run?.turboTaskId?.trim()) return stored && stored !== 'VIDEO_NOT_SENT' ? stored : 'VIDEO_SUBMITTED';
-  if (stored === 'INPUT_INVALID') return 'INPUT_INVALID';
   return 'VIDEO_NOT_SENT';
 }
 

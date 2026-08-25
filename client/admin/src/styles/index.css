@@ -1271,6 +1271,36 @@ body {
   min-width: 0;
 }
 
+.pos-consultation-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: -2px 0 6px;
+  min-height: 24px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.pos-consultation-chip__tag {
+  margin: 0;
+  font-size: 11px;
+  line-height: 18px;
+  padding-inline: 6px;
+}
+
+.pos-consultation-chip__level {
+  color: var(--ant-color-text-secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+.pos-consultation-chip__action {
+  padding: 0 4px;
+  height: auto;
+  font-size: 12px;
+}
+
 .pos-page__barcode-field {
   flex: 1;
   min-width: 0;

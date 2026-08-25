@@ -39,9 +39,11 @@ import {
   compareRunwayJobs,
   formatRunwayDiagnostic,
   formatProductionLog,
+  formatRunwayWaitHint,
   isInternalBadOutput,
   lastGenerationFail,
   parseFailureCode,
+  runwayWaitElapsedSec,
   stampFailedInput,
   videoPipeLabel,
 } from './content-famixa-runway-pipe';
@@ -75,6 +77,7 @@ import {
   fullEpisodeBlockReason,
 } from './content-famixa-scene-first';
 import { buildAssembleTimeline } from './content-famixa-assemble';
+import { normalizeMixPrefs } from './content-famixa-mix';
 import { resolveFinalSource, resolveTakeUrl } from './content-famixa-final-source';
 import { multiSpeakerBlock } from './content-famixa-dialogue-map';
 import { actingOfLines } from './content-famixa-acting-law';
@@ -96,6 +99,7 @@ import {
   FAIL_TICKS,
   formatVisualContract,
   nextShotNeedingKf,
+  soloCastFromNote,
 } from './content-famixa-kf-pipeline';
 import { rewriteContentSeriesKfNote } from '../../shared/api/content.api';
 import './content-famixa-studio.css';
@@ -114,6 +118,23 @@ function kfLabel(run: SeriesShotRun) {
   if (origin === 'NONE') return 'NONE';
   if (kfIsApproved(run)) return `${origin} · READY`;
   return `${origin} · DRAFT`;
+}
+
+function RunwayWaitHint({ run, seconds }: { run: SeriesShotRun; seconds?: number }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  return (
+    <span className="fx-prod-row__warn">
+      {formatRunwayWaitHint({
+        seconds,
+        elapsedSec: runwayWaitElapsedSec(run, now),
+        pipe: classifyVideoPipe(run),
+      })}
+    </span>
+  );
 }
 
 export function ContentFamixaProdV2({
@@ -148,6 +169,7 @@ export function ContentFamixaProdV2({
   onAbDiagnostic,
   onLipsync,
   onLipsyncPrefs,
+  onMixPrefs,
   onAttachLipsync,
   lipsyncBusy,
   cutPlan,
@@ -221,6 +243,7 @@ export function ContentFamixaProdV2({
   onAbDiagnostic?: (successId: string, failId: string) => void;
   onLipsync?: (ids?: string[], opts?: { remake?: boolean }) => void;
   onLipsyncPrefs?: (prefs: { lipsyncModel?: FalLipsyncModel; lipsyncSyncMode?: FalLipsyncSyncMode }) => void;
+  onMixPrefs?: (prefs: Partial<import('./content-famixa-mix').FamixaMixPrefs>) => void;
   onAttachLipsync?: (shotId: string) => void;
   lipsyncBusy?: boolean | string;
   cutPlan?: PreviewCutPlan;
@@ -508,7 +531,6 @@ export function ContentFamixaProdV2({
               return Boolean(hit && runOf(hit).keyframeDataUrl);
             });
             const genN = kfMethod === 'ai' ? need.length : 0;
-            const fromCode = need[0] ? studioShotCode(sel.find((s) => s.id === need[0]) || queue.find((s) => s.id === need[0])!, queue) : '';
             return (
               <>
                 <p className="fx-kf__kicker">04 IMAGE — Scene Master rồi mới Shot</p>
@@ -1054,9 +1076,14 @@ export function ContentFamixaProdV2({
                               kfDetail,
                               previousSceneKf(state, kfDetail, queue)?.shot,
                             ).visualSpec;
-                            const fromTicks = kfFailTicks.length
-                              ? compileCorrectionPrompt(spec, kfFailTicks, runOf(kfDetail).visualQa?.evidence)
-                              : '';
+                            const evidence =
+                              kfUserNote.trim() || kfRewrite.instruction.trim() || runOf(kfDetail).visualQa?.evidence;
+                            const ticks = kfFailTicks.length
+                              ? kfFailTicks
+                              : soloCastFromNote(kfUserNote)
+                                ? ['wrong-character']
+                                : [];
+                            const fromTicks = ticks.length ? compileCorrectionPrompt(spec, ticks, evidence) : '';
                             const note =
                               fromTicks ||
                               kfRewrite.instruction.trim() ||
@@ -1259,7 +1286,12 @@ export function ContentFamixaProdV2({
               </Radio.Group>
               <Typography.Text type="secondary">
                 {lipNeed.length
-                  ? `Ước tính ${lipNeed.length} clip · ${lipsyncTierOf(state.lipsyncModel).title} ≈ $${estimateFalLipsyncUsdForShots(lipNeed, normalizeLipsyncModel(state.lipsyncModel)).toFixed(2)} Fal. Confirm mới trừ.`
+                  ? `Ước tính ${lipNeed.length} clip · ${lipsyncTierOf(state.lipsyncModel).title} ≈ $${estimateFalLipsyncUsdForShots(
+                      lipNeed
+                        .map((id) => sel.find((s) => s.id === id))
+                        .filter((s): s is FamixaSeriesShot => Boolean(s)),
+                      normalizeLipsyncModel(state.lipsyncModel),
+                    ).toFixed(2)} Fal. Confirm mới trừ.`
                   : `${lipsyncTierOf(state.lipsyncModel).title} — chọn trước, Confirm khi gửi.`}
                 {normalizeLipsyncModel(state.lipsyncModel) === 'ls'
                   ? ' LatentSync không có remap/cut_off — KIT chỉ gửi loop/bounce nếu bạn chọn.'
@@ -1433,7 +1465,12 @@ export function ContentFamixaProdV2({
                 ) : turboInFlight(run) || turboBusy === s.id ? (
                   <>
                     <Tag color="blue">{run.turboStatus || 'PENDING'}</Tag>
-                    <span className="fx-prod-row__warn">Đang tạo trên Runway — History 200 chưa phải có file. Đợi Tải.</span>
+                    <RunwayWaitHint run={run} seconds={s.seconds} />
+                    {turboBusy !== s.id && shouldResumeTurboPoll(run) ? (
+                      <Button size="small" loading={turboBusy === s.id} onClick={() => onCreateVideo([s.id])}>
+                        Hỏi lại · 0 cr
+                      </Button>
+                    ) : null}
                   </>
                 ) : run.turboError ? (
                   <>
@@ -1810,8 +1847,42 @@ export function ContentFamixaProdV2({
             <Alert type="success" showIcon message="Gate Final đủ — Timeline chỉ dùng FINAL_SOURCE." />
           )}
           <Typography.Paragraph type="secondary">
-            Một tập: 30fps H.264 + TTS đúng chỗ. 16:9 pad hoặc 9:16 crop (Reels). Không fade che continuity. Confirm không trừ credit.
+            Một tập: 30fps H.264 + TTS đúng chỗ. 16:9 pad hoặc 9:16 crop (Reels). Mix: phòng + Foley từ Action + −14 LUFS; nhạc 1 bed + duck khi tick. Không fade che continuity. Confirm không trừ credit.
           </Typography.Paragraph>
+          {onMixPrefs ? (
+            <div style={{ marginBottom: 12 }}>
+              <Typography.Text strong>Mix FINAL</Typography.Text>
+              <Space wrap style={{ display: 'block', marginTop: 8 }}>
+                <Checkbox
+                  checked={normalizeMixPrefs(state.mixPrefs).room}
+                  onChange={(e) => onMixPrefs({ room: e.target.checked })}
+                >
+                  Phòng
+                </Checkbox>
+                <Checkbox
+                  checked={normalizeMixPrefs(state.mixPrefs).foley}
+                  onChange={(e) => onMixPrefs({ foley: e.target.checked })}
+                >
+                  Foley
+                </Checkbox>
+                <Checkbox
+                  checked={normalizeMixPrefs(state.mixPrefs).music}
+                  onChange={(e) => onMixPrefs({ music: e.target.checked })}
+                >
+                  Nhạc
+                </Checkbox>
+                <Checkbox
+                  checked={normalizeMixPrefs(state.mixPrefs).loudnorm}
+                  onChange={(e) => onMixPrefs({ loudnorm: e.target.checked })}
+                >
+                  −14 LUFS
+                </Checkbox>
+              </Space>
+              <Typography.Text type="secondary">
+                Mặc định phòng + Foley + −14. Nhạc trống đến khi tick (1 bed, duck −12 dB dưới thoại). 0 cr.
+              </Typography.Text>
+            </div>
+          ) : null}
           <ul className="fx-final-gates">
             {PROD_GATES.map((g) => {
               const ok = prodGateState(state, queue)[g.id];

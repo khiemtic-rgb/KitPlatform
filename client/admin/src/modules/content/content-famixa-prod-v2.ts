@@ -4,7 +4,7 @@ import { kfIsApproved, sceneCodeOfShot } from './content-famixa-batch-plan';
 import { approveBlockReason, visualQaAllowsApprove } from './content-famixa-visual-spec';
 import { shotsInInclusiveRange } from './content-famixa-preview-cut';
 import { pickShots, shotProdStatus } from './content-famixa-scene-first';
-import { classifyVideoPipe, dataUriHash, hasVerifiedTake, promptHashOf, sameKfAsInternalFail } from './content-famixa-runway-pipe';
+import { classifyVideoPipe, dataUriHash, hasVerifiedTake, promptHashOf, sameKfAsInternalFail, type RunwayPipeRun } from './content-famixa-runway-pipe';
 import {
   compileI2vPrompt,
   episodeShots,
@@ -475,7 +475,7 @@ export function nextRunwayQuietUntil(opts: {
 export function turboInFlight(run: { turboStatus?: string; previewUrl?: string }) {
   if (run.previewUrl?.trim()) return false;
   const st = (run.turboStatus || '').toUpperCase();
-  return st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'THROTTLED' || st === 'RETRY';
+  return st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'IN_PROGRESS';
 }
 
 /** 429 / throttle often means the old task is still on Runway — poll it, do not POST again. */
@@ -488,7 +488,9 @@ export function shouldResumeTurboPoll(run: {
   if (!run.turboTaskId?.trim() || run.previewUrl?.trim()) return false;
   const st = (run.turboStatus || '').toUpperCase();
   if (st === 'SUCCEEDED') return false;
-  if (st === 'PENDING' || st === 'RUNNING' || st === 'THROTTLED' || st === 'RETRY') return true;
+  if (st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'IN_PROGRESS' || st === 'THROTTLED' || st === 'RETRY') {
+    return true;
+  }
   if (isTurboRateLimit(run.turboError || '')) return true;
   return false;
 }
@@ -508,20 +510,7 @@ export function runwayEstimatedCredits(seconds: number) {
   return clampShortSeconds(seconds) * 5;
 }
 
-export function runwayCostView(
-  run: {
-    runwayBilled?: number;
-    runwaySpent?: number;
-    turboTaskId?: string;
-    previewUrl?: string;
-    turboStatus?: string;
-    turboError?: string;
-    videoVerified?: boolean;
-    runwayRefund?: string;
-    videoPipe?: string;
-  },
-  seconds: number,
-) {
+export function runwayCostView(run: RunwayPipeRun, seconds: number) {
   const estimated = runwayEstimatedCredits(seconds);
   if (hasVerifiedTake(run) || run.previewUrl?.trim()) {
     const actual = inferRunwayBilled(run, seconds) || estimated;
@@ -536,7 +525,7 @@ export function runwayCostView(
   }
   const failed =
     classifyVideoPipe(run) === 'RUNWAY_FAILED' ||
-    ((run.turboStatus || '').toUpperCase() === 'FAILED' && run.videoPipe !== 'INPUT_INVALID');
+    (run.turboStatus || '').toUpperCase() === 'FAILED';
   if (failed) {
     return {
       phase: 'REFUND_PENDING' as const,

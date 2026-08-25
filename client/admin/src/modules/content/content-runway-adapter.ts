@@ -74,6 +74,14 @@ export function requestFingerprint(opts: {
 
 export function classifyRunwayFailure(code?: string, error?: string) {
   const blob = `${code || ''} ${error || ''}`.toUpperCase();
+  if (/KIT PRECHECK|RUNWAY BLOCKED|WIDTH —|CHƯA ĐO ĐƯỢC PIXEL/.test(blob)) {
+    return {
+      code: 'KIT_PRECHECK' as const,
+      layer: 'KIT_PRECHECK' as const,
+      retry: 'NO' as const,
+      action: 'Sửa KF / prompt trước khi gửi Runway.',
+    };
+  }
   if (/ASSET\.INVALID|INVALID_ASSET|UNSUPPORTED|CORRUPT|INVALID_DIM/.test(blob)) {
     return {
       code: 'ASSET.INVALID' as const,

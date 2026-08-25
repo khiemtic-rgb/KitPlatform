@@ -68,10 +68,10 @@ export function patchDialoguePerformance(
   return { ...state, scenes };
 }
 
-export function mergeKeepDialoguePerformance(
-  rem?: { id: string; performance?: LinePerformance }[],
+export function mergeKeepDialoguePerformance<T extends { id: string; performance?: LinePerformance }>(
+  rem?: T[],
   old?: { id: string; performance?: LinePerformance }[],
-) {
+): T[] {
   const byOld = new Map((old ?? []).map((d) => [d.id, d.performance]));
   return (rem ?? []).map((d) => ({
     ...d,

@@ -76,4 +76,26 @@ public sealed class SalesSettingsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpGet("consultation-ai")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    public async Task<ActionResult<TenantPharmacyConsultationAiSettingsDto>> GetConsultationAi(
+        CancellationToken cancellationToken) =>
+        Ok(await _settings.GetPharmacyConsultationAiSettingsAsync(cancellationToken));
+
+    [HttpPut("consultation-ai")]
+    [Authorize(Policy = SalesPolicies.Write)]
+    public async Task<ActionResult<TenantPharmacyConsultationAiSettingsDto>> UpdateConsultationAi(
+        [FromBody] UpdateTenantPharmacyConsultationAiSettingsRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _settings.UpdatePharmacyConsultationAiSettingsAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

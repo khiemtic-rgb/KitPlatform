@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { App, Alert, Button, Card, Form, Input, Select, Space, Switch, Typography } from 'antd';
-import { PrinterOutlined } from '@ant-design/icons';import {
+import { App, Alert, Button, Card, Form, Input, Select, Space, Switch, Tag, Typography } from 'antd';
+import { MedicineBoxOutlined, PrinterOutlined } from '@ant-design/icons';
+import {
+  fetchPharmacyConsultationAiSettings,
+  updatePharmacyConsultationAiSettings,
+  type PharmacyConsultationAiSettings,
+} from '@/shared/api/pharmacy-consultation.api';
+import {
   fetchBatchModeSettings,
   updateBatchModeSettings,
   fetchRxSettings,
@@ -37,6 +43,16 @@ export function ReceiptSettingsPage() {
   const [savingBatchMode, setSavingBatchMode] = useState(false);
   const [rxSettings, setRxSettings] = useState<TenantRxSettings>({ enforcementMode: 'off', posBlockedAudit: true });
   const [savingRxSettings, setSavingRxSettings] = useState(false);
+  const [consultationAi, setConsultationAi] = useState<PharmacyConsultationAiSettings>({
+    geminiApiKeySecretRef: 'GEMINI_API_KEY',
+    textModel: 'gemini-2.5-flash-lite',
+    geminiApiKeyConfigured: false,
+    envFallbackAvailable: false,
+    contentFallbackAvailable: false,
+  });
+  const [consultationAiKey, setConsultationAiKey] = useState('');
+  const [clearConsultationAiKey, setClearConsultationAiKey] = useState(false);
+  const [savingConsultationAi, setSavingConsultationAi] = useState(false);
   const [testPrinting, setTestPrinting] = useState(false);
 
   useEffect(() => {
@@ -49,14 +65,18 @@ export function ReceiptSettingsPage() {
     void (async () => {
       setLoading(true);
       try {
-        const [receipt, mode, rx] = await Promise.all([
+        const [receipt, mode, rx, consultationAiSettings] = await Promise.all([
           loadReceiptStoreSettings(true),
           fetchBatchModeSettings(),
           fetchRxSettings(),
+          fetchPharmacyConsultationAiSettings(),
         ]);
         receiptForm.setFieldsValue(receipt);
         setBatchMode(mode);
         setRxSettings(rx);
+        setConsultationAi(consultationAiSettings);
+        setConsultationAiKey('');
+        setClearConsultationAiKey(false);
       } catch (error) {
         message.error(apiErrorMessage(error, t('messages.loadFailed')));
       } finally {
@@ -121,6 +141,25 @@ export function ReceiptSettingsPage() {
       message.error(apiErrorMessage(error, t('rxCard.saveFailed')));
     } finally {
       setSavingRxSettings(false);
+    }
+  };
+
+  const onSaveConsultationAi = async () => {
+    setSavingConsultationAi(true);
+    try {
+      const saved = await updatePharmacyConsultationAiSettings({
+        geminiApiKeySecretRef: consultationAi.geminiApiKeySecretRef?.trim() || 'GEMINI_API_KEY',
+        textModel: consultationAi.textModel.trim() || 'gemini-2.5-flash-lite',
+        geminiApiKey: clearConsultationAiKey ? '' : consultationAiKey.trim() || undefined,
+      });
+      setConsultationAi(saved);
+      setConsultationAiKey('');
+      setClearConsultationAiKey(false);
+      message.success('Đã lưu cấu hình AI tư vấn quầy');
+    } catch (error) {
+      message.error(apiErrorMessage(error, 'Không lưu được cấu hình AI'));
+    } finally {
+      setSavingConsultationAi(false);
     }
   };
 
@@ -216,6 +255,101 @@ export function ReceiptSettingsPage() {
           {canWrite ? (
             <Button type="primary" loading={savingRxSettings} onClick={() => void onSaveRxSettings()}>
               {t('rxCard.save')}
+            </Button>
+          ) : null}
+        </Space>
+      </Card>
+
+      <Card
+        title={
+          <Space>
+            <MedicineBoxOutlined />
+            <span>AI tư vấn quầy (POS)</span>
+          </Space>
+        }
+        loading={loading}
+      >
+        <Space direction="vertical" size={12} style={{ maxWidth: 520, width: '100%' }}>
+          <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+            Dùng cho nút <strong>Tư vấn</strong> trên POS — trích xuất triệu chứng bằng Gemini. Key lưu theo
+            từng nhà thuốc (tenant). Không hiển thị lại key đã lưu.
+          </Typography.Text>
+          <div>
+            <Typography.Text type="secondary">Trạng thái</Typography.Text>
+            <div style={{ marginTop: 4 }}>
+              {consultationAi.geminiApiKeyConfigured ? (
+                <Tag color="success">Đã có API key</Tag>
+              ) : (
+                <Tag>Chưa cấu hình key</Tag>
+              )}
+              {consultationAi.envFallbackAvailable ? (
+                <Tag color="blue">Có fallback env</Tag>
+              ) : null}
+              {consultationAi.contentFallbackAvailable ? (
+                <Tag color="purple">Dùng key Content Park</Tag>
+              ) : null}
+            </div>
+          </div>
+          <div>
+            <Typography.Text type="secondary">Secret ref (env trên server)</Typography.Text>
+            <Input
+              style={{ marginTop: 4 }}
+              disabled={!canWrite}
+              value={consultationAi.geminiApiKeySecretRef ?? 'GEMINI_API_KEY'}
+              onChange={(e) =>
+                setConsultationAi((prev) => ({ ...prev, geminiApiKeySecretRef: e.target.value }))
+              }
+              placeholder="GEMINI_API_KEY"
+            />
+          </div>
+          <div>
+            <Typography.Text type="secondary">Gemini API key (lưu DB tenant)</Typography.Text>
+            <Input.Password
+              style={{ marginTop: 4 }}
+              disabled={!canWrite || clearConsultationAiKey}
+              value={consultationAiKey}
+              onChange={(e) => setConsultationAiKey(e.target.value)}
+              placeholder={
+                consultationAi.geminiApiKeyConfigured
+                  ? 'Để trống = giữ key cũ'
+                  : 'Dán API key Google AI Studio'
+              }
+            />
+          </div>
+          {canWrite ? (
+            <Space>
+              <Switch
+                checked={clearConsultationAiKey}
+                onChange={(checked) => {
+                  setClearConsultationAiKey(checked);
+                  if (checked) setConsultationAiKey('');
+                }}
+              />
+              <Typography.Text>Xóa key đã lưu trên DB</Typography.Text>
+            </Space>
+          ) : null}
+          <div>
+            <Typography.Text type="secondary">Model text</Typography.Text>
+            <Select
+              style={{ width: '100%', marginTop: 4 }}
+              disabled={!canWrite}
+              value={consultationAi.textModel}
+              options={[
+                { value: 'gemini-2.5-flash-lite', label: 'gemini-2.5-flash-lite (nhanh)' },
+                { value: 'gemini-flash-latest', label: 'gemini-flash-latest' },
+              ]}
+              onChange={(value) => setConsultationAi((prev) => ({ ...prev, textModel: value }))}
+            />
+          </div>
+          <Alert
+            type="info"
+            showIcon
+            message="Fallback"
+            description="Nếu chưa lưu key ở đây, hệ thống dùng key Gemini của Content Park (Cài đặt Content → AI), rồi secret ref / GEMINI_API_KEY."
+          />
+          {canWrite ? (
+            <Button type="primary" loading={savingConsultationAi} onClick={() => void onSaveConsultationAi()}>
+              Lưu cấu hình AI
             </Button>
           ) : null}
         </Space>

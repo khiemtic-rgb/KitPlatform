@@ -20,6 +20,8 @@ using KitPlatform.Packs.Pharmacy.Sales;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Healthcare;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Integration.Qd540;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Catalog.CsdlDuoc;
+using KitPlatform.Packs.Pharmacy.Consultation;
+using KitPlatform.Packs.Pharmacy.Infrastructure.Consultation;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
@@ -79,6 +81,14 @@ public static class PharmacyPackDependencyInjection
         // Sales / POS
         services.AddScoped<SalesRepository>();
         services.AddScoped<ISalesService, SalesService>();
+
+        // POS consultation (AI Assistant MVP 1)
+        services.AddHttpClient<PharmacyConsultationGeminiClient>()
+            .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
+        services.AddScoped<PharmacyConsultationAiConfigProvider>();
+        services.AddScoped<ConsultationRepository>();
+        services.AddScoped<SymptomTaxonomyRepository>();
+        services.AddScoped<IPharmacyConsultationService, PharmacyConsultationService>();
         services.AddScoped<ICustomerReceivablesService, CustomerReceivablesService>();
         services.AddScoped<ICustomerPaymentService, CustomerPaymentService>();
         services.AddScoped<PrescriptionRepository>();

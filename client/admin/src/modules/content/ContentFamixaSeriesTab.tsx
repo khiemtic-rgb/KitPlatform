@@ -174,7 +174,6 @@ import {
   explainPipeError,
   inspectKfDataUri,
   inspectRunwayPayload,
-  isInternalBadOutput,
   isKitPrecheckError,
   lastGenerationFail,
   kfCheckFromMeasure,
@@ -203,6 +202,7 @@ import {
   takeDownloadName,
   lipsyncDownloadName,
 } from './content-famixa-assemble';
+import { assembleMixPayload, compileMixCueSheet, normalizeMixPrefs } from './content-famixa-mix';
 import { blobToBase64, recordAssembledCut, takeBlobFromUrl, triggerDownload } from './content-famixa-assemble-render';
 import { deleteTtsScope, findTtsBlobForLine, loadTtsBlob, loadTtsBlobAny, measureAudioSec, saveTtsBlob, ttsLineKey, ttsLookupKeys, ttsTextKey } from './content-famixa-tts-store';
 import { loadKfPixels } from './content-famixa-kf-store';
@@ -229,16 +229,19 @@ import {
   parseVisionQa,
   peopleCountForSpec,
   seedQaChecks,
+  shouldAttachPrevKf,
   visualQaAllowsApprove,
   type VisualSpec,
 } from './content-famixa-visual-spec';
 import {
+  applySoloCast,
   compileCorrectionPrompt,
+  soloCastFromNote,
   identityCanonIds,
   mergeReferencePack,
   nextShotNeedingKf,
 } from './content-famixa-kf-pipeline';
-import { applyDialogueMap, coverageOf, linesForShot, multiSpeakerBlock } from './content-famixa-dialogue-map';
+import { applyDialogueMap, coverageOf, dialogueMapNeedsHeal, linesForShot, lipsyncSpeakerMismatch, multiSpeakerBlock } from './content-famixa-dialogue-map';
 import { ACTING_EMOTIONS, actingTtsPerformText, actingTtsVoiceSettings, resolveLinePerformance } from './content-famixa-acting-law';
 import { isChildFromBible, linePerformanceOf, patchDialoguePerformance, patchVoiceBible, stampDialoguePerformances } from './content-famixa-performance';
 import {
@@ -817,7 +820,14 @@ export function ContentFamixaSeriesTab() {
     setTtsNote(undefined);
   };
 
-  const loadCueAudio = async (cue: { id: string; voiceId?: string; text: string; name: string; characterId?: string }) => {
+  const loadCueAudio = async (cue: {
+    id: string;
+    voiceId?: string;
+    text: string;
+    name: string;
+    characterId?: string;
+    performance?: import('./content-famixa-acting-law').LinePerformance;
+  }) => {
     if (looksLikeScreenplayDump(cue.text)) {
       throw new Error('TTS chỉ nhận thoại CHAR — không gửi heading/cảnh/action.');
     }
@@ -1147,6 +1157,12 @@ export function ContentFamixaSeriesTab() {
     if (deriveVoiceScript(next).lines.length <= voiceScript.lines.length) return;
     persistState(next);
   }, [state.packDraft, voiceScript.lines.length]);
+
+  useEffect(() => {
+    if (!state.shotGraphLocked) return;
+    if (!dialogueMapNeedsHeal(stateRef.current)) return;
+    persistState(applyDialogueMap(stateRef.current));
+  }, [state.shotGraphLocked, voiceScript.lines.length, state.episode?.shots?.length]);
   const voiceLockHint =
     !keys.elevenLabs && state.voicePreview?.status !== 'complete'
       ? 'Chưa có key ElevenLabs — Cấu hình AI, rồi bấm Tạo Full Voice.'
@@ -1503,7 +1519,12 @@ export function ContentFamixaSeriesTab() {
       sceneUrl = await shrinkStillDataUrl(opts.sceneMasterUrl);
     }
     let failedUrl: string | undefined;
-    if (opts.failedKfUrl?.startsWith('data:image') && opts.correction) {
+    if (
+      opts.failedKfUrl?.startsWith('data:image') &&
+      opts.correction &&
+      !soloCastFromNote(opts.correction) &&
+      !/Remove every extra person|Only Linh|CAST: Linh only/i.test(opts.correction)
+    ) {
       failedUrl = await shrinkStillDataUrl(opts.failedKfUrl);
     }
     const refs = mergeReferencePack({
@@ -1861,12 +1882,13 @@ export function ContentFamixaSeriesTab() {
     setTurboBusy(opts.clipId);
 
     const finishOk = (task: {
-      videoUrl?: string;
+      videoUrl?: string | null;
       seconds?: number;
       model?: string;
       taskId?: string;
       videoBytes?: number | null;
       videoMime?: string | null;
+      videoVerified?: boolean;
     }, wan: boolean) => {
       const current = shortRunOf(stateRef.current, opts.clipId);
       const sameLip = Boolean(
@@ -1890,7 +1912,7 @@ export function ContentFamixaSeriesTab() {
         videoMime: task.videoMime ?? undefined,
         runwayAttempts: patchRunwayAttempt(current.runwayAttempts, task.taskId || current.turboTaskId, {
           status: 'SUCCEEDED',
-          outputUrl: task.videoUrl,
+          outputUrl: task.videoUrl ?? undefined,
           downloadOk: true,
           videoBytes: task.videoBytes ?? undefined,
           videoMime: task.videoMime ?? undefined,
@@ -2276,17 +2298,16 @@ export function ContentFamixaSeriesTab() {
               error: after.turboError,
             });
             const ready = Boolean(ok || (keepTake && current.previewUrl));
+            const failedStamp = ready
+              ? { failedKfHash: undefined, failedPromptHash: undefined, runwayRefund: 'NONE' as const, renderFailure: false }
+              : stampFailedInput(after, imageDataUrl, prompt);
             patchRun(opts.clipId, {
               previewUrl: keepTake ? current.previewUrl : after.previewUrl,
               takeUrl: keepTake ? current.takeUrl : after.takeUrl,
               videoPipe: keepTake && current.previewUrl ? 'VIDEO_READY' : after.videoPipe,
               videoVerified: keepTake ? current.videoVerified : after.videoVerified,
               runwayBilled: ready ? (current.runwayBilled ?? current.runwaySpent ?? 0) + estimatedCost : current.runwayBilled,
-              runwayRefund: ready ? 'NONE' : 'REFUND_PENDING',
-              renderFailure: ready ? false : true,
-              ...(ready
-                ? { failedKfHash: undefined, failedPromptHash: undefined }
-                : stampFailedInput(after, imageDataUrl, prompt)),
+              ...failedStamp,
               runwayAttempts: patchRunwayAttempt(after.runwayAttempts, started.taskId, {
                 classification: klass,
                 billed: ready ? estimatedCost : undefined,
@@ -2342,6 +2363,25 @@ export function ContentFamixaSeriesTab() {
       release();
     }
   };
+
+  const resumePollBoot = useRef(false);
+  useEffect(() => {
+    if (resumePollBoot.current) return;
+    const hung = productionShorts(stateRef.current).find((s) =>
+      shouldResumeTurboPoll(shotRunOf(stateRef.current, s)),
+    );
+    if (!hung) return;
+    resumePollBoot.current = true;
+    void sendTurbo({
+      clipId: hung.id,
+      prompt: '',
+      seconds: hung.seconds || 10,
+      ratio: outputAspectOf(stateRef.current),
+      engine: 'turbo',
+      silent: true,
+      resume: true,
+    });
+  }, [state.episode?.shots?.length]);
 
   const startTurbo = () => {
     if (!active || !run) {
@@ -2649,12 +2689,20 @@ export function ContentFamixaSeriesTab() {
     const lock = visualLockShot(st, pack);
     const card = compileShotSceneCard(st, s, prev?.shot);
     persistState(applyVisibleCast(st, s.id, card.cast.ids));
-    const spec = card.visualSpec;
+    const solo = soloCastFromNote(edit?.correction);
+    const spec = solo ? applySoloCast(card.visualSpec, solo) : card.visualSpec;
+    const soloFrame = Boolean(solo) || (!spec.secondary.length && spec.subjectKind !== 'prop');
     const count = peopleCountForSpec(spec);
     const wide =
       spec.framing === 'WIDE' || spec.framing === 'MEDIUM' || spec.framing === 'ESTABLISHING';
     const lockUrl = lock ? shotRunOf(st, lock).keyframeDataUrl : undefined;
     const prevUrl = prev?.run.keyframeDataUrl;
+    const attachPrev =
+      Boolean(prevUrl?.startsWith('data:image')) &&
+      !soloFrame &&
+      spec.framing !== 'INSERT' &&
+      spec.subjectKind !== 'prop' &&
+      shouldAttachPrevKf(prev?.run.visualSpec?.framing, spec.framing);
     const placeLock = [
       master.location || loc.environment || s.location,
       master.lighting || card.lighting,
@@ -2668,8 +2716,8 @@ export function ContentFamixaSeriesTab() {
       visual: placeLock,
       action: spec.shotAction || card.stillAction,
       location: [master.location || loc.environment || s.location, card.lighting].filter(Boolean).join('. '),
-      characterIds: identityCanonIds(spec, card.cast.ids),
-      prevKfUrl: prevUrl?.startsWith('data:image') ? prevUrl : undefined,
+      characterIds: identityCanonIds(spec, soloFrame && spec.primary?.id ? [spec.primary.id] : card.cast.ids),
+      prevKfUrl: attachPrev ? prevUrl : undefined,
       sceneMasterUrl: lockUrl?.startsWith('data:image') ? lockUrl : undefined,
       inheritFromId: prev?.shot.id,
       peopleCount: count,
@@ -2685,7 +2733,7 @@ export function ContentFamixaSeriesTab() {
         .filter(Boolean)
         .join(' '),
       correction: edit?.correction,
-      failedKfUrl: edit?.failedKfUrl,
+      failedKfUrl: soloFrame ? undefined : edit?.failedKfUrl,
     };
   };
 
@@ -2811,10 +2859,13 @@ export function ContentFamixaSeriesTab() {
         (spec && run.visualQa?.hardFails.length
           ? compileCorrectionPrompt(spec, [], run.visualQa.evidence || run.visualQa.notes)
           : undefined);
+      const solo = soloCastFromNote(correction);
+      const nextSpec = spec && solo ? applySoloCast(spec, solo) : spec;
       patchRun(one.id, {
         kfForceNew: true,
         kfApproved: false,
         kfTechNote: correction,
+        visualSpec: nextSpec,
       });
       const ok = await generateKfFromCanon(
         stillArgsFor(one, pack, undefined, {
@@ -3348,6 +3399,18 @@ export function ContentFamixaSeriesTab() {
       );
       return;
     }
+    const faceBlock = need
+      .map((s) => {
+        const line = spokenLinesOf(s)[0];
+        if (!line) return '';
+        const why = lipsyncSpeakerMismatch(s, line, shotRunOf(stateRef.current, s), stateRef.current.characters);
+        return why ? `${studioShotCode(s, pack)}: ${why}` : '';
+      })
+      .filter(Boolean);
+    if (faceBlock.length) {
+      message.error(`${faceBlock.join(' · ')} — không gửi Fal. Sửa map thoại hoặc KF.`);
+      return;
+    }
     if (!keys.fal) {
       message.error('Chưa có Fal API key (Model AI → Video). Khớp môi không trừ Runway.');
       return;
@@ -3558,9 +3621,13 @@ export function ContentFamixaSeriesTab() {
       okText: 'Gắn · 0$',
       cancelText: 'Hủy',
       async onOk() {
+        if (!shot) {
+          message.error('Không tìm thấy Short.');
+          return Promise.reject();
+        }
         const ref = parseFalLipsyncRef(raw);
         if (ref.url) {
-          const live = shotRunOf(stateRef.current, shotId);
+          const live = shotRunOf(stateRef.current, shot);
           patchRun(shotId, {
             ...stampFalFinal(live, ref.url),
             lipsyncStatus: 'SUCCEEDED',
@@ -3580,9 +3647,9 @@ export function ContentFamixaSeriesTab() {
           message.error(task.error || 'Fal chưa trả file cho id này. Thử dòng Quantity lớn hơn (0.17).');
           return Promise.reject();
         }
-        const live = shotRunOf(stateRef.current, shotId);
+        const live = shotRunOf(stateRef.current, shot);
         patchRun(shotId, {
-          ...stampFalFinal(live, task.videoUrl),
+          ...stampFalFinal(live, task.videoUrl!),
           lipsyncTaskId: task.taskId || ref.taskId,
           lipsyncStatus: 'SUCCEEDED',
           lipsyncError: undefined,
@@ -3703,7 +3770,12 @@ export function ContentFamixaSeriesTab() {
       message.warning('Chưa có KF trên dải. Tạo hình rồi ghép — không cắt nhịp kịch bản.');
       return;
     }
-    const confirm = assembleConfirmCopy(readyPlan);
+    let mixSheet = compileMixCueSheet(
+      buildAssembleTimeline(readyPlan, { hasVoiceFile: () => true, fit: 'speech' }),
+      productionShorts(stateRef.current),
+      stateRef.current,
+    );
+    const confirm = assembleConfirmCopy(readyPlan, mixSheet);
     const holdN = completeCutHolds(readyPlan).length;
     if (!opts?.confirmed) {
       modal.confirm({
@@ -3792,11 +3864,18 @@ export function ContentFamixaSeriesTab() {
       voiceSecOf: (id) => measured[id] || assets[id]?.duration,
       fit: 'speech',
     });
+    mixSheet = compileMixCueSheet(tl, productionShorts(stateRef.current), stateRef.current);
     const stem = assembleFileStem(readyPlan, ep?.episode, ep?.title);
     triggerDownload(new Blob([formatSrt(tl.cues)], { type: 'text/plain;charset=utf-8' }), `${stem}.srt`);
     setAssembleBusy(true);
     try {
-      message.loading({ content: 'FFmpeg: normalize + mix thoại → một MP4…', key: 'assemble', duration: 0 });
+      message.loading({
+        content: mixSheet.music
+          ? 'FFmpeg: phòng + Foley + nhạc (duck) + thoại → −14 LUFS…'
+          : 'FFmpeg: phòng + Foley + thoại → −14 LUFS…',
+        key: 'assemble',
+        duration: 0,
+      });
       const pack = productionShorts(stateRef.current);
       const clips = [];
       for (const clip of tl.clips) {
@@ -3855,13 +3934,22 @@ export function ContentFamixaSeriesTab() {
         throw new Error('Không gửi được file thoại lên API. Không tải file câm.');
       }
       try {
-        const mp4 = await assembleContentSeriesCut({ fileStem: stem, aspect: assembleAspect, clips });
+        const mp4 = await assembleContentSeriesCut({
+          fileStem: stem,
+          aspect: assembleAspect,
+          clips,
+          mix: assembleMixPayload(mixSheet),
+        });
         triggerDownload(mp4, `${stem}.mp4`);
         persistState({ ...stateRef.current, previewApproved: true });
         message.success({
           content: `Đã ghép tập hoàn chỉnh ${tl.clips.length} shot${
             holdN ? ` · ${holdN} HOLD KF` : ''
-          }${lipN ? ` · ${lipN} khớp môi` : ''}${voiceCount ? ` · ${voiceCount} câu thoại` : ''} → ${stem}.mp4`,
+          }${lipN ? ` · ${lipN} khớp môi` : ''}${voiceCount ? ` · ${voiceCount} câu thoại` : ''}${
+            mixSheet.room ? ' · phòng' : ''
+          }${mixSheet.sfx.length ? ` · Foley ${mixSheet.sfx.length}` : ''}${
+            mixSheet.music ? ' · nhạc duck' : ''
+          }${mixSheet.loudnorm ? ' · −14 LUFS' : ''} → ${stem}.mp4`,
           key: 'assemble',
         });
         return;
@@ -3976,6 +4064,12 @@ export function ContentFamixaSeriesTab() {
         onAbDiagnostic={startAbDiagnostic}
         onLipsync={startLipsync}
         onLipsyncPrefs={(prefs) => persistState({ ...stateRef.current, ...prefs })}
+        onMixPrefs={(prefs) =>
+          persistState({
+            ...stateRef.current,
+            mixPrefs: { ...normalizeMixPrefs(stateRef.current.mixPrefs), ...prefs },
+          })
+        }
         onAttachLipsync={attachLipsync}
         lipsyncBusy={lipsyncBusy}
         sceneBatchLabel={sceneBatchLabel}
