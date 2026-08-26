@@ -12,6 +12,11 @@ export const MARKETING_PARK_BRAND =
 export const MARKETING_PARK_PRODUCT =
   import.meta.env.VITE_MARKETING_PARK_PRODUCT?.trim() || 'AI Content & Marketing Workspace';
 
+/** KIT Sales — acquisition pipeline (org KIT_SALES). Independent of Marketing Park. */
+export const KIT_SALES_BRAND = import.meta.env.VITE_KIT_SALES_BRAND?.trim() || 'KIT Sales';
+export const KIT_SALES_PRODUCT =
+  import.meta.env.VITE_KIT_SALES_PRODUCT?.trim() || 'Acquisition pipeline — prospect → paid';
+
 /** KIT Local OS — admin shell when tenant vertical = local (org KIT_LOCAL). */
 export const LOCAL_OS_BRAND = import.meta.env.VITE_LOCAL_OS_BRAND?.trim() || 'Thái Nguyên Life';
 export const LOCAL_OS_PRODUCT =
@@ -69,6 +74,15 @@ export function resolveLoginBrandByTenantCode(tenantCode: string | null | undefi
   isLocal: boolean;
 } {
   const code = String(tenantCode ?? '').trim().toUpperCase();
+  if (code === 'KIT_SALES' || code.startsWith('KIT_SALES')) {
+    return {
+      brand: KIT_SALES_BRAND,
+      product: KIT_SALES_PRODUCT,
+      isFamily: false,
+      isMarketing: true,
+      isLocal: false,
+    };
+  }
   if (code === 'KIT_MKT' || code === 'DEMO_CONTENT' || code.startsWith('KIT_MKT')) {
     return {
       brand: MARKETING_PARK_BRAND,

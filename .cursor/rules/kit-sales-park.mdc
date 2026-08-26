@@ -1,9 +1,10 @@
 # KIT Sales (`kit_sales`) — isolated park
 
-- Pack / module / tenant package: **`kit_sales`**. Schema: **`pack_sales`**.
+- Pack / module / tenant package: **`kit_sales`**. Schema: **`pack_sales`**. Tenant: **`KIT_SALES`**.
 - Manifest: `deploy/ubuntu/migration-files.kit-sales.txt` only. Do **not** add to `migration-files.prod.txt`, Pharmacy, Family, Content, or Local OS manifests.
 - **Not** Pharmacy POS (`sales` module) or **Growth Desk** (retention/refill).
+- **Not** Marketing Park (`KIT_MKT` / `kit_content`) — do not enable `kit_sales` on `KIT_MKT`.
 - Multi-product via `pack_sales.product` + `product_profile` (`novixa` v1, `famixa` planned).
 - PHC hooks via Survey/Assessment — do not duplicate assessment engine in Sales pack.
-- Do not auto-enable `kit_sales` on `DEMO_PHARMACY` / `NT_XUANHOA` without explicit tenant ops.
-- KIT org workspace (marketing vertical) — same nav lane as `kit_content`.
+- Do not auto-enable `kit_sales` on `DEMO_PHARMACY` / `NT_XUANHOA` / `KIT_MKT` / `KIT_LOCAL`.
+- Login: `KIT_SALES` / `admin` / `Admin@123`. Content stays on `KIT_MKT`; Sales may consume briefs later without sharing tenant.

@@ -1,7 +1,7 @@
 -- KitPlatform 323: KIT Sales — acquisition pipeline (isolated park)
--- Pack/module: kit_sales | Schema: pack_sales
+-- Pack/module: kit_sales | Schema: pack_sales | Tenant (324): KIT_SALES
 -- Manifest: deploy/ubuntu/migration-files.kit-sales.txt ONLY
--- NOT Pharmacy Growth Desk (retention). NOT hard dependency for Novixa POS/PHC.
+-- NOT Pharmacy Growth Desk (retention). NOT Marketing Park (KIT_MKT).
 
 CREATE SCHEMA IF NOT EXISTS pack_sales;
 

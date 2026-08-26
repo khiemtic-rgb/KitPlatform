@@ -99,6 +99,24 @@ export function LoginPage() {
     });
   };
 
+  const fillKitSalesDemo = () => {
+    setMode('tenant');
+    form.setFieldsValue({
+      tenantCode: 'KIT_SALES',
+      username: 'admin',
+      password: 'Admin@123',
+    });
+  };
+
+  const fillKitMktDemo = () => {
+    setMode('tenant');
+    form.setFieldsValue({
+      tenantCode: 'KIT_MKT',
+      username: 'admin',
+      password: 'Admin@123',
+    });
+  };
+
   const onFinish = async (values: LoginFormValues) => {
     setLoading(true);
     try {
@@ -338,6 +356,24 @@ export function LoginPage() {
                   onClick={fillFamilyDemo}
                 >
                   DEMO_FAMILY
+                </Button>
+                {' · '}
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                  onClick={fillKitSalesDemo}
+                >
+                  KIT_SALES
+                </Button>
+                {' · '}
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                  onClick={fillKitMktDemo}
+                >
+                  KIT_MKT
                 </Button>
                 {' · '}
                 <Button

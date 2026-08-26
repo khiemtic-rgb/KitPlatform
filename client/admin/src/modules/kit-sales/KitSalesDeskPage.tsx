@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -156,8 +155,7 @@ export function KitSalesDeskPage() {
           {t('title')}
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          {t('subtitle')}{' '}
-          <Link to="/success/growth">{t('growthDeskLink')}</Link>
+          {t('subtitle')}
         </Typography.Paragraph>
       </div>
 

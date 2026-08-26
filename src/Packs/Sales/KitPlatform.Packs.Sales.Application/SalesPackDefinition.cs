@@ -7,6 +7,7 @@ public static class SalesPackDefinition
     public const string DisplayName = "KIT Sales";
     public const string EventSource = "pack:kit_sales";
     public const string PrimaryModuleCode = "kit_sales";
+    public const string DedicatedTenantCode = "KIT_SALES";
 
     public static IReadOnlyList<string> DefaultEnabledModules { get; } = [PrimaryModuleCode];
     public static IReadOnlyList<string> PackModuleCodes { get; } = [PrimaryModuleCode];
