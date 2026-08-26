@@ -1,6 +1,8 @@
 ﻿using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Core.Engines;
+using KitPlatform.Packs.Pharmacy.Infrastructure.Catalog.CsdlDuoc;
 using KitPlatform.Packs.Pharmacy.Procurement;
+using Microsoft.Extensions.Logging;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
@@ -10,17 +12,23 @@ internal sealed class GoodsReceiptService : IGoodsReceiptService
     private readonly ITenantContext _tenant;
     private readonly IAuditEngine _audit;
     private readonly IBranchAccessService _branchAccess;
+    private readonly ICsdlDuocStockInSyncService _csdlStockIn;
+    private readonly ILogger<GoodsReceiptService> _logger;
 
     public GoodsReceiptService(
         ProcurementRepository repository,
         ITenantContext tenant,
         IAuditEngine audit,
-        IBranchAccessService branchAccess)
+        IBranchAccessService branchAccess,
+        ICsdlDuocStockInSyncService csdlStockIn,
+        ILogger<GoodsReceiptService> logger)
     {
         _repository = repository;
         _tenant = tenant;
         _audit = audit;
         _branchAccess = branchAccess;
+        _csdlStockIn = csdlStockIn;
+        _logger = logger;
     }
 
     public async Task<ProcurementPagedListResult<GoodsReceiptListItemDto>> GetAllAsync(
@@ -117,7 +125,21 @@ internal sealed class GoodsReceiptService : IGoodsReceiptService
         var grn = await RequireGrnAccessAsync(id, cancellationToken);
         await _repository.CompleteGoodsReceiptAsync(id, _tenant.UserId, cancellationToken);
         await _audit.WriteAsync("goods_receipt", id, "complete", cancellationToken: cancellationToken);
-        return await _repository.GetGoodsReceiptAsync(id, cancellationToken: cancellationToken);
+        var completed = await _repository.GetGoodsReceiptAsync(id, cancellationToken: cancellationToken);
+        if (completed is not null)
+        {
+            try
+            {
+                await _csdlStockIn.SyncGoodsReceiptAsync(
+                    _tenant.TenantId, completed.Id, completed.GrnNumber, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CSDL stock-in sync threw for GRN {GrnId}", completed.Id);
+            }
+        }
+
+        return completed;
     }
 
     public async Task<GoodsReceiptDetailDto?> CancelAsync(Guid id, CancellationToken cancellationToken = default)

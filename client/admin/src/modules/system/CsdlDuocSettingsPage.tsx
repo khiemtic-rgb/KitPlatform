@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,15 +11,21 @@ import {
   Select,
   Space,
   Switch,
+  Table,
   Tag,
   Typography,
 } from 'antd';
-import { ApiOutlined, CloudSyncOutlined, SaveOutlined } from '@ant-design/icons';
+import { ApiOutlined, CloudSyncOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
+  fetchCsdlDuocSyncLog,
   fetchTenantCsdlDuocLink,
+  retryCsdlDuocStockIn,
+  retryCsdlDuocStockOut,
   testTenantCsdlDuocLink,
   updateTenantCsdlDuocLink,
+  type CsdlDuocSyncLogRow,
   type TenantCsdlDuocLink,
   type UpdateTenantCsdlDuocLinkRequest,
 } from '@/shared/api/csdl-duoc-link.api';
@@ -50,6 +56,21 @@ function statusColor(status: string): string {
   }
 }
 
+function syncStatusColor(status: string): string {
+  switch (status) {
+    case 'submitted':
+      return 'success';
+    case 'pending':
+      return 'processing';
+    case 'skipped':
+      return 'default';
+    case 'error':
+      return 'error';
+    default:
+      return 'warning';
+  }
+}
+
 export function CsdlDuocSettingsPage() {
   const { t } = useTranslation('system', { keyPrefix: 'csdlSettings' });
   const { message } = App.useApp();
@@ -60,6 +81,9 @@ export function CsdlDuocSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [link, setLink] = useState<TenantCsdlDuocLink | null>(null);
+  const [syncLog, setSyncLog] = useState<CsdlDuocSyncLogRow[]>([]);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const applyLink = (data: TenantCsdlDuocLink) => {
     setLink(data);
@@ -74,6 +98,17 @@ export function CsdlDuocSettingsPage() {
     });
   };
 
+  const loadSyncLog = useCallback(async () => {
+    setSyncLoading(true);
+    try {
+      setSyncLog(await fetchCsdlDuocSyncLog(40));
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('loadFailed')));
+    } finally {
+      setSyncLoading(false);
+    }
+  }, [message, t]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -87,6 +122,7 @@ export function CsdlDuocSettingsPage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+    void loadSyncLog();
     return () => {
       cancelled = true;
     };
@@ -130,6 +166,80 @@ export function CsdlDuocSettingsPage() {
       setTesting(false);
     }
   };
+
+  const onRetry = async (row: CsdlDuocSyncLogRow) => {
+    setRetryingId(row.id);
+    try {
+      if (row.direction === 'stock-in') {
+        await retryCsdlDuocStockIn(row.salesOrderId);
+      } else {
+        await retryCsdlDuocStockOut(row.salesOrderId);
+      }
+      message.success(t('syncLogRetryOk'));
+      await loadSyncLog();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('syncLogRetryFail')));
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
+  const columns: ColumnsType<CsdlDuocSyncLogRow> = [
+    {
+      title: t('syncLogColTime'),
+      dataIndex: 'createdAt',
+      width: 160,
+      render: (v: string) => (v ? new Date(v).toLocaleString() : '—'),
+    },
+    {
+      title: t('syncLogColDir'),
+      dataIndex: 'direction',
+      width: 100,
+    },
+    {
+      title: t('syncLogColDoc'),
+      dataIndex: 'orderNumber',
+      ellipsis: true,
+      render: (v: string | undefined, row) => v || row.salesOrderId.slice(0, 8),
+    },
+    {
+      title: t('syncLogColStatus'),
+      dataIndex: 'status',
+      width: 110,
+      render: (v: string) => <Tag color={syncStatusColor(v)}>{v}</Tag>,
+    },
+    {
+      title: t('syncLogColLines'),
+      width: 90,
+      render: (_, row) => `${row.lineCount}/${row.skippedLineCount}`,
+    },
+    {
+      title: t('syncLogColRemote'),
+      dataIndex: 'remoteTransactionId',
+      ellipsis: true,
+      render: (v?: string) => v || '—',
+    },
+    {
+      title: t('syncLogColError'),
+      dataIndex: 'errorMessage',
+      ellipsis: true,
+      render: (v?: string) => v || '—',
+    },
+    {
+      title: '',
+      width: 100,
+      render: (_, row) =>
+        canWrite && (row.status === 'error' || row.status === 'skipped') ? (
+          <Button
+            size="small"
+            loading={retryingId === row.id}
+            onClick={() => void onRetry(row)}
+          >
+            {t('syncLogRetry')}
+          </Button>
+        ) : null,
+    },
+  ];
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -229,6 +339,30 @@ export function CsdlDuocSettingsPage() {
             </Button>
           </Space>
         </Form>
+      </Card>
+
+      <Card
+        title={t('syncLogTitle')}
+        extra={
+          <Button
+            icon={<ReloadOutlined />}
+            loading={syncLoading}
+            onClick={() => void loadSyncLog()}
+          >
+            {t('syncLogRefresh')}
+          </Button>
+        }
+      >
+        <Table
+          size="small"
+          rowKey="id"
+          loading={syncLoading}
+          columns={columns}
+          dataSource={syncLog}
+          pagination={false}
+          locale={{ emptyText: t('syncLogEmpty') }}
+          scroll={{ x: 900 }}
+        />
       </Card>
     </Space>
   );

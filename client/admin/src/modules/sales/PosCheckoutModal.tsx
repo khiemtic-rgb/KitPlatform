@@ -20,10 +20,20 @@ import {
   moneyInputNumberStyle,
 } from '@/shared/utils/money';
 
-import { PosSummaryRow } from '@/modules/sales/pos-summary-ui';
+import { PosSummaryPanel, PosSummaryRow } from '@/modules/sales/pos-summary-ui';
 import { defaultOrderReminderLabel } from '@/modules/sales/order-reminder-label';
+import {
+  buildCheckoutSymptomChips,
+  type CartSymptomInferLine,
+} from '@/modules/sales/checkout-symptom-chips';
+import {
+  fetchConsultationSymptomCatalog,
+  type ConsultationSymptomCatalog,
+  type ConsultationSymptomOption,
+} from '@/shared/api/pharmacy-consultation.api';
 import { useTranslation } from 'react-i18next';
 import { useSalesEnums } from '@/shared/i18n/use-sales-enums';
+import './pos-checkout-modal.css';
 
 
 
@@ -68,6 +78,12 @@ type Props = {
   customerLoyalty?: PosCustomerLoyalty | null;
 
   customerVouchers?: PosCustomerVoucher[] | null;
+
+  /** Cart product names for soft symptom chip suggestions. */
+  cartLines?: CartSymptomInferLine[];
+
+  /** When false (active consultation session), hide optional checkout chips. */
+  symptomCaptureEnabled?: boolean;
 
   onCancel: () => void;
 
@@ -282,6 +298,10 @@ export function PosCheckoutModal({
 
   customerVouchers,
 
+  cartLines = [],
+
+  symptomCaptureEnabled = false,
+
   onCancel,
 
   onConfirm,
@@ -366,6 +386,10 @@ export function PosCheckoutModal({
 
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const [symptomCatalog, setSymptomCatalog] = useState<ConsultationSymptomCatalog | null>(null);
+
+  const [selectedSymptomCodes, setSelectedSymptomCodes] = useState<string[]>([]);
+
 
 
   useEffect(() => {
@@ -388,7 +412,48 @@ export function PosCheckoutModal({
 
     setSelectedCustomerVoucherId(undefined);
 
+    setSelectedSymptomCodes([]);
+
   }, [open, totalAmount]);
+
+
+
+  useEffect(() => {
+
+    if (!open || !symptomCaptureEnabled) {
+      setSymptomCatalog(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchConsultationSymptomCatalog()
+      .then((catalog) => {
+        if (!cancelled) setSymptomCatalog(catalog);
+      })
+      .catch(() => {
+        if (!cancelled) setSymptomCatalog(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, symptomCaptureEnabled]);
+
+
+
+  const symptomChips = useMemo(
+    () => (symptomCaptureEnabled ? buildCheckoutSymptomChips(symptomCatalog, cartLines, 8) : []),
+    [symptomCaptureEnabled, symptomCatalog, cartLines],
+  );
+
+  const symptomConfirm = useMemo(() => {
+    if (!symptomCaptureEnabled || selectedSymptomCodes.length === 0) return {};
+    return { symptomCodes: selectedSymptomCodes };
+  }, [symptomCaptureEnabled, selectedSymptomCodes]);
+
+  const toggleSymptom = (opt: ConsultationSymptomOption) => {
+    setSelectedSymptomCodes((prev) =>
+      prev.includes(opt.code) ? prev.filter((c) => c !== opt.code) : [...prev, opt.code],
+    );
+  };
 
 
 
@@ -648,6 +713,8 @@ export function PosCheckoutModal({
 
             ...orderReminderConfirm,
 
+            ...symptomConfirm,
+
           }),
 
         );
@@ -687,6 +754,8 @@ export function PosCheckoutModal({
           ...(loyaltyDiscount > 0 ? { loyaltyDiscountAmount: loyaltyDiscount } : {}),
 
           ...orderReminderConfirm,
+
+          ...symptomConfirm,
 
         }),
 
@@ -800,6 +869,8 @@ export function PosCheckoutModal({
 
     <Modal
 
+      className="pos-checkout-modal"
+
       title={t('pos.checkout.title')}
 
       open={open}
@@ -822,99 +893,225 @@ export function PosCheckoutModal({
 
       ]}
 
-      width={620}
+      width={780}
 
       destroyOnClose
 
       maskClosable={false}
 
+      centered={false}
+
+      style={{ top: 48, paddingBottom: 0 }}
+
+      styles={{ body: { paddingTop: 12, paddingBottom: 12 } }}
+
     >
 
-      <Space direction="vertical" size={8} style={{ width: '100%', marginBottom: 16 }}>
+      <div className="pos-checkout-top-row">
 
-        <PosSummaryRow label={t('pos.checkout.subtotal')} value={formatDisplayMoney(subtotalGross)} />
+        <div className="pos-checkout-summary">
 
-        {lineDiscountTotal > 0 && (
+          <PosSummaryPanel>
 
-          <PosSummaryRow
+            <PosSummaryRow label={t('pos.checkout.subtotal')} value={formatDisplayMoney(subtotalGross)} />
 
-            label={t('pos.checkout.lineDiscount')}
+            {lineDiscountTotal > 0 && (
 
-            value={`−${formatDisplayMoney(lineDiscountTotal)}`}
+              <PosSummaryRow
 
-            danger
+                label={t('pos.checkout.lineDiscount')}
 
-          />
+                value={`−${formatDisplayMoney(lineDiscountTotal)}`}
 
-        )}
+                danger
 
-        {orderDiscountAmount > 0 && (
+              />
 
-          <PosSummaryRow
+            )}
 
-            label={t('pos.checkout.orderDiscount')}
+            {orderDiscountAmount > 0 && (
 
-            value={`−${formatDisplayMoney(orderDiscountAmount)}`}
+              <PosSummaryRow
 
-            danger
+                label={t('pos.checkout.orderDiscount')}
 
-          />
+                value={`−${formatDisplayMoney(orderDiscountAmount)}`}
 
-        )}
+                danger
 
-        {totalDiscountAmount > 0 && (
+              />
 
-          <PosSummaryRow
+            )}
 
-            label={t('pos.checkout.totalDiscount')}
+            {totalDiscountAmount > 0 && (
 
-            value={`−${formatDisplayMoney(totalDiscountAmount)}`}
+              <PosSummaryRow
 
-            danger
+                label={t('pos.checkout.totalDiscount')}
 
-          />
+                value={`−${formatDisplayMoney(totalDiscountAmount)}`}
 
-        )}
+                danger
 
-        {voucherDiscount > 0 && (
+              />
 
-          <PosSummaryRow
+            )}
 
-            label={t('pos.checkout.voucher')}
+            {voucherDiscount > 0 && (
 
-            value={`−${formatDisplayMoney(voucherDiscount)}`}
+              <PosSummaryRow
 
-            danger
+                label={t('pos.checkout.voucher')}
 
-          />
+                value={`−${formatDisplayMoney(voucherDiscount)}`}
 
-        )}
+                danger
 
-        {loyaltyDiscount > 0 && (
+              />
 
-          <PosSummaryRow
+            )}
 
-            label={t('pos.checkout.loyaltyDiscount')}
+            {loyaltyDiscount > 0 && (
 
-            value={`−${formatDisplayMoney(loyaltyDiscount)}`}
+              <PosSummaryRow
 
-            danger
+                label={t('pos.checkout.loyaltyDiscount')}
 
-          />
+                value={`−${formatDisplayMoney(loyaltyDiscount)}`}
 
-        )}
+                danger
 
-        <PosSummaryRow label={t('pos.checkout.payable')} value={formatDisplayMoney(payableTotal)} strong />
+              />
 
-      </Space>
+            )}
+
+            <PosSummaryRow label={t('pos.checkout.payable')} value={formatDisplayMoney(payableTotal)} strong />
+
+          </PosSummaryPanel>
+
+        </div>
+
+        {showLoyaltyPanel && customerLoyalty ? (
+
+          <div className="pos-checkout-loyalty">
+
+            <div className="pos-checkout-loyalty-row">
+
+              <Typography.Text style={{ fontSize: 13, lineHeight: 1.35 }}>
+
+                {customerLoyalty.pointsBalance > 0
+
+                  ? t('pos.checkout.loyaltyHasPoints', {
+                      points: formatPoints(customerLoyalty.pointsBalance),
+                      value: formatDisplayMoney(loyaltyPointsValue),
+                      amountPerPoint: formatDisplayMoney(customerLoyalty.amountPerPoint),
+                    })
+                  : t('pos.checkout.loyaltyNoPoints', {
+                      amountPerPoint: formatDisplayMoney(customerLoyalty.amountPerPoint),
+                    })}
+
+              </Typography.Text>
+
+              {canOfferRedeem ? (
+
+                <Space size={6} align="center">
+
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+
+                    {t('pos.checkout.redeemNow')}
+
+                  </Typography.Text>
+
+                  <Switch
+
+                    size="small"
+
+                    checked={redeemEnabled}
+
+                    disabled={busy}
+
+                    checkedChildren={tc('actions.yes')}
+                    unCheckedChildren={tc('actions.no')}
+
+                    onChange={handleRedeemToggle}
+
+                  />
+
+                </Space>
+
+              ) : null}
+
+            </div>
+
+            <div className="pos-checkout-loyalty-meta">
+
+              {customerLoyalty.maxRedeemPercent < 100
+
+                ? t('pos.checkout.loyaltyMaxPercent', {
+                    percent: customerLoyalty.maxRedeemPercent,
+                    amount: formatDisplayMoney(maxRedeemMoney),
+                  })
+                : maxRedeemMoney > 0
+                  ? t('pos.checkout.loyaltyMaxAmount', { amount: formatDisplayMoney(maxRedeemMoney) })
+                  : canOfferRedeem
+                    ? t('pos.checkout.loyaltyCannotRedeem')
+                    : customerLoyalty.pointsBalance <= 0
+                      ? t('pos.checkout.earnRule', { amount: formatDisplayMoney(customerLoyalty.pointsPerAmount) })
+                      : null}
+
+              {redeemEnabled && loyaltyDiscount > 0
+
+                ? ` · ${t('pos.checkout.redeemApprox', { points: formatPoints(redeemPointsUsed) })}`
+
+                : null}
+
+            </div>
+
+            {redeemEnabled ? (
+
+              <Space wrap align="start" size={8} style={{ marginTop: 6 }}>
+
+                <Form.Item label={t('pos.checkout.loyaltyDiscount')} style={{ marginBottom: 0 }}>
+
+                  <InputNumber
+
+                    size="small"
+
+                    {...moneyInputNumberPropsAllowZeroSuffix}
+
+                    min={0}
+
+                    max={maxRedeemMoney}
+
+                    value={redeemDiscountAmount}
+
+                    disabled={busy}
+
+                    onChange={handleRedeemAmountChange}
+
+                    style={{ ...moneyInputNumberStyle, width: 140 }}
+
+                  />
+
+                </Form.Item>
+
+              </Space>
+
+            ) : null}
+
+          </div>
+
+        ) : null}
+
+      </div>
 
 
 
-      <div style={{ marginBottom: 16 }}>
+      <div className="pos-checkout-section">
 
-        <Typography.Text strong>{t('pos.checkout.customer')}</Typography.Text>
+        <Typography.Text strong style={{ fontSize: 13 }}>{t('pos.checkout.customer')}</Typography.Text>
 
-        <Space.Compact block style={{ width: '100%', marginTop: 8 }}>
+        <Space.Compact block style={{ width: '100%', marginTop: 4 }}>
 
           <Select
 
@@ -960,53 +1157,139 @@ export function PosCheckoutModal({
 
         </Space.Compact>
 
-        {selectedCustomer ? (
+        {(selectedCustomer || creditAmount > 0.009 || customerId) ? (
 
-          <Space size={[8, 4]} wrap style={{ marginTop: 8 }}>
+          <div className="pos-checkout-customer-meta">
 
-            <Typography.Text type="secondary">
+            <div className="pos-checkout-customer-meta__left">
 
-              {selectedCustomer.customerCode} · {selectedCustomer.fullName}
+              {selectedCustomer ? (
 
-              {selectedCustomer.phone ? ` · ${selectedCustomer.phone}` : ''}
+                <Space size={[6, 4]} wrap className="pos-checkout-customer-tags">
 
-            </Typography.Text>
+                  {selectedCustomer.allowCredit ? (
 
-            {selectedCustomer.allowCredit ? (
+                    <Tag color="gold">{t('pos.checkout.creditAllowed')}</Tag>
 
-              <Tag color="gold">{t('pos.checkout.creditAllowed')}</Tag>
+                  ) : (
 
-            ) : (
+                    <Tag>{t('pos.checkout.creditNotAllowed')}</Tag>
 
-              <Tag>{t('pos.checkout.creditNotAllowed')}</Tag>
+                  )}
 
-            )}
+                  {(selectedCustomer.currentOutstanding ?? 0) > 0.009 ? (
 
-            {(selectedCustomer.currentOutstanding ?? 0) > 0.009 ? (
+                    <Tag color="orange">
 
-              <Tag color="orange">
+                      {t('pos.checkout.outstanding', { amount: formatDisplayMoney(selectedCustomer.currentOutstanding) })}
 
-                {t('pos.checkout.outstanding', { amount: formatDisplayMoney(selectedCustomer.currentOutstanding) })}
+                    </Tag>
 
-              </Tag>
+                  ) : null}
+
+                </Space>
+
+              ) : creditAmount > 0.009 ? (
+
+                <Typography.Text type="warning" style={{ fontSize: 12 }}>
+
+                  {t('pos.checkout.selectCustomerForCredit')}
+
+                </Typography.Text>
+
+              ) : null}
+
+            </div>
+
+            {customerId ? (
+
+              <Space align="center" size={8} className="pos-checkout-order-reminder-inline">
+
+                <Typography.Text strong style={{ fontSize: 13 }}>{t('pos.checkout.orderReminderTitle')}</Typography.Text>
+
+                <Switch
+
+                  size="small"
+
+                  checked={orderReminderEnabled}
+
+                  disabled={busy}
+
+                  checkedChildren={tc('actions.yes')}
+
+                  unCheckedChildren={tc('actions.no')}
+
+                  onChange={(checked) => {
+
+                    setOrderReminderEnabled(checked);
+
+                    if (checked && !orderReminderLabel.trim()) {
+
+                      setOrderReminderLabel(defaultOrderReminderLabel());
+
+                    }
+
+                  }}
+
+                />
+
+              </Space>
 
             ) : null}
 
+          </div>
+
+        ) : null}
+
+        {customerId && orderReminderEnabled ? (
+
+          <Space wrap align="start" size={8} style={{ width: '100%', marginTop: 6 }}>
+
+            <Form.Item label={t('pos.checkout.orderReminderLabel')} style={{ marginBottom: 0 }}>
+
+              <Input
+
+                size="small"
+
+                maxLength={120}
+
+                value={orderReminderLabel}
+
+                disabled={busy}
+
+                placeholder={defaultOrderReminderLabel()}
+
+                style={{ width: 260 }}
+
+                onChange={(e) => setOrderReminderLabel(e.target.value)}
+
+              />
+
+            </Form.Item>
+
+            <Form.Item label={t('pos.checkout.orderReminderDays')} style={{ marginBottom: 0 }}>
+
+              <InputNumber
+
+                size="small"
+
+                min={1}
+
+                max={730}
+
+                value={orderReminderDaysSupply}
+
+                disabled={busy}
+
+                style={{ width: 88 }}
+
+                onChange={(value) => setOrderReminderDaysSupply(Math.max(1, Number(value ?? 30)))}
+
+              />
+
+            </Form.Item>
+
           </Space>
-
-        ) : creditAmount > 0.009 ? (
-
-          <Alert
-
-            type="warning"
-
-            showIcon
-
-            style={{ marginTop: 8 }}
-
-            message={t('pos.checkout.selectCustomerForCredit')}
-
-          />
 
         ) : null}
 
@@ -1014,103 +1297,11 @@ export function PosCheckoutModal({
 
 
 
-      {customerId ? (
-
-        <div style={{ marginBottom: 16 }}>
-
-          <Space align="center" style={{ marginBottom: 8 }}>
-
-            <Typography.Text strong>{t('pos.checkout.orderReminderTitle')}</Typography.Text>
-
-            <Switch
-
-              checked={orderReminderEnabled}
-
-              disabled={busy}
-
-              checkedChildren={tc('actions.yes')}
-
-              unCheckedChildren={tc('actions.no')}
-
-              onChange={(checked) => {
-
-                setOrderReminderEnabled(checked);
-
-                if (checked && !orderReminderLabel.trim()) {
-
-                  setOrderReminderLabel(defaultOrderReminderLabel());
-
-                }
-
-              }}
-
-            />
-
-          </Space>
-
-          {orderReminderEnabled ? (
-
-            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-
-                {t('pos.checkout.orderReminderHint')}
-
-              </Typography.Text>
-
-              <Form.Item label={t('pos.checkout.orderReminderLabel')} style={{ marginBottom: 0 }}>
-
-                <Input
-
-                  maxLength={120}
-
-                  value={orderReminderLabel}
-
-                  disabled={busy}
-
-                  placeholder={defaultOrderReminderLabel()}
-
-                  onChange={(e) => setOrderReminderLabel(e.target.value)}
-
-                />
-
-              </Form.Item>
-
-              <Form.Item label={t('pos.checkout.orderReminderDays')} style={{ marginBottom: 0 }}>
-
-                <InputNumber
-
-                  min={1}
-
-                  max={730}
-
-                  value={orderReminderDaysSupply}
-
-                  disabled={busy}
-
-                  style={{ width: 160 }}
-
-                  onChange={(value) => setOrderReminderDaysSupply(Math.max(1, Number(value ?? 30)))}
-
-                />
-
-              </Form.Item>
-
-            </Space>
-
-          ) : null}
-
-        </div>
-
-      ) : null}
-
-
-
       {(customerVouchers?.length ?? 0) > 0 ? (
 
-        <div style={{ marginBottom: 16 }}>
+        <div className="pos-checkout-section">
 
-          <Typography.Text strong>{t('pos.checkout.customerVouchers')}</Typography.Text>
+          <Typography.Text strong style={{ fontSize: 13 }}>{t('pos.checkout.customerVouchers')}</Typography.Text>
 
           <Select
 
@@ -1118,7 +1309,7 @@ export function PosCheckoutModal({
 
             placeholder={t('pos.checkout.voucherPlaceholder')}
 
-            style={{ width: '100%', marginTop: 8 }}
+            style={{ width: '100%', marginTop: 4 }}
 
             value={selectedCustomerVoucherId}
 
@@ -1150,161 +1341,77 @@ export function PosCheckoutModal({
 
 
 
-      {showLoyaltyPanel && customerLoyalty ? (
+      {submitError && (
 
-        <Alert
+        <Alert type="error" showIcon message={submitError} style={{ marginBottom: 10 }} closable onClose={() => setSubmitError(null)} />
 
-          type="info"
+      )}
 
-          showIcon
 
-          style={{ marginBottom: 16 }}
 
-          message={
+      {symptomChips.length > 0 ? (
 
-            customerLoyalty.pointsBalance > 0
+        <div className="pos-checkout-section pos-checkout-symptoms">
 
-              ? t('pos.checkout.loyaltyHasPoints', {
-                  points: formatPoints(customerLoyalty.pointsBalance),
-                  value: formatDisplayMoney(loyaltyPointsValue),
-                  amountPerPoint: formatDisplayMoney(customerLoyalty.amountPerPoint),
-                })
-              : t('pos.checkout.loyaltyNoPoints', {
-                  amountPerPoint: formatDisplayMoney(customerLoyalty.amountPerPoint),
-                })
+          <div className="pos-checkout-section-head">
 
-          }
+            <Typography.Text strong style={{ fontSize: 13 }}>
 
-          description={
+              {t('pos.checkout.symptomsOptional')}
 
-            <Space direction="vertical" size={12} style={{ width: '100%', marginTop: 4 }}>
+            </Typography.Text>
 
-              <Typography.Text type="secondary">
+            <Typography.Text type="secondary" style={{ fontSize: 11 }}>
 
-                {customerLoyalty.maxRedeemPercent < 100
+              {t('pos.checkout.symptomsHint')}
 
-                  ? t('pos.checkout.loyaltyMaxPercent', {
-                      percent: customerLoyalty.maxRedeemPercent,
-                      amount: formatDisplayMoney(maxRedeemMoney),
-                    })
-                  : maxRedeemMoney > 0
-                    ? t('pos.checkout.loyaltyMaxAmount', { amount: formatDisplayMoney(maxRedeemMoney) })
-                    : t('pos.checkout.loyaltyCannotRedeem')}
+            </Typography.Text>
+
+            {selectedSymptomCodes.length > 0 ? (
+
+              <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+
+                {t('pos.checkout.symptomsSelected', { count: selectedSymptomCodes.length })}
 
               </Typography.Text>
 
+            ) : null}
 
+          </div>
 
-              {canOfferRedeem ? (
+          <div className="pos-checkout-symptom-chips">
 
-                <>
+            {symptomChips.map((opt) => {
 
-                  <Space align="center">
+              const selected = selectedSymptomCodes.includes(opt.code);
 
-                    <Typography.Text>{t('pos.checkout.redeemNow')}</Typography.Text>
+              return (
 
-                    <Switch
+                <Tag
 
-                      checked={redeemEnabled}
+                  key={opt.code}
 
-                      disabled={busy}
+                  color={selected ? 'blue' : undefined}
 
-                      checkedChildren={tc('actions.yes')}
-                      unCheckedChildren={tc('actions.no')}
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
 
-                      onChange={handleRedeemToggle}
+                  onClick={() => toggleSymptom(opt)}
 
-                    />
+                >
 
-                  </Space>
+                  {opt.label}
 
+                </Tag>
 
+              );
 
-                  {redeemEnabled ? (
+            })}
 
-                    <Space wrap align="start">
+          </div>
 
-                      <Form.Item label={t('pos.checkout.loyaltyDiscount')} style={{ marginBottom: 0 }}>
-
-                        <InputNumber
-
-                          {...moneyInputNumberPropsAllowZeroSuffix}
-
-                          min={0}
-
-                          max={maxRedeemMoney}
-
-                          value={redeemDiscountAmount}
-
-                          disabled={busy}
-
-                          onChange={handleRedeemAmountChange}
-
-                          style={{ ...moneyInputNumberStyle, width: 180 }}
-
-                        />
-
-                      </Form.Item>
-
-                      <Form.Item label={t('pos.checkout.remainingAmount')} style={{ marginBottom: 0 }}>
-
-                        <InputNumber
-
-                          {...moneyInputNumberPropsAllowZeroSuffix}
-
-                          value={payableTotal}
-
-                          disabled
-
-                          style={{ ...moneyInputNumberStyle, width: 180 }}
-
-                        />
-
-                      </Form.Item>
-
-                    </Space>
-
-                  ) : null}
-
-
-
-                  {redeemEnabled && loyaltyDiscount > 0 ? (
-
-                    <Typography.Text type="secondary">
-
-                      {t('pos.checkout.redeemApprox', { points: formatPoints(redeemPointsUsed) })}
-
-                    </Typography.Text>
-
-                  ) : null}
-
-                </>
-
-              ) : customerLoyalty.pointsBalance <= 0 ? (
-
-                <Typography.Text type="secondary">
-
-                  {t('pos.checkout.earnRule', { amount: formatDisplayMoney(customerLoyalty.pointsPerAmount) })}
-
-                </Typography.Text>
-
-              ) : null}
-
-            </Space>
-
-          }
-
-        />
+        </div>
 
       ) : null}
-
-
-
-      {submitError && (
-
-        <Alert type="error" showIcon message={submitError} style={{ marginBottom: 16 }} closable onClose={() => setSubmitError(null)} />
-
-      )}
 
 
 
@@ -1342,7 +1449,7 @@ export function PosCheckoutModal({
 
 
 
-          <Form layout="vertical" requiredMark={false}>
+          <Form layout="vertical" requiredMark={false} className="pos-checkout-payment-form" size="small">
 
             {payments.map((row, index) => {
 
@@ -1350,13 +1457,15 @@ export function PosCheckoutModal({
 
               return (
 
-                <Space key={index} align="start" wrap style={{ marginBottom: 8, width: '100%' }}>
+                <Space key={index} align="start" wrap style={{ marginBottom: 6, width: '100%' }}>
 
                   <Form.Item label={t('pos.checkout.paymentMethod')} required style={{ marginBottom: 0 }}>
 
                     <Select
 
-                      style={{ width: 160 }}
+                      size="small"
+
+                      style={{ width: 150 }}
 
                       value={row.paymentMethod}
 
@@ -1373,6 +1482,8 @@ export function PosCheckoutModal({
                   <Form.Item label={amountFieldLabel(autoSplit)} style={{ marginBottom: 0 }}>
 
                     <InputNumber
+
+                      size="small"
 
                       {...moneyFieldProps}
 
@@ -1424,9 +1535,9 @@ export function PosCheckoutModal({
 
 
 
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 8 }}>
 
-            <Typography.Text>
+            <Typography.Text style={{ fontSize: 13 }}>
 
               {t('pos.checkout.collected')}:{' '}
 
@@ -1460,7 +1571,7 @@ export function PosCheckoutModal({
 
             {changeDue > 0 && (
 
-              <Typography.Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
+              <Typography.Text style={{ display: 'block', marginTop: 4, fontSize: 13 }}>
 
                 {t('pos.checkout.changeDue')}:{' '}
 
@@ -1470,7 +1581,7 @@ export function PosCheckoutModal({
 
                 </Typography.Text>
 
-              </Typography.Paragraph>
+              </Typography.Text>
 
             )}
 

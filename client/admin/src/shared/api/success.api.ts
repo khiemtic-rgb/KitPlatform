@@ -13,6 +13,20 @@ export interface OwnerCockpitRiskStrip {
   cycleCountAdjustmentNumber?: string | null;
 }
 
+export interface OwnerCockpitHourBucket {
+  hour: number;
+  orderCount: number;
+  revenue: number;
+}
+
+export interface OwnerCockpitPeakHours {
+  windowDays: number;
+  peakHour?: number | null;
+  peakOrderCount: number;
+  peakRevenue: number;
+  hours: OwnerCockpitHourBucket[];
+}
+
 export interface OwnerCockpit {
   overview: DashboardOverview;
   salesExtras: {
@@ -23,11 +37,17 @@ export interface OwnerCockpit {
   inventoryExtras: {
     nearExpirySkuCount: number;
     nearExpiryStockValue: number;
+    urgentNearExpirySkuCount: number;
+    urgentExpiryDays: number;
   };
   customers: {
     newCustomers7d: number;
     returningCustomers7d: number;
+    dormantBuyerCount: number;
+    dormantDays: number;
+    activeBuyerCount: number;
   };
+  peakHours?: OwnerCockpitPeakHours | null;
   latestAssessment?: {
     submissionId: string;
     overallScore?: number | null;
@@ -149,6 +169,25 @@ export interface GrowthWeeklyRefillReport {
   attributedRevenue: number;
 }
 
+export interface DormantBuyerItem {
+  customerId: string;
+  customerName: string;
+  customerPhone?: string | null;
+  lastOrderId: string;
+  lastOrderNumber: string;
+  lastOrderDate: string;
+  daysSinceLastBuy: number;
+  lastOrderTotal: number;
+  warehouseId?: string | null;
+}
+
+export interface DormantBuyers {
+  businessDate: string;
+  dormantDays: number;
+  totalCount: number;
+  items: DormantBuyerItem[];
+}
+
 function normalizeOpportunity(row: UnknownRow): GrowthOpportunityItem {
   return {
     suggestionId: String(row.suggestionId ?? row.SuggestionId ?? ''),
@@ -210,6 +249,49 @@ export async function fetchGrowthWeeklyRefillReport(
     notifiedCount: num(row.notifiedCount ?? row.NotifiedCount),
     convertedCount: num(row.convertedCount ?? row.ConvertedCount),
     attributedRevenue: num(row.attributedRevenue ?? row.AttributedRevenue),
+  };
+}
+
+function normalizeDormantBuyer(row: UnknownRow): DormantBuyerItem {
+  return {
+    customerId: String(row.customerId ?? row.CustomerId ?? ''),
+    customerName: String(row.customerName ?? row.CustomerName ?? ''),
+    customerPhone: (row.customerPhone ?? row.CustomerPhone) as string | null | undefined,
+    lastOrderId: String(row.lastOrderId ?? row.LastOrderId ?? ''),
+    lastOrderNumber: String(row.lastOrderNumber ?? row.LastOrderNumber ?? ''),
+    lastOrderDate: String(row.lastOrderDate ?? row.LastOrderDate ?? ''),
+    daysSinceLastBuy: num(row.daysSinceLastBuy ?? row.DaysSinceLastBuy),
+    lastOrderTotal: num(row.lastOrderTotal ?? row.LastOrderTotal),
+    warehouseId: (row.warehouseId ?? row.WarehouseId) as string | null | undefined,
+  };
+}
+
+export async function fetchDormantBuyers(params?: {
+  days?: number;
+  limit?: number;
+}): Promise<DormantBuyers> {
+  const { data } = await http.get<UnknownRow>('/success/growth/dormant-buyers', { params });
+  const row = data as UnknownRow;
+  return {
+    businessDate: String(row.businessDate ?? row.BusinessDate ?? ''),
+    dormantDays: num(row.dormantDays ?? row.DormantDays) || 30,
+    totalCount: num(row.totalCount ?? row.TotalCount),
+    items: ((row.items ?? row.Items ?? []) as UnknownRow[]).map(normalizeDormantBuyer),
+  };
+}
+
+export async function postDormantCareNow(customerId: string): Promise<GrowthCareNowResult> {
+  const { data } = await http.post<UnknownRow>(
+    `/success/growth/dormant-buyers/${customerId}/care-now`,
+  );
+  const row = data as UnknownRow;
+  return {
+    suggestionId: String(row.suggestionId ?? row.SuggestionId ?? ''),
+    draftOrderId: String(row.draftOrderId ?? row.DraftOrderId ?? ''),
+    draftNumber: String(row.draftNumber ?? row.DraftNumber ?? ''),
+    customerId: String(row.customerId ?? row.CustomerId ?? customerId),
+    careActionId: String(row.careActionId ?? row.CareActionId ?? ''),
+    alreadyHadOpenDraft: Boolean(row.alreadyHadOpenDraft ?? row.AlreadyHadOpenDraft),
   };
 }
 
@@ -537,8 +619,18 @@ export async function fetchOwnerCockpit(params?: {
   const salesExtras = (row.salesExtras ?? row.SalesExtras ?? {}) as UnknownRow;
   const inventoryExtras = (row.inventoryExtras ?? row.InventoryExtras ?? {}) as UnknownRow;
   const customers = (row.customers ?? row.Customers ?? {}) as UnknownRow;
+  const peakHoursRow = (row.peakHours ?? row.PeakHours) as UnknownRow | null | undefined;
   const assessment = (row.latestAssessment ?? row.LatestAssessment) as UnknownRow | null | undefined;
   const risk = (row.riskStrip ?? row.RiskStrip) as UnknownRow | null | undefined;
+
+  const peakHourRaw = peakHoursRow?.peakHour ?? peakHoursRow?.PeakHour;
+  const peakHoursList = ((peakHoursRow?.hours ?? peakHoursRow?.Hours ?? []) as UnknownRow[]).map(
+    (h) => ({
+      hour: num(h.hour ?? h.Hour),
+      orderCount: num(h.orderCount ?? h.OrderCount),
+      revenue: num(h.revenue ?? h.Revenue),
+    }),
+  );
 
   return {
     overview: normalizeOverview((row.overview ?? row.Overview ?? {}) as UnknownRow),
@@ -552,11 +644,31 @@ export async function fetchOwnerCockpit(params?: {
       nearExpiryStockValue: num(
         inventoryExtras.nearExpiryStockValue ?? inventoryExtras.NearExpiryStockValue,
       ),
+      urgentNearExpirySkuCount: num(
+        inventoryExtras.urgentNearExpirySkuCount ?? inventoryExtras.UrgentNearExpirySkuCount,
+      ),
+      urgentExpiryDays:
+        num(inventoryExtras.urgentExpiryDays ?? inventoryExtras.UrgentExpiryDays) || 7,
     },
     customers: {
       newCustomers7d: num(customers.newCustomers7d ?? customers.NewCustomers7d),
       returningCustomers7d: num(customers.returningCustomers7d ?? customers.ReturningCustomers7d),
+      dormantBuyerCount: num(customers.dormantBuyerCount ?? customers.DormantBuyerCount),
+      dormantDays: num(customers.dormantDays ?? customers.DormantDays) || 30,
+      activeBuyerCount: num(customers.activeBuyerCount ?? customers.ActiveBuyerCount),
     },
+    peakHours: peakHoursRow
+      ? {
+          windowDays: num(peakHoursRow.windowDays ?? peakHoursRow.WindowDays) || 30,
+          peakHour:
+            peakHourRaw == null || peakHourRaw === ''
+              ? null
+              : num(peakHourRaw),
+          peakOrderCount: num(peakHoursRow.peakOrderCount ?? peakHoursRow.PeakOrderCount),
+          peakRevenue: num(peakHoursRow.peakRevenue ?? peakHoursRow.PeakRevenue),
+          hours: peakHoursList,
+        }
+      : null,
     latestAssessment: assessment
       ? {
           submissionId: String(assessment.submissionId ?? assessment.SubmissionId ?? ''),

@@ -82,8 +82,8 @@ Chụp lại (nếu cần): `cd assets/screenshots && npm install && npm run cap
 | Map 23 trường QĐ 540 Bảng 1 | ✅ Đã triển khai |
 | Xuất JSON/CSV kiểm thử | ✅ API nội bộ |
 | Tra cứu CSDL Dược QG (QĐ 522) | ✅ Mock + sẵn sàng chuyển Live |
-| Đẩy dữ liệu lên Cổng liên thông BYT | 🔧 Connector QĐ 777 (giai đoạn triển khai) |
-| Nhật ký gửi / retry / queue | ✅ Export log + kiến trúc Outbox |
+| Đẩy dữ liệu lên Cổng liên thông BYT | ✅ Stock-out (bán lẻ) + stock-in (phiếu nhập) khi tenant Connected; prod mặc định mock |
+| Nhật ký gửi / retry / queue | ✅ `csdl_duoc_sync_log` + Admin sync-log / đẩy lại |
 | Bảo mật HTTPS, JWT, RBAC, Audit | ✅ |
 
 ---

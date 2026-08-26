@@ -104,6 +104,7 @@ import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderS
 import { PosConsultationModal } from '@/modules/sales/PosConsultationModal';
 import { PosConsultationSessionChip } from '@/modules/sales/PosConsultationSessionChip';
 import {
+  confirmConsultation,
   linkConsultationOrder,
   type ConsultationSession,
 } from '@/shared/api/pharmacy-consultation.api';
@@ -897,6 +898,26 @@ export function PosPage() {
     });
   }, [searchParams, setSearchParams, warehouseId, loadConnectHandoffIntoPos]);
 
+  const customerDeepLinkHandled = useRef<string | null>(null);
+  useEffect(() => {
+    const id = searchParams.get('customerId');
+    if (!id) {
+      customerDeepLinkHandled.current = null;
+      return;
+    }
+    if (customerDeepLinkHandled.current === id) return;
+    customerDeepLinkHandled.current = id;
+    setCustomerId(id);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('customerId');
+        return next;
+      },
+      { replace: true },
+    );
+  }, [searchParams, setSearchParams]);
+
   const validateDiscounts = useCallback(() => {
     if (!canDiscount) {
       const hasLineDiscount = cart.some((line) => (line.discountValue ?? 0) > 0);
@@ -1256,6 +1277,7 @@ export function PosPage() {
     customerVoucherId,
     orderReminderLabel,
     orderReminderDaysSupply,
+    symptomCodes,
   }: PosCheckoutConfirm) => {
     if (!warehouseId) {
       message.warning(t('pos.messages.selectWarehouseFirst'));
@@ -1335,6 +1357,23 @@ export function PosPage() {
         } finally {
           setActiveConsultationSessionId(undefined);
           setActiveConsultationSafetyLevel('none');
+        }
+      } else if (symptomCodes && symptomCodes.length > 0) {
+        try {
+          const session = await confirmConsultation({
+            customerId,
+            consultationLevel: 1,
+            quickSymptoms: symptomCodes,
+            confirmedFacts: {
+              symptoms: symptomCodes,
+              redFlags: [],
+              notes: 'checkout_optional',
+            },
+            extractionSource: 'checkout_chips',
+          });
+          await linkConsultationOrder(session.id, order.id);
+        } catch {
+          message.warning('Đã bán xong nhưng chưa ghi được triệu chứng — không ảnh hưởng đơn bán.');
         }
       }
       setCheckoutOpen(false);
@@ -2051,6 +2090,8 @@ export function PosPage() {
         customerCurrentOutstanding={customers.find((c) => c.id === customerId)?.currentOutstanding}
         customerLoyalty={customerLoyalty}
         customerVouchers={customerVouchers}
+        cartLines={cart.map((line) => ({ productName: line.productName }))}
+        symptomCaptureEnabled={!activeConsultationSessionId}
         onCancel={() => setCheckoutOpen(false)}
         onConfirm={(result) => confirmCheckout(result)}
       />

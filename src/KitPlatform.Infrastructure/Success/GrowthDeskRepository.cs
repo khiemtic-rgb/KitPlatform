@@ -200,7 +200,7 @@ internal sealed class GrowthDeskRepository
 
     public async Task<Guid> InsertCareActionAsync(
         Guid tenantId,
-        Guid suggestionId,
+        Guid? suggestionId,
         Guid customerId,
         Guid? actorUserId,
         Guid draftOrderId,
@@ -229,6 +229,162 @@ internal sealed class GrowthDeskRepository
             ActorUserId = actorUserId,
             DraftOrderId = draftOrderId,
             Notes = notes,
+        });
+    }
+
+    public async Task<(DateOnly BusinessDate, int TotalCount, IReadOnlyList<DormantBuyerRow> Rows)> ListDormantBuyersAsync(
+        Guid tenantId,
+        DateTime dormantBeforeUtc,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        limit = Math.Clamp(limit, 1, 200);
+        const string sql = $"""
+            WITH today AS (
+                SELECT (NOW() AT TIME ZONE '{VnTz}')::date AS d
+            ),
+            last_buy AS (
+                SELECT
+                    o.customer_id AS CustomerId,
+                    MAX(o.order_date) AS LastOrderDate
+                FROM sales_orders o
+                WHERE o.tenant_id = @TenantId
+                  AND o.status = @Completed
+                  AND o.customer_id IS NOT NULL
+                GROUP BY o.customer_id
+                HAVING MAX(o.order_date) < @DormantBefore
+            )
+            SELECT
+                c.id AS CustomerId,
+                COALESCE(c.full_name, '') AS CustomerName,
+                c.phone AS CustomerPhone,
+                so.id AS LastOrderId,
+                so.order_number AS LastOrderNumber,
+                so.order_date AS LastOrderDate,
+                so.total_amount AS LastOrderTotal,
+                so.warehouse_id AS WarehouseId,
+                ((SELECT d FROM today) - (so.order_date AT TIME ZONE '{VnTz}')::date)::int AS DaysSinceLastBuy,
+                (SELECT d FROM today) AS BusinessDate,
+                COUNT(*) OVER()::int AS TotalCount
+            FROM last_buy lb
+            INNER JOIN customers c ON c.id = lb.CustomerId AND c.tenant_id = @TenantId AND c.deleted_at IS NULL
+            INNER JOIN LATERAL (
+                SELECT o.id, o.order_number, o.order_date, o.total_amount, o.warehouse_id
+                FROM sales_orders o
+                WHERE o.tenant_id = @TenantId
+                  AND o.customer_id = lb.CustomerId
+                  AND o.status = @Completed
+                ORDER BY o.order_date DESC
+                LIMIT 1
+            ) so ON TRUE
+            ORDER BY so.order_date ASC, c.full_name
+            LIMIT @Limit
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = (await conn.QueryAsync<DormantBuyerRow>(sql, new
+        {
+            TenantId = tenantId,
+            DormantBefore = dormantBeforeUtc,
+            Limit = limit,
+            Completed = KitPlatform.Packs.Pharmacy.Sales.SalesOrderStatuses.Completed,
+        })).ToList();
+
+        var businessDate = rows.FirstOrDefault()?.BusinessDate
+            ?? await conn.ExecuteScalarAsync<DateOnly>(
+                $"SELECT (NOW() AT TIME ZONE '{VnTz}')::date");
+        var total = rows.FirstOrDefault()?.TotalCount ?? 0;
+        return (businessDate, total, rows);
+    }
+
+    public async Task<DormantBuyerRow?> GetDormantBuyerAsync(
+        Guid tenantId,
+        Guid customerId,
+        DateTime dormantBeforeUtc,
+        CancellationToken cancellationToken)
+    {
+        const string sql = $"""
+            WITH today AS (
+                SELECT (NOW() AT TIME ZONE '{VnTz}')::date AS d
+            ),
+            last_buy AS (
+                SELECT MAX(o.order_date) AS LastOrderDate
+                FROM sales_orders o
+                WHERE o.tenant_id = @TenantId
+                  AND o.customer_id = @CustomerId
+                  AND o.status = @Completed
+            )
+            SELECT
+                c.id AS CustomerId,
+                COALESCE(c.full_name, '') AS CustomerName,
+                c.phone AS CustomerPhone,
+                so.id AS LastOrderId,
+                so.order_number AS LastOrderNumber,
+                so.order_date AS LastOrderDate,
+                so.total_amount AS LastOrderTotal,
+                so.warehouse_id AS WarehouseId,
+                ((SELECT d FROM today) - (so.order_date AT TIME ZONE '{VnTz}')::date)::int AS DaysSinceLastBuy,
+                (SELECT d FROM today) AS BusinessDate,
+                1 AS TotalCount
+            FROM customers c
+            CROSS JOIN last_buy lb
+            INNER JOIN LATERAL (
+                SELECT o.id, o.order_number, o.order_date, o.total_amount, o.warehouse_id
+                FROM sales_orders o
+                WHERE o.tenant_id = @TenantId
+                  AND o.customer_id = @CustomerId
+                  AND o.status = @Completed
+                ORDER BY o.order_date DESC
+                LIMIT 1
+            ) so ON TRUE
+            WHERE c.tenant_id = @TenantId
+              AND c.id = @CustomerId
+              AND c.deleted_at IS NULL
+              AND lb.LastOrderDate IS NOT NULL
+              AND lb.LastOrderDate < @DormantBefore
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<DormantBuyerRow>(sql, new
+        {
+            TenantId = tenantId,
+            CustomerId = customerId,
+            DormantBefore = dormantBeforeUtc,
+            Completed = KitPlatform.Packs.Pharmacy.Sales.SalesOrderStatuses.Completed,
+        });
+    }
+
+    public async Task<OpenCareDraftRow?> FindOpenDormantCareDraftAsync(
+        Guid tenantId,
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                gca.id AS CareActionId,
+                gca.draft_order_id AS DraftOrderId,
+                d.draft_number AS DraftNumber,
+                gca.customer_id AS CustomerId
+            FROM growth_care_actions gca
+            INNER JOIN customer_draft_orders d ON d.id = gca.draft_order_id
+            WHERE gca.tenant_id = @TenantId
+              AND gca.customer_id = @CustomerId
+              AND gca.repurchase_suggestion_id IS NULL
+              AND gca.action_type = 'create_draft'
+              AND gca.draft_order_id IS NOT NULL
+              AND d.status IN (@Draft, @Sent, @Confirmed)
+            ORDER BY gca.created_at DESC
+            LIMIT 1
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<OpenCareDraftRow>(sql, new
+        {
+            TenantId = tenantId,
+            CustomerId = customerId,
+            Draft = CustomerDraftOrderStatuses.Draft,
+            Sent = CustomerDraftOrderStatuses.Sent,
+            Confirmed = CustomerDraftOrderStatuses.Confirmed,
         });
     }
 
@@ -340,5 +496,20 @@ internal sealed class GrowthDeskRepository
         public int NotifiedCount { get; init; }
         public int ConvertedCount { get; init; }
         public decimal AttributedRevenue { get; init; }
+    }
+
+    internal sealed class DormantBuyerRow
+    {
+        public Guid CustomerId { get; init; }
+        public string CustomerName { get; init; } = "";
+        public string? CustomerPhone { get; init; }
+        public Guid LastOrderId { get; init; }
+        public string LastOrderNumber { get; init; } = "";
+        public DateTime LastOrderDate { get; init; }
+        public decimal LastOrderTotal { get; init; }
+        public Guid? WarehouseId { get; init; }
+        public int DaysSinceLastBuy { get; init; }
+        public DateOnly BusinessDate { get; init; }
+        public int TotalCount { get; init; }
     }
 }

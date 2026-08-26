@@ -27,13 +27,22 @@ internal sealed class OwnerCockpitService : IOwnerCockpitService
     public async Task<OwnerCockpitDto> GetAsync(
         int expiryDays = 30,
         decimal lowStockThreshold = 10,
+        int dormantDays = 30,
+        int peakHoursWindowDays = 30,
+        int urgentExpiryDays = 7,
         CancellationToken cancellationToken = default)
     {
         var overview = await _dashboard.GetOverviewAsync(expiryDays, lowStockThreshold, cancellationToken);
         var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
-        var (sales, inventory, customers, assessment) =
-            await _extras.GetExtrasAsync(expiryDays, allowed, cancellationToken);
+        var (sales, inventory, customers, peakHours, assessment) =
+            await _extras.GetExtrasAsync(
+                expiryDays,
+                dormantDays,
+                peakHoursWindowDays,
+                urgentExpiryDays,
+                allowed,
+                cancellationToken);
         var risk = await _loss.GetRiskStripAsync(cancellationToken: cancellationToken);
-        return new OwnerCockpitDto(overview, sales, inventory, customers, assessment, risk);
+        return new OwnerCockpitDto(overview, sales, inventory, customers, assessment, risk, peakHours);
     }
 }

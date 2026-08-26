@@ -275,6 +275,8 @@ export type PosCheckoutConfirm = {
   customerVoucherId?: string;
   orderReminderLabel?: string;
   orderReminderDaysSupply?: number;
+  /** Optional symptom codes selected on checkout (only persist when non-empty). */
+  symptomCodes?: string[];
 };
 
 export interface PosCustomerVoucher {

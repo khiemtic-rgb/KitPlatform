@@ -8,6 +8,7 @@
   "sections": {
     "risk": "Risk today",
     "sales": "Sales",
+    "peakHours": "Peak hours",
     "inventory": "Inventory risk",
     "customers": "Customers",
     "assessment": "KAP assessment"
@@ -19,12 +20,23 @@
     "todayOrders": "Orders today",
     "weekOrders": "{{count}} orders / 7 days",
     "monthOrders": "{{count}} orders / month",
+    "peakHour": "Peak hour",
+    "peakHourValue": "{{hour}}:00–{{hourEnd}}:00",
+    "peakHourHint": "{{count}} orders · {{revenue}} (last {{days}} days)",
+    "peakHourEmpty": "Not enough orders to find a peak hour",
+    "peakHoursCaption": "Orders by hour (VN time) — last {{days}} days",
     "nearExpirySku": "Near-expiry SKUs",
     "nearExpiryValue": "Value ~ {{value}} (≤ {{days}} days)",
+    "urgentNearExpiry": "Urgent near-expiry SKUs",
+    "urgentNearExpiryHint": "Expiry ≤ {{days}} days — act today",
     "lowStockProducts": "Products below min stock",
     "lowStockBatches": "Low-stock batches",
     "newCustomers": "New customers",
     "returningCustomers": "Returning customers",
+    "dormantBuyers": "Dormant buyers",
+    "dormantBuyersHint": "Bought before · no purchase ≥ {{days}} days",
+    "activeBuyers": "Active buyers",
+    "activeBuyersHint": "Ordered in last {{days}} days",
     "totalCustomers": "Total customers",
     "last7Days": "Last 7 days",
     "latestKapScore": "Latest KAP score",
@@ -160,6 +172,26 @@
     "careAlreadyOpen": "Open draft already exists: {{draft}}",
     "careFailed": "Could not create care draft",
     "daysOverdue": "{{days}} days overdue",
+    "tabs": {
+      "refill": "Refill ({{count}})",
+      "dormant": "Dormant ({{count}})"
+    },
+    "dormant": {
+      "subtitle": "{{count}} buyers with no purchase for ≥ {{days}} days",
+      "tip": "Call / Zalo to nudge repurchase, or Care now to draft from their last order for the counter.",
+      "tableTitle": "Dormant buyers ≥ {{days}} days",
+      "empty": "No dormant buyers in this window",
+      "noPhone": "No phone",
+      "openPos": "Open POS",
+      "zalo": "Zalo",
+      "daysIdle": "{{days}} days",
+      "careFailed": "Could not create dormant care draft",
+      "showing": "Showing {{shown}} of {{total}} (longest idle first)",
+      "columns": {
+        "lastOrder": "Last order",
+        "daysIdle": "Idle"
+      }
+    },
     "buckets": {
       "refillOverdue": "Overdue refill",
       "refillDue": "Due today",

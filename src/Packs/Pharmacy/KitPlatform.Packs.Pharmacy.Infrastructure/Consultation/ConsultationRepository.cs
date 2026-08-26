@@ -3,6 +3,7 @@ using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.Pharmacy.Consultation;
+using KitPlatform.Packs.Pharmacy.Sales;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure.Consultation;
 
@@ -285,6 +286,16 @@ internal sealed class ConsultationRepository
                 WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                   AND b.product_id = p.id AND b.quantity_available > 0
             ) st ON TRUE
+            LEFT JOIN LATERAL (
+                -- Rank by what this tenant actually sells (90d), then stock.
+                SELECT COALESCE(SUM(oi.quantity), 0) AS sold_qty_90d
+                FROM sales_order_items oi
+                INNER JOIN sales_orders o ON o.id = oi.sales_order_id
+                WHERE o.tenant_id = @TenantId
+                  AND oi.product_id = p.id
+                  AND o.status = @CompletedStatus
+                  AND o.order_date >= (NOW() - INTERVAL '90 days')
+            ) sales ON TRUE
             WHERE p.tenant_id = @TenantId
               AND p.deleted_at IS NULL
               AND p.status = 1
@@ -311,7 +322,7 @@ internal sealed class ConsultationRepository
                     OR COALESCE(p.description, '') ILIKE ANY(@ExcludePatterns)
                 )
               )
-            ORDER BY st.stock_available DESC, p.product_name
+            ORDER BY COALESCE(sales.sold_qty_90d, 0) DESC, st.stock_available DESC, p.product_name
             LIMIT @Limit
             """;
 
@@ -324,6 +335,7 @@ internal sealed class ConsultationRepository
             CategoryCodes = categories,
             KeywordPatterns = keywordPatterns,
             ExcludePatterns = excludePatterns,
+            CompletedStatus = SalesOrderStatuses.Completed,
             Limit = Math.Clamp(limit, 1, 12),
         });
         return rows.ToList();

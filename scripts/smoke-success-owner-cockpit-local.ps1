@@ -22,7 +22,9 @@ if ($null -eq $cockpit.customers) { throw "customers missing" }
 if ($null -eq $cockpit.riskStrip) { throw "riskStrip missing (EP03 AC2 additive — must not break EP01)" }
 
 Write-Host "[OK] todayNet=$($cockpit.overview.sales.todayNetTotal) monthNet=$($cockpit.salesExtras.monthNetTotal)" -ForegroundColor Green
-Write-Host "[OK] nearExpirySku=$($cockpit.inventoryExtras.nearExpirySkuCount) value=$($cockpit.inventoryExtras.nearExpiryStockValue)" -ForegroundColor Green
-Write-Host "[OK] new7d=$($cockpit.customers.newCustomers7d) returning7d=$($cockpit.customers.returningCustomers7d)" -ForegroundColor Green
+Write-Host "[OK] nearExpirySku=$($cockpit.inventoryExtras.nearExpirySkuCount) urgent=$($cockpit.inventoryExtras.urgentNearExpirySkuCount) value=$($cockpit.inventoryExtras.nearExpiryStockValue)" -ForegroundColor Green
+Write-Host "[OK] new7d=$($cockpit.customers.newCustomers7d) returning7d=$($cockpit.customers.returningCustomers7d) dormant=$($cockpit.customers.dormantBuyerCount) active=$($cockpit.customers.activeBuyerCount)" -ForegroundColor Green
+if ($null -eq $cockpit.peakHours) { throw "peakHours missing (Owner Cockpit v1)" }
+Write-Host "[OK] peakHour=$($cockpit.peakHours.peakHour) peakOrders=$($cockpit.peakHours.peakOrderCount) windowDays=$($cockpit.peakHours.windowDays)" -ForegroundColor Green
 Write-Host "`n=== Owner Cockpit smoke PASS ===" -ForegroundColor Green
 Write-Host "Admin: http://localhost:5173/success/cockpit ($Tenant)"

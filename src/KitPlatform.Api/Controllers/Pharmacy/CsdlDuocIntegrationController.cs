@@ -15,15 +15,18 @@ namespace KitPlatform.Api.Controllers.Pharmacy;
 public sealed class CsdlDuocIntegrationController : ControllerBase
 {
     private readonly ICsdlDuocStockOutSyncService _sync;
+    private readonly ICsdlDuocStockInSyncService _stockIn;
     private readonly ITenantCsdlDuocLinkService _link;
     private readonly ITenantContext _tenant;
 
     public CsdlDuocIntegrationController(
         ICsdlDuocStockOutSyncService sync,
+        ICsdlDuocStockInSyncService stockIn,
         ITenantCsdlDuocLinkService link,
         ITenantContext tenant)
     {
         _sync = sync;
+        _stockIn = stockIn;
         _link = link;
         _tenant = tenant;
     }
@@ -93,6 +96,18 @@ public sealed class CsdlDuocIntegrationController : ControllerBase
         CancellationToken cancellationToken)
     {
         await _sync.SyncSalesOrderAsync(_tenant.TenantId, orderId, orderNumber: null, cancellationToken);
+        return Accepted();
+    }
+
+    /// <summary>Đẩy lại / đẩy thủ công stock-in cho phiếu nhập hoàn tất.</summary>
+    [HttpPost("stock-in/{grnId:guid}")]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public async Task<IActionResult> SyncStockIn(
+        Guid grnId,
+        CancellationToken cancellationToken)
+    {
+        await _stockIn.SyncGoodsReceiptAsync(_tenant.TenantId, grnId, grnNumber: null, cancellationToken);
         return Accepted();
     }
 }

@@ -5,6 +5,7 @@ import { Alert, Button, Col, Row, Spin, Typography, message } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
+  ClockCircleOutlined,
   FundOutlined,
   InboxOutlined,
   ReloadOutlined,
@@ -41,6 +42,48 @@ function Tile({ title, value, hint, to, icon, tone = 'default' }: TileProps) {
       </div>
       <RightOutlined className="dashboard-tile__arrow" />
     </Link>
+  );
+}
+
+function PeakHoursBars({
+  hours,
+  peakHour,
+}: {
+  hours: { hour: number; orderCount: number }[];
+  peakHour?: number | null;
+}) {
+  const max = Math.max(1, ...hours.map((h) => h.orderCount));
+  // Show trading hours 6–22 for readability; keep all data in peak tile.
+  const visible = hours.filter((h) => h.hour >= 6 && h.hour <= 22);
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 4,
+        height: 72,
+        marginTop: 8,
+      }}
+      aria-hidden
+    >
+      {visible.map((h) => {
+        const height = Math.max(4, Math.round((h.orderCount / max) * 64));
+        const isPeak = peakHour != null && h.hour === peakHour;
+        return (
+          <div
+            key={h.hour}
+            title={`${h.hour}h: ${h.orderCount}`}
+            style={{
+              flex: 1,
+              height,
+              borderRadius: 3,
+              background: isPeak ? 'var(--ant-color-primary, #1677ff)' : 'rgba(22, 119, 255, 0.28)',
+              minWidth: 0,
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 
@@ -87,11 +130,14 @@ export function OwnerCockpitPage() {
   const extras = data?.salesExtras;
   const invX = data?.inventoryExtras;
   const cust = data?.customers;
+  const peak = data?.peakHours;
   const kap = data?.latestAssessment;
   const risk = data?.riskStrip;
   const showKap = isModuleEnabled('assessment') && !!kap?.submissionId;
   const riskTone =
     (risk?.cashVarianceAlertCount ?? 0) > 0 ? 'danger' : (risk?.openShiftCountToday ?? 0) > 0 ? 'warning' : 'info';
+  const peakHour = peak?.peakHour;
+  const hasPeak = peakHour != null && (peak?.peakOrderCount ?? 0) > 0;
 
   return (
     <div className="dashboard-page">
@@ -224,10 +270,70 @@ export function OwnerCockpitPage() {
       </Row>
 
       <Typography.Title level={5} style={{ marginTop: 24 }}>
+        {t('sections.peakHours')}
+      </Typography.Title>
+      <Row gutter={[12, 12]}>
+        <Col xs={24} lg={8}>
+          <Tile
+            title={t('kpi.peakHour')}
+            value={
+              hasPeak
+                ? t('kpi.peakHourValue', { hour: peakHour, hourEnd: (peakHour ?? 0) + 1 })
+                : '—'
+            }
+            hint={
+              hasPeak
+                ? t('kpi.peakHourHint', {
+                    count: peak?.peakOrderCount ?? 0,
+                    revenue: formatDisplayMoney(peak?.peakRevenue ?? 0),
+                    days: peak?.windowDays ?? 30,
+                  })
+                : t('kpi.peakHourEmpty')
+            }
+            to="/sales/shifts"
+            icon={<ClockCircleOutlined />}
+            tone={hasPeak ? 'info' : 'default'}
+          />
+        </Col>
+        <Col xs={24} lg={16}>
+          <div className="dashboard-tile dashboard-tile--default" style={{ display: 'block', padding: 16 }}>
+            <Typography.Text type="secondary">
+              {t('kpi.peakHoursCaption', { days: peak?.windowDays ?? 30 })}
+            </Typography.Text>
+            <PeakHoursBars hours={peak?.hours ?? []} peakHour={peakHour} />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: 4,
+                fontSize: 11,
+                color: 'rgba(0,0,0,0.45)',
+              }}
+            >
+              <span>6h</span>
+              <span>12h</span>
+              <span>18h</span>
+              <span>22h</span>
+            </div>
+          </div>
+        </Col>
+      </Row>
+
+      <Typography.Title level={5} style={{ marginTop: 24 }}>
         {t('sections.inventory')}
       </Typography.Title>
       <Row gutter={[12, 12]}>
-        <Col xs={24} sm={12} lg={8}>
+        <Col xs={24} sm={12} lg={6}>
+          <Tile
+            title={t('kpi.urgentNearExpiry')}
+            value={invX?.urgentNearExpirySkuCount ?? 0}
+            hint={t('kpi.urgentNearExpiryHint', { days: invX?.urgentExpiryDays ?? 7 })}
+            to="/inventory/stock?tab=fefo"
+            icon={<WarningOutlined />}
+            tone={(invX?.urgentNearExpirySkuCount ?? 0) > 0 ? 'danger' : 'default'}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
           <Tile
             title={t('kpi.nearExpirySku')}
             value={invX?.nearExpirySkuCount ?? 0}
@@ -237,10 +343,10 @@ export function OwnerCockpitPage() {
             })}
             to="/inventory/stock?tab=fefo"
             icon={<WarningOutlined />}
-            tone={(invX?.nearExpirySkuCount ?? 0) > 0 ? 'danger' : 'default'}
+            tone={(invX?.nearExpirySkuCount ?? 0) > 0 ? 'warning' : 'default'}
           />
         </Col>
-        <Col xs={24} sm={12} lg={8}>
+        <Col xs={24} sm={12} lg={6}>
           <Tile
             title={t('kpi.lowStockProducts')}
             value={inv?.lowStockProductCount ?? 0}
@@ -249,7 +355,7 @@ export function OwnerCockpitPage() {
             tone={(inv?.lowStockProductCount ?? 0) > 0 ? 'warning' : 'default'}
           />
         </Col>
-        <Col xs={24} sm={12} lg={8}>
+        <Col xs={24} sm={12} lg={6}>
           <Tile
             title={t('kpi.lowStockBatches')}
             value={inv?.lowStockBatchCount ?? 0}
@@ -264,6 +370,26 @@ export function OwnerCockpitPage() {
         {t('sections.customers')}
       </Typography.Title>
       <Row gutter={[12, 12]}>
+        <Col xs={24} sm={12} lg={8}>
+          <Tile
+            title={t('kpi.dormantBuyers')}
+            value={cust?.dormantBuyerCount ?? 0}
+            hint={t('kpi.dormantBuyersHint', { days: cust?.dormantDays ?? 30 })}
+            to="/success/growth?tab=dormant"
+            icon={<TeamOutlined />}
+            tone={(cust?.dormantBuyerCount ?? 0) > 0 ? 'warning' : 'default'}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Tile
+            title={t('kpi.activeBuyers')}
+            value={cust?.activeBuyerCount ?? 0}
+            hint={t('kpi.activeBuyersHint', { days: cust?.dormantDays ?? 30 })}
+            to="/customer/list"
+            icon={<TeamOutlined />}
+            tone="info"
+          />
+        </Col>
         <Col xs={24} sm={12} lg={8}>
           <Tile
             title={t('growth.tile.title')}

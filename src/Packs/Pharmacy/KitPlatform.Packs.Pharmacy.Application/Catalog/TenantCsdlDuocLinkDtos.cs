@@ -22,6 +22,12 @@ public sealed record CsdlDuocEffectiveCredentials(
         && !string.IsNullOrWhiteSpace(Username)
         && !string.IsNullOrWhiteSpace(Password)
         && NationalDrugCatalogSettings.NormalizeMode(Mode) is "sandbox" or "live";
+
+    public bool CanSyncStockIn =>
+        EnableStockInSync
+        && !string.IsNullOrWhiteSpace(Username)
+        && !string.IsNullOrWhiteSpace(Password)
+        && NationalDrugCatalogSettings.NormalizeMode(Mode) is "sandbox" or "live";
 }
 
 public sealed record TenantCsdlDuocLinkDto(

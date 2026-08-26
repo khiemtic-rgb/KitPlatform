@@ -24,17 +24,32 @@ internal sealed class OwnerCockpitRepository
         OwnerCockpitSalesExtrasDto Sales,
         OwnerCockpitInventoryExtrasDto Inventory,
         OwnerCockpitCustomerExtrasDto Customers,
+        OwnerCockpitPeakHoursDto PeakHours,
         OwnerCockpitAssessmentSnapshotDto? Assessment)> GetExtrasAsync(
         int expiryDays,
+        int dormantDays,
+        int peakHoursWindowDays,
+        int urgentExpiryDays,
         Guid[]? allowedWarehouseIds,
         CancellationToken cancellationToken)
     {
         if (expiryDays < 1) expiryDays = 30;
+        if (dormantDays < 7) dormantDays = 7;
+        if (dormantDays > 365) dormantDays = 365;
+        if (peakHoursWindowDays < 7) peakHoursWindowDays = 7;
+        if (peakHoursWindowDays > 90) peakHoursWindowDays = 90;
+        if (urgentExpiryDays < 1) urgentExpiryDays = 7;
+        if (urgentExpiryDays > expiryDays) urgentExpiryDays = expiryDays;
 
         var utcNow = DateTime.UtcNow;
         var (weekStart, weekEnd) = VietnamBusinessCalendar.RollingDaysRangeUtc(utcNow, 7);
         var (monthStart, monthEnd) = VietnamBusinessCalendar.MonthToDateRangeUtc(utcNow);
-        var expiryCutoff = VietnamBusinessCalendar.Today(utcNow).AddDays(expiryDays);
+        var (peakStart, peakEnd) = VietnamBusinessCalendar.RollingDaysRangeUtc(utcNow, peakHoursWindowDays);
+        var (_, todayEnd) = VietnamBusinessCalendar.TodayRangeUtc(utcNow);
+        var todayVn = VietnamBusinessCalendar.Today(utcNow);
+        var expiryCutoff = todayVn.AddDays(expiryDays);
+        var urgentCutoff = todayVn.AddDays(urgentExpiryDays);
+        var dormantBefore = VietnamBusinessCalendar.RollingDaysRangeUtc(utcNow, dormantDays).StartUtc;
 
         var orderWarehouseFilter = allowedWarehouseIds is { Length: > 0 }
             ? "AND o.warehouse_id = ANY(@AllowedWarehouseIds)"
@@ -97,8 +112,15 @@ internal sealed class OwnerCockpitRepository
 
         var invSql = $"""
             SELECT
-                COUNT(DISTINCT b.product_id)::int AS NearExpirySkuCount,
-                COALESCE(SUM(b.quantity_available * COALESCE(b.unit_cost, 0)), 0) AS NearExpiryStockValue
+                COUNT(DISTINCT b.product_id) FILTER (
+                    WHERE b.expiry_date <= @ExpiryBefore
+                )::int AS NearExpirySkuCount,
+                COALESCE(SUM(b.quantity_available * COALESCE(b.unit_cost, 0)) FILTER (
+                    WHERE b.expiry_date <= @ExpiryBefore
+                ), 0) AS NearExpiryStockValue,
+                COUNT(DISTINCT b.product_id) FILTER (
+                    WHERE b.expiry_date <= @UrgentBefore
+                )::int AS UrgentNearExpirySkuCount
             FROM inventory_batches b
             INNER JOIN products p ON p.id = b.product_id AND p.tenant_id = b.tenant_id AND p.deleted_at IS NULL
             WHERE b.tenant_id = @TenantId
@@ -108,12 +130,16 @@ internal sealed class OwnerCockpitRepository
               {batchWarehouseFilter}
             """;
 
-        var inventory = await conn.QuerySingleAsync<(int NearExpirySkuCount, decimal NearExpiryStockValue)>(
+        var inventory = await conn.QuerySingleAsync<(
+            int NearExpirySkuCount,
+            decimal NearExpiryStockValue,
+            int UrgentNearExpirySkuCount)>(
             invSql,
             new
             {
                 TenantId,
                 ExpiryBefore = expiryCutoff,
+                UrgentBefore = urgentCutoff,
                 AllowedWarehouseIds = allowedWarehouseIds,
             });
 
@@ -141,18 +167,98 @@ internal sealed class OwnerCockpitRepository
                             AND prior.status = @OrderCompleted
                             AND prior.order_date < @WeekStart
                       )
-                ), 0) AS ReturningCustomers7d
+                ), 0) AS ReturningCustomers7d,
+                COALESCE((
+                    SELECT COUNT(*)::int
+                    FROM (
+                        SELECT o.customer_id
+                        FROM sales_orders o
+                        WHERE o.tenant_id = @TenantId
+                          AND o.status = @OrderCompleted
+                          AND o.customer_id IS NOT NULL
+                        GROUP BY o.customer_id
+                        HAVING MAX(o.order_date) < @DormantBefore
+                    ) dormant
+                ), 0) AS DormantBuyerCount,
+                COALESCE((
+                    SELECT COUNT(DISTINCT o.customer_id)::int
+                    FROM sales_orders o
+                    WHERE o.tenant_id = @TenantId
+                      AND o.status = @OrderCompleted
+                      AND o.customer_id IS NOT NULL
+                      AND o.order_date >= @DormantBefore
+                      AND o.order_date < @TodayEnd
+                ), 0) AS ActiveBuyerCount
             """;
 
-        var customers = await conn.QuerySingleAsync<(int NewCustomers7d, int ReturningCustomers7d)>(
+        var customers = await conn.QuerySingleAsync<(
+            int NewCustomers7d,
+            int ReturningCustomers7d,
+            int DormantBuyerCount,
+            int ActiveBuyerCount)>(
             customerSql,
             new
             {
                 TenantId,
                 WeekStart = weekStart,
                 WeekEnd = weekEnd,
+                DormantBefore = dormantBefore,
+                TodayEnd = todayEnd,
                 OrderCompleted = SalesOrderStatuses.Completed,
             });
+
+        var peakSql = $"""
+            SELECT
+                EXTRACT(HOUR FROM o.order_date AT TIME ZONE 'Asia/Ho_Chi_Minh')::int AS Hour,
+                COUNT(*)::int AS OrderCount,
+                COALESCE(SUM(o.total_amount), 0) AS Revenue
+            FROM sales_orders o
+            WHERE o.tenant_id = @TenantId
+              AND o.status = @OrderCompleted
+              AND o.order_date >= @PeakStart AND o.order_date < @PeakEnd
+              {orderWarehouseFilter}
+            GROUP BY 1
+            ORDER BY 1
+            """;
+
+        var peakRows = (await conn.QueryAsync<(int Hour, int OrderCount, decimal Revenue)>(
+            peakSql,
+            new
+            {
+                TenantId,
+                PeakStart = peakStart,
+                PeakEnd = peakEnd,
+                OrderCompleted = SalesOrderStatuses.Completed,
+                AllowedWarehouseIds = allowedWarehouseIds,
+            })).ToList();
+
+        var hours = new OwnerCockpitHourBucketDto[24];
+        for (var h = 0; h < 24; h++)
+            hours[h] = new OwnerCockpitHourBucketDto(h, 0, 0);
+        foreach (var row in peakRows)
+        {
+            if (row.Hour is >= 0 and <= 23)
+                hours[row.Hour] = new OwnerCockpitHourBucketDto(row.Hour, row.OrderCount, row.Revenue);
+        }
+
+        OwnerCockpitHourBucketDto? peak = null;
+        foreach (var bucket in hours)
+        {
+            if (bucket.OrderCount <= 0) continue;
+            if (peak is null
+                || bucket.OrderCount > peak.OrderCount
+                || (bucket.OrderCount == peak.OrderCount && bucket.Revenue > peak.Revenue))
+            {
+                peak = bucket;
+            }
+        }
+
+        var peakHours = new OwnerCockpitPeakHoursDto(
+            peakHoursWindowDays,
+            peak?.Hour,
+            peak?.OrderCount ?? 0,
+            peak?.Revenue ?? 0,
+            hours);
 
         OwnerCockpitAssessmentSnapshotDto? assessment = null;
         var hasAssessment = await conn.ExecuteScalarAsync<bool>("""
@@ -182,8 +288,18 @@ internal sealed class OwnerCockpitRepository
 
         return (
             new OwnerCockpitSalesExtrasDto(sales.MonthNetTotal, sales.WeekOrderCount, sales.MonthOrderCount),
-            new OwnerCockpitInventoryExtrasDto(inventory.NearExpirySkuCount, inventory.NearExpiryStockValue),
-            new OwnerCockpitCustomerExtrasDto(customers.NewCustomers7d, customers.ReturningCustomers7d),
+            new OwnerCockpitInventoryExtrasDto(
+                inventory.NearExpirySkuCount,
+                inventory.NearExpiryStockValue,
+                inventory.UrgentNearExpirySkuCount,
+                urgentExpiryDays),
+            new OwnerCockpitCustomerExtrasDto(
+                customers.NewCustomers7d,
+                customers.ReturningCustomers7d,
+                customers.DormantBuyerCount,
+                dormantDays,
+                customers.ActiveBuyerCount),
+            peakHours,
             assessment);
     }
 }

@@ -1,0 +1,134 @@
+.pos-checkout-modal {
+  top: 48px;
+  margin: 0 auto;
+  padding-bottom: 0;
+}
+
+.pos-checkout-modal .ant-modal-body {
+  padding: 12px 16px;
+}
+
+.pos-checkout-modal .ant-modal-header {
+  padding: 12px 16px;
+}
+
+.pos-checkout-modal .ant-modal-footer {
+  padding: 10px 16px;
+}
+
+.pos-checkout-section {
+  margin-bottom: 10px;
+}
+
+.pos-checkout-section:last-child {
+  margin-bottom: 0;
+}
+
+.pos-checkout-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin-bottom: 4px;
+}
+
+.pos-checkout-symptom-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pos-checkout-symptom-chips .ant-tag {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0 6px;
+}
+
+.pos-checkout-top-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 10px;
+}
+
+.pos-checkout-summary {
+  flex: 0 0 300px;
+  max-width: 300px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.pos-checkout-top-row .pos-checkout-loyalty {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  margin-left: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-checkout-loyalty {
+  padding: 8px 10px;
+  background: #f0f5ff;
+  border: 1px solid #d6e4ff;
+  border-radius: 6px;
+}
+
+.pos-checkout-loyalty-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.pos-checkout-loyalty-meta {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-top: 2px;
+}
+
+.pos-checkout-customer-tags {
+  margin-top: 0;
+}
+
+.pos-checkout-customer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-top: 4px;
+}
+
+.pos-checkout-customer-meta__left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pos-checkout-order-reminder-inline {
+  flex-shrink: 0;
+}
+
+.pos-checkout-payment-form .ant-form-item {
+  margin-bottom: 0;
+}
+
+.pos-checkout-payment-form .ant-form-item-label {
+  padding-bottom: 2px;
+}
+
+.pos-checkout-payment-form .ant-form-item-label > label {
+  font-size: 12px;
+  height: auto;
+}
+
+.pos-checkout-summary .pos-summary-panel {
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+}

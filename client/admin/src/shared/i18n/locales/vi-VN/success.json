@@ -8,6 +8,7 @@
   "sections": {
     "risk": "Rủi ro hôm nay",
     "sales": "Doanh số",
+    "peakHours": "Giờ vàng",
     "inventory": "Tồn & rủi ro",
     "customers": "Khách hàng",
     "assessment": "Đánh giá KAP"
@@ -19,12 +20,23 @@
     "todayOrders": "Đơn hôm nay",
     "weekOrders": "{{count}} đơn / 7 ngày",
     "monthOrders": "{{count}} đơn / tháng",
+    "peakHour": "Giờ cao điểm",
+    "peakHourValue": "{{hour}}h–{{hourEnd}}h",
+    "peakHourHint": "{{count}} đơn · {{revenue}} ({{days}} ngày gần nhất)",
+    "peakHourEmpty": "Chưa đủ đơn để xác định giờ vàng",
+    "peakHoursCaption": "Phân bố đơn theo giờ (giờ VN) — {{days}} ngày",
     "nearExpirySku": "SKU cận HSD",
     "nearExpiryValue": "Giá trị ~ {{value}} (≤ {{days}} ngày)",
+    "urgentNearExpiry": "SKU sắp hết hạn gấp",
+    "urgentNearExpiryHint": "HSD ≤ {{days}} ngày — ưu tiên xử lý hôm nay",
     "lowStockProducts": "SP dưới tồn tối thiểu",
     "lowStockBatches": "Lô tồn thấp",
     "newCustomers": "Khách mới",
     "returningCustomers": "Khách quay lại",
+    "dormantBuyers": "Khách ngủ",
+    "dormantBuyersHint": "Đã từng mua · không mua ≥ {{days}} ngày",
+    "activeBuyers": "Khách đang mua",
+    "activeBuyersHint": "Có đơn trong {{days}} ngày",
     "totalCustomers": "Tổng khách",
     "last7Days": "7 ngày gần nhất",
     "latestKapScore": "Điểm KAP gần nhất",
@@ -160,6 +172,26 @@
     "careAlreadyOpen": "Đã có draft mở {{draft}}",
     "careFailed": "Không tạo được draft chăm sóc",
     "daysOverdue": "Trễ {{days}} ngày",
+    "tabs": {
+      "refill": "Tái mua ({{count}})",
+      "dormant": "Khách ngủ ({{count}})"
+    },
+    "dormant": {
+      "subtitle": "{{count}} khách đã mua nhưng không quay lại ≥ {{days}} ngày",
+      "tip": "Gọi / Zalo nhắc mua, hoặc Chăm sóc ngay để tạo draft từ đơn gần nhất — rồi xử lý trên quầy.",
+      "tableTitle": "Khách ngủ ≥ {{days}} ngày",
+      "empty": "Không có khách ngủ trong khoảng này",
+      "noPhone": "Chưa có SĐT",
+      "openPos": "Mở POS",
+      "zalo": "Zalo",
+      "daysIdle": "{{days}} ngày",
+      "careFailed": "Không tạo được draft cho khách ngủ",
+      "showing": "Đang hiện {{shown}} / {{total}} khách (ưu tiên ngủ lâu nhất)",
+      "columns": {
+        "lastOrder": "Đơn gần nhất",
+        "daysIdle": "Ngủ"
+      }
+    },
     "buckets": {
       "refillOverdue": "Quá hạn tái mua",
       "refillDue": "Đến hạn hôm nay",

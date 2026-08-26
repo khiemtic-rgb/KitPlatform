@@ -21,6 +21,15 @@ public sealed class OwnerCockpitController : ControllerBase
     public async Task<ActionResult<OwnerCockpitDto>> Get(
         [FromQuery] int expiryDays = 30,
         [FromQuery] decimal lowStockThreshold = 10,
+        [FromQuery] int dormantDays = 30,
+        [FromQuery] int peakHoursWindowDays = 30,
+        [FromQuery] int urgentExpiryDays = 7,
         CancellationToken cancellationToken = default) =>
-        Ok(await _cockpit.GetAsync(expiryDays, lowStockThreshold, cancellationToken));
+        Ok(await _cockpit.GetAsync(
+            expiryDays,
+            lowStockThreshold,
+            dormantDays,
+            peakHoursWindowDays,
+            urgentExpiryDays,
+            cancellationToken));
 }

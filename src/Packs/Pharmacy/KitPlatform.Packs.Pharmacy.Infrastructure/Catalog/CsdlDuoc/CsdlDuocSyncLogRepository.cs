@@ -14,16 +14,17 @@ internal sealed class CsdlDuocSyncLogRepository
 
     public async Task<bool> TryBeginAsync(
         Guid tenantId,
-        Guid salesOrderId,
-        string? orderNumber,
-        CancellationToken cancellationToken)
+        Guid documentId,
+        string? documentNumber,
+        CancellationToken cancellationToken,
+        string direction = "stock-out")
     {
         await using var conn = await OpenTenantAsync(tenantId, cancellationToken);
         const string sql = """
             INSERT INTO csdl_duoc_sync_log (
                 tenant_id, sales_order_id, order_number, direction, status
             )
-            VALUES (@TenantId, @SalesOrderId, @OrderNumber, 'stock-out', 'pending')
+            VALUES (@TenantId, @DocumentId, @DocumentNumber, @Direction, 'pending')
             ON CONFLICT (tenant_id, sales_order_id, direction) DO UPDATE
             SET status = 'pending',
                 error_message = NULL,
@@ -34,15 +35,16 @@ internal sealed class CsdlDuocSyncLogRepository
         var id = await conn.QuerySingleOrDefaultAsync<Guid?>(new CommandDefinition(sql, new
         {
             TenantId = tenantId,
-            SalesOrderId = salesOrderId,
-            OrderNumber = orderNumber,
+            DocumentId = documentId,
+            DocumentNumber = documentNumber,
+            Direction = direction,
         }, cancellationToken: cancellationToken));
         return id.HasValue;
     }
 
     public async Task UpdateAsync(
         Guid tenantId,
-        Guid salesOrderId,
+        Guid documentId,
         string status,
         string? remoteTransactionId,
         string? remoteStatus,
@@ -51,7 +53,8 @@ internal sealed class CsdlDuocSyncLogRepository
         object? request,
         object? response,
         string? errorMessage,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string direction = "stock-out")
     {
         await using var conn = await OpenTenantAsync(tenantId, cancellationToken);
         const string sql = """
@@ -66,13 +69,14 @@ internal sealed class CsdlDuocSyncLogRepository
                 error_message = @ErrorMessage,
                 updated_at = NOW()
             WHERE tenant_id = @TenantId
-              AND sales_order_id = @SalesOrderId
-              AND direction = 'stock-out'
+              AND sales_order_id = @DocumentId
+              AND direction = @Direction
             """;
         await conn.ExecuteAsync(new CommandDefinition(sql, new
         {
             TenantId = tenantId,
-            SalesOrderId = salesOrderId,
+            DocumentId = documentId,
+            Direction = direction,
             Status = status,
             RemoteTransactionId = remoteTransactionId,
             RemoteStatus = remoteStatus,
@@ -162,6 +166,48 @@ internal sealed class CsdlDuocSyncLogRepository
         return rows.ToList();
     }
 
+    public async Task<IReadOnlyList<CsdlDuocGrnLineForSync>> LoadGrnLinesAsync(
+        Guid tenantId,
+        Guid goodsReceiptId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await OpenTenantAsync(tenantId, cancellationToken);
+        const string sql = """
+            SELECT
+                gr.id AS GoodsReceiptId,
+                gr.grn_number AS GrnNumber,
+                gr.receipt_date AS ReceiptDate,
+                gri.id AS LineId,
+                p.national_drug_id AS NationalDrugId,
+                p.packaging AS Packaging,
+                p.attributes->>'manufacturer' AS ManufacturerName,
+                pb.country_code AS CountryCode,
+                gri.batch_number AS BatchNumber,
+                gri.expiry_date AS ExpiryDate,
+                gri.quantity AS Quantity,
+                COALESCE(gri.inventory_unit_cost, gri.unit_cost, 0) AS UnitCost
+            FROM goods_receipts gr
+            INNER JOIN goods_receipt_items gri ON gri.goods_receipt_id = gr.id
+            INNER JOIN products p ON p.id = gri.product_id
+            LEFT JOIN product_brands pb ON pb.id = p.brand_id
+            WHERE gr.tenant_id = @TenantId
+              AND gr.id = @GoodsReceiptId
+              AND gr.deleted_at IS NULL
+              AND gr.status = @Completed
+            ORDER BY gri.id
+            """;
+        var rows = await conn.QueryAsync<CsdlDuocGrnLineForSync>(new CommandDefinition(
+            sql,
+            new
+            {
+                TenantId = tenantId,
+                GoodsReceiptId = goodsReceiptId,
+                Completed = KitPlatform.Packs.Pharmacy.Procurement.GoodsReceiptStatuses.Completed,
+            },
+            cancellationToken: cancellationToken));
+        return rows.ToList();
+    }
+
     private async Task<Npgsql.NpgsqlConnection> OpenTenantAsync(Guid tenantId, CancellationToken cancellationToken)
     {
         var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -207,4 +253,20 @@ internal sealed class CsdlDuocSaleLineForSync
     public decimal Quantity { get; init; }
     public decimal UnitPrice { get; init; }
     public string? UnitName { get; init; }
+}
+
+internal sealed class CsdlDuocGrnLineForSync
+{
+    public Guid GoodsReceiptId { get; init; }
+    public string GrnNumber { get; init; } = "";
+    public DateTime ReceiptDate { get; init; }
+    public Guid LineId { get; init; }
+    public string? NationalDrugId { get; init; }
+    public string? Packaging { get; init; }
+    public string? ManufacturerName { get; init; }
+    public string? CountryCode { get; init; }
+    public string? BatchNumber { get; init; }
+    public DateTime? ExpiryDate { get; init; }
+    public decimal Quantity { get; init; }
+    public decimal UnitCost { get; init; }
 }

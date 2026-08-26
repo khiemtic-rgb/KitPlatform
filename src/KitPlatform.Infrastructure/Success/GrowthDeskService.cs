@@ -1,6 +1,7 @@
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.CustomerApp;
 using KitPlatform.Application.Success;
+using KitPlatform.Infrastructure.Dashboard;
 
 namespace KitPlatform.Infrastructure.Success;
 
@@ -131,6 +132,89 @@ internal sealed class GrowthDeskService : IGrowthDeskService
             row.AttributedRevenue);
     }
 
+    public async Task<DormantBuyersDto> GetDormantBuyersAsync(
+        int dormantDays = 30,
+        int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        if (dormantDays < 7) dormantDays = 7;
+        if (dormantDays > 365) dormantDays = 365;
+        var dormantBefore = VietnamBusinessCalendar.RollingDaysRangeUtc(DateTime.UtcNow, dormantDays).StartUtc;
+        var (businessDate, total, rows) = await _repo.ListDormantBuyersAsync(
+            _tenant.TenantId,
+            dormantBefore,
+            limit,
+            cancellationToken);
+
+        return new DormantBuyersDto(
+            businessDate,
+            dormantDays,
+            total,
+            rows.Select(MapDormant).ToList());
+    }
+
+    public async Task<GrowthCareNowResultDto> CareDormantBuyerAsync(
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var tenantId = _tenant.TenantId;
+        var existing = await _repo.FindOpenDormantCareDraftAsync(tenantId, customerId, cancellationToken);
+        if (existing is not null)
+        {
+            return new GrowthCareNowResultDto(
+                Guid.Empty,
+                existing.DraftOrderId,
+                existing.DraftNumber,
+                existing.CustomerId,
+                existing.CareActionId,
+                AlreadyHadOpenDraft: true);
+        }
+
+        const int dormantDays = 30;
+        var dormantBefore = VietnamBusinessCalendar.RollingDaysRangeUtc(DateTime.UtcNow, dormantDays).StartUtc;
+        var buyer = await _repo.GetDormantBuyerAsync(tenantId, customerId, dormantBefore, cancellationToken)
+            ?? throw new InvalidOperationException("Khách không còn trong danh sách ngủ (đã mua lại hoặc chưa từng mua).");
+
+        var lines = await _repo.ListOrderLinesForDraftAsync(tenantId, buyer.LastOrderId, cancellationToken);
+        if (lines.Count == 0)
+            throw new InvalidOperationException("Đơn gần nhất không còn dòng thuốc để tạo draft.");
+
+        var notes = $"Growth Desk · Khách ngủ · tái mua từ #{buyer.LastOrderNumber}";
+        var draft = await _draftOrders.CreateAsync(
+            tenantId,
+            _tenant.UserId,
+            new UpsertCustomerDraftOrderRequest(
+                buyer.CustomerId,
+                ChatThreadId: null,
+                WarehouseId: buyer.WarehouseId,
+                PriceType: 1,
+                Items: lines
+                    .Select(l => new CustomerDraftOrderLineRequest(
+                        l.ProductId,
+                        l.ProductUnitId,
+                        l.Quantity))
+                    .ToList(),
+                Notes: notes),
+            cancellationToken);
+
+        var careActionId = await _repo.InsertCareActionAsync(
+            tenantId,
+            suggestionId: null,
+            buyer.CustomerId,
+            _tenant.UserId,
+            draft.Id,
+            notes,
+            cancellationToken);
+
+        return new GrowthCareNowResultDto(
+            Guid.Empty,
+            draft.Id,
+            draft.DraftNumber,
+            buyer.CustomerId,
+            careActionId,
+            AlreadyHadOpenDraft: false);
+    }
+
     private static DateOnly StartOfWeekMonday(DateOnly day)
     {
         var offset = ((int)day.DayOfWeek + 6) % 7; // Monday = 0
@@ -152,4 +236,16 @@ internal sealed class GrowthDeskService : IGrowthDeskService
             row.DaysOverdue,
             row.Bucket ?? "",
             row.Status);
+
+    private static DormantBuyerItemDto MapDormant(GrowthDeskRepository.DormantBuyerRow row) =>
+        new(
+            row.CustomerId,
+            row.CustomerName,
+            row.CustomerPhone,
+            row.LastOrderId,
+            row.LastOrderNumber,
+            new DateTimeOffset(DateTime.SpecifyKind(row.LastOrderDate, DateTimeKind.Utc)),
+            row.DaysSinceLastBuy,
+            row.LastOrderTotal,
+            row.WarehouseId);
 }

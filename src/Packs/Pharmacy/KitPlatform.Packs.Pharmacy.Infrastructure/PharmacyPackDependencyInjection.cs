@@ -139,6 +139,7 @@ public static class PharmacyPackDependencyInjection
         {
             services.AddScoped<INationalDrugCatalogService, MockNationalDrugCatalogService>();
             services.AddScoped<ICsdlDuocStockOutSyncService, NoOpCsdlDuocStockOutSyncService>();
+            services.AddScoped<ICsdlDuocStockInSyncService, NoOpCsdlDuocStockInSyncService>();
             return;
         }
 
@@ -146,5 +147,6 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<CsdlDuocTransactionClient>();
         services.AddScoped<CsdlDuocSyncLogRepository>();
         services.AddScoped<ICsdlDuocStockOutSyncService, CsdlDuocStockOutSyncService>();
+        services.AddScoped<ICsdlDuocStockInSyncService, CsdlDuocStockInSyncService>();
     }
 }

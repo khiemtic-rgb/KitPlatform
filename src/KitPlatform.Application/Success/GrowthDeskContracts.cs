@@ -43,6 +43,23 @@ public sealed record GrowthWeeklyRefillReportDto(
     int ConvertedCount,
     decimal AttributedRevenue);
 
+public sealed record DormantBuyerItemDto(
+    Guid CustomerId,
+    string CustomerName,
+    string? CustomerPhone,
+    Guid LastOrderId,
+    string LastOrderNumber,
+    DateTimeOffset LastOrderDate,
+    int DaysSinceLastBuy,
+    decimal LastOrderTotal,
+    Guid? WarehouseId);
+
+public sealed record DormantBuyersDto(
+    DateOnly BusinessDate,
+    int DormantDays,
+    int TotalCount,
+    IReadOnlyList<DormantBuyerItemDto> Items);
+
 public interface IGrowthDeskService
 {
     Task<GrowthOpportunitiesTodayDto> GetOpportunitiesTodayAsync(
@@ -57,5 +74,14 @@ public interface IGrowthDeskService
 
     Task<GrowthWeeklyRefillReportDto> GetWeeklyRefillReportAsync(
         DateOnly? weekStart = null,
+        CancellationToken cancellationToken = default);
+
+    Task<DormantBuyersDto> GetDormantBuyersAsync(
+        int dormantDays = 30,
+        int limit = 50,
+        CancellationToken cancellationToken = default);
+
+    Task<GrowthCareNowResultDto> CareDormantBuyerAsync(
+        Guid customerId,
         CancellationToken cancellationToken = default);
 }
