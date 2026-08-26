@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-26T13:31:52.332Z",
+  "generatedAt": "2026-08-26T20:26:35.126Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 22,
-    "todayPageViews": 10,
-    "todayRequests": 57,
-    "last24hVisitors": 44,
-    "last24hPageViews": 21,
-    "last24hRequests": 104
+    "todayVisitors": 12,
+    "todayPageViews": 2,
+    "todayRequests": 16,
+    "last24hVisitors": 46,
+    "last24hPageViews": 19,
+    "last24hRequests": 114
   },
   "hourly": [
-    {
-      "time": "2026-08-25T15:00:00Z",
-      "visitors": 3,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-25T16:00:00Z",
-      "visitors": 2,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-25T17:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-25T18:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-25T19:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-25T20:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-08-25T21:00:00Z",
       "visitors": 15,
@@ -108,17 +78,41 @@
     },
     {
       "time": "2026-08-26T13:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-26T14:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-26T15:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-26T16:00:00Z",
+      "visitors": 5,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-26T17:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-26T18:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-26T19:00:00Z",
+      "visitors": 5,
+      "requests": 6
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-20",
-      "visitors": 72,
-      "pageViews": 38,
-      "requests": 208
-    },
     {
       "date": "2026-08-21",
       "visitors": 110,
@@ -151,30 +145,44 @@
     },
     {
       "date": "2026-08-26",
-      "visitors": 53,
+      "visitors": 31,
       "pageViews": 17,
-      "requests": 90
+      "requests": 98
+    },
+    {
+      "date": "2026-08-27",
+      "visitors": 12,
+      "pageViews": 2,
+      "requests": 16
     }
   ],
   "topPages": [
     {
-      "path": "/",
-      "views": 20
+      "path": "/robots.txt",
+      "views": 24
     },
     {
-      "path": "/robots.txt",
-      "views": 16
+      "path": "/",
+      "views": 18
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 8
     },
     {
       "path": "/vi/",
-      "views": 10
+      "views": 8
     },
     {
       "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
       "views": 4
     },
     {
-      "path": "/_next/static/css/4e38ee1c6419eb50.css",
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "views": 4
+    },
+    {
+      "path": "/wp-login.php",
       "views": 3
     },
     {
@@ -182,23 +190,7 @@
       "views": 3
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 3
-    },
-    {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 3
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 3
-    },
-    {
-      "path": "/media/system/js/core.js",
-      "views": 2
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 2
     },
     {
@@ -206,7 +198,15 @@
       "views": 2
     },
     {
-      "path": "/.env",
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 2
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 2
+    },
+    {
+      "path": "/media/system/js/core.js",
       "views": 2
     },
     {
