@@ -16,6 +16,7 @@ import {
   SettingOutlined,
   HomeOutlined,
   RiseOutlined,
+  RocketOutlined,
   ReadOutlined,
 } from '@ant-design/icons';
 import { commonT } from '@/shared/i18n';
@@ -37,6 +38,7 @@ export type ModuleKey =
   | 'reports'
   | 'kap'
   | 'content'
+  | 'kitSales'
   | 'localOs'
   | 'learning'
   | 'system';
@@ -238,6 +240,15 @@ export const moduleRegistry: ModuleMenuItem[] = [
     icon: <ReadOutlined />,
     enabled: true,
     platformModule: ADMIN_MODULE_PLATFORM_CODES.content,
+    verticals: MARKETING_ONLY,
+  },
+  {
+    key: 'kitSales',
+    label: 'kitSales',
+    path: '/kit-sales',
+    icon: <RocketOutlined />,
+    enabled: true,
+    platformModule: ADMIN_MODULE_PLATFORM_CODES.kitSales,
     verticals: MARKETING_ONLY,
   },
   {

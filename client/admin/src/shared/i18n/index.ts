@@ -15,6 +15,7 @@ import viRx from '@/shared/i18n/locales/vi-VN/rx.json';
 import viConnect from '@/shared/i18n/locales/vi-VN/connect.json';
 import viClinic from '@/shared/i18n/locales/vi-VN/clinic.json';
 import viSuccess from '@/shared/i18n/locales/vi-VN/success.json';
+import viKitSales from '@/shared/i18n/locales/vi-VN/kit-sales.json';
 import enCommon from '@/shared/i18n/locales/en-US/common.json';
 import enDashboard from '@/shared/i18n/locales/en-US/dashboard.json';
 import enSales from '@/shared/i18n/locales/en-US/sales.json';
@@ -30,6 +31,7 @@ import enRx from '@/shared/i18n/locales/en-US/rx.json';
 import enConnect from '@/shared/i18n/locales/en-US/connect.json';
 import enClinic from '@/shared/i18n/locales/en-US/clinic.json';
 import enSuccess from '@/shared/i18n/locales/en-US/success.json';
+import enKitSales from '@/shared/i18n/locales/en-US/kit-sales.json';
 
 export const ADMIN_LOCALE_STORAGE_KEY = 'admin-locale';
 
@@ -64,6 +66,7 @@ void i18n.use(initReactI18next).init({
       connect: viConnect,
       clinic: viClinic,
       success: viSuccess,
+      kitSales: viKitSales,
     },
     'en-US': {
       common: enCommon,
@@ -81,6 +84,7 @@ void i18n.use(initReactI18next).init({
       connect: enConnect,
       clinic: enClinic,
       success: enSuccess,
+      kitSales: enKitSales,
     },
   },
   lng: resolveInitialAdminLocale(),

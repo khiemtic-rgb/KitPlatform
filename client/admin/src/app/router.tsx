@@ -419,6 +419,12 @@ const KapPartnersPage = lazy(() =>
 const ContentLayout = lazy(() =>
   import('@/modules/content/ContentLayout').then((m) => ({ default: m.ContentLayout })),
 );
+const KitSalesLayout = lazy(() =>
+  import('@/modules/kit-sales/KitSalesLayout').then((m) => ({ default: m.KitSalesLayout })),
+);
+const KitSalesDeskPage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesDeskPage').then((m) => ({ default: m.KitSalesDeskPage })),
+);
 const ContentOpsPage = lazy(() =>
   import('@/modules/content/ContentOpsPage').then((m) => ({ default: m.ContentOpsPage })),
 );
@@ -900,6 +906,23 @@ export function AppRouter() {
                 <Route path="rules" element={<KapRulesPage />} />
                 <Route path="campaigns" element={<KapCampaignsPage />} />
                 <Route path="partners" element={<KapPartnersPage />} />
+              </Route>
+              <Route
+                path="kit-sales"
+                element={
+                  <SuspenseRoute>
+                    <KitSalesLayout />
+                  </SuspenseRoute>
+                }
+              >
+                <Route
+                  index
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesDeskPage />
+                    </SuspenseRoute>
+                  }
+                />
               </Route>
               <Route
                 path="content"

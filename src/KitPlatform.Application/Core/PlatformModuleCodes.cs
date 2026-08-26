@@ -37,6 +37,8 @@ public static class PlatformModuleCodes
     public const string KitContent = "kit_content";
     /// <summary>KIT Local OS — Thái Nguyên Life, tenant KIT_LOCAL, package local_os.</summary>
     public const string LocalOs = "local_os";
+    /// <summary>KIT Sales — acquisition pipeline (prospect → PHC → paid). Not Pharmacy POS.</summary>
+    public const string KitSales = "kit_sales";
     public const string Learning = "learning";
 
     public static IReadOnlyList<string> All { get; } =
@@ -67,6 +69,7 @@ public static class PlatformModuleCodes
         CareOs,
         KitContent,
         LocalOs,
+        KitSales,
         Learning,
     ];
 }

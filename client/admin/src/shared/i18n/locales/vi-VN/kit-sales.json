@@ -1,0 +1,48 @@
+{
+  "title": "KIT Sales",
+  "subtitle": "Pipeline acquisition — prospect → PHC → pilot → paid",
+  "growthDeskLink": "Growth Desk (giữ chân)",
+  "pipeline": {
+    "title": "Pipeline",
+    "total": "{{count}} lead",
+    "empty": "Chưa có lead — thêm prospect bên dưới."
+  },
+  "leads": {
+    "title": "Leads",
+    "business": "Nhà thuốc / DN",
+    "product": "Sản phẩm",
+    "status": "Trạng thái",
+    "temperature": "Nhiệt",
+    "score": "Điểm",
+    "source": "Nguồn",
+    "updated": "Cập nhật"
+  },
+  "create": {
+    "title": "Thêm prospect",
+    "businessName": "Tên nhà thuốc / doanh nghiệp",
+    "province": "Tỉnh/TP",
+    "phone": "SĐT",
+    "source": "Nguồn",
+    "notes": "Ghi chú",
+    "submit": "Thêm prospect",
+    "success": "Đã thêm prospect",
+    "failed": "Không thêm được prospect"
+  },
+  "status": {
+    "discovered": "Khám phá",
+    "research": "Nghiên cứu",
+    "contact": "Liên hệ",
+    "engage": "Tương tác",
+    "phc": "PHC",
+    "qualify": "Đánh giá",
+    "demo": "Demo",
+    "pilot": "Pilot",
+    "paid": "Trả phí",
+    "lost": "Mất"
+  },
+  "temperature": {
+    "cold": "Lạnh",
+    "warm": "Ấm",
+    "hot": "Nóng"
+  }
+}

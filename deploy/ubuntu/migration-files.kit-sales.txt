@@ -1,0 +1,6 @@
+# KIT Sales (acquisition pipeline) — INDEPENDENT park
+# Do NOT merge into migration-files.prod.txt (Pharmacy NT),
+# migration-files.family-os.txt, migration-files.content.txt, or migration-files.local-os.txt.
+# Apply when operating KIT Sales (Novixa / multi-product acquisition).
+
+323_pack_kit_sales_v1.sql

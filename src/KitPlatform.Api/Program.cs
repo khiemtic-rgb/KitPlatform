@@ -19,6 +19,7 @@ using KitPlatform.Packs.FamilyOs.Infrastructure;
 using KitPlatform.Packs.Care.Infrastructure;
 using KitPlatform.Packs.Content.Infrastructure;
 using KitPlatform.Packs.LocalOs.Infrastructure;
+using KitPlatform.Packs.Sales.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 // Optional local secrets (gitignored under .dev/) — e.g. CSDL dược sandbox password.
@@ -116,6 +117,7 @@ builder.Services.AddAuthorization(options =>
     options.AddIdentityAuthorization();
     options.AddClinicAuthorization();
     options.AddPaymentAuthorization();
+    options.AddKitSalesAuthorization();
 });
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddPharmacyPack(builder.Configuration);
@@ -139,6 +141,7 @@ catch (Exception ex) when (
 }
 builder.Services.AddContentPack(builder.Configuration);
 builder.Services.AddLocalOsPack();
+builder.Services.AddKitSalesPack();
 builder.Services.Configure<KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions>(
     builder.Configuration.GetSection(KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions.Section));
 builder.Services.AddHttpClient<KitPlatform.Api.LocalOs.LocalOsHomepageFeedPublisher>();

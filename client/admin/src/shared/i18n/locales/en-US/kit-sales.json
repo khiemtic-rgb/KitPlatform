@@ -1,0 +1,48 @@
+{
+  "title": "KIT Sales",
+  "subtitle": "Acquisition pipeline — prospect → PHC → pilot → paid",
+  "growthDeskLink": "Growth Desk (retention)",
+  "pipeline": {
+    "title": "Pipeline",
+    "total": "{{count}} leads",
+    "empty": "No leads yet — add a prospect below."
+  },
+  "leads": {
+    "title": "Leads",
+    "business": "Business",
+    "product": "Product",
+    "status": "Status",
+    "temperature": "Temperature",
+    "score": "Score",
+    "source": "Source",
+    "updated": "Updated"
+  },
+  "create": {
+    "title": "New prospect",
+    "businessName": "Pharmacy / business name",
+    "province": "Province",
+    "phone": "Phone",
+    "source": "Source",
+    "notes": "Notes",
+    "submit": "Add prospect",
+    "success": "Prospect added",
+    "failed": "Could not add prospect"
+  },
+  "status": {
+    "discovered": "Discovered",
+    "research": "Research",
+    "contact": "Contact",
+    "engage": "Engage",
+    "phc": "PHC",
+    "qualify": "Qualify",
+    "demo": "Demo",
+    "pilot": "Pilot",
+    "paid": "Paid",
+    "lost": "Lost"
+  },
+  "temperature": {
+    "cold": "Cold",
+    "warm": "Warm",
+    "hot": "Hot"
+  }
+}
