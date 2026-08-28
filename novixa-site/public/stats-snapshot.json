@@ -1,81 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-27T22:17:37.436Z",
+  "generatedAt": "2026-08-28T11:26:45.842Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 176,
-    "last24hPageViews": 86,
-    "last24hRequests": 335
+    "todayVisitors": 167,
+    "todayPageViews": 77,
+    "todayRequests": 322,
+    "last24hVisitors": 252,
+    "last24hPageViews": 112,
+    "last24hRequests": 474
   },
   "hourly": [
-    {
-      "time": "2026-08-26T23:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-27T00:00:00Z",
-      "visitors": 6,
-      "requests": 58
-    },
-    {
-      "time": "2026-08-27T01:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-27T02:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-27T03:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-27T04:00:00Z",
-      "visitors": 16,
-      "requests": 20
-    },
-    {
-      "time": "2026-08-27T05:00:00Z",
-      "visitors": 12,
-      "requests": 13
-    },
-    {
-      "time": "2026-08-27T06:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-27T07:00:00Z",
-      "visitors": 26,
-      "requests": 26
-    },
-    {
-      "time": "2026-08-27T08:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-27T09:00:00Z",
-      "visitors": 19,
-      "requests": 29
-    },
-    {
-      "time": "2026-08-27T10:00:00Z",
-      "visitors": 6,
-      "requests": 11
-    },
-    {
-      "time": "2026-08-27T11:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
     {
       "time": "2026-08-27T12:00:00Z",
       "visitors": 5,
@@ -128,8 +63,73 @@
     },
     {
       "time": "2026-08-27T22:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 11,
+      "requests": 17
+    },
+    {
+      "time": "2026-08-27T23:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-28T00:00:00Z",
+      "visitors": 10,
+      "requests": 11
+    },
+    {
+      "time": "2026-08-28T01:00:00Z",
+      "visitors": 21,
+      "requests": 33
+    },
+    {
+      "time": "2026-08-28T02:00:00Z",
+      "visitors": 56,
+      "requests": 69
+    },
+    {
+      "time": "2026-08-28T03:00:00Z",
+      "visitors": 36,
+      "requests": 126
+    },
+    {
+      "time": "2026-08-28T04:00:00Z",
+      "visitors": 19,
+      "requests": 19
+    },
+    {
+      "time": "2026-08-28T05:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-28T06:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-28T07:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-28T08:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-28T09:00:00Z",
+      "visitors": 14,
+      "requests": 18
+    },
+    {
+      "time": "2026-08-28T10:00:00Z",
+      "visitors": 12,
+      "requests": 18
+    },
+    {
+      "time": "2026-08-28T11:00:00Z",
+      "visitors": 2,
+      "requests": 4
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-08-27",
-      "visitors": 174,
-      "pageViews": 83,
-      "requests": 329
+      "visitors": 186,
+      "pageViews": 89,
+      "requests": 354
+    },
+    {
+      "date": "2026-08-28",
+      "visitors": 167,
+      "pageViews": 77,
+      "requests": 322
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 41
+      "path": "/",
+      "views": 66
     },
     {
-      "path": "/",
-      "views": 39
+      "path": "/robots.txt",
+      "views": 38
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 17
     },
     {
       "path": "/vi/",
       "views": 16
     },
     {
-      "path": "/sitemap-index.xml",
-      "views": 12
+      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
+      "views": 14
     },
     {
       "path": "/sitemap.xml",
-      "views": 12
+      "views": 14
     },
     {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 11
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 9
-    },
-    {
-      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
-      "views": 8
+      "path": "/sitemap-index.xml",
+      "views": 14
     },
     {
       "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
-      "views": 8
+      "views": 12
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don.png",
-      "views": 7
+      "path": "/brand/products/eugica-cough.jpg",
+      "views": 12
     },
     {
       "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
-      "views": 7
+      "views": 11
+    },
+    {
+      "path": "/images/tin-tuc/nha-thuoc-ban-tot-nhung-co-duoc-quan-ly-tot.png",
+      "views": 9
+    },
+    {
+      "path": "/vi/tin-tuc/the-nao-la-ton-kho-chet-sat-thu-am-tham-bao-mon-dong-tien-nha-thuoc/",
+      "views": 9
     },
     {
       "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
-      "views": 6
+      "views": 9
     },
     {
-      "path": "/_astro/_slug_.OmCW7wJf.css",
-      "views": 5
+      "path": "/favicon.ico",
+      "views": 9
     },
     {
-      "path": "/wp-login.php",
-      "views": 5
-    },
-    {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 5
+      "path": "/brand/articles/dinh-duong-tieu-duong.jpg",
+      "views": 8
     }
   ]
 }
