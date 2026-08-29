@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-29T07:13:31.958Z",
+  "generatedAt": "2026-08-29T16:48:55.529Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 31,
-    "todayPageViews": 58,
-    "todayRequests": 3302,
-    "last24hVisitors": 75,
-    "last24hPageViews": 65,
-    "last24hRequests": 3412
+    "todayVisitors": 58,
+    "todayPageViews": 67,
+    "todayRequests": 3370,
+    "last24hVisitors": 72,
+    "last24hPageViews": 71,
+    "last24hRequests": 3425
   },
   "hourly": [
-    {
-      "time": "2026-08-28T08:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-28T09:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-28T10:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-28T11:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-28T12:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-28T13:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-28T14:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-28T15:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-28T16:00:00Z",
-      "visitors": 10,
-      "requests": 13
-    },
     {
       "time": "2026-08-28T17:00:00Z",
       "visitors": 5,
@@ -130,6 +85,46 @@
       "time": "2026-08-29T07:00:00Z",
       "visitors": 1,
       "requests": 2
+    },
+    {
+      "time": "2026-08-29T08:00:00Z",
+      "visitors": 15,
+      "requests": 19
+    },
+    {
+      "time": "2026-08-29T09:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-29T10:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-29T12:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-29T13:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-29T14:00:00Z",
+      "visitors": 4,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-29T15:00:00Z",
+      "visitors": 1,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-29T16:00:00Z",
+      "visitors": 1,
+      "requests": 2
     }
   ],
   "daily": [
@@ -171,19 +166,19 @@
     },
     {
       "date": "2026-08-29",
-      "visitors": 55,
-      "pageViews": 62,
-      "requests": 3357
+      "visitors": 88,
+      "pageViews": 71,
+      "requests": 3425
     }
   ],
   "topPages": [
     {
       "path": "/vi/",
-      "views": 41
+      "views": 44
     },
     {
       "path": "/",
-      "views": 35
+      "views": 41
     },
     {
       "path": "/%2fconfiguration.php",
@@ -202,10 +197,6 @@
       "views": 33
     },
     {
-      "path": "/%2f%2ewell-known%2fstripe%2f",
-      "views": 33
-    },
-    {
       "path": "/%2f%2edockerignore",
       "views": 33
     },
@@ -214,15 +205,11 @@
       "views": 33
     },
     {
+      "path": "/%2f_next%2fstatic%2fdevelopment%2f_ssgmanifest.js",
+      "views": 33
+    },
+    {
       "path": "/%252fstore%252f.env",
-      "views": 33
-    },
-    {
-      "path": "/%2fdockerfile",
-      "views": 33
-    },
-    {
-      "path": "/%252fswagger%252ejson",
       "views": 33
     },
     {
@@ -230,11 +217,19 @@
       "views": 33
     },
     {
-      "path": "/%2f_next%2fstatic%2fdevelopment%2f_ssgmanifest.js",
+      "path": "/%2f",
       "views": 33
     },
     {
-      "path": "/%2f",
+      "path": "/%2fdockerfile",
+      "views": 33
+    },
+    {
+      "path": "/%2f%2ewell-known%2fstripe%2f",
+      "views": 33
+    },
+    {
+      "path": "/%252fswagger%252ejson",
       "views": 33
     }
   ]
