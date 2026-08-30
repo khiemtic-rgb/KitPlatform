@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-29T20:57:36.556Z",
+  "generatedAt": "2026-08-30T05:27:34.280Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 119,
-    "last24hPageViews": 268,
-    "last24hRequests": 1630
+    "todayVisitors": 42,
+    "todayPageViews": 6,
+    "todayRequests": 63,
+    "last24hVisitors": 138,
+    "last24hPageViews": 181,
+    "last24hRequests": 828
   },
   "hourly": [
-    {
-      "time": "2026-08-28T21:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-28T22:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-28T23:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-29T00:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-29T01:00:00Z",
-      "visitors": 5,
-      "requests": 802
-    },
-    {
-      "time": "2026-08-29T02:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-29T03:00:00Z",
-      "visitors": 15,
-      "requests": 18
-    },
-    {
-      "time": "2026-08-29T04:00:00Z",
-      "visitors": 8,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-29T05:00:00Z",
-      "visitors": 4,
-      "requests": 44
-    },
     {
       "time": "2026-08-29T06:00:00Z",
       "visitors": 4,
@@ -130,6 +85,51 @@
       "time": "2026-08-29T20:00:00Z",
       "visitors": 12,
       "requests": 14
+    },
+    {
+      "time": "2026-08-29T21:00:00Z",
+      "visitors": 11,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-29T22:00:00Z",
+      "visitors": 8,
+      "requests": 13
+    },
+    {
+      "time": "2026-08-29T23:00:00Z",
+      "visitors": 3,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-30T00:00:00Z",
+      "visitors": 7,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-30T01:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-30T02:00:00Z",
+      "visitors": 8,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-30T03:00:00Z",
+      "visitors": 8,
+      "requests": 11
+    },
+    {
+      "time": "2026-08-30T04:00:00Z",
+      "visitors": 21,
+      "requests": 21
+    },
+    {
+      "time": "2026-08-30T05:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-08-29",
-      "visitors": 110,
-      "pageViews": 266,
-      "requests": 1614
+      "visitors": 128,
+      "pageViews": 272,
+      "requests": 1651
+    },
+    {
+      "date": "2026-08-30",
+      "visitors": 42,
+      "pageViews": 6,
+      "requests": 63
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 268
-    },
-    {
-      "path": "/index.php",
-      "views": 79
-    },
-    {
-      "path": "/wp-json/batch/v1/",
-      "views": 56
-    },
-    {
-      "path": "//wp-json/batch/v1",
-      "views": 52
+      "views": 81
     },
     {
       "path": "/robots.txt",
-      "views": 44
-    },
-    {
-      "path": "/wordpress/index.php",
-      "views": 38
-    },
-    {
-      "path": "/blog/wp-json/batch/v1",
-      "views": 36
+      "views": 43
     },
     {
       "path": "/vi/",
-      "views": 36
+      "views": 26
     },
     {
-      "path": "/blog/",
-      "views": 36
+      "path": "/sitemap-index.xml",
+      "views": 18
     },
     {
-      "path": "/wp-json/Batch/v1",
-      "views": 34
+      "path": "/sitemap.xml",
+      "views": 15
     },
     {
-      "path": "/wp-json/batch/v1",
-      "views": 32
+      "path": "/.git/config",
+      "views": 9
     },
     {
-      "path": "/blog/blog/wp-json/batch/v1",
-      "views": 30
+      "path": "/actuator/env",
+      "views": 9
     },
     {
-      "path": "/wordpress/",
-      "views": 28
+      "path": "/.env",
+      "views": 8
     },
     {
-      "path": "/blog//wp-json/batch/v1",
-      "views": 24
+      "path": "/graphql",
+      "views": 8
     },
     {
-      "path": "/wordpress/wp-json/batch/v1/",
-      "views": 24
+      "path": "/debug/default/view",
+      "views": 7
+    },
+    {
+      "path": "/kien-thuc/phong-cam-cum",
+      "views": 7
+    },
+    {
+      "path": "/api/graphql",
+      "views": 7
+    },
+    {
+      "path": "/config.json",
+      "views": 7
+    },
+    {
+      "path": "/.well-known/security.txt",
+      "views": 6
+    },
+    {
+      "path": "/telescope/requests",
+      "views": 6
     }
   ]
 }
