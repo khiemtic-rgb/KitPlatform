@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-30T05:27:34.280Z",
+  "generatedAt": "2026-08-30T11:57:02.790Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 42,
-    "todayPageViews": 6,
-    "todayRequests": 63,
-    "last24hVisitors": 138,
-    "last24hPageViews": 181,
-    "last24hRequests": 828
+    "todayVisitors": 81,
+    "todayPageViews": 32,
+    "todayRequests": 138,
+    "last24hVisitors": 137,
+    "last24hPageViews": 53,
+    "last24hRequests": 266
   },
   "hourly": [
-    {
-      "time": "2026-08-29T06:00:00Z",
-      "visitors": 4,
-      "requests": 393
-    },
-    {
-      "time": "2026-08-29T07:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-29T08:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-29T09:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-29T10:00:00Z",
-      "visitors": 20,
-      "requests": 203
-    },
-    {
-      "time": "2026-08-29T11:00:00Z",
-      "visitors": 11,
-      "requests": 18
-    },
     {
       "time": "2026-08-29T12:00:00Z",
       "visitors": 3,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-08-30T05:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-30T06:00:00Z",
+      "visitors": 9,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-30T07:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-30T08:00:00Z",
+      "visitors": 9,
+      "requests": 15
+    },
+    {
+      "time": "2026-08-30T09:00:00Z",
+      "visitors": 7,
+      "requests": 18
+    },
+    {
+      "time": "2026-08-30T10:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-30T11:00:00Z",
+      "visitors": 9,
+      "requests": 11
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-08-30",
-      "visitors": 42,
-      "pageViews": 6,
-      "requests": 63
+      "visitors": 81,
+      "pageViews": 32,
+      "requests": 138
     }
   ],
   "topPages": [
     {
-      "path": "/",
-      "views": 81
+      "path": "/robots.txt",
+      "views": 47
     },
     {
-      "path": "/robots.txt",
-      "views": 43
+      "path": "/",
+      "views": 44
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 21
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 18
+      "views": 17
     },
     {
       "path": "/sitemap.xml",
-      "views": 15
+      "views": 14
+    },
+    {
+      "path": "/index.php",
+      "views": 10
+    },
+    {
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "views": 6
+    },
+    {
+      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
+      "views": 5
+    },
+    {
+      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
+      "views": 4
+    },
+    {
+      "path": "/media/system/js/core.js",
+      "views": 4
+    },
+    {
+      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
+      "views": 4
+    },
+    {
+      "path": "/images/tin-tuc/tu-du-lieu-hoc-tap-den-thang-tien.png",
+      "views": 4
+    },
+    {
+      "path": "/vi/tin-tuc/recognition-giup-giu-chan-nhan-vien-nha-thuoc-nhu-the-nao/",
+      "views": 4
+    },
+    {
+      "path": "/wp-includes/css/buttons.css",
+      "views": 4
     },
     {
       "path": "/.git/config",
-      "views": 9
-    },
-    {
-      "path": "/actuator/env",
-      "views": 9
-    },
-    {
-      "path": "/.env",
-      "views": 8
-    },
-    {
-      "path": "/graphql",
-      "views": 8
-    },
-    {
-      "path": "/debug/default/view",
-      "views": 7
-    },
-    {
-      "path": "/kien-thuc/phong-cam-cum",
-      "views": 7
-    },
-    {
-      "path": "/api/graphql",
-      "views": 7
-    },
-    {
-      "path": "/config.json",
-      "views": 7
-    },
-    {
-      "path": "/.well-known/security.txt",
-      "views": 6
-    },
-    {
-      "path": "/telescope/requests",
-      "views": 6
+      "views": 3
     }
   ]
 }
