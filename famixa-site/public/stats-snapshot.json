@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-30T05:35:21.578Z",
+  "generatedAt": "2026-08-30T12:04:10.797Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 61,
-    "todayPageViews": 10,
-    "todayRequests": 110,
-    "last24hVisitors": 117,
-    "last24hPageViews": 41,
-    "last24hRequests": 286
+    "todayVisitors": 85,
+    "todayPageViews": 18,
+    "todayRequests": 371,
+    "last24hVisitors": 118,
+    "last24hPageViews": 42,
+    "last24hRequests": 517
   },
   "hourly": [
-    {
-      "time": "2026-08-29T06:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-29T07:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-29T08:00:00Z",
-      "visitors": 15,
-      "requests": 19
-    },
-    {
-      "time": "2026-08-29T09:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-29T10:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-29T12:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-08-29T13:00:00Z",
       "visitors": 5,
@@ -115,6 +85,41 @@
       "time": "2026-08-30T04:00:00Z",
       "visitors": 11,
       "requests": 14
+    },
+    {
+      "time": "2026-08-30T05:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-30T06:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-30T07:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-30T08:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-30T09:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-30T10:00:00Z",
+      "visitors": 10,
+      "requests": 227
+    },
+    {
+      "time": "2026-08-30T11:00:00Z",
+      "visitors": 10,
+      "requests": 15
     }
   ],
   "daily": [
@@ -156,71 +161,71 @@
     },
     {
       "date": "2026-08-30",
-      "visitors": 92,
-      "pageViews": 32,
-      "requests": 214
+      "visitors": 125,
+      "pageViews": 40,
+      "requests": 475
     }
   ],
   "topPages": [
     {
-      "path": "/vi/",
-      "views": 57
-    },
-    {
       "path": "/",
-      "views": 54
+      "views": 62
     },
     {
-      "path": "/%2f%2egit-secret",
-      "views": 33
+      "path": "/vi/",
+      "views": 31
     },
     {
-      "path": "/.git/",
-      "views": 33
+      "path": "/robots.txt",
+      "views": 25
     },
     {
-      "path": "/%252fservers%252fsave%252ecgi",
-      "views": 33
+      "path": "/favicon.ico",
+      "views": 20
     },
     {
-      "path": "/%2f%2edockerignore",
-      "views": 33
+      "path": "/favicon-32.png",
+      "views": 12
     },
     {
-      "path": "/%252fconfig.php",
-      "views": 33
+      "path": "/sitemap.xml",
+      "views": 12
     },
     {
-      "path": "/%2f_next%2fstatic%2fdevelopment%2f_ssgmanifest.js",
-      "views": 33
+      "path": "/apple-touch-icon.png",
+      "views": 11
     },
     {
-      "path": "/%2f_next%2finspector",
-      "views": 33
+      "path": "/@fs/proc/self/cwd/.env.local",
+      "views": 10
     },
     {
-      "path": "/%252fswagger%252ejson",
-      "views": 33
+      "path": "/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "views": 7
     },
     {
-      "path": "/%252fstore%252f.env",
-      "views": 33
+      "path": "/.git/config",
+      "views": 7
     },
     {
-      "path": "/%252F_ignition%252Fhealth-check",
-      "views": 33
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 7
     },
     {
-      "path": "/%2f",
-      "views": 33
+      "path": "/images/moment-family.png",
+      "views": 7
     },
     {
-      "path": "/%2f%2ewell-known%2fstripe%2f",
-      "views": 33
+      "path": "/images/loop/02-heart.png",
+      "views": 6
     },
     {
-      "path": "/%2fconfiguration.php",
-      "views": 33
+      "path": "/key.json",
+      "views": 6
+    },
+    {
+      "path": "/storage/.env",
+      "views": 6
     }
   ]
 }
