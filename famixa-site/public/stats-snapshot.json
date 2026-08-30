@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-30T12:04:10.797Z",
+  "generatedAt": "2026-08-30T16:51:55.474Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 85,
-    "todayPageViews": 18,
-    "todayRequests": 371,
-    "last24hVisitors": 118,
+    "todayVisitors": 100,
+    "todayPageViews": 20,
+    "todayRequests": 398,
+    "last24hVisitors": 124,
     "last24hPageViews": 42,
-    "last24hRequests": 517
+    "last24hRequests": 502
   },
   "hourly": [
-    {
-      "time": "2026-08-29T13:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-29T14:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-29T15:00:00Z",
-      "visitors": 1,
-      "requests": 21
-    },
-    {
-      "time": "2026-08-29T16:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-08-29T17:00:00Z",
       "visitors": 3,
@@ -120,6 +100,31 @@
       "time": "2026-08-30T11:00:00Z",
       "visitors": 10,
       "requests": 15
+    },
+    {
+      "time": "2026-08-30T12:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-30T13:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-30T14:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-08-30T15:00:00Z",
+      "visitors": 9,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-30T16:00:00Z",
+      "visitors": 3,
+      "requests": 4
     }
   ],
   "daily": [
@@ -161,50 +166,50 @@
     },
     {
       "date": "2026-08-30",
-      "visitors": 125,
-      "pageViews": 40,
-      "requests": 475
+      "visitors": 146,
+      "pageViews": 42,
+      "requests": 502
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 62
+      "views": 54
     },
     {
       "path": "/vi/",
-      "views": 31
+      "views": 30
     },
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 28
     },
     {
       "path": "/favicon.ico",
-      "views": 20
-    },
-    {
-      "path": "/favicon-32.png",
-      "views": 12
+      "views": 22
     },
     {
       "path": "/sitemap.xml",
-      "views": 12
+      "views": 15
+    },
+    {
+      "path": "/favicon-32.png",
+      "views": 13
     },
     {
       "path": "/apple-touch-icon.png",
-      "views": 11
+      "views": 12
     },
     {
       "path": "/@fs/proc/self/cwd/.env.local",
       "views": 10
     },
     {
-      "path": "/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "path": "/.git/config",
       "views": 7
     },
     {
-      "path": "/.git/config",
+      "path": "/_next/static/media/e4af272ccee01ff0-s.p.woff2",
       "views": 7
     },
     {
@@ -216,7 +221,7 @@
       "views": 7
     },
     {
-      "path": "/images/loop/02-heart.png",
+      "path": "/storage/.env",
       "views": 6
     },
     {
@@ -224,7 +229,7 @@
       "views": 6
     },
     {
-      "path": "/storage/.env",
+      "path": "/var/www/.env",
       "views": 6
     }
   ]
