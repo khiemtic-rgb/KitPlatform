@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-30T16:43:00.094Z",
+  "generatedAt": "2026-08-30T21:09:02.946Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 103,
-    "todayPageViews": 40,
-    "todayRequests": 181,
-    "last24hVisitors": 142,
-    "last24hPageViews": 54,
-    "last24hRequests": 273
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 134,
+    "last24hPageViews": 160,
+    "last24hRequests": 357
   },
   "hourly": [
-    {
-      "time": "2026-08-29T17:00:00Z",
-      "visitors": 7,
-      "requests": 13
-    },
-    {
-      "time": "2026-08-29T18:00:00Z",
-      "visitors": 3,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-29T19:00:00Z",
-      "visitors": 6,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-29T20:00:00Z",
-      "visitors": 12,
-      "requests": 14
-    },
-    {
-      "time": "2026-08-29T21:00:00Z",
-      "visitors": 11,
-      "requests": 12
-    },
     {
       "time": "2026-08-29T22:00:00Z",
       "visitors": 8,
@@ -128,17 +103,31 @@
     },
     {
       "time": "2026-08-30T16:00:00Z",
+      "visitors": 14,
+      "requests": 117
+    },
+    {
+      "time": "2026-08-30T17:00:00Z",
       "visitors": 5,
       "requests": 5
+    },
+    {
+      "time": "2026-08-30T18:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-30T19:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-30T20:00:00Z",
+      "visitors": 7,
+      "requests": 12
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-24",
-      "visitors": 191,
-      "pageViews": 179,
-      "requests": 3863
-    },
     {
       "date": "2026-08-25",
       "visitors": 196,
@@ -171,9 +160,9 @@
     },
     {
       "date": "2026-08-30",
-      "visitors": 103,
-      "pageViews": 40,
-      "requests": 181
+      "visitors": 126,
+      "pageViews": 154,
+      "requests": 332
     }
   ],
   "topPages": [
@@ -183,59 +172,59 @@
     },
     {
       "path": "/",
-      "views": 44
+      "views": 43
+    },
+    {
+      "path": "/vi/tin-tuc/tu-du-lieu-hoc-tap-den-quyet-dinh-thang-tien/",
+      "views": 18
     },
     {
       "path": "/vi/",
-      "views": 19
+      "views": 17
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 16
+      "views": 15
     },
     {
       "path": "/sitemap.xml",
       "views": 14
     },
     {
-      "path": "/index.php",
+      "path": "/vi/tin-tuc/fifo-va-fefo-khac-nhau-the-nao-lua-chon-nguyen-tac-quan-tri-kho-dung-cho-nha-thuoc/",
+      "views": 13
+    },
+    {
+      "path": "/vi/tai-lieu/",
+      "views": 12
+    },
+    {
+      "path": "/vi/tai-lieu/van-ban-phap-luat/",
+      "views": 12
+    },
+    {
+      "path": "/vi/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don-otc-chuan-hoa-de-toi-uu-hoa-doanh-thu-va-dam-bao-an-toan-dieu-tri/",
       "views": 10
     },
     {
-      "path": "/media/system/js/core.js",
-      "views": 6
+      "path": "/vi/tin-tuc/quy-trinh-doi-tra-thuoc-tai-nha-thuoc-chuan-hoa-de-giu-chan-khach-hang-va-kiem-soat-an-toan-y-khoa/",
+      "views": 10
+    },
+    {
+      "path": "/vi/tin-tuc/cach-giam-thoi-gian-phuc-vu-moi-khach-tai-nha-thuoc-ma-khong-lam-giam-chat-luong-tu-van/",
+      "views": 8
+    },
+    {
+      "path": "/vi/tai-lieu/van-ban-phap-luat/thong-tu-02-2018-gpp/",
+      "views": 8
+    },
+    {
+      "path": "/index.php",
+      "views": 8
     },
     {
       "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
       "views": 6
-    },
-    {
-      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 5
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 4
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 4
-    },
-    {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 4
-    },
-    {
-      "path": "/vi/tin-tuc/recognition-giup-giu-chan-nhan-vien-nha-thuoc-nhu-the-nao/",
-      "views": 4
-    },
-    {
-      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
-      "views": 4
-    },
-    {
-      "path": "/wp-includes/css/buttons.css",
-      "views": 4
     }
   ]
 }
