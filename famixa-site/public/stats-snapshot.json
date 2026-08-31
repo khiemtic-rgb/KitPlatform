@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-31T05:50:50.696Z",
+  "generatedAt": "2026-08-31T14:13:02.701Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 33,
-    "todayPageViews": 7,
-    "todayRequests": 65,
-    "last24hVisitors": 90,
-    "last24hPageViews": 55,
-    "last24hRequests": 503
+    "todayVisitors": 48,
+    "todayPageViews": 30,
+    "todayRequests": 143,
+    "last24hVisitors": 77,
+    "last24hPageViews": 69,
+    "last24hRequests": 312
   },
   "hourly": [
-    {
-      "time": "2026-08-30T06:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-30T07:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-30T08:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-30T09:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-30T10:00:00Z",
-      "visitors": 10,
-      "requests": 227
-    },
-    {
-      "time": "2026-08-30T11:00:00Z",
-      "visitors": 10,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-30T12:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-08-30T13:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-30T14:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
     {
       "time": "2026-08-30T15:00:00Z",
       "visitors": 9,
@@ -130,6 +85,46 @@
       "time": "2026-08-31T05:00:00Z",
       "visitors": 4,
       "requests": 6
+    },
+    {
+      "time": "2026-08-31T06:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-31T07:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-31T08:00:00Z",
+      "visitors": 4,
+      "requests": 50
+    },
+    {
+      "time": "2026-08-31T09:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-31T10:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-31T11:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-31T12:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-08-31T13:00:00Z",
+      "visitors": 6,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,34 +166,34 @@
     },
     {
       "date": "2026-08-31",
-      "visitors": 64,
-      "pageViews": 45,
-      "requests": 218
+      "visitors": 87,
+      "pageViews": 67,
+      "requests": 294
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 50
+      "views": 38
     },
     {
       "path": "/robots.txt",
-      "views": 27
+      "views": 24
     },
     {
       "path": "/vi/",
-      "views": 21
+      "views": 19
     },
     {
       "path": "/sitemap.xml",
-      "views": 17
+      "views": 19
     },
     {
-      "path": "/favicon.ico",
-      "views": 15
+      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
+      "views": 12
     },
     {
-      "path": "/@fs/proc/self/cwd/.env.local",
+      "path": "/en/privacy/",
       "views": 10
     },
     {
@@ -206,15 +201,7 @@
       "views": 10
     },
     {
-      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 10
-    },
-    {
-      "path": "/en/privacy/",
-      "views": 10
-    },
-    {
-      "path": "/favicon-32.png",
+      "path": "/favicon.ico",
       "views": 9
     },
     {
@@ -222,20 +209,28 @@
       "views": 8
     },
     {
-      "path": "/apple-touch-icon.png",
-      "views": 8
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "views": 7
+    },
+    {
+      "path": "/favicon-32.png",
+      "views": 7
     },
     {
       "path": "//wp2/wp-includes/wlwmanifest.xml",
       "views": 7
     },
     {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 6
+      "path": "/vi/goi-cha-me/gia-dinh-la-noi-con-hoc-cach-lam-nguoi-moi-truong-giao-duc-dau-tien-va-quan-trong-nhat/",
+      "views": 7
     },
     {
-      "path": "/storage/.env",
-      "views": 6
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 7
+    },
+    {
+      "path": "/vi/huong-dan/",
+      "views": 7
     }
   ]
 }
