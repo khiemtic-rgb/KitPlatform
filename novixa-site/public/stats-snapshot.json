@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-31T13:56:00.407Z",
+  "generatedAt": "2026-08-31T22:53:00.636Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 80,
-    "todayPageViews": 124,
-    "todayRequests": 247,
-    "last24hVisitors": 122,
-    "last24hPageViews": 248,
-    "last24hRequests": 444
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 116,
+    "last24hPageViews": 162,
+    "last24hRequests": 374
   },
   "hourly": [
-    {
-      "time": "2026-08-30T14:00:00Z",
-      "visitors": 7,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-30T15:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-30T16:00:00Z",
-      "visitors": 14,
-      "requests": 117
-    },
-    {
-      "time": "2026-08-30T17:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-30T18:00:00Z",
-      "visitors": 6,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-30T19:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-30T20:00:00Z",
-      "visitors": 7,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-30T21:00:00Z",
-      "visitors": 6,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-30T22:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
     {
       "time": "2026-08-30T23:00:00Z",
       "visitors": 2,
@@ -128,17 +83,56 @@
     },
     {
       "time": "2026-08-31T13:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-08-31T14:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-31T15:00:00Z",
+      "visitors": 4,
+      "requests": 20
+    },
+    {
+      "time": "2026-08-31T16:00:00Z",
+      "visitors": 11,
+      "requests": 12
+    },
+    {
+      "time": "2026-08-31T17:00:00Z",
       "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-31T18:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-31T19:00:00Z",
+      "visitors": 3,
       "requests": 6
+    },
+    {
+      "time": "2026-08-31T20:00:00Z",
+      "visitors": 6,
+      "requests": 54
+    },
+    {
+      "time": "2026-08-31T21:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-08-31T22:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-25",
-      "visitors": 196,
-      "pageViews": 126,
-      "requests": 381
-    },
     {
       "date": "2026-08-26",
       "visitors": 168,
@@ -171,71 +165,71 @@
     },
     {
       "date": "2026-08-31",
-      "visitors": 80,
-      "pageViews": 124,
-      "requests": 247
+      "visitors": 115,
+      "pageViews": 162,
+      "requests": 371
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 65
+      "views": 59
     },
     {
       "path": "/robots.txt",
-      "views": 43
-    },
-    {
-      "path": "/vi/tin-tuc/tu-du-lieu-hoc-tap-den-quyet-dinh-thang-tien/",
-      "views": 18
+      "views": 38
     },
     {
       "path": "/vi/",
-      "views": 18
+      "views": 19
     },
     {
       "path": "/sitemap-index.xml",
       "views": 15
     },
     {
-      "path": "/vi/tai-lieu/",
-      "views": 13
-    },
-    {
       "path": "/sitemap.xml",
-      "views": 13
+      "views": 14
     },
     {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/",
-      "views": 13
+      "path": "/wp-admin/install.php",
+      "views": 6
     },
     {
-      "path": "/vi/tin-tuc/fifo-va-fefo-khac-nhau-the-nao-lua-chon-nguyen-tac-quan-tri-kho-dung-cho-nha-thuoc/",
-      "views": 13
+      "path": "/web",
+      "views": 5
     },
     {
-      "path": "/vi/tin-tuc/quy-trinh-doi-tra-thuoc-tai-nha-thuoc-chuan-hoa-de-giu-chan-khach-hang-va-kiem-soat-an-toan-y-khoa/",
-      "views": 10
-    },
-    {
-      "path": "/vi/tin-tuc/quy-trinh-ban-thuoc-khong-ke-don-otc-chuan-hoa-de-toi-uu-hoa-doanh-thu-va-dam-bao-an-toan-dieu-tri/",
-      "views": 10
-    },
-    {
-      "path": "/vi/tin-tuc/cach-giam-thoi-gian-phuc-vu-moi-khach-tai-nha-thuoc-ma-khong-lam-giam-chat-luong-tu-van/",
-      "views": 8
-    },
-    {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/thong-tu-02-2018-gpp/",
-      "views": 8
+      "path": "/dev",
+      "views": 5
     },
     {
       "path": "/wp-login.php",
-      "views": 7
+      "views": 5
     },
     {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 6
+      "path": "/wp",
+      "views": 4
+    },
+    {
+      "path": "//test/wp-includes/wlwmanifest.xml",
+      "views": 4
+    },
+    {
+      "path": "/images/kien-thuc/nhung-thoi-quen-nho-giup-tu-thuoc-gia-dinh-luon-an-toan.png",
+      "views": 4
+    },
+    {
+      "path": "/cdn-cgi/l/email-protection",
+      "views": 4
+    },
+    {
+      "path": "//wp2/wp-includes/wlwmanifest.xml",
+      "views": 4
+    },
+    {
+      "path": "/vi/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach-nen-mong-tao-dung-niem-tin-tai-nha-thuoc-hien-dai/",
+      "views": 4
     }
   ]
 }
