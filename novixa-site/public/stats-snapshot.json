@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-31T05:39:49.562Z",
+  "generatedAt": "2026-08-31T13:56:00.407Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 29,
-    "todayPageViews": 10,
-    "todayRequests": 50,
-    "last24hVisitors": 119,
-    "last24hPageViews": 161,
-    "last24hRequests": 337
+    "todayVisitors": 80,
+    "todayPageViews": 124,
+    "todayRequests": 247,
+    "last24hVisitors": 122,
+    "last24hPageViews": 248,
+    "last24hRequests": 444
   },
   "hourly": [
-    {
-      "time": "2026-08-30T06:00:00Z",
-      "visitors": 9,
-      "requests": 10
-    },
-    {
-      "time": "2026-08-30T07:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-30T08:00:00Z",
-      "visitors": 9,
-      "requests": 15
-    },
-    {
-      "time": "2026-08-30T09:00:00Z",
-      "visitors": 7,
-      "requests": 18
-    },
-    {
-      "time": "2026-08-30T10:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
-    {
-      "time": "2026-08-30T11:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-30T12:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-30T13:00:00Z",
-      "visitors": 7,
-      "requests": 10
-    },
     {
       "time": "2026-08-30T14:00:00Z",
       "visitors": 7,
@@ -128,8 +88,48 @@
     },
     {
       "time": "2026-08-31T05:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-31T06:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-31T07:00:00Z",
+      "visitors": 7,
+      "requests": 35
+    },
+    {
+      "time": "2026-08-31T08:00:00Z",
+      "visitors": 16,
+      "requests": 50
+    },
+    {
+      "time": "2026-08-31T09:00:00Z",
+      "visitors": 10,
+      "requests": 33
+    },
+    {
+      "time": "2026-08-31T10:00:00Z",
+      "visitors": 8,
+      "requests": 13
+    },
+    {
+      "time": "2026-08-31T11:00:00Z",
+      "visitors": 3,
+      "requests": 46
+    },
+    {
+      "time": "2026-08-31T12:00:00Z",
       "visitors": 4,
       "requests": 5
+    },
+    {
+      "time": "2026-08-31T13:00:00Z",
+      "visitors": 6,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,18 +171,18 @@
     },
     {
       "date": "2026-08-31",
-      "visitors": 29,
-      "pageViews": 10,
-      "requests": 50
+      "visitors": 80,
+      "pageViews": 124,
+      "requests": 247
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 49
+      "path": "/",
+      "views": 65
     },
     {
-      "path": "/",
+      "path": "/robots.txt",
       "views": 43
     },
     {
@@ -191,27 +191,27 @@
     },
     {
       "path": "/vi/",
-      "views": 17
+      "views": 18
     },
     {
       "path": "/sitemap-index.xml",
       "views": 15
     },
     {
+      "path": "/vi/tai-lieu/",
+      "views": 13
+    },
+    {
       "path": "/sitemap.xml",
+      "views": 13
+    },
+    {
+      "path": "/vi/tai-lieu/van-ban-phap-luat/",
       "views": 13
     },
     {
       "path": "/vi/tin-tuc/fifo-va-fefo-khac-nhau-the-nao-lua-chon-nguyen-tac-quan-tri-kho-dung-cho-nha-thuoc/",
       "views": 13
-    },
-    {
-      "path": "/vi/tai-lieu/",
-      "views": 12
-    },
-    {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/",
-      "views": 12
     },
     {
       "path": "/vi/tin-tuc/quy-trinh-doi-tra-thuoc-tai-nha-thuoc-chuan-hoa-de-giu-chan-khach-hang-va-kiem-soat-an-toan-y-khoa/",
@@ -222,20 +222,20 @@
       "views": 10
     },
     {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/thong-tu-02-2018-gpp/",
-      "views": 8
-    },
-    {
       "path": "/vi/tin-tuc/cach-giam-thoi-gian-phuc-vu-moi-khach-tai-nha-thuoc-ma-khong-lam-giam-chat-luong-tu-van/",
       "views": 8
     },
     {
-      "path": "/index.php",
+      "path": "/vi/tai-lieu/van-ban-phap-luat/thong-tu-02-2018-gpp/",
       "views": 8
     },
     {
       "path": "/wp-login.php",
       "views": 7
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 6
     }
   ]
 }
