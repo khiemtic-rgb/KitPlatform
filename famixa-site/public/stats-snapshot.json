@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-30T21:17:18.728Z",
+  "generatedAt": "2026-08-31T05:50:50.696Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 14,
-    "todayPageViews": 36,
-    "todayRequests": 116,
-    "last24hVisitors": 123,
-    "last24hPageViews": 72,
-    "last24hRequests": 596
+    "todayVisitors": 33,
+    "todayPageViews": 7,
+    "todayRequests": 65,
+    "last24hVisitors": 90,
+    "last24hPageViews": 55,
+    "last24hRequests": 503
   },
   "hourly": [
-    {
-      "time": "2026-08-29T22:00:00Z",
-      "visitors": 9,
-      "requests": 72
-    },
-    {
-      "time": "2026-08-29T23:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-30T00:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-30T01:00:00Z",
-      "visitors": 13,
-      "requests": 20
-    },
-    {
-      "time": "2026-08-30T02:00:00Z",
-      "visitors": 23,
-      "requests": 56
-    },
-    {
-      "time": "2026-08-30T03:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-30T04:00:00Z",
-      "visitors": 11,
-      "requests": 14
-    },
-    {
-      "time": "2026-08-30T05:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
     {
       "time": "2026-08-30T06:00:00Z",
       "visitors": 2,
@@ -128,8 +88,48 @@
     },
     {
       "time": "2026-08-30T21:00:00Z",
-      "visitors": 2,
+      "visitors": 5,
+      "requests": 26
+    },
+    {
+      "time": "2026-08-30T22:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-08-30T23:00:00Z",
+      "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-08-31T00:00:00Z",
+      "visitors": 7,
+      "requests": 29
+    },
+    {
+      "time": "2026-08-31T01:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-31T02:00:00Z",
+      "visitors": 18,
+      "requests": 22
+    },
+    {
+      "time": "2026-08-31T03:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-08-31T04:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-31T05:00:00Z",
+      "visitors": 4,
+      "requests": 6
     }
   ],
   "daily": [
@@ -165,60 +165,40 @@
     },
     {
       "date": "2026-08-30",
-      "visitors": 109,
-      "pageViews": 56,
-      "requests": 516
+      "visitors": 117,
+      "pageViews": 57,
+      "requests": 551
     },
     {
       "date": "2026-08-31",
-      "visitors": 14,
-      "pageViews": 36,
-      "requests": 116
+      "visitors": 64,
+      "pageViews": 45,
+      "requests": 218
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 52
-    },
-    {
-      "path": "/vi/",
-      "views": 28
+      "views": 50
     },
     {
       "path": "/robots.txt",
-      "views": 28
+      "views": 27
     },
     {
-      "path": "/favicon.ico",
+      "path": "/vi/",
       "views": 21
     },
     {
       "path": "/sitemap.xml",
-      "views": 18
+      "views": 17
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "path": "/favicon.ico",
       "views": 15
     },
     {
-      "path": "/favicon-32.png",
-      "views": 13
-    },
-    {
-      "path": "/apple-touch-icon.png",
-      "views": 11
-    },
-    {
-      "path": "/en/privacy/",
-      "views": 11
-    },
-    {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 11
-    },
-    {
-      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
+      "path": "/@fs/proc/self/cwd/.env.local",
       "views": 10
     },
     {
@@ -226,16 +206,36 @@
       "views": 10
     },
     {
-      "path": "/@fs/proc/self/cwd/.env.local",
+      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
       "views": 10
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "path": "/en/privacy/",
+      "views": 10
+    },
+    {
+      "path": "/favicon-32.png",
+      "views": 9
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
       "views": 8
     },
     {
-      "path": "/_next/static/media/e4af272ccee01ff0-s.p.woff2",
+      "path": "/apple-touch-icon.png",
+      "views": 8
+    },
+    {
+      "path": "//wp2/wp-includes/wlwmanifest.xml",
       "views": 7
+    },
+    {
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "views": 6
+    },
+    {
+      "path": "/storage/.env",
+      "views": 6
     }
   ]
 }
