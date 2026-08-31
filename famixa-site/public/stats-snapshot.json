@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-31T14:13:02.701Z",
+  "generatedAt": "2026-08-31T22:57:30.729Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 48,
-    "todayPageViews": 30,
-    "todayRequests": 143,
-    "last24hVisitors": 77,
-    "last24hPageViews": 69,
-    "last24hRequests": 312
+    "todayVisitors": 8,
+    "todayPageViews": 0,
+    "todayRequests": 10,
+    "last24hVisitors": 66,
+    "last24hPageViews": 31,
+    "last24hRequests": 170
   },
   "hourly": [
-    {
-      "time": "2026-08-30T15:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-08-30T16:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-30T17:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-30T18:00:00Z",
-      "visitors": 5,
-      "requests": 91
-    },
-    {
-      "time": "2026-08-30T19:00:00Z",
-      "visitors": 2,
-      "requests": 16
-    },
-    {
-      "time": "2026-08-30T20:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-30T21:00:00Z",
-      "visitors": 5,
-      "requests": 26
-    },
-    {
-      "time": "2026-08-30T22:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
     {
       "time": "2026-08-30T23:00:00Z",
       "visitors": 3,
@@ -125,15 +85,49 @@
       "time": "2026-08-31T13:00:00Z",
       "visitors": 6,
       "requests": 6
+    },
+    {
+      "time": "2026-08-31T14:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-31T15:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-08-31T16:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-08-31T17:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-31T18:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-31T19:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-08-31T20:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-08-31T21:00:00Z",
+      "visitors": 3,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-25",
-      "visitors": 61,
-      "pageViews": 26,
-      "requests": 122
-    },
     {
       "date": "2026-08-26",
       "visitors": 33,
@@ -166,71 +160,77 @@
     },
     {
       "date": "2026-08-31",
-      "visitors": 87,
-      "pageViews": 67,
-      "requests": 294
+      "visitors": 63,
+      "pageViews": 31,
+      "requests": 167
+    },
+    {
+      "date": "2026-09-01",
+      "visitors": 8,
+      "pageViews": 0,
+      "requests": 10
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 38
+      "views": 30
     },
     {
       "path": "/robots.txt",
-      "views": 24
-    },
-    {
-      "path": "/vi/",
-      "views": 19
+      "views": 21
     },
     {
       "path": "/sitemap.xml",
-      "views": 19
+      "views": 17
     },
     {
-      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 12
+      "path": "/vi/",
+      "views": 14
     },
     {
-      "path": "/en/privacy/",
-      "views": 10
-    },
-    {
-      "path": "/_next/static/chunks/app/vi/chinh-sach-bao-mat/page-2d062270f9ff84b4.js",
-      "views": 10
-    },
-    {
-      "path": "/favicon.ico",
-      "views": 9
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 8
-    },
-    {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 7
+      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
+      "views": 4
     },
     {
       "path": "/favicon-32.png",
-      "views": 7
+      "views": 4
     },
     {
-      "path": "//wp2/wp-includes/wlwmanifest.xml",
-      "views": 7
+      "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
+      "views": 4
     },
     {
-      "path": "/vi/goi-cha-me/gia-dinh-la-noi-con-hoc-cach-lam-nguoi-moi-truong-giao-duc-dau-tien-va-quan-trong-nhat/",
-      "views": 7
+      "path": "/favicon.ico",
+      "views": 4
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 7
+      "path": "//2019/wp-includes/wlwmanifest.xml",
+      "views": 4
     },
     {
-      "path": "/vi/huong-dan/",
-      "views": 7
+      "path": "/images/hero-family.png%5C",
+      "views": 3
+    },
+    {
+      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/%5C",
+      "views": 3
+    },
+    {
+      "path": "/apple-touch-icon.png",
+      "views": 3
+    },
+    {
+      "path": "//media/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "//wordpress/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "/images/logo-famixa-nav.png%5C%5C%5C",
+      "views": 2
     }
   ]
 }
