@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-08-31T22:57:30.729Z",
+  "generatedAt": "2026-09-01T05:23:39.625Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 8,
-    "todayPageViews": 0,
-    "todayRequests": 10,
-    "last24hVisitors": 66,
-    "last24hPageViews": 31,
-    "last24hRequests": 170
+    "todayVisitors": 17,
+    "todayPageViews": 1,
+    "todayRequests": 28,
+    "last24hVisitors": 47,
+    "last24hPageViews": 24,
+    "last24hRequests": 129
   },
   "hourly": [
-    {
-      "time": "2026-08-30T23:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-31T00:00:00Z",
-      "visitors": 7,
-      "requests": 29
-    },
-    {
-      "time": "2026-08-31T01:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-08-31T02:00:00Z",
-      "visitors": 18,
-      "requests": 22
-    },
-    {
-      "time": "2026-08-31T03:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-08-31T04:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-08-31T05:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
     {
       "time": "2026-08-31T06:00:00Z",
       "visitors": 1,
@@ -125,6 +90,41 @@
       "time": "2026-08-31T21:00:00Z",
       "visitors": 3,
       "requests": 4
+    },
+    {
+      "time": "2026-08-31T22:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-01T00:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-01T01:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-01T02:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-01T03:00:00Z",
+      "visitors": 8,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-01T04:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-01T05:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
@@ -160,76 +160,76 @@
     },
     {
       "date": "2026-08-31",
-      "visitors": 63,
+      "visitors": 65,
       "pageViews": 31,
-      "requests": 167
+      "requests": 168
     },
     {
       "date": "2026-09-01",
-      "visitors": 8,
-      "pageViews": 0,
-      "requests": 10
+      "visitors": 32,
+      "pageViews": 1,
+      "requests": 39
     }
   ],
   "topPages": [
     {
-      "path": "/",
-      "views": 30
-    },
-    {
       "path": "/robots.txt",
-      "views": 21
+      "views": 22
     },
     {
       "path": "/sitemap.xml",
-      "views": 17
+      "views": 18
     },
     {
-      "path": "/vi/",
-      "views": 14
+      "path": "/",
+      "views": 15
     },
     {
       "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
-      "views": 4
+      "views": 11
     },
     {
-      "path": "/favicon-32.png",
-      "views": 4
+      "path": "/vi/",
+      "views": 8
     },
     {
       "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
       "views": 4
     },
     {
-      "path": "/favicon.ico",
+      "path": "/wp-login.php",
       "views": 4
-    },
-    {
-      "path": "//2019/wp-includes/wlwmanifest.xml",
-      "views": 4
-    },
-    {
-      "path": "/images/hero-family.png%5C",
-      "views": 3
     },
     {
       "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/%5C",
       "views": 3
     },
     {
-      "path": "/apple-touch-icon.png",
+      "path": "/images/hero-family.png%5C",
       "views": 3
     },
     {
-      "path": "//media/wp-includes/wlwmanifest.xml",
+      "path": "/cdn-cgi/trace",
       "views": 2
     },
     {
-      "path": "//wordpress/wp-includes/wlwmanifest.xml",
+      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png%5C",
       "views": 2
     },
     {
-      "path": "/images/logo-famixa-nav.png%5C%5C%5C",
+      "path": "/vi/chinh-sach-bao-mat/",
+      "views": 2
+    },
+    {
+      "path": "/en/%5C",
+      "views": 2
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 2
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
       "views": 2
     }
   ]
