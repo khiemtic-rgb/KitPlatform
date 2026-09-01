@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-01T11:42:12.057Z",
+  "generatedAt": "2026-09-01T16:42:06.283Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 73,
-    "todayPageViews": 35,
-    "todayRequests": 168,
-    "last24hVisitors": 120,
-    "last24hPageViews": 79,
-    "last24hRequests": 317
+    "todayVisitors": 119,
+    "todayPageViews": 42,
+    "todayRequests": 259,
+    "last24hVisitors": 141,
+    "last24hPageViews": 81,
+    "last24hRequests": 360
   },
   "hourly": [
-    {
-      "time": "2026-08-31T12:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-08-31T13:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-31T14:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-31T15:00:00Z",
-      "visitors": 4,
-      "requests": 20
-    },
-    {
-      "time": "2026-08-31T16:00:00Z",
-      "visitors": 11,
-      "requests": 12
-    },
     {
       "time": "2026-08-31T17:00:00Z",
       "visitors": 6,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-09-01T11:00:00Z",
-      "visitors": 5,
-      "requests": 7
+      "visitors": 12,
+      "requests": 17
+    },
+    {
+      "time": "2026-09-01T12:00:00Z",
+      "visitors": 4,
+      "requests": 24
+    },
+    {
+      "time": "2026-09-01T13:00:00Z",
+      "visitors": 8,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-01T14:00:00Z",
+      "visitors": 21,
+      "requests": 33
+    },
+    {
+      "time": "2026-09-01T15:00:00Z",
+      "visitors": 7,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-01T16:00:00Z",
+      "visitors": 4,
+      "requests": 4
     }
   ],
   "daily": [
@@ -171,27 +171,27 @@
     },
     {
       "date": "2026-09-01",
-      "visitors": 73,
-      "pageViews": 35,
-      "requests": 168
+      "visitors": 119,
+      "pageViews": 42,
+      "requests": 259
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 52
+      "views": 48
     },
     {
       "path": "/robots.txt",
-      "views": 41
+      "views": 43
     },
     {
       "path": "/vi/",
-      "views": 23
+      "views": 20
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 15
+      "views": 13
     },
     {
       "path": "/sitemap.xml",
@@ -199,26 +199,22 @@
     },
     {
       "path": "/images/tin-tuc/quan-ly-lo-va-han-dung-hieu-qua.png",
-      "views": 12
+      "views": 13
     },
     {
       "path": "/.env",
-      "views": 9
+      "views": 11
     },
     {
       "path": "/_astro/_slug_.OmCW7wJf.css",
-      "views": 5
-    },
-    {
-      "path": "/web",
-      "views": 5
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 5
+      "views": 6
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 6
+    },
+    {
+      "path": "/web",
       "views": 5
     },
     {
@@ -226,15 +222,19 @@
       "views": 5
     },
     {
-      "path": "/wp-login.php",
-      "views": 5
-    },
-    {
-      "path": "/.env.local",
+      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
       "views": 4
     },
     {
-      "path": "/.env.dev",
+      "path": "/.env.save",
+      "views": 4
+    },
+    {
+      "path": "/.env.production",
+      "views": 4
+    },
+    {
+      "path": "/blog",
       "views": 4
     }
   ]
