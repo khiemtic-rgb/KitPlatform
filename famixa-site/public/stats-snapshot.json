@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-01T05:23:39.625Z",
+  "generatedAt": "2026-09-01T11:51:14.800Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 17,
-    "todayPageViews": 1,
-    "todayRequests": 28,
-    "last24hVisitors": 47,
-    "last24hPageViews": 24,
-    "last24hRequests": 129
+    "todayVisitors": 38,
+    "todayPageViews": 4,
+    "todayRequests": 85,
+    "last24hVisitors": 61,
+    "last24hPageViews": 9,
+    "last24hRequests": 122
   },
   "hourly": [
-    {
-      "time": "2026-08-31T06:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-31T07:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-31T08:00:00Z",
-      "visitors": 4,
-      "requests": 50
-    },
-    {
-      "time": "2026-08-31T09:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-08-31T10:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-08-31T11:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-08-31T12:00:00Z",
       "visitors": 4,
@@ -123,8 +93,38 @@
     },
     {
       "time": "2026-09-01T05:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-01T06:00:00Z",
       "visitors": 2,
       "requests": 2
+    },
+    {
+      "time": "2026-09-01T07:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-01T08:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-01T09:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-01T10:00:00Z",
+      "visitors": 6,
+      "requests": 29
+    },
+    {
+      "time": "2026-09-01T11:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,70 +166,70 @@
     },
     {
       "date": "2026-09-01",
-      "visitors": 32,
-      "pageViews": 1,
-      "requests": 39
+      "visitors": 60,
+      "pageViews": 4,
+      "requests": 97
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 22
+      "views": 26
     },
     {
       "path": "/sitemap.xml",
-      "views": 18
+      "views": 19
     },
     {
       "path": "/",
-      "views": 15
+      "views": 17
     },
     {
       "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
-      "views": 11
+      "views": 12
     },
     {
-      "path": "/vi/",
-      "views": 8
+      "path": "/wp-login.php",
+      "views": 6
     },
     {
       "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
       "views": 4
     },
     {
-      "path": "/wp-login.php",
+      "path": "/vi/",
       "views": 4
     },
     {
-      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/%5C",
-      "views": 3
+      "path": "//2019/wp-includes/wlwmanifest.xml",
+      "views": 2
     },
     {
-      "path": "/images/hero-family.png%5C",
-      "views": 3
+      "path": "//site/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "//wp2/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "/xmlrpc.php",
+      "views": 2
+    },
+    {
+      "path": "//website/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "/wp-includes/js/jquery/jquery.js",
+      "views": 2
     },
     {
       "path": "/cdn-cgi/trace",
       "views": 2
     },
     {
-      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png%5C",
-      "views": 2
-    },
-    {
-      "path": "/vi/chinh-sach-bao-mat/",
-      "views": 2
-    },
-    {
-      "path": "/en/%5C",
-      "views": 2
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 2
-    },
-    {
-      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
+      "path": "//news/wp-includes/wlwmanifest.xml",
       "views": 2
     }
   ]
