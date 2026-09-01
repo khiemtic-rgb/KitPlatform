@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-01T05:13:35.013Z",
+  "generatedAt": "2026-09-01T11:42:12.057Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 38,
-    "todayPageViews": 16,
-    "todayRequests": 59,
-    "last24hVisitors": 127,
-    "last24hPageViews": 172,
-    "last24hRequests": 397
+    "todayVisitors": 73,
+    "todayPageViews": 35,
+    "todayRequests": 168,
+    "last24hVisitors": 120,
+    "last24hPageViews": 79,
+    "last24hRequests": 317
   },
   "hourly": [
-    {
-      "time": "2026-08-31T06:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-08-31T07:00:00Z",
-      "visitors": 7,
-      "requests": 35
-    },
-    {
-      "time": "2026-08-31T08:00:00Z",
-      "visitors": 16,
-      "requests": 50
-    },
-    {
-      "time": "2026-08-31T09:00:00Z",
-      "visitors": 10,
-      "requests": 33
-    },
-    {
-      "time": "2026-08-31T10:00:00Z",
-      "visitors": 8,
-      "requests": 13
-    },
-    {
-      "time": "2026-08-31T11:00:00Z",
-      "visitors": 3,
-      "requests": 46
-    },
     {
       "time": "2026-08-31T12:00:00Z",
       "visitors": 4,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-09-01T05:00:00Z",
-      "visitors": 2,
+      "visitors": 11,
+      "requests": 20
+    },
+    {
+      "time": "2026-09-01T06:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-01T07:00:00Z",
+      "visitors": 11,
+      "requests": 49
+    },
+    {
+      "time": "2026-09-01T08:00:00Z",
+      "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-09-01T09:00:00Z",
+      "visitors": 9,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-01T10:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-01T11:00:00Z",
+      "visitors": 5,
+      "requests": 7
     }
   ],
   "daily": [
@@ -171,23 +171,23 @@
     },
     {
       "date": "2026-09-01",
-      "visitors": 38,
-      "pageViews": 16,
-      "requests": 59
+      "visitors": 73,
+      "pageViews": 35,
+      "requests": 168
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 60
+      "views": 52
     },
     {
       "path": "/robots.txt",
-      "views": 38
+      "views": 41
     },
     {
       "path": "/vi/",
-      "views": 20
+      "views": 23
     },
     {
       "path": "/sitemap-index.xml",
@@ -199,18 +199,26 @@
     },
     {
       "path": "/images/tin-tuc/quan-ly-lo-va-han-dung-hieu-qua.png",
-      "views": 13
+      "views": 12
     },
     {
-      "path": "/wp-admin/install.php",
-      "views": 6
+      "path": "/.env",
+      "views": 9
     },
     {
-      "path": "/favicon.svg",
-      "views": 6
+      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "views": 5
     },
     {
       "path": "/web",
+      "views": 5
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 5
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
       "views": 5
     },
     {
@@ -218,23 +226,15 @@
       "views": 5
     },
     {
-      "path": "//xmlrpc.php",
+      "path": "/wp-login.php",
+      "views": 5
+    },
+    {
+      "path": "/.env.local",
       "views": 4
     },
     {
-      "path": "//wp2/wp-includes/wlwmanifest.xml",
-      "views": 4
-    },
-    {
-      "path": "/wp-json/gravitysmtp/v1/tests/mock-data",
-      "views": 4
-    },
-    {
-      "path": "/blog",
-      "views": 4
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "path": "/.env.dev",
       "views": 4
     }
   ]
