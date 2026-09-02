@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-02T16:36:54.528Z",
+  "generatedAt": "2026-09-02T21:05:36.476Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 125,
-    "todayPageViews": 134,
-    "todayRequests": 426,
-    "last24hVisitors": 140,
-    "last24hPageViews": 152,
-    "last24hRequests": 477
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 156,
+    "last24hPageViews": 189,
+    "last24hRequests": 531
   },
   "hourly": [
-    {
-      "time": "2026-09-01T17:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-01T18:00:00Z",
-      "visitors": 4,
-      "requests": 20
-    },
-    {
-      "time": "2026-09-01T19:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-01T20:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-01T21:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
     {
       "time": "2026-09-01T22:00:00Z",
       "visitors": 2,
@@ -128,17 +103,36 @@
     },
     {
       "time": "2026-09-02T16:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-02T17:00:00Z",
+      "visitors": 8,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-02T18:00:00Z",
       "visitors": 5,
-      "requests": 7
+      "requests": 18
+    },
+    {
+      "time": "2026-09-02T19:00:00Z",
+      "visitors": 7,
+      "requests": 33
+    },
+    {
+      "time": "2026-09-02T20:00:00Z",
+      "visitors": 5,
+      "requests": 26
+    },
+    {
+      "time": "2026-09-02T21:00:00Z",
+      "visitors": 4,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-27",
-      "visitors": 186,
-      "pageViews": 89,
-      "requests": 354
-    },
     {
       "date": "2026-08-28",
       "visitors": 240,
@@ -171,71 +165,71 @@
     },
     {
       "date": "2026-09-02",
-      "visitors": 125,
-      "pageViews": 134,
-      "requests": 426
+      "visitors": 148,
+      "pageViews": 185,
+      "requests": 518
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 70
+      "views": 84
     },
     {
       "path": "/robots.txt",
-      "views": 49
+      "views": 52
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 30
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 20
+      "views": 21
     },
     {
       "path": "/sitemap.xml",
       "views": 16
     },
     {
-      "path": "/.env",
+      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
       "views": 10
     },
     {
-      "path": "/.env.dev",
-      "views": 10
-    },
-    {
-      "path": "/.env.local",
-      "views": 10
-    },
-    {
-      "path": "/.env.production",
-      "views": 10
+      "path": "//web/wp-includes/wlwmanifest.xml",
+      "views": 9
     },
     {
       "path": "/.env.save",
-      "views": 10
-    },
-    {
-      "path": "/.env.old",
-      "views": 10
-    },
-    {
-      "path": "/.env.bak",
-      "views": 10
+      "views": 8
     },
     {
       "path": "/.env.backup",
-      "views": 9
+      "views": 8
     },
     {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 9
+      "path": "/.env.production",
+      "views": 8
     },
     {
-      "path": "/images/tin-tuc/ban-chay-van-thieu-tien-4-diem-nghen-dong-tien-nha-thuoc-va-cach-giai-phong-ngay.png",
-      "views": 7
+      "path": "/.env.dev",
+      "views": 8
+    },
+    {
+      "path": "/.env.local",
+      "views": 8
+    },
+    {
+      "path": "/.env.old",
+      "views": 8
+    },
+    {
+      "path": "/.env",
+      "views": 8
+    },
+    {
+      "path": "/.env.bak",
+      "views": 8
     }
   ]
 }
