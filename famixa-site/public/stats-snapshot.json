@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-02T04:49:27.724Z",
+  "generatedAt": "2026-09-02T11:32:30.118Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 9,
-    "todayPageViews": 3,
-    "todayRequests": 41,
-    "last24hVisitors": 46,
-    "last24hPageViews": 10,
-    "last24hRequests": 191
+    "todayVisitors": 19,
+    "todayPageViews": 21,
+    "todayRequests": 136,
+    "last24hVisitors": 35,
+    "last24hPageViews": 24,
+    "last24hRequests": 221
   },
   "hourly": [
-    {
-      "time": "2026-09-01T05:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-01T06:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-01T07:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-01T08:00:00Z",
-      "visitors": 6,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-01T09:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-01T10:00:00Z",
-      "visitors": 6,
-      "requests": 29
-    },
-    {
-      "time": "2026-09-01T11:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
     {
       "time": "2026-09-01T12:00:00Z",
       "visitors": 3,
@@ -125,6 +90,41 @@
       "time": "2026-09-02T04:00:00Z",
       "visitors": 2,
       "requests": 5
+    },
+    {
+      "time": "2026-09-02T05:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-02T06:00:00Z",
+      "visitors": 6,
+      "requests": 82
+    },
+    {
+      "time": "2026-09-02T07:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-02T08:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-02T09:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-02T10:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-02T11:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,19 +166,19 @@
     },
     {
       "date": "2026-09-02",
-      "visitors": 27,
-      "pageViews": 6,
-      "requests": 94
+      "visitors": 44,
+      "pageViews": 24,
+      "requests": 189
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 37
+      "views": 32
     },
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 23
     },
     {
       "path": "/sitemap.xml",
@@ -186,51 +186,51 @@
     },
     {
       "path": "/vi/",
-      "views": 10
+      "views": 11
     },
     {
       "path": "/wp-login.php",
-      "views": 8
-    },
-    {
-      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
       "views": 6
     },
     {
-      "path": "//wp1/wp-includes/wlwmanifest.xml",
+      "path": "/.env",
+      "views": 5
+    },
+    {
+      "path": "/.env.old",
       "views": 4
     },
     {
-      "path": "//cms/wp-includes/wlwmanifest.xml",
+      "path": "/.env.save",
+      "views": 4
+    },
+    {
+      "path": "/.env.backup",
+      "views": 4
+    },
+    {
+      "path": "/.env.bak",
+      "views": 4
+    },
+    {
+      "path": "/.env.production",
+      "views": 4
+    },
+    {
+      "path": "/.env.local",
+      "views": 4
+    },
+    {
+      "path": "/.env.dev",
+      "views": 4
+    },
+    {
+      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/%5C",
       "views": 3
     },
     {
-      "path": "//web/wp-includes/wlwmanifest.xml",
+      "path": "/en/%5C",
       "views": 3
-    },
-    {
-      "path": "//xmlrpc.php",
-      "views": 2
-    },
-    {
-      "path": "//wp/wp-includes/wlwmanifest.xml",
-      "views": 2
-    },
-    {
-      "path": "//wordpress/wp-includes/wlwmanifest.xml",
-      "views": 2
-    },
-    {
-      "path": "//images/images/images/images/images/images/cache.php",
-      "views": 2
-    },
-    {
-      "path": "//assets/images/images/cache.php",
-      "views": 2
-    },
-    {
-      "path": "//news/wp-includes/wlwmanifest.xml",
-      "views": 2
     }
   ]
 }
