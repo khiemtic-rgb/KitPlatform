@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-02T04:38:48.085Z",
+  "generatedAt": "2026-09-02T11:22:02.575Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 27,
-    "todayPageViews": 32,
-    "todayRequests": 113,
-    "last24hVisitors": 128,
-    "last24hPageViews": 76,
-    "last24hRequests": 370
+    "todayVisitors": 85,
+    "todayPageViews": 77,
+    "todayRequests": 238,
+    "last24hVisitors": 143,
+    "last24hPageViews": 101,
+    "last24hRequests": 377
   },
   "hourly": [
-    {
-      "time": "2026-09-01T05:00:00Z",
-      "visitors": 11,
-      "requests": 20
-    },
-    {
-      "time": "2026-09-01T06:00:00Z",
-      "visitors": 6,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-01T07:00:00Z",
-      "visitors": 11,
-      "requests": 49
-    },
-    {
-      "time": "2026-09-01T08:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-01T09:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-01T10:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-01T11:00:00Z",
-      "visitors": 12,
-      "requests": 17
-    },
     {
       "time": "2026-09-01T12:00:00Z",
       "visitors": 4,
@@ -129,7 +94,42 @@
     {
       "time": "2026-09-02T04:00:00Z",
       "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-02T05:00:00Z",
+      "visitors": 21,
+      "requests": 23
+    },
+    {
+      "time": "2026-09-02T06:00:00Z",
+      "visitors": 6,
+      "requests": 41
+    },
+    {
+      "time": "2026-09-02T07:00:00Z",
+      "visitors": 16,
+      "requests": 24
+    },
+    {
+      "time": "2026-09-02T08:00:00Z",
+      "visitors": 4,
       "requests": 6
+    },
+    {
+      "time": "2026-09-02T09:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-02T10:00:00Z",
+      "visitors": 13,
+      "requests": 18
+    },
+    {
+      "time": "2026-09-02T11:00:00Z",
+      "visitors": 1,
+      "requests": 3
     }
   ],
   "daily": [
@@ -171,23 +171,23 @@
     },
     {
       "date": "2026-09-02",
-      "visitors": 27,
-      "pageViews": 32,
-      "requests": 113
+      "visitors": 85,
+      "pageViews": 77,
+      "requests": 238
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 52
+      "views": 55
     },
     {
       "path": "/robots.txt",
-      "views": 48
+      "views": 46
     },
     {
       "path": "/vi/",
-      "views": 17
+      "views": 19
     },
     {
       "path": "/sitemap-index.xml",
@@ -195,30 +195,18 @@
     },
     {
       "path": "/sitemap.xml",
-      "views": 14
-    },
-    {
-      "path": "/.env",
-      "views": 11
+      "views": 15
     },
     {
       "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 8
+      "views": 10
     },
     {
-      "path": "/.env.local",
-      "views": 6
+      "path": "/images/tin-tuc/ban-chay-van-thieu-tien-4-diem-nghen-dong-tien-nha-thuoc-va-cach-giai-phong-ngay.png",
+      "views": 7
     },
     {
-      "path": "/images/tin-tuc/quan-ly-lo-va-han-dung-hieu-qua.png",
-      "views": 6
-    },
-    {
-      "path": "/.env.save",
-      "views": 6
-    },
-    {
-      "path": "/.env.production",
+      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
       "views": 6
     },
     {
@@ -226,16 +214,28 @@
       "views": 6
     },
     {
-      "path": "/images/tin-tuc/ban-chay-van-thieu-tien-4-diem-nghen-dong-tien-nha-thuoc-va-cach-giai-phong-ngay.png",
+      "path": "/images/tin-tuc/tu-du-lieu-hoc-tap-den-thang-tien.png",
       "views": 6
     },
     {
-      "path": "/.env.old",
-      "views": 6
+      "path": "/images/tin-tuc/giup-giu-chan-nhan-vien.png",
+      "views": 5
     },
     {
-      "path": "/.env.bak",
-      "views": 6
+      "path": "/vi/kien-thuc/",
+      "views": 5
+    },
+    {
+      "path": "/images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png",
+      "views": 5
+    },
+    {
+      "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
+      "views": 4
+    },
+    {
+      "path": "/vi/lien-he/",
+      "views": 4
     }
   ]
 }
