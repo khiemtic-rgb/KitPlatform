@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-03T04:47:52.002Z",
+  "generatedAt": "2026-09-03T11:28:50.595Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 30,
-    "todayPageViews": 7,
-    "todayRequests": 36,
-    "last24hVisitors": 76,
-    "last24hPageViews": 36,
-    "last24hRequests": 206
+    "todayVisitors": 38,
+    "todayPageViews": 14,
+    "todayRequests": 79,
+    "last24hVisitors": 74,
+    "last24hPageViews": 25,
+    "last24hRequests": 154
   },
   "hourly": [
-    {
-      "time": "2026-09-02T05:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-02T06:00:00Z",
-      "visitors": 6,
-      "requests": 82
-    },
-    {
-      "time": "2026-09-02T07:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-02T08:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-02T09:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-02T10:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-02T11:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-09-02T12:00:00Z",
       "visitors": 5,
@@ -125,6 +90,41 @@
       "time": "2026-09-03T04:00:00Z",
       "visitors": 4,
       "requests": 5
+    },
+    {
+      "time": "2026-09-03T05:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-03T06:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-03T07:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-03T08:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-03T09:00:00Z",
+      "visitors": 4,
+      "requests": 22
+    },
+    {
+      "time": "2026-09-03T10:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-03T11:00:00Z",
+      "visitors": 3,
+      "requests": 7
     }
   ],
   "daily": [
@@ -166,71 +166,71 @@
     },
     {
       "date": "2026-09-03",
-      "visitors": 65,
-      "pageViews": 15,
-      "requests": 74
+      "visitors": 83,
+      "pageViews": 22,
+      "requests": 117
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 23
+      "path": "/",
+      "views": 26
     },
     {
-      "path": "/",
-      "views": 20
+      "path": "/robots.txt",
+      "views": 25
+    },
+    {
+      "path": "/vi/",
+      "views": 14
     },
     {
       "path": "/sitemap.xml",
       "views": 14
     },
     {
-      "path": "/vi/",
-      "views": 13
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 4
     },
     {
       "path": "/wp-login.php",
       "views": 4
     },
     {
-      "path": "/.env.save",
-      "views": 4
-    },
-    {
-      "path": "/.env.local",
-      "views": 4
-    },
-    {
       "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
-      "views": 4
+      "views": 3
     },
     {
-      "path": "/.env.backup",
-      "views": 4
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 3
     },
     {
-      "path": "/.env.bak",
-      "views": 4
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 3
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 4
+      "path": "//web/wp-includes/wlwmanifest.xml",
+      "views": 2
     },
     {
-      "path": "/.env.production",
-      "views": 4
+      "path": "/images/blog/co-nen-thuong-tien-cho-con.png",
+      "views": 2
     },
     {
-      "path": "/.env.old",
-      "views": 4
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 2
     },
     {
-      "path": "/.env.dev",
-      "views": 4
+      "path": "/wp-includes/js/jquery/jquery.js",
+      "views": 2
     },
     {
-      "path": "/.env",
-      "views": 4
+      "path": "//wordpress/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "/_next/static/chunks/977-9a1479e294eb83c3.js",
+      "views": 2
     }
   ]
 }
