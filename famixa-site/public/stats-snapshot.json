@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-04T16:30:13.140Z",
+  "generatedAt": "2026-09-04T20:53:55.327Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 27,
-    "todayPageViews": 16,
-    "todayRequests": 254,
-    "last24hVisitors": 37,
-    "last24hPageViews": 25,
-    "last24hRequests": 291
+    "todayVisitors": 11,
+    "todayPageViews": 1,
+    "todayRequests": 13,
+    "last24hVisitors": 38,
+    "last24hPageViews": 26,
+    "last24hRequests": 322
   },
   "hourly": [
-    {
-      "time": "2026-09-03T17:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-03T18:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-03T19:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-03T20:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-09-03T21:00:00Z",
       "visitors": 2,
@@ -123,17 +103,31 @@
     },
     {
       "time": "2026-09-04T16:00:00Z",
-      "visitors": 2,
+      "visitors": 4,
+      "requests": 34
+    },
+    {
+      "time": "2026-09-04T17:00:00Z",
+      "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-09-04T18:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-04T19:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-04T20:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-29",
-      "visitors": 83,
-      "pageViews": 89,
-      "requests": 3475
-    },
     {
       "date": "2026-08-30",
       "visitors": 117,
@@ -166,15 +160,21 @@
     },
     {
       "date": "2026-09-04",
-      "visitors": 61,
-      "pageViews": 25,
-      "requests": 291
+      "visitors": 34,
+      "pageViews": 20,
+      "requests": 298
+    },
+    {
+      "date": "2026-09-05",
+      "visitors": 11,
+      "pageViews": 1,
+      "requests": 13
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 45
+      "views": 47
     },
     {
       "path": "/vi/",
@@ -189,27 +189,7 @@
       "views": 18
     },
     {
-      "path": "/web/.env",
-      "views": 7
-    },
-    {
       "path": "/.docker/.env",
-      "views": 7
-    },
-    {
-      "path": "/admin/.env",
-      "views": 7
-    },
-    {
-      "path": "/sites/default/settings.php",
-      "views": 7
-    },
-    {
-      "path": "/.docker/laravel/.env",
-      "views": 7
-    },
-    {
-      "path": "/index.php",
       "views": 7
     },
     {
@@ -217,11 +197,27 @@
       "views": 7
     },
     {
-      "path": "//test/wp-includes/wlwmanifest.xml",
-      "views": 6
+      "path": "/index.php",
+      "views": 7
     },
     {
-      "path": "//website/wp-includes/wlwmanifest.xml",
+      "path": "/sites/default/settings.php",
+      "views": 7
+    },
+    {
+      "path": "/admin/.env",
+      "views": 7
+    },
+    {
+      "path": "/.docker/laravel/.env",
+      "views": 7
+    },
+    {
+      "path": "/web/.env",
+      "views": 7
+    },
+    {
+      "path": "/smtp/.env",
       "views": 5
     },
     {
@@ -229,8 +225,12 @@
       "views": 5
     },
     {
-      "path": "/smtp/.env",
+      "path": "/app/.env",
       "views": 5
+    },
+    {
+      "path": "/mailer/.env",
+      "views": 4
     }
   ]
 }
