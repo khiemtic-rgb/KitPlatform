@@ -909,6 +909,10 @@ export async function fetchContentSites(brandId: string) {
   return data;
 }
 
+export async function deleteContentSite(brandId: string, siteId: string) {
+  await http.delete(`/content/brands/${brandId}/sites/${siteId}`);
+}
+
 export async function upsertContentSite(
   brandId: string,
   body: {
@@ -938,6 +942,10 @@ export async function fetchContentWritePlans(brandId?: string) {
     params: brandId ? { brandId } : undefined,
   });
   return data;
+}
+
+export async function deleteContentChannel(brandId: string, channelId: string) {
+  await http.delete(`/content/brands/${brandId}/channels/${channelId}`);
 }
 
 export async function upsertContentChannel(

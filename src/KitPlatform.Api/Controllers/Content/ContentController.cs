@@ -584,6 +584,16 @@ public sealed class ContentController : ControllerBase
         CancellationToken cancellationToken) =>
         Ok(await _brands.UpsertSiteAsync(brandId, request, cancellationToken));
 
+    [HttpDelete("brands/{brandId:guid}/sites/{siteId:guid}")]
+    public async Task<IActionResult> DeleteSite(
+        Guid brandId,
+        Guid siteId,
+        CancellationToken cancellationToken)
+    {
+        var ok = await _brands.DeleteSiteAsync(brandId, siteId, cancellationToken);
+        return ok ? NoContent() : NotFound();
+    }
+
     [HttpGet("write-plans")]
     public async Task<ActionResult<IReadOnlyList<ContentWritePlanDto>>> ListWritePlans(
         [FromQuery] Guid? brandId,
@@ -602,6 +612,16 @@ public sealed class ContentController : ControllerBase
         [FromBody] UpsertContentChannelTargetRequest request,
         CancellationToken cancellationToken) =>
         Ok(await _brands.UpsertChannelAsync(brandId, request, cancellationToken));
+
+    [HttpDelete("brands/{brandId:guid}/channels/{channelId:guid}")]
+    public async Task<IActionResult> DeleteChannel(
+        Guid brandId,
+        Guid channelId,
+        CancellationToken cancellationToken)
+    {
+        var ok = await _brands.DeleteChannelAsync(brandId, channelId, cancellationToken);
+        return ok ? NoContent() : NotFound();
+    }
 
     [HttpGet("packages")]
     public async Task<ActionResult<IReadOnlyList<ContentPackageDto>>> ListPackages(
