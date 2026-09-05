@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-05T10:38:36.878Z",
+  "generatedAt": "2026-09-05T15:16:53.707Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 153,
-    "todayPageViews": 432,
-    "todayRequests": 752,
-    "last24hVisitors": 251,
-    "last24hPageViews": 747,
-    "last24hRequests": 1231
+    "todayVisitors": 190,
+    "todayPageViews": 459,
+    "todayRequests": 832,
+    "last24hVisitors": 243,
+    "last24hPageViews": 752,
+    "last24hRequests": 1236
   },
   "hourly": [
-    {
-      "time": "2026-09-04T11:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-04T12:00:00Z",
-      "visitors": 24,
-      "requests": 36
-    },
-    {
-      "time": "2026-09-04T13:00:00Z",
-      "visitors": 10,
-      "requests": 18
-    },
-    {
-      "time": "2026-09-04T14:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-04T15:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
     {
       "time": "2026-09-04T16:00:00Z",
       "visitors": 13,
@@ -128,8 +103,28 @@
     },
     {
       "time": "2026-09-05T10:00:00Z",
-      "visitors": 5,
-      "requests": 10
+      "visitors": 10,
+      "requests": 18
+    },
+    {
+      "time": "2026-09-05T11:00:00Z",
+      "visitors": 11,
+      "requests": 25
+    },
+    {
+      "time": "2026-09-05T12:00:00Z",
+      "visitors": 10,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-05T13:00:00Z",
+      "visitors": 12,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-05T14:00:00Z",
+      "visitors": 12,
+      "requests": 21
     }
   ],
   "daily": [
@@ -171,23 +166,23 @@
     },
     {
       "date": "2026-09-05",
-      "visitors": 153,
-      "pageViews": 432,
-      "requests": 752
+      "visitors": 190,
+      "pageViews": 459,
+      "requests": 832
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 137
+      "views": 141
     },
     {
       "path": "/robots.txt",
-      "views": 57
+      "views": 62
     },
     {
       "path": "/vi/",
-      "views": 49
+      "views": 52
     },
     {
       "path": "/cdn-cgi/l/email-protection",
@@ -198,6 +193,14 @@
       "views": 28
     },
     {
+      "path": "/.env.uat",
+      "views": 24
+    },
+    {
+      "path": "/.env.preprod",
+      "views": 24
+    },
+    {
       "path": "/react/.env",
       "views": 24
     },
@@ -206,19 +209,7 @@
       "views": 24
     },
     {
-      "path": "/.env.preprod",
-      "views": 24
-    },
-    {
       "path": "/transactional/.env",
-      "views": 24
-    },
-    {
-      "path": "/.env.uat",
-      "views": 24
-    },
-    {
-      "path": "/phpinfo.php~",
       "views": 24
     },
     {
@@ -226,12 +217,16 @@
       "views": 24
     },
     {
+      "path": "/phpinfo.php~",
+      "views": 24
+    },
+    {
       "path": "/sitemap-index.xml",
-      "views": 22
+      "views": 23
     },
     {
       "path": "/sitemap.xml",
-      "views": 14
+      "views": 16
     },
     {
       "path": "/.env.live",
