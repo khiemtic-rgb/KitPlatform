@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-06T04:42:46.536Z",
+  "generatedAt": "2026-09-06T11:00:31.356Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 40,
-    "todayPageViews": 25,
-    "todayRequests": 95,
-    "last24hVisitors": 186,
-    "last24hPageViews": 205,
-    "last24hRequests": 516
+    "todayVisitors": 86,
+    "todayPageViews": 59,
+    "todayRequests": 296,
+    "last24hVisitors": 163,
+    "last24hPageViews": 143,
+    "last24hRequests": 512
   },
   "hourly": [
-    {
-      "time": "2026-09-05T05:00:00Z",
-      "visitors": 11,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-05T06:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-05T07:00:00Z",
-      "visitors": 11,
-      "requests": 89
-    },
-    {
-      "time": "2026-09-05T08:00:00Z",
-      "visitors": 23,
-      "requests": 34
-    },
-    {
-      "time": "2026-09-05T09:00:00Z",
-      "visitors": 12,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-05T10:00:00Z",
-      "visitors": 10,
-      "requests": 18
-    },
-    {
-      "time": "2026-09-05T11:00:00Z",
-      "visitors": 11,
-      "requests": 25
-    },
     {
       "time": "2026-09-05T12:00:00Z",
       "visitors": 10,
@@ -128,8 +93,38 @@
     },
     {
       "time": "2026-09-06T04:00:00Z",
-      "visitors": 3,
-      "requests": 3
+      "visitors": 7,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-06T05:00:00Z",
+      "visitors": 21,
+      "requests": 23
+    },
+    {
+      "time": "2026-09-06T06:00:00Z",
+      "visitors": 6,
+      "requests": 131
+    },
+    {
+      "time": "2026-09-06T07:00:00Z",
+      "visitors": 8,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-06T08:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-06T09:00:00Z",
+      "visitors": 13,
+      "requests": 18
+    },
+    {
+      "time": "2026-09-06T10:00:00Z",
+      "visitors": 6,
+      "requests": 7
     }
   ],
   "daily": [
@@ -171,71 +166,71 @@
     },
     {
       "date": "2026-09-06",
-      "visitors": 40,
-      "pageViews": 25,
-      "requests": 95
+      "visitors": 86,
+      "pageViews": 59,
+      "requests": 296
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 96
+      "views": 83
     },
     {
       "path": "/robots.txt",
-      "views": 66
+      "views": 62
     },
     {
       "path": "/vi/",
-      "views": 24
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 20
+      "views": 22
     },
     {
       "path": "/sitemap.xml",
       "views": 17
     },
     {
-      "path": "/functions/.env",
+      "path": "/sitemap-index.xml",
+      "views": 14
+    },
+    {
+      "path": "/backup.tar.gz",
+      "views": 10
+    },
+    {
+      "path": "/dump.sql",
+      "views": 9
+    },
+    {
+      "path": "/backups.zip",
       "views": 8
     },
     {
-      "path": "/wp-login.php",
-      "views": 7
+      "path": "/dbdump.sql",
+      "views": 8
     },
     {
-      "path": "/.env.live",
-      "views": 7
+      "path": "/old.zip",
+      "views": 8
     },
     {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 6
+      "path": "/htdocs.tar.gz",
+      "views": 8
     },
     {
-      "path": "/.env.bak",
-      "views": 5
+      "path": "/www.tar.gz",
+      "views": 8
     },
     {
-      "path": "/application/.env",
-      "views": 5
+      "path": "/xuanhoa.novixa.vn.zip",
+      "views": 8
     },
     {
-      "path": "/.env.old",
-      "views": 5
+      "path": "/database.bak",
+      "views": 8
     },
     {
-      "path": "/vi/tin-tuc/manager-validation-giup-danh-gia-nang-luc-thuc-te/",
-      "views": 5
-    },
-    {
-      "path": "/.env.staging",
-      "views": 5
-    },
-    {
-      "path": "/.env.production",
-      "views": 5
+      "path": "/xuanhoa.tar.gz",
+      "views": 8
     }
   ]
 }
