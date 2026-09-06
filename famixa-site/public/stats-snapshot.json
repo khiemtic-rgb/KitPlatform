@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-06T15:36:23.930Z",
+  "generatedAt": "2026-09-06T20:34:58.987Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 34,
-    "todayPageViews": 15,
-    "todayRequests": 226,
-    "last24hVisitors": 51,
-    "last24hPageViews": 18,
-    "last24hRequests": 258
+    "todayVisitors": 21,
+    "todayPageViews": 12,
+    "todayRequests": 50,
+    "last24hVisitors": 60,
+    "last24hPageViews": 28,
+    "last24hRequests": 296
   },
   "hourly": [
-    {
-      "time": "2026-09-05T16:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-05T17:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-05T18:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-05T19:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-05T20:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-09-05T21:00:00Z",
       "visitors": 3,
@@ -123,17 +98,36 @@
     },
     {
       "time": "2026-09-06T15:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-06T16:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-06T17:00:00Z",
+      "visitors": 11,
+      "requests": 25
+    },
+    {
+      "time": "2026-09-06T18:00:00Z",
+      "visitors": 5,
+      "requests": 15
+    },
+    {
+      "time": "2026-09-06T19:00:00Z",
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-06T20:00:00Z",
       "visitors": 2,
-      "requests": 2
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-08-31",
-      "visitors": 65,
-      "pageViews": 31,
-      "requests": 168
-    },
     {
       "date": "2026-09-01",
       "visitors": 56,
@@ -166,23 +160,33 @@
     },
     {
       "date": "2026-09-06",
-      "visitors": 74,
-      "pageViews": 18,
-      "requests": 256
+      "visitors": 56,
+      "pageViews": 28,
+      "requests": 284
+    },
+    {
+      "date": "2026-09-07",
+      "visitors": 21,
+      "pageViews": 12,
+      "requests": 50
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 30
+      "path": "/",
+      "views": 46
     },
     {
-      "path": "/",
+      "path": "/robots.txt",
+      "views": 32
+    },
+    {
+      "path": "/vi/",
       "views": 21
     },
     {
       "path": "/sitemap.xml",
-      "views": 19
+      "views": 20
     },
     {
       "path": "/backup.zip",
@@ -193,23 +197,11 @@
       "views": 9
     },
     {
-      "path": "/dbdump.sql",
-      "views": 8
-    },
-    {
-      "path": "/famixa.tar.gz",
-      "views": 8
-    },
-    {
-      "path": "/wp-content/uploads/database.sql",
-      "views": 8
-    },
-    {
       "path": "/wwwroot.zip",
       "views": 8
     },
     {
-      "path": "/vi/",
+      "path": "/db.sqlite",
       "views": 8
     },
     {
@@ -217,7 +209,15 @@
       "views": 8
     },
     {
-      "path": "/db.sqlite",
+      "path": "/dbdump.sql",
+      "views": 8
+    },
+    {
+      "path": "/wp-content/uploads/database.sql",
+      "views": 8
+    },
+    {
+      "path": "/famixa.tar.gz",
       "views": 8
     },
     {
