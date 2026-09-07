@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-07T04:58:55.675Z",
+  "generatedAt": "2026-09-07T12:50:22.554Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 16,
-    "todayPageViews": 4,
-    "todayRequests": 44,
-    "last24hVisitors": 85,
-    "last24hPageViews": 35,
-    "last24hRequests": 367
+    "todayVisitors": 42,
+    "todayPageViews": 16,
+    "todayRequests": 393,
+    "last24hVisitors": 91,
+    "last24hPageViews": 39,
+    "last24hRequests": 548
   },
   "hourly": [
-    {
-      "time": "2026-09-06T05:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-06T06:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-06T07:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-06T08:00:00Z",
-      "visitors": 5,
-      "requests": 132
-    },
-    {
-      "time": "2026-09-06T09:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-06T10:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-06T11:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-06T12:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
     {
       "time": "2026-09-06T13:00:00Z",
       "visitors": 3,
@@ -130,6 +90,46 @@
       "time": "2026-09-07T04:00:00Z",
       "visitors": 1,
       "requests": 11
+    },
+    {
+      "time": "2026-09-07T05:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-07T06:00:00Z",
+      "visitors": 4,
+      "requests": 23
+    },
+    {
+      "time": "2026-09-07T07:00:00Z",
+      "visitors": 2,
+      "requests": 279
+    },
+    {
+      "time": "2026-09-07T08:00:00Z",
+      "visitors": 15,
+      "requests": 15
+    },
+    {
+      "time": "2026-09-07T09:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-07T10:00:00Z",
+      "visitors": 5,
+      "requests": 17
+    },
+    {
+      "time": "2026-09-07T11:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-07T12:00:00Z",
+      "visitors": 3,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-09-07",
-      "visitors": 66,
-      "pageViews": 24,
-      "requests": 178
+      "visitors": 101,
+      "pageViews": 36,
+      "requests": 527
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 44
+      "views": 50
     },
     {
       "path": "/robots.txt",
-      "views": 32
+      "views": 29
     },
     {
       "path": "/vi/",
-      "views": 23
+      "views": 29
+    },
+    {
+      "path": "/v2/.env",
+      "views": 21
+    },
+    {
+      "path": "/api/v2/.env",
+      "views": 21
+    },
+    {
+      "path": "/test/phpinfo.php",
+      "views": 21
+    },
+    {
+      "path": "/gcp/.env",
+      "views": 21
+    },
+    {
+      "path": "/travis/.env",
+      "views": 21
+    },
+    {
+      "path": "/gateway/.env",
+      "views": 21
     },
     {
       "path": "/sitemap.xml",
-      "views": 20
+      "views": 18
     },
     {
-      "path": "/backup.zip",
+      "path": "/rest/.env",
       "views": 12
     },
     {
-      "path": "/mysql.sql",
-      "views": 9
+      "path": "/api/v1/.env",
+      "views": 12
     },
     {
-      "path": "/wwwroot.zip",
-      "views": 8
+      "path": "/transactional/.env",
+      "views": 10
     },
     {
-      "path": "/db.sqlite",
-      "views": 8
+      "path": "/actions/.env",
+      "views": 10
     },
     {
-      "path": "/wp-content/uploads/database.sql",
-      "views": 8
-    },
-    {
-      "path": "/famixa.tar.gz",
-      "views": 8
-    },
-    {
-      "path": "/dbdump.sql",
-      "views": 8
-    },
-    {
-      "path": "/dump.sql",
-      "views": 8
-    },
-    {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 7
-    },
-    {
-      "path": "/users.sql",
-      "views": 6
-    },
-    {
-      "path": "/www.sql",
-      "views": 6
+      "path": "/public_html/phpinfo.php",
+      "views": 10
     }
   ]
 }
