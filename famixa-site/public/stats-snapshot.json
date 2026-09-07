@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-07T12:50:22.554Z",
+  "generatedAt": "2026-09-07T21:38:13.361Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 42,
-    "todayPageViews": 16,
-    "todayRequests": 393,
-    "last24hVisitors": 91,
-    "last24hPageViews": 39,
-    "last24hRequests": 548
+    "todayVisitors": 18,
+    "todayPageViews": 5,
+    "todayRequests": 31,
+    "last24hVisitors": 88,
+    "last24hPageViews": 33,
+    "last24hRequests": 787
   },
   "hourly": [
-    {
-      "time": "2026-09-06T13:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-06T14:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-06T15:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-06T16:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-06T17:00:00Z",
-      "visitors": 11,
-      "requests": 25
-    },
-    {
-      "time": "2026-09-06T18:00:00Z",
-      "visitors": 5,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-06T19:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-06T20:00:00Z",
-      "visitors": 5,
-      "requests": 54
-    },
-    {
-      "time": "2026-09-06T21:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-09-06T22:00:00Z",
       "visitors": 1,
@@ -128,17 +83,56 @@
     },
     {
       "time": "2026-09-07T12:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-07T13:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-07T14:00:00Z",
+      "visitors": 8,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-07T15:00:00Z",
+      "visitors": 7,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-07T16:00:00Z",
+      "visitors": 8,
+      "requests": 302
+    },
+    {
+      "time": "2026-09-07T17:00:00Z",
       "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-07T18:00:00Z",
+      "visitors": 6,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-07T19:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-07T20:00:00Z",
+      "visitors": 4,
       "requests": 6
+    },
+    {
+      "time": "2026-09-07T21:00:00Z",
+      "visitors": 3,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-01",
-      "visitors": 56,
-      "pageViews": 8,
-      "requests": 176
-    },
     {
       "date": "2026-09-02",
       "visitors": 55,
@@ -171,23 +165,37 @@
     },
     {
       "date": "2026-09-07",
-      "visitors": 101,
-      "pageViews": 36,
-      "requests": 527
+      "visitors": 70,
+      "pageViews": 28,
+      "requests": 756
+    },
+    {
+      "date": "2026-09-08",
+      "visitors": 18,
+      "pageViews": 5,
+      "requests": 31
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 50
+      "views": 36
     },
     {
       "path": "/robots.txt",
-      "views": 29
+      "views": 30
     },
     {
       "path": "/vi/",
-      "views": 29
+      "views": 22
+    },
+    {
+      "path": "/test/phpinfo.php",
+      "views": 21
+    },
+    {
+      "path": "/gateway/.env",
+      "views": 21
     },
     {
       "path": "/v2/.env",
@@ -195,10 +203,6 @@
     },
     {
       "path": "/api/v2/.env",
-      "views": 21
-    },
-    {
-      "path": "/test/phpinfo.php",
       "views": 21
     },
     {
@@ -210,12 +214,16 @@
       "views": 21
     },
     {
-      "path": "/gateway/.env",
-      "views": 21
+      "path": "/actions/.env",
+      "views": 18
     },
     {
       "path": "/sitemap.xml",
-      "views": 18
+      "views": 17
+    },
+    {
+      "path": "/phpinfo.php.save",
+      "views": 16
     },
     {
       "path": "/rest/.env",
@@ -224,14 +232,6 @@
     {
       "path": "/api/v1/.env",
       "views": 12
-    },
-    {
-      "path": "/transactional/.env",
-      "views": 10
-    },
-    {
-      "path": "/actions/.env",
-      "views": 10
     },
     {
       "path": "/public_html/phpinfo.php",
