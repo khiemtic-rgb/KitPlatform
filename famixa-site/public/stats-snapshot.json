@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-08T11:31:42.443Z",
+  "generatedAt": "2026-09-08T16:45:56.201Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 30,
-    "todayPageViews": 9,
-    "todayRequests": 67,
-    "last24hVisitors": 74,
-    "last24hPageViews": 27,
-    "last24hRequests": 465
+    "todayVisitors": 42,
+    "todayPageViews": 13,
+    "todayRequests": 103,
+    "last24hVisitors": 63,
+    "last24hPageViews": 22,
+    "last24hRequests": 163
   },
   "hourly": [
-    {
-      "time": "2026-09-07T12:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-07T13:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-07T14:00:00Z",
-      "visitors": 8,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-07T15:00:00Z",
-      "visitors": 7,
-      "requests": 14
-    },
-    {
-      "time": "2026-09-07T16:00:00Z",
-      "visitors": 8,
-      "requests": 302
-    },
     {
       "time": "2026-09-07T17:00:00Z",
       "visitors": 3,
@@ -125,6 +100,31 @@
       "time": "2026-09-08T10:00:00Z",
       "visitors": 1,
       "requests": 1
+    },
+    {
+      "time": "2026-09-08T12:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-08T13:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-08T14:00:00Z",
+      "visitors": 5,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-08T15:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-08T16:00:00Z",
+      "visitors": 3,
+      "requests": 11
     }
   ],
   "daily": [
@@ -166,23 +166,23 @@
     },
     {
       "date": "2026-09-08",
-      "visitors": 80,
-      "pageViews": 18,
-      "requests": 127
+      "visitors": 100,
+      "pageViews": 22,
+      "requests": 163
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 29
+      "views": 30
     },
     {
       "path": "/",
-      "views": 28
+      "views": 26
     },
     {
       "path": "/vi/",
-      "views": 17
+      "views": 16
     },
     {
       "path": "/wp-login.php",
@@ -193,44 +193,44 @@
       "views": 13
     },
     {
-      "path": "/phpinfo.php.save",
-      "views": 8
+      "path": "/media/system/js/core.js",
+      "views": 6
     },
     {
-      "path": "/v3/.env",
-      "views": 8
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 6
     },
     {
-      "path": "/admin-panel/.env",
-      "views": 8
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 5
     },
     {
-      "path": "/stage/.env",
-      "views": 8
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 5
     },
     {
-      "path": "/actions/.env",
-      "views": 8
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 5
     },
     {
-      "path": "/buildkite/.env",
-      "views": 8
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "views": 4
     },
     {
-      "path": "/.env.ci",
-      "views": 8
+      "path": "/_next/static/css/4e38ee1c6419eb50.css",
+      "views": 4
     },
     {
-      "path": "/resources/.env",
-      "views": 8
+      "path": "/vi/goi-cha-me/phat-con-the-nao-de-con-khong-ton-thuong-ky-luat-tich-cuc-trong-gia-dinh-modern/",
+      "views": 4
     },
     {
-      "path": "/lab/.env",
-      "views": 8
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 4
     },
     {
-      "path": "/cache/.env",
-      "views": 8
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 3
     }
   ]
 }
