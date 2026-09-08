@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-08T16:40:21.456Z",
+  "generatedAt": "2026-09-08T21:11:34.772Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 133,
-    "todayPageViews": 553,
-    "todayRequests": 2020,
-    "last24hVisitors": 158,
-    "last24hPageViews": 588,
-    "last24hRequests": 2118
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 163,
+    "last24hPageViews": 631,
+    "last24hRequests": 2157
   },
   "hourly": [
-    {
-      "time": "2026-09-07T17:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-07T18:00:00Z",
-      "visitors": 7,
-      "requests": 24
-    },
-    {
-      "time": "2026-09-07T19:00:00Z",
-      "visitors": 2,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-07T20:00:00Z",
-      "visitors": 11,
-      "requests": 34
-    },
-    {
-      "time": "2026-09-07T21:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
     {
       "time": "2026-09-07T22:00:00Z",
       "visitors": 7,
@@ -128,17 +103,36 @@
     },
     {
       "time": "2026-09-08T16:00:00Z",
-      "visitors": 3,
-      "requests": 3
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-08T17:00:00Z",
+      "visitors": 14,
+      "requests": 71
+    },
+    {
+      "time": "2026-09-08T18:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-08T19:00:00Z",
+      "visitors": 5,
+      "requests": 31
+    },
+    {
+      "time": "2026-09-08T20:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-08T21:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-02",
-      "visitors": 160,
-      "pageViews": 189,
-      "requests": 542
-    },
     {
       "date": "2026-09-03",
       "visitors": 213,
@@ -171,23 +165,23 @@
     },
     {
       "date": "2026-09-08",
-      "visitors": 133,
-      "pageViews": 553,
-      "requests": 2020
+      "visitors": 158,
+      "pageViews": 625,
+      "requests": 2144
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 118
+      "views": 125
     },
     {
       "path": "/robots.txt",
-      "views": 49
+      "views": 52
     },
     {
       "path": "/vi/",
-      "views": 39
+      "views": 35
     },
     {
       "path": "/scripts/.env",
@@ -227,7 +221,7 @@
     },
     {
       "path": "/sitemap.xml",
-      "views": 18
+      "views": 17
     },
     {
       "path": "/php-info.php",
