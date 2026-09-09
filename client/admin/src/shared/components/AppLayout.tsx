@@ -59,7 +59,7 @@ import { logoutApi } from '@/shared/api/auth.api';
 
 import { AdminLanguageSelect } from '@/shared/i18n/LanguageSelect';
 import { AppBrandLogo } from '@/shared/components/AppBrandLogo';
-import { resolveShellBrand } from '@/shared/config/app-brand';
+import { resolveLoginBrandByTenantCode, resolveShellBrand } from '@/shared/config/app-brand';
 import {
   CONTENT_NAV_ITEMS,
   CONTENT_NAV_SETUP,
@@ -111,7 +111,21 @@ function AppLayoutShell() {
   const platformVertical = useTenantPlatformStore((s) => s.settings?.vertical);
   const { enabled: kapEnabled, checked: kapAccessChecked } = useKapAdminAccess();
   const adminVertical = resolveAdminVertical(platformVertical);
-  const shellBrand = resolveShellBrand(platformVertical);
+  const shellBrand = user?.tenantCode
+    ? resolveLoginBrandByTenantCode(user.tenantCode)
+    : resolveShellBrand(platformVertical);
+  const orgCodeLabel = (user?.tenantCode || '').trim().toUpperCase() ||
+    (shellBrand.isLocal ? 'KIT_LOCAL' : shellBrand.isMarketing ? 'KIT_MKT' : 'Starter');
+  const orgCodeShort =
+    orgCodeLabel === 'KIT_SALES'
+      ? 'KS'
+      : orgCodeLabel === 'KIT_LOCAL'
+        ? 'TN'
+        : shellBrand.isMarketing
+          ? 'MK'
+          : shellBrand.isLocal
+            ? 'TN'
+            : 'FO';
 
   const canAccessSales = useCanSalesRead();
   const canAccessProcurement = useCanProcurementRead();
@@ -359,16 +373,12 @@ function AppLayoutShell() {
                 style={{ color: '#fff', fontSize: collapsed ? 12 : 18, lineHeight: 1.1 }}
               >
                 {collapsed
-                  ? shellBrand.isMarketing
-                    ? 'MK'
-                    : shellBrand.isLocal
-                      ? 'TN'
-                      : 'FO'
+                  ? orgCodeShort
                   : shellBrand.brand}
               </Typography.Text>
               {!collapsed ? (
                 <Typography.Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11 }}>
-                  {shellBrand.isMarketing ? 'KIT_MKT' : shellBrand.isLocal ? 'KIT_LOCAL' : 'Starter'}
+                  {orgCodeLabel}
                 </Typography.Text>
               ) : null}
             </>

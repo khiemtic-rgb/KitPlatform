@@ -422,8 +422,33 @@ const ContentLayout = lazy(() =>
 const KitSalesLayout = lazy(() =>
   import('@/modules/kit-sales/KitSalesLayout').then((m) => ({ default: m.KitSalesLayout })),
 );
-const KitSalesDeskPage = lazy(() =>
-  import('@/modules/kit-sales/KitSalesDeskPage').then((m) => ({ default: m.KitSalesDeskPage })),
+const KitSalesWorkspacePage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesWorkspacePage').then((m) => ({ default: m.KitSalesWorkspacePage })),
+);
+const KitSalesLeadsPage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesLeadsPage').then((m) => ({ default: m.KitSalesLeadsPage })),
+);
+const KitSalesLeadWorkspacePage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesLeadWorkspacePage').then((m) => ({
+    default: m.KitSalesLeadWorkspacePage,
+  })),
+);
+const KitSalesPipelinePage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesPipelinePage').then((m) => ({ default: m.KitSalesPipelinePage })),
+);
+const KitSalesCampaignsPage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesCampaignsPage').then((m) => ({ default: m.KitSalesCampaignsPage })),
+);
+const KitSalesIntelligencePage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesIntelligencePage').then((m) => ({
+    default: m.KitSalesIntelligencePage,
+  })),
+);
+const KitSalesAnalyticsPage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesAnalyticsPage').then((m) => ({ default: m.KitSalesAnalyticsPage })),
+);
+const KitSalesSettingsPage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesSettingsPage').then((m) => ({ default: m.KitSalesSettingsPage })),
 );
 const ContentOpsPage = lazy(() =>
   import('@/modules/content/ContentOpsPage').then((m) => ({ default: m.ContentOpsPage })),
@@ -919,7 +944,63 @@ export function AppRouter() {
                   index
                   element={
                     <SuspenseRoute>
-                      <KitSalesDeskPage />
+                      <KitSalesWorkspacePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="leads"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesLeadsPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="leads/:leadId"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesLeadWorkspacePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="pipeline"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesPipelinePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="campaigns"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesCampaignsPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="intelligence"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesIntelligencePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="analytics"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesAnalyticsPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="settings"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesSettingsPage />
                     </SuspenseRoute>
                   }
                 />

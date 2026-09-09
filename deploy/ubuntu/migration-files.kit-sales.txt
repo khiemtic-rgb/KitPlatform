@@ -5,3 +5,9 @@
 
 323_pack_kit_sales_v1.sql
 324_pack_kit_sales_tenant.sql
+325_pack_kit_sales_source_text.sql
+326_pack_kit_sales_interaction_review.sql
+327_pack_kit_sales_facebook_identity.sql
+328_pack_kit_sales_pain_library.sql
+329_pack_kit_sales_facebook_settings.sql
+331_pack_kit_sales_ai_settings.sql

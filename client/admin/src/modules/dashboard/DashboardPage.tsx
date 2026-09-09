@@ -135,7 +135,24 @@ function LocalOsDashboardPage() {
 }
 
 function MarketingParkDashboardPage() {
-  return <Navigate to="/content/ops" replace />;
+  const isModuleEnabled = useTenantPlatformStore((s) => s.isModuleEnabled);
+  // KIT_MKT → content; KIT_SALES (marketing vertical, no kit_content) → kit-sales.
+  // Never bounce KIT_SALES to /content/ops (ContentLayout would kick back to / → flicker loop).
+  if (isModuleEnabled('kit_content')) {
+    return <Navigate to="/content/ops" replace />;
+  }
+  if (isModuleEnabled('kit_sales')) {
+    return <Navigate to="/kit-sales" replace />;
+  }
+  return (
+    <div style={{ padding: 24 }}>
+      <Typography.Title level={4}>Marketing workspace</Typography.Title>
+      <Typography.Paragraph type="secondary">
+        Tenant chưa bật module Marketing Park (<code>kit_content</code>) hoặc KIT Sales (
+        <code>kit_sales</code>).
+      </Typography.Paragraph>
+    </div>
+  );
 }
 
 function PharmacyDashboardPage() {

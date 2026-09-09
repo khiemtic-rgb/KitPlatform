@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Text;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -141,7 +141,8 @@ catch (Exception ex) when (
 }
 builder.Services.AddContentPack(builder.Configuration);
 builder.Services.AddLocalOsPack();
-builder.Services.AddKitSalesPack();
+builder.Services.AddKitSalesPack(builder.Configuration);
+builder.Services.AddHostedService<KitPlatform.Api.KitSales.KitSalesJourneyWorker>();
 builder.Services.Configure<KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions>(
     builder.Configuration.GetSection(KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions.Section));
 builder.Services.AddHttpClient<KitPlatform.Api.LocalOs.LocalOsHomepageFeedPublisher>();
