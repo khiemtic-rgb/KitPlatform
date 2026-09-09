@@ -172,6 +172,7 @@ internal sealed class ContentElevenLabsClient
                     Gender = existing.Gender ?? row.Gender,
                     Age = existing.Age ?? row.Age,
                     Accent = existing.Accent ?? row.Accent,
+                    PreviewUrl = FirstNonEmpty(existing.PreviewUrl) ?? row.PreviewUrl,
                 };
                 continue;
             }
@@ -191,6 +192,73 @@ internal sealed class ContentElevenLabsClient
             .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
             .Take(80)
             .ToList();
+    }
+
+    /// <summary>Library preview_url only. Does not call TTS / previewContentSeriesTts.</summary>
+    public async Task<byte[]?> GetLibraryPreviewAsync(string voiceId, CancellationToken cancellationToken)
+    {
+        var resolved = await ResolveAsync(cancellationToken);
+        if (!resolved.ElevenLabsConfigured || string.IsNullOrWhiteSpace(resolved.ElevenLabsApiKey))
+            return null;
+        var id = (voiceId ?? "").Trim();
+        if (id.Length is < 8 or > 64) return null;
+        foreach (var ch in id)
+        {
+            if (ch is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or (>= '0' and <= '9') or '_' or '-')
+                continue;
+            return null;
+        }
+
+        var url = await ReadSingleVoicePreviewUrlAsync(resolved.ElevenLabsApiKey, id, cancellationToken)
+            ?? await ReadSharedLibraryPreviewUrlAsync(resolved.ElevenLabsApiKey, id, cancellationToken);
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+            return null;
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("audio/mpeg"));
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("audio/*"));
+        using var res = await _http.SendAsync(req, cancellationToken);
+        if (!res.IsSuccessStatusCode) return null;
+        var bytes = await res.Content.ReadAsByteArrayAsync(cancellationToken);
+        return bytes.Length == 0 ? null : bytes;
+    }
+
+    private async Task<string?> ReadSharedLibraryPreviewUrlAsync(string key, string voiceId, CancellationToken cancellationToken)
+    {
+        var url = $"v1/shared-voices?search={Uri.EscapeDataString(voiceId)}&page_size=20";
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Add("xi-api-key", key);
+        using var res = await _http.SendAsync(req, cancellationToken);
+        if (!res.IsSuccessStatusCode) return null;
+        var body = await res.Content.ReadAsStringAsync(cancellationToken);
+        foreach (var row in ParseVoiceArray(body, library: true))
+        {
+            if (string.Equals(row.VoiceId, voiceId, StringComparison.Ordinal)
+                && !string.IsNullOrWhiteSpace(row.PreviewUrl))
+                return row.PreviewUrl;
+        }
+        return null;
+    }
+
+    private async Task<string?> ReadSingleVoicePreviewUrlAsync(string key, string voiceId, CancellationToken cancellationToken)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"v1/voices/{Uri.EscapeDataString(voiceId)}");
+        req.Headers.Add("xi-api-key", key);
+        using var res = await _http.SendAsync(req, cancellationToken);
+        if (!res.IsSuccessStatusCode) return null;
+        var body = await res.Content.ReadAsStringAsync(cancellationToken);
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            return FirstNonEmpty(ReadString(doc.RootElement, "preview_url"))
+                ?? ReadNestedPreview(doc.RootElement);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private async Task<List<ContentSeriesVoiceDto>> ReadAccountVoicesAsync(string key, CancellationToken cancellationToken)
@@ -269,6 +337,8 @@ internal sealed class ContentElevenLabsClient
                 var gender = FirstNonEmpty(ReadString(v, "gender")) ?? FirstNonEmpty(ReadLabel(v, "gender"));
                 var age = FirstNonEmpty(ReadString(v, "age")) ?? FirstNonEmpty(ReadLabel(v, "age"));
                 var accent = FirstNonEmpty(ReadString(v, "accent")) ?? FirstNonEmpty(ReadLabel(v, "accent"));
+                var preview = FirstNonEmpty(ReadString(v, "preview_url"))
+                    ?? ReadNestedPreview(v);
                 var label = string.IsNullOrWhiteSpace(name) ? id.Trim() : name.Trim();
                 rows.Add(new ContentSeriesVoiceDto(
                     id.Trim(),
@@ -279,7 +349,8 @@ internal sealed class ContentElevenLabsClient
                     string.IsNullOrWhiteSpace(owner) ? null : owner,
                     gender,
                     age,
-                    accent));
+                    accent,
+                    preview));
             }
         }
         catch (JsonException)
@@ -354,6 +425,28 @@ internal sealed class ContentElevenLabsClient
                || s.Contains("vietnam", StringComparison.OrdinalIgnoreCase)
                || s.Contains("tiếng việt", StringComparison.OrdinalIgnoreCase)
                || s.Contains("tieng viet", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? ReadNestedPreview(JsonElement v)
+    {
+        if (v.TryGetProperty("verified_languages", out var verified) && verified.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in verified.EnumerateArray())
+            {
+                var url = FirstNonEmpty(ReadString(item, "preview_url"));
+                if (url is not null) return url;
+            }
+        }
+        if (v.TryGetProperty("samples", out var samples) && samples.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in samples.EnumerateArray())
+            {
+                var url = FirstNonEmpty(ReadString(item, "preview_url"))
+                    ?? FirstNonEmpty(ReadString(item, "sample_url"));
+                if (url is not null) return url;
+            }
+        }
+        return null;
     }
 
     private static string? ReadString(JsonElement el, string name) =>

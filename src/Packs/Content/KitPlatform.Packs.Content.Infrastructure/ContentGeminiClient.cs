@@ -14,9 +14,20 @@ internal sealed class ContentGeminiClient
     private static readonly string[] TextFallbacks =
     [
         "gemini-3.6-flash",
-        "gemini-flash-latest",
-        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash-lite",
     ];
+
+    /// <summary>
+    /// Identity/vision JSON only. Do not use gemini-flash-latest or retired 2.5-flash-lite —
+    /// those hang 2–4 min or 404 and stall Character Studio after pixels are already ready.
+    /// </summary>
+    private static readonly string[] VisionModels =
+    [
+        "gemini-3.5-flash-lite",
+        "gemini-3.6-flash",
+    ];
+
+    private static readonly TimeSpan VisionAttemptTimeout = TimeSpan.FromSeconds(25);
 
     /// <summary>
     /// Gemini native image models via generateContent.
@@ -192,6 +203,85 @@ internal sealed class ContentGeminiClient
         }
 
         throw last ?? new InvalidOperationException("Gemini still QA failed");
+    }
+
+    public async Task<string> GenerateJsonWithImagesAsync(
+        string systemPrompt,
+        string userPrompt,
+        IReadOnlyList<(string Mime, string Base64, string Label)> images,
+        CancellationToken ct,
+        int maxOutputTokens = 2048)
+    {
+        var resolved = await ResolveConfigAsync(ct);
+        if (!resolved.ApiKeyConfigured)
+            throw new InvalidOperationException("VISION_FAILED: Gemini API key chưa cấu hình.");
+        var models = VisionModels.ToList();
+        if (IsUsableVisionModel(resolved.TextModel)
+            && !models.Contains(resolved.TextModel, StringComparer.OrdinalIgnoreCase))
+            models.Insert(0, resolved.TextModel);
+        var parts = new List<object> { new { text = userPrompt } };
+        foreach (var (mime, b64, label) in images)
+        {
+            if (!string.IsNullOrWhiteSpace(label))
+                parts.Add(new { text = label });
+            parts.Add(new { inline_data = new { mime_type = mime, data = b64 } });
+        }
+
+        Exception? last = null;
+        foreach (var model in models)
+        {
+            // thinkingConfig is INVALID_ARGUMENT on several flash vision models — try without it first.
+            foreach (var variant in new[] { "plain", "json", "no-think" })
+            {
+                try
+                {
+                    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    timeout.CancelAfter(VisionAttemptTimeout);
+                    object generationConfig = variant switch
+                    {
+                        "plain" => new { temperature = 0.1, maxOutputTokens },
+                        "json" => new
+                        {
+                            temperature = 0.1,
+                            responseMimeType = "application/json",
+                            maxOutputTokens,
+                        },
+                        _ => new
+                        {
+                            temperature = 0.1,
+                            responseMimeType = "application/json",
+                            maxOutputTokens,
+                            thinkingConfig = new { thinkingBudget = 0 },
+                        },
+                    };
+                    var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", new
+                    {
+                        systemInstruction = new { parts = new[] { new { text = systemPrompt } } },
+                        contents = new[] { new { role = "user", parts } },
+                        generationConfig,
+                    }, timeout.Token);
+                    var text = ExtractText(data);
+                    if (string.IsNullOrWhiteSpace(text))
+                        throw new InvalidOperationException("Gemini returned empty vision JSON");
+                    _logger.LogInformation(
+                        "KIT Video vision model {Model} images={Count} variant={Variant}",
+                        model, images.Count, variant);
+                    return text;
+                }
+                catch (Exception ex)
+                {
+                    last = ex;
+                    _logger.LogWarning(ex, "KIT Video vision model {Model} variant {Variant} failed", model, variant);
+                    if (ex.Message.Contains("failed (400)", StringComparison.Ordinal)
+                        || ex.Message.Contains("failed (404)", StringComparison.Ordinal)
+                        || ex.Message.Contains("failed (503)", StringComparison.Ordinal)
+                        || ex is OperationCanceledException)
+                        continue;
+                }
+            }
+        }
+
+        throw last ?? new InvalidOperationException("VISION_FAILED: Gemini vision JSON failed.");
     }
 
     public async Task<(byte[] Bytes, string Model)> GenerateImageAsync(string prompt, CancellationToken ct)
@@ -374,6 +464,73 @@ internal sealed class ContentGeminiClient
 
         throw first ?? new InvalidOperationException("Không vẽ được KF cảnh từ Canon. Kiểm tra Gemini image model / quota.");
     }
+
+    /// <summary>One Gemini still request. No model fallback. No Pollinations. No invented request id.</summary>
+    public async Task<(bool Accepted, byte[]? Bytes, string? Mime, string? Model, string? Error)> GenerateProductionStillOnceAsync(
+        string prompt,
+        IReadOnlyList<(string Mime, string Base64, string Label)> references,
+        string? aspectRatio,
+        CancellationToken ct)
+    {
+        var resolved = await ResolveConfigAsync(ct);
+        if (!resolved.ApiKeyConfigured)
+            return (false, null, null, null, "GEMINI_API_KEY_MISSING");
+
+        var model = FirstNonEmpty(_options.KitVideoGeminiModel, resolved.ImageModel, _options.ImageModel, "gemini-2.5-flash-image");
+        if (model.Contains("runway", StringComparison.OrdinalIgnoreCase)
+            || model.Contains("pollinations", StringComparison.OrdinalIgnoreCase)
+            || model.StartsWith("imagen", StringComparison.OrdinalIgnoreCase))
+            return (false, null, null, model, "IMAGE_GENERATION_EXECUTION: model not allowed.");
+
+        var parts = new List<object> { new { text = prompt } };
+        foreach (var (mime, b64, label) in references)
+        {
+            if (!string.IsNullOrWhiteSpace(label))
+                parts.Add(new { text = label });
+            parts.Add(new { inline_data = new { mime_type = mime, data = b64 } });
+        }
+
+        object generationConfig = string.IsNullOrWhiteSpace(aspectRatio)
+            ? new { responseModalities = new[] { "TEXT", "IMAGE" } }
+            : new { responseModalities = new[] { "TEXT", "IMAGE" }, imageConfig = new { aspectRatio } };
+        try
+        {
+            var data = await PostAsync(resolved.ApiKey, $"/models/{model}:generateContent", new
+            {
+                contents = new[] { new { role = "user", parts } },
+                generationConfig,
+            }, ct);
+            var bytes = ExtractInlineImage(data);
+            var mime = KitVideoArtifactRules.DetectMime(bytes);
+            if (bytes is null || bytes.Length == 0)
+                return (true, null, null, model, "GEMINI_ACCEPTED_NO_ARTIFACT");
+            _logger.LogInformation("PRODUCTION_IMAGE_GENERATION_EXECUTION_V1 Gemini once model={Model} bytes={Len}", model, bytes.Length);
+            return (true, bytes, mime ?? "image/png", model, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "PRODUCTION_IMAGE_GENERATION_EXECUTION_V1 Gemini once failed");
+            return (false, null, null, model, ex.Message);
+        }
+    }
+
+    private static bool IsUsableVisionModel(string? model)
+    {
+        var m = (model ?? "").Trim();
+        if (m.Length == 0) return false;
+        if (m.Equals("gemini-flash-latest", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (m.Contains("2.5-flash-lite", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (m.Contains("2.0-flash", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (m.Contains("1.5-flash", StringComparison.OrdinalIgnoreCase))
+            return false;
+        return true;
+    }
+
+    private static string FirstNonEmpty(params string?[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim() ?? "";
 
     private static readonly SemaphoreSlim PollinationsGate = new(1, 1);
     private static DateTimeOffset _pollinationsNextAllowed = DateTimeOffset.MinValue;

@@ -23,6 +23,7 @@ import {
 import { Link } from 'react-router-dom';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { CONTENT_NAV_SETUP } from '@/modules/content/content-nav';
+import { ContentKitVideoEngineCard } from '@/modules/content/ContentKitVideoEngineCard';
 
 const ContentFamixaSeriesTab = lazy(() =>
   import('@/modules/content/ContentFamixaSeriesTab').then((m) => ({ default: m.ContentFamixaSeriesTab })),
@@ -396,6 +397,12 @@ export function ContentVideosPage() {
       </div>
       )}
 
+      {mainTab !== 'series' ? (
+        <div style={{ padding: '8px 16px' }}>
+          <Button onClick={() => setMainTab('series')}>← Video Studio</Button>
+        </div>
+      ) : null}
+      {mainTab !== 'series' ? <ContentKitVideoEngineCard /> : null}
       <Tabs
         activeKey={mainTab}
         onChange={setMainTab}
@@ -579,6 +586,17 @@ export function ContentVideosPage() {
           },
         ]}
       />
+      {mainTab === 'series' ? (
+        <details className="fx-videos__more">
+          <summary>Công cụ khác</summary>
+          <Button type="link" onClick={() => setMainTab('lab')}>
+            Bảng sản xuất ngắn
+          </Button>
+          <Button type="link" onClick={() => setMainTab('factory')}>
+            Factory góc brand
+          </Button>
+        </details>
+      ) : null}
 
       <Drawer
         title={panel ? `${panel.job ? 'Video' : 'Tạo video'} · ${panel.brandName}` : 'Video'}

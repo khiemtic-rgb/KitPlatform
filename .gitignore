@@ -17,6 +17,8 @@ docs/*
 .env
 .env.*
 !.env.example
+src/KitPlatform.Api/App_Data/kit-video-kf/
+src/KitPlatform.Api/App_Data/kit-video-i2v/
 src/**/uploads/
 uploads/
 

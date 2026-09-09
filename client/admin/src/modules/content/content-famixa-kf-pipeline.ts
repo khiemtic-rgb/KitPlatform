@@ -31,6 +31,11 @@ export type KfRefSlot = {
   name: string;
   role: KfRefRole;
   imageDataUrl: string;
+  visualMode?: string;
+  referenceStatus?: string;
+  authorityStatus?: string;
+  characterId?: string;
+  referenceRole?: string;
 };
 
 export const EDIT_QUICK = [
@@ -112,6 +117,8 @@ export function compileNarrativeStillPrompt(opts: {
   lighting?: string;
   refs?: { name: string; role?: string }[];
   correction?: string;
+  /** Identity + era + outfit + style. Never emotion / action. */
+  characterSubset?: string;
 }) {
   const spec = opts.spec;
   const c = compileVisualContract(spec);
@@ -134,7 +141,7 @@ export function compileNarrativeStillPrompt(opts: {
   });
   const draw =
     spec.subjectKind === 'prop'
-      ? `This is a photoreal INSERT. The ${spec.subjectName} fills the frame. ${sec ? `${sec.name} appears only as ${sec.body}.` : ''}`
+      ? `This is a stylized cinematic INSERT. The ${spec.subjectName} fills the frame. ${sec ? `${sec.name} appears only as ${sec.body}.` : ''}`
       : count <= 1
         ? `${who} is the only complete person in frame.`
         : `${who} and ${sec?.name || 'the other person'} share the frame as a natural two-shot.`;
@@ -143,9 +150,9 @@ export function compileNarrativeStillPrompt(opts: {
       ? `The camera looks at the ${spec.subjectName}. ${c.shotIntent} ${c.action}`
       : `${who} ${c.action} ${sec ? `toward ${sec.name}` : ''}. ${c.performance} ${c.gaze} ${c.face}`;
   return [
-    'Photorealistic cinematic Vietnamese family drama. One sharp live-action film still — not a portrait, catalog, cartoon, or character sheet.',
+    'Stylized cinematic Vietnamese family drama. One sharp designed-character film still — not photoreal, not a portrait, catalog, cartoon, or character sheet.',
     `PRIORITY 1 — STORY: ${c.story} ${c.shotIntent}`,
-    `PRIORITY 2 — CHARACTER: ${draw} ${body}`,
+    `PRIORITY 2 — CHARACTER: ${(opts.characterSubset ?? '').trim()} ${draw} ${body}`.replace(/\s+/g, ' '),
     `PRIORITY 3 — COMPOSITION: ${c.camera}. ${c.composition}${
       vertical
         ? count <= 1
@@ -175,7 +182,7 @@ export function mergeReferencePack(opts: {
   const sceneUrl = opts.scene?.imageDataUrl;
   const prevUrl = opts.prev?.imageDataUrl;
   const scene = sceneUrl && sceneUrl !== prevUrl ? opts.scene : undefined;
-  const ordered = [...(scene ? [scene] : []), ...opts.identities, ...(opts.prev ? [opts.prev] : [])];
+  const ordered = [...opts.identities, ...(opts.prev ? [opts.prev] : []), ...(scene ? [scene] : [])];
   const uniq: KfRefSlot[] = [];
   for (const row of ordered) {
     if (!row.imageDataUrl.startsWith('data:image')) continue;
@@ -195,14 +202,57 @@ export function identityCanonIds(spec: VisualSpec, castIds: string[]) {
   return ids.length ? ids : castIds.slice(0, spec.framing === 'WIDE' || spec.framing === 'MEDIUM' ? 3 : 2);
 }
 
+/** User note “chỉ có Linh” — rewrite cast, do not keep a second body. */
+export function soloCastFromNote(note?: string) {
+  const t = (note ?? '').trim();
+  if (!t) return undefined;
+  if (!/chỉ có|một mình|only |không có (minh|nam|ai khác|người thứ)/i.test(t)) return undefined;
+  if (/\b(linh|mẹ)\b/i.test(t)) return 'Linh';
+  if (/\b(minh|con)\b/i.test(t)) return 'Minh';
+  if (/\b(nam|bố|ba)\b/i.test(t)) return 'Nam';
+  return undefined;
+}
+
+export function applySoloCast(spec: VisualSpec, who: string): VisualSpec {
+  const id = who === 'Linh' ? 'CHAR-003' : who === 'Nam' ? 'CHAR-002' : 'CHAR-001';
+  const primary = spec.primary
+    ? { ...spec.primary, id, name: who, role: 'primary' as const, face: 'full' as const }
+    : { id, name: who, role: 'primary' as const, face: 'full' as const, body: 'upper body' };
+  const phone = /phone|điện thoại/i.test(`${spec.shotAction} ${spec.gaze} ${spec.purpose}`);
+  return {
+    ...spec,
+    primary,
+    subjectName: who,
+    secondary: [],
+    gazeTarget: phone ? 'the phone' : spec.gazeTarget && !/minh|nam|linh/i.test(spec.gazeTarget) ? spec.gazeTarget : 'the table',
+    gaze: `${who} looks at ${phone ? 'the phone' : 'the table'} — never the lens. Alone in frame.`,
+    composition: `${who} is the only complete person in frame. No second body, no child's shoulder, no OTS of Minh.`,
+    forbidden: [...spec.forbidden, 'Minh in frame', 'second person', 'OTS shoulder of a boy', 'two-shot'],
+    shotAction: spec.shotAction.replace(/\b(toward|with|and|nhìn) Minh\b/gi, '').replace(/\s+/g, ' ').trim(),
+  };
+}
+
 export function compileCorrectionPrompt(spec: VisualSpec, tickIds: string[], evidence?: string) {
   const ticks = FAIL_TICKS.filter((t) => tickIds.includes(t.id));
   const locks = [...new Set(ticks.map((t) => t.lock))];
   const c = compileVisualContract(spec);
   const focus = ticks.map((t) => t.label).join(', ') || evidence || 'the failed hard check';
+  const solo = soloCastFromNote(evidence) || (ticks.some((t) => t.id === 'wrong-character') ? spec.primary?.name : undefined);
+  if (solo || ticks.some((t) => t.id === 'wrong-character')) {
+    const who = solo || c.primary;
+    return [
+      `Remove every extra person from the frame. Only ${who} remains.`,
+      `Do not keep a shoulder, back, or blur of Minh or anyone else.`,
+      `Do not copy the failed two-shot. Same room and lighting. ${who} full face, not looking at the camera.`,
+      evidence ? `Operator: ${evidence}` : '',
+      `LOCK: BACKGROUND + LIGHTING. CAST: ${who} only.`,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
   return [
     'Keep the entire image unchanged. Do not generate a new unrelated picture.',
-    `Preserve ${c.primary}'s face, hairstyle, clothing, body position, the other person, room, lighting, camera angle and composition exactly as they are.`,
+    `Preserve ${c.primary}'s face, hairstyle, clothing, body position, room, lighting, camera angle and composition exactly as they are.`,
     `Change only: ${focus}.`,
     evidence ? `QA evidence: ${evidence}` : '',
     `LOCK: ${locks.join(' · ') || 'FACE + WARDROBE + BACKGROUND + LIGHTING'}.`,

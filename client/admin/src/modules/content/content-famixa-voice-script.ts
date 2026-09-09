@@ -227,7 +227,7 @@ export function canLockVoice(state: SeriesPilotState) {
 
 export function voiceLockBlockReason(state: SeriesPilotState): string | undefined {
   if ((state.scenes?.length ?? 0) > 0 && !state.storyReviewed) {
-    return 'Duyệt Parsed Story (nút «Parsed Story đúng») trước.';
+    return 'Duyệt kịch bản đã tách (nút Duyệt trên tab Kịch bản) trước.';
   }
   const script = deriveVoiceScript(state);
   if (script.lines.length === 0) return 'Chưa có thoại trong Voice Script — Nhận pack kịch bản.';

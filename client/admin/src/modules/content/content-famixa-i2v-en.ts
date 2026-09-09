@@ -48,3 +48,11 @@ export function englishI2vMotion(action: string, _seconds?: number) {
 export function i2vPromptIsEnglish(prompt: string) {
   return !I2V_VI_RE.test(prompt) && !PACK_RE.test(prompt);
 }
+
+/** Runway motion fields stay English. Vietnamese acting copy stays on the card. */
+export function runwayEnglishBit(raw?: string, fallback?: string) {
+  const t = (raw || '').replace(/\s+/g, ' ').trim();
+  if (!t) return fallback;
+  if (I2V_VI_RE.test(t) || PACK_RE.test(t)) return fallback;
+  return t;
+}

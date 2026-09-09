@@ -5,6 +5,8 @@ import {
   formatExactRequest,
   lifecycleReady,
   requestFingerprint,
+  samePromptAsFailedRequest,
+  promptUsedOnCurrentKf,
   sameRequestBlocked,
   testRunwayInput,
 } from './content-runway-adapter';
@@ -56,6 +58,55 @@ if (
 }
 if (sameRequestBlocked({ failedFingerprint: fp }, fp)) fail.push('stamp without generation job must not block');
 if (sameRequestBlocked({ failedFingerprint: fp }, `${fp}|other`)) fail.push('Test 3/4: changed input must allow');
+if (!samePromptAsFailedRequest({ runwayAttempts: [{ fingerprint: fp, status: 'FAILED', taskId: 't', failureCode: 'INTERNAL' }] }, job.exact.promptHash)) {
+  fail.push('same prompt as failed request must lock');
+}
+if (samePromptAsFailedRequest({ runwayAttempts: [{ fingerprint: fp, status: 'FAILED', taskId: 't', failureCode: 'INTERNAL' }] }, `${job.exact.promptHash}|x`)) {
+  fail.push('new prompt must open');
+}
+if (
+  promptUsedOnCurrentKf(
+    {
+      failedKfHash: job.exact.kfHash,
+      runwayAttempts: [{ fingerprint: fp, status: 'FAILED', taskId: 't', failureCode: 'INTERNAL' }],
+    },
+    job.exact.promptHash,
+    job.exact.kfHash,
+  ) !== true
+) {
+  fail.push('same KF + failed prompt must lock camera slot');
+}
+if (
+  promptUsedOnCurrentKf(
+    {
+      failedKfHash: job.exact.kfHash,
+      runwayAttempts: [{ fingerprint: fp, status: 'FAILED', taskId: 't', failureCode: 'INTERNAL' }],
+    },
+    job.exact.promptHash,
+    'hnewkf:99',
+  )
+) {
+  fail.push('new still must not inherit old camera slots');
+}
+const olderFail = requestFingerprint({
+  kfHash: job.exact.kfHash,
+  promptHash: 'older-hold-prompt',
+  model: 'gen4_turbo',
+  duration: 5,
+});
+if (
+  !samePromptAsFailedRequest(
+    {
+      runwayAttempts: [
+        { fingerprint: olderFail, status: 'FAILED', taskId: 't0', failureCode: 'INTERNAL' },
+        { fingerprint: fp, status: 'FAILED', taskId: 't1', failureCode: 'INTERNAL' },
+      ],
+    },
+    'older-hold-prompt',
+  )
+) {
+  fail.push('older failed prompt must still lock after a later fail');
+}
 
 const intern = classifyRunwayFailure('INTERNAL.BAD_OUTPUT.CODE01', 'unexpected');
 if (intern.retry !== 'AFTER_INPUT_CHANGE' || intern.layer !== 'GENERATION') fail.push('INTERNAL maps to review input');

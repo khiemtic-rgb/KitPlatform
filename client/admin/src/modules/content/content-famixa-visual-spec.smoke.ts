@@ -11,13 +11,44 @@ import {
   peopleCountForSpec,
   qaLane,
   seedQaChecks,
+  remakeStillCorrection,
   shouldAttachPrevKf,
   visualQaAllowsApprove,
 } from './content-famixa-visual-spec';
 
 const fail: string[] = [];
 if (framingFromAction('Liếc nhìn con số 9 đúng nửa giây.') !== 'INSERT') fail.push('glance action → INSERT');
+if (framingFromAction('Người mẹ đón lấy, liếc nhanh con số đỏ chót rồi nhìn thẳng vào mắt con.') === 'INSERT') {
+  fail.push('receive + look at eyes is not paper INSERT');
+}
 if (framingFromAction('Minh bước vào nhà.') !== 'WIDE') fail.push('enter → WIDE');
+const enterSpeak = deriveVisualSpec({
+  shotId: 'SC-ENTER-01',
+  action: 'Minh bước vào nhà, mẹ đang lau bàn. Minh walks in from outside, face toward mother.',
+  names: ['Minh', 'Linh'],
+  ids: ['CHAR-001', 'CHAR-003'],
+  speakers: ['Linh'],
+});
+if (enterSpeak.primary?.name !== 'Minh') fail.push('enter action subject is primary, not the speaker');
+if (enterSpeak.secondary.find((p) => p.name === 'Linh')?.face !== 'full') fail.push('speaker stays full face');
+if (!/back of the arriving|walking out|backpack/i.test(enterSpeak.forbidden.join(' '))) {
+  fail.push('enter forbids leaving / hidden face');
+}
+if (!/entering the room|not leaving/i.test(enterSpeak.purpose)) fail.push('enter purpose requires arriving face');
+if (!/Do not copy the previous still|full face toward/i.test(remakeStillCorrection(enterSpeak))) {
+  fail.push('remake correction must reject copied leaving pose');
+}
+if (!/entering the room/i.test(remakeStillCorrection(enterSpeak))) {
+  fail.push('enter remake still asks for arriving face');
+}
+const holdRemake = remakeStillCorrection({
+  ...enterSpeak,
+  purpose: 'Already inside the room, standing still.',
+  shotAction: 'Already inside the room, standing still, facing the other person.',
+});
+if (!/already inside|standing still/i.test(holdRemake) || /is entering the room/i.test(holdRemake)) {
+  fail.push('hold remake must not ask Gemini to walk in');
+}
 if (framingFromAction('GẤU NƯỚC LẠNH') !== 'CU') fail.push('cold-bucket heading → CU');
 if (framingFromAction('Minh đưa bài kiểm tra cho mẹ.') !== 'MEDIUM') fail.push('hand object → MEDIUM');
 
@@ -167,10 +198,37 @@ if (framingFromAction('Minh nói với mẹ.', 'Mẹ ơi', ['Minh'], 'MCU') !== 
 if (!/notice the 9/i.test(spec.purpose)) fail.push('INSERT paper purpose stays the gold standard');
 
 const insertBrief = compileGeminiStillBrief(spec);
+if (/DRAW: photoreal/i.test(insertBrief)) fail.push('INSERT brief must not ask photoreal');
+if (!/stylized cinematic/i.test(insertBrief)) fail.push('INSERT brief is stylized cinematic');
 if (!/GEMINI STILL/i.test(insertBrief)) fail.push('INSERT brief header');
 if (!/Test paper/i.test(insertBrief)) fail.push('INSERT brief draws the paper');
 if (/exactly 2 people/i.test(insertBrief)) fail.push('INSERT brief must not say exactly 2 people');
 if (peopleCountForSpec(spec) !== 0) fail.push('INSERT people count is 0');
+
+const receiveLook = deriveVisualSpec({
+  shotId: 'SH-RECEIVE-01',
+  action: 'Người mẹ đón lấy, liếc nhanh con số đỏ chót rồi nhìn thẳng vào mắt con.',
+  names: ['Minh', 'Linh'],
+  ids: ['CHAR-001', 'CHAR-003'],
+  speakers: [],
+});
+if (receiveLook.framing === 'INSERT' || receiveLook.subjectKind === 'prop') {
+  fail.push('receive look must stay a two-person shot, not paper INSERT');
+}
+if (receiveLook.primary?.name !== 'Linh') fail.push('mother-led receive primary is Linh');
+if (!receiveLook.secondary.some((p) => p.name === 'Minh' && p.face === 'full')) {
+  fail.push('Minh full face in receive two-shot');
+}
+if (peopleCountForSpec(receiveLook) !== 2) fail.push('receive people count is 2');
+if (/notice the 9/i.test(receiveLook.purpose)) fail.push('receive purpose is the look, not the painted 9');
+const receiveBrief = compileGeminiStillBrief(receiveLook);
+if (!/two-shot|both/i.test(receiveBrief)) fail.push('receive brief is a two-shot');
+if (/only full person|Do not force a two-shot|Test paper fills/i.test(receiveBrief)) {
+  fail.push('receive brief must not be INSERT or solo');
+}
+if (!/Do not copy the previous still|both full faces|small prop/i.test(remakeStillCorrection(receiveLook))) {
+  fail.push('receive remake keeps both faces, paper as prop');
+}
 
 const mcuBrief = compileGeminiStillBrief(spokenMcu);
 if (spokenMcu.framing !== 'MCU') fail.push(`spoken one-liner must be MCU, got ${spokenMcu.framing}`);

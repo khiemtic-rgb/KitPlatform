@@ -1579,6 +1579,31 @@ internal sealed class ContentRepository
         return rows.ToList();
     }
 
+    public async Task<IReadOnlyList<SeriesBuildRow>> ListSeriesBuildsWithGraphAsync(string seriesCode, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT
+                id AS Id,
+                series_code AS SeriesCode,
+                episode_code AS EpisodeCode,
+                title AS Title,
+                status AS Status,
+                shot_count AS ShotCount,
+                voice_lines AS VoiceLines,
+                kf_count AS KfCount,
+                video_count AS VideoCount,
+                graph_json::text AS GraphJson,
+                created_at AS CreatedAt,
+                updated_at AS UpdatedAt
+            FROM pack_content.series_build
+            WHERE series_code = @SeriesCode
+            ORDER BY updated_at DESC
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        var rows = await conn.QueryAsync<SeriesBuildRow>(sql, new { SeriesCode = seriesCode });
+        return rows.ToList();
+    }
+
     public async Task<SeriesBuildRow?> GetSeriesBuildAsync(Guid id, CancellationToken ct)
     {
         const string sql = """
@@ -1679,5 +1704,474 @@ internal sealed class ContentRepository
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         await conn.ExecuteAsync(sql, new { SeriesCode = seriesCode, BuildId = buildId });
+    }
+
+    public sealed class FamixaCharacterRow
+    {
+        public Guid Id { get; set; }
+        public string CharacterCode { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Role { get; set; } = "";
+        public string Universe { get; set; } = "CORE";
+        public string Visual { get; set; } = "frame";
+        public string Lifecycle { get; set; } = "draft";
+        public Guid? CurrentVersionId { get; set; }
+        public string CurrentEra { get; set; } = "A11";
+        public string Version { get; set; } = "V1";
+        public bool IsCurrentCanon { get; set; }
+        public DateTimeOffset? ApprovedAt { get; set; }
+        public string? ApprovedBy { get; set; }
+        public string CanonJson { get; set; } = "{}";
+        public DateTimeOffset UpdatedAt { get; set; }
+    }
+
+    private const string FamixaCharacterSelect = """
+        SELECT
+            c.id AS Id,
+            c.character_code AS CharacterCode,
+            c.name AS Name,
+            c.role AS Role,
+            c.universe AS Universe,
+            c.visual AS Visual,
+            c.lifecycle AS Lifecycle,
+            c.current_version_id AS CurrentVersionId,
+            c.current_era AS CurrentEra,
+            COALESCE(v.version, 'V1') AS Version,
+            COALESCE(v.is_current_canon, FALSE) AS IsCurrentCanon,
+            v.approved_at AS ApprovedAt,
+            v.approved_by AS ApprovedBy,
+            COALESCE(v.canon_json::text, '{}') AS CanonJson,
+            c.updated_at AS UpdatedAt
+        FROM pack_content.famixa_character c
+        LEFT JOIN pack_content.famixa_character_version v ON v.id = c.current_version_id
+        """;
+
+    public async Task<IReadOnlyList<FamixaCharacterRow>> ListFamixaCharactersAsync(CancellationToken ct)
+    {
+        var sql = FamixaCharacterSelect + " ORDER BY c.character_code";
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        var rows = await conn.QueryAsync<FamixaCharacterRow>(sql);
+        return rows.ToList();
+    }
+
+    public async Task<FamixaCharacterRow?> GetFamixaCharacterAsync(string code, CancellationToken ct)
+    {
+        var sql = FamixaCharacterSelect + " WHERE c.character_code = @Code";
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<FamixaCharacterRow>(sql, new { Code = code });
+    }
+
+    public async Task<FamixaCharacterRow> InsertFamixaCharacterAsync(
+        Guid id,
+        Guid versionId,
+        string code,
+        string name,
+        string role,
+        string universe,
+        string visual,
+        string canonJson,
+        string era,
+        CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.famixa_character (
+                id, character_code, name, role, universe, visual, lifecycle,
+                current_version_id, current_era, created_at, updated_at)
+            VALUES (
+                @Id, @Code, @Name, @Role, @Universe, @Visual, 'draft',
+                @VersionId, @Era, NOW(), NOW());
+            INSERT INTO pack_content.famixa_character_version (
+                id, character_id, version, era, status, is_current_canon, canon_json, created_at)
+            VALUES (
+                @VersionId, @Id, 'V1', @Era, 'draft', TRUE, CAST(@CanonJson AS jsonb), NOW());
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = id,
+            VersionId = versionId,
+            Code = code,
+            Name = name,
+            Role = role,
+            Universe = universe,
+            Visual = visual,
+            Era = string.IsNullOrWhiteSpace(era) ? "A11" : era.Trim().ToUpperInvariant(),
+            CanonJson = string.IsNullOrWhiteSpace(canonJson) ? "{}" : canonJson,
+        });
+        return (await GetFamixaCharacterAsync(code, ct))!;
+    }
+
+    public sealed class FamixaAuditRow
+    {
+        public Guid Id { get; set; }
+        public string CharacterCode { get; set; } = "";
+        public string Version { get; set; } = "V1";
+        public string FieldChanged { get; set; } = "";
+        public string? OldValue { get; set; }
+        public string? NewValue { get; set; }
+        public string? ChangedBy { get; set; }
+        public DateTimeOffset ChangedAt { get; set; }
+        public string? Reason { get; set; }
+        public string? Approval { get; set; }
+    }
+
+    public sealed class FamixaVersionRow
+    {
+        public Guid Id { get; set; }
+        public string Version { get; set; } = "V1";
+        public string Era { get; set; } = "A11";
+        public string Status { get; set; } = "draft";
+        public bool IsCurrentCanon { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+    }
+
+    public async Task InsertFamixaAuditAsync(
+        Guid id,
+        Guid characterId,
+        string code,
+        string version,
+        string field,
+        string? oldValue,
+        string? newValue,
+        string? actor,
+        string? reason,
+        string? approval,
+        CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.famixa_character_audit (
+                id, character_id, character_code, version, field_changed, old_value, new_value,
+                changed_by, changed_at, reason, approval)
+            VALUES (
+                @Id, @CharacterId, @Code, @Version, @Field, @OldValue, @NewValue,
+                @Actor, NOW(), @Reason, @Approval);
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = id,
+            CharacterId = characterId,
+            Code = code,
+            Version = version,
+            Field = field,
+            OldValue = oldValue,
+            NewValue = newValue,
+            Actor = actor,
+            Reason = reason,
+            Approval = approval,
+        });
+    }
+
+    public async Task<IReadOnlyList<FamixaAuditRow>> ListFamixaAuditAsync(string code, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT id AS Id, character_code AS CharacterCode, version AS Version,
+                   field_changed AS FieldChanged, old_value AS OldValue, new_value AS NewValue,
+                   changed_by AS ChangedBy, changed_at AS ChangedAt, reason AS Reason, approval AS Approval
+            FROM pack_content.famixa_character_audit
+            WHERE character_code = @Code
+            ORDER BY changed_at DESC
+            LIMIT 200;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        var rows = await conn.QueryAsync<FamixaAuditRow>(sql, new { Code = code });
+        return rows.ToList();
+    }
+
+    public async Task<IReadOnlyList<FamixaVersionRow>> ListFamixaVersionsAsync(string code, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT v.id AS Id, v.version AS Version, v.era AS Era, v.status AS Status,
+                   v.is_current_canon AS IsCurrentCanon, v.created_at AS CreatedAt
+            FROM pack_content.famixa_character_version v
+            JOIN pack_content.famixa_character c ON c.id = v.character_id
+            WHERE c.character_code = @Code
+            ORDER BY v.created_at;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        var rows = await conn.QueryAsync<FamixaVersionRow>(sql, new { Code = code });
+        return rows.ToList();
+    }
+
+    public async Task<FamixaCharacterRow> InsertFamixaVersionAsync(
+        Guid versionId,
+        string code,
+        string version,
+        string era,
+        string canonJson,
+        CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.famixa_character_version v
+            SET is_current_canon = FALSE
+            FROM pack_content.famixa_character c
+            WHERE v.character_id = c.id AND c.character_code = @Code;
+            INSERT INTO pack_content.famixa_character_version (
+                id, character_id, version, era, status, is_current_canon, canon_json, created_at)
+            SELECT @VersionId, c.id, @Version, @Era, 'draft', TRUE, CAST(@CanonJson AS jsonb), NOW()
+            FROM pack_content.famixa_character c
+            WHERE c.character_code = @Code;
+            UPDATE pack_content.famixa_character
+            SET current_version_id = @VersionId, current_era = @Era, lifecycle = 'designing', updated_at = NOW()
+            WHERE character_code = @Code;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            VersionId = versionId,
+            Code = code,
+            Version = version,
+            Era = string.IsNullOrWhiteSpace(era) ? "A11" : era.Trim().ToUpperInvariant(),
+            CanonJson = string.IsNullOrWhiteSpace(canonJson) ? "{}" : canonJson,
+        });
+        return (await GetFamixaCharacterAsync(code, ct))!;
+    }
+
+    public async Task<FamixaCharacterRow> UpdateFamixaCanonAsync(
+        string code,
+        string canonJson,
+        string lifecycle,
+        string versionStatus,
+        DateTimeOffset? approvedAt,
+        string? approvedBy,
+        CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.famixa_character
+            SET lifecycle = @Lifecycle, updated_at = NOW()
+            WHERE character_code = @Code;
+            UPDATE pack_content.famixa_character_version v
+            SET canon_json = CAST(@CanonJson AS jsonb),
+                status = @VersionStatus,
+                approved_at = @ApprovedAt,
+                approved_by = @ApprovedBy
+            FROM pack_content.famixa_character c
+            WHERE v.id = c.current_version_id AND c.character_code = @Code;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Code = code,
+            CanonJson = string.IsNullOrWhiteSpace(canonJson) ? "{}" : canonJson,
+            Lifecycle = lifecycle,
+            VersionStatus = versionStatus,
+            ApprovedAt = approvedAt,
+            ApprovedBy = approvedBy,
+        });
+        return (await GetFamixaCharacterAsync(code, ct))!;
+    }
+
+    public sealed class VideoProjectRow
+    {
+        public Guid Id { get; set; }
+        public string ProjectCode { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string BrandCode { get; set; } = "";
+        public string Status { get; set; } = "draft";
+        public string VisualJson { get; set; } = "{}";
+        public string RulesJson { get; set; } = "{}";
+    }
+
+    public sealed class VideoUniverseRow
+    {
+        public Guid Id { get; set; }
+        public Guid ProjectId { get; set; }
+        public string UniverseCode { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Status { get; set; } = "draft";
+        public string WorldJson { get; set; } = "{}";
+    }
+
+    public sealed class VideoProductionRow
+    {
+        public Guid Id { get; set; }
+        public Guid ProjectId { get; set; }
+        public string ProjectCode { get; set; } = "";
+        public Guid UniverseId { get; set; }
+        public string UniverseCode { get; set; } = "";
+        public string ProductionCode { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string State { get; set; } = "DRAFT";
+        public string RunStatus { get; set; } = "READY";
+        public Guid? SeriesBuildId { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+    }
+
+    public sealed class VideoShotStateRow
+    {
+        public string ShotCode { get; set; } = "";
+        public string State { get; set; } = "DRAFT";
+        public bool Failed { get; set; }
+        public string ExtraJson { get; set; } = "{}";
+    }
+
+    public async Task<IReadOnlyList<VideoProjectRow>> ListVideoProjectsAsync(CancellationToken ct)
+    {
+        const string sql = """
+            SELECT id AS Id, project_code AS ProjectCode, name AS Name, brand_code AS BrandCode,
+                   status AS Status, visual_json::text AS VisualJson, rules_json::text AS RulesJson
+            FROM pack_content.video_project
+            ORDER BY project_code;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<VideoProjectRow>(sql)).ToList();
+    }
+
+    public async Task<IReadOnlyList<VideoUniverseRow>> ListVideoUniversesAsync(CancellationToken ct)
+    {
+        const string sql = """
+            SELECT id AS Id, project_id AS ProjectId, universe_code AS UniverseCode, name AS Name,
+                   status AS Status, world_json::text AS WorldJson
+            FROM pack_content.video_universe
+            ORDER BY universe_code;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<VideoUniverseRow>(sql)).ToList();
+    }
+
+    public async Task<IReadOnlyList<VideoProductionRow>> ListVideoProductionsAsync(string? projectCode, CancellationToken ct)
+    {
+        var sql = """
+            SELECT p.id AS Id, p.project_id AS ProjectId, pr.project_code AS ProjectCode,
+                   p.universe_id AS UniverseId, u.universe_code AS UniverseCode,
+                   p.production_code AS ProductionCode, p.title AS Title, p.state AS State,
+                   p.run_status AS RunStatus, p.series_build_id AS SeriesBuildId, p.updated_at AS UpdatedAt
+            FROM pack_content.video_production p
+            JOIN pack_content.video_project pr ON pr.id = p.project_id
+            JOIN pack_content.video_universe u ON u.id = p.universe_id
+            """;
+        if (!string.IsNullOrWhiteSpace(projectCode))
+            sql += " WHERE pr.project_code = @Code";
+        sql += " ORDER BY p.updated_at DESC";
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<VideoProductionRow>(sql, new { Code = projectCode })).ToList();
+    }
+
+    public async Task<VideoProductionRow?> GetVideoProductionAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT p.id AS Id, p.project_id AS ProjectId, pr.project_code AS ProjectCode,
+                   p.universe_id AS UniverseId, u.universe_code AS UniverseCode,
+                   p.production_code AS ProductionCode, p.title AS Title, p.state AS State,
+                   p.run_status AS RunStatus, p.series_build_id AS SeriesBuildId, p.updated_at AS UpdatedAt
+            FROM pack_content.video_production p
+            JOIN pack_content.video_project pr ON pr.id = p.project_id
+            JOIN pack_content.video_universe u ON u.id = p.universe_id
+            WHERE p.id = @Id;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<VideoProductionRow>(sql, new { Id = id });
+    }
+
+    public async Task<IReadOnlyList<VideoShotStateRow>> ListVideoShotsAsync(Guid productionId, CancellationToken ct)
+    {
+        const string sql = """
+            SELECT shot_code AS ShotCode, state AS State, failed AS Failed,
+                   extra_json::text AS ExtraJson
+            FROM pack_content.video_shot_state
+            WHERE production_id = @Id
+            ORDER BY shot_code;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return (await conn.QueryAsync<VideoShotStateRow>(sql, new { Id = productionId })).ToList();
+    }
+
+    public async Task<VideoProductionRow> InsertVideoProductionAsync(
+        Guid id,
+        Guid projectId,
+        Guid universeId,
+        string code,
+        string title,
+        Guid? seriesBuildId,
+        CancellationToken ct)
+    {
+        const string sql = """
+            INSERT INTO pack_content.video_production (
+                id, project_id, universe_id, production_code, title, state, series_build_id, created_at, updated_at)
+            VALUES (@Id, @ProjectId, @UniverseId, @Code, @Title, 'DRAFT', @SeriesBuildId, NOW(), NOW());
+            INSERT INTO pack_content.video_production_event (id, production_id, from_state, to_state, reason)
+            VALUES (@EventId, @Id, NULL, 'DRAFT', 'create');
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = id,
+            EventId = Guid.NewGuid(),
+            ProjectId = projectId,
+            UniverseId = universeId,
+            Code = code,
+            Title = title,
+            SeriesBuildId = seriesBuildId,
+        });
+        return (await GetVideoProductionAsync(id, ct))!;
+    }
+
+    public async Task<VideoProductionRow> UpdateVideoProductionStateAsync(
+        Guid id,
+        string state,
+        string? actor,
+        string? reason,
+        string fromState,
+        CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.video_production SET state = @State, updated_at = NOW() WHERE id = @Id;
+            INSERT INTO pack_content.video_production_event (id, production_id, from_state, to_state, actor, reason)
+            VALUES (@EventId, @Id, @From, @State, @Actor, @Reason);
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = id,
+            EventId = Guid.NewGuid(),
+            State = state,
+            From = fromState,
+            Actor = actor,
+            Reason = reason,
+        });
+        return (await GetVideoProductionAsync(id, ct))!;
+    }
+
+    public async Task UpsertVideoShotStateAsync(
+        Guid productionId,
+        string shotCode,
+        string state,
+        bool failed,
+        CancellationToken ct,
+        string? extraJson = null)
+    {
+        const string sql = """
+            INSERT INTO pack_content.video_shot_state (id, production_id, shot_code, state, failed, extra_json, updated_at)
+            VALUES (@Id, @ProductionId, @ShotCode, @State, @Failed, COALESCE(@Extra::jsonb, '{}'::jsonb), NOW())
+            ON CONFLICT (production_id, shot_code) DO UPDATE
+            SET state = EXCLUDED.state,
+                failed = EXCLUDED.failed,
+                extra_json = CASE
+                    WHEN @Extra IS NULL THEN pack_content.video_shot_state.extra_json
+                    ELSE EXCLUDED.extra_json
+                END,
+                updated_at = NOW();
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new
+        {
+            Id = Guid.NewGuid(),
+            ProductionId = productionId,
+            ShotCode = shotCode,
+            State = state,
+            Failed = failed,
+            Extra = extraJson,
+        });
+    }
+
+    public async Task UpdateVideoProductionRunStatusAsync(Guid id, string runStatus, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.video_production
+            SET run_status = @Run, updated_at = NOW()
+            WHERE id = @Id;
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await conn.ExecuteAsync(sql, new { Id = id, Run = runStatus });
     }
 }

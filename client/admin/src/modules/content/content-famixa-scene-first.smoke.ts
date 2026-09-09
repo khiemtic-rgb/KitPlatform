@@ -16,6 +16,7 @@ import {
   prodGateState,
   sequentialKfIds,
   shotProdStatus,
+  actingBeatStillAction,
   compileShotSceneCard,
   compileShotStillMood,
   visibleFrameCast,
@@ -127,6 +128,16 @@ if (shotProdStatus({ ...state, sceneLocked: true }, shots[1]!) !== 'KF DRAFT') {
   fail.push('sceneLocked without take must stay KF DRAFT');
 }
 if (kfIsApprovedStill(state.runs.SH02!)) fail.push('draft must not be approved');
+if (
+  !kfIsApprovedStill({
+    status: 'keyframe_ready',
+    keyframeDataUrl: 'data:image/png;base64,aa',
+    kfApproved: true,
+    visualQa: { status: 'PENDING', hardFails: [], checks: {} },
+  })
+) {
+  fail.push('human kfApproved must win over PENDING QA');
+}
 if (!looksLikePackHeading('KHOE BÀI TRONG VỠ ÒA (0–6s)')) fail.push('pack title with duration is not Action');
 if (
   shotProdStatus(
@@ -260,6 +271,55 @@ const namCard = compileShotSceneCard(state, namShot, shots[1]!);
 if (!/Nam/i.test(namCard.spoken) || !/Anh về rồi/i.test(namCard.oneLiner)) fail.push(`card ${namCard.oneLiner}`);
 if (/Anh về rồi/i.test(namCard.stillAction)) fail.push('still prompt must not include spoken line (Gemini paints captions)');
 if (!/Nam/i.test(namCard.stillAction)) fail.push('still prompt must keep speaker name');
+const actingEnter = shot({
+  id: 'SH-ACT-ENTER',
+  story: 'Minh bước vào nhà, mẹ đang lau bàn.',
+  actingBeat: {
+    before: {
+      action: 'Minh walks in from outside, face toward mother.',
+      body: 'He steps through the doorway inward.',
+      gaze: 'Looks at his mother, not the camera.',
+      room: 'Only two people in the room.',
+      holdSec: 0.2,
+    },
+    during: { speech: true, emotion: 'neutral' },
+    after: { holdSec: 0.22 },
+  },
+});
+const actingPlain = shot({ id: 'SH-ACT-PLAIN', story: 'Minh bước vào nhà, mẹ đang lau bàn.' });
+if (!/walks in from outside|face toward mother/i.test(actingBeatStillAction(actingEnter))) {
+  fail.push('actingBeatStillAction must read before.action');
+}
+const actingHold = shot({
+  id: 'SH-ACT-HOLD',
+  story: 'Minh vừa vào nhà, đứng đối diện mẹ đang lau bàn.',
+  actingBeat: {
+    before: {
+      action: 'Minh vừa vào nhà, đứng đối diện mẹ đang lau bàn.',
+      body: 'Minh bước vào rồi đứng lại. Linh đứng ở bàn, không ra cửa.',
+      gaze: 'Minh ngẩng nhìn Linh',
+      room: 'Linh ở bàn ăn. Minh trong nhà, không đứng cửa.',
+      holdSec: 0.2,
+    },
+    during: { speech: true, emotion: 'neutral' },
+    after: { holdSec: 0.22 },
+  },
+});
+if (!/Already inside|standing still|Not walking/i.test(actingBeatStillAction(actingHold))) {
+  fail.push('hold body still action is arrived, not walk-in');
+}
+if (/walks in from outside|vừa vào nhà/i.test(actingBeatStillAction(actingHold))) {
+  fail.push('hold still action must drop enter locomotion');
+}
+const enterCard = compileShotSceneCard(state, actingEnter);
+const plainCard = compileShotSceneCard(state, actingPlain);
+if (!/walks in from outside|face toward mother/i.test(`${enterCard.stillAction} ${enterCard.visualSpec.shotAction}`)) {
+  fail.push('actingBeat must reach still action');
+}
+if (enterCard.visualSpec.shotAction === plainCard.visualSpec.shotAction) {
+  fail.push('actingBeat must change still shotAction');
+}
+if (enterCard.visualSpec.primary?.name !== 'Minh') fail.push('enter still primary is the arriving person');
 const glance = shot({
   id: 'SH01-09',
   story: 'Liếc nhìn con số 9 đúng nửa giây.',

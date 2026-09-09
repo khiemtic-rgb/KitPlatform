@@ -98,6 +98,19 @@ function packHeading(text: string) {
   return /^(tone|thời lượng|gấu nước|cold bucket|heading)\b/i.test(text.trim()) || /^[A-ZÀ-Ỹ0-9 \-]{6,}$/.test(text.trim());
 }
 
+function paperGlanceCue(t: string) {
+  return /liếc|con số|nhìn xuống.*điểm|nhìn con số|9\/10/i.test(t);
+}
+
+function paperInsertCue(t: string) {
+  return /đặt xuống|cận tờ|cận bài|insert|tờ bài kiểm/i.test(t) && !/đưa|khoe|chia bài/i.test(t);
+}
+
+/** Receive / look-into-eyes stays a two-person shot. INSERT only when the glance at the score is the whole beat. */
+export function twoPersonLookBeat(t: string) {
+  return /đón lấy|nhìn thẳng vào mắt|vào mắt con|nhìn vào mắt|đưa.+cho mẹ|mẹ.+đón|hai người|đối diện/i.test(t);
+}
+
 export function framingFromAction(
   action: string,
   spoken = '',
@@ -106,8 +119,7 @@ export function framingFromAction(
 ): ShotFraming {
   const t = `${action} ${spoken}`.replace(/\s+/g, ' ').trim();
   let next: ShotFraming = 'MEDIUM';
-  if (/liếc|con số|nhìn xuống.*điểm|nhìn con số|9\/10/i.test(t)) next = 'INSERT';
-  else if (/đặt xuống|cận tờ|cận bài|insert|tờ bài kiểm/i.test(t) && !/đưa|khoe|chia bài/i.test(t)) next = 'INSERT';
+  if ((paperGlanceCue(t) || paperInsertCue(t)) && !twoPersonLookBeat(t)) next = 'INSERT';
   else if (/bước vào|chạy vào|vào nhà|về nhà|toàn cảnh|establishing|cửa chính/i.test(t)) next = 'WIDE';
   else if (/quay đi|bước ra|rời khỏi/i.test(t)) next = 'WIDE';
   else if (/không đổi biểu cảm|giữ nét|không phản ứng/i.test(t)) next = 'CU';
@@ -129,6 +141,25 @@ export function shouldAttachPrevKf(prev?: ShotFraming, next?: ShotFraming) {
   if (next === 'CU' || next === 'ECU' || next === 'INSERT') return false;
   if (prev === 'CU' || prev === 'ECU' || prev === 'INSERT') return false;
   return prev === next;
+}
+
+/** Director remake — text only. Do not attach the rejected still (Gemini copies it). */
+export function remakeStillCorrection(spec: VisualSpec) {
+  const who = spec.primary?.name || spec.subjectName || 'the arriving person';
+  const other = spec.secondary[0]?.name || spec.gazeTarget || 'the other person';
+  const blob = `${spec.purpose || ''} ${spec.shotAction || ''} ${spec.whyThisShot || ''}`;
+  const exchange = twoPersonLookBeat(blob);
+  const arrived = /already inside|standing still|đối diện|trong nhà|đứng lại|không di chuyển|stays in place/i.test(blob);
+  const pose = exchange
+    ? `${who} and ${other} already in the room, both full faces visible, looking at each other. Handheld paper is a small prop — do not cover either face. Do not paint a large number.`
+    : arrived
+      ? `${who} is already inside, full face toward ${other}, standing still.`
+      : `${who} is entering the room, full face toward ${other}.`;
+  return [
+    'Do not copy the previous still or take.',
+    pose,
+    'Forbidden: back of the head, walking out, backpack-only in the doorway, hidden arriving face, on-image text, captions, watermark.',
+  ].join(' ');
 }
 
 function person(id: string, name: string, role: VisualPerson['role'], face: VisualPerson['face'], body: string): VisualPerson {
@@ -158,10 +189,19 @@ export function deriveVisualSpec(opts: {
   const framing = framingFromAction(action || rawAction, spoken, speakers, opts.prevFraming);
   const insertScore = framing === 'INSERT' && /liếc|con số|9\/10|điểm|bài kiểm/i.test(`${action} ${spoken} ${rawAction}`);
   const holdFace = /không đổi biểu cảm|giữ nét|không phản ứng/i.test(`${rawAction} ${action}`);
+  const exchange = !insertScore && twoPersonLookBeat(`${action} ${spoken} ${rawAction}`);
   const speakerName = speakers[0] || names.find((n) => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(`${action} ${spoken}`));
+  const enterBlob = `${action} ${rawAction}`;
+  const entering = /bước vào|đi từ ngoài|walks? in|vào nhà|về nhà|\benter/i.test(enterBlob);
+  const enterName = entering
+    ? names.find((n) => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(enterBlob))
+    : undefined;
+  const namedInAction = names.find((n) => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(action));
+  const motherInCast = names.find((n) => /linh|^mẹ$|mother/i.test(n));
+  const motherLed = /người mẹ|\bmẹ\b|\bmother\b/i.test(`${action} ${rawAction}`);
   const subjectName = insertScore
     ? 'Test paper'
-    : speakerName || names.find((n) => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(action)) || names[0] || 'Minh';
+    : enterName || speakerName || namedInAction || (motherLed && motherInCast ? motherInCast : undefined) || names[0] || 'Minh';
   const subjectIdx = Math.max(0, names.findIndex((n) => n === subjectName));
   const subjectKind: 'character' | 'prop' = insertScore ? 'prop' : 'character';
 
@@ -187,12 +227,13 @@ export function deriveVisualSpec(opts: {
       .map((n, i) => {
         const speaking = speakers.some((s) => s.toLowerCase() === n.toLowerCase());
         const tight = framing === 'CU' || framing === 'ECU' || framing === 'MCU';
+        const bothFaces = exchange && !tight;
         return person(
           ids[names.indexOf(n)] || `CHAR-00${i + 2}`,
           n,
           'secondary',
-          speaking && !tight ? 'full' : 'partial',
-          speaking ? 'upper body' : tight ? 'partial foreground / shoulder' : 'background / partial',
+          bothFaces || (speaking && !tight) ? 'full' : 'partial',
+          bothFaces ? 'upper body' : speaking ? 'upper body' : tight ? 'partial foreground / shoulder' : 'background / partial',
         );
       });
   }
@@ -205,6 +246,12 @@ export function deriveVisualSpec(opts: {
   } else if (primary) {
     required.push({ id: 'primary-face', label: `${primary.name} full face`, hard: true });
     required.push({ id: 'primary-eyes', label: `${primary.name} eyes visible`, hard: true });
+    if (exchange) {
+      for (const p of secondary.filter((x) => x.face === 'full')) {
+        required.push({ id: `face-${p.id}`, label: `${p.name} full face`, hard: true });
+      }
+      required.push({ id: 'paper-prop', label: 'Paper stays a small handheld prop — never covers a face', hard: true });
+    }
   }
   if (opts.location && framing !== 'INSERT') required.push({ id: 'place', label: opts.location.slice(0, 48), hard: true });
   if ((opts.lighting || /tối|dim|evening/i.test(action)) && framing !== 'INSERT') {
@@ -259,23 +306,38 @@ export function deriveVisualSpec(opts: {
     : holdFace
       ? `Audience must see ${subjectName} stand still and look at ${other || 'mother'} — face visible, gaze off-lens.`
       : framing === 'WIDE'
-        ? `Audience must see ${subjectName} in the room — doorway and space, not a portrait into camera.`
+        ? entering
+          ? `Audience must see ${subjectName} entering the room, face toward ${other || 'the other person'} — not the back of the head, not leaving.`
+          : `Audience must see ${subjectName} in the room — doorway and space, not a portrait into camera.`
         : framing === 'OTS'
           ? `Audience must see ${subjectName} over ${other || 'the other'}'s shoulder — ${subjectName} face visible, looking at them.`
           : framing === 'CU' || framing === 'ECU'
             ? `Audience must read ${subjectName}'s face on this beat — gaze toward ${gazeTarget || 'the other person'}, never the lens.`
-            : `Audience must see ${shotAction.slice(0, 110)} Face visible. Gaze toward ${gazeTarget || 'the other person'}, not the camera.`;
+            : exchange
+              ? `Audience must see ${subjectName} and ${other || 'the other person'} in the same frame — both faces readable, looking at each other. The paper is a handheld prop, not the shot.`
+              : `Audience must see ${shotAction.slice(0, 110)} Face visible. Gaze toward ${gazeTarget || 'the other person'}, not the camera.`;
   const intent = purpose;
   const focus = insertScore ? 'Test paper / score 9' : subjectName;
   const forbidden = [
     'New character',
     'New background',
     'Different wardrobe',
+    ...(entering
+      ? [
+          'Back of the arriving person\'s head',
+          'Walking out through the doorway',
+          'Only a backpack in the doorway',
+          'Arriving face hidden',
+        ]
+      : []),
     ...(framing === 'INSERT' || framing === 'CU' || framing === 'ECU'
       ? ['Full-body wide shot', 'Two-shot of both people', 'Whole dining room']
       : framing === 'MCU' || framing === 'OTS'
         ? ['Full body both people', 'Wide dining table']
         : []),
+    ...(exchange
+      ? ['Paper covering a face', 'Giant painted score', 'One person holding a sign over their face']
+      : []),
   ];
   const prev = (opts.prevAction || '').replace(/\s+/g, ' ').trim();
   const inheritFromPrev = prev
@@ -294,7 +356,9 @@ export function deriveVisualSpec(opts: {
         ? 'Wide room. Bodies readable. Do not crop heads. Show entry / space.'
       : framing === 'OTS'
         ? `Camera behind ${other || 'secondary'}'s shoulder. ${subjectName} face visible beyond it, looking at ${other || 'them'}. ${other || 'Secondary'} face not required. Do not flatten into an even two-shot.`
-        : `${subjectName} occupies approximately 60–70% of frame, upper body, full face visible. ${other ? `${other}: foreground shoulder / partial — face not required.` : ''} Gaze toward ${gazeTarget || other || 'the other person'}, never the lens.`;
+        : exchange
+          ? `Two-shot. ${subjectName} and ${other || 'the other person'} both in frame, both full faces visible. ${subjectName} holds the paper at chest height as a small prop. Both look at each other, never the lens. Never cover a face with the paper. Do not paint letters or a large 9.`
+          : `${subjectName} occupies approximately 60–70% of frame, upper body, full face visible. ${other ? `${other}: foreground shoulder / partial — face not required.` : ''} Gaze toward ${gazeTarget || other || 'the other person'}, never the lens.`;
   const lens =
     opts.lens ||
     (framing === 'INSERT' || framing === 'ECU' ? '85mm' : framing === 'CU' || framing === 'MCU' ? '50mm' : framing === 'WIDE' ? '35mm' : '40mm');
@@ -352,19 +416,27 @@ export function canonIdsForSpec(spec: VisualSpec, castIds: string[]) {
 /** Short English order Gemini can draw. Goes first in the still prompt. */
 export function compileGeminiStillBrief(spec: VisualSpec) {
   const sec = spec.secondary[0];
+  const twoShot = spec.subjectKind !== 'prop' && spec.secondary.some((p) => p.face === 'full');
+  const who = spec.primary?.name || spec.subjectName;
   const draw =
     spec.subjectKind === 'prop'
-      ? `DRAW: photoreal INSERT. The ${spec.subjectName} fills the frame. ${sec ? `${sec.name} only as ${sec.body}.` : ''}`
-      : `DRAW: photoreal ${spec.shotType}. ${spec.primary?.name || spec.subjectName} is the only full person.`;
+      ? `DRAW: stylized cinematic INSERT. The ${spec.subjectName} fills the frame. ${sec ? `${sec.name} only as ${sec.body}.` : ''}`
+      : twoShot
+        ? `DRAW: stylized cinematic two-shot. ${who} and ${sec?.name} both stand in frame as complete people, both full faces visible.`
+        : `DRAW: stylized cinematic ${spec.shotType}. ${who} is the only full person.`;
   const must =
     spec.subjectKind === 'prop'
       ? `MUST SEE: ${spec.purpose}`
-      : `MUST SEE: ${spec.primary?.name || spec.subjectName} full face (forehead to chin) + this Action: ${spec.shotAction}`;
+      : twoShot
+        ? `MUST SEE: ${who} and ${sec?.name} full faces (forehead to chin) + this Action: ${spec.shotAction}. Paper is a small handheld prop — never a mask.`
+        : `MUST SEE: ${who} full face (forehead to chin) + this Action: ${spec.shotAction}`;
   const secLine = spec.subjectKind === 'prop'
     ? ''
-    : sec
-      ? `SECONDARY: ${sec.name} — ${sec.body}. Face ${sec.face}. Do not force a two-shot.`
-      : 'SECONDARY: none.';
+    : twoShot && sec
+      ? `SECONDARY: ${sec.name} — ${sec.body}. Face full, required. This is a two-shot.`
+      : sec
+        ? `SECONDARY: ${sec.name} — ${sec.body}. Face ${sec.face}. Do not force a two-shot.`
+        : 'SECONDARY: none.';
   return [
     'GEMINI STILL — ONE FRAME (follow this first)',
     draw,
@@ -409,9 +481,11 @@ export function compileVisualPrompt(spec: VisualSpec) {
     spec.inheritFromPrev || '',
     spec.framing === 'INSERT'
       ? 'INSERT: do not reframe as a two-shot. The required prop is the subject. Faces may be cropped to eyes/hands.'
-      : spec.framing !== 'WIDE' && spec.framing !== 'ESTABLISHING'
-        ? 'Do not force a full-body two-shot. Keep the primary subject; secondary may be partial.'
-        : '',
+      : spec.secondary.some((p) => p.face === 'full') && spec.framing === 'MEDIUM'
+        ? 'Two-shot lock: both named people stay in frame with readable faces. Handheld paper is a small prop. Never cover a face. Do not paint letters or a large score.'
+        : spec.framing !== 'WIDE' && spec.framing !== 'ESTABLISHING'
+          ? 'Do not force a full-body two-shot. Keep the primary subject; secondary may be partial.'
+          : '',
     'FACE VISIBLE: if a character face is required, reject a still with a missing, cropped, back-turned, or unreadable face. They must not look into the lens.',
     'HARD CONTINUITY: same faces, hair, age, wardrobe, people count, place, time, key prop. SOFT: expression, pose, camera, gaze may change with Action.',
     spec.overlay ? `Narrative mark "${spec.overlay.text}" may be added by KIT overlay — do not paint warped letters.` : '',

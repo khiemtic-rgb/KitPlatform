@@ -2,6 +2,7 @@ import {
   buildAssembleTimeline,
   formatSrt,
   looksLikeVideoUrl,
+  hardCutPlayableSec,
   existingTakesReady,
   planWithExistingTakes,
   planCompleteCut,
@@ -168,6 +169,12 @@ if (buildAssembleTimeline(planWithExistingTakes(flagOnly), { hasVoiceFile: () =>
 if (!/HOLD|không bỏ|không cắt/i.test(assembleConfirmCopy(planCompleteCut(mixed)).detail)) {
   fail.push('confirm must keep failed I2V as HOLD, not skip');
 }
+
+if (hardCutPlayableSec(Number.POSITIVE_INFINITY, 5) !== 5) fail.push('Infinity metadata → I2V cap');
+if (hardCutPlayableSec(35, 5) !== 5) fail.push('padded mix → I2V cap');
+if (hardCutPlayableSec(4.8, 5) !== 4.8) fail.push('short take keeps real length');
+if (hardCutPlayableSec(5.04, 5) !== 5) fail.push('5.04 take caps at 5');
+if (hardCutPlayableSec(Number.NaN, 10) !== 10) fail.push('NaN → 10s cap');
 
 if (!looksLikeVideoUrl('https://dncdn.runwayml.com/generations/abc')) fail.push('runway url without suffix');
 if (!looksLikeVideoUrl('https://cdn.example.com/a.mp4?x=1')) fail.push('mp4 query');

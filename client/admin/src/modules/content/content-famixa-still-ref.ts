@@ -108,6 +108,18 @@ export function aspectMismatch(srcW: number, srcH: number, destW: number, destH:
   return Math.abs(srcA - destA) / destA > slack;
 }
 
+/** Bottom brand mark on stills — Runway I2V often BAD_OUTPUT on readable type or a painted bar. */
+export function brandMarkCoverRect(w: number, h: number) {
+  const band = Math.max(36, Math.round(h * 0.11));
+  return { x: 0, y: Math.max(0, h - band), w, h: Math.min(band, h) };
+}
+
+function coverBrandMark(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const box = brandMarkCoverRect(w, h);
+  const keepH = Math.max(1, h - box.h);
+  ctx.drawImage(ctx.canvas, 0, 0, w, keepH, 0, 0, w, h);
+}
+
 export async function prepareRunwayKf(url: string, ratio?: string, opts?: { people?: number; faceSafe?: boolean }): Promise<string> {
   const src = (url ?? '').trim();
   if (!src.startsWith('data:image')) {
@@ -117,9 +129,6 @@ export async function prepareRunwayKf(url: string, ratio?: string, opts?: { peop
   const { width: dw, height: dh } = runwayFrameSize(ratio);
   const sw = img.naturalWidth || 1;
   const sh = img.naturalHeight || 1;
-  if (isJpegDataUri(src) && pixelsMatchRunway(sw, sh, ratio) && src.length >= 800 && src.length <= RUNWAY_KF_MAX_CHARS) {
-    return src;
-  }
   const canvas = document.createElement('canvas');
   canvas.width = dw;
   canvas.height = dh;
@@ -134,6 +143,7 @@ export async function prepareRunwayKf(url: string, ratio?: string, opts?: { peop
     const crop = coverCropRect(sw, sh, dw, dh);
     ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, dw, dh);
   }
+  coverBrandMark(ctx, dw, dh);
   for (const q of [0.92, 0.88, 0.82, 0.7]) {
     const out = canvas.toDataURL('image/jpeg', q);
     if (out.length >= 800 && out.length <= RUNWAY_KF_MAX_CHARS) return out;

@@ -28,6 +28,8 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5290',
         changeOrigin: true,
+        timeout: 1_080_000,
+        proxyTimeout: 1_080_000,
       },
       '/uploads': {
         target: 'http://localhost:5290',

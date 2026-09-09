@@ -19,8 +19,15 @@ export function ContentLayout() {
   useRegisterModuleSubnav(null, '', () => undefined);
 
   useEffect(() => {
-    if (!isAdmin || (platformLoaded && !moduleOk)) navigate('/', { replace: true });
-  }, [isAdmin, moduleOk, navigate, platformLoaded]);
+    if (!isAdmin) {
+      navigate('/', { replace: true });
+      return;
+    }
+    if (platformLoaded && !moduleOk) {
+      if (isModuleEnabled('kit_sales')) navigate('/kit-sales', { replace: true });
+      else navigate('/', { replace: true });
+    }
+  }, [isAdmin, isModuleEnabled, moduleOk, navigate, platformLoaded]);
 
   useEffect(() => {
     if (location.pathname === '/content' || location.pathname === '/content/') {

@@ -119,6 +119,9 @@ internal static class ContentAiConfigParser
         if (m.StartsWith("models/", StringComparison.OrdinalIgnoreCase))
             m = m["models/".Length..];
         if (m.Length == 0) return "gemini-3.6-flash";
+        if (m.Equals("gemini-2.5-flash-lite", StringComparison.OrdinalIgnoreCase)
+            || m.Equals("gemini-2.0-flash-lite", StringComparison.OrdinalIgnoreCase))
+            return "gemini-3.5-flash-lite";
         if (m.Equals("gemini-2.5-flash", StringComparison.OrdinalIgnoreCase)
             || m.Equals("gemini-2.0-flash", StringComparison.OrdinalIgnoreCase)
             || m.Equals("gemini-2.0-flash-001", StringComparison.OrdinalIgnoreCase)

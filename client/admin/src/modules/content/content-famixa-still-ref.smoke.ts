@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   aspectMatchesRunway,
+  brandMarkCoverRect,
   containDrawRect,
   coverCropRect,
   pixelsMatchRunway,
@@ -38,6 +42,15 @@ if (shouldContainFit(1344, 768, 720, 1280, 1)) fail.push('1 person may still cov
 const box = containDrawRect(1344, 768, 720, 1280);
 if (box.dw > 720 || box.dh > 1280) fail.push('contain must fit inside dest');
 if (box.dw < 700) fail.push('landscape contain in 9:16 keeps full width');
+const mark = brandMarkCoverRect(1280, 720);
+if (mark.x !== 0 || mark.w !== 1280) fail.push('brand cover is full bottom width');
+if (mark.y + mark.h !== 720) fail.push('brand cover reaches bottom edge');
+if (mark.h < 36) fail.push('brand cover too thin for FAMIXA mark');
+const stillSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'content-famixa-still-ref.ts'), 'utf8');
+const prep = stillSrc.slice(stillSrc.indexOf('export async function prepareRunwayKf'), stillSrc.indexOf('export async function measureKfImage'));
+if (!prep.includes('coverBrandMark(ctx, dw, dh)') || /isJpegDataUri[\s\S]*return src/.test(prep)) {
+  fail.push('prepareRunwayKf must cover brand mark — no raw 1280 JPEG pass-through');
+}
 
 setTimeout(() => {
   if (fail.length) {

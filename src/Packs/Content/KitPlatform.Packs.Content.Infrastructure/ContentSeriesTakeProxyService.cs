@@ -32,7 +32,7 @@ internal sealed class ContentSeriesTakeProxyService : IContentSeriesTakeProxySer
         using var res = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         if (!res.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Không tải được take ({(int)res.StatusCode}). Link Runway có thể hết hạn — gửi lại clip.");
+            throw new InvalidOperationException($"Không tải được take ({(int)res.StatusCode}). Link Runway hết hạn. Hỏi lại task cũ · 0 cr — không tạo video mới.");
         }
 
         var type = res.Content.Headers.ContentType?.MediaType ?? "video/mp4";

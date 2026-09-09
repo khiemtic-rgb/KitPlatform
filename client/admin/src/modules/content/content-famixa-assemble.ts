@@ -216,6 +216,7 @@ export function completeCutReady(plan: PreviewCutPlan) {
   return plan.items.length > 0 && plan.items.every((i) => i.hasVideo || i.hasKf);
 }
 
+/** DEPRECATED for Final. PREVIEW_ONLY / NOT_ELIGIBLE_FOR_FINAL. Canonical assemble blocks these. */
 export function assembleNeedTtsOverlay(plan: PreviewCutPlan) {
   return plan.items.filter((i) => !i.silent && !i.hasLipsyncFile);
 }
@@ -243,6 +244,14 @@ export function assembleConfirmCopy(plan: PreviewCutPlan) {
         : `Ghép tập hoàn chỉnh · ${plan.items.length} shot + thoại`,
     detail: bits.join(' '),
   };
+}
+
+/** Playable length for a hard cut. Drops padded mix / Infinity metadata — never hold a still. */
+export function hardCutPlayableSec(reported: number, cap: number) {
+  const max = Math.min(20, Math.max(0.4, cap));
+  if (!Number.isFinite(reported) || reported <= 0) return max;
+  if (reported > max + 0.45) return max;
+  return Math.min(reported, max);
 }
 
 /** Runway/Fal links often have no .mp4 suffix — still playable. */

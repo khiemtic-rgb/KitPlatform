@@ -287,6 +287,60 @@ export function formatExactRequest(req: RunwayExactRequest) {
   );
 }
 
+function isFailedGenerationAttempt(a: {
+  fingerprint?: string;
+  status?: string;
+  failureCode?: string;
+  taskId?: string;
+  promptHash?: string;
+}) {
+  return (
+    Boolean(a.taskId?.trim()) &&
+    (/INTERNAL|BAD_OUTPUT/i.test(`${a.failureCode || ''} ${a.status || ''}`) || /FAIL/i.test(a.status || ''))
+  );
+}
+
+/** Prompt half of a failed job fingerprint — source KF hash may differ from the sent JPEG. */
+export function failedRequestPromptHash(run?: {
+  runwayAttempts?: { fingerprint?: string; status?: string; failureCode?: string; taskId?: string; promptHash?: string }[];
+}) {
+  const failedAtt = [...(run?.runwayAttempts ?? [])].reverse().find(isFailedGenerationAttempt);
+  return (failedAtt?.fingerprint || '').split('|')[1] || failedAtt?.promptHash || '';
+}
+
+export function failedRequestPromptHashes(run?: {
+  runwayAttempts?: { fingerprint?: string; status?: string; failureCode?: string; taskId?: string; promptHash?: string }[];
+}) {
+  return (run?.runwayAttempts ?? [])
+    .filter(isFailedGenerationAttempt)
+    .map((a) => (a.fingerprint || '').split('|')[1] || a.promptHash || '')
+    .filter(Boolean);
+}
+
+export function samePromptAsFailedRequest(
+  run: {
+    runwayAttempts?: { fingerprint?: string; status?: string; failureCode?: string; taskId?: string; promptHash?: string }[];
+  },
+  promptHash?: string,
+) {
+  if (!promptHash) return false;
+  return failedRequestPromptHashes(run).includes(promptHash);
+}
+
+/** Prompt reuse lock only on the failed source KF. A new still must not inherit old camera slots. */
+export function promptUsedOnCurrentKf(
+  run: {
+    failedKfHash?: string;
+    runwayAttempts?: { fingerprint?: string; status?: string; failureCode?: string; taskId?: string; promptHash?: string }[];
+  },
+  promptHash: string | undefined,
+  sourceKfHash: string | undefined,
+) {
+  if (!promptHash || !sourceKfHash) return false;
+  if (!run.failedKfHash || run.failedKfHash !== sourceKfHash) return false;
+  return samePromptAsFailedRequest(run, promptHash);
+}
+
 export function sameRequestBlocked(
   run: {
     runwayAttempts?: { fingerprint?: string; status?: string; failureCode?: string; taskId?: string }[];

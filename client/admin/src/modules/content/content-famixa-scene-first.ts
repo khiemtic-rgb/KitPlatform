@@ -13,6 +13,7 @@ import { linesForShot } from './content-famixa-dialogue-map';
 import { displayCanonName, isOffFrameCanon } from './content-famixa-char-canon';
 import { isMetaSpeakerName } from './content-famixa-story-parse';
 import { estimateSpokenSec, deriveVoiceScript } from './content-famixa-voice-script';
+import { applyTimingToShot, buildV3ShotTiming, shotHasMeasuredVoice } from './famixa-shot-production-timing';
 import type { AssembleTimeline } from './content-famixa-assemble';
 import { finalSourceBlockReason, resolveFinalSource } from './content-famixa-final-source';
 import {
@@ -239,8 +240,8 @@ export function kfHasPixels(run: SeriesShotRun) {
 /** Explicit duyệt + Image QA PASS (hard OK + quality ≥85). Legacy without visualQa still uses kfApproved. */
 export function kfIsApprovedStill(run: SeriesShotRun) {
   if (!kfHasPixels(run)) return false;
-  if (run.visualQa && !visualQaAllowsApprove(run.visualQa)) return false;
   if (run.kfApproved === true) return true;
+  if (run.visualQa && !visualQaAllowsApprove(run.visualQa)) return false;
   if (run.kfApproved === false) return false;
   return Boolean(run.continuity && Object.values(run.continuity).some(Boolean));
 }
@@ -421,6 +422,29 @@ export function compileShotStillMood(state: SeriesPilotState, shot: FamixaSeries
     .join(' ');
 }
 
+/** Director actingBeat blocking — still compiler reads this. I2V already has its own path. */
+export function actingBeatStillAction(shot: FamixaSeriesShot) {
+  const before = shot.actingBeat?.before;
+  if (!before) return '';
+  const hold = /stays in place|adjusts (?:his |her )?posture|không di chuyển|đứng lại|không ra cửa|hơi điều chỉnh/i.test(
+    before.body || '',
+  );
+  if (hold) {
+    return [
+      'Already inside the room, standing still, facing the other person. Not walking in or out.',
+      before.gaze,
+      before.room,
+    ]
+      .map((bit) => (bit || '').trim())
+      .filter(Boolean)
+      .join(' ');
+  }
+  return [before.action, before.body, before.gaze, before.room]
+    .map((bit) => (bit || '').trim())
+    .filter(Boolean)
+    .join(' ');
+}
+
 export function compileShotSceneCard(
   state: SeriesPilotState,
   shot: FamixaSeriesShot,
@@ -430,7 +454,9 @@ export function compileShotSceneCard(
   const lines = linesForShot(state, shot, script.lines).filter((l) => !isVoiceOnlyChar(l.characterId, l.name));
   const master = sceneMasterOf(state, sceneIdOfShot(shot));
   const cast = visibleFrameCast(state, shot, prevShot);
-  const action = effectiveShotAction(shot, shotRunOf(state, shot));
+  const action = [effectiveShotAction(shot, shotRunOf(state, shot)), actingBeatStillAction(shot)]
+    .filter(Boolean)
+    .join(' ');
   const speakerNames = lines
     .filter((l) => !isOffFrameChar(l.characterId, l.name))
     .map((l) => (l.name || l.characterId || '').trim())
@@ -482,7 +508,9 @@ export function compileShotSceneCard(
       : visualSpec.primary
         ? `PRIMARY FACE VISIBLE: ${visualSpec.primary.name} full face, looking at ${visualSpec.gazeTarget || 'the other person'}, never the lens.${
             visualSpec.secondary[0]
-              ? ` SECONDARY ${visualSpec.secondary[0].name}: ${visualSpec.secondary[0].body} — face ${visualSpec.secondary[0].face}, not required unless spec says full.`
+              ? visualSpec.secondary[0].face === 'full'
+                ? ` SECONDARY ${visualSpec.secondary[0].name}: full face required, looking at the other person, never the lens.`
+                : ` SECONDARY ${visualSpec.secondary[0].name}: ${visualSpec.secondary[0].body} — face ${visualSpec.secondary[0].face}, not required unless spec says full.`
               : ''
           }`
         : '';
@@ -590,7 +618,7 @@ export function planEditSeconds(voiceSec: number, pauseSec = 0.2, actionSec = 0)
   return Math.round(raw * 10) / 10;
 }
 
-/** Runway gen4_turbo only accepts 5 or 10. Assemble trims to edit. */
+/** Runway gen4_turbo only accepts 5 or 10. Assemble trims to production, not this. */
 export function i2vSecondsForEdit(editSec: number): 5 | 10 {
   return editSec > 5.5 ? 10 : 5;
 }
@@ -612,15 +640,18 @@ export function applyEditDurations(
         const run = shotRunOf(state, s);
         if (!shotHasValidAction(s, run) || run.prodSkip) return s;
         const lines = linesForShot(state, s, script.lines);
-        let voice = 0;
-        let pause = 0.2;
-        for (const line of lines) {
-          voice += voiceSecOf?.(line.id) || state.voiceAssets?.[line.id]?.duration || estimateSpokenSec(line.text.replace(/\s+/g, '').length);
-          pause = Math.max(pause, inferActingDirection({ text: line.text, name: line.name, action: s.story }).pauseSec);
+        if (!shotHasMeasuredVoice(state, s, voiceSecOf, lines.map((l) => l.id))) {
+          return s;
         }
-        const editSeconds = planEditSeconds(voice, pause, lines.length ? 0 : 2);
-        const seconds = i2vSecondsForEdit(editSeconds);
-        return { ...s, editSeconds, seconds, clock: `${seconds}s` };
+        const perf = lines[0]
+          ? inferActingDirection({ text: lines[0].text, name: lines[0].name, action: s.story })
+          : undefined;
+        const timing = buildV3ShotTiming(state, s, voiceSecOf);
+        return applyTimingToShot(s, timing, {
+          emotion: perf?.emotion || lines[0]?.performance?.emotion,
+          intensity: perf?.intensity ?? lines[0]?.performance?.intensity,
+          pace: perf?.pace || lines[0]?.performance?.pace,
+        });
       }),
     },
   };
@@ -756,7 +787,7 @@ export function continueScenePrompt(
   if (mode === 'new-camera') {
     return [
       `Same locked scene (${place}, ${light}, ${clothes}, ${who}). NEW CAMERA — do not copy the previous crop, zoom, or camera distance.`,
-      `Do not upscale or smear a previous still. Sharp photoreal film grain, not a zoomed JPEG.`,
+      `Do not upscale or smear a previous still. Sharp stylized cinematic film grain, not photoreal, not a zoomed JPEG.`,
       `FACE SAFE: forehead, both eyes, nose, mouth, chin, hairline inside the frame. Face visible ≠ look at camera. Forbidden: cut forehead, cut chin, cheek-only, back of head, motion blur, looking into the lens.`,
       master.screenDirection ? `Screen direction lock: ${master.screenDirection}.` : '',
       `Only the Action changes: ${action}.`,

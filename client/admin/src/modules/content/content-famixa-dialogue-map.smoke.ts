@@ -1,4 +1,4 @@
-import { applyDialogueMap, coverageOf, proposeDialogueMap } from './content-famixa-dialogue-map';
+import { applyDialogueMap, coverageOf, linesForShot, proposeDialogueMap } from './content-famixa-dialogue-map';
 import type { FamixaSeriesShot, SeriesPilotState } from './content-famixa-series';
 
 function shot(partial: Partial<FamixaSeriesShot> & { id: string }): FamixaSeriesShot {
@@ -99,7 +99,9 @@ const longState = {
 const chained = applyDialogueMap(longState);
 const chainShots = chained.episode?.shots ?? [];
 if (chainShots.length < 2) fail.push(`overflow must insert continuation, got ${chainShots.length}`);
-if (chainShots[0]?.seconds !== 10) fail.push('spoken host must be 10s');
+if (chainShots[0]?.seconds !== 5 && chainShots[0]?.seconds !== 10) {
+  fail.push('host seconds stays provider 5|10, not forced');
+}
 if (!chainShots.slice(1).every((s) => s.voiceChainFrom === 'SH01' && s.story === chainShots[0]?.story)) {
   fail.push('continuation must copy Action/KF host, not invent beat');
 }
@@ -108,6 +110,32 @@ if (!['L1', 'L2', 'L3'].every((id) => allIds.includes(id))) fail.push('must keep
 if (allIds.length !== 3) fail.push('must not duplicate lines');
 const again = applyDialogueMap(chained);
 if ((again.episode?.shots.length ?? 0) !== chainShots.length) fail.push('chain must be idempotent');
+
+const leftover = {
+  ...locked,
+  packDraft: 'Minh bước vào nhà.\nMinh: Dạ... nay con làm bài không tốt ạ.\nMẹ: Về rồi hả con?',
+  episode: {
+    ...locked.episode!,
+    shots: locked.episode!.shots.map((s) =>
+      s.id === 'SH01'
+        ? { ...s, dialogueSegmentIds: ['D1', 'OLD9'] }
+        : s,
+    ),
+  },
+  scenes: [
+    {
+      id: 'SC01',
+      characterIds: ['CHAR-001'],
+      dialogue: [
+        { id: 'D1', characterId: 'CHAR-001', text: 'Dạ... nay con làm bài không tốt ạ.' },
+        { id: 'OLD9', characterId: 'CHAR-001', text: 'Mẹ nay con gỡ được 9 điểm' },
+      ],
+    },
+  ],
+} as SeriesPilotState;
+const homeLines = linesForShot(leftover, leftover.episode!.shots[0]!);
+if (homeLines.some((l) => /gỡ được 9 điểm/i.test(l.text))) fail.push('old 9-point line must not appear on this pack');
+if (!homeLines.some((l) => /không tốt/i.test(l.text))) fail.push('this-pack line must stay');
 
 if (fail.length) {
   console.error('DIALOGUE MAP FAIL');

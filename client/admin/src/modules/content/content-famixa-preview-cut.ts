@@ -11,6 +11,7 @@ import {
 } from './content-famixa-series';
 import { deriveVoiceScript, estimateSpokenSec, type FamixaVoiceLine } from './content-famixa-voice-script';
 import { resolveFinalSource, type FinalSource } from './content-famixa-final-source';
+import { productionDurationOf } from './famixa-shot-production-timing';
 
 export type PreviewCutStatus = 'ready' | 'need_voice' | 'need_kf' | 'need_video' | 'blocked';
 
@@ -107,11 +108,12 @@ export function mapPreviewCut(
       0,
     );
     const i2v = Math.max(1, shot.seconds === 10 ? 10 : shot.seconds || 5);
-    const cap = shot.editSeconds && shot.editSeconds > 0 ? shot.editSeconds : i2v;
+    const production = productionDurationOf(state, shot, opts?.voiceSecOf);
+    const cap = production > 0 ? production : shot.editSeconds && shot.editSeconds > 0 ? shot.editSeconds : i2v;
     const durationIssue =
       !silent && voiceSec > i2v + 0.05 ? `VOICE ${voiceSec.toFixed(1)}s / I2V ${i2v.toFixed(1)}s` : undefined;
     const hasKf = Boolean(run.keyframeDataUrl);
-    const hasVideo = Boolean(run.takeUrl?.trim() || run.previewUrl?.trim() || run.lipsyncUrl?.trim());
+    const hasVideo = Boolean(run.takeUrl?.trim() || run.lipsyncUrl?.trim() || run.acceptedTake?.url?.trim() || run.previewUrl?.trim());
     let status: PreviewCutStatus = 'ready';
     let statusLabel = silent ? 'Voice: NONE' : 'Ready';
     if (durationIssue) {

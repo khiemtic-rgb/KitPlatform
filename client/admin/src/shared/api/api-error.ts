@@ -3,6 +3,9 @@ import { apiOfflineMessage, apiServerErrorMessage } from '@/shared/api/api-netwo
 
 export function apiErrorMessage(error: unknown, fallback: string) {
   if (isAxiosError(error)) {
+    if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message)) {
+      return 'Yêu cầu quá lâu. Bộ 4 ảnh có thể mất vài phút — bấm lại và đợi tới khi xong.';
+    }
     if (!error.response) {
       return apiOfflineMessage();
     }

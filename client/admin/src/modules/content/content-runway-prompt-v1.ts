@@ -49,9 +49,76 @@ function actingEn(action?: string) {
   return 'natural, contained emotion';
 }
 
+const CAMERA_HOLD = [
+  'Camera remains steady.',
+  'Camera eases in slightly.',
+  'Camera holds, then a small push-in.',
+  'Camera drifts a few centimeters right.',
+  'Camera holds on the face, then eases back.',
+  'Camera eases a few centimeters left.',
+  'Camera holds, then a slight tilt down.',
+] as const;
+
+export const CAMERA_RETRY_POOL = CAMERA_HOLD.length;
+
+/** retry 0 keeps coverage. retry N>0 never wraps back to that first camera line. */
+export function cameraLineForRetry(retryN: number, coverage?: string) {
+  const hold = (coverage ?? '').trim() || CAMERA_HOLD[0];
+  if (retryN <= 0) return hold;
+  const pool = CAMERA_HOLD.filter((line) => line !== hold);
+  const variants = pool.length ? pool : CAMERA_HOLD;
+  return variants[(retryN - 1) % variants.length];
+}
+
+export type RunwayMotionIntent = {
+  action?: string;
+  blocking?: string;
+  prop?: string;
+  gaze?: string;
+  acting?: string;
+  timing?: string;
+  body?: string;
+  room?: string;
+  camera?: string;
+};
+
+function motionFromAction(action?: string): RunwayMotionIntent {
+  const t = (action || '').toLowerCase();
+  const out: RunwayMotionIntent = {};
+  if (/đứng ở cửa|cửa phòng khách|living-room doorway|doorway/.test(t)) {
+    out.action = 'Standing at the living-room doorway.';
+    out.blocking = 'At the doorway, body turned toward the room.';
+  }
+  if (/cầm tờ giấy|hai tay cầm|sheet of paper|tờ giấy/.test(t)) {
+    out.prop = 'Holds a sheet of paper with both hands.';
+  }
+  if (/nhìn mẹ|toward (?:his )?mother|toward linh/.test(t)) {
+    out.gaze = 'Looks toward their mother, not the camera.';
+  }
+  if (/uneasy|mong manh|căng/.test(t)) out.acting = 'The performance is uneasy and contained.';
+  return out;
+}
+
+function mergeMotion(fromAction: RunwayMotionIntent, explicit?: RunwayMotionIntent): RunwayMotionIntent {
+  return {
+    action: explicit?.action || fromAction.action,
+    blocking: explicit?.blocking || fromAction.blocking,
+    prop: explicit?.prop || fromAction.prop,
+    gaze: explicit?.gaze || fromAction.gaze,
+    acting: explicit?.acting || fromAction.acting,
+    timing: explicit?.timing || fromAction.timing,
+    body: explicit?.body || fromAction.body,
+    room: explicit?.room || fromAction.room,
+    camera: explicit?.camera || fromAction.camera,
+  };
+}
+
 export function compileRunwayPromptV1(opts: {
   action?: string;
   diagnostic?: boolean;
+  retry?: number;
+  motion?: RunwayMotionIntent;
+  directed?: boolean;
 }) {
   const warnings: string[] = [];
   const cleaned = stripSpokenAndContract(opts.action);
@@ -60,12 +127,26 @@ export function compileRunwayPromptV1(opts: {
     const text = 'Subtle natural movement, realistic cinematic family drama.';
     return { text, version: RUNWAY_PROMPT_COMPILER, warnings, chars: text.length };
   }
-  const acting = actingEn(`${opts.action || ''} ${cleaned}`);
+  const acting = actingEn(`${opts.action || ''} ${cleaned} ${opts.motion?.acting || ''}`);
+  const retryN = Math.abs(opts.retry ?? 0);
+  const camera = cameraLineForRetry(retryN, opts.motion?.camera);
+  const motion = mergeMotion(motionFromAction(`${opts.action || ''} ${cleaned}`), opts.motion);
+  const directed = Boolean(opts.directed);
+  const bodyLine = (motion.body ?? '').trim() || (directed ? 'Performs the action in one continuous move.' : `Subtle body movement, ${acting}.`);
   const text = [
-    `Subtle body movement, ${acting}.`,
-    `Blink and breathe.`,
-    `Camera remains steady.`,
-  ].join(' ');
+    motion.action,
+    motion.blocking,
+    motion.prop,
+    motion.gaze,
+    motion.acting || `The performance is ${acting}.`,
+    motion.timing,
+    bodyLine,
+    motion.room,
+    directed ? undefined : `Blink and breathe.`,
+    /camera/i.test(camera) ? (camera.endsWith('.') ? camera : `${camera}.`) : `Camera remains steady.`,
+  ]
+    .filter((line) => Boolean(line && String(line).trim()))
+    .join(' ');
   const clipped = text.length <= RUNWAY_PROMPT_MAX ? text : text.slice(0, RUNWAY_PROMPT_MAX);
   if (promptHasTextRisk(clipped)) warnings.push('Prompt still looks like on-screen text — review before send.');
   return { text: clipped, version: RUNWAY_PROMPT_COMPILER, warnings, chars: clipped.length };

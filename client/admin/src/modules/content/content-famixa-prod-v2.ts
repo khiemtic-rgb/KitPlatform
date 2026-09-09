@@ -18,6 +18,9 @@ import {
 } from './content-famixa-series';
 import { needsInheritanceReview } from './content-famixa-story-memory';
 import { linesForShot, multiSpeakerBlock } from './content-famixa-dialogue-map';
+import { lipsyncMotionInputOf, resolveTakeUrl } from './content-famixa-final-source';
+import { performanceDurationOf } from './famixa-shot-production-timing';
+import { FAL_LIPSYNC_USD_PER_MIN_SOT, quoteFamixaProviderCost } from './famixa-ai-provider-cost';
 
 export type ProdV2Step = 'script' | 'voice' | 'shorts' | 'image' | 'video' | 'preview' | 'final';
 
@@ -172,10 +175,10 @@ export function videoNeedIds(state: SeriesPilotState, shots: FamixaSeriesShot[])
   return shots.filter((s) => {
     const run = shotRunOf(state, s);
     if (!shotHasValidAction(s, run) || run.prodSkip) return false;
-    if (run.status === 'approved' && run.previewUrl?.trim()) return false;
+    if (run.status === 'approved' && resolveTakeUrl(run)) return false;
     if (!kfIsApproved(run)) return false;
     if (sameKfAsInternalFail(run, dataUriHash(run.keyframeDataUrl), shotI2vPromptHash(state, s, run))) return false;
-    return !run.previewUrl?.trim();
+    return !resolveTakeUrl(run);
   }).map((s) => s.id);
 }
 
@@ -193,8 +196,32 @@ export function lipsyncNeedIds(state: SeriesPilotState, shots: FamixaSeriesShot[
     const lines = linesForShot(state, s);
     if (Array.isArray(s.dialogueSegmentIds) && lines.length === 0) return false;
     if (multiSpeakerBlock(lines)) return false;
-    return Boolean(run.previewUrl?.trim() || run.takeUrl?.trim());
+    return Boolean(lipsyncMotionInputOf(run));
   }).map((s) => s.id);
+}
+
+/** Fal send eligibility. Stale take blocks unless Director ACCEPT_EXISTING. */
+export function lipsyncSendEligible(opts: {
+  run: {
+    prodSkip?: boolean;
+    lipsynced?: boolean;
+    lipsyncUrl?: string;
+    takeUrl?: string;
+    previewUrl?: string;
+    takeHistory?: { url: string }[];
+    acceptedTake?: { url?: string };
+  };
+  spoken: boolean;
+  remake?: boolean;
+  motionStale: boolean;
+  accepted?: boolean;
+}) {
+  if (!opts.spoken || opts.run.prodSkip) return false;
+  const accepted = opts.accepted ?? Boolean(opts.run.acceptedTake?.url?.trim());
+  if (opts.motionStale && !accepted) return false;
+  if (!resolveTakeUrl(opts.run)) return false;
+  if ((opts.run.lipsynced || opts.run.lipsyncUrl?.trim()) && !opts.remake) return false;
+  return true;
 }
 
 export function lipsyncInFlight(run: { lipsynced?: boolean; lipsyncStatus?: string; lipsyncTaskId?: string }) {
@@ -252,8 +279,11 @@ export type FalLipsyncSyncMode = 'cut_off' | 'silence' | 'loop' | 'bounce' | 're
 export type VideoSendOpts = { remake?: boolean };
 export type LipsyncSendOpts = { remake?: boolean };
 
-/** Fal 1.9 ≈ $0.70/min. v3 ≈ $8/min. LatentSync is per-clip (see estimate). */
-export const FAL_LIPSYNC_USD_PER_MIN: Record<Exclude<FalLipsyncModel, 'ls'>, number> = { '1.9': 0.7, v3: 8 };
+/** Display rates from Cost SoT. Do not recompute vendor prices here. */
+export const FAL_LIPSYNC_USD_PER_MIN: Record<Exclude<FalLipsyncModel, 'ls'>, number> = {
+  '1.9': FAL_LIPSYNC_USD_PER_MIN_SOT['1.9'],
+  v3: FAL_LIPSYNC_USD_PER_MIN_SOT.v3,
+};
 
 export const FAL_LIPSYNC_TIERS: { value: FalLipsyncModel; title: string; hint: string; rate: string }[] = [
   { value: 'v3', title: 'Chuẩn · đắt', hint: 'Fal v3 — miệng sát thoại nhất', rate: '~$8/phút (~$1.33/10s)' },
@@ -275,18 +305,23 @@ export function lipsyncTierOf(raw?: string) {
 export function normalizeLipsyncSyncMode(raw?: string): FalLipsyncSyncMode {
   return raw === 'cut_off' || raw === 'silence' || raw === 'loop' || raw === 'bounce' || raw === 'remap'
     ? raw
-    : 'remap';
+    : 'silence';
 }
 
 export function estimateFalLipsyncUsd(seconds: number, model: FalLipsyncModel = '1.9') {
-  const kind = normalizeLipsyncModel(model);
-  const sec = Math.max(5, Number(seconds) || 10);
-  if (kind === 'ls') return sec <= 40 ? 0.2 : Math.round(sec * 0.005 * 100) / 100;
-  return Math.round((sec / 60) * FAL_LIPSYNC_USD_PER_MIN[kind] * 100) / 100;
+  return quoteFamixaProviderCost({ providerId: 'fal', modelId: normalizeLipsyncModel(model), quantity: seconds }).estimatedAmount ?? 0;
 }
 
-export function estimateFalLipsyncUsdForShots(shots: { seconds?: number }[], model: FalLipsyncModel = '1.9') {
-  return Math.round(shots.reduce((n, s) => n + estimateFalLipsyncUsd(s.seconds ?? 10, model), 0) * 100) / 100;
+export function estimateFalLipsyncUsdForShots(
+  shots: { seconds?: number; performanceDurationSec?: number }[],
+  model: FalLipsyncModel = '1.9',
+) {
+  return Math.round(
+    shots.reduce((n, s) => {
+      const sec = s.performanceDurationSec && s.performanceDurationSec > 0 ? s.performanceDurationSec : s.seconds && s.seconds > 0 ? s.seconds : 5;
+      return n + estimateFalLipsyncUsd(sec, model);
+    }, 0) * 100,
+  ) / 100;
 }
 
 /** Estimated / billed / Fal — per selected production shots. */
@@ -295,16 +330,18 @@ export function productionCostLedger(state: SeriesPilotState, shots: FamixaSerie
   const needI2v = videoNeedIds(state, shots);
   const estimatedRunway = billedRunway + needI2v.reduce((n, id) => {
     const s = shots.find((x) => x.id === id);
-    return n + clampShortSeconds(s?.seconds ?? 5) * 5;
+    return n + (quoteFamixaProviderCost({ providerId: 'runway', modelId: 'gen4_turbo', quantity: s?.seconds ?? 5 }).estimatedAmount ?? 0);
   }, 0);
   const needFal = lipsyncNeedIds(state, shots);
   const falDone = shots.filter((s) => shotKeepsLipsync(shotRunOf(state, s)));
   const falModel = normalizeLipsyncModel(state.lipsyncModel);
+  const falShots = (rows: FamixaSeriesShot[]) =>
+    rows.map((s) => ({ seconds: performanceDurationOf(state, s), performanceDurationSec: performanceDurationOf(state, s) }));
   const estimatedFalUsd = estimateFalLipsyncUsdForShots(
-    [...needFal.map((id) => shots.find((s) => s.id === id)!).filter(Boolean), ...falDone],
+    falShots([...needFal.map((id) => shots.find((s) => s.id === id)!).filter(Boolean), ...falDone]),
     falModel,
   );
-  const confirmedFalUsd = estimateFalLipsyncUsdForShots(falDone, falModel);
+  const confirmedFalUsd = estimateFalLipsyncUsdForShots(falShots(falDone), falModel);
   return { billedRunway, estimatedRunway, estimatedFalUsd, confirmedFalUsd, needI2v: needI2v.length, needFal: needFal.length };
 }
 
@@ -366,7 +403,7 @@ export function readyV2VideoShots(state: SeriesPilotState, shots: FamixaSeriesSh
       blocked.push({ shot: s, reason: 'HOLD / không có Action' });
       continue;
     }
-    if (run.previewUrl?.trim()) continue;
+    if (resolveTakeUrl(run) && !run.motionNeedsRemake) continue;
     const action = (run.shotAction || s.story || s.motionPromptVi || '').trim();
     if (!run.keyframeDataUrl) {
       blocked.push({ shot: s, reason: 'thiếu KF' });
@@ -495,7 +532,7 @@ export function shouldResumeTurboPoll(run: {
   return false;
 }
 
-/** Confirmed spend only. Task created / FAILED ≠ billed. 5 cr/s gen4_turbo. */
+/** KIT inferred estimate from stored fields. Not vendor actual billing. */
 export function inferRunwayBilled(
   run: { runwayBilled?: number; runwaySpent?: number; turboTaskId?: string; previewUrl?: string; videoVerified?: boolean },
   seconds: number,
@@ -503,18 +540,23 @@ export function inferRunwayBilled(
   if (!run.previewUrl?.trim() && !hasVerifiedTake(run)) return 0;
   if (typeof run.runwayBilled === 'number' && run.runwayBilled > 0) return run.runwayBilled;
   if (typeof run.runwaySpent === 'number' && run.runwaySpent > 0) return run.runwaySpent;
-  return clampShortSeconds(seconds) * 5;
+  return quoteFamixaProviderCost({ providerId: 'runway', modelId: 'gen4_turbo', quantity: seconds }).estimatedAmount ?? 0;
 }
 
 export function runwayEstimatedCredits(seconds: number) {
-  return clampShortSeconds(seconds) * 5;
+  return quoteFamixaProviderCost({ providerId: 'runway', modelId: 'gen4_turbo', quantity: seconds }).estimatedAmount ?? 0;
 }
 
 export function runwayCostView(run: RunwayPipeRun, seconds: number) {
   const estimated = runwayEstimatedCredits(seconds);
   if (hasVerifiedTake(run) || run.previewUrl?.trim()) {
-    const actual = inferRunwayBilled(run, seconds) || estimated;
-    return { phase: 'ACTUAL' as const, estimated, actual, label: `Actual: ${actual} cr` };
+    const inferred = inferRunwayBilled(run, seconds) || estimated;
+    return {
+      phase: 'INFERRED_ESTIMATE' as const,
+      estimated,
+      inferred,
+      label: `Inferred estimate: ${inferred} cr`,
+    };
   }
   if (
     run.videoPipe === 'INPUT_INVALID' ||

@@ -1,7 +1,7 @@
 /** Browser mux: Runway takes + TTS + burned Vietnamese subs. */
 
 import { fetchContentSeriesTake } from '../../shared/api/content.api';
-import type { AssembleClip } from './content-famixa-assemble';
+import { hardCutPlayableSec, type AssembleClip } from './content-famixa-assemble';
 
 export function triggerDownload(blob: Blob, fileName: string) {
   const a = document.createElement('a');
@@ -217,6 +217,96 @@ export async function recordAssembledCut(opts: {
       });
       el?.pause();
       URL.revokeObjectURL(url);
+    }
+  } finally {
+    osc.stop();
+    if (rec.state !== 'inactive') rec.stop();
+    await stopped;
+    await ac.close().catch(() => undefined);
+  }
+  if (!chunks.length) throw new Error('Ghép xong nhưng không có dữ liệu video.');
+  return new Blob(chunks, { type: rec.mimeType || 'video/webm' });
+}
+
+/** Hard-cut finals. Stops on ended / I2V cap. Does not hold a still or burn TTS subs. */
+export async function recordHardCutConcat(opts: {
+  clips: { shotId: string; code: string; capSec: number }[];
+  videoOf: (shotId: string) => Promise<Blob>;
+  onProgress?: (msg: string) => void;
+}): Promise<Blob> {
+  if (typeof MediaRecorder === 'undefined') {
+    throw new Error('Trình duyệt không ghi được video. Dùng Chrome/Edge.');
+  }
+  const w = 1280;
+  const h = 720;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Không mở được canvas ghép.');
+  const ac = new AudioContext();
+  if (ac.state === 'suspended') await ac.resume();
+  const dest = ac.createMediaStreamDestination();
+  const keepAlive = ac.createGain();
+  keepAlive.gain.value = 0.0001;
+  const osc = ac.createOscillator();
+  osc.frequency.value = 20;
+  osc.connect(keepAlive);
+  keepAlive.connect(dest);
+  osc.start();
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, w, h);
+  const vStream = canvas.captureStream(30);
+  const mixed = new MediaStream([...vStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  const chunks: BlobPart[] = [];
+  const rec = new MediaRecorder(mixed, { mimeType: pickRecorderMime(), videoBitsPerSecond: 4_000_000 });
+  rec.ondataavailable = (e) => {
+    if (e.data.size) chunks.push(e.data);
+  };
+  const stopped = new Promise<void>((resolve) => {
+    rec.onstop = () => resolve();
+  });
+  rec.start(400);
+  try {
+    for (let i = 0; i < opts.clips.length; i++) {
+      const clip = opts.clips[i]!;
+      opts.onProgress?.(`${clip.code} · ${i + 1}/${opts.clips.length}`);
+      const blob = await opts.videoOf(clip.shotId);
+      const loaded = await loadVideo(blob, false);
+      const el = loaded.el;
+      try {
+        ac.createMediaElementSource(el).connect(dest);
+      } catch {
+        /* already routed */
+      }
+      const dur = hardCutPlayableSec(el.duration, clip.capSec);
+      el.currentTime = 0;
+      await waitVideoPlaying(el);
+      const started = performance.now();
+      let ended = false;
+      const onEnded = () => {
+        ended = true;
+      };
+      el.addEventListener('ended', onEnded);
+      await new Promise<void>((resolve) => {
+        const tick = () => {
+          const elapsed = (performance.now() - started) / 1000;
+          if (ended || elapsed >= dur || (Number.isFinite(el.currentTime) && el.currentTime >= dur - 0.04)) {
+            el.removeEventListener('ended', onEnded);
+            resolve();
+            return;
+          }
+          try {
+            if (el.readyState >= 2) ctx.drawImage(el, 0, 0, w, h);
+          } catch {
+            /* decode lag */
+          }
+          window.requestAnimationFrame(tick);
+        };
+        window.requestAnimationFrame(tick);
+      });
+      el.pause();
+      URL.revokeObjectURL(loaded.url);
     }
   } finally {
     osc.stop();

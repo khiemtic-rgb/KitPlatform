@@ -1,6 +1,6 @@
 /** TTS blobs — same idea as KF IndexedDB. Survives F5 so Final can mux. */
 
-import { famixaLegacyKey, famixaMediaScope, famixaScopedKey } from './content-famixa-media-scope';
+import { famixaMediaScope, famixaScopedKey } from './content-famixa-media-scope';
 
 const DB_NAME = 'kit-famixa-tts';
 const STORE = 'audio';
@@ -9,10 +9,6 @@ const mem = new Map<string, Blob>();
 
 function ttsKey(lineId: string) {
   return famixaScopedKey(PREFIX, lineId);
-}
-
-function ttsLegacy(lineId: string) {
-  return famixaLegacyKey(PREFIX, lineId);
 }
 
 export function ttsTextKey(text: string, voiceId?: string) {
@@ -43,6 +39,27 @@ export function ttsLookupKeys(
   if (text) {
     keys.push(ttsTextKey(text));
     for (const v of voices) keys.push(ttsTextKey(text, v));
+  }
+  return [...new Set(keys)];
+}
+
+/** This build + this spoken text only. Never the bare line id (other EP01s reuse it). */
+export function ttsHydrateKeys(
+  line: { id: string; text?: string; voiceId?: string },
+  extraVoiceIds: string[] = [],
+) {
+  const id = (line.id ?? '').trim();
+  const text = (line.text ?? '').replace(/\s+/g, ' ').trim();
+  const voices = [...new Set([line.voiceId, ...extraVoiceIds].map((v) => (v ?? '').trim()).filter(Boolean))];
+  const keys: string[] = [];
+  if (!text) return keys;
+  if (!voices.length) {
+    keys.push(ttsTextKey(text));
+    return keys;
+  }
+  for (const v of voices) {
+    keys.push(ttsTextKey(text, v));
+    if (id) keys.push(ttsLineKey(id, v));
   }
   return [...new Set(keys)];
 }
@@ -112,10 +129,9 @@ export async function loadTtsBlob(lineId: string) {
         req.onsuccess = () => resolve(req.result as Blob | undefined);
         req.onerror = () => reject(req.error);
       });
-    const row = (await read(ttsKey(lineId))) || (famixaMediaScope() ? await read(ttsLegacy(lineId)) : undefined);
+    const row = await read(ttsKey(lineId));
     if (row && row.size >= 32) {
       mem.set(ttsKey(lineId), row);
-      if (famixaMediaScope()) void saveTtsBlob(lineId, row);
       return row;
     }
   } catch {
@@ -184,14 +200,14 @@ export async function findTtsBlobForLine(lineId: string) {
       req.onsuccess = () => resolve(req.result ?? []);
       req.onerror = () => reject(req.error);
     });
-    const needle = `:${id}`;
-    const hashed = `:${id}#`;
-    const match = keys.map(String).find((k) => k.endsWith(needle) || k.includes(hashed));
+    const scope = famixaMediaScope();
+    if (!scope) return undefined;
+    const prefix = `${PREFIX}:${scope}:`;
+    const match = keys.map(String).find((k) => k.startsWith(prefix) && (k === `${prefix}${id}` || k.startsWith(`${prefix}${id}#`)));
     if (!match) return undefined;
     const row = await readExactTtsKey(match);
     if (!row || row.size < 32) return undefined;
-    mem.set(ttsKey(id), row);
-    void saveTtsBlob(id, row);
+    mem.set(match, row);
     return row;
   } catch {
     return undefined;

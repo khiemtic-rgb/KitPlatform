@@ -33,6 +33,8 @@ import {
   type FalLipsyncSyncMode,
   type ProdV2Step,
 } from './content-famixa-prod-v2';
+import { performanceDurationOf } from './famixa-shot-production-timing';
+import { FAMIXA_COST_COPY } from './famixa-ai-provider-cost';
 import {
   canManualRetry,
   classifyVideoPipe,
@@ -1160,7 +1162,7 @@ export function ContentFamixaProdV2({
                   PRODUCTION · batch 3
                 </Button>
                 <Typography.Text type="secondary">
-                  I2V chỉ sau KF APPROVED + QA PASS + PRECHECK. 5s = 25 cr · 10s = 50 cr. Task tạo ≠ đã trừ.
+                  I2V chỉ sau KF APPROVED + QA PASS + PRECHECK. {FAMIXA_COST_COPY.runwayI2v}. Task tạo ≠ đã trừ.
                 </Typography.Text>
               </Space>
             }
@@ -1289,7 +1291,11 @@ export function ContentFamixaProdV2({
                   ? `Ước tính ${lipNeed.length} clip · ${lipsyncTierOf(state.lipsyncModel).title} ≈ $${estimateFalLipsyncUsdForShots(
                       lipNeed
                         .map((id) => sel.find((s) => s.id === id))
-                        .filter((s): s is FamixaSeriesShot => Boolean(s)),
+                        .filter((s): s is FamixaSeriesShot => Boolean(s))
+                        .map((s) => ({
+                          seconds: performanceDurationOf(state, s),
+                          performanceDurationSec: performanceDurationOf(state, s),
+                        })),
                       normalizeLipsyncModel(state.lipsyncModel),
                     ).toFixed(2)} Fal. Confirm mới trừ.`
                   : `${lipsyncTierOf(state.lipsyncModel).title} — chọn trước, Confirm khi gửi.`}
@@ -1310,11 +1316,11 @@ export function ContentFamixaProdV2({
                           { value: 'cut_off', label: 'mặc định — không loop' },
                         ]
                       : [
+                          { value: 'silence', label: 'silence — giữ take, pad thoại' },
                           { value: 'remap', label: 'remap — kéo video theo thoại' },
                           { value: 'cut_off', label: 'cut_off — cắt phần thừa' },
                           { value: 'loop', label: 'loop — lặp video' },
                           { value: 'bounce', label: 'bounce — đảo chiều' },
-                          { value: 'silence', label: 'silence — giữ im hết thoại' },
                         ]
                   }
                 />

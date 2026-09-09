@@ -66,11 +66,34 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
 
                 var dur = Math.Clamp(clip.Seconds, 0.4, 20);
                 if (clip.UsableEnd is > 0) dur = Math.Min(dur, Math.Max(0.4, clip.UsableEnd.Value - clip.UsableStart));
+                if (!fromStill)
+                {
+                    var takeDur = ProbeDurationSec(ffmpeg, src);
+                    if (takeDur > 0 && takeDur + 0.001 < dur - 0.12)
+                        throw new InvalidOperationException(
+                            $"{clip.Code}: take {takeDur.ToString("0.##", CultureInfo.InvariantCulture)}s ngắn hơn production {dur.ToString("0.##", CultureInfo.InvariantCulture)}s — không clone frame.");
+                }
                 var outPart = Path.Combine(work, $"part{i:00}.mp4");
                 var keepAudio = !fromStill && clip.UseVideoAudio && HasAudibleAudio(ffmpeg, src);
                 if (!keepAudio && voices.Count == 0 && clip.RequireVoice)
                     throw new InvalidOperationException($"{clip.Code}: thiếu thoại — không ghép file câm.");
-                await RunFfmpeg(ffmpeg, MixArgs(src, voices, delays, clip.UsableStart, dur, outPart, request.Aspect, keepAudio, fromStill), work, cancellationToken);
+                await RunFfmpeg(
+                    ffmpeg,
+                    MixArgs(
+                        src,
+                        voices,
+                        delays,
+                        clip.UsableStart,
+                        dur,
+                        outPart,
+                        request.Aspect,
+                        keepAudio,
+                        fromStill,
+                        request.Mix?.Grade == true,
+                        request.Mix?.Interpolate == true,
+                        request.Mix?.ColorMatch == true && i > 0),
+                    work,
+                    cancellationToken);
                 parts.Add(outPart);
             }
 
@@ -82,16 +105,21 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
             var dest = Path.Combine(work, "cut.mp4");
             try
             {
-                await RunFfmpeg(ffmpeg, $"-y -f concat -safe 0 -i \"{list}\" -c copy \"{dest}\"", work, cancellationToken);
+                await RunFfmpeg(
+                    ffmpeg,
+                    $"-y -fflags +genpts -f concat -safe 0 -i \"{list}\" -c copy \"{dest}\"",
+                    work,
+                    cancellationToken);
             }
             catch (InvalidOperationException)
             {
                 await RunFfmpeg(
                     ffmpeg,
-                    $"-y -f concat -safe 0 -i \"{list}\" -c:v libx264 -preset veryfast -crf 20 -c:a aac -b:a 160k -ar 48000 -ac 2 \"{dest}\"",
+                    $"-y -fflags +genpts -f concat -safe 0 -i \"{list}\" -c:v libx264 -preset veryfast -crf 20 -c:a aac -b:a 160k -ar 48000 -ac 2 -fps_mode cfr \"{dest}\"",
                     work,
                     cancellationToken);
             }
+            dest = await ApplyCanonicalMix(ffmpeg, dest, work, clips, request.Mix, cancellationToken);
             var bytes = await File.ReadAllBytesAsync(dest, cancellationToken);
             if (bytes.Length < 1000) throw new InvalidOperationException("FFmpeg xong nhưng file trống.");
             var stem = Sanitize(request.FileStem);
@@ -112,7 +140,10 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
         string dest,
         string? aspect,
         bool useVideoAudio,
-        bool fromStill = false)
+        bool fromStill = false,
+        bool grade = false,
+        bool interpolate = false,
+        bool colorMatch = false)
     {
         var t = $"-t {dur.ToString("0.###", CultureInfo.InvariantCulture)}";
         var keepTakeAudio = useVideoAudio && !fromStill;
@@ -139,12 +170,19 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
             ? $"scale={vw}:{vh}:force_original_aspect_ratio=increase,crop={vw}:{vh}"
             : $"scale={vw}:{vh}:force_original_aspect_ratio=decrease,pad={vw}:{vh}:(ow-iw)/2:(oh-ih)/2";
         var fc = new StringBuilder();
-        fc.Append("[0:v]").Append(fit).Append(",fps=30,setsar=1,format=yuv420p,tpad=stop_mode=clone:stop_duration=8[v];");
+        var polish = new StringBuilder();
+        if (grade)
+            polish.Append(",eq=contrast=1.04:saturation=0.92:brightness=0.01,colorbalance=rs=0.02:gs=-0.01:bs=-0.02");
+        if (colorMatch)
+            polish.Append(",eq=saturation=0.94:gamma=1.01");
+        if (interpolate)
+            polish.Append(",minterpolate=fps=30:mi_mode=mci:mc_mode=aobmc:vsbmc=1");
+        fc.Append("[0:v]").Append(fit).Append(polish).Append(",fps=30,setsar=1,format=yuv420p[v];");
         if (keepTakeAudio)
         {
             fc.Append("[0:a]aformat=sample_rates=48000:channel_layouts=stereo,atrim=0:")
                 .Append(dur.ToString("0.###", CultureInfo.InvariantCulture))
-                .Append(",apad[a]");
+                .Append(",apad=pad_dur=0.05[a]");
         }
         else if (voices.Count == 0)
         {
@@ -159,16 +197,55 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
                     .Append(",aformat=sample_rates=48000:channel_layouts=stereo[a").Append(i).Append("];");
             }
 
+            var gain = VideoAudioLipsyncPipelineV1Rules.DialogueLinearGain.ToString("0.###", CultureInfo.InvariantCulture);
             if (voices.Count == 1)
-                fc.Append("[a0]volume=2,apad[a]");
+                fc.Append("[a0]volume=").Append(gain).Append(",apad=pad_dur=0.05[a]");
             else
             {
                 for (var i = 0; i < voices.Count; i++) fc.Append("[a").Append(i).Append(']');
-                fc.Append("amix=inputs=").Append(voices.Count).Append(":normalize=0:dropout_transition=0,volume=2,apad[a]");
+                fc.Append("amix=inputs=").Append(voices.Count).Append(":normalize=0:dropout_transition=0,volume=")
+                    .Append(gain).Append(",apad=pad_dur=0.05[a]");
             }
         }
 
         return $"-y {inputs}-filter_complex \"{fc}\" -map \"[v]\" -map \"[a]\" {t} -c:v libx264 -preset veryfast -crf 20 -c:a aac -b:a 160k -ar 48000 -ac 2 \"{dest}\"";
+    }
+
+    private static async Task<string> ApplyCanonicalMix(
+        string ffmpeg,
+        string cut,
+        string work,
+        IReadOnlyList<ContentSeriesAssembleClipDto> clips,
+        ContentSeriesAssembleMixDto? mix,
+        CancellationToken cancellationToken)
+    {
+        var dest = Path.Combine(work, "mixed.mp4");
+        var total = clips.Sum(c => Math.Clamp(c.Seconds, 0.4, 20));
+        if (mix is null || (!mix.Room && !mix.Music && (mix.Sfx is null || mix.Sfx.Count == 0)))
+        {
+            await RunFfmpeg(ffmpeg, ContentMixAssets.MasterFallbackArgs(cut, dest, total), work, cancellationToken);
+            return dest;
+        }
+
+        string? room = null;
+        string? music = null;
+        if (mix.Room)
+            room = ContentMixAssets.Resolve(ffmpeg, mix.RoomId ?? "room.night.dining", cancellationToken);
+        if (mix.Music)
+            music = ContentMixAssets.Resolve(ffmpeg, mix.MusicId ?? "music.bed.dim", cancellationToken);
+        var sfx = new List<(string Path, int DelayMs, double GainDb)>();
+        foreach (var cue in mix.Sfx ?? Array.Empty<ContentSeriesAssembleMixSfxDto>())
+        {
+            var path = ContentMixAssets.Resolve(ffmpeg, cue.AssetId, cancellationToken);
+            sfx.Add((path, Math.Max(0, (int)Math.Round(cue.StartSec * 1000)), cue.GainDb));
+        }
+
+        await RunFfmpeg(
+            ffmpeg,
+            ContentMixAssets.MasterArgs(cut, dest, total, room, music, sfx, mix.Loudnorm),
+            work,
+            cancellationToken);
+        return dest;
     }
 
     private static async Task RunFfmpeg(string bin, string args, string work, CancellationToken cancellationToken)
@@ -189,6 +266,39 @@ internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleServi
         await p.WaitForExitAsync(cancellationToken);
         if (p.ExitCode != 0)
             throw new InvalidOperationException($"FFmpeg lỗi ({p.ExitCode}): {Trim(err)}");
+    }
+
+    private static double ProbeDurationSec(string ffmpeg, string src)
+    {
+        try
+        {
+            using var p = new Process();
+            p.StartInfo = new ProcessStartInfo
+            {
+                FileName = ffmpeg,
+                Arguments = $"-hide_banner -i \"{src}\"",
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true,
+            };
+            if (!p.Start()) return 0;
+            var err = p.StandardError.ReadToEnd();
+            p.WaitForExit(20_000);
+            var m = System.Text.RegularExpressions.Regex.Match(
+                err,
+                @"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!m.Success) return 0;
+            var h = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+            var min = int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+            var sec = double.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture);
+            return h * 3600 + min * 60 + sec;
+        }
+        catch
+        {
+            return 0;
+        }
     }
 
     private static bool HasAudibleAudio(string ffmpeg, string src)

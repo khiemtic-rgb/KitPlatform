@@ -549,8 +549,8 @@ internal sealed class ContentFalClient
 
     private static string NormalizeSyncMode(string? raw)
     {
-        var m = (raw ?? "cut_off").Trim().ToLowerInvariant();
-        return m is "cut_off" or "loop" or "bounce" or "silence" or "remap" ? m : "cut_off";
+        var m = (raw ?? "silence").Trim().ToLowerInvariant();
+        return m is "cut_off" or "loop" or "bounce" or "silence" or "remap" ? m : "silence";
     }
 
     private static void ApplyAuth(HttpRequestMessage req, string key)

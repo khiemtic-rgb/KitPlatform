@@ -226,7 +226,7 @@ function continuationOf(host: FamixaSeriesShot, draft: FamixaSeriesShot, ids: st
   };
 }
 
-/** Spoken Short → 10s. Thoại >10s → nối Short cùng Action/KF. Không tách giữa câu. Không bịa beat. */
+/** Thoại >10s → nối Short cùng Action/KF. Không ép 10s. Không tách giữa câu. Không bịa beat. */
 export function chainOverflowVoiceShots(state: SeriesPilotState): SeriesPilotState {
   const ep = state.episode;
   if (!ep?.shots.length) return state;
@@ -239,18 +239,6 @@ export function chainOverflowVoiceShots(state: SeriesPilotState): SeriesPilotSta
     if (!live) continue;
     const ids = live.dialogueSegmentIds ?? [];
     if (ids.length < 2) {
-      const sec = ids.reduce((n, id) => n + (byId.get(id) ? lineSecOf(cur, byId.get(id)!) : 0), 0);
-      if (ids.length === 1 && sec > 0.2) {
-        cur = {
-          ...cur,
-          episode: {
-            ...cur.episode!,
-            shots: cur.episode!.shots.map((s) =>
-              s.id === live.id ? { ...s, seconds: 10, clock: '10s' } : s,
-            ),
-          },
-        };
-      }
       continue;
     }
     const chunks = packLineIds(cur, ids, byId, 10);
@@ -261,7 +249,7 @@ export function chainOverflowVoiceShots(state: SeriesPilotState): SeriesPilotSta
       episode: {
         ...cur.episode!,
         shots: cur.episode!.shots.map((s) =>
-          s.id === live.id ? { ...s, dialogueSegmentIds: first, seconds: 10, clock: '10s' } : s,
+          s.id === live.id ? { ...s, dialogueSegmentIds: first } : s,
         ),
       },
     };
@@ -269,7 +257,7 @@ export function chainOverflowVoiceShots(state: SeriesPilotState): SeriesPilotSta
     const extras = chunks.slice(1, 6);
     for (const chunk of extras) {
       const inserted = insertSceneShot(cur, { afterId, scene: live.scene || live.sceneId });
-      const filled = continuationOf(live, inserted.shot, chunk, afterId, 10);
+      const filled = continuationOf(live, inserted.shot, chunk, afterId, live.seconds === 10 ? 10 : 5);
       cur = {
         ...inserted.state,
         episode: {
@@ -313,13 +301,9 @@ export function applyDialogueMap(state: SeriesPilotState): SeriesPilotState {
   const { byShot } = proposeDialogueMap(cleared, ep.shots);
   const shots = ep.shots.map((s) => {
     const ids = s.voiceChainFrom ? (s.dialogueSegmentIds ?? []) : (byShot.get(s.id) ?? []);
-    const spoken = ids.length > 0;
-    const seconds: 5 | 10 = spoken ? 10 : s.seconds === 10 ? 10 : 5;
     return {
       ...s,
       dialogueSegmentIds: ids,
-      seconds,
-      clock: `${seconds}s`,
     };
   });
   return chainOverflowVoiceShots({ ...cleared, episode: { ...ep, shots } });
@@ -358,6 +342,14 @@ export function multiSpeakerBlock(lines: Pick<FamixaVoiceLine, 'characterId' | '
   return `${u.join(' + ')} cùng một take — tách shot, Fal từng người. Không gửi 2 wav vào 1 Fal.`;
 }
 
+function spokenInPack(text: string, pack?: string) {
+  const t = norm(text);
+  const p = (pack || '').replace(/\s+/g, ' ');
+  if (!t || p.length < 20) return true;
+  const slice = t.length >= 12 ? t.slice(0, 12) : t;
+  return p.includes(slice);
+}
+
 export function linesForShot(
   state: SeriesPilotState,
   shot: FamixaSeriesShot,
@@ -365,10 +357,12 @@ export function linesForShot(
 ): FamixaVoiceLine[] {
   const lines = scriptLines ?? deriveVoiceScript(state).lines;
   const ids = shot.dialogueSegmentIds;
-  if (Array.isArray(ids)) return ids.map((id) => lines.find((l) => l.id === id)).filter((l): l is FamixaVoiceLine => Boolean(l));
-  const { byShot } = proposeDialogueMap(state);
-  const proposed = byShot.get(shot.id) ?? [];
-  return proposed.map((id) => lines.find((l) => l.id === id)).filter((l): l is FamixaVoiceLine => Boolean(l));
+  const mapped = Array.isArray(ids)
+    ? ids.map((id) => lines.find((l) => l.id === id)).filter((l): l is FamixaVoiceLine => Boolean(l))
+    : (proposeDialogueMap(state).byShot.get(shot.id) ?? [])
+        .map((id) => lines.find((l) => l.id === id))
+        .filter((l): l is FamixaVoiceLine => Boolean(l));
+  return mapped.filter((l) => spokenInPack(l.text, state.packDraft));
 }
 
 export type CoverageRow = {
@@ -407,7 +401,7 @@ export function coverageOf(
     const seconds = shot.seconds === 10 ? 10 : shot.seconds || 5;
     const durationIssue = !silent && voiceSec > seconds + 0.05 ? `VOICE ${voiceSec.toFixed(1)}s / SHOT ${seconds}s` : undefined;
     const hasKf = Boolean(run.keyframeDataUrl);
-    const hasVideo = Boolean(run.previewUrl?.trim());
+    const hasVideo = Boolean(run.takeUrl?.trim() || run.previewUrl?.trim() || run.lipsyncUrl?.trim());
     let status: CoverageRow['status'] = silent ? 'NONE' : 'READY';
     if (durationIssue) status = 'MISMATCH';
     else if (!silent && !hasVoice) status = 'NEED_VOICE';

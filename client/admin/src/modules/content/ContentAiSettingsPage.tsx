@@ -34,6 +34,7 @@ import {
   type ContentFacebookConfig,
   type ContentVideoConfig,
 } from '@/shared/api/content.api';
+import { FAMIXA_COST_COPY } from '@/modules/content/famixa-ai-provider-cost';
 
 type AiFormValues = {
   provider: string;
@@ -566,7 +567,7 @@ export function ContentAiSettingsPage() {
           style={{ marginBottom: 16 }}
         >
           <p style={{ marginTop: 0, color: 'rgba(0,0,0,0.65)' }}>
-            Key từ fal.ai (Key / API). Khớp môi: Chuẩn v3 (~$8/phút) · Vừa 1.9 (~$0.70/phút) · Rẻ LatentSync (~$0.20/clip). Wan dùng chung. Không dán vào Runway / ElevenLabs / Creatomate.
+            Key từ fal.ai (Key / API). {FAMIXA_COST_COPY.falSettings} Không dán vào Runway / ElevenLabs / Creatomate.
           </p>
           <Form.Item name="falApiKeySecretRef" label="Secret ref">
             <Input placeholder="FAL_KEY" autoComplete="off" />

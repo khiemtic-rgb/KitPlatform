@@ -1,6 +1,6 @@
 /** Scene/short KF pixels — off graph JSON (quota / server strip). Survives pane switch + F5. */
 
-import { famixaLegacyKey, famixaMediaScope, famixaScopedKey } from './content-famixa-media-scope';
+import { famixaScopedKey } from './content-famixa-media-scope';
 
 const DB_NAME = 'kit-famixa-kf';
 const STORE = 'pixels';
@@ -9,10 +9,6 @@ const mem = new Map<string, { dataUrl: string; fileName?: string }>();
 
 function kfKey(clipId: string) {
   return famixaScopedKey(PREFIX, clipId);
-}
-
-function kfLegacy(clipId: string) {
-  return famixaLegacyKey(PREFIX, clipId);
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -79,7 +75,7 @@ export async function loadKfPixels(clipId: string) {
         req.onsuccess = () => resolve(req.result as { dataUrl: string; fileName?: string } | undefined);
         req.onerror = () => reject(req.error);
       });
-    const row = (await read(kfKey(clipId))) || (famixaMediaScope() ? await read(kfLegacy(clipId)) : undefined);
+    const row = await read(kfKey(clipId));
     if (row?.dataUrl?.startsWith('data:image')) {
       mem.set(kfKey(clipId), row);
       return row;

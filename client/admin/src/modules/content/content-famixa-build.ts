@@ -40,7 +40,7 @@ export function buildStatusOf(state: SeriesPilotState): SeriesBuildStatus {
   if (state.sceneLocked) return 'final';
   const shots = episodeShots(state);
   const runs = shots.map((s) => state.runs[s.id]).filter(Boolean);
-  const hasVideo = runs.some((r) => Boolean(r?.previewUrl?.trim() || r?.localVideoPath));
+  const hasVideo = runs.some((r) => Boolean(r?.takeUrl?.trim() || r?.previewUrl?.trim() || r?.localVideoPath || r?.lipsyncUrl?.trim()));
   const hasKf = runs.some((r) => Boolean(r?.keyframeFileName || r?.keyframePath || r?.keyframeDataUrl));
   if (hasVideo || hasKf) return 'in_prod';
   if (state.voiceLocked) return 'voice_locked';

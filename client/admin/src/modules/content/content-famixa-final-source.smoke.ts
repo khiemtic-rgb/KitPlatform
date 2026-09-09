@@ -53,6 +53,50 @@ if (assembleVideoUrl({ lipsyncUrl: 'https://fal.example/lip.mp4', previewUrl: 'h
 if (assembleVideoUrl({ takeUrl: 'https://runway.example/take.mp4' }) !== 'https://runway.example/take.mp4') {
   fail.push('assemble must use takeUrl when previewUrl is gone');
 }
+if (
+  resolveTakeUrl({
+    pictureRevisionId: 'picture:SH01:002',
+    takeUrl: 'https://old/take-44.mp4',
+    runwayAttempts: [
+      { n: 44, status: 'SUCCEEDED', outputUrl: 'https://old/take-44.mp4' },
+      { n: 45, status: 'SUCCEEDED', outputUrl: 'https://new/wan-45.mp4' },
+    ],
+  }) !== 'https://new/wan-45.mp4'
+) {
+  fail.push('newer SUCCESS must beat stale takeUrl after picture revision');
+}
+if (
+  resolveTakeUrl({
+    pictureRevisionId: 'picture:SH01:002',
+    takeUrl: 'https://old/take-44.mp4',
+    runwayAttempts: [{ n: 44, status: 'SUCCEEDED', outputUrl: 'https://old/take-44.mp4' }],
+  })
+) {
+  fail.push('stale takeUrl must not resolve after picture revision without a new take');
+}
+if (
+  resolveTakeUrl({
+    pictureRevisionId: 'picture:SH01:002',
+    pictureRevisionAttemptN: 44,
+    takeUrl: undefined,
+    runwayAttempts: [{ n: 44, status: 'SUCCEEDED', outputUrl: 'https://old/take-44.mp4' }],
+  })
+) {
+  fail.push('cleared takeUrl must not resolve take 44 after picture epoch');
+}
+if (
+  resolveTakeUrl({
+    pictureRevisionId: 'picture:SH01:002',
+    pictureRevisionAttemptN: 44,
+    takeUrl: undefined,
+    runwayAttempts: [
+      { n: 44, status: 'SUCCEEDED', outputUrl: 'https://old/take-44.mp4' },
+      { n: 45, status: 'SUCCEEDED', outputUrl: 'https://new/wan-45.mp4' },
+    ],
+  }) !== 'https://new/wan-45.mp4'
+) {
+  fail.push('new SUCCESS after picture epoch must resolve');
+}
 
 const kept = mergeKeepFinalSource({ previewUrl: 'https://runway.example/raw.mp4' }, {
   lipsynced: true,

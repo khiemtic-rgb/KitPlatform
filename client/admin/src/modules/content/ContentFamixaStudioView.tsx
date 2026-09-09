@@ -171,7 +171,7 @@ export function ContentFamixaStudioView({
   turboBusy?: boolean | string;
   kitCredits: number;
   runwaySpent: number;
-  expectedCost: number;
+  expectedCost?: number | null;
   costLabel: string;
   engine: 'turbo' | 'wan';
   onEngine: (engine: 'turbo' | 'wan') => void;
@@ -917,7 +917,9 @@ export function ContentFamixaStudioView({
                   loading={Boolean(turboBusy)}
                   onClick={onCreateVideo}
                 >
-                  KF đã đổi · Tạo Video · Confirm {expectedCost} cr
+                  {engine === 'wan'
+                    ? 'KF đã đổi · Tạo Video · xác nhận Wan'
+                    : `KF đã đổi · Tạo Video · Confirm ${expectedCost} cr`}
                 </Button>
               ) : (
                 <Button
@@ -930,7 +932,7 @@ export function ContentFamixaStudioView({
                   {precheck.ok
                     ? engine === 'wan'
                       ? 'Tạo video · xác nhận Wan'
-                      : `Tạo video · Confirm ước ${expectedCost} cr`
+                      : `Tạo video · Confirm ước ${expectedCost ?? ''} cr`
                     : 'Pre-check chưa đạt (0 cr)'}
                 </Button>
               )}
@@ -1246,8 +1248,8 @@ export function FamixaTimelinePane({
         ) : (
           <>
             <Typography.Paragraph type="secondary">
-              KIT không ghép file tự động. Kiểm tra thứ tự LOCK ({total}s). Runway đã trừ {runwaySpent} cr · sổ
-              KIT khi khóa {kitCredits} cr. Dán link timeline / ghi chú xuất, rồi khóa cảnh.
+              KIT không ghép file tự động. Kiểm tra thứ tự LOCK ({total}s). Runway ước {runwaySpent} cr · sổ
+              KIT khi khóa {kitCredits} cr (KIT credit estimate, không phải vendor actual). Dán link timeline / ghi chú xuất, rồi khóa cảnh.
             </Typography.Paragraph>
             <textarea
               rows={3}
