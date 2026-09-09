@@ -7,7 +7,7 @@ import { canonPixelsOf, loadCanonPixels, rememberCanonFromChars, rememberCanonPi
 import { kfPixelsOf, loadKfPixels, rememberKfFromRuns, rememberKfPixels, saveKfPixels } from './content-famixa-kf-store';
 import { famixaCanonSeedFor, fetchFamixaCanonSeedDataUrl } from './content-famixa-canon-seed';
 import { displayUrlForData, stripJsonDataUrls } from './content-famixa-blob-url';
-import { I2V_VI_RE } from './content-famixa-i2v-en';
+import { I2V_VI_RE, runwayEnglishBit } from './content-famixa-i2v-en';
 import { ACTING_LAW_LOCK, actingI2vBrief, inferActingDirection } from './content-famixa-acting-law';
 import { mergeKeepDialoguePerformance } from './content-famixa-performance';
 import { isDialogueFragment, isNonCinematicAction, looksLikeInsertAction, looksLikeVoiceDirection } from './content-famixa-story-parse';
@@ -16,7 +16,9 @@ import { mergeKeepFinalSource } from './content-famixa-final-source';
 import { type VisualSpec } from './content-famixa-visual-spec';
 import { compileNarrativeStillPrompt } from './content-famixa-kf-pipeline';
 import { dataUriHash, promptHashOf, sameFailedInput } from './content-famixa-runway-pipe';
+import { mergeMotionAttempts, playableMotionTakeOf } from './ContentFamixaShotProduction/ShotProductionArtifacts';
 import { compileRunwayPromptV1, promptViolatesRunwayI2vLaw } from './content-runway-prompt-v1';
+import { actingPerformanceLine, actingSpeakerFromDialogue } from './famixa-acting-beat-language';
 import {
   FAMIXA_CANON_VERSION,
   frameCanonIds,
@@ -71,8 +73,12 @@ export type FamixaSeriesShot = {
   dialogueSegmentIds?: string[];
   /** Auto Short nối thoại >10s — cùng Action/KF với shot gốc. Không bịa beat. */
   voiceChainFrom?: string;
-  /** Edit length from voice + pause. I2V stays 5 or 10; assemble trims. */
+  /** Edit length = productionDurationSec. I2V stays 5 or 10; assemble trims to this. */
   editSeconds?: number;
+  /** Canonical production clock. seconds = provider 5|10 only. */
+  timing?: import('./famixa-shot-production-timing').ShotTiming;
+  actingBeat?: import('./famixa-shot-production-timing').ShotActingBeat;
+  coverage?: import('./famixa-shot-smoothness-contract').ShotCoverage;
   /** Why this Shot exists. NONE / missing → not production. */
   splitReason?: ShotSplitReason;
   actionUnitIds?: string[];
@@ -179,6 +185,8 @@ export type FamixaSceneNode = {
   dialogue?: FamixaSceneDialogue[];
   /** Script beats that produced shots. Shot graph follows these, not a target count. */
   scriptBeats?: { id: string; text: string; shotIds: string[] }[];
+  /** Staff assigned this cast. Do not merge shot characters back onto the scene. */
+  castAssigned?: boolean;
 };
 
 export type FamixaLine = {
@@ -329,7 +337,7 @@ export type StudioShotTone = 'locked' | 'error' | 'on' | 'warn' | 'wait';
 
 export function studioShotUi(run?: SeriesShotRun) {
   const r = run ?? { status: 'story_locked' as const };
-  const hasTake = Boolean(r.previewUrl || r.localVideoPath);
+  const hasTake = Boolean(r.takeUrl || r.previewUrl || r.localVideoPath);
   if (r.status === 'approved') {
     return {
       tone: 'locked' as StudioShotTone,
@@ -451,6 +459,8 @@ export type SeriesShotRun = {
   runwayDiagnostics?: import('./content-famixa-runway-pipe').RunwayDiagRow[];
   /** Operator duyệt KF mới sau INTERNAL — cho đúng 1 job, không spam cùng ảnh. */
   kfRetryOk?: boolean;
+  /** Camera variant after INTERNAL.BAD_OUTPUT — changes prompt hash without a new still. */
+  i2vRetry?: number;
   /** Fal sync-lipsync take — mouth follows TTS. Assemble keeps this audio. */
   lipsynced?: boolean;
   /** Fal output URL. Kept even if previewUrl is later replaced. */
@@ -464,27 +474,79 @@ export type SeriesShotRun = {
     continuity?: boolean;
     motion?: boolean;
     dialogue?: boolean;
+    /** Artifact flag — Fal returned a URL. Not lip-sync quality. */
     lipsync?: boolean;
+    /** Director quality tick. Never auto-set from Fal URL. */
+    lipsyncQuality?: boolean;
+    /** Director Final A/V tick after assemble. */
+    finalAv?: boolean;
     /** Voice vs Face — same Performance Plan. Fail → fix KF, not Fal. */
     voiceFace?: boolean;
   };
   lipsyncTaskId?: string;
   lipsyncStatus?: string;
   lipsyncError?: string;
+  /** Immutable SelectionDecision snapshot from LipSync Start. Not Router re-query. */
+  lipsyncSelectionSnapshot?: {
+    decisionId: string;
+    providerId: string;
+    modelId?: string;
+    selectionMode: string;
+    reason?: string;
+    estimatedCost?: number | null;
+    costKind?: string;
+  };
   /** Scene start frame (KF01) — not a CHAR face crop. */
   keyframeDataUrl?: string;
   keyframeFileName?: string;
   keyframePath?: string;
+  /** Action text stamped when this KF was painted. Live shotAction can change; pixels do not. */
+  kfBoundAction?: string;
   /** Shot LOCK mà KF này copy từ đó (cùng khung cảnh). Pixel copy only — not “drew from previous ref”. */
   keyframeInheritedFrom?: string;
   /** Operator duyệt KF. AI still starts as draft. */
   kfApproved?: boolean;
+  /** New approved still — old take must not stay the primary CTA. */
+  motionNeedsRemake?: boolean;
+  /** Survives slim (pixels are stripped). Binds I2V / hide-stale-AV to this still. */
+  kfSourceHash?: string;
+  /** Immutable SelectionDecision snapshot from Picture Start. Not Router re-query. */
+  pictureSelectionSnapshot?: {
+    decisionId: string;
+    providerId: string;
+    modelId?: string;
+    selectionMode: string;
+    reason?: string;
+    estimatedCost?: number | null;
+    costKind?: string;
+  };
+  /** Director-approved picture revision. Changes on every Duyệt hình. Not a filename. */
+  pictureRevisionId?: string;
+  /** Last motion attempt n when this picture revision was minted. New video must have n greater than this. */
+  pictureRevisionAttemptN?: number;
+  /** Operator duyệt take. Clip exists does not mean approved. */
+  videoApproved?: boolean;
   /** Operator ép KF mới — bỏ plan REUSE. */
   kfForceNew?: boolean;
   /** Continuity instruction after KIT rewrite — not the raw user complaint. */
   kfTechNote?: string;
+  /** Project Visual Mode stamped at generate time. Missing + existing KF = legacy pipeline. */
+  visualMode?: string;
+  visualUniverse?: string;
+  visualStyle?: string;
+  visualPipelineStatus?: string;
+  visualReferenceIds?: string[];
   visualSpec?: import('./content-famixa-visual-spec').VisualSpec;
   visualQa?: import('./content-famixa-visual-spec').VisualQa;
+  /** Character Resolution audit — Canon version used for this still. */
+  characterAudit?: {
+    characterCodes: string[];
+    era: string;
+    version: string;
+    refIds: string[];
+    compilerVersion: string;
+    wardrobeIds?: string[];
+  };
   /** Shot dư — không sản xuất. */
   prodSkip?: boolean;
   /** Legacy paste fields — never sent to Runway. */
@@ -496,6 +558,24 @@ export type SeriesShotRun = {
   startState?: import('./content-famixa-continuity-chain').ShotBeatState;
   endState?: import('./content-famixa-continuity-chain').ShotBeatState;
   transitionType?: import('./content-famixa-continuity-chain').TransitionType;
+  /** Shot Production Orchestration stamps — JSON graph only, not a DB stage column. */
+  shotProduction?: import('./ContentFamixaShotProduction/ShotProductionStamp').ShotProductionStamp;
+  /** Director ACCEPT_EXISTING. Does not rewrite attempts or failed* circuit stamps. */
+  acceptedTake?: import('./ContentFamixaShotProduction/ShotProductionArtifacts').AcceptedTake;
+  /** Immutable lipsync/mix submit freeze. Not a mutable execution status. */
+  lipsyncFrozenInput?: {
+    motionArtifactId?: string;
+    motionFingerprint?: string;
+    voiceFingerprint: string;
+    fingerprint: string;
+    usedValidity?: string;
+  };
+  mixFrozenInput?: {
+    videoArtifactId?: string;
+    voiceFingerprint: string;
+    editorialFingerprint: string;
+    fingerprint: string;
+  };
 };
 
 export type SeriesPilotState = {
@@ -546,6 +626,10 @@ export type SeriesPilotState = {
   lipsyncSyncMode?: 'cut_off' | 'silence' | 'loop' | 'bounce' | 'remap';
   /** false / unset = SAFE (1 shot). true = batch tối đa 3, fail thì dừng. */
   i2vProductionMode?: boolean;
+  /** Mix polish. Grade default on. Interpolate opt-in. Does not remake I2V. */
+  smoothness?: import('./famixa-shot-smoothness-contract').EpisodeSmoothness;
+  /** Film Editing V1 overlay. Does not mutate take / lipsync / KF / timing. */
+  editorialCut?: import('./content-famixa-editorial-cut').EditorialCut;
 };
 
 export type FamixaVoiceAsset = {
@@ -554,6 +638,16 @@ export type FamixaVoiceAsset = {
   characterId?: string;
   duration: number;
   status: 'ready';
+  /** Immutable SelectionDecision snapshot from Voice Start. Not Router re-query. */
+  selectionSnapshot?: {
+    decisionId: string;
+    providerId: string;
+    modelId?: string;
+    selectionMode: string;
+    reason?: string;
+    estimatedCost?: number | null;
+    costKind?: string;
+  };
 };
 
 function sceneCodeOf(scene?: string) {
@@ -833,6 +927,7 @@ export function loadSeriesPilot(): SeriesPilotState {
           ? v.lipsyncSyncMode
           : undefined,
       i2vProductionMode: v.i2vProductionMode === true,
+      editorialCut: v.editorialCut && typeof v.editorialCut === 'object' ? v.editorialCut : undefined,
     };
     const migrated = slimPilotForStorage(ensurePilotGraph(loaded));
     const hadDeadLipsync = Object.values(loaded.runs ?? {}).some((r) =>
@@ -872,6 +967,7 @@ let lastPilotJson = '';
 export function saveSeriesPilot(state: SeriesPilotState, preJson?: string) {
   rememberCanonFromChars(state.characters ?? [], state.stills);
   rememberKfFromRuns(state.runs);
+  state = bindPictureHashOnRuns(state);
   for (const [id, run] of Object.entries(state.runs)) {
     if (run.keyframeDataUrl?.startsWith('data:image')) {
       void saveKfPixels(id, run.keyframeDataUrl, run.keyframeFileName);
@@ -1082,7 +1178,9 @@ export function ensurePilotGraph(state: SeriesPilotState): SeriesPilotState {
         id: sceneId,
         characterIds: [],
       };
-      node.characterIds = [...new Set([...node.characterIds, ...characterIds])];
+      if (!node.castAssigned) {
+        node.characterIds = [...new Set([...node.characterIds, ...characterIds])];
+      }
       sceneMap.set(sceneId, node);
     }
     const sameScenePrev = prev && (prev.sceneId || sceneIdOfShot(prev)) === sceneId ? prev.id : undefined;
@@ -1103,7 +1201,9 @@ export function ensurePilotGraph(state: SeriesPilotState): SeriesPilotState {
     const characterIds = shotCharacterIds({ characters: s.characters, characterIds: s.characterIds });
     if (sceneId) {
       const node = sceneMap.get(sceneId) ?? { id: sceneId, characterIds: [] };
-      node.characterIds = [...new Set([...node.characterIds, ...characterIds])];
+      if (!node.castAssigned) {
+        node.characterIds = [...new Set([...node.characterIds, ...characterIds])];
+      }
       sceneMap.set(sceneId, node);
     }
     return { ...s, sceneId: sceneId || s.sceneId, characterIds, characters: characterIds.length ? characterIds : s.characters };
@@ -1288,12 +1388,60 @@ export function pickFamixaBrand<T extends { code: string; name: string }>(brands
 
 /** I2V = RUNWAY_PROMPT_V1 only. Visual Contract / thoại / START-END không vào Runway. */
 export function compileI2vPrompt(
-  _state: SeriesPilotState,
-  _shot: FamixaSeriesShot,
+  state: SeriesPilotState,
+  shot: FamixaSeriesShot,
   action: string,
   _videoContext?: string,
+  retryOverride?: number,
 ) {
-  return compileRunwayPromptV1({ action }).text;
+  const retry = retryOverride ?? shotRunOf(state, shot).i2vRetry ?? 0;
+  const beat = shot.actingBeat;
+  const speaker = actingSpeakerFromDialogue(state, shot);
+  const path = shot.coverage?.cameraPath;
+  const camera =
+    path === 'TRACK' ? 'Camera tracks with the subject.' : path === 'PUSH_IN' ? 'Camera eases in slightly.' : path === 'HOLD' ? 'Camera remains steady.' : undefined;
+  const bodyText = beat?.before.body || '';
+  const holdEnglish = /stays in place|adjusts (?:his |her )?posture|shifts (?:his |her )?weight|remains seated|only a small natural movement/i.test(
+    bodyText,
+  );
+  const holdVi = /không di chuyển|đứng lại|hơi điều chỉnh|chỉ chuyển động nhẹ|không ra cửa/i.test(bodyText);
+  const walkBody = /half-step|takes a small|bước nhẹ/i.test(bodyText);
+  const beatLocomotion = /bước|đi tới|đi vào|walk(?:s|ing|ed)?|vào nhà|enters?\b|entering|arriving|vừa vào|leaves?\b|leaving|ra khỏi|step into|steps? (?:in|into|forward)/i.test(
+    beat?.before.action || '',
+  );
+  const dropBeatWalk = beatLocomotion && !walkBody;
+  const holdBody = holdEnglish || holdVi || dropBeatWalk;
+  const holdBodyLine = holdEnglish
+    ? bodyText
+    : holdVi && /hơi điều chỉnh/i.test(bodyText)
+      ? 'He adjusts his posture slightly.'
+      : holdBody
+        ? 'He stays in place.'
+        : bodyText;
+  const directed =
+    !holdBody &&
+    /bước|đặt tờ|đặt giấy|đi tới|walk|place the|sits down|stands up|nhận lấy/i.test(
+      `${action} ${shot.story || ''} ${shot.motionPromptVi || ''} ${beat?.before.action || ''}`,
+    );
+  const actionForRunway = holdBody ? holdBodyLine : action;
+  return compileRunwayPromptV1({
+    action: actionForRunway,
+    retry,
+    directed,
+    motion: {
+      ...(beat
+        ? {
+            action: holdBody && beatLocomotion ? undefined : runwayEnglishBit(beat.before.action),
+            prop: runwayEnglishBit(beat.before.prop),
+            gaze: runwayEnglishBit(beat.before.gaze, 'Looks toward the other person, not the camera.'),
+            acting: actingPerformanceLine(beat.during.emotion, speaker),
+            body: holdBody ? holdBodyLine : runwayEnglishBit(beat.before.body),
+            room: runwayEnglishBit(beat.before.room, 'The room behind them stays still.'),
+          }
+        : {}),
+      camera,
+    },
+  }).text;
 }
 
 export function applyShotLockToGraph(
@@ -1384,7 +1532,16 @@ export function characterCanonReady(c?: FamixaCharacter) {
   );
 }
 
-export type SeriesCanonRef = { name: string; role?: string; imageDataUrl: string };
+export type SeriesCanonRef = {
+  name: string;
+  role?: string;
+  imageDataUrl: string;
+  visualMode?: string;
+  referenceStatus?: string;
+  authorityStatus?: string;
+  characterId?: string;
+  referenceRole?: string;
+};
 
 export function canonDisplayOf(state: SeriesPilotState, characterId: string) {
   const id = normCharId(characterId);
@@ -1466,14 +1623,9 @@ export async function hydratePilotCanon(state: SeriesPilotState): Promise<Series
 /** Restore scene/short KF from IndexedDB after slim graph load. */
 export async function hydratePilotKeyframes(state: SeriesPilotState): Promise<SeriesPilotState> {
   setFamixaMediaScope(state.buildId);
-  const ids = [
-    ...episodeShots(state).map((s) => s.id),
-    ...(state.shorts ?? []).map((s) => s.id),
-    ...Object.keys(state.runs ?? {}),
-  ];
-  const uniq = [...new Set(ids.filter(Boolean))];
   rememberKfFromRuns(state.runs ?? {});
-  for (const id of uniq) {
+  for (const id of Object.keys(state.runs ?? {})) {
+    if (!id) continue;
     const run = state.runs[id];
     if (run?.keyframeDataUrl?.startsWith('data:image')) continue;
     if (kfPixelsOf(id)) continue;
@@ -1509,6 +1661,7 @@ export function seriesSceneStillPrompt(opts: {
   speakers?: string;
   visualSpec?: VisualSpec;
   correction?: string;
+  characterSubset?: string;
 }) {
   if (opts.visualSpec) {
     return compileNarrativeStillPrompt({
@@ -1518,6 +1671,7 @@ export function seriesSceneStillPrompt(opts: {
       lighting: opts.lightingLock,
       refs: opts.refs,
       correction: opts.correction,
+      characterSubset: opts.characterSubset,
     });
   }
   const people = opts.refs.filter((r) => r.role !== 'scene' && !/loi binh|narrator|voice.?over/i.test(`${r.name} ${r.role}`));
@@ -1533,7 +1687,7 @@ export function seriesSceneStillPrompt(opts: {
   const note = stripStillLettering(opts.continuityNote);
   return [
     STILL_NO_TEXT,
-    `Format: ${frame}. One SHARP photoreal live-action film still — not a zoomed copy of another frame, not motion-blur, not a smeared JPEG.`,
+    `Format: ${frame}. One SHARP stylized cinematic film still — not photoreal, not a zoomed copy of another frame, not motion-blur, not a smeared JPEG.`,
     'FACE SAFE: forehead, both eyes, nose, mouth, chin and hairline inside the frame. Face visible ≠ look at camera. Forbidden: cut forehead, cut chin, cheek-only, back of head, out-of-focus face, looking into the lens.',
     'Canon attachments are FACE identity only for anyone newly entering. NEVER reproduce a character bible, master reference, turnaround, expression grid, contact sheet, or typography. Do not change clothes already shown in PREV-SHOT.',
     count === 0
@@ -1566,7 +1720,7 @@ export function seriesSceneStillPrompt(opts: {
     'WARDROBE LOCK: copy exact clothes from PREV-SHOT. The boy in the room is Minh — same shirt as frames 1–4. Do not dress him from the Canon sheet. Do not draw classmate An. If Nam is already in PREV-SHOT, copy that exact man (face, hair, shirt).',
     opts.refs.some((r) => r.role === 'scene')
       ? 'Continue the exact same room from the attached PREVIOUS keyframe (not a redesigned set). Same clothes, faces already in scene, place, dim lighting, props. Do NOT copy a smile, huddle, or brightened room. Change only this Action. Not a family portrait.'
-      : 'Vietnamese family, dim warm indoor evening after dinner, photoreal, not anime, not a smiling catalog still, not a family portrait.',
+      : 'Vietnamese family, dim warm indoor evening after dinner, stylized cinematic designed-character, not photoreal, not anime, not a smiling catalog still, not a family portrait.',
     note
       ? `Continuity lock (operator, already rewritten): ${note.slice(0, 280)} Do not change the story action or add people.`
       : '',
@@ -1886,6 +2040,20 @@ export function hasSeriesGraph(state: SeriesPilotState) {
   );
 }
 
+function mergeShotQaFlags(a?: SeriesShotRun['shotQa'], b?: SeriesShotRun['shotQa']): SeriesShotRun['shotQa'] {
+  if (!a && !b) return undefined;
+  return {
+    action: Boolean(a?.action || b?.action) || undefined,
+    continuity: Boolean(a?.continuity || b?.continuity) || undefined,
+    motion: Boolean(a?.motion || b?.motion) || undefined,
+    dialogue: Boolean(a?.dialogue || b?.dialogue) || undefined,
+    lipsync: Boolean(a?.lipsync || b?.lipsync) || undefined,
+    lipsyncQuality: Boolean(a?.lipsyncQuality || b?.lipsyncQuality) || undefined,
+    finalAv: Boolean(a?.finalAv || b?.finalAv) || undefined,
+    voiceFace: Boolean(a?.voiceFace || b?.voiceFace) || undefined,
+  };
+}
+
 export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotState): SeriesPilotState {
   rememberCanonFromChars(local.characters ?? [], local.stills);
   rememberCanonFromChars(remote.characters ?? [], remote.stills);
@@ -1917,16 +2085,48 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
       keyframePath: old?.keyframePath || rem?.keyframePath,
     };
     const keep = mergeKeepFinalSource(base, old);
+    const attempts = mergeMotionAttempts(base.runwayAttempts, old?.runwayAttempts);
+    const runPixels = (old?.keyframeDataUrl || '').trim();
+    const mem = kfPixelsOf(id);
+    const stamp = (old?.kfSourceHash || '').trim() || (base.kfSourceHash || '').trim();
+    const memHash = mem?.startsWith('data:image') ? dataUriHash(mem) : '';
+    const pixelHash = runPixels.startsWith('data:image')
+      ? dataUriHash(runPixels)
+      : memHash && (!stamp || memHash === stamp)
+        ? memHash
+        : '';
+    const liveHash = pixelHash || stamp;
+    const playable = playableMotionTakeOf(
+      { ...base, ...keep, runwayAttempts: attempts, kfSourceHash: liveHash || base.kfSourceHash },
+      liveHash,
+    );
+    const playableOnLive = Boolean(playable?.url && liveHash && (playable.kfHash || '').trim() === liveHash);
     runs[id] = {
       ...base,
       ...keep,
-      takeUrl: keep.takeUrl || base.takeUrl || old?.takeUrl,
+      kfSourceHash: liveHash || base.kfSourceHash || old?.kfSourceHash,
+      motionNeedsRemake: Boolean(
+        old?.motionNeedsRemake ||
+          (liveHash && playable?.kfHash && playable.kfHash !== liveHash) ||
+          (!playableOnLive && base.motionNeedsRemake),
+      ),
+      runwayAttempts: attempts,
+      turboTaskId: base.turboTaskId || old?.turboTaskId,
+      turboStatus: base.turboStatus || old?.turboStatus,
+      takeUrl:
+        playableOnLive && !old?.motionNeedsRemake && !base.motionNeedsRemake
+          ? playable!.url
+          : keep.takeUrl || base.takeUrl || old?.takeUrl,
+      acceptedTake: base.acceptedTake || old?.acceptedTake,
       lipsyncTaskId: base.lipsyncTaskId || (keep.lipsynced ? old?.lipsyncTaskId : undefined),
       lipsyncStatus: base.lipsyncStatus || (keep.lipsynced ? old?.lipsyncStatus || 'SUCCEEDED' : undefined),
+      lipsyncSelectionSnapshot: base.lipsyncSelectionSnapshot || old?.lipsyncSelectionSnapshot,
+      pictureSelectionSnapshot: base.pictureSelectionSnapshot || old?.pictureSelectionSnapshot,
       stateLocked: Boolean(base.stateLocked || old?.stateLocked),
       startState: base.stateLocked ? base.startState : base.startState ?? old?.startState,
       endState: base.stateLocked ? base.endState : base.endState ?? old?.endState,
-      shotQa: base.shotQa ?? old?.shotQa,
+      shotQa: mergeShotQaFlags(base.shotQa, old?.shotQa),
+      shotProduction: base.shotProduction ?? old?.shotProduction,
       visualSpec: base.visualSpec ?? old?.visualSpec,
       visualQa: base.visualQa ?? old?.visualQa,
     };
@@ -2199,9 +2399,28 @@ export function replaceStoryFromParse(
     ...(parsed.shorts ?? []).map((s) => s.id),
     ...((switchedEpisode ? [] : prev.shorts) ?? []).map((s) => s.id),
   ]);
+  const stripShotMedia = (run: SeriesShotRun): SeriesShotRun => ({
+    ...run,
+    status: 'story_locked',
+    keyframeDataUrl: undefined,
+    keyframeFileName: undefined,
+    keyframePath: undefined,
+    kfApproved: false,
+    keyframeInheritedFrom: undefined,
+    kfBoundAction: undefined,
+    takeUrl: undefined,
+    previewUrl: undefined,
+    lipsyncUrl: undefined,
+    lipsynced: false,
+    visualPipelineStatus: undefined,
+  });
   const runs = switchedEpisode
     ? {}
-    : Object.fromEntries(Object.entries(prev.runs).filter(([id]) => keepIds.has(id)));
+    : Object.fromEntries(
+        Object.entries(prev.runs)
+          .filter(([id]) => keepIds.has(id))
+          .map(([id, run]) => [id, stripShotMedia(run)]),
+      );
   const shorts = switchedEpisode
     ? parsed.shorts
     : mergeClipLists(parsed.shorts, prev.shorts ?? []);
@@ -2287,9 +2506,167 @@ export function episodeShots(state: SeriesPilotState) {
 
 export function withKfPixels(id: string, run?: SeriesShotRun): SeriesShotRun {
   const base = run ?? { status: 'story_locked' as const };
-  if (base.keyframeDataUrl?.startsWith('data:image')) return base;
+  const stamp = (base.kfSourceHash || '').trim();
+  const approved = Boolean(base.kfApproved || base.status === 'approved');
+  const raw = (base.keyframeDataUrl || '').trim();
+  if (raw.startsWith('data:image')) {
+    if (!approved || !stamp || dataUriHash(raw) === stamp) return base;
+    const mem = kfPixelsOf(id);
+    if (mem?.startsWith('data:image') && dataUriHash(mem) === stamp) {
+      return { ...base, keyframeDataUrl: mem };
+    }
+    return { ...base, keyframeDataUrl: undefined };
+  }
   const pixels = kfPixelsOf(id);
-  return pixels ? { ...base, keyframeDataUrl: pixels } : base;
+  if (!pixels?.startsWith('data:image')) return base;
+  if (stamp && dataUriHash(pixels) !== stamp) return base;
+  return { ...base, keyframeDataUrl: pixels };
+}
+
+export function withRunPixels(state: SeriesPilotState): SeriesPilotState {
+  const runs: SeriesPilotState['runs'] = {};
+  for (const [id, run] of Object.entries(state.runs ?? {})) {
+    runs[id] = withKfPixels(id, run);
+  }
+  return { ...state, runs };
+}
+
+function takePictureRevisionOf(run?: SeriesShotRun) {
+  const list = run?.runwayAttempts ?? [];
+  for (let i = list.length - 1; i >= 0; i--) {
+    const rev = ((list[i] as { frozenInput?: { pictureRevisionId?: string } }).frozenInput?.pictureRevisionId || '').trim();
+    if (rev) return rev;
+  }
+  return '';
+}
+
+function takePictureHashOf(run?: SeriesShotRun) {
+  const live = (run?.kfSourceHash || '').trim();
+  const match = playableMotionTakeOf(run, live);
+  if ((match?.kfHash || '').trim()) return (match?.kfHash || '').trim();
+  const stamped = (run?.acceptedTake?.kfHash || '').trim();
+  if (stamped) return stamped;
+  const list = run?.runwayAttempts ?? [];
+  for (let i = list.length - 1; i >= 0; i--) {
+    const row = list[i];
+    const hash = (
+      row?.kf?.hash ||
+      row?.source?.hash ||
+      row?.exactRequest?.kfHash ||
+      (row as { frozenInput?: { keyframePixelHash?: string } }).frozenInput?.keyframePixelHash ||
+      ''
+    ).trim();
+    if (hash) return hash;
+  }
+  return '';
+}
+
+/** Keep still identity after slim strips pixels. Unbound Fal/take must remake. */
+export function bindPictureHashOnRuns(state: SeriesPilotState): SeriesPilotState {
+  const runs: SeriesPilotState['runs'] = {};
+  for (const [id, run] of Object.entries(state.runs ?? {})) {
+    const runPixels = (run.keyframeDataUrl || '').trim();
+    const mem = kfPixelsOf(id);
+    const stamp = (run.kfSourceHash || '').trim();
+    const memHash = mem?.startsWith('data:image') ? dataUriHash(mem) : '';
+    const pixelHash = runPixels.startsWith('data:image')
+      ? dataUriHash(runPixels)
+      : memHash && (!stamp || memHash === stamp)
+        ? memHash
+        : '';
+    const hash = pixelHash || stamp;
+    let next = hash && hash !== run.kfSourceHash ? { ...run, kfSourceHash: hash } : run;
+    const now = (next.kfSourceHash || '').trim();
+    const liveRevEarly = (next.pictureRevisionId || '').trim();
+    const attempts = [...(next.runwayAttempts ?? [])] as Array<{
+      n?: number;
+      status?: string;
+      taskId?: string;
+      outputUrl?: string;
+      kf?: { hash?: string };
+      frozenInput?: { pictureRevisionId?: string; keyframePixelHash?: string };
+    }>;
+    const last = attempts.at(-1);
+    const lastUrl = (last?.outputUrl || '').trim();
+    const lastHash = (last?.kf?.hash || last?.frozenInput?.keyframePixelHash || '').trim();
+    const lastRev = (last?.frozenInput?.pictureRevisionId || '').trim();
+    const epoch = next.pictureRevisionAttemptN || 0;
+    if (
+      liveRevEarly &&
+      last &&
+      (last.n || 0) > epoch &&
+      (last.taskId || '').trim() &&
+      (next.turboTaskId || '').trim() === (last.taskId || '').trim() &&
+      /SUCCEED|SUCCESS|READY/i.test(last.status || '') &&
+      lastUrl &&
+      lastUrl !== (next.takeUrl || '').trim() &&
+      lastHash &&
+      now &&
+      lastHash === now &&
+      !lastRev
+    ) {
+      last.frozenInput = { ...last.frozenInput, pictureRevisionId: liveRevEarly, keyframePixelHash: last.frozenInput?.keyframePixelHash || lastHash };
+      next = {
+        ...next,
+        runwayAttempts: attempts as SeriesShotRun['runwayAttempts'],
+        takeUrl: lastUrl,
+        previewUrl: lastUrl,
+        motionNeedsRemake: false,
+        videoPipe: 'VIDEO_READY',
+      };
+    }
+    const hadAv = Boolean(next.lipsyncUrl || next.takeUrl || next.previewUrl || next.acceptedTake?.url);
+    if (next.motionNeedsRemake && next.lipsyncUrl) {
+      next = {
+        ...next,
+        lipsyncUrl: undefined,
+        lipsynced: false,
+        lipsyncStatus: undefined,
+        finalSource: next.finalSource === 'FAL' ? undefined : next.finalSource,
+      };
+    }
+    if (now && hadAv && takePictureHashOf(next) !== now) {
+      next = {
+        ...next,
+        motionNeedsRemake: true,
+        ...(next.lipsyncUrl
+          ? {
+              lipsyncUrl: undefined,
+              lipsynced: false,
+              lipsyncStatus: undefined,
+              finalSource: next.finalSource === 'FAL' ? undefined : next.finalSource,
+            }
+          : {}),
+      };
+    }
+    const liveRev = (next.pictureRevisionId || '').trim();
+    const takeRev = takePictureRevisionOf(next);
+    const pointer = (next.takeUrl || '').trim();
+    const pointerRow = pointer
+      ? attempts.find((row) => (row.outputUrl || '').trim() === pointer)
+      : undefined;
+    const pointerRev = (pointerRow?.frozenInput?.pictureRevisionId || '').trim();
+    const pointerN = pointerRow?.n || 0;
+    const pointerStale = Boolean(
+      liveRev &&
+        pointer &&
+        ((pointerRev && pointerRev !== liveRev) ||
+          (!pointerRev && ((epoch && pointerN <= epoch) || next.motionNeedsRemake))),
+    );
+    if (pointerStale) {
+      next = {
+        ...next,
+        takeUrl: undefined,
+        previewUrl: (next.previewUrl || '').trim() === pointer ? undefined : next.previewUrl,
+        motionNeedsRemake: true,
+      };
+    }
+    if (next.kfApproved !== false && liveRev && hadAv && ((takeRev && takeRev !== liveRev) || !takeRev)) {
+      next = { ...next, motionNeedsRemake: true };
+    }
+    runs[id] = next;
+  }
+  return { ...state, runs };
 }
 
 /** Stale Fal 404/405/403 stay in local graph after key change — drop so Khớp môi POSTs new. */
@@ -2297,11 +2674,13 @@ export function dropDeadLipsync(run: SeriesShotRun): SeriesShotRun {
   if (run.lipsynced) return run;
   const err = `${run.lipsyncError || ''} ${run.lipsyncStatus || ''}`;
   if (!/404|405|504|403|exhausted|locked|downstream|request failed/i.test(err)) return run;
-  return { ...run, lipsyncError: undefined, lipsyncStatus: undefined, lipsyncTaskId: undefined };
+  return { ...run, lipsyncError: undefined, lipsyncStatus: undefined, lipsyncTaskId: undefined, lipsyncSelectionSnapshot: undefined };
 }
 
 export function shotRunOf(state: SeriesPilotState, shot: FamixaSeriesShot): SeriesShotRun {
-  return dropDeadLipsync(withKfPixels(shot.id, state.runs[shot.id] ?? { status: shot.status }));
+  const stored = state.runs[shot.id];
+  if (!stored) return dropDeadLipsync({ status: shot.status });
+  return dropDeadLipsync(withKfPixels(shot.id, stored));
 }
 
 export function reviewComplete(run: SeriesShotRun) {
@@ -2358,6 +2737,7 @@ export function bindShotToMemory(state: SeriesPilotState, shot: FamixaSeriesShot
         keyframeDataUrl: prevRun.keyframeDataUrl || run.keyframeDataUrl,
         keyframeFileName: run.keyframeFileName || prevRun.keyframeFileName,
         keyframePath: run.keyframePath || prevRun.keyframePath,
+        kfBoundAction: prevRun.kfBoundAction || run.kfBoundAction,
         keyframeInheritedFrom: prev.id,
       },
     },
@@ -2604,6 +2984,7 @@ export function bindShotToSceneKeyframe(state: SeriesPilotState, shot: FamixaSer
         keyframeDataUrl: prevRun.keyframeDataUrl,
         keyframeFileName: run.keyframeFileName || prevRun.keyframeFileName,
         keyframePath: run.keyframePath || prevRun.keyframePath,
+        kfBoundAction: prevRun.kfBoundAction || run.kfBoundAction,
         keyframeInheritedFrom: prev.id,
       },
     },
@@ -2649,6 +3030,9 @@ export function allLongShotsLocked(state: SeriesPilotState) {
   return shots.length > 0 && shots.every((s) => shotRunOf(state, s).status === 'approved');
 }
 
+/** KIT UI credit rollup. Not vendor actual billing. */
+export const CREDIT_SUM_KIND = 'KIT_CREDIT_ESTIMATE' as const;
+
 export function creditSum(state: SeriesPilotState) {
   const shot = episodeShots(state).reduce((n, s) => {
     const run = shotRunOf(state, s);
@@ -2661,6 +3045,9 @@ export function creditSum(state: SeriesPilotState) {
   return shot + short;
 }
 
+/** KIT inferred spend fields. Not a vendor ledger. */
+export const RUNWAY_SPENT_SUM_KIND = 'INFERRED_ESTIMATE' as const;
+
 export function runwaySpentSum(state: SeriesPilotState) {
   const of = (run: SeriesShotRun) => run.runwayBilled ?? run.runwaySpent ?? 0;
   const shot = episodeShots(state).reduce((n, s) => n + of(shotRunOf(state, s)), 0);
@@ -2669,7 +3056,9 @@ export function runwaySpentSum(state: SeriesPilotState) {
 }
 
 export function shortRunOf(state: SeriesPilotState, id: string): SeriesShotRun {
-  return dropDeadLipsync(withKfPixels(id, state.runs[id] ?? { status: 'keyframe_ready' }));
+  const stored = state.runs[id];
+  if (!stored) return dropDeadLipsync({ status: 'story_locked' });
+  return dropDeadLipsync(withKfPixels(id, stored));
 }
 
 export function approvedShortCount(state: SeriesPilotState) {
@@ -2697,6 +3086,17 @@ export function visualRolesOf(state: SeriesPilotState) {
 export function ensureScriptFollowsVoice(state: SeriesPilotState): SeriesPilotState {
   if (state.scriptLocked || !state.voiceLocked) return state;
   return { ...state, scriptLocked: true };
+}
+
+/** Staff Script desk: confirm story only. Cast/voice stay a later tab. */
+export function canConfirmStaffScript(state: SeriesPilotState) {
+  const n =
+    (state.shorts?.length ?? 0) +
+    episodeShots(state).filter((s) => shotHasValidAction(s, shotRunOf(state, s))).length;
+  if (n === 0) return false;
+  if ((state.scenes?.length ?? 0) > 0 && !state.storyReviewed) return false;
+  if (needsInheritanceReview(state)) return false;
+  return true;
 }
 
 export function canLockScript(state: SeriesPilotState) {
@@ -3060,11 +3460,28 @@ function looksLikeEpisodeScript(text: string) {
     /BỐ ĐỪNG HỨA NỮA|BỐ MẸ KHÔNG CÃI/i.test(text) ||
     /^(?:SCENE|SC|CẢNH|CANH)\s*0*\d+/im.test(text) ||
     /^CHAR-\d+/im.test(text) ||
-    /^(?:MINH|NAM|LINH|BỐ|MẸ|BA|CON|CHAR-\d+)\s*[:：]/im.test(text) ||
+    /^(?:MINH|NAM|LINH|BỐ|MẸ|BA|CON|CHAR-\d+)(?:\s*\([^)]{0,48}\))?\s*[:：]/im.test(text) ||
     /^(?:MINH|NAM|LINH)\s*$/im.test(text) ||
     /(?:^|\n)07\.\s*SCRIPT\b/i.test(text) ||
     /^(?:cuối\s*episode|mục tiêu)\s*:?\s*$/im.test(text)
   );
+}
+
+/** Format-only wrapper so staff Nội dung (no VIDEO TITLE / SC) still parses. Does not invent story. */
+export function wrapStaffScriptForParse(opts: { title?: string; episode?: string; body: string }) {
+  const body = (opts.body || '').trim();
+  if (!body) return '';
+  if (
+    /^(?:SCENE|SC|CẢNH|CANH)\s*0*\d+/im.test(body) ||
+    /VIDEO[ _]?TITLE\s*:/i.test(body) ||
+    /^(?:VIDEO[ _]?ID)\s*:/im.test(body) ||
+    /^---\s*(SHORT|SHOT|LONG)\s*---/im.test(body)
+  ) {
+    return body;
+  }
+  const ep = String(opts.episode || '01').replace(/^EP/i, '').replace(/\D/g, '') || '01';
+  const title = (opts.title || '').trim() || 'Tập mới';
+  return `VIDEO TITLE: ${title}\nEPISODE: ${ep}\n\nSC01 —\n\n${body}\n`;
 }
 
 export function stripDialogue(raw: string) {
@@ -3520,6 +3937,7 @@ export function studioI2vPrecheck(opts: {
   shot?: FamixaSeriesShot;
   videoContext?: string;
   run?: SeriesShotRun;
+  ignoreCircuit?: boolean;
 }): StudioI2vPrecheck {
   const action = (
     opts.state && opts.shot ? i2vActionOf(opts.state, opts.shot) : ''
@@ -3592,7 +4010,10 @@ export function studioI2vPrecheck(opts: {
       ok: gate.ok,
       label: gate.ok ? 'Prompt I2V đạt (0 cr)' : gate.reasons[0] || 'Prompt I2V chưa đạt',
     });
-    if (sameFailedInput(opts.run, dataUriHash(opts.keyframeDataUrl), promptHashOf(gate.prompt))) {
+    if (
+      !opts.ignoreCircuit &&
+      sameFailedInput(opts.run, dataUriHash(opts.keyframeDataUrl), promptHashOf(gate.prompt))
+    ) {
       items.push({
         id: 'circuit',
         ok: false,

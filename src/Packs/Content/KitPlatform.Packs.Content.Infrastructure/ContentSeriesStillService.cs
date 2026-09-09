@@ -8,10 +8,23 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
     private const int MaxDataUrlChars = 2_400_000;
 
     private readonly ContentGeminiClient _gemini;
+    private readonly IFamixaProviderRegistry _providers;
+    private readonly IFamixaProviderSelectionService _selector;
+    private readonly IVisualUniverseSnapshotResolver _snapshots;
+    private readonly IUnifiedVisualCompiler _compiler;
 
-    public ContentSeriesStillService(ContentGeminiClient gemini)
+    public ContentSeriesStillService(
+        ContentGeminiClient gemini,
+        IFamixaProviderRegistry providers,
+        IFamixaProviderSelectionService selector,
+        IVisualUniverseSnapshotResolver snapshots,
+        IUnifiedVisualCompiler compiler)
     {
         _gemini = gemini;
+        _providers = providers;
+        _selector = selector;
+        _snapshots = snapshots;
+        _compiler = compiler;
     }
 
     public async Task<ContentSeriesStillDto> GenerateAsync(
@@ -21,6 +34,68 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
         var prompt = (request.Prompt ?? "").Trim();
         if (prompt.Length is < 12 or > 8000)
             throw new InvalidOperationException("Prompt KF cảnh 12–8000 ký tự.");
+
+        var (snapshot, snapGate) = await SeriesStillVisualIngressV1Rules.ResolveSnapshotAsync(
+            _snapshots, FamixaVisualUniverseAuthorityV1Rules.ProjectId, cancellationToken);
+        if (snapGate is not null || snapshot is null)
+            throw new InvalidOperationException(snapGate ?? SeriesStillVisualIngressV1Rules.GateSnapshot);
+
+        var compiled = SeriesStillVisualIngressV1Rules.CompileStill(
+            snapshot, SeriesStillVisualIngressV1Rules.FromSeriesRequest(request), _compiler);
+        if (compiled.Gate is not null || compiled.Contract is null
+            || !SeriesStillVisualIngressV1Rules.ProviderMayCall(compiled.Contract))
+            throw new InvalidOperationException(compiled.Gate ?? SeriesStillVisualIngressV1Rules.GateCompile);
+
+        var mode = ProjectVisualModeAuthorityV1Rules.FamixaCurrent();
+        var claims = (request.References ?? Array.Empty<ContentSeriesStillRefDto>())
+            .Select(r =>
+            {
+                var role = (r.Role ?? "").Trim();
+                var identity = role.Equals("identity", StringComparison.OrdinalIgnoreCase)
+                    || role.Equals("identity-secondary", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(r.ReferenceRole, ProjectVisualModeAuthorityV1Rules.RoleIdentityAnchor, StringComparison.OrdinalIgnoreCase);
+                var missingMode = string.IsNullOrWhiteSpace(r.VisualMode);
+                var legacyIdentity = identity && missingMode;
+                return new VisualReferenceClaim(
+                    mode.ProjectId,
+                    r.CharacterId ?? "",
+                    r.Name,
+                    legacyIdentity
+                        ? ProjectVisualModeAuthorityV1Rules.ModePhotoreal
+                        : (r.VisualMode ?? mode.VisualMode),
+                    mode.VisualUniverse,
+                    mode.VisualStyle,
+                    r.ReferenceRole ?? (identity
+                        ? ProjectVisualModeAuthorityV1Rules.RoleIdentityAnchor
+                        : role.Equals("scene", StringComparison.OrdinalIgnoreCase)
+                            ? ProjectVisualModeAuthorityV1Rules.RoleScene
+                            : role),
+                    r.AuthorityStatus ?? (identity ? "" : "LOCKED"),
+                    r.ReferenceStatus ?? (legacyIdentity
+                        ? ProjectVisualModeAuthorityV1Rules.StatusLegacy
+                        : ProjectVisualModeAuthorityV1Rules.StatusActive),
+                    legacyIdentity ? "CANON_SEED" : "CHARACTER_STUDIO",
+                    null);
+            })
+            .ToList();
+        var identityClaims = claims
+            .Where(c => c.ReferenceRole == ProjectVisualModeAuthorityV1Rules.RoleIdentityAnchor)
+            .ToList();
+        var visualPreflight = ProjectVisualModeAuthorityV1Rules.Preflight(
+            new VisualGenerationPreflightInput(
+                mode,
+                mode.VisualUniverse,
+                mode.VisualMode,
+                identityClaims.Any(c =>
+                    string.Equals(c.AuthorityStatus, "LOCKED", StringComparison.OrdinalIgnoreCase)),
+                identityClaims.Count > 0 ? identityClaims : claims,
+                identityClaims.Any(c => c.Source == "CANON_SEED"),
+                mode.VisualMode,
+                mode.VisualMode));
+        if (!visualPreflight.Allowed)
+            throw new InvalidOperationException(
+                (visualPreflight.Code ?? ProjectVisualModeAuthorityV1Rules.GateConflict)
+                + ": " + ProjectVisualModeAuthorityV1Rules.StaffConflict);
 
         var aspect = NormalizeAspect(request.Aspect);
         var refs = request.References ?? Array.Empty<ContentSeriesStillRefDto>();
@@ -48,7 +123,7 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
         }
         refs = kept;
 
-        var guarded = prompt;
+        var guarded = compiled.Contract.CompiledPrompt;
 
         var labeled = new List<(string Mime, string Base64, string Label)>(parsed.Count);
         for (var i = 0; i < parsed.Count; i++)
@@ -66,16 +141,23 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
             labeled.Add((parsed[i].Mime, parsed[i].Base64, label));
         }
 
-        var (bytes, model) = await _gemini.GenerateImageWithRefsAsync(
-            guarded,
-            labeled,
-            aspect,
+        var decision = _selector.Select(new FamixaProviderSelectionRequirements(FamixaProviderCapability.Picture));
+        var picture = _providers.GetPicture(decision.ProviderId);
+        var generated = await picture.GenerateAsync(
+            new FamixaPictureProviderRequest(
+                guarded,
+                labeled.Select(r => new FamixaPictureRef(r.Mime, r.Base64, r.Label)).ToList(),
+                aspect),
             cancellationToken);
-        var mimeOut = bytes.Length >= 8 && bytes[0] == 0x89 ? "image/png" : "image/jpeg";
+        var bytes = generated.Bytes ?? throw new InvalidOperationException("Không vẽ được KF cảnh từ Canon. Kiểm tra Gemini image model / quota.");
+        var mimeOut = generated.MimeType
+                      ?? (bytes.Length >= 8 && bytes[0] == 0x89 ? "image/png" : "image/jpeg");
         return new ContentSeriesStillDto(
             $"data:{mimeOut};base64,{Convert.ToBase64String(bytes)}",
-            model,
-            aspect);
+            generated.ModelId ?? decision.ModelId ?? "",
+            aspect,
+            decision.DecisionId,
+            decision.ProviderId);
     }
 
     public async Task<ContentSeriesKfNoteDto> RewriteNoteAsync(

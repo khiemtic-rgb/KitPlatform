@@ -4,25 +4,38 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 
 internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
 {
-    private readonly ContentRunwayClient _runway;
     private readonly ContentFalClient _fal;
+    private readonly IFamixaProviderRegistry _providers;
+    private readonly IFamixaProviderSelectionService _selector;
     private readonly IContentSeriesTakeProxyService _takes;
+    private readonly IVisualUniverseSnapshotResolver _snapshots;
+    private readonly IUnifiedVisualCompiler _compiler;
 
     public ContentSeriesTurboService(
-        ContentRunwayClient runway,
         ContentFalClient fal,
-        IContentSeriesTakeProxyService takes)
+        IFamixaProviderRegistry providers,
+        IFamixaProviderSelectionService selector,
+        IContentSeriesTakeProxyService takes,
+        IVisualUniverseSnapshotResolver snapshots,
+        IUnifiedVisualCompiler compiler)
     {
-        _runway = runway;
         _fal = fal;
+        _providers = providers;
+        _selector = selector;
         _takes = takes;
+        _snapshots = snapshots;
+        _compiler = compiler;
     }
 
     public async Task<ContentSeriesTurboTaskDto> StartAsync(
         ContentSeriesTurboStartRequest request,
         CancellationToken cancellationToken = default)
     {
-        var wan = IsWan(request.Engine);
+        if (!request.Confirm)
+            throw new InvalidOperationException(VideoVisualIngressV1Rules.GateConfirm);
+
+        var decision = _selector.Select(FamixaRuntimeMaxCost.MotionRequirements(request));
+        var wan = decision.ProviderId == FamixaProviderIds.Wan;
         var seconds = request.Seconds >= 8 ? 10 : 5;
         var ratio = MapRatio(request.Ratio);
         var image = NormalizeImage(request.ImageDataUrl);
@@ -31,37 +44,35 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         if (usedPlaceholder)
             throw new InvalidOperationException("Thiếu KF cảnh — không gửi I2V (0 cr).");
 
-        var prompt = BuildPrompt(request.Prompt);
+        var prompt = await CompileBoundPromptAsync(request, cancellationToken);
         if (!wan)
             image = GuardRunwayDataUri(image, ratio);
-        if (wan)
-        {
-            var wanId = await _fal.CreateImageToVideoAsync(
+
+        string? lastImage = null;
+        if (!wan && !string.IsNullOrWhiteSpace(request.LastFrameFromUrl))
+            lastImage = await ExtractLastFrameDataUriAsync(request.LastFrameFromUrl, cancellationToken);
+
+        var started = await _providers.GetMotion(decision.ProviderId).StartAsync(
+            new FamixaMotionStartRequest(
                 image,
                 prompt,
                 request.NegativePrompt,
                 seconds,
-                request.Ratio,
-                cancellationToken);
-            return new ContentSeriesTurboTaskDto(
-                wanId,
+                wan ? request.Ratio : ratio,
+                lastImage),
+            cancellationToken);
+        var taskId = started.ProviderRequestId
+                     ?? throw new InvalidOperationException("Provider I2V không trả task id.");
+        return FamixaExecutionProvenanceRules.StampTurbo(
+            new ContentSeriesTurboTaskDto(
+                taskId,
                 "PENDING",
                 null,
                 null,
                 usedPlaceholder,
-                ContentFalClient.WanModel,
-                seconds >= 8 ? 6 : 5);
-        }
-
-        var taskId = await _runway.CreateImageToVideoAsync(image, prompt, seconds, ratio, cancellationToken);
-        return new ContentSeriesTurboTaskDto(
-            taskId,
-            "PENDING",
-            null,
-            null,
-            usedPlaceholder,
-            ContentRunwayClient.TurboModel,
-            seconds);
+                started.ModelId ?? decision.ModelId ?? "",
+                wan ? (seconds >= 8 ? 6 : 5) : seconds),
+            decision);
     }
 
     public async Task<ContentSeriesTurboTaskDto> GetAsync(
@@ -71,47 +82,12 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         if (string.IsNullOrWhiteSpace(taskId))
             throw new InvalidOperationException("Thiếu task id.");
 
-        var id = taskId.Trim();
-        if (ContentFalClient.IsFalTask(id))
-        {
-            var fal = await _fal.GetTaskAsync(id, cancellationToken);
-            return new ContentSeriesTurboTaskDto(
-                id,
-                fal.Status,
-                fal.VideoUrl,
-                fal.Error,
-                false,
-                ContentFalClient.IsLipsyncTask(id) ? ContentFalClient.LipsyncModel : ContentFalClient.WanModel,
-                0);
-        }
-
-        var (status, video, error, failureCode) = await _runway.GetTaskAsync(id, cancellationToken);
-        long? bytes = null;
-        string? mime = null;
-        var verified = false;
-        if (status == "SUCCEEDED" && !string.IsNullOrWhiteSpace(video))
-        {
-            var probe = await _takes.ProbeAsync(video, cancellationToken);
-            bytes = probe.Bytes;
-            mime = probe.Mime;
-            verified = probe.Ok;
-            if (!probe.Ok)
-                error = string.IsNullOrWhiteSpace(error)
-                    ? $"DOWNLOAD_FAILED: {probe.Error}"
-                    : error;
-        }
-        return new ContentSeriesTurboTaskDto(
-            id,
-            status,
-            video,
-            error,
-            false,
-            ContentRunwayClient.TurboModel,
-            0,
-            failureCode,
-            bytes,
-            mime,
-            verified);
+        var raw = taskId.Trim();
+        var identity = _providers.DescribeTask(raw);
+        var polled = identity.Capability == FamixaProviderCapability.LipSync
+            ? await _providers.GetLipSync(identity.ProviderId).GetAsync(raw, cancellationToken)
+            : await _providers.GetMotion(identity.ProviderId).GetAsync(raw, cancellationToken);
+        return await ToTurboDtoAsync(polled, identity, probe: identity.ProviderId == FamixaProviderIds.Runway, cancellationToken);
     }
 
     public async Task<ContentSeriesTurboTaskDto> StartLipsyncAsync(
@@ -126,37 +102,115 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
               || video.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException("Take khớp môi phải là HTTPS hoặc data video.");
 
-        var audioBytes = DecodeAudio(request.AudioBase64);
-        if (audioBytes.Length is < 32 or > 4_000_000)
+        var voiceRows = (request.Voices ?? Array.Empty<ContentSeriesLipsyncVoiceDto>())
+            .Where(v => !string.IsNullOrWhiteSpace(v.AudioBase64))
+            .ToList();
+        if (voiceRows.Count == 0)
+            voiceRows.Add(new ContentSeriesLipsyncVoiceDto(request.AudioBase64, 0, request.Mime));
+        var padToPerformance = request.PerformanceDurationSec is > 0
+            ? request.PerformanceDurationSec
+            : request.ProductionDurationSec;
+        var audioBytes = voiceRows.Count == 1 && padToPerformance is not > 0
+            ? DecodeAudio(voiceRows[0].AudioBase64)
+            : MergeLipsyncVoices(voiceRows, cancellationToken, padToPerformance);
+        if (audioBytes.Length is < 32 or > 8_000_000)
             throw new InvalidOperationException("File thoại khớp môi không đọc được.");
 
-        byte[] takeBytes;
-        if (video.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase))
-        {
-            takeBytes = DecodeAudio(video);
-        }
-        else
-        {
-            var take = await _takes.FetchAsync(video, cancellationToken);
-            takeBytes = take.Bytes;
-        }
+        var takeBytes = await FetchTakeForLipsyncAsync(video, request.TakeTaskId, cancellationToken);
         if (takeBytes.Length is < 800 or > 12_000_000)
             throw new InvalidOperationException("Take quá lớn hoặc trống — không gửi Fal.");
+        // V3: Fal receives the full performance take. Editorial trim is assemble-only.
 
         var videoCdn = await _fal.UploadAsync(takeBytes, "video/mp4", $"{request.ClipId}.mp4", cancellationToken);
         var audioMime = string.IsNullOrWhiteSpace(request.Mime) ? "audio/mpeg" : request.Mime.Trim();
         var audioExt = audioMime.Contains("wav", StringComparison.OrdinalIgnoreCase) ? "wav" : "mp3";
         var audioCdn = await _fal.UploadAsync(audioBytes, audioMime, $"{request.ClipId}.{audioExt}", cancellationToken);
 
-        var created = await _fal.CreateLipsyncAsync(videoCdn, audioCdn, request.SyncMode, request.Model, cancellationToken);
+        var decision = _selector.Select(new FamixaProviderSelectionRequirements(
+            FamixaProviderCapability.LipSync,
+            DurationSec: request.PerformanceDurationSec ?? request.ProductionDurationSec,
+            LipsyncModel: request.Model));
+        var created = await _providers.GetLipSync(decision.ProviderId).StartAsync(
+            new FamixaLipSyncStartRequest(videoCdn, audioCdn, request.SyncMode, decision.ModelId),
+            cancellationToken);
+        return FamixaExecutionProvenanceRules.StampTurbo(
+            new ContentSeriesTurboTaskDto(
+                created.ProviderRequestId ?? "",
+                created.Status == FamixaProviderStatus.Succeeded ? "SUCCEEDED" : "PENDING",
+                created.OutputUrl,
+                created.Error,
+                false,
+                created.ModelId ?? decision.ModelId ?? "",
+                0),
+            decision);
+    }
+
+    private async Task<byte[]> FetchTakeForLipsyncAsync(string video, string? takeTaskId, CancellationToken cancellationToken)
+    {
+        if (video.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase))
+            return DecodeAudio(video);
+
+        try
+        {
+            return (await _takes.FetchAsync(video, cancellationToken)).Bytes;
+        }
+        catch (InvalidOperationException ex) when (IsExpiredTakeLink(ex.Message) && !string.IsNullOrWhiteSpace(takeTaskId))
+        {
+            var identity = _providers.DescribeTask(takeTaskId, capability: FamixaProviderCapability.Motion);
+            var recovered = identity.Capability == FamixaProviderCapability.LipSync
+                ? await _providers.GetLipSync(identity.ProviderId).RecoverAsync(takeTaskId, cancellationToken)
+                : await _providers.GetMotion(identity.ProviderId).RecoverAsync(takeTaskId, cancellationToken);
+            var fresh = (recovered.OutputUrl ?? "").Trim();
+            if (recovered.Status != FamixaProviderStatus.Succeeded || string.IsNullOrWhiteSpace(fresh))
+                throw new InvalidOperationException(
+                    "Link take hết hạn. Hỏi lại task cũ không lấy được file. Không tạo video mới trừ khi Director Confirm Tạo lại.");
+            return (await _takes.FetchAsync(fresh, cancellationToken)).Bytes;
+        }
+    }
+
+    private async Task<ContentSeriesTurboTaskDto> ToTurboDtoAsync(
+        FamixaProviderResult polled,
+        FamixaProviderTaskRef identity,
+        bool probe,
+        CancellationToken cancellationToken)
+    {
+        var status = FamixaProviderTaskIdentity.ToTurboStatus(polled.Status);
+        var video = polled.OutputUrl;
+        var error = polled.Error;
+        long? bytes = null;
+        string? mime = polled.MimeType;
+        var verified = false;
+        if (probe && status == "SUCCEEDED" && !string.IsNullOrWhiteSpace(video))
+        {
+            var checkedTake = await _takes.ProbeAsync(video, cancellationToken);
+            bytes = checkedTake.Bytes;
+            mime = checkedTake.Mime;
+            verified = checkedTake.Ok;
+            if (!checkedTake.Ok)
+                error = string.IsNullOrWhiteSpace(error)
+                    ? $"DOWNLOAD_FAILED: {checkedTake.Error}"
+                    : error;
+        }
         return new ContentSeriesTurboTaskDto(
-            created.TaskId,
-            created.Status,
-            created.VideoUrl,
-            null,
+            polled.ProviderRequestId ?? "",
+            status,
+            video,
+            error,
             false,
-            created.Model,
-            0);
+            polled.ModelId ?? identity.ModelId ?? "",
+            0,
+            polled.ErrorCode,
+            bytes,
+            mime,
+            verified);
+    }
+
+    private static bool IsExpiredTakeLink(string? message)
+    {
+        var m = message ?? "";
+        return m.Contains("401", StringComparison.Ordinal)
+               || m.Contains("403", StringComparison.Ordinal)
+               || m.Contains("hết hạn", StringComparison.OrdinalIgnoreCase);
     }
 
     private static byte[] DecodeAudio(string? raw)
@@ -171,8 +225,99 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         catch { throw new InvalidOperationException("File thoại không đọc được."); }
     }
 
-    private static bool IsWan(string? engine) =>
-        string.Equals((engine ?? "").Trim(), "wan", StringComparison.OrdinalIgnoreCase);
+    private static byte[] TrimVideoToDuration(byte[] takeBytes, double durationSec, CancellationToken cancellationToken)
+    {
+        var t = Math.Clamp(durationSec, 0.4, 20);
+        var work = Path.Combine(Path.GetTempPath(), "kit-famixa-lipsync-trim", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(work);
+        try
+        {
+            var src = Path.Combine(work, "take.mp4");
+            var dest = Path.Combine(work, "trim.mp4");
+            File.WriteAllBytes(src, takeBytes);
+            cancellationToken.ThrowIfCancellationRequested();
+            RunFfmpegOrThrow(
+                $"-y -hide_banner -i \"{src}\" -t {t.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)} -c:v libx264 -preset veryfast -crf 20 -an \"{dest}\"",
+                dest,
+                "Không cắt được take về production duration trước Fal.");
+            return File.ReadAllBytes(dest);
+        }
+        finally
+        {
+            try { Directory.Delete(work, true); } catch { /* temp */ }
+        }
+    }
+
+    private static byte[] MergeLipsyncVoices(
+        IReadOnlyList<ContentSeriesLipsyncVoiceDto> voices,
+        CancellationToken cancellationToken,
+        double? productionDurationSec = null)
+    {
+        var work = Path.Combine(Path.GetTempPath(), "kit-famixa-lipsync-merge", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(work);
+        try
+        {
+            var inputs = new System.Text.StringBuilder("-y ");
+            var fc = new System.Text.StringBuilder();
+            for (var i = 0; i < voices.Count; i++)
+            {
+                var raw = DecodeAudio(voices[i].AudioBase64);
+                var path = Path.Combine(work, $"v{i:00}.mp3");
+                File.WriteAllBytes(path, raw);
+                inputs.Append("-i \"").Append(path).Append("\" ");
+                var ms = Math.Max(0, (int)Math.Round(voices[i].StartSec * 1000));
+                fc.Append('[').Append(i).Append(":a]adelay=").Append(ms).Append('|').Append(ms)
+                    .Append(",aformat=sample_rates=48000:channel_layouts=stereo[a").Append(i).Append("];");
+            }
+            for (var i = 0; i < voices.Count; i++) fc.Append("[a").Append(i).Append(']');
+            var prod = productionDurationSec is > 0 ? Math.Clamp(productionDurationSec.Value, 0.4, 20) : 0;
+            var prodTxt = prod.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+            fc.Append("amix=inputs=").Append(voices.Count).Append(":normalize=0:dropout_transition=0");
+            if (prod > 0)
+                fc.Append(",atrim=0:").Append(prodTxt).Append(",apad=pad_dur=0.05[a]");
+            else
+                fc.Append(",apad[a]");
+            var dest = Path.Combine(work, "merged.mp3");
+            cancellationToken.ThrowIfCancellationRequested();
+            RunFfmpegOrThrow(
+                prod > 0
+                    ? $"{inputs}-hide_banner -filter_complex \"{fc}\" -map \"[a]\" -t {prodTxt} -c:a libmp3lame -b:a 160k -ar 48000 -ac 2 \"{dest}\""
+                    : $"{inputs}-hide_banner -filter_complex \"{fc}\" -map \"[a]\" -c:a libmp3lame -b:a 160k -ar 48000 -ac 2 \"{dest}\"",
+                dest,
+                "Không ghép được nhiều câu thoại trước Fal. Không bỏ câu.");
+            return File.ReadAllBytes(dest);
+        }
+        finally
+        {
+            try { Directory.Delete(work, true); } catch { /* temp */ }
+        }
+    }
+
+    private static void RunFfmpegOrThrow(string arguments, string dest, string failMessage)
+    {
+        using var p = new System.Diagnostics.Process();
+        p.StartInfo = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "ffmpeg",
+            Arguments = arguments,
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            CreateNoWindow = true,
+        };
+        if (!p.Start())
+            throw new InvalidOperationException(failMessage);
+        var stdout = p.StandardOutput.ReadToEndAsync();
+        var stderr = p.StandardError.ReadToEndAsync();
+        if (!p.WaitForExit(60_000))
+        {
+            try { p.Kill(entireProcessTree: true); } catch { /* ignore */ }
+            throw new InvalidOperationException(failMessage);
+        }
+        try { Task.WaitAll(new Task[] { stdout, stderr }, 5_000); } catch { /* ignore */ }
+        if (!p.HasExited || p.ExitCode != 0 || !File.Exists(dest))
+            throw new InvalidOperationException(failMessage);
+    }
 
     private static string MapRatio(string? raw)
     {
@@ -338,6 +483,97 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         }
         try { return Convert.FromBase64String(s); }
         catch { throw new InvalidOperationException("KF không đọc được — không gửi Runway (0 cr)."); }
+    }
+
+    private async Task<string> ExtractLastFrameDataUriAsync(string takeUrl, CancellationToken cancellationToken)
+    {
+        var take = await _takes.FetchAsync(takeUrl, cancellationToken);
+        if (take.Bytes.Length < 1000)
+            throw new InvalidOperationException("Last-frame: take trước trống — không gửi Runway (0 cr).");
+        var ffmpeg = ResolveFfmpeg();
+        if (string.IsNullOrWhiteSpace(ffmpeg))
+            throw new InvalidOperationException("Last-frame cần FFmpeg trên máy API — không gửi Runway (0 cr).");
+        var work = Path.Combine(Path.GetTempPath(), "kit-famixa-lastframe", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(work);
+        try
+        {
+            var src = Path.Combine(work, "take.mp4");
+            var dest = Path.Combine(work, "last.jpg");
+            await File.WriteAllBytesAsync(src, take.Bytes, cancellationToken);
+            using var p = new System.Diagnostics.Process();
+            p.StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = ffmpeg,
+                Arguments = $"-y -sseof -0.05 -i \"{src}\" -frames:v 1 -q:v 3 \"{dest}\"",
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true,
+            };
+            p.Start();
+            await p.WaitForExitAsync(cancellationToken);
+            if (p.ExitCode != 0 || !File.Exists(dest))
+                throw new InvalidOperationException("Không lấy được frame cuối take trước — không gửi Runway (0 cr).");
+            var bytes = await File.ReadAllBytesAsync(dest, cancellationToken);
+            if (bytes.Length < 32)
+                throw new InvalidOperationException("Frame cuối trống — không gửi Runway (0 cr).");
+            return "data:image/jpeg;base64," + Convert.ToBase64String(bytes);
+        }
+        finally
+        {
+            try { Directory.Delete(work, true); } catch { /* temp */ }
+        }
+    }
+
+    private static string? ResolveFfmpeg()
+    {
+        foreach (var name in new[] { "ffmpeg", "ffmpeg.exe" })
+        {
+            try
+            {
+                using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = name,
+                    Arguments = "-version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                });
+                if (p is null) continue;
+                p.WaitForExit(4000);
+                if (p.ExitCode == 0) return name;
+            }
+            catch { /* next */ }
+        }
+        foreach (var path in new[]
+                 {
+                     @"C:\ffmpeg\bin\ffmpeg.exe",
+                     @"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+                     "/usr/bin/ffmpeg",
+                     "/usr/local/bin/ffmpeg",
+                 })
+        {
+            if (File.Exists(path)) return path;
+        }
+        return null;
+    }
+
+    private async Task<string> CompileBoundPromptAsync(
+        ContentSeriesTurboStartRequest request,
+        CancellationToken cancellationToken)
+    {
+        var (snapshot, snapGate) = await VideoVisualIngressV1Rules.ResolveSnapshotAsync(
+            _snapshots, FamixaVisualUniverseAuthorityV1Rules.ProjectId, cancellationToken);
+        if (snapGate is not null || snapshot is null)
+            throw new InvalidOperationException(snapGate ?? VideoVisualIngressV1Rules.GateSnapshot);
+        var compiled = VideoVisualIngressV1Rules.CompileVideo(
+            snapshot, VideoVisualIngressV1Rules.FromTurbo(request), _compiler);
+        if (compiled.Gate is not null || compiled.Contract is null
+            || !VideoVisualIngressV1Rules.ProviderMayCall(compiled.Contract))
+            throw new InvalidOperationException(compiled.Gate ?? VideoVisualIngressV1Rules.GateCompile);
+        return VideoVisualIngressV1Rules.RunwayI2vPrompt(
+            VideoVisualIngressV1Rules.ComposeMotionLayer(VideoVisualIngressV1Rules.FromTurbo(request)));
     }
 
     private static string BuildPrompt(string? prompt)

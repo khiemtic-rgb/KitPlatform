@@ -20,11 +20,19 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
 
     private readonly ContentRepository _repo;
     private readonly ContentElevenLabsClient _elevenLabs;
+    private readonly IFamixaProviderRegistry _providers;
+    private readonly IFamixaProviderSelectionService _selector;
 
-    public ContentSeriesPilotService(ContentRepository repo, ContentElevenLabsClient elevenLabs)
+    public ContentSeriesPilotService(
+        ContentRepository repo,
+        ContentElevenLabsClient elevenLabs,
+        IFamixaProviderRegistry providers,
+        IFamixaProviderSelectionService selector)
     {
         _repo = repo;
         _elevenLabs = elevenLabs;
+        _providers = providers;
+        _selector = selector;
     }
 
     public async Task<ContentSeriesPilotDto> GetAsync(string seriesCode, CancellationToken cancellationToken = default)
@@ -57,7 +65,10 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
     public Task<IReadOnlyList<ContentSeriesVoiceDto>> ListVoicesAsync(CancellationToken cancellationToken = default) =>
         _elevenLabs.ListVoicesAsync(cancellationToken);
 
-    public async Task<byte[]> PreviewTtsAsync(
+    public Task<byte[]?> GetLibraryPreviewAsync(string voiceId, CancellationToken cancellationToken = default) =>
+        _elevenLabs.GetLibraryPreviewAsync(voiceId, cancellationToken);
+
+    public async Task<ContentSeriesTtsPreviewDto> PreviewTtsAsync(
         string voiceId,
         string text,
         string? publicOwnerId = null,
@@ -71,18 +82,24 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
             throw new InvalidOperationException("Thiếu câu thoại để nghe thử.");
         if (LooksLikeScreenplayDump(spoken))
             throw new InvalidOperationException("TTS chỉ nhận Voice Script (thoại CHAR). Không gửi heading/cảnh/action/CUT TO.");
-        var voice = (voiceId ?? "").Trim();
-        if (voice.Length is < 8 or > 64)
-            throw new InvalidOperationException("Voice ID ElevenLabs không hợp lệ.");
-        foreach (var ch in voice)
-        {
-            if (ch is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or (>= '0' and <= '9') or '_' or '-')
-                continue;
-            throw new InvalidOperationException("Voice ID ElevenLabs không hợp lệ.");
-        }
-        if (!await _elevenLabs.IsConfiguredAsync(cancellationToken))
-            throw new InvalidOperationException("Chưa có key ElevenLabs — Cấu hình AI.");
-        return await _elevenLabs.SynthesizeMp3Async(spoken, voice, publicOwnerId, voiceName, voiceSettings, cancellationToken, accent);
+        var decision = _selector.Select(new FamixaProviderSelectionRequirements(FamixaProviderCapability.Voice));
+        var synthesized = await _providers.GetVoice(decision.ProviderId).SynthesizeAsync(
+            new FamixaVoiceSynthesizeRequest(
+                voiceId,
+                spoken,
+                publicOwnerId,
+                voiceName,
+                accent,
+                voiceSettings),
+            cancellationToken);
+        var bytes = synthesized.Bytes
+                    ?? throw new InvalidOperationException("ElevenLabs trả audio rỗng.");
+        return new ContentSeriesTtsPreviewDto(
+            bytes,
+            decision.DecisionId,
+            decision.ProviderId,
+            synthesized.ModelId ?? decision.ModelId,
+            FamixaExecutionProvenanceRules.VendorRequestId(synthesized.ProviderRequestId));
     }
 
     public async Task<IReadOnlyList<ContentSeriesBuildSummaryDto>> ListBuildsAsync(

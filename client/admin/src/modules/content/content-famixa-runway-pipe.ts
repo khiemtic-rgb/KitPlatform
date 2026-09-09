@@ -1,5 +1,7 @@
 /** Per-shot Runway I2V pipeline. HTTP 200 ≠ VIDEO READY. */
 
+import { quoteFamixaProviderCost } from './famixa-ai-provider-cost';
+
 export type VideoPipeStatus =
   | 'VIDEO_NOT_SENT'
   | 'VIDEO_QUEUED'
@@ -70,6 +72,33 @@ export type RunwayAttempt = {
     apiVersion?: string;
     compiler?: string;
   };
+  /** Immutable attempt identity. Not a mutable execution status store. */
+  attemptId?: string;
+  resultClass?: 'CURRENT' | 'LATE_RESULT';
+  /** Immutable SelectionDecision snapshot. Not Router re-query. */
+  selectionSnapshot?: {
+    decisionId: string;
+    providerId: string;
+    modelId?: string;
+    selectionMode: string;
+    reason?: string;
+    estimatedCost?: number | null;
+    costKind?: string;
+  };
+  frozenInput?: {
+    keyframeArtifactId?: string;
+    keyframePixelHash?: string;
+    pictureRevisionId?: string;
+    baseMotionFingerprint: string;
+    actingBeatFingerprint: string;
+    promptHash: string;
+    visualContractHash?: string;
+    timingHash: string;
+    provider: 'runway' | 'wan';
+    providerDuration: 5 | 10;
+    executionFingerprint: string;
+  };
+  inputFingerprint?: string;
 };
 
 export type RunwayDiagRow = {
@@ -170,6 +199,7 @@ export function formatRunwayWaitHint(opts: {
   return `${elapsed}${phase} Thường ${typical}. KIT hỏi mỗi 6s, tối đa 4 phút — đừng Gửi lại.`;
 }
 
+/** Pipe/display: a playable file exists. Not current-valid production identity. */
 export function hasVerifiedTake(run?: RunwayPipeRun) {
   const url = (run?.previewUrl || run?.localVideoPath || '').trim();
   if (!url) return false;
@@ -207,6 +237,7 @@ export function hasRunwayGenerationFail(run?: RunwayPipeRun) {
   return Boolean(lastGenerationFail(run));
 }
 
+/** Pipe status for send/retry. VIDEO_READY here means a file exists, not current-valid. */
 export function classifyVideoPipe(run?: RunwayPipeRun): VideoPipeStatus {
   if (run?.videoPipe && run.videoPipe !== 'VIDEO_READY' && run.videoPipe !== 'VIDEO_NOT_SENT') {
     if (run.videoPipe === 'INPUT_INVALID' && !hasVerifiedTake(run)) {
@@ -319,6 +350,10 @@ export function sanitizeKitPrecheck(run?: RunwayPipeRun): Partial<RunwayPipeRun>
 export function sameFailedInput(run?: RunwayPipeRun, sourceHash?: string, promptHash?: string) {
   const failed = lastGenerationFail(run);
   if (!failed) return false;
+  const liveRev = ((run as { pictureRevisionId?: string } | undefined)?.pictureRevisionId || '').trim();
+  const failedRev = (failed.frozenInput?.pictureRevisionId || '').trim();
+  if (liveRev && failedRev && liveRev !== failedRev) return false;
+  if (liveRev && !failedRev) return false;
   const current = sourceHash || dataUriHash(run?.keyframeDataUrl);
   const stamped = run?.failedKfHash || failed.source?.hash;
   if (stamped && current && stamped !== current) return false;
@@ -612,10 +647,14 @@ export function formatProductionLog(opts: {
     `  Failure: ${att?.failureCode || '—'}`,
     `  KF_HASH: ${att?.source?.hash || att?.kf?.hash || '—'}`,
     `  PROMPT_HASH: ${att?.promptHash || '—'}`,
-    `  Estimated: ${att?.duration ? att.duration * 5 : '—'} cr (5 cr/s · gen4_turbo)`,
+    `  Estimated: ${
+      att?.duration
+        ? `${quoteFamixaProviderCost({ providerId: 'runway', modelId: 'gen4_turbo', quantity: att.duration }).estimatedAmount} cr`
+        : '—'
+    } (Cost SoT · gen4_turbo)`,
     `  Cost: ${
       classifyVideoPipe(opts.run) === 'VIDEO_READY'
-        ? `ACTUAL ${attempts.reduce((n, a) => n + (a.billed || 0), 0) || '—'} cr`
+        ? `INFERRED_ESTIMATE ${attempts.reduce((n, a) => n + (a.billed || 0), 0) || '—'} cr`
         : classifyVideoPipe(opts.run) === 'INPUT_INVALID'
           ? 'NONE — KIT PRECHECK, chưa gọi Runway'
           : isInternalBadOutput(opts.run) || classifyVideoPipe(opts.run) === 'RUNWAY_FAILED'
