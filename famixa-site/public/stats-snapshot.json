@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-09T04:56:18.852Z",
+  "generatedAt": "2026-09-09T11:37:00.234Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 15,
-    "todayPageViews": 7,
-    "todayRequests": 111,
-    "last24hVisitors": 65,
-    "last24hPageViews": 26,
-    "last24hRequests": 541
+    "todayVisitors": 39,
+    "todayPageViews": 32,
+    "todayRequests": 196,
+    "last24hVisitors": 73,
+    "last24hPageViews": 45,
+    "last24hRequests": 582
   },
   "hourly": [
-    {
-      "time": "2026-09-08T05:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-08T06:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-08T07:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-08T08:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-08T09:00:00Z",
-      "visitors": 10,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-08T10:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-09-08T12:00:00Z",
       "visitors": 2,
@@ -120,6 +90,41 @@
       "time": "2026-09-09T04:00:00Z",
       "visitors": 5,
       "requests": 8
+    },
+    {
+      "time": "2026-09-09T05:00:00Z",
+      "visitors": 5,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-09T06:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-09T07:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-09T08:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-09T09:00:00Z",
+      "visitors": 9,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-09T10:00:00Z",
+      "visitors": 5,
+      "requests": 28
+    },
+    {
+      "time": "2026-09-09T11:00:00Z",
+      "visitors": 4,
+      "requests": 15
     }
   ],
   "daily": [
@@ -161,26 +166,30 @@
     },
     {
       "date": "2026-09-09",
-      "visitors": 48,
-      "pageViews": 16,
-      "requests": 462
+      "visitors": 81,
+      "pageViews": 41,
+      "requests": 546
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 38
+      "views": 42
     },
     {
       "path": "/robots.txt",
-      "views": 23
+      "views": 27
     },
     {
-      "path": "/mail/phpinfo.php",
-      "views": 21
+      "path": "/vi/",
+      "views": 22
     },
     {
       "path": "/api/dev/.env",
+      "views": 21
+    },
+    {
+      "path": "/mail/phpinfo.php",
       "views": 21
     },
     {
@@ -188,8 +197,8 @@
       "views": 21
     },
     {
-      "path": "/vi/",
-      "views": 20
+      "path": "/sitemap.xml",
+      "views": 17
     },
     {
       "path": "/wp-login.php",
@@ -212,10 +221,6 @@
       "views": 14
     },
     {
-      "path": "/sitemap.xml",
-      "views": 13
-    },
-    {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "views": 13
     },
@@ -224,7 +229,7 @@
       "views": 12
     },
     {
-      "path": "/rabbitmq/.env",
+      "path": "/server-status.php",
       "views": 12
     }
   ]
