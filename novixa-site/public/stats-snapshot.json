@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-08T21:11:34.772Z",
+  "generatedAt": "2026-09-09T04:46:15.739Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 163,
-    "last24hPageViews": 631,
-    "last24hRequests": 2157
+    "todayVisitors": 19,
+    "todayPageViews": 28,
+    "todayRequests": 61,
+    "last24hVisitors": 146,
+    "last24hPageViews": 372,
+    "last24hRequests": 1629
   },
   "hourly": [
-    {
-      "time": "2026-09-07T22:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-07T23:00:00Z",
-      "visitors": 1,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-08T00:00:00Z",
-      "visitors": 16,
-      "requests": 18
-    },
-    {
-      "time": "2026-09-08T01:00:00Z",
-      "visitors": 3,
-      "requests": 283
-    },
-    {
-      "time": "2026-09-08T02:00:00Z",
-      "visitors": 18,
-      "requests": 282
-    },
-    {
-      "time": "2026-09-08T03:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-08T04:00:00Z",
-      "visitors": 13,
-      "requests": 14
-    },
     {
       "time": "2026-09-08T05:00:00Z",
       "visitors": 2,
@@ -128,8 +93,43 @@
     },
     {
       "time": "2026-09-08T21:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-08T22:00:00Z",
+      "visitors": 8,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-08T23:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-09T00:00:00Z",
+      "visitors": 7,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-09T01:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-09T02:00:00Z",
+      "visitors": 6,
+      "requests": 36
+    },
+    {
+      "time": "2026-09-09T03:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-09T04:00:00Z",
+      "visitors": 4,
+      "requests": 5
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-09-08",
-      "visitors": 158,
-      "pageViews": 625,
-      "requests": 2144
+      "visitors": 168,
+      "pageViews": 633,
+      "requests": 2166
+    },
+    {
+      "date": "2026-09-09",
+      "visitors": 19,
+      "pageViews": 28,
+      "requests": 61
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 125
+      "views": 109
     },
     {
       "path": "/robots.txt",
-      "views": 52
+      "views": 49
     },
     {
       "path": "/vi/",
-      "views": 35
-    },
-    {
-      "path": "/scripts/.env",
-      "views": 24
-    },
-    {
-      "path": "/microservice/.env",
-      "views": 24
-    },
-    {
-      "path": "/application_default_credentials.json",
-      "views": 24
-    },
-    {
-      "path": "/.env.backup2",
-      "views": 24
-    },
-    {
-      "path": "/job/.env",
-      "views": 24
-    },
-    {
-      "path": "/firebase-key.json",
-      "views": 24
-    },
-    {
-      "path": "/user-panel/.env",
-      "views": 21
-    },
-    {
-      "path": "/administrator/.env",
-      "views": 21
-    },
-    {
-      "path": "/releases/.env",
-      "views": 21
+      "views": 37
     },
     {
       "path": "/sitemap.xml",
-      "views": 17
-    },
-    {
-      "path": "/php-info.php",
       "views": 16
     },
     {
-      "path": "/erp/.env",
-      "views": 16
+      "path": "/sitemap-index.xml",
+      "views": 15
+    },
+    {
+      "path": "//wp1/wp-includes/wlwmanifest.xml",
+      "views": 12
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 12
+    },
+    {
+      "path": "//sito/wp-includes/wlwmanifest.xml",
+      "views": 9
+    },
+    {
+      "path": "//website/wp-includes/wlwmanifest.xml",
+      "views": 9
+    },
+    {
+      "path": "/wp-json/",
+      "views": 9
+    },
+    {
+      "path": "/%2fetc%2fgitlab%2fgitlab%2erb",
+      "views": 7
+    },
+    {
+      "path": "/%2egithub/dependabot.yml",
+      "views": 7
+    },
+    {
+      "path": "//2019/wp-includes/wlwmanifest.xml",
+      "views": 7
+    },
+    {
+      "path": "/__nextjs_action",
+      "views": 7
+    },
+    {
+      "path": "/%252F.gitlab-ci.yml",
+      "views": 6
     }
   ]
 }
