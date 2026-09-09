@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-09T16:40:57.805Z",
+  "generatedAt": "2026-09-09T20:57:31.382Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 114,
-    "todayPageViews": 421,
-    "todayRequests": 613,
-    "last24hVisitors": 142,
-    "last24hPageViews": 500,
-    "last24hRequests": 757
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 140,
+    "last24hPageViews": 453,
+    "last24hRequests": 699
   },
   "hourly": [
-    {
-      "time": "2026-09-08T17:00:00Z",
-      "visitors": 14,
-      "requests": 71
-    },
-    {
-      "time": "2026-09-08T18:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-08T19:00:00Z",
-      "visitors": 5,
-      "requests": 31
-    },
-    {
-      "time": "2026-09-08T20:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
     {
       "time": "2026-09-08T21:00:00Z",
       "visitors": 3,
@@ -128,17 +108,31 @@
     },
     {
       "time": "2026-09-09T16:00:00Z",
+      "visitors": 10,
+      "requests": 15
+    },
+    {
+      "time": "2026-09-09T17:00:00Z",
       "visitors": 7,
-      "requests": 11
+      "requests": 8
+    },
+    {
+      "time": "2026-09-09T18:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-09T19:00:00Z",
+      "visitors": 6,
+      "requests": 20
+    },
+    {
+      "time": "2026-09-09T20:00:00Z",
+      "visitors": 11,
+      "requests": 23
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-03",
-      "visitors": 213,
-      "pageViews": 462,
-      "requests": 1386
-    },
     {
       "date": "2026-09-04",
       "visitors": 159,
@@ -171,23 +165,23 @@
     },
     {
       "date": "2026-09-09",
-      "visitors": 114,
-      "pageViews": 421,
-      "requests": 613
+      "visitors": 132,
+      "pageViews": 445,
+      "requests": 676
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 132
+      "views": 115
     },
     {
       "path": "/robots.txt",
-      "views": 43
+      "views": 39
     },
     {
       "path": "/vi/",
-      "views": 38
+      "views": 37
     },
     {
       "path": "/hosting/phpinfo.php",
@@ -202,11 +196,11 @@
       "views": 18
     },
     {
-      "path": "/test.php",
+      "path": "/kubernetes/.env",
       "views": 18
     },
     {
-      "path": "/kubernetes/.env",
+      "path": "/test.php",
       "views": 18
     },
     {
@@ -214,27 +208,27 @@
       "views": 18
     },
     {
-      "path": "/wp-login.php",
-      "views": 18
-    },
-    {
-      "path": "//wp1/wp-includes/wlwmanifest.xml",
+      "path": "/sitemap-index.xml",
       "views": 14
     },
     {
-      "path": "/sitemap-index.xml",
-      "views": 13
+      "path": "/wp-login.php",
+      "views": 14
     },
     {
       "path": "/sitemap.xml",
       "views": 13
     },
     {
-      "path": "//sito/wp-includes/wlwmanifest.xml",
-      "views": 13
+      "path": "/prestashop/.env",
+      "views": 12
     },
     {
       "path": "/frontend/.env",
+      "views": 12
+    },
+    {
+      "path": "/saas/.env",
       "views": 12
     }
   ]
