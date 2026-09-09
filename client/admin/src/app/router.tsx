@@ -485,6 +485,16 @@ const ContentIdeaPoolPage = lazy(() =>
 const ContentVideosPage = lazy(() =>
   import('@/modules/content/ContentVideosPage').then((m) => ({ default: m.ContentVideosPage })),
 );
+const ContentFamixaDirectorReviewPage = lazy(() =>
+  import('@/modules/content/ContentFamixaDirectorReviewPage').then((m) => ({
+    default: m.ContentFamixaDirectorReviewPage,
+  })),
+);
+const ContentFamixaVisualCalibrationPage = lazy(() =>
+  import('@/modules/content/ContentFamixaVisualCalibrationPage').then((m) => ({
+    default: m.ContentFamixaVisualCalibrationPage,
+  })),
+);
 const LocalOsListingsPage = lazy(() =>
   import('@/modules/local-os/LocalOsListingsPage').then((m) => ({ default: m.LocalOsListingsPage })),
 );
@@ -1031,6 +1041,22 @@ export function AppRouter() {
                   element={
                     <Suspense fallback={<ContentRouteFallback />}>
                       <ContentVideosPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="visual-calibration/:packId/director-review"
+                  element={
+                    <Suspense fallback={<ContentRouteFallback />}>
+                      <ContentFamixaDirectorReviewPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="visual-calibration/:packId"
+                  element={
+                    <Suspense fallback={<ContentRouteFallback />}>
+                      <ContentFamixaVisualCalibrationPage />
                     </Suspense>
                   }
                 />
