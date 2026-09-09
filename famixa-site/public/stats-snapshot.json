@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-09T16:48:00.333Z",
+  "generatedAt": "2026-09-09T21:02:42.272Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 54,
-    "todayPageViews": 36,
-    "todayRequests": 245,
-    "last24hVisitors": 76,
-    "last24hPageViews": 45,
-    "last24hRequests": 596
+    "todayVisitors": 12,
+    "todayPageViews": 3,
+    "todayRequests": 29,
+    "last24hVisitors": 70,
+    "last24hPageViews": 41,
+    "last24hRequests": 289
   },
   "hourly": [
-    {
-      "time": "2026-09-08T17:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-08T18:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-08T19:00:00Z",
-      "visitors": 7,
-      "requests": 35
-    },
-    {
-      "time": "2026-09-08T20:00:00Z",
-      "visitors": 3,
-      "requests": 280
-    },
-    {
-      "time": "2026-09-08T21:00:00Z",
-      "visitors": 5,
-      "requests": 13
-    },
     {
       "time": "2026-09-08T22:00:00Z",
       "visitors": 6,
@@ -125,15 +100,29 @@
       "time": "2026-09-09T16:00:00Z",
       "visitors": 7,
       "requests": 7
+    },
+    {
+      "time": "2026-09-09T17:00:00Z",
+      "visitors": 5,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-09T18:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-09T19:00:00Z",
+      "visitors": 5,
+      "requests": 15
+    },
+    {
+      "time": "2026-09-09T20:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-03",
-      "visitors": 62,
-      "pageViews": 32,
-      "requests": 202
-    },
     {
       "date": "2026-09-04",
       "visitors": 40,
@@ -166,71 +155,77 @@
     },
     {
       "date": "2026-09-09",
-      "visitors": 104,
-      "pageViews": 45,
-      "requests": 596
+      "visitors": 61,
+      "pageViews": 39,
+      "requests": 274
+    },
+    {
+      "date": "2026-09-10",
+      "visitors": 12,
+      "pageViews": 3,
+      "requests": 29
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 41
+      "views": 27
     },
     {
       "path": "/robots.txt",
-      "views": 26
-    },
-    {
-      "path": "/current/.env",
-      "views": 21
-    },
-    {
-      "path": "/mail/phpinfo.php",
-      "views": 21
-    },
-    {
-      "path": "/api/dev/.env",
-      "views": 21
-    },
-    {
-      "path": "/vi/",
-      "views": 20
+      "views": 25
     },
     {
       "path": "/sitemap.xml",
       "views": 18
     },
     {
-      "path": "/application_default_credentials.json",
-      "views": 14
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 14
-    },
-    {
-      "path": "/graphql/.env",
-      "views": 14
-    },
-    {
-      "path": "/phpinfo",
-      "views": 14
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 12
-    },
-    {
-      "path": "/.git/.env",
-      "views": 12
-    },
-    {
-      "path": "/server-status.php",
-      "views": 12
+      "path": "/vi/",
+      "views": 18
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 13
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 13
+    },
+    {
+      "path": "/wp-login.php",
       "views": 12
+    },
+    {
+      "path": "/images/social/zalo.png",
+      "views": 9
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 9
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 9
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 7
+    },
+    {
+      "path": "/_next/static/css/4e38ee1c6419eb50.css",
+      "views": 6
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 5
+    },
+    {
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
+      "views": 5
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 5
     }
   ]
 }
