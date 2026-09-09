@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-09T11:27:06.304Z",
+  "generatedAt": "2026-09-09T16:40:57.805Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 76,
-    "todayPageViews": 101,
-    "todayRequests": 208,
-    "last24hVisitors": 147,
-    "last24hPageViews": 223,
-    "last24hRequests": 449
+    "todayVisitors": 114,
+    "todayPageViews": 421,
+    "todayRequests": 613,
+    "last24hVisitors": 142,
+    "last24hPageViews": 500,
+    "last24hRequests": 757
   },
   "hourly": [
-    {
-      "time": "2026-09-08T12:00:00Z",
-      "visitors": 12,
-      "requests": 18
-    },
-    {
-      "time": "2026-09-08T13:00:00Z",
-      "visitors": 9,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-08T14:00:00Z",
-      "visitors": 17,
-      "requests": 22
-    },
-    {
-      "time": "2026-09-08T15:00:00Z",
-      "visitors": 9,
-      "requests": 39
-    },
-    {
-      "time": "2026-09-08T16:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
     {
       "time": "2026-09-08T17:00:00Z",
       "visitors": 14,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-09-09T11:00:00Z",
-      "visitors": 6,
-      "requests": 18
+      "visitors": 11,
+      "requests": 23
+    },
+    {
+      "time": "2026-09-09T12:00:00Z",
+      "visitors": 10,
+      "requests": 313
+    },
+    {
+      "time": "2026-09-09T13:00:00Z",
+      "visitors": 13,
+      "requests": 37
+    },
+    {
+      "time": "2026-09-09T14:00:00Z",
+      "visitors": 7,
+      "requests": 35
+    },
+    {
+      "time": "2026-09-09T15:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-09T16:00:00Z",
+      "visitors": 7,
+      "requests": 11
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-09-09",
-      "visitors": 76,
-      "pageViews": 101,
-      "requests": 208
+      "visitors": 114,
+      "pageViews": 421,
+      "requests": 613
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 116
+      "views": 132
     },
     {
       "path": "/robots.txt",
-      "views": 41
+      "views": 43
     },
     {
       "path": "/vi/",
       "views": 38
     },
     {
-      "path": "/wp-login.php",
+      "path": "/hosting/phpinfo.php",
+      "views": 21
+    },
+    {
+      "path": "/wp/.env",
+      "views": 21
+    },
+    {
+      "path": "/phpinfo.php.bak",
       "views": 18
     },
     {
-      "path": "/sitemap-index.xml",
-      "views": 15
+      "path": "/test.php",
+      "views": 18
+    },
+    {
+      "path": "/kubernetes/.env",
+      "views": 18
+    },
+    {
+      "path": "/firebase-adminsdk.json",
+      "views": 18
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 18
     },
     {
       "path": "//wp1/wp-includes/wlwmanifest.xml",
       "views": 14
     },
     {
+      "path": "/sitemap-index.xml",
+      "views": 13
+    },
+    {
       "path": "/sitemap.xml",
-      "views": 14
+      "views": 13
     },
     {
       "path": "//sito/wp-includes/wlwmanifest.xml",
-      "views": 11
+      "views": 13
     },
     {
-      "path": "//website/wp-includes/wlwmanifest.xml",
-      "views": 9
-    },
-    {
-      "path": "/wp-json/",
-      "views": 8
-    },
-    {
-      "path": "//2019/wp-includes/wlwmanifest.xml",
-      "views": 7
-    },
-    {
-      "path": "//web/wp-includes/wlwmanifest.xml",
-      "views": 7
-    },
-    {
-      "path": "/.git/config",
-      "views": 6
-    },
-    {
-      "path": "//2018/wp-includes/wlwmanifest.xml",
-      "views": 6
-    },
-    {
-      "path": "//media/wp-includes/wlwmanifest.xml",
-      "views": 6
+      "path": "/frontend/.env",
+      "views": 12
     }
   ]
 }
