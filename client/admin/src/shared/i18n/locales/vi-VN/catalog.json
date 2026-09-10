@@ -433,6 +433,8 @@
     },
     "messages": {
       "saveFailed": "Không lưu được dữ liệu",
+      "noWritePermission": "Bạn không có quyền sửa danh mục (cần quyền catalog.write hoặc tài khoản ADMIN). Liên hệ quản trị viên nhà thuốc.",
+      "readOnlyBanner": "Tài khoản hiện tại chỉ được xem sản phẩm — không thêm/sửa ĐVT, barcode, giá hay lưu thay đổi. Cần quyền «Sửa danh mục» (catalog.write) hoặc đăng nhập bằng ADMIN.",
       "saveUnitsFailed": "Không lưu được đơn vị tính",
       "saveIngredientsFailed": "Không lưu được hoạt chất",
       "fillGeneralBefore": "Vui lòng nhập đầy đủ thông tin sản phẩm trước khi nhập {{section}}.",

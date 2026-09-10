@@ -154,6 +154,12 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   } = useCatalogEnums();
   const canCatalogWrite = useCanCatalogWrite();
   const { message: msg, modal } = App.useApp();
+
+  const ensureCanWrite = () => {
+    if (canCatalogWrite) return true;
+    msg.warning(t('productForm.messages.noWritePermission'));
+    return false;
+  };
   const [form] = Form.useForm();
   const linkedNationalDrugId = Form.useWatch('nationalDrugId', form);
   const linkedNationalReg = Form.useWatch('nationalRegistrationNumber', form);
@@ -349,6 +355,10 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   const persistCommercial = (payload: ProductCommercialPayload): Promise<ProductDetail | undefined> => {
     const product = currentProduct();
     if (!product) return Promise.resolve(undefined);
+    if (!canCatalogWrite) {
+      msg.warning(t('productForm.messages.noWritePermission'));
+      return Promise.reject(new Error('catalog.write required'));
+    }
 
     commercialRef.current = payload;
     setCommercial(payload);
@@ -369,7 +379,11 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         return updated;
       } catch (error) {
         if (displayProduct) syncCommercialFromProduct(displayProduct);
-        msg.error(apiErrorMessage(error, t('productForm.messages.saveFailed')));
+        const fallback =
+          isAxiosError(error) && error.response?.status === 403
+            ? t('productForm.messages.noWritePermission')
+            : t('productForm.messages.saveFailed');
+        msg.error(apiErrorMessage(error, fallback));
         throw error;
       } finally {
         setCommercialSaving(false);
@@ -384,6 +398,10 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   const persistUnits = (payload: ProductUnitPayload[]): Promise<ProductDetail | undefined> => {
     const product = currentProduct();
     if (!product) return Promise.resolve(undefined);
+    if (!canCatalogWrite) {
+      msg.warning(t('productForm.messages.noWritePermission'));
+      return Promise.reject(new Error('catalog.write required'));
+    }
 
     unitsRef.current = payload;
     setUnits(payload);
@@ -403,7 +421,11 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         return updated;
       } catch (error) {
         if (displayProduct) syncUnitsFromProduct(displayProduct);
-        msg.error(apiErrorMessage(error, t('productForm.messages.saveUnitsFailed')));
+        const fallback =
+          isAxiosError(error) && error.response?.status === 403
+            ? t('productForm.messages.noWritePermission')
+            : t('productForm.messages.saveUnitsFailed');
+        msg.error(apiErrorMessage(error, fallback));
         throw error;
       } finally {
         setUnitsSaving(false);
@@ -418,6 +440,10 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   const persistIngredients = (payload: IngredientRow[]): Promise<ProductDetail | undefined> => {
     const product = currentProduct();
     if (!product) return Promise.resolve(undefined);
+    if (!canCatalogWrite) {
+      msg.warning(t('productForm.messages.noWritePermission'));
+      return Promise.reject(new Error('catalog.write required'));
+    }
 
     ingredientsRef.current = payload;
     setIngredientRows(payload);
@@ -441,7 +467,11 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         return updated;
       } catch (error) {
         if (displayProduct) syncIngredientsFromProduct(displayProduct);
-        msg.error(apiErrorMessage(error, t('productForm.messages.saveIngredientsFailed')));
+        const fallback =
+          isAxiosError(error) && error.response?.status === 403
+            ? t('productForm.messages.noWritePermission')
+            : t('productForm.messages.saveIngredientsFailed');
+        msg.error(apiErrorMessage(error, fallback));
         throw error;
       } finally {
         setIngredientsSaving(false);
@@ -514,7 +544,11 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
       return created;
     } catch (error) {
       if (isAxiosError(error)) {
-        msg.error(apiErrorMessage(error, t('productForm.messages.createFailed')));
+        const fallback =
+          error.response?.status === 403
+            ? t('productForm.messages.noWritePermission')
+            : t('productForm.messages.createFailed');
+        msg.error(apiErrorMessage(error, fallback));
       }
       return null;
     } finally {
@@ -651,6 +685,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     });
 
   const handleAddBarcode = async () => {
+    if (!ensureCanWrite()) return;
     if (!currentProduct()) {
       msg.warning(t('productForm.messages.fillGeneralBeforeBarcode'));
       return;
@@ -727,6 +762,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   };
 
   const handleAddPrice = async () => {
+    if (!ensureCanWrite()) return;
     if (!currentProduct()) {
       msg.warning(t('productForm.messages.fillGeneralBeforePrice'));
       return;
@@ -774,6 +810,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   };
 
   const handleAddImage = async (url: string) => {
+    if (!ensureCanWrite()) return;
     if (!currentProduct()) {
       msg.warning(t('productForm.messages.fillGeneralBeforeImage'));
       return;
@@ -858,6 +895,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   };
 
   const handleAddUnit = async () => {
+    if (!ensureCanWrite()) return;
     if (!currentProduct()) {
       msg.warning(t('productForm.messages.fillGeneralBeforeUnits'));
       return;
@@ -932,6 +970,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
   };
 
   const handleAddIngredient = async () => {
+    if (!ensureCanWrite()) return;
     if (!currentProduct()) {
       msg.warning(t('productForm.messages.fillGeneralBeforeIngredients'));
       return;
@@ -1043,6 +1082,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
     });
 
   const saveGeneralChanges = async (): Promise<boolean> => {
+    if (!ensureCanWrite()) return false;
     if (!hasPersistedId) {
       const created = await createProductFirstTime();
       return created !== null;
@@ -1517,7 +1557,12 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             { value: 0, label: t('productForm.unitTags.saleNotAllowed') },
           ]}
         />
-        <Button type="primary" onClick={() => void handleAddUnit()} loading={unitsSaving}>
+        <Button
+          type="primary"
+          onClick={() => void handleAddUnit()}
+          loading={unitsSaving}
+          disabled={!canCatalogWrite}
+        >
           {tc('actions.add')}
         </Button>
       </Space>
@@ -1567,7 +1612,12 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           onPressEnter={() => void handleAddBarcode()}
           style={{ width: 'calc(100% - 202px)' }}
         />
-        <Button type="primary" onClick={() => void handleAddBarcode()} loading={commercialSaving}>
+        <Button
+          type="primary"
+          onClick={() => void handleAddBarcode()}
+          loading={commercialSaving}
+          disabled={!canCatalogWrite}
+        >
           {tc('actions.add')}
         </Button>
       </Space.Compact>
@@ -1639,7 +1689,12 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           style={{ ...moneyInputNumberStyle, width: 160 }}
           {...moneyInputNumberPropsAllowZeroSuffix}
         />
-        <Button type="primary" onClick={() => void handleAddPrice()} loading={commercialSaving}>
+        <Button
+          type="primary"
+          onClick={() => void handleAddPrice()}
+          loading={commercialSaving}
+          disabled={!canCatalogWrite}
+        >
           {tc('actions.add')}
         </Button>
       </Space>
@@ -1680,9 +1735,9 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           accept="image/jpeg,image/png,image/webp"
           showUploadList={false}
           customRequest={handleImageUpload}
-          disabled={uploading || commercialSaving}
+          disabled={!canCatalogWrite || uploading || commercialSaving}
         >
-          <Button icon={<UploadOutlined />} loading={uploading}>
+          <Button icon={<UploadOutlined />} loading={uploading} disabled={!canCatalogWrite}>
             {t('productForm.actions.uploadImage')}
           </Button>
         </Upload>
@@ -1693,8 +1748,14 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
             onChange={(e) => setDraftImageUrl(e.target.value)}
             onPressEnter={() => void handleAddImageFromUrl()}
             style={{ width: 'calc(100% - 72px)' }}
+            disabled={!canCatalogWrite}
           />
-          <Button type="primary" onClick={() => void handleAddImageFromUrl()} loading={commercialSaving}>
+          <Button
+            type="primary"
+            onClick={() => void handleAddImageFromUrl()}
+            loading={commercialSaving}
+            disabled={!canCatalogWrite}
+          >
             {tc('actions.add')}
           </Button>
         </Space.Compact>
@@ -1813,7 +1874,12 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
           onChange={(e) => setDraftStrengthUnit(e.target.value)}
           style={{ width: 72 }}
         />
-        <Button type="primary" onClick={() => void handleAddIngredient()} loading={ingredientsSaving}>
+        <Button
+          type="primary"
+          onClick={() => void handleAddIngredient()}
+          loading={ingredientsSaving}
+          disabled={!canCatalogWrite}
+        >
           {tc('actions.add')}
         </Button>
       </Space>
@@ -1846,7 +1912,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
               {t('products.viewStock')}
             </Button>
           )}
-          {hasPersistedId && (
+          {hasPersistedId && canCatalogWrite && (
             <Popconfirm
               title={t('products.deleteConfirm')}
               onConfirm={async () => {
@@ -1863,13 +1929,26 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
               <Button danger>{tc('actions.delete')}</Button>
             </Popconfirm>
           )}
-          <Button type="primary" loading={saving} onClick={() => void handleSave()}>
+          <Button
+            type="primary"
+            loading={saving}
+            disabled={!canCatalogWrite}
+            onClick={() => void handleSave()}
+          >
             {hasPersistedId ? t('productForm.actions.saveProduct') : t('productForm.actions.createProduct')}
           </Button>
         </Space>
       }
     >
       <Form form={form} layout="vertical" onValuesChange={() => setGeneralDirty(true)}>
+        {!canCatalogWrite && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('productForm.messages.readOnlyBanner')}
+            style={{ marginBottom: 16 }}
+          />
+        )}
         {showCreatedHint && hasPersistedId && (
           <Alert
             type="success"

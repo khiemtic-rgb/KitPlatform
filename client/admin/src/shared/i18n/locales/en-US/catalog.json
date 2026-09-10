@@ -425,6 +425,8 @@
     },
     "messages": {
       "saveFailed": "Could not save data",
+      "noWritePermission": "You do not have permission to edit the catalog (requires catalog.write or ADMIN). Ask a pharmacy admin.",
+      "readOnlyBanner": "This account can view products only — you cannot add/edit units, barcodes, prices, or save changes. You need «Edit catalog» (catalog.write) or an ADMIN login.",
       "saveUnitsFailed": "Could not save units",
       "saveIngredientsFailed": "Could not save ingredients",
       "fillGeneralBefore": "Please complete the product information before entering {{section}}.",
