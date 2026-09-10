@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-10T16:33:56.713Z",
+  "generatedAt": "2026-09-10T21:01:21.184Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 27,
-    "todayPageViews": 7,
-    "todayRequests": 92,
-    "last24hVisitors": 38,
-    "last24hPageViews": 11,
-    "last24hRequests": 137
+    "todayVisitors": 24,
+    "todayPageViews": 6,
+    "todayRequests": 57,
+    "last24hVisitors": 48,
+    "last24hPageViews": 14,
+    "last24hRequests": 165
   },
   "hourly": [
-    {
-      "time": "2026-09-09T17:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-09T18:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-09T19:00:00Z",
-      "visitors": 5,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-09T20:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-09T21:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-09-09T22:00:00Z",
       "visitors": 2,
@@ -128,17 +103,31 @@
     },
     {
       "time": "2026-09-10T16:00:00Z",
-      "visitors": 1,
-      "requests": 24
+      "visitors": 3,
+      "requests": 26
+    },
+    {
+      "time": "2026-09-10T17:00:00Z",
+      "visitors": 6,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-10T18:00:00Z",
+      "visitors": 7,
+      "requests": 19
+    },
+    {
+      "time": "2026-09-10T19:00:00Z",
+      "visitors": 4,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-10T20:00:00Z",
+      "visitors": 7,
+      "requests": 15
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-04",
-      "visitors": 40,
-      "pageViews": 22,
-      "requests": 311
-    },
     {
       "date": "2026-09-05",
       "visitors": 84,
@@ -171,42 +160,48 @@
     },
     {
       "date": "2026-09-10",
-      "visitors": 62,
-      "pageViews": 11,
-      "requests": 137
+      "visitors": 45,
+      "pageViews": 13,
+      "requests": 151
+    },
+    {
+      "date": "2026-09-11",
+      "visitors": 24,
+      "pageViews": 6,
+      "requests": 57
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 20
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 15
+      "views": 23
     },
     {
       "path": "/",
-      "views": 9
+      "views": 18
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 16
     },
     {
       "path": "/wp-login.php",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 5
+      "views": 11
     },
     {
       "path": "/vi/",
-      "views": 5
+      "views": 8
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "path": "/media/system/js/core.js",
+      "views": 8
+    },
+    {
+      "path": "/wp-includes/css/buttons.css",
+      "views": 6
+    },
+    {
+      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
       "views": 5
     },
     {
@@ -218,23 +213,23 @@
       "views": 5
     },
     {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 5
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 5
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 5
+    },
+    {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/css/4e38ee1c6419eb50.css",
       "views": 4
     },
     {
-      "path": "/media/system/js/core.js",
-      "views": 4
-    },
-    {
-      "path": "/wp-includes/css/buttons.css",
+      "path": "/.env",
       "views": 4
     }
   ]
