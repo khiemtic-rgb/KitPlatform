@@ -6449,6 +6449,35 @@ public sealed class ContentController : ControllerBase
         return ok ? NoContent() : NotFound();
     }
 
+    [HttpPost("topics/{topicId:guid}/assets")]
+    [RequestSizeLimit(20 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)]
+    public async Task<ActionResult<ContentAssetDto>> UploadTopicAsset(
+        Guid topicId,
+        IFormFile? file,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            file ??= Request.Form.Files.GetFile("file") ?? Request.Form.Files.FirstOrDefault();
+            if (file is null || file.Length <= 0)
+                return BadRequest(new { message = "Chọn file ảnh (JPG/PNG/WEBP/GIF)." });
+
+            await using var stream = file.OpenReadStream();
+            var asset = await _topics.UploadAssetAsync(
+                topicId,
+                stream,
+                file.FileName,
+                file.ContentType ?? "application/octet-stream",
+                cancellationToken);
+            return asset is null ? NotFound() : Ok(asset);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("assets/{id:guid}/file")]
     public async Task<IActionResult> GetAssetFile(Guid id, CancellationToken cancellationToken)
     {

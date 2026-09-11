@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   Collapse,
+  DatePicker,
   Drawer,
   Form,
   Input,
@@ -19,18 +20,23 @@ import {
   Upload,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import {
   CheckOutlined,
   CloudUploadOutlined,
+  CopyOutlined,
   DeleteOutlined,
   DownloadOutlined,
   FacebookOutlined,
   FileExcelOutlined,
   FolderOpenOutlined,
+  PictureOutlined,
   PlusOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
   UnorderedListOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
@@ -49,6 +55,7 @@ import {
   selectContentAsset,
   startFacebookOAuth,
   updateContentTopic,
+  uploadContentTopicAsset,
   type ContentAsset,
   type ContentBrand,
   type ContentChannelTarget,
@@ -61,6 +68,7 @@ import {
 import { FB_RETURN_KEY } from '@/modules/content/ContentFacebookCallbackPage';
 import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
 import { writeClipboardImage } from '@/modules/content/content-manual-dest';
+import { buildStaffImagePrompt } from '@/modules/content/content-staff-image-prompt';
 import {
   getLocalImageLibraryStatus,
   isConfidentLocalMatch,
@@ -512,6 +520,15 @@ export function ContentTopicsPage() {
     setBulkOpen(true);
   };
 
+  const toDisplayAtIso = (value: Dayjs | string | null | undefined): string | null => {
+    if (!value) return null;
+    if (typeof value === 'string') {
+      const d = dayjs(value);
+      return d.isValid() ? d.toISOString() : null;
+    }
+    return value.isValid() ? value.toISOString() : null;
+  };
+
   const openEdit = (row: ContentTopic) => {
     setEditing(row);
     form.setFieldsValue({
@@ -524,6 +541,7 @@ export function ContentTopicsPage() {
       priority: row.priority,
       status: row.status,
       bodyOutline: row.bodyOutline ?? undefined,
+      displayAt: row.displayAt && dayjs(row.displayAt).isValid() ? dayjs(row.displayAt) : undefined,
     });
     setOpen(true);
   };
@@ -538,8 +556,20 @@ export function ContentTopicsPage() {
     try {
       const v = await form.validateFields();
       setBusy(true);
+      const displayAt = toDisplayAtIso(v.displayAt as Dayjs | null | undefined);
       if (editing) {
-        await updateContentTopic(editing.id, v);
+        await updateContentTopic(editing.id, {
+          brandId: v.brandId,
+          title: v.title,
+          pillar: v.pillar,
+          goal: v.goal,
+          ctaUrl: v.ctaUrl,
+          utmCampaign: v.utmCampaign,
+          priority: v.priority,
+          status: v.status,
+          bodyOutline: v.bodyOutline,
+          displayAt,
+        });
         message.success('Đã cập nhật bài');
         setOpen(false);
         await load();
@@ -556,16 +586,19 @@ export function ContentTopicsPage() {
         priority: v.priority ?? 'P1',
         status: 'Draft',
         bodyOutline: v.bodyOutline,
+        displayAt,
       });
       setOpen(false);
-      message.success(andGenerate ? 'Đã tạo — đang nhờ AI viết…' : 'Đã thêm vào hàng đợi');
+      message.success(andGenerate ? 'Đã tạo — đang nhờ AI viết chữ…' : 'Đã thêm vào hàng đợi');
       await load();
 
       if (andGenerate) {
+        setDetailTab('images');
         setDetailOpen(true);
         await loadDetail(created.id);
-        const res = await generateContentTopic(created.id, { skipImages: false });
-        message.success(res.message ?? 'AI đã viết xong');
+        // Chỉ viết chữ — nhân viên chọn ảnh kho / Tạo ảnh khi cần (tiết kiệm phí).
+        const res = await generateContentTopic(created.id, { skipImages: true });
+        message.success(res.message ?? 'AI đã viết xong — chọn ảnh hoặc Tạo ảnh nếu cần');
         await loadDetail(created.id);
         await load();
       }
@@ -764,6 +797,37 @@ export function ContentTopicsPage() {
       cancelText: 'Giữ ảnh cũ',
       onOk: () => onGenerateImages(),
     });
+  };
+
+  const staffImagePrompt = detail
+    ? buildStaffImagePrompt(detail.topic, detail.variants)
+    : '';
+
+  const onCopyStaffImagePrompt = async () => {
+    if (!staffImagePrompt) return;
+    try {
+      await navigator.clipboard.writeText(staffImagePrompt);
+      message.success('Đã copy hướng dẫn tạo ảnh — dán vào ChatGPT / Gemini / Midjourney…');
+    } catch {
+      message.warning('Không copy được — hãy bôi đen ô text và Ctrl+C');
+    }
+  };
+
+  const onUploadStaffImage = async (file: File) => {
+    if (!detail) return false;
+    setDetailAction('pickImage');
+    try {
+      await uploadContentTopicAsset(detail.topic.id, file);
+      message.success('Đã tải ảnh lên và chọn làm ảnh đăng');
+      setDetailTab('images');
+      await loadDetail(detail.topic.id, { silent: true });
+      await load();
+    } catch (e) {
+      message.error(apiErrorMessage(e, 'Không tải được ảnh lên'));
+    } finally {
+      setDetailAction(null);
+    }
+    return false;
   };
 
   const onSelectAsset = async (asset: ContentAsset) => {
@@ -1488,6 +1552,19 @@ export function ContentTopicsPage() {
           <Form.Item name="title" label="Tiêu đề" rules={[{ required: true }]}>
             <Input placeholder="Ví dụ: 5 việc chủ nhà thuốc nên làm mỗi sáng" />
           </Form.Item>
+          <Form.Item
+            name="displayAt"
+            label="Ngày đăng / lên lịch"
+            extra="Để trống = chưa lên lịch (Xuất bản sẽ đăng ngay). Có ngày thì WP/FB đẩy đúng giờ."
+          >
+            <DatePicker
+              showTime={{ format: 'HH:mm' }}
+              format="DD/MM/YYYY HH:mm"
+              style={{ width: '100%' }}
+              placeholder="Chọn ngày giờ đăng (tuỳ chọn)"
+              allowClear
+            />
+          </Form.Item>
 
           {!editing ? (
             <>
@@ -1607,15 +1684,14 @@ export function ContentTopicsPage() {
               >
                 Chỉ viết chữ
               </Button>
-              {!localLibName ? (
-                <Button
-                  loading={detailAction === 'images'}
-                  disabled={!!detailAction && detailAction !== 'images'}
-                  onClick={() => confirmGenerateImages()}
-                >
-                  Tạo ảnh
-                </Button>
-              ) : null}
+              <Button
+                icon={<PictureOutlined />}
+                loading={detailAction === 'images'}
+                disabled={!!detailAction && detailAction !== 'images'}
+                onClick={() => confirmGenerateImages()}
+              >
+                Tạo ảnh
+              </Button>
               <Button
                 icon={<CheckOutlined />}
                 loading={detailAction === 'approve'}
@@ -1644,9 +1720,18 @@ export function ContentTopicsPage() {
                 {detail.topic.brandName}
               </Typography.Text>
               <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
-                {localLibName
-                  ? <>«AI viết + ảnh» ra chữ và ảnh theo chủ đề. Đã xong thì <strong>Đẩy lịch đăng</strong>. Nhóm / LinkedIn → tab <strong>Đăng tay</strong>.</>
-                  : <>«AI viết + ảnh» = chữ + ảnh cùng lúc. Xong thì chọn ảnh → <strong>Duyệt</strong> → <strong>Xuất bản</strong>. «Chỉ viết chữ» nếu không cần ảnh mới.</>}
+                {localLibName ? (
+                  <>
+                    «Chỉ viết chữ» / «AI viết + ảnh» xong → tab <strong>Ảnh</strong>: chọn từ kho «{localLibName}»
+                    hoặc <strong>Tạo ảnh</strong> AI khi thiếu (tiết kiệm phí nếu nhân viên chọn ảnh sẵn). Rồi{' '}
+                    <strong>Đẩy lịch đăng</strong>. Nhóm / LinkedIn → tab <strong>Đăng tay</strong>.
+                  </>
+                ) : (
+                  <>
+                    «Chỉ viết chữ» nếu chưa cần ảnh. Tab <strong>Ảnh</strong>: <strong>Chọn ảnh này</strong> hoặc{' '}
+                    <strong>Tạo ảnh</strong>. Xong → <strong>Duyệt</strong> → <strong>Xuất bản</strong>.
+                  </>
+                )}
               </Typography.Paragraph>
             </div>
 
@@ -1688,17 +1773,45 @@ export function ContentTopicsPage() {
                     ? `Ảnh · ${localLibName} (${localLibCount})`
                     : `Ảnh (${detail.assets.length})`,
                   children: (
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Card
+              size="small"
+              title="Hướng dẫn tạo ảnh (copy sang AI chat)"
+              extra={
+                <Button type="primary" size="small" icon={<CopyOutlined />} onClick={() => void onCopyStaffImagePrompt()}>
+                  Copy
+                </Button>
+              }
+            >
+              <Typography.Paragraph type="secondary" style={{ marginTop: 0, marginBottom: 8 }}>
+                Nhân viên copy đoạn dưới → dán ChatGPT / Gemini / Midjourney… → tải ảnh về → bấm{' '}
+                <strong>Tải ảnh lên</strong> (hoặc chọn trong kho máy). Không cần «Tạo ảnh» hệ thống nếu đã có ảnh ngoài.
+              </Typography.Paragraph>
+              <Input.TextArea
+                value={staffImagePrompt}
+                readOnly
+                autoSize={{ minRows: 6, maxRows: 14 }}
+                onFocus={(e) => e.target.select()}
+                style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontSize: 12 }}
+              />
+              {detail.assets.some((a) => a.prompt?.trim()) ? (
+                <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0, fontSize: 12 }}>
+                  Gợi ý: ảnh AI đã tạo trên server cũng có prompt lưu kèm — ưu tiên ô hướng dẫn này vì bám tiêu đề +
+                  bản viết hiện tại.
+                </Typography.Paragraph>
+              ) : null}
+            </Card>
             <Card
               size="small"
               title={
                 localLibName
-                  ? `Kho ảnh máy «${localLibName}» (${localLibCount})`
+                  ? `Chọn ảnh từ kho máy «${localLibName}» (${localLibCount})`
                   : `Ảnh để chọn (${detail.assets.length})`
               }
               extra={
-                localLibName ? (
-                  <Space size={4}>
-                    {localLibNeedsPermission ? (
+                <Space size={4}>
+                  {localLibName ? (
+                    localLibNeedsPermission ? (
                       <Button size="small" type="primary" loading={localPreviewLoading} onClick={() => void onAllowLocalLibrary()}>
                         Cho phép đọc lại
                       </Button>
@@ -1706,9 +1819,37 @@ export function ContentTopicsPage() {
                       <Button size="small" loading={localPreviewLoading} onClick={() => void loadLocalGallery(detail.topic.brandId, detail.topic.title)}>
                         Tải lại ảnh
                       </Button>
-                    )}
-                  </Space>
-                ) : null
+                    )
+                  ) : null}
+                  <Upload
+                    accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+                    showUploadList={false}
+                    beforeUpload={(file) => {
+                      void onUploadStaffImage(file);
+                      return false;
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      icon={<UploadOutlined />}
+                      loading={detailAction === 'pickImage'}
+                      disabled={!!detailAction && detailAction !== 'pickImage'}
+                    >
+                      Tải ảnh lên
+                    </Button>
+                  </Upload>
+                  <Button
+                    size="small"
+                    type="primary"
+                    ghost
+                    icon={<PictureOutlined />}
+                    loading={detailAction === 'images'}
+                    disabled={!!detailAction && detailAction !== 'images'}
+                    onClick={() => confirmGenerateImages()}
+                  >
+                    Tạo ảnh
+                  </Button>
+                </Space>
               }
             >
               {localLibName ? (
@@ -1727,7 +1868,7 @@ export function ContentTopicsPage() {
                   ) : localPreviews.length === 0 ? (
                     <Space direction="vertical" size={8}>
                       <Typography.Text type="warning">
-                        Chưa thấy ảnh trong thư mục. Đổi kho ở Thương hiệu (cột Kho ảnh máy) — file .png / .jpg / .webp.
+                        Chưa thấy ảnh trong thư mục. Đổi kho ở Thương hiệu (cột Kho ảnh máy) — file .png / .jpg / .webp — hoặc bấm <strong>Tạo ảnh</strong> AI.
                       </Typography.Text>
                     </Space>
                   ) : (
@@ -1808,11 +1949,6 @@ export function ContentTopicsPage() {
                       </div>
                     </>
                   )}
-                  {detail.assets.length > 0 ? (
-                    <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>
-                      (Vẫn còn {detail.assets.length} ảnh AI trên server — khi dùng kho máy, ưu tiên ảnh local khi đăng.)
-                    </Typography.Paragraph>
-                  ) : null}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
@@ -1863,20 +1999,107 @@ export function ContentTopicsPage() {
                   {detail.assets.length === 0 ? (
                     <Space direction="vertical" size={8}>
                       <Typography.Text type="secondary">
-                        Chưa có ảnh. Bấm «Tạo ảnh ngay», hoặc gắn kho máy ở Thương hiệu (cột Kho ảnh máy).
+                        Chưa có ảnh. Bấm «Tải ảnh lên» (ảnh từ máy / AI chat), gắn kho máy, hoặc «Tạo ảnh» hệ thống.
                       </Typography.Text>
-                      <Button
-                        type="primary"
-                        loading={detailAction === 'images'}
-                        onClick={() => confirmGenerateImages()}
-                      >
-                        Tạo ảnh ngay
-                      </Button>
+                      <Space wrap>
+                        <Upload
+                          accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            void onUploadStaffImage(file);
+                            return false;
+                          }}
+                        >
+                          <Button type="primary" icon={<UploadOutlined />} loading={detailAction === 'pickImage'}>
+                            Tải ảnh lên
+                          </Button>
+                        </Upload>
+                        <Button
+                          icon={<PictureOutlined />}
+                          loading={detailAction === 'images'}
+                          onClick={() => confirmGenerateImages()}
+                        >
+                          Tạo ảnh
+                        </Button>
+                      </Space>
                     </Space>
                   ) : null}
                 </div>
               )}
             </Card>
+
+            {localLibName ? (
+              <Card
+                size="small"
+                title={`Ảnh AI trên server (${detail.assets.length})`}
+                extra={
+                  <Button
+                    size="small"
+                    icon={<PictureOutlined />}
+                    loading={detailAction === 'images'}
+                    disabled={!!detailAction && detailAction !== 'images'}
+                    onClick={() => confirmGenerateImages()}
+                  >
+                    Tạo ảnh
+                  </Button>
+                }
+              >
+                <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
+                  Dùng khi kho máy thiếu ảnh phù hợp. Chọn ảnh AI bên dưới; khi đăng vẫn ưu tiên ảnh kho máy nếu đã chọn.
+                </Typography.Paragraph>
+                {detail.assets.length === 0 ? (
+                  <Typography.Text type="secondary">Chưa có ảnh AI — bấm «Tạo ảnh» khi cần.</Typography.Text>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                    {detail.assets.map((a) => (
+                      <div
+                        key={a.id}
+                        style={{
+                          width: 160,
+                          border: a.isSelected ? '2px solid #1677ff' : '1px solid #e2e8f0',
+                          borderRadius: 8,
+                          padding: 8,
+                        }}
+                      >
+                        {assetUrls[a.id] ? (
+                          <img
+                            src={assetUrls[a.id]}
+                            alt={a.fileName}
+                            style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 4 }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              height: 100,
+                              background: '#f1f5f9',
+                              borderRadius: 4,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 12,
+                              color: '#64748b',
+                            }}
+                          >
+                            {a.fileName}
+                          </div>
+                        )}
+                        <Button
+                          size="small"
+                          block
+                          type={a.isSelected ? 'primary' : 'default'}
+                          style={{ marginTop: 6 }}
+                          loading={detailAction === 'pickImage'}
+                          onClick={() => void onSelectAsset(a)}
+                        >
+                          {a.isSelected ? 'Đang dùng' : 'Chọn ảnh này'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ) : null}
+            </Space>
                   ),
                 },
                 {

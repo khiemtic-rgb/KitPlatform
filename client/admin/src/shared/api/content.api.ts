@@ -6138,6 +6138,18 @@ export async function selectContentAsset(topicId: string, assetId: string) {
   await http.post(`/content/topics/${topicId}/assets/${assetId}/select`);
 }
 
+/** Staff upload cover image from computer (JPG/PNG/WEBP/GIF). Auto-selected. */
+export async function uploadContentTopicAsset(topicId: string, file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  const { data } = await http.post<ContentAsset>(`/content/topics/${topicId}/assets`, form, {
+    timeout: 60_000,
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity,
+  });
+  return data;
+}
+
 export async function publishContentTopic(
   id: string,
   body?: {

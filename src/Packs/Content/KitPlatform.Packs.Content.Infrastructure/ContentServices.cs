@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using KitPlatform.Packs.Content;
 
@@ -548,9 +549,24 @@ internal sealed class ContentBrandService : IContentBrandService
 
 internal sealed class ContentTopicService : IContentTopicService
 {
-    private readonly ContentRepository _repo;
+    private static readonly HashSet<string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+    };
 
-    public ContentTopicService(ContentRepository repo) => _repo = repo;
+    private readonly ContentRepository _repo;
+    private readonly ContentOptions _options;
+    private readonly IHostEnvironment _env;
+
+    public ContentTopicService(
+        ContentRepository repo,
+        IOptions<ContentOptions> options,
+        IHostEnvironment env)
+    {
+        _repo = repo;
+        _options = options.Value;
+        _env = env;
+    }
 
     public async Task<IReadOnlyList<ContentTopicDto>> ListAsync(
         Guid? brandId,
@@ -662,6 +678,100 @@ internal sealed class ContentTopicService : IContentTopicService
         if (asset is null || asset.TopicId != topicId) return false;
         await _repo.SelectAssetAsync(topicId, assetId, cancellationToken);
         return true;
+    }
+
+    public async Task<ContentAssetDto?> UploadAssetAsync(
+        Guid topicId,
+        Stream content,
+        string fileName,
+        string contentType,
+        CancellationToken cancellationToken = default)
+    {
+        var topic = await _repo.GetTopicAsync(topicId, cancellationToken);
+        if (topic is null) return null;
+
+        if (content is null || !content.CanRead)
+            throw new InvalidOperationException("Thiếu file ảnh.");
+
+        var ct = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType.Trim();
+        if (ct.Equals("image/jpg", StringComparison.OrdinalIgnoreCase))
+            ct = "image/jpeg";
+
+        // Guess from extension when browser sends octet-stream
+        if (!AllowedImageTypes.Contains(ct))
+        {
+            var extGuess = Path.GetExtension(fileName).ToLowerInvariant();
+            ct = extGuess switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                _ => ct,
+            };
+        }
+
+        if (!AllowedImageTypes.Contains(ct))
+            throw new InvalidOperationException("Chỉ nhận ảnh JPG / PNG / WEBP / GIF.");
+
+        await using var ms = new MemoryStream();
+        await content.CopyToAsync(ms, cancellationToken);
+        var bytes = ms.ToArray();
+        if (bytes.Length == 0)
+            throw new InvalidOperationException("File ảnh trống.");
+        if (bytes.Length > 15 * 1024 * 1024)
+            throw new InvalidOperationException("Ảnh tối đa 15MB.");
+
+        var assetId = Guid.CreateVersion7();
+        var ext = ct switch
+        {
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/gif" => ".gif",
+            _ => ".jpg",
+        };
+        var safeName = $"{assetId:N}{ext}";
+        var root = ResolveAssetRoot();
+        var relDir = topicId.ToString("N");
+        var absDir = Path.Combine(root, relDir);
+        Directory.CreateDirectory(absDir);
+        var absPath = Path.Combine(absDir, safeName);
+        await File.WriteAllBytesAsync(absPath, bytes, cancellationToken);
+        var storagePath = Path.Combine(relDir, safeName).Replace('\\', '/');
+
+        await _repo.InsertAssetAsync(new ContentRepository.AssetRow
+        {
+            Id = assetId,
+            TopicId = topicId,
+            Kind = "image",
+            FileName = string.IsNullOrWhiteSpace(fileName) ? safeName : Path.GetFileName(fileName),
+            ContentType = ct,
+            StoragePath = storagePath,
+            Prompt = "Staff upload (external AI / máy tính)",
+            Model = "upload",
+            ImageTier = "staff",
+            EstimateUsd = 0,
+            IsSelected = true,
+            MetaJson = "{}",
+        }, cancellationToken);
+
+        await _repo.SelectAssetAsync(topicId, assetId, cancellationToken);
+
+        var saved = await _repo.GetAssetAsync(assetId, cancellationToken)
+                    ?? throw new InvalidOperationException("Upload ok nhưng không đọc lại được asset.");
+        return new ContentAssetDto(
+            saved.Id, saved.TopicId, saved.Kind, saved.FileName, saved.ContentType, saved.Prompt, saved.Model,
+            saved.ImageTier, saved.EstimateUsd, saved.IsSelected, saved.CreatedAt);
+    }
+
+    private string ResolveAssetRoot()
+    {
+        var configured = string.IsNullOrWhiteSpace(_options.AssetRoot)
+            ? "App_Data/content-assets"
+            : _options.AssetRoot;
+        return Path.IsPathRooted(configured)
+            ? configured
+            : Path.GetFullPath(Path.Combine(_env.ContentRootPath, configured));
     }
 
     private static ContentTopicDto Map(ContentRepository.TopicRow r) =>

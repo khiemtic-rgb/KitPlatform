@@ -914,6 +914,12 @@ public interface IContentTopicService
     Task<ContentTopicDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> SelectAssetAsync(Guid topicId, Guid assetId, CancellationToken cancellationToken = default);
+    Task<ContentAssetDto?> UploadAssetAsync(
+        Guid topicId,
+        Stream content,
+        string fileName,
+        string contentType,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IContentGenerateService
