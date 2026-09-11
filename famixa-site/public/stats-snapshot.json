@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-11T04:55:29.079Z",
+  "generatedAt": "2026-09-11T11:36:52.004Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 15,
-    "todayPageViews": 5,
-    "todayRequests": 57,
-    "last24hVisitors": 52,
-    "last24hPageViews": 18,
-    "last24hRequests": 199
+    "todayVisitors": 25,
+    "todayPageViews": 7,
+    "todayRequests": 80,
+    "last24hVisitors": 55,
+    "last24hPageViews": 16,
+    "last24hRequests": 194
   },
   "hourly": [
-    {
-      "time": "2026-09-10T05:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-10T06:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-10T07:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-10T08:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-10T09:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-10T10:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-10T11:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
     {
       "time": "2026-09-10T12:00:00Z",
       "visitors": 1,
@@ -128,6 +93,36 @@
     },
     {
       "time": "2026-09-11T04:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-11T05:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-11T06:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-11T07:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-11T08:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-11T09:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-11T10:00:00Z",
       "visitors": 1,
       "requests": 1
     }
@@ -171,31 +166,31 @@
     },
     {
       "date": "2026-09-11",
-      "visitors": 50,
-      "pageViews": 12,
-      "requests": 129
+      "visitors": 65,
+      "pageViews": 14,
+      "requests": 151
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 30
+      "views": 29
     },
     {
       "path": "/robots.txt",
-      "views": 24
+      "views": 22
     },
     {
       "path": "/sitemap.xml",
-      "views": 16
+      "views": 12
     },
     {
       "path": "/vi/",
-      "views": 12
+      "views": 11
     },
     {
       "path": "/wp-login.php",
-      "views": 12
+      "views": 11
     },
     {
       "path": "/media/system/js/core.js",
@@ -226,7 +221,7 @@
       "views": 6
     },
     {
-      "path": "/wp-includes/css/buttons.css",
+      "path": "/.git/config",
       "views": 5
     },
     {
@@ -234,8 +229,8 @@
       "views": 5
     },
     {
-      "path": "/_next/static/chunks/app/vi/goi-cha-me/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 4
+      "path": "/wp-includes/css/buttons.css",
+      "views": 5
     }
   ]
 }
