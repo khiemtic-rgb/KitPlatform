@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-12T04:48:01.538Z",
+  "generatedAt": "2026-09-12T11:01:05.406Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 26,
-    "todayPageViews": 5,
-    "todayRequests": 56,
-    "last24hVisitors": 69,
-    "last24hPageViews": 15,
-    "last24hRequests": 166
+    "todayVisitors": 35,
+    "todayPageViews": 7,
+    "todayRequests": 90,
+    "last24hVisitors": 67,
+    "last24hPageViews": 16,
+    "last24hRequests": 179
   },
   "hourly": [
-    {
-      "time": "2026-09-11T05:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-11T06:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-11T07:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-11T08:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-11T09:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-11T10:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-11T11:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-09-11T12:00:00Z",
       "visitors": 5,
@@ -130,6 +95,36 @@
       "time": "2026-09-12T04:00:00Z",
       "visitors": 3,
       "requests": 10
+    },
+    {
+      "time": "2026-09-12T05:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-12T06:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-12T07:00:00Z",
+      "visitors": 3,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-12T08:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-12T09:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-12T10:00:00Z",
+      "visitors": 4,
+      "requests": 14
     }
   ],
   "daily": [
@@ -171,71 +166,71 @@
     },
     {
       "date": "2026-09-12",
-      "visitors": 56,
-      "pageViews": 10,
-      "requests": 106
+      "visitors": 74,
+      "pageViews": 12,
+      "requests": 140
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 22
+      "views": 25
     },
     {
       "path": "/",
-      "views": 21
+      "views": 15
     },
     {
       "path": "/sitemap.xml",
-      "views": 12
-    },
-    {
-      "path": "/vi/",
-      "views": 10
+      "views": 15
     },
     {
       "path": "/wp-login.php",
       "views": 9
     },
     {
-      "path": "/_next/static/css/4e38ee1c6419eb50.css",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 5
+      "path": "/vi/",
+      "views": 8
     },
     {
       "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 5
+      "views": 7
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 7
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 6
+    },
+    {
+      "path": "/_next/static/css/4e38ee1c6419eb50.css",
+      "views": 6
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 6
     },
     {
       "path": "/_next/static/chunks/app/vi/huong-dan/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 4
+      "views": 6
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 6
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 4
+      "views": 5
     },
     {
       "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 4
+      "views": 5
     },
     {
-      "path": "/uploads/",
-      "views": 2
+      "path": "/wp-json/",
+      "views": 3
     }
   ]
 }
