@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-12T04:38:45.475Z",
+  "generatedAt": "2026-09-12T10:50:40.345Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 81,
-    "todayPageViews": 27,
-    "todayRequests": 116,
-    "last24hVisitors": 181,
-    "last24hPageViews": 621,
-    "last24hRequests": 1303
+    "todayVisitors": 126,
+    "todayPageViews": 47,
+    "todayRequests": 197,
+    "last24hVisitors": 183,
+    "last24hPageViews": 345,
+    "last24hRequests": 595
   },
   "hourly": [
-    {
-      "time": "2026-09-11T05:00:00Z",
-      "visitors": 12,
-      "requests": 16
-    },
-    {
-      "time": "2026-09-11T06:00:00Z",
-      "visitors": 9,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-11T07:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-11T08:00:00Z",
-      "visitors": 10,
-      "requests": 721
-    },
-    {
-      "time": "2026-09-11T09:00:00Z",
-      "visitors": 10,
-      "requests": 21
-    },
-    {
-      "time": "2026-09-11T10:00:00Z",
-      "visitors": 8,
-      "requests": 12
-    },
     {
       "time": "2026-09-11T11:00:00Z",
       "visitors": 6,
@@ -128,8 +98,38 @@
     },
     {
       "time": "2026-09-12T04:00:00Z",
-      "visitors": 55,
-      "requests": 63
+      "visitors": 65,
+      "requests": 73
+    },
+    {
+      "time": "2026-09-12T05:00:00Z",
+      "visitors": 14,
+      "requests": 18
+    },
+    {
+      "time": "2026-09-12T06:00:00Z",
+      "visitors": 10,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-12T07:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-12T08:00:00Z",
+      "visitors": 9,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-12T09:00:00Z",
+      "visitors": 12,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-12T10:00:00Z",
+      "visitors": 6,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-09-12",
-      "visitors": 81,
-      "pageViews": 27,
-      "requests": 116
+      "visitors": 126,
+      "pageViews": 47,
+      "requests": 197
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 103
+      "views": 76
     },
     {
       "path": "/robots.txt",
-      "views": 47
+      "views": 45
     },
     {
       "path": "/vi/",
-      "views": 46
-    },
-    {
-      "path": "/fetch",
-      "views": 30
-    },
-    {
-      "path": "/keyfile.json",
-      "views": 19
-    },
-    {
-      "path": "/proxy",
-      "views": 17
-    },
-    {
-      "path": "/.git/config",
-      "views": 17
-    },
-    {
-      "path": "/url",
-      "views": 17
+      "views": 37
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 16
-    },
-    {
-      "path": "/ses.env",
       "views": 15
     },
     {
-      "path": "/app/.env.local",
-      "views": 15
+      "path": "/sitemap.xml",
+      "views": 12
     },
     {
-      "path": "/index.php",
-      "views": 15
+      "path": "/favicon.svg",
+      "views": 11
     },
     {
-      "path": "/config/env.php",
-      "views": 15
+      "path": "/favicon.ico",
+      "views": 9
     },
     {
-      "path": "/apps/.env",
-      "views": 14
+      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
+      "views": 7
     },
     {
-      "path": "/i.php",
-      "views": 14
+      "path": "/google-credentials.json",
+      "views": 6
+    },
+    {
+      "path": "/backups/.env",
+      "views": 6
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 6
+    },
+    {
+      "path": "/core/phpinfo.php",
+      "views": 6
+    },
+    {
+      "path": "/v2/.env",
+      "views": 6
+    },
+    {
+      "path": "/info",
+      "views": 6
+    },
+    {
+      "path": "/mail/.env",
+      "views": 6
     }
   ]
 }
