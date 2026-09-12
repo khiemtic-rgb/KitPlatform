@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-12T15:40:15.297Z",
+  "generatedAt": "2026-09-12T20:43:34.255Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 45,
-    "todayPageViews": 10,
-    "todayRequests": 269,
-    "last24hVisitors": 69,
+    "todayVisitors": 15,
+    "todayPageViews": 2,
+    "todayRequests": 40,
+    "last24hVisitors": 67,
     "last24hPageViews": 16,
-    "last24hRequests": 334
+    "last24hRequests": 341
   },
   "hourly": [
-    {
-      "time": "2026-09-11T16:00:00Z",
-      "visitors": 5,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-11T17:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-11T18:00:00Z",
-      "visitors": 1,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-11T19:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-11T20:00:00Z",
-      "visitors": 4,
-      "requests": 14
-    },
     {
       "time": "2026-09-11T21:00:00Z",
       "visitors": 3,
@@ -128,17 +103,36 @@
     },
     {
       "time": "2026-09-12T15:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-12T16:00:00Z",
+      "visitors": 4,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-12T17:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-12T18:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-12T19:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-12T20:00:00Z",
       "visitors": 1,
-      "requests": 1
+      "requests": 21
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-06",
-      "visitors": 78,
-      "pageViews": 36,
-      "requests": 370
-    },
     {
       "date": "2026-09-07",
       "visitors": 82,
@@ -171,62 +165,48 @@
     },
     {
       "date": "2026-09-12",
-      "visitors": 89,
-      "pageViews": 15,
-      "requests": 319
+      "visitors": 58,
+      "pageViews": 14,
+      "requests": 320
+    },
+    {
+      "date": "2026-09-13",
+      "visitors": 15,
+      "pageViews": 2,
+      "requests": 40
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 24
+      "path": "/",
+      "views": 29
     },
     {
-      "path": "/",
-      "views": 16
+      "path": "/robots.txt",
+      "views": 22
     },
     {
       "path": "/sitemap.xml",
       "views": 15
     },
     {
-      "path": "/wp-login.php",
+      "path": "/vi/",
       "views": 11
     },
     {
-      "path": "/vi/",
-      "views": 8
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 7
+      "path": "/wp-login.php",
+      "views": 10
     },
     {
       "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 7
-    },
-    {
-      "path": "/_next/static/chunks/app/vi/huong-dan/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/css/4e38ee1c6419eb50.css",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 6
+      "views": 5
     },
     {
       "path": "/backup/.env",
+      "views": 5
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 5
     },
     {
@@ -234,8 +214,28 @@
       "views": 5
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 5
+      "path": "/wp-config.php.old",
+      "views": 4
+    },
+    {
+      "path": "/wp-json/",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/huong-dan/%5Bslug%5D/page-2d062270f9ff84b4.js",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/css/4e38ee1c6419eb50.css",
+      "views": 4
     }
   ]
 }
