@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-12T10:50:40.345Z",
+  "generatedAt": "2026-09-12T15:34:01.589Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 126,
-    "todayPageViews": 47,
-    "todayRequests": 197,
-    "last24hVisitors": 183,
-    "last24hPageViews": 345,
-    "last24hRequests": 595
+    "todayVisitors": 176,
+    "todayPageViews": 73,
+    "todayRequests": 285,
+    "last24hVisitors": 208,
+    "last24hPageViews": 361,
+    "last24hRequests": 632
   },
   "hourly": [
-    {
-      "time": "2026-09-11T11:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-11T12:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-11T13:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-11T14:00:00Z",
-      "visitors": 8,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-11T15:00:00Z",
-      "visitors": 13,
-      "requests": 18
-    },
     {
       "time": "2026-09-11T16:00:00Z",
       "visitors": 4,
@@ -130,6 +105,31 @@
       "time": "2026-09-12T10:00:00Z",
       "visitors": 6,
       "requests": 6
+    },
+    {
+      "time": "2026-09-12T11:00:00Z",
+      "visitors": 8,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-12T12:00:00Z",
+      "visitors": 8,
+      "requests": 16
+    },
+    {
+      "time": "2026-09-12T13:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-12T14:00:00Z",
+      "visitors": 41,
+      "requests": 48
+    },
+    {
+      "time": "2026-09-12T15:00:00Z",
+      "visitors": 5,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,19 +171,19 @@
     },
     {
       "date": "2026-09-12",
-      "visitors": 126,
-      "pageViews": 47,
-      "requests": 197
+      "visitors": 176,
+      "pageViews": 73,
+      "requests": 285
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 76
+      "views": 68
     },
     {
       "path": "/robots.txt",
-      "views": 45
+      "views": 47
     },
     {
       "path": "/vi/",
@@ -199,22 +199,26 @@
     },
     {
       "path": "/favicon.svg",
-      "views": 11
-    },
-    {
-      "path": "/favicon.ico",
-      "views": 9
+      "views": 10
     },
     {
       "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
+      "views": 8
+    },
+    {
+      "path": "/favicon.ico",
       "views": 7
     },
     {
-      "path": "/google-credentials.json",
+      "path": "/images/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach.png",
+      "views": 7
+    },
+    {
+      "path": "/vite/.env",
       "views": 6
     },
     {
-      "path": "/backups/.env",
+      "path": "/.env.old",
       "views": 6
     },
     {
@@ -222,19 +226,15 @@
       "views": 6
     },
     {
-      "path": "/core/phpinfo.php",
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
       "views": 6
     },
     {
-      "path": "/v2/.env",
+      "path": "/images/tin-tuc/quy-trinh-doi-tra-thuoc.png",
       "views": 6
     },
     {
-      "path": "/info",
-      "views": 6
-    },
-    {
-      "path": "/mail/.env",
+      "path": "/p.php",
       "views": 6
     }
   ]
