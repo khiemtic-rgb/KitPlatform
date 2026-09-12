@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-12T11:01:05.406Z",
+  "generatedAt": "2026-09-12T15:40:15.297Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 35,
-    "todayPageViews": 7,
-    "todayRequests": 90,
-    "last24hVisitors": 67,
+    "todayVisitors": 45,
+    "todayPageViews": 10,
+    "todayRequests": 269,
+    "last24hVisitors": 69,
     "last24hPageViews": 16,
-    "last24hRequests": 179
+    "last24hRequests": 334
   },
   "hourly": [
-    {
-      "time": "2026-09-11T12:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-11T13:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-11T14:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-11T15:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-09-11T16:00:00Z",
       "visitors": 5,
@@ -125,6 +105,31 @@
       "time": "2026-09-12T10:00:00Z",
       "visitors": 4,
       "requests": 14
+    },
+    {
+      "time": "2026-09-12T11:00:00Z",
+      "visitors": 5,
+      "requests": 162
+    },
+    {
+      "time": "2026-09-12T12:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-12T13:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-12T14:00:00Z",
+      "visitors": 5,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-12T15:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -166,19 +171,19 @@
     },
     {
       "date": "2026-09-12",
-      "visitors": 74,
-      "pageViews": 12,
-      "requests": 140
+      "visitors": 89,
+      "pageViews": 15,
+      "requests": 319
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 24
     },
     {
       "path": "/",
-      "views": 15
+      "views": 16
     },
     {
       "path": "/sitemap.xml",
@@ -186,22 +191,22 @@
     },
     {
       "path": "/wp-login.php",
-      "views": 9
+      "views": 11
     },
     {
       "path": "/vi/",
       "views": 8
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 7
-    },
-    {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 7
     },
     {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 7
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/huong-dan/%5Bslug%5D/page-2d062270f9ff84b4.js",
       "views": 6
     },
     {
@@ -209,28 +214,28 @@
       "views": 6
     },
     {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/app/vi/huong-dan/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 6
-    },
-    {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
       "views": 6
     },
     {
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 6
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 6
+    },
+    {
+      "path": "/backup/.env",
+      "views": 5
+    },
+    {
+      "path": "/html/.env",
+      "views": 5
+    },
+    {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 5
-    },
-    {
-      "path": "/wp-json/",
-      "views": 3
     }
   ]
 }
