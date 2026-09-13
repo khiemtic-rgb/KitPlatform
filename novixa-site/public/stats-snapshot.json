@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-12T20:35:18.198Z",
+  "generatedAt": "2026-09-13T04:52:13.544Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 215,
-    "last24hPageViews": 96,
-    "last24hRequests": 372
+    "todayVisitors": 78,
+    "todayPageViews": 229,
+    "todayRequests": 494,
+    "last24hVisitors": 225,
+    "last24hPageViews": 298,
+    "last24hRequests": 759
   },
   "hourly": [
-    {
-      "time": "2026-09-11T21:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-11T22:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-11T23:00:00Z",
-      "visitors": 10,
-      "requests": 19
-    },
-    {
-      "time": "2026-09-12T00:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-12T01:00:00Z",
-      "visitors": 9,
-      "requests": 17
-    },
-    {
-      "time": "2026-09-12T02:00:00Z",
-      "visitors": 7,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-12T03:00:00Z",
-      "visitors": 9,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-12T04:00:00Z",
-      "visitors": 65,
-      "requests": 73
-    },
     {
       "time": "2026-09-12T05:00:00Z",
       "visitors": 14,
@@ -128,8 +88,48 @@
     },
     {
       "time": "2026-09-12T20:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-12T21:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-12T22:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-12T23:00:00Z",
+      "visitors": 17,
+      "requests": 25
+    },
+    {
+      "time": "2026-09-13T00:00:00Z",
+      "visitors": 9,
+      "requests": 17
+    },
+    {
+      "time": "2026-09-13T01:00:00Z",
+      "visitors": 50,
+      "requests": 96
+    },
+    {
+      "time": "2026-09-13T02:00:00Z",
+      "visitors": 17,
+      "requests": 321
+    },
+    {
+      "time": "2026-09-13T03:00:00Z",
+      "visitors": 22,
+      "requests": 41
+    },
+    {
+      "time": "2026-09-13T04:00:00Z",
+      "visitors": 14,
+      "requests": 19
     }
   ],
   "daily": [
@@ -165,23 +165,33 @@
     },
     {
       "date": "2026-09-12",
-      "visitors": 203,
-      "pageViews": 91,
-      "requests": 345
+      "visitors": 223,
+      "pageViews": 97,
+      "requests": 391
+    },
+    {
+      "date": "2026-09-13",
+      "visitors": 78,
+      "pageViews": 229,
+      "requests": 494
     }
   ],
   "topPages": [
+    {
+      "path": "/cdn-cgi/l/email-protection",
+      "views": 125
+    },
     {
       "path": "/",
       "views": 70
     },
     {
       "path": "/robots.txt",
-      "views": 46
+      "views": 42
     },
     {
       "path": "/vi/",
-      "views": 33
+      "views": 35
     },
     {
       "path": "/sitemap-index.xml",
@@ -192,27 +202,23 @@
       "views": 12
     },
     {
-      "path": "/favicon.svg",
+      "path": "/wp-login.php",
       "views": 9
     },
     {
-      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
-      "views": 8
-    },
-    {
-      "path": "/images/tin-tuc/chuan-hoa-quy-trinh-tiep-don-khach.png",
-      "views": 7
-    },
-    {
-      "path": "/favicon.ico",
-      "views": 7
-    },
-    {
-      "path": "/images/tin-tuc/the-nao-la-ton-kho-chet.png",
+      "path": "/vi/tin-tuc/career-path-tao-dong-luc-phat-trien-ra-sao/",
       "views": 6
     },
     {
-      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "path": "/vi/lien-he/",
+      "views": 6
+    },
+    {
+      "path": "/media/system/js/core.js",
+      "views": 6
+    },
+    {
+      "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
       "views": 6
     },
     {
@@ -220,15 +226,15 @@
       "views": 6
     },
     {
-      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
+      "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-gi-moi-ngay.png",
       "views": 6
     },
     {
-      "path": "/wp-login.php",
-      "views": 6
+      "path": "/vi/tai-lieu/van-ban-phap-luat/",
+      "views": 5
     },
     {
-      "path": "/images/tin-tuc/quy-trinh-thuoc-ke-don.png",
+      "path": "/wp-includes/css/buttons.css",
       "views": 5
     }
   ]
