@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-13T12:10:19.681Z",
+  "generatedAt": "2026-09-13T16:31:55.239Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 96,
-    "todayPageViews": 63,
-    "todayRequests": 204,
+    "todayVisitors": 104,
+    "todayPageViews": 73,
+    "todayRequests": 268,
     "last24hVisitors": 122,
-    "last24hPageViews": 72,
-    "last24hRequests": 297
+    "last24hPageViews": 78,
+    "last24hRequests": 336
   },
   "hourly": [
-    {
-      "time": "2026-09-12T13:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-12T14:00:00Z",
-      "visitors": 5,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-12T15:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-12T16:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
     {
       "time": "2026-09-12T17:00:00Z",
       "visitors": 5,
@@ -128,7 +108,22 @@
     },
     {
       "time": "2026-09-13T12:00:00Z",
+      "visitors": 17,
+      "requests": 20
+    },
+    {
+      "time": "2026-09-13T13:00:00Z",
       "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-13T14:00:00Z",
+      "visitors": 10,
+      "requests": 37
+    },
+    {
+      "time": "2026-09-13T15:00:00Z",
+      "visitors": 3,
       "requests": 4
     }
   ],
@@ -171,31 +166,31 @@
     },
     {
       "date": "2026-09-13",
-      "visitors": 178,
-      "pageViews": 68,
-      "requests": 272
+      "visitors": 208,
+      "pageViews": 78,
+      "requests": 336
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 32
+      "views": 28
     },
     {
       "path": "/robots.txt",
-      "views": 24
+      "views": 25
     },
     {
       "path": "/sitemap.xml",
-      "views": 14
-    },
-    {
-      "path": "/vi/",
-      "views": 13
+      "views": 12
     },
     {
       "path": "/wp-login.php",
       "views": 11
+    },
+    {
+      "path": "/vi/",
+      "views": 10
     },
     {
       "path": "/media/system/js/core.js",
@@ -206,11 +201,11 @@
       "views": 4
     },
     {
-      "path": "/images/chapter5-scene.png",
-      "views": 3
+      "path": "/en/plans/",
+      "views": 4
     },
     {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "path": "/images/chapter5-scene.png",
       "views": 3
     },
     {
@@ -218,7 +213,11 @@
       "views": 3
     },
     {
-      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 3
+    },
+    {
+      "path": "/vi/goi/",
       "views": 3
     },
     {
@@ -230,11 +229,7 @@
       "views": 3
     },
     {
-      "path": "/en/plans/",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 2
     }
   ]
