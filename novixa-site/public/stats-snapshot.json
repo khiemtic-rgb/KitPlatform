@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-13T16:20:21.535Z",
+  "generatedAt": "2026-09-13T20:52:52.692Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 231,
-    "todayPageViews": 539,
-    "todayRequests": 2769,
-    "last24hVisitors": 276,
-    "last24hPageViews": 560,
-    "last24hRequests": 2860
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 292,
+    "last24hPageViews": 837,
+    "last24hRequests": 3508
   },
   "hourly": [
-    {
-      "time": "2026-09-12T17:00:00Z",
-      "visitors": 18,
-      "requests": 33
-    },
-    {
-      "time": "2026-09-12T18:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-12T19:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-12T20:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
     {
       "time": "2026-09-12T21:00:00Z",
       "visitors": 4,
@@ -130,15 +110,29 @@
       "time": "2026-09-13T16:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-09-13T17:00:00Z",
+      "visitors": 34,
+      "requests": 35
+    },
+    {
+      "time": "2026-09-13T18:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-13T19:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-13T20:00:00Z",
+      "visitors": 9,
+      "requests": 651
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-07",
-      "visitors": 185,
-      "pageViews": 682,
-      "requests": 2316
-    },
     {
       "date": "2026-09-08",
       "visitors": 168,
@@ -171,15 +165,15 @@
     },
     {
       "date": "2026-09-13",
-      "visitors": 231,
-      "pageViews": 539,
-      "requests": 2769
+      "visitors": 276,
+      "pageViews": 833,
+      "requests": 3470
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 542
+      "views": 526
     },
     {
       "path": "/index.php",
@@ -211,19 +205,19 @@
     },
     {
       "path": "/vi/",
-      "views": 62
-    },
-    {
-      "path": "/login",
-      "views": 50
+      "views": 57
     },
     {
       "path": "/wp-json/Batch/v1",
       "views": 50
     },
     {
+      "path": "/login",
+      "views": 50
+    },
+    {
       "path": "/robots.txt",
-      "views": 46
+      "views": 47
     },
     {
       "path": "/wordpress/",
