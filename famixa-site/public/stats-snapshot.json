@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-14T13:06:42.478Z",
+  "generatedAt": "2026-09-14T21:56:02.958Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 65,
-    "todayPageViews": 63,
-    "todayRequests": 208,
-    "last24hVisitors": 88,
+    "todayVisitors": 28,
+    "todayPageViews": 10,
+    "todayRequests": 72,
+    "last24hVisitors": 91,
     "last24hPageViews": 83,
-    "last24hRequests": 606
+    "last24hRequests": 322
   },
   "hourly": [
-    {
-      "time": "2026-09-13T14:00:00Z",
-      "visitors": 10,
-      "requests": 37
-    },
-    {
-      "time": "2026-09-13T15:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-13T17:00:00Z",
-      "visitors": 7,
-      "requests": 17
-    },
-    {
-      "time": "2026-09-13T18:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-13T19:00:00Z",
-      "visitors": 3,
-      "requests": 11
-    },
-    {
-      "time": "2026-09-13T20:00:00Z",
-      "visitors": 6,
-      "requests": 304
-    },
-    {
-      "time": "2026-09-13T21:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
     {
       "time": "2026-09-13T22:00:00Z",
       "visitors": 2,
@@ -120,15 +85,54 @@
       "time": "2026-09-14T12:00:00Z",
       "visitors": 38,
       "requests": 64
+    },
+    {
+      "time": "2026-09-14T13:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-14T14:00:00Z",
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-14T15:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-14T16:00:00Z",
+      "visitors": 4,
+      "requests": 16
+    },
+    {
+      "time": "2026-09-14T17:00:00Z",
+      "visitors": 5,
+      "requests": 25
+    },
+    {
+      "time": "2026-09-14T18:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-14T19:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-14T20:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-14T21:00:00Z",
+      "visitors": 7,
+      "requests": 24
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-08",
-      "visitors": 65,
-      "pageViews": 22,
-      "requests": 454
-    },
     {
       "date": "2026-09-09",
       "visitors": 66,
@@ -161,23 +165,29 @@
     },
     {
       "date": "2026-09-14",
-      "visitors": 103,
-      "pageViews": 81,
-      "requests": 565
+      "visitors": 87,
+      "pageViews": 79,
+      "requests": 306
+    },
+    {
+      "date": "2026-09-15",
+      "visitors": 28,
+      "pageViews": 10,
+      "requests": 72
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 38
+      "views": 52
     },
     {
       "path": "/vi/",
-      "views": 34
+      "views": 42
     },
     {
       "path": "/robots.txt",
-      "views": 29
+      "views": 25
     },
     {
       "path": "/sitemap.xml",
@@ -193,39 +203,39 @@
     },
     {
       "path": "/wp-login.php",
-      "views": 12
+      "views": 13
     },
     {
-      "path": "/admin/.env",
-      "views": 7
+      "path": "/media/system/js/core.js",
+      "views": 8
     },
     {
-      "path": "/secrets.env",
+      "path": "/wp-includes/css/buttons.css",
+      "views": 8
+    },
+    {
+      "path": "/wp-json/",
       "views": 6
     },
     {
-      "path": "/.docker/config.json",
+      "path": "/api/session/properties",
       "views": 6
     },
     {
-      "path": "/.env.staging.local",
-      "views": 6
-    },
-    {
-      "path": "/.git/config",
-      "views": 6
-    },
-    {
-      "path": "/.git/HEAD",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "path": "/vi/goi-cha-me/gia-dinh-la-de-yeu-thuong-khong-phai-de-quan-ly/",
       "views": 5
     },
     {
-      "path": "/_next/static/chunks/718-8fa61f5aede14d73.js",
-      "views": 5
+      "path": "/vi/goi-cha-me/cach-xay-dung-niem-tin-giua-cha-me-va-con-soi-day-ket-noi-giup-tre-tu-giac-truong-thanh/",
+      "views": 4
+    },
+    {
+      "path": "/vi/goi-cha-me/cach-xay-dung-quy-tac-trong-gia-dinh-de-con-tu-giac-chap-hanh-khong-can-cam-doan/",
+      "views": 4
+    },
+    {
+      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
+      "views": 4
     }
   ]
 }
