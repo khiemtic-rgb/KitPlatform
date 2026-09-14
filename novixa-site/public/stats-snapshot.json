@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-14T05:00:21.489Z",
+  "generatedAt": "2026-09-14T12:52:58.418Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 35,
-    "todayPageViews": 359,
-    "todayRequests": 855,
-    "last24hVisitors": 301,
-    "last24hPageViews": 990,
-    "last24hRequests": 4242
+    "todayVisitors": 93,
+    "todayPageViews": 779,
+    "todayRequests": 4925,
+    "last24hVisitors": 273,
+    "last24hPageViews": 1318,
+    "last24hRequests": 8101
   },
   "hourly": [
-    {
-      "time": "2026-09-13T06:00:00Z",
-      "visitors": 31,
-      "requests": 40
-    },
-    {
-      "time": "2026-09-13T07:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-13T08:00:00Z",
-      "visitors": 13,
-      "requests": 23
-    },
-    {
-      "time": "2026-09-13T09:00:00Z",
-      "visitors": 9,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-13T10:00:00Z",
-      "visitors": 40,
-      "requests": 73
-    },
-    {
-      "time": "2026-09-13T11:00:00Z",
-      "visitors": 20,
-      "requests": 25
-    },
-    {
-      "time": "2026-09-13T12:00:00Z",
-      "visitors": 19,
-      "requests": 23
-    },
     {
       "time": "2026-09-13T13:00:00Z",
       "visitors": 21,
@@ -125,6 +90,46 @@
       "time": "2026-09-14T04:00:00Z",
       "visitors": 9,
       "requests": 534
+    },
+    {
+      "time": "2026-09-14T05:00:00Z",
+      "visitors": 5,
+      "requests": 286
+    },
+    {
+      "time": "2026-09-14T06:00:00Z",
+      "visitors": 13,
+      "requests": 365
+    },
+    {
+      "time": "2026-09-14T07:00:00Z",
+      "visitors": 15,
+      "requests": 17
+    },
+    {
+      "time": "2026-09-14T08:00:00Z",
+      "visitors": 6,
+      "requests": 1058
+    },
+    {
+      "time": "2026-09-14T09:00:00Z",
+      "visitors": 9,
+      "requests": 40
+    },
+    {
+      "time": "2026-09-14T10:00:00Z",
+      "visitors": 12,
+      "requests": 368
+    },
+    {
+      "time": "2026-09-14T11:00:00Z",
+      "visitors": 5,
+      "requests": 1909
+    },
+    {
+      "time": "2026-09-14T12:00:00Z",
+      "visitors": 13,
+      "requests": 27
     }
   ],
   "daily": [
@@ -166,71 +171,71 @@
     },
     {
       "date": "2026-09-14",
-      "visitors": 35,
-      "pageViews": 359,
-      "requests": 855
+      "visitors": 93,
+      "pageViews": 779,
+      "requests": 4925
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 516
+      "views": 956
     },
     {
       "path": "/index.php",
-      "views": 158
-    },
-    {
-      "path": "/wp-json/batch/v1/",
-      "views": 95
+      "views": 340
     },
     {
       "path": "/wp-json/batch/v1",
-      "views": 89
-    },
-    {
-      "path": "//wp-json/batch/v1",
-      "views": 69
+      "views": 200
     },
     {
       "path": "/blog/wp-json/batch/v1",
-      "views": 68
+      "views": 164
+    },
+    {
+      "path": "/wp-json/batch/v1/",
+      "views": 136
     },
     {
       "path": "/wordpress/wp-json/batch/v1",
-      "views": 66
+      "views": 132
     },
     {
-      "path": "/robots.txt",
-      "views": 55
-    },
-    {
-      "path": "/__vite_rsc_findSourceMapURL",
-      "views": 54
-    },
-    {
-      "path": "/.env",
-      "views": 52
-    },
-    {
-      "path": "/vi/",
-      "views": 50
-    },
-    {
-      "path": "/wp-json/Batch/v1",
-      "views": 50
+      "path": "//wp-json/batch/v1",
+      "views": 131
     },
     {
       "path": "/login",
-      "views": 50
+      "views": 129
+    },
+    {
+      "path": "/wp-json/Batch/v1",
+      "views": 128
+    },
+    {
+      "path": "/.env",
+      "views": 110
+    },
+    {
+      "path": "/vi/",
+      "views": 104
+    },
+    {
+      "path": "/dashboard",
+      "views": 99
     },
     {
       "path": "/wordpress/",
-      "views": 45
+      "views": 95
     },
     {
-      "path": "/wp/",
-      "views": 43
+      "path": "/register",
+      "views": 81
+    },
+    {
+      "path": "/__vite_rsc_findSourceMapURL",
+      "views": 81
     }
   ]
 }
