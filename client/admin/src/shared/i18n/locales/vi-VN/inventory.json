@@ -206,8 +206,19 @@
     "messages": {
       "loadFailed": "Không tải được tồn kho",
       "detailLoadFailed": "Không tải được chi tiết lô",
-      "emptySearchHint": "Không có SP khớp, hoặc tồn vẫn 0 vì phiếu nhập chưa bấm «Hoàn tất»."
-    }
+      "emptySearchHint": "Không có SP khớp, hoặc tồn vẫn 0 vì phiếu nhập chưa bấm «Hoàn tất».",
+      "revalueOk": "Đã sửa giá vốn lô {{batch}}.",
+      "revalueFailed": "Không sửa được giá vốn lô"
+    },
+    "revalueTitle": "Sửa giá vốn lô",
+    "revalueHint": "Chỉ đổi giá vốn trên lô. Số lượng không đổi. Nếu tồn cũng sai: lưu giá đúng trước, rồi mở phiếu kiểm kê — tránh phiếu nhân giá bẩn.",
+    "revalueThenQty": "Tiếp: sửa số lượng",
+    "revalueBackReport": "Quay lại bảng kê",
+    "revalueFromReport": "Đang sửa từ báo cáo tồn bất thường. Xong thì quay lại đúng dòng này.",
+    "revalueSavedNext": "Đã lưu giá vốn. Tiếp theo sửa số lượng, hoặc quay lại bảng kê.",
+    "revalueReason": "Lý do",
+    "revalueReasonPh": "VD: Nhập thừa số 0 / nhầm đơn vị",
+    "newUnitCost": "Giá vốn mới"
   },
   "transferList": {
     "title": "Phiếu điều chuyển",
@@ -304,6 +315,11 @@
     "batchDocument": "Kiểm kê nhanh theo lô",
     "createBatchTitle": "Nhập số lượng thực tế theo lô",
     "batchDrawerTip": "Chọn lô cần chỉnh → sửa cột «Đếm được» nếu khác tồn trên máy → Lưu. Duyệt phiếu ở danh sách để cập nhật tồn.",
+    "anomalyPrefillReason": "Rà tồn bất thường: {{code}}",
+    "anomalyPrefillOk": "Đã chọn {{count}} lô của {{code}}. Sửa cột Đếm được rồi Lưu.",
+    "anomalyPrefillEmpty": "Không tìm thấy lô tồn của {{code}} trong kho này.",
+    "backToAnomaly": "Quay lại bảng kê",
+    "fromAnomalyTip": "Đang sửa từ báo cáo tồn bất thường. Lưu → duyệt phiếu để cập nhật tồn → Quay lại bảng kê (đã mở sẵn SP này).",
     "sessionStep1Title": "Bước 1 — Mở phiên kiểm kê",
     "startCounting": "Bắt đầu đếm",
     "countWarehouse": "Kho đang kiểm",

@@ -221,6 +221,21 @@ export async function fetchStockBatches(params: {
   return normalizePaged(data, normalizeStockBatch);
 }
 
+export async function revalueBatchUnitCost(
+  batchId: string,
+  payload: { unitCost: number; reason?: string },
+): Promise<{ batchId: string; previousUnitCost: number; unitCost: number }> {
+  const { data } = await http.patch<Record<string, unknown>>(
+    `/inventory/stock/batches/${batchId}/unit-cost`,
+    payload,
+  );
+  return {
+    batchId: String(data.batchId ?? data.BatchId ?? batchId),
+    previousUnitCost: Number(data.previousUnitCost ?? data.PreviousUnitCost ?? 0),
+    unitCost: Number(data.unitCost ?? data.UnitCost ?? payload.unitCost),
+  };
+}
+
 export async function fetchStockProducts(params: {
   warehouseId?: string;
   search?: string;

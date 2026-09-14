@@ -255,6 +255,75 @@ internal sealed class InventoryRepository
         return (items, total);
     }
 
+    public async Task<StockBatchListItemDto?> GetStockBatchAsync(Guid batchId, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                b.id AS Id,
+                b.warehouse_id AS WarehouseId,
+                w.warehouse_code AS WarehouseCode,
+                w.warehouse_name AS WarehouseName,
+                b.product_id AS ProductId,
+                p.product_code AS ProductCode,
+                p.product_name AS ProductName,
+                (SELECT u.unit_name FROM product_units u
+                 WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
+                 ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
+                b.batch_number AS BatchNumber,
+                b.expiry_date AS ExpiryDate,
+                b.unit_cost AS UnitCost,
+                b.quantity_available AS QuantityAvailable,
+                b.quantity_received AS QuantityReceived,
+                b.status AS Status
+            FROM inventory_batches b
+            INNER JOIN products p ON p.id = b.product_id
+            INNER JOIN warehouses w ON w.id = b.warehouse_id
+            WHERE b.id = @BatchId AND b.tenant_id = @TenantId
+              AND p.deleted_at IS NULL AND w.deleted_at IS NULL
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<StockBatchListItemDto>(sql, new { BatchId = batchId, TenantId });
+    }
+
+    public async Task RevalueBatchUnitCostAsync(
+        Guid batchId,
+        Guid warehouseId,
+        Guid productId,
+        decimal previousUnitCost,
+        decimal unitCost,
+        string? reason,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        const string updateSql = """
+            UPDATE inventory_batches
+            SET unit_cost = @UnitCost, updated_at = NOW()
+            WHERE id = @BatchId AND tenant_id = @TenantId
+            """;
+        var rows = await conn.ExecuteAsync(
+            updateSql,
+            new { BatchId = batchId, UnitCost = unitCost, TenantId },
+            tx);
+        if (rows == 0)
+            throw new InvalidOperationException("Không tìm thấy lô để sửa giá vốn.");
+
+        await InsertMovementAsync(
+            conn,
+            tx,
+            warehouseId,
+            batchId,
+            productId,
+            1,
+            "COST_REVALUE",
+            batchId,
+            0,
+            unitCost,
+            $"Giá vốn {previousUnitCost:0.##} → {unitCost:0.##}. {reason}".Trim(),
+            cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<StockProductSummaryDto> Items, int Total)> GetStockProductsAsync(
         Guid? warehouseId,
         Guid[]? allowedWarehouseIds,

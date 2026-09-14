@@ -989,6 +989,8 @@ internal sealed class ReportsRepository
 
         var sql = $"""
             SELECT
+                p.id AS ProductId,
+                w.id AS WarehouseId,
                 p.product_code AS ProductCode,
                 p.product_name AS ProductName,
                 COALESCE(c.category_name, 'Chưa phân loại') AS CategoryLabel,
@@ -1032,6 +1034,8 @@ internal sealed class ReportsRepository
 
         return rows.Select(r => new Dictionary<string, object?>
         {
+            ["productId"] = r.ProductId,
+            ["warehouseId"] = r.WarehouseId,
             ["productCode"] = r.ProductCode,
             ["productName"] = r.ProductName,
             ["categoryLabel"] = r.CategoryLabel,
@@ -1346,6 +1350,8 @@ internal sealed class ReportsRepository
 
     private sealed class StockSnapshotRow
     {
+        public Guid ProductId { get; init; }
+        public Guid WarehouseId { get; init; }
         public string ProductCode { get; init; } = "";
         public string ProductName { get; init; } = "";
         public string CategoryLabel { get; init; } = "";

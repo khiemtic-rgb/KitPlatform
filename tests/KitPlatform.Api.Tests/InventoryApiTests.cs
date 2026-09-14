@@ -25,6 +25,15 @@ public sealed class InventoryApiTests : IClassFixture<KitPlatformWebApplicationF
     }
 
     [Fact]
+    public async Task Inventory_revalue_unit_cost_requires_authentication()
+    {
+        var response = await _client.PatchAsJsonAsync(
+            $"/api/inventory/stock/batches/{Guid.Empty}/unit-cost",
+            new { unitCost = 400m });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Inventory_opening_balance_and_transfer_flow()
     {
         var token = await LoginAsync();

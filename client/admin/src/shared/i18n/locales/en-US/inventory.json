@@ -206,8 +206,19 @@
     "messages": {
       "loadFailed": "Could not load stock",
       "detailLoadFailed": "Could not load batch details",
-      "emptySearchHint": "No matching products, or stock is still 0 because the goods receipt was not completed."
-    }
+      "emptySearchHint": "No matching products, or stock is still 0 because the goods receipt was not completed.",
+      "revalueOk": "Updated unit cost for lot {{batch}}.",
+      "revalueFailed": "Could not update lot unit cost"
+    },
+    "revalueTitle": "Fix lot unit cost",
+    "revalueHint": "This changes unit cost only. Quantity stays the same. If on-hand is also wrong: save the correct cost first, then open a count — a count against a dirty cost books a huge movement.",
+    "revalueThenQty": "Next: fix quantity",
+    "revalueBackReport": "Back to the list",
+    "revalueFromReport": "Opened from the abnormal stock report. When done, return to this SKU.",
+    "revalueSavedNext": "Unit cost saved. Fix quantity next, or go back to the list.",
+    "revalueReason": "Reason",
+    "revalueReasonPh": "e.g. extra zeros / wrong unit",
+    "newUnitCost": "New unit cost"
   },
   "transferList": {
     "title": "Transfer documents",
@@ -304,6 +315,11 @@
     "batchDocument": "Quick batch count",
     "createBatchTitle": "Enter actual quantities by batch",
     "batchDrawerTip": "Select batches to adjust → edit «Counted» if different from system stock → Save. Approve from the list to update inventory.",
+    "anomalyPrefillReason": "Review abnormal stock: {{code}}",
+    "anomalyPrefillOk": "Selected {{count}} lots of {{code}}. Edit Counted, then Save.",
+    "anomalyPrefillEmpty": "No on-hand lots for {{code}} in this warehouse.",
+    "backToAnomaly": "Back to the list",
+    "fromAnomalyTip": "Opened from the abnormal stock report. Save → approve to update on-hand → Back to the list (this SKU is already selected).",
     "sessionStep1Title": "Step 1 — Open count session",
     "startCounting": "Start counting",
     "countWarehouse": "Warehouse being counted",

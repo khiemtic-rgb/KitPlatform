@@ -304,3 +304,10 @@ public sealed record LowStockProductDto(
     decimal MinStockQty,
     int BatchCount);
 
+public sealed record RevalueBatchCostRequest(decimal UnitCost, string? Reason);
+
+public sealed record RevalueBatchCostResult(
+    Guid BatchId,
+    decimal PreviousUnitCost,
+    decimal UnitCost);
+

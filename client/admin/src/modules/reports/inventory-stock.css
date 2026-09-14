@@ -302,6 +302,49 @@
 .inv-stock__status--soon::before { background: #faad14; }
 .inv-stock__status--expired::before { background: #f5222d; }
 
+.inv-stock__anomaly {
+  margin-bottom: 16px;
+  border-color: #ffd8bf;
+  background: #fff7f0;
+}
+
+.inv-stock__anomaly-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #8c8c8c;
+  max-width: 52rem;
+}
+
+.inv-stock__reason-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.inv-stock__fix-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.inv-stock__fix-order {
+  width: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  color: #d46b08;
+}
+
+.inv-stock__row--focus td {
+  background: #fff7e6 !important;
+}
+
+.inv-stock__panel-icon--warn {
+  color: #d46b08;
+  background: #fff7e6;
+}
+
 .inv-stock__table-panel .ant-table-wrapper {
   margin: 0 -8px;
 }

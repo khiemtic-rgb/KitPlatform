@@ -44,4 +44,21 @@ public sealed class StockController : ControllerBase
         [FromQuery] decimal defaultThreshold = 10,
         CancellationToken cancellationToken = default) =>
         Ok(await _inventory.GetLowStockProductsAsync(warehouseId, defaultThreshold, cancellationToken));
+
+    [HttpPatch("batches/{id:guid}/unit-cost")]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    public async Task<ActionResult<RevalueBatchCostResult>> RevalueUnitCost(
+        Guid id,
+        [FromBody] RevalueBatchCostRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _inventory.RevalueBatchCostAsync(id, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

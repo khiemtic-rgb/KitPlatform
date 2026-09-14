@@ -89,4 +89,9 @@ public interface IInventoryService
         Guid? warehouseId,
         decimal defaultThreshold,
         CancellationToken cancellationToken = default);
+
+    Task<RevalueBatchCostResult> RevalueBatchCostAsync(
+        Guid batchId,
+        RevalueBatchCostRequest request,
+        CancellationToken cancellationToken = default);
 }

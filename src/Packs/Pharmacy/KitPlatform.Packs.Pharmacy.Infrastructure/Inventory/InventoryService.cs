@@ -501,4 +501,45 @@ internal sealed class InventoryService : IInventoryService
         var (scopedId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
         return await _repository.GetLowStockProductsAsync(scopedId, allowed, defaultThreshold, cancellationToken);
     }
+
+    public async Task<RevalueBatchCostResult> RevalueBatchCostAsync(
+        Guid batchId,
+        RevalueBatchCostRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.UnitCost < 0)
+            throw new InvalidOperationException("Giá vốn lô không được âm.");
+
+        var batch = await _repository.GetStockBatchAsync(batchId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy lô.");
+        await _branchAccess.EnsureWarehouseAccessAsync(batch.WarehouseId, cancellationToken);
+
+        if (batch.UnitCost == request.UnitCost)
+            return new RevalueBatchCostResult(batch.Id, batch.UnitCost, batch.UnitCost);
+
+        await _repository.RevalueBatchUnitCostAsync(
+            batch.Id,
+            batch.WarehouseId,
+            batch.ProductId,
+            batch.UnitCost,
+            request.UnitCost,
+            request.Reason,
+            cancellationToken);
+
+        await _audit.WriteAsync(
+            "inventory_batch",
+            batch.Id,
+            "revalue_unit_cost",
+            new
+            {
+                batch.ProductCode,
+                batch.BatchNumber,
+                previousUnitCost = batch.UnitCost,
+                unitCost = request.UnitCost,
+                reason = request.Reason,
+            },
+            cancellationToken);
+
+        return new RevalueBatchCostResult(batch.Id, batch.UnitCost, request.UnitCost);
+    }
 }

@@ -230,7 +230,8 @@
       "all": "All stock",
       "near": "Near expiry",
       "expired": "Expired",
-      "stale": "No movement in 60 days"
+      "stale": "No movement in 60 days",
+      "abnormal": "Abnormal stock"
     },
     "run": "View",
     "loadError": "Could not load stock. Try again, or tell engineering if it keeps failing.",
@@ -265,6 +266,22 @@
       "title": "Stock list",
       "count": "{{count}} products",
       "search": "Search results…"
+    },
+    "anomaly": {
+      "title": "Abnormal stock list",
+      "hint": "Qty ≥ 100,000, or implied lot cost ≥ 10 million, or line value ≥ 1 billion. Usually extra zeros or a unit mix-up. If both cost and qty are wrong: fix unit cost first, then count — a count against a dirty cost books a huge movement.",
+      "count": "{{count}} rows to review",
+      "empty": "No rows over the threshold.",
+      "reasonQty": "Qty too high",
+      "reasonCost": "Lot cost off",
+      "reasonValue": "Line value off",
+      "unitCost": "Avg unit cost",
+      "fix": "Fix",
+      "openStock": "View lots",
+      "openAdjust": "Fix quantity",
+      "openCost": "Fix unit cost",
+      "bothOrder": "① Cost → ② Qty",
+      "returned": "Reviewing {{code}} after the fix — no need to search again."
     },
     "cols": {
       "code": "SKU",

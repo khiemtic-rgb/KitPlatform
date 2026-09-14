@@ -230,7 +230,8 @@
       "all": "Tất cả tồn",
       "near": "Sắp hết hạn",
       "expired": "Hết hạn",
-      "stale": "Không xuất/nhập 60 ngày"
+      "stale": "Không xuất/nhập 60 ngày",
+      "abnormal": "Tồn bất thường"
     },
     "run": "Xem",
     "loadError": "Không tải được tồn kho. Thử lại hoặc báo kỹ thuật nếu lỗi lặp lại.",
@@ -265,6 +266,22 @@
       "title": "Danh sách tồn kho",
       "count": "Tổng {{count}} sản phẩm",
       "search": "Tìm trong kết quả…"
+    },
+    "anomaly": {
+      "title": "Bảng kê tồn bất thường",
+      "hint": "SL ≥ 100.000, hoặc giá vốn lô (tồn ÷ giá trị) ≥ 10 triệu, hoặc giá trị dòng ≥ 1 tỷ. Thường do nhập thừa số 0 / nhầm đơn vị. Nếu vừa sai giá vừa sai SL: sửa giá vốn trước, rồi mới kiểm kê — tránh phiếu nhân giá bẩn.",
+      "count": "{{count}} dòng cần rà",
+      "empty": "Không có dòng vượt ngưỡng.",
+      "reasonQty": "SL quá lớn",
+      "reasonCost": "Giá vốn lô lệch",
+      "reasonValue": "Giá trị dòng lệch",
+      "unitCost": "Giá vốn TB",
+      "fix": "Sửa",
+      "openStock": "Xem lô",
+      "openAdjust": "Sửa số lượng",
+      "openCost": "Sửa giá vốn",
+      "bothOrder": "① Giá vốn → ② Số lượng",
+      "returned": "Đang xem lại {{code}} sau khi sửa — không cần tìm lại."
     },
     "cols": {
       "code": "Mã SP",

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -11,6 +11,7 @@ import {
   Select,
   Spin,
   Table,
+  Tag,
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -18,6 +19,7 @@ import {
   AlertOutlined,
   AppstoreOutlined,
   DownloadOutlined,
+  EditOutlined,
   FilterOutlined,
   InboxOutlined,
   PieChartOutlined,
@@ -45,14 +47,26 @@ import {
   readReportFieldNumber,
   readReportFieldString,
 } from '@/modules/dashboard/dashboard-revenue-range';
+import {
+  classifyStockAnomaly,
+  impliedUnitCost,
+  type StockAnomalyReason,
+} from '@/modules/reports/stock-anomaly';
+import {
+  inventoryAdjustFixPath,
+  inventoryRevaluePath,
+  inventoryStockFixPath,
+} from '@/modules/reports/stock-fix-links';
 import './inventory-stock.css';
 
 type StockStatus = 'ok' | 'soon' | 'expired';
-type AdvancedFilter = 'all' | 'near' | 'expired' | 'stale';
+type AdvancedFilter = 'all' | 'near' | 'expired' | 'stale' | 'abnormal';
 type Tone = 'value' | 'qty' | 'sku' | 'alert';
 
 type StockRow = {
   key: string;
+  productId: string;
+  warehouseId: string;
   productCode: string;
   productName: string;
   categoryLabel: string;
@@ -64,6 +78,8 @@ type StockRow = {
   status: StockStatus;
   stale: boolean;
 };
+
+type AnomalyRow = StockRow & { reasons: StockAnomalyReason[]; unitCost: number };
 
 function compactMoney(value: number): string {
   if (Math.abs(value) >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} tỷ`;
@@ -81,9 +97,20 @@ function rowKey(code: string, warehouse: string) {
   return `${code}::${warehouse}`;
 }
 
+function isFocusedStockRow(
+  row: { productId?: string; productCode: string },
+  focus: { productId?: string; productCode?: string },
+) {
+  if (focus.productId && row.productId && row.productId === focus.productId) return true;
+  if (focus.productCode && row.productCode === focus.productCode) return true;
+  return false;
+}
+
 export function InventoryStockPage() {
   const { t } = useTranslation('reports', { keyPrefix: 'inventoryHub' });
   const canExport = useCanReportsExport();
+  const [searchParams] = useSearchParams();
+  const urlApplied = useRef(false);
 
   const [warehouseId, setWarehouseId] = useState<string>();
   const [categoryId, setCategoryId] = useState<string>();
@@ -91,6 +118,8 @@ export function InventoryStockPage() {
   const [search, setSearch] = useState('');
   const [advanced, setAdvanced] = useState<AdvancedFilter>('all');
   const [tableQuery, setTableQuery] = useState('');
+  const [focusProductId, setFocusProductId] = useState<string>();
+  const [focusProductCode, setFocusProductCode] = useState<string>();
   const [hiddenCols, setHiddenCols] = useState<string[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -110,6 +139,23 @@ export function InventoryStockPage() {
       setCategories(cats);
     });
   }, []);
+
+  useEffect(() => {
+    if (urlApplied.current) return;
+    const q = (searchParams.get('q') ?? '').trim();
+    const productId = searchParams.get('productId')?.trim();
+    const warehouseFromUrl = searchParams.get('warehouseId')?.trim();
+    if (!q && !productId && !warehouseFromUrl) return;
+    urlApplied.current = true;
+    if (q) {
+      setSearchInput(q);
+      setSearch(q);
+      setTableQuery(q);
+      setFocusProductCode(q);
+    }
+    if (productId) setFocusProductId(productId);
+    if (warehouseFromUrl) setWarehouseId(warehouseFromUrl);
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,6 +202,12 @@ export function InventoryStockPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (loading) return;
+    if (!focusProductId && !focusProductCode) return;
+    document.getElementById('inv-stock-anomaly')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [loading, focusProductId, focusProductCode]);
+
   const today = dayjs().startOf('day');
   const expiryByKey = useMemo(() => {
     const map = new Map<string, { expired: boolean; near7: boolean; near30: boolean }>();
@@ -182,6 +234,8 @@ export function InventoryStockPage() {
         const status: StockStatus = flag?.expired ? 'expired' : flag?.near7 || flag?.near30 ? 'soon' : 'ok';
         return {
           key,
+          productId: readReportFieldString(row, 'productId'),
+          warehouseId: readReportFieldString(row, 'warehouseId'),
           productCode,
           productName: readReportFieldString(row, 'productName'),
           categoryLabel: readReportFieldString(row, 'categoryLabel') || '—',
@@ -203,6 +257,9 @@ export function InventoryStockPage() {
       if (advanced === 'near' && row.status !== 'soon') return false;
       if (advanced === 'expired' && row.status !== 'expired') return false;
       if (advanced === 'stale' && !row.stale) return false;
+      if (advanced === 'abnormal' && classifyStockAnomaly(row.totalQty, row.stockValue).length === 0) {
+        return false;
+      }
       if (!q) return true;
       return (
         row.productCode.toLowerCase().includes(q) ||
@@ -212,6 +269,25 @@ export function InventoryStockPage() {
       );
     });
   }, [rows, tableQuery, advanced]);
+
+  const anomalyRows = useMemo<AnomalyRow[]>(
+    () =>
+      rows
+        .map((row) => ({
+          ...row,
+          reasons: classifyStockAnomaly(row.totalQty, row.stockValue),
+          unitCost: impliedUnitCost(row.totalQty, row.stockValue),
+        }))
+        .filter((row) => row.reasons.length > 0)
+        .sort((a, b) => {
+          const focus = { productId: focusProductId, productCode: focusProductCode };
+          const aFocus = isFocusedStockRow(a, focus) ? 0 : 1;
+          const bFocus = isFocusedStockRow(b, focus) ? 0 : 1;
+          if (aFocus !== bFocus) return aFocus - bFocus;
+          return b.stockValue - a.stockValue || b.totalQty - a.totalQty;
+        }),
+    [rows, focusProductId, focusProductCode],
+  );
 
   const value = rows.reduce((sum, row) => sum + row.stockValue, 0);
   const qty = rows.reduce((sum, row) => sum + row.totalQty, 0);
@@ -401,6 +477,7 @@ export function InventoryStockPage() {
               { value: 'near', label: t('filters.near') },
               { value: 'expired', label: t('filters.expired') },
               { value: 'stale', label: t('filters.stale') },
+              { value: 'abnormal', label: t('filters.abnormal') },
             ]}
           />
         </label>
@@ -421,6 +498,15 @@ export function InventoryStockPage() {
         <Alert type="error" showIcon message={loadError} style={{ marginBottom: 12 }} />
       ) : null}
 
+      {focusProductCode || focusProductId ? (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={t('anomaly.returned', { code: focusProductCode || focusProductId })}
+        />
+      ) : null}
+
       <Spin spinning={loading}>
         <div className="inv-stock__kpis">
           {kpis.map((kpi) => (
@@ -434,6 +520,103 @@ export function InventoryStockPage() {
             </div>
           ))}
         </div>
+
+        {anomalyRows.length > 0 ? (
+          <section id="inv-stock-anomaly" className="inv-stock__panel inv-stock__anomaly">
+            <div className="inv-stock__panel-head">
+              <span className="inv-stock__panel-icon inv-stock__panel-icon--warn">
+                <WarningOutlined />
+              </span>
+              <h3>{t('anomaly.title')}</h3>
+              <span className="inv-stock__muted">{t('anomaly.count', { count: anomalyRows.length })}</span>
+            </div>
+            <p className="inv-stock__anomaly-hint">{t('anomaly.hint')}</p>
+            <Table<AnomalyRow>
+              rowKey="key"
+              size="small"
+              pagination={anomalyRows.length > 8 ? { pageSize: 8, showSizeChanger: false } : false}
+              dataSource={anomalyRows}
+              rowClassName={(row) =>
+                isFocusedStockRow(row, { productId: focusProductId, productCode: focusProductCode })
+                  ? 'inv-stock__row--focus'
+                  : ''
+              }
+              scroll={{ x: true }}
+              columns={[
+                {
+                  title: t('cols.code'),
+                  dataIndex: 'productCode',
+                  width: 130,
+                  render: (code: string, row: AnomalyRow) => (
+                    <Link to={inventoryStockFixPath(row)}>{code}</Link>
+                  ),
+                },
+                { title: t('cols.name'), dataIndex: 'productName', ellipsis: true },
+                { title: t('cols.warehouse'), dataIndex: 'warehouseName', width: 140 },
+                {
+                  title: t('cols.qty'),
+                  dataIndex: 'totalQty',
+                  align: 'right',
+                  width: 140,
+                  render: (v: number) => formatDisplayQuantity(v),
+                },
+                {
+                  title: t('anomaly.unitCost'),
+                  dataIndex: 'unitCost',
+                  align: 'right',
+                  width: 140,
+                  render: (v: number) => compactMoney(v),
+                },
+                {
+                  title: t('cols.value'),
+                  dataIndex: 'stockValue',
+                  align: 'right',
+                  width: 150,
+                  render: (v: number) => compactMoney(v),
+                },
+                {
+                  title: t('cols.status'),
+                  dataIndex: 'reasons',
+                  width: 260,
+                  render: (reasons: StockAnomalyReason[]) => (
+                    <span className="inv-stock__reason-tags">
+                      {reasons.includes('qty') ? <Tag color="orange">{t('anomaly.reasonQty')}</Tag> : null}
+                      {reasons.includes('cost') ? <Tag color="red">{t('anomaly.reasonCost')}</Tag> : null}
+                      {reasons.includes('value') ? <Tag color="magenta">{t('anomaly.reasonValue')}</Tag> : null}
+                    </span>
+                  ),
+                },
+                {
+                  title: t('anomaly.fix'),
+                  key: 'fix',
+                  width: 280,
+                  render: (_: unknown, row: AnomalyRow) => {
+                    const needCost = row.reasons.includes('cost') || row.reasons.includes('value');
+                    const needQty = row.reasons.includes('qty');
+                    return (
+                      <span className="inv-stock__fix-links">
+                        {needCost && needQty ? (
+                          <span className="inv-stock__fix-order">{t('anomaly.bothOrder')}</span>
+                        ) : null}
+                        <Link to={inventoryStockFixPath(row)}>{t('anomaly.openStock')}</Link>
+                        {needCost ? (
+                          <Link to={inventoryRevaluePath(row)}>
+                            <EditOutlined /> {t('anomaly.openCost')}
+                          </Link>
+                        ) : null}
+                        {needQty ? (
+                          <Link to={inventoryAdjustFixPath({ ...row, from: 'anomaly' })}>
+                            {t('anomaly.openAdjust')}
+                          </Link>
+                        ) : null}
+                      </span>
+                    );
+                  },
+                },
+              ]}
+            />
+          </section>
+        ) : null}
 
         <div className="inv-stock__charts">
           <section className="inv-stock__panel">
@@ -560,6 +743,11 @@ export function InventoryStockPage() {
             size="middle"
             columns={columns}
             dataSource={filteredRows}
+            rowClassName={(row) =>
+              isFocusedStockRow(row, { productId: focusProductId, productCode: focusProductCode })
+                ? 'inv-stock__row--focus'
+                : ''
+            }
             rowSelection={{
               selectedRowKeys: selectedKeys,
               onChange: (keys) => setSelectedKeys(keys.map(String)),
