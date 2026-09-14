@@ -26,20 +26,26 @@ internal sealed class ReportsService : IReportsService
             "Doanh thu bán, hoàn trả và thu ròng theo ngày/tuần/tháng (giờ Việt Nam).", true, false, false),
         new(ReportCodes.SalesRevenueByPaymentMethod, "Doanh thu theo hình thức thanh toán", "sales",
             "Thu ròng theo tiền mặt, thẻ, chuyển khoản, ví.", true, false, false),
-        new(ReportCodes.SalesShifts, "Báo cáo ca làm việc", "sales",
-            "Danh sách ca, quỹ tiền mặt và thu ròng trong ca.", true, false, false),
-        new(ReportCodes.SalesRevenueByCategory, "Doanh thu theo danh mục", "sales",
-            "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ.", true, false, false),
+        new(ReportCodes.SalesShifts, "Ca bán hàng", "sales",
+            "Danh sách ca, quỹ tiền mặt và doanh thu ròng trong ca.", true, false, false),
+        new(ReportCodes.SalesRevenueByCategory, "Doanh thu theo nhóm sản phẩm", "sales",
+            "Doanh thu ròng theo nhóm sản phẩm trong kỳ.", true, false, false),
         new(ReportCodes.SalesRevenueByClinicDoctor, "Đơn bán theo phòng khám / bác sĩ", "sales",
             "Tổng hợp đơn Connect (PK) theo phòng khám và bác sĩ kê đơn — số đơn, thu bán, hoàn, thu ròng.", true, false, false),
+        new(ReportCodes.SalesRevenueByEmployee, "Doanh số theo nhân viên", "sales",
+            "Thu bán, hoàn, thu ròng và số đơn theo người trên POS — không xếp hạng.", true, false, false),
+        new(ReportCodes.SalesRevenueByEmployeeProduct, "Doanh số nhân viên theo sản phẩm", "sales",
+            "Số lượng và thu ròng từng mặt theo người bán — dùng đối soát KPI / hoa hồng vượt mốc.", true, false, false),
+        new(ReportCodes.SalesRevenueByCustomer, "Doanh số theo khách hàng", "sales",
+            "Thu ròng và số đơn POS gắn hồ sơ khách — không bịa xếp hạng.", true, false, false),
         new(ReportCodes.ProcurementGrnValue, "Giá trị nhập hàng", "procurement",
             "Tổng hợp phiếu nhập hoàn tất — số tiền trước thuế GTGT.", false, true, false),
         new(ReportCodes.ProcurementPayablesSnapshot, "Công nợ nhà cung cấp", "procurement",
             "Số còn phải trả và tuổi nợ tại thời điểm xem báo cáo.", false, true, false),
-        new(ReportCodes.InventoryStockSnapshot, "Tồn kho và giá trị", "inventory",
-            "Số lượng và giá trị tồn (số lượng × giá vốn lô) theo sản phẩm/kho.", false, false, true),
-        new(ReportCodes.InventoryNearExpiry, "Sắp hết hạn sử dụng", "inventory",
-            "Lô tồn có hạn dùng trong số ngày cảnh báo.", false, false, true),
+        new(ReportCodes.InventoryStockSnapshot, "Tồn kho hiện tại", "inventory",
+            "Số lượng và giá trị tồn (tồn × giá vốn lô) theo sản phẩm và kho.", false, false, true),
+        new(ReportCodes.InventoryNearExpiry, "Hàng cận hạn", "inventory",
+            "Lô còn tồn có hạn dùng trong số ngày cảnh báo.", false, false, true),
         new(ReportCodes.InventoryMovementSummary, "Xuất — nhập — tồn", "inventory",
             "Tồn đầu kỳ, nhập/xuất trong kỳ và tồn cuối theo sản phẩm/kho.", false, false, true),
     ];
@@ -188,6 +194,131 @@ internal sealed class ReportsService : IReportsService
             SumTotals(rows, "orderCount", "salesAmount", "refundAmount", "netAmount"));
     }
 
+    public async Task<ReportTableResultDto> RunSalesRevenueByEmployeeAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        Guid? employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesRevenueByEmployeeAsync(
+            from, to, scopedWarehouseId, allowed, employeeId, cancellationToken);
+        rows = AppendSharePercent(rows);
+
+        var columns = new List<ReportColumnDto>
+        {
+            Col("employeeName", "Nhân viên", ReportColumnFormats.Text, "left"),
+            Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
+            Col("namedOrderCount", "Đơn gắn khách", ReportColumnFormats.Integer, "right"),
+            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("aov", "AOV", ReportColumnFormats.Money, "right"),
+            Col("sharePercent", "Tỷ lệ %", ReportColumnFormats.Qty, "right"),
+        };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        if (employeeId.HasValue) filters["Nhân viên"] = employeeId.Value.ToString();
+        filters["Ghi chú"] = "Gán theo người trên đơn POS. Hoàn trả về người của đơn gốc.";
+        return BuildTable(
+            ReportCodes.SalesRevenueByEmployee,
+            "Doanh số theo nhân viên",
+            filters,
+            columns,
+            rows,
+            SumTotals(rows, "orderCount", "namedOrderCount", "salesAmount", "refundAmount", "netAmount"));
+    }
+
+    public async Task<ReportTableResultDto> RunSalesRevenueByEmployeeProductAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        Guid? employeeId,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesRevenueByEmployeeProductAsync(
+            from, to, scopedWarehouseId, allowed, employeeId, search, cancellationToken);
+
+        var columns = new List<ReportColumnDto>
+        {
+            Col("employeeName", "Nhân viên", ReportColumnFormats.Text, "left"),
+            Col("productCode", "Mã SP", ReportColumnFormats.Text, "left"),
+            Col("productName", "Sản phẩm", ReportColumnFormats.Text, "left"),
+            Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
+            Col("qty", "SL bán", ReportColumnFormats.Qty, "right"),
+            Col("refundQty", "SL trả", ReportColumnFormats.Qty, "right"),
+            Col("netQty", "SL ròng", ReportColumnFormats.Qty, "right"),
+            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+        };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        if (employeeId.HasValue) filters["Nhân viên"] = employeeId.Value.ToString();
+        if (!string.IsNullOrWhiteSpace(search)) filters["Tìm kiếm"] = search.Trim();
+        filters["Ghi chú"] = "SL ròng = bán − trả. Dùng đối soát KPI hộp / hoa hồng vượt mốc.";
+        return BuildTable(
+            ReportCodes.SalesRevenueByEmployeeProduct,
+            "Doanh số nhân viên theo sản phẩm",
+            filters,
+            columns,
+            rows,
+            SumTotals(rows, "orderCount", "qty", "refundQty", "netQty", "salesAmount", "refundAmount", "netAmount"));
+    }
+
+    public async Task<ReportTableResultDto> RunSalesRevenueByCustomerAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesRevenueByCustomerAsync(
+            from, to, scopedWarehouseId, allowed, search, cancellationToken);
+        rows = AppendSharePercent(rows);
+        var insight = await _repository.GetSalesCustomerInsightAsync(
+            from, to, scopedWarehouseId, allowed, cancellationToken);
+
+        var columns = new List<ReportColumnDto>
+        {
+            Col("customerCode", "Mã khách", ReportColumnFormats.Text, "left"),
+            Col("customerName", "Tên khách", ReportColumnFormats.Text, "left"),
+            Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
+            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("lastOrderAt", "Đơn gần nhất", ReportColumnFormats.Date, "left"),
+            Col("segmentLabel", "Nhóm", ReportColumnFormats.Text, "left"),
+            Col("sharePercent", "Tỷ lệ %", ReportColumnFormats.Qty, "right"),
+        };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        if (!string.IsNullOrWhiteSpace(search)) filters["Tìm kiếm"] = search.Trim();
+        filters["Ghi chú"] = "Chỉ đơn POS đã thanh toán có gắn hồ sơ khách.";
+
+        var totals = SumTotals(rows, "orderCount", "salesAmount", "refundAmount", "netAmount")
+            ?? new Dictionary<string, object?>();
+        totals["customerName"] = "Tổng cộng";
+        totals["walkInOrderCount"] = insight.WalkInOrderCount;
+        totals["allOrderCount"] = insight.AllOrderCount;
+        totals["weekdayOrderCount"] = insight.WeekdayOrderCount;
+        totals["weekendOrderCount"] = insight.WeekendOrderCount;
+        totals["peakHour"] = insight.PeakHour;
+        totals["peakHourOrders"] = insight.PeakHourOrders;
+        totals["firstTimeCount"] = rows.Count(r => r.TryGetValue("isReturning", out var v) && v is false);
+        totals["returningCount"] = rows.Count(r => r.TryGetValue("isReturning", out var v) && v is true);
+
+        return BuildTable(
+            ReportCodes.SalesRevenueByCustomer,
+            "Doanh số theo khách hàng",
+            filters,
+            columns,
+            rows,
+            totals);
+    }
+
     public async Task<ReportTableResultDto> RunProcurementGrnValueAsync(
         DateTime? fromUtc,
         DateTime? toUtc,
@@ -197,7 +328,7 @@ internal sealed class ReportsService : IReportsService
         CancellationToken cancellationToken = default)
     {
         var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
-        groupBy = groupBy is ReportGroupBy.Supplier or ReportGroupBy.Month or ReportGroupBy.Day
+        groupBy = groupBy is ReportGroupBy.Supplier or ReportGroupBy.Month or ReportGroupBy.Week or ReportGroupBy.Day
             ? groupBy
             : ReportGroupBy.Supplier;
 
@@ -238,11 +369,57 @@ internal sealed class ReportsService : IReportsService
         periodFilters["Ghi chú"] = "Phiếu nhập hoàn tất — số tiền trước thuế GTGT";
         return BuildTable(
             ReportCodes.ProcurementGrnValue,
-            groupBy == ReportGroupBy.Month ? "Giá trị nhập hàng theo tháng" : "Giá trị nhập hàng theo ngày",
+            groupBy == ReportGroupBy.Month
+                ? "Giá trị nhập hàng theo tháng"
+                : groupBy == ReportGroupBy.Week
+                    ? "Giá trị nhập hàng theo tuần"
+                    : "Giá trị nhập hàng theo ngày",
             periodFilters,
             periodColumns,
             rows,
             SumTotals(rows, "grnCount", "totalQty", "preTaxAmount"));
+    }
+
+    public async Task<ReportTableResultDto> RunProcurementGrnDocumentsAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        string groupBy,
+        Guid? supplierId,
+        Guid? warehouseId,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        groupBy = NormalizePeriodGroupBy(groupBy);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetProcurementGrnDocumentsAsync(
+            from, to, groupBy, supplierId, scopedWarehouseId, allowed, search, cancellationToken);
+
+        var columns = new List<ReportColumnDto>
+        {
+            Col("periodLabel", "Kỳ", ReportColumnFormats.Text, "left"),
+            Col("grnNumber", "Số phiếu nhập", ReportColumnFormats.Text, "left"),
+            Col("receiptDate", "Ngày nhập", ReportColumnFormats.Date, "left"),
+            Col("supplierName", "Nhà cung cấp", ReportColumnFormats.Text, "left"),
+            Col("warehouseName", "Kho", ReportColumnFormats.Text, "left"),
+            Col("totalQty", "Số lượng", ReportColumnFormats.Qty, "right"),
+            Col("preTaxAmount", "Tiền trước thuế", ReportColumnFormats.Money, "right"),
+            Col("taxAmount", "Thuế GTGT", ReportColumnFormats.Money, "right"),
+            Col("totalAmount", "Tổng tiền", ReportColumnFormats.Money, "right"),
+            Col("statusLabel", "Trạng thái", ReportColumnFormats.Text, "left"),
+        };
+        var filters = FilterLabels(from, to, groupBy, warehouseId);
+        if (supplierId.HasValue) filters["NCC"] = supplierId.Value.ToString();
+        if (!string.IsNullOrWhiteSpace(search)) filters["Tìm kiếm"] = search.Trim();
+        filters["Ghi chú"] = "Phiếu nhập hoàn tất — tiền hàng, thuế GTGT và tổng thanh toán";
+
+        return BuildTable(
+            ReportCodes.ProcurementGrnValue,
+            "Chi tiết nhập hàng",
+            filters,
+            columns,
+            rows,
+            SumTotals(rows, "totalQty", "preTaxAmount", "taxAmount", "totalAmount"));
     }
 
     public async Task<ReportTableResultDto> RunProcurementPayablesSnapshotAsync(
@@ -289,23 +466,28 @@ internal sealed class ReportsService : IReportsService
     public async Task<ReportTableResultDto> RunInventoryStockSnapshotAsync(
         Guid? warehouseId,
         string? search,
+        Guid? categoryId,
         CancellationToken cancellationToken = default)
     {
         var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
-        var rows = await _repository.GetInventoryStockSnapshotAsync(scopedWarehouseId, allowed, search, cancellationToken);
+        var rows = await _repository.GetInventoryStockSnapshotAsync(scopedWarehouseId, allowed, search, categoryId, cancellationToken);
         var columns = new List<ReportColumnDto>
         {
             Col("productCode", "Mã SP", ReportColumnFormats.Text, "left"),
             Col("productName", "Tên SP", ReportColumnFormats.Text, "left"),
+            Col("categoryLabel", "Nhóm sản phẩm", ReportColumnFormats.Text, "left"),
             Col("warehouseName", "Kho", ReportColumnFormats.Text, "left"),
             Col("totalQty", "Tồn", ReportColumnFormats.Qty, "right"),
+            Col("unitName", "Đơn vị", ReportColumnFormats.Text, "left"),
             Col("stockValue", "Giá trị tồn", ReportColumnFormats.Money, "right"),
+            Col("updatedAt", "Cập nhật", ReportColumnFormats.Date, "left"),
         };
         var filters = new Dictionary<string, string>
         {
             ["Thời điểm"] = DateTime.UtcNow.AddHours(7).ToString("dd/MM/yyyy HH:mm"),
         };
         if (warehouseId.HasValue) filters["Kho"] = warehouseId.Value.ToString();
+        if (categoryId.HasValue) filters["Danh mục"] = categoryId.Value.ToString();
         if (!string.IsNullOrWhiteSpace(search)) filters["Tìm kiếm"] = search.Trim();
 
         return BuildTable(
@@ -436,7 +618,15 @@ internal sealed class ReportsService : IReportsService
         params string[] numericKeys)
     {
         if (rows.Count == 0) return null;
-        var totals = new Dictionary<string, object?> { ["periodLabel"] = "Tổng cộng", ["supplierName"] = "Tổng cộng", ["productName"] = "Tổng cộng", ["paymentMethodLabel"] = "Tổng cộng", ["categoryLabel"] = "Tổng cộng" };
+        var totals = new Dictionary<string, object?>
+        {
+            ["periodLabel"] = "Tổng cộng",
+            ["supplierName"] = "Tổng cộng",
+            ["productName"] = "Tổng cộng",
+            ["paymentMethodLabel"] = "Tổng cộng",
+            ["categoryLabel"] = "Tổng cộng",
+            ["employeeName"] = "Tổng cộng",
+        };
         foreach (var key in numericKeys)
         {
             decimal sum = 0;

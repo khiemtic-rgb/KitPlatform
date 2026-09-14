@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Tabs, Typography } from 'antd';
+import { Tabs } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { secondaryTabsBarStyle } from '@/shared/components/module-tabs.ui';
 import { reportsForCategory, type ReportCategory } from '@/modules/reports/reports-catalog';
@@ -30,7 +30,11 @@ export function ReportCategoryNav() {
 
   if (!category) return null;
 
-  const activeReport = reports.find((r) => location.pathname.startsWith(r.path));
+  const activeReport = reports.find((r) =>
+    r.path === '/reports/sales/revenue-by-employee'
+      ? location.pathname.startsWith('/reports/sales/revenue-by-employee')
+      : location.pathname === r.path || location.pathname.startsWith(`${r.path}/`),
+  );
 
   return (
     <div style={secondaryTabsBarStyle}>
@@ -39,14 +43,7 @@ export function ReportCategoryNav() {
         size="small"
         items={reports.map((r) => ({
           key: r.path,
-          label: (
-            <span>
-              <Typography.Text code style={{ fontSize: 11, marginRight: 6 }}>
-                {r.code}
-              </Typography.Text>
-              {r.name}
-            </span>
-          ),
+          label: r.name,
         }))}
         onChange={(path) => navigate(path)}
       />

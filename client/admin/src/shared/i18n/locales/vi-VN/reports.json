@@ -12,25 +12,479 @@
     "procurement": "Mua hàng",
     "inventory": "Kho hàng"
   },
+  "catalogHub": {
+    "title": "Báo cáo chi tiết",
+    "subtitle": "Số liệu bán, kho và nhập theo kỳ — phục vụ điều hành nhà thuốc.",
+    "create": "Mở báo cáo",
+    "empty": "Không có dữ liệu trong kỳ",
+    "period": {
+      "today": "Hôm nay",
+      "week": "Tuần này",
+      "month": "Tháng này",
+      "quarter": "Quý này"
+    },
+    "kpi": {
+      "revenue": "Doanh thu",
+      "orders": "Đơn bán",
+      "customers": "Khách mua",
+      "products": "Mặt hàng bán",
+      "staff": "Nhân viên bán",
+      "stock": "Lô tồn",
+      "vsPrior": "so với kỳ trước",
+      "newPeriod": "kỳ trước chưa có số",
+      "namedHint": "{{count}} phiếu gắn hồ sơ",
+      "soldHint": "có bán trong kỳ",
+      "staffHint": "có bán trong kỳ",
+      "batches": "còn hàng"
+    },
+    "charts": {
+      "time": "Doanh thu theo thời gian",
+      "mix": "Cơ cấu báo cáo",
+      "types": "Loại báo cáo",
+      "used": "Báo cáo thường dùng",
+      "byDay": "Theo ngày",
+      "byWeek": "Theo tuần",
+      "byMonth": "Theo tháng"
+    },
+    "groups": {
+      "sales": "Bán hàng",
+      "salesHint": "Doanh thu, đơn bán, hình thức thanh toán, theo nhóm sản phẩm.",
+      "inventory": "Kho hàng",
+      "inventoryHint": "Tồn hiện tại, hàng cận hạn, xuất nhập tồn.",
+      "procurement": "Mua hàng",
+      "procurementHint": "Phiếu nhập hoàn tất và công nợ nhà cung cấp.",
+      "customers": "Khách hàng",
+      "customersHint": "Khách gắn hồ sơ, quay lại, giá trị mua trong kỳ.",
+      "staff": "Nhân viên",
+      "staffHint": "Doanh số theo người bán trên POS.",
+      "other": "Khác",
+      "otherHint": "Báo cáo vận hành còn lại."
+    },
+    "pick": {
+      "title": "Chọn loại báo cáo",
+      "subtitle": "Chọn nhóm để mở báo cáo chi tiết.",
+      "search": "Tìm báo cáo…",
+      "count": "{{count}} báo cáo"
+    },
+    "recent": {
+      "title": "Báo cáo gần đây",
+      "empty": "Chưa mở báo cáo nào trên trình duyệt này.",
+      "name": "Tên báo cáo",
+      "group": "Loại báo cáo",
+      "period": "Thời gian",
+      "by": "Người mở",
+      "at": "Lần mở",
+      "action": "Thao tác",
+      "open": "Xem"
+    }
+  },
   "home": {
     "title": "Báo cáo",
-    "description": "Doanh thu, ca làm việc, nhập hàng, công nợ nhà cung cấp, tồn kho, xuất–nhập–tồn và cảnh báo hạn dùng. Chọn báo cáo để lọc kỳ, xuất file hoặc in.",
+    "description": "Phân tích hoạt động nhà thuốc theo kỳ — doanh thu, đơn, khách, nhân viên và tồn.",
     "favorites": "Thường dùng"
   },
-  "view": {
-    "notFound": "Không tìm thấy báo cáo.",
-    "filterCriteria": "Tiêu chí lọc:",
-    "period": "Kỳ (giờ Việt Nam)",
+  "hub": {
+    "subtitle": "Số liệu bán, kho và nhập theo kỳ — phục vụ điều hành nhà thuốc.",
+    "export": "Xuất kỳ này",
+    "viewAll": "Xem chi tiết",
+    "empty": "Không có dữ liệu trong kỳ",
+    "other": "Khác",
+    "period": {
+      "today": "Hôm nay",
+      "week": "Tuần này",
+      "month": "Tháng này"
+    },
+    "customersTitle": "Khách hàng trong kỳ",
+    "customersNote": "Tỷ lệ đơn POS gắn hồ sơ khách trong kỳ.",
+    "tabs": {
+      "overview": "Tổng quan",
+      "sales": "Doanh thu",
+      "inventory": "Kho hàng",
+      "customers": "Khách hàng",
+      "staff": "Nhân viên",
+      "procurement": "Mua hàng",
+      "list": "Báo cáo chi tiết"
+    },
+    "kpi": {
+      "revenue": "Doanh thu",
+      "orders": "Đơn bán",
+      "customers": "Khách mua",
+      "products": "Mặt hàng bán",
+      "staff": "Nhân viên bán",
+      "stock": "Lô tồn",
+      "vsPrior": "so với kỳ trước",
+      "newPeriod": "kỳ trước chưa có số",
+      "customersHint": "{{count}} phiếu gắn hồ sơ",
+      "soldHint": "có bán trong kỳ",
+      "staffHint": "có bán trong kỳ",
+      "batches": "còn hàng"
+    },
+    "charts": {
+      "daily": "Doanh thu và đơn bán theo ngày",
+      "revenue": "Doanh thu",
+      "orders": "Số đơn bán",
+      "category": "Cơ cấu doanh thu theo nhóm",
+      "total": "Tổng kỳ"
+    },
+    "tables": {
+      "topProducts": "Top sản phẩm bán chạy",
+      "staff": "Doanh thu theo nhân viên",
+      "customers": "Gắn hồ sơ khách",
+      "product": "Sản phẩm",
+      "qty": "SL",
+      "revenue": "Doanh thu",
+      "namedOrders": "Phiếu gắn hồ sơ",
+      "walkIn": "Phiếu chưa gắn",
+      "attachRate": "Tỷ lệ gắn hồ sơ",
+      "bookCustomers": "Khách trên sổ"
+    },
+    "help": {
+      "title": "Đọc số để làm gì?",
+      "one": "Theo dõi doanh thu và đơn bán theo ngày.",
+      "two": "Biết ai bán, mặt nào chạy — để xếp ca và nhập hàng.",
+      "three": "Đo tỷ lệ đơn gắn hồ sơ khách — nền tảng chăm sóc khách."
+    },
+    "quick": {
+      "title": "Báo cáo nhanh",
+      "products": "Doanh số theo sản phẩm",
+      "staff": "Doanh số nhân viên",
+      "customers": "Khách gắn hồ sơ",
+      "expiry": "Hàng cận hạn",
+      "all": "Toàn bộ báo cáo"
+    },
+    "list": {
+      "code": "Mã",
+      "name": "Báo cáo",
+      "group": "Nhóm"
+    }
+  },
+  "revenue": {
+    "title": "Doanh thu theo kỳ",
+    "subtitle": "Doanh thu bán, hoàn trả và doanh thu ròng theo ngày / tuần / tháng.",
+    "export": "Xuất báo cáo",
+    "period": "Thời gian",
+    "groupBy": "Nhóm theo thời gian",
+    "warehouse": "Kho",
+    "warehouseAll": "Tất cả kho",
+    "run": "Xem",
+    "empty": "Không có dữ liệu trong kỳ",
+    "other": "Khác",
+    "byCategory": "Theo nhóm sản phẩm",
+    "search": "Tìm kiếm…",
+    "columns": "Hiển thị cột",
+    "total": "Tổng cộng",
+    "rows": "{{count}} dòng",
+    "kpi": {
+      "revenue": "Tổng doanh thu",
+      "orders": "Số đơn bán",
+      "aov": "Doanh thu TB/đơn",
+      "refund": "Doanh thu hoàn trả",
+      "vsPrior": "so với kỳ trước",
+      "newPeriod": "kỳ trước chưa có số"
+    },
+    "charts": {
+      "day": "Doanh thu theo ngày",
+      "week": "Doanh thu theo tuần",
+      "month": "Doanh thu theo tháng",
+      "revenue": "Doanh thu (₫)",
+      "orders": "Số đơn bán",
+      "category": "Cơ cấu doanh thu",
+      "total": "Tổng doanh thu"
+    },
+    "table": {
+      "day": "Chi tiết doanh thu theo ngày",
+      "week": "Chi tiết doanh thu theo tuần",
+      "month": "Chi tiết doanh thu theo tháng"
+    },
+    "cols": {
+      "period": "Ngày",
+      "periodBy": {
+        "day": "Ngày",
+        "week": "Tuần",
+        "month": "Tháng"
+      },
+      "sales": "Doanh thu",
+      "refund": "Hoàn trả",
+      "net": "Doanh thu ròng",
+      "orders": "Số đơn",
+      "aov": "Doanh thu TB/đơn",
+      "change": "Thay đổi",
+      "share": "Tỷ trọng"
+    }
+  },
+  "inventoryHub": {
+    "title": "Tồn kho hiện tại",
+    "subtitle": "Số lượng và giá trị tồn theo giá vốn từng lô, tại thời điểm xem.",
+    "export": "Xuất báo cáo",
+    "warehouse": "Kho",
+    "warehouseAll": "Tất cả kho",
+    "category": "Nhóm sản phẩm",
+    "categoryAll": "Tất cả nhóm",
+    "search": "Tìm sản phẩm",
+    "searchPh": "Mã / tên sản phẩm",
+    "advanced": "Lọc tình trạng",
+    "onlyAlerts": "Chỉ hiện sắp hết hạn / hết hạn",
+    "openExpiry": "Báo cáo cận hạn",
+    "openMovement": "Xuất — nhập — tồn",
+    "filters": {
+      "all": "Tất cả tồn",
+      "near": "Sắp hết hạn",
+      "expired": "Hết hạn",
+      "stale": "Không xuất/nhập 60 ngày"
+    },
+    "run": "Xem",
+    "loadError": "Không tải được tồn kho. Thử lại hoặc báo kỹ thuật nếu lỗi lặp lại.",
+    "empty": "Không có tồn kho",
+    "uncategorized": "Chưa phân loại",
+    "asOf": "tại thời điểm xem",
+    "viewAll": "Xem tất cả",
+    "columns": "Cột hiển thị",
+    "total": "Tổng",
+    "rows": "{{count}} dòng",
+    "kpi": {
+      "value": "Giá trị tồn (giá vốn lô)",
+      "valueNote": "Giá trị = tồn × giá vốn lô. Giá vốn nhập sai sẽ làm số này lệch.",
+      "qty": "Tổng số lượng tồn",
+      "sku": "Số mặt hàng còn tồn",
+      "expiry": "Mặt hàng cận / hết hạn"
+    },
+    "charts": {
+      "warehouse": "Giá trị tồn theo kho",
+      "category": "Tồn kho theo nhóm sản phẩm",
+      "alerts": "Cảnh báo tồn kho",
+      "byValue": "Theo giá trị",
+      "totalValue": "Tổng giá trị tồn"
+    },
+    "alerts": {
+      "d7": "Sắp hết hạn (7 ngày)",
+      "d30": "Sắp hết hạn (30 ngày)",
+      "expired": "Hết hạn",
+      "idle": "Không xuất/nhập 60 ngày"
+    },
+    "table": {
+      "title": "Danh sách tồn kho",
+      "count": "Tổng {{count}} sản phẩm",
+      "search": "Tìm trong kết quả…"
+    },
+    "cols": {
+      "code": "Mã SP",
+      "name": "Tên sản phẩm",
+      "group": "Nhóm sản phẩm",
+      "warehouse": "Kho",
+      "qty": "Tồn",
+      "unit": "Đơn vị",
+      "value": "Giá trị tồn",
+      "status": "Tình trạng",
+      "updated": "Cập nhật"
+    },
+    "status": {
+      "ok": "Bình thường",
+      "soon": "Sắp hết hạn",
+      "expired": "Hết hạn"
+    }
+  },
+  "customerHub": {
+    "title": "Doanh số theo khách hàng",
+    "subtitle": "Đơn POS gắn hồ sơ: khách mua, giá trị và khách quay lại trong kỳ.",
+    "export": "Xuất báo cáo",
+    "periodToday": "Hôm nay",
+    "periodWeek": "Tuần này",
+    "periodMonth": "Tháng này",
+    "warehouseAll": "Tất cả chi nhánh",
+    "empty": "Chưa có đơn gắn khách trong kỳ",
+    "asOf": "trong kỳ đã chọn",
+    "bookHint": "khách trên sổ",
+    "kpi": {
+      "revenue": "Doanh thu từ khách gắn",
+      "orders": "Số đơn gắn",
+      "buyers": "Khách mua trong kỳ",
+      "first": "Khách lần đầu",
+      "attach": "Tỷ lệ gắn khách",
+      "book": "Khách trên sổ"
+    },
+    "charts": {
+      "mix": "Tỷ lệ đơn theo nhóm khách",
+      "mixHint": "Theo số đơn",
+      "new": "Khách lần đầu theo ngày",
+      "funnel": "Giá trị khách hàng",
+      "funnelBook": "Khách trên sổ",
+      "funnelBuy": "Khách đã mua",
+      "funnelRepeat": "Khách ≥ 2 đơn",
+      "funnelValue": "Top 20% doanh thu"
+    },
+    "mix": {
+      "first": "Khách lần đầu",
+      "returning": "Khách quay lại",
+      "walkIn": "Đơn chưa gắn"
+    },
+    "table": {
+      "title": "Khách mua trong kỳ",
+      "count": "{{count}} khách",
+      "search": "Tìm khách hàng…",
+      "rank": "#",
+      "code": "Mã khách",
+      "name": "Tên khách hàng",
+      "orders": "Số đơn",
+      "revenue": "Tổng giá trị",
+      "last": "Đơn gần nhất",
+      "segment": "Nhóm",
+      "status": "Trạng thái",
+      "bought": "Đã mua"
+    },
+    "top": {
+      "title": "Top khách theo doanh thu",
+      "limit": "Top 10",
+      "view": "Xem chi tiết"
+    },
+    "insight": {
+      "title": "Hành vi trong kỳ",
+      "peak": "Giờ bán nhiều nhất (đơn gắn)",
+      "weekend": "Tỷ lệ đơn cuối tuần",
+      "aov": "TB / đơn gắn",
+      "attach": "Tỷ lệ gắn khách"
+    }
+  },
+  "procurementHub": {
+    "title": "Giá trị nhập hàng",
+    "subtitle": "Tổng hợp phiếu nhập hoàn tất — số tiền trước thuế GTGT. Phân tích nhập hàng theo thời gian.",
+    "export": "Xuất báo cáo",
+    "period": "Thời gian",
     "groupBy": "Nhóm theo",
     "warehouse": "Kho",
     "warehouseAll": "Tất cả kho",
     "supplier": "Nhà cung cấp",
     "supplierAll": "Tất cả nhà cung cấp",
+    "run": "Xem",
+    "reset": "Đặt lại",
+    "empty": "Không có dữ liệu trong kỳ đã chọn",
+    "emptyChart": "Chưa có dữ liệu",
+    "emptyDonut": "Không có dữ liệu để phân nhóm",
+    "columns": "Cột hiển thị",
+    "rows": "{{count}} dòng",
+    "other": "Khác",
+    "open": "Xem phiếu",
+    "kpi": {
+      "value": "Tổng giá trị nhập hàng",
+      "preTaxHint": "{{count}} phiếu nhập",
+      "grn": "Số phiếu nhập",
+      "grnHint": "Hoàn tất",
+      "qty": "Tổng số lượng",
+      "qtyHint": "0 sản phẩm",
+      "suppliers": "Số nhà cung cấp",
+      "suppliersHint": "phát sinh nhập hàng"
+    },
+    "charts": {
+      "time": "Giá trị nhập hàng theo thời gian",
+      "bar": "Biểu đồ cột",
+      "supplier": "Giá trị nhập hàng theo nhà cung cấp",
+      "top5": "Top 5 nhà cung cấp",
+      "total": "Tổng giá trị"
+    },
+    "table": {
+      "title": "Chi tiết nhập hàng",
+      "search": "Tìm kiếm phiếu / nhà cung cấp…"
+    },
+    "cols": {
+      "period": "Kỳ",
+      "grn": "Số phiếu nhập",
+      "grnCount": "Số phiếu nhập",
+      "date": "Ngày nhập",
+      "supplier": "Nhà cung cấp",
+      "warehouse": "Kho",
+      "qty": "Số lượng",
+      "preTax": "Tiền trước thuế",
+      "tax": "Thuế GTGT",
+      "total": "Tổng tiền",
+      "status": "Trạng thái",
+      "action": "Thao tác"
+    }
+  },
+  "staffHub": {
+    "title": "Doanh số nhân viên",
+    "subtitle": "Doanh số theo người bán trên phiếu POS. Tab Theo sản phẩm để đối soát từng mặt hàng.",
+    "export": "Xuất báo cáo",
+    "summary": "Tổng hợp",
+    "product": "Theo sản phẩm",
+    "warehouse": "Kho",
+    "warehouseAll": "Tất cả kho",
+    "employee": "Nhân viên",
+    "employeeAll": "Tất cả nhân viên",
+    "productPh": "Tìm mã / tên sản phẩm",
+    "run": "Xem",
+    "empty": "Không có dữ liệu trong kỳ đã chọn",
+    "columns": "Cột hiển thị",
+    "total": "Tổng cộng",
+    "rows": "{{count}} dòng",
+    "period": {
+      "today": "Hôm nay",
+      "week": "Tuần này",
+      "month": "Tháng này",
+      "quarter": "Quý này"
+    },
+    "kpi": {
+      "revenue": "Tổng doanh thu",
+      "orders": "Số đơn bán",
+      "staff": "Số nhân viên có bán",
+      "staffHint": "{{pct}}% nhân viên có đơn",
+      "aov": "Doanh thu bình quân/đơn",
+      "vsPrior": "so với kỳ trước",
+      "newPeriod": "kỳ trước chưa có số"
+    },
+    "charts": {
+      "bars": "Doanh số theo nhân viên",
+      "share": "Tỷ lệ doanh số theo nhân viên",
+      "legend": "Doanh thu",
+      "total": "Tổng doanh thu"
+    },
+    "table": {
+      "summary": "Chi tiết doanh số nhân viên",
+      "product": "Chi tiết theo sản phẩm",
+      "search": "Tìm kiếm nhân viên…",
+      "namedHint": "{{count}} đơn gắn khách"
+    },
+    "cols": {
+      "rank": "#",
+      "name": "Nhân viên",
+      "orders": "Số đơn",
+      "named": "Đơn gắn khách",
+      "sales": "Thu bán",
+      "refund": "Hoàn trả",
+      "net": "Thu ròng",
+      "aov": "AOV",
+      "share": "Tỷ lệ",
+      "sku": "Mã",
+      "product": "Sản phẩm",
+      "qty": "SL bán",
+      "netQty": "SL ròng"
+    }
+  },
+  "view": {
+    "notFound": "Không tìm thấy báo cáo.",
+    "filterCriteria": "Tiêu chí lọc:",
+    "period": "Kỳ",
+    "groupBy": "Nhóm theo",
+    "warehouse": "Kho",
+    "warehouseAll": "Tất cả kho",
+    "employee": "Nhân viên",
+    "employeeAll": "Tất cả nhân viên",
+    "supplier": "Nhà cung cấp",
+    "supplierAll": "Tất cả nhà cung cấp",
     "productSearch": "Tên sản phẩm",
     "productSearchPlaceholder": "Mã / tên sản phẩm",
     "expiryDays": "Số ngày đến hạn dùng",
-    "runReport": "Xem báo cáo",
-    "exportCsv": "Xuất Excel/CSV",
+    "runReport": "Xem",
+    "viewByProduct": "Xem theo sản phẩm",
+    "sales06ProductHint": "Bảng này chỉ tổng theo người. Bấm «Xem theo sản phẩm» hoặc tên nhân viên để thấy từng mặt hàng.",
+    "staffSalesTitle": "Doanh số nhân viên",
+    "staffSalesDesc": "Theo người bán trên POS. Chọn «Theo sản phẩm» để xem từng mặt hàng.",
+    "summary": "Tổng hợp",
+    "byProduct": "Theo sản phẩm",
+    "kpiNet": "Thu ròng",
+    "kpiOrders": "Số đơn",
+    "kpiAov": "TB / đơn",
+    "kpiQty": "SL ròng",
+    "kpiRefund": "Hoàn trả",
+    "exportCsv": "Xuất",
     "print": "In",
     "loadFailed": "Không tải được báo cáo",
     "loadFailedHint": "Không kết nối được máy chủ báo cáo. Thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.",
@@ -50,10 +504,12 @@
     "period": "Kỳ",
     "groupBy": "Nhóm theo",
     "warehouse": "Kho",
+    "employee": "Nhân viên",
     "supplier": "Nhà cung cấp",
     "productSearch": "Tên sản phẩm",
     "expiryDays": "Số ngày đến hạn dùng",
     "warehouseAll": "Tất cả kho",
+    "employeeAll": "Tất cả nhân viên",
     "supplierAll": "Tất cả nhà cung cấp",
     "apiKeys": {
       "period": "Thời điểm",
@@ -76,16 +532,28 @@
       "description": "Thu ròng theo tiền mặt, thẻ, chuyển khoản, ví."
     },
     "SALES-03": {
-      "name": "Báo cáo ca làm việc",
-      "description": "Danh sách ca, quỹ tiền mặt và thu ròng trong ca."
+      "name": "Ca bán hàng",
+      "description": "Danh sách ca, quỹ tiền mặt và doanh thu ròng trong ca."
     },
     "SALES-04": {
-      "name": "Doanh thu theo danh mục",
-      "description": "Thu ròng theo nhóm sản phẩm (danh mục) trong kỳ."
+      "name": "Doanh thu theo nhóm sản phẩm",
+      "description": "Doanh thu ròng theo nhóm sản phẩm trong kỳ."
     },
     "SALES-05": {
       "name": "Đơn bán theo phòng khám / bác sĩ",
       "description": "Tổng hợp đơn POS gắn handoff Connect (PK) theo phòng khám và bác sĩ — số đơn, thu bán, hoàn, thu ròng."
+    },
+    "SALES-06": {
+      "name": "Doanh số nhân viên",
+      "description": "Theo người bán trên POS. Chọn «Theo sản phẩm» để xem từng mặt hàng."
+    },
+    "SALES-07": {
+      "name": "Doanh số nhân viên theo sản phẩm",
+      "description": "Số lượng và thu ròng từng mặt theo người bán — đối soát KPI / hoa hồng vượt mốc."
+    },
+    "SALES-08": {
+      "name": "Doanh số theo khách hàng",
+      "description": "Thu ròng và số đơn POS gắn hồ sơ khách — không bịa xếp hạng."
     },
     "PROC-01": {
       "name": "Giá trị nhập hàng",
@@ -96,12 +564,12 @@
       "description": "Số còn phải trả và tuổi nợ tại thời điểm xem báo cáo."
     },
     "INV-01": {
-      "name": "Tồn kho và giá trị",
-      "description": "Số lượng và giá trị tồn (số lượng × giá vốn lô) theo sản phẩm/kho."
+      "name": "Tồn kho hiện tại",
+      "description": "Số lượng và giá trị tồn (tồn × giá vốn lô) theo sản phẩm và kho."
     },
     "INV-02": {
-      "name": "Sắp hết hạn sử dụng",
-      "description": "Lô tồn có hạn dùng trong số ngày cảnh báo."
+      "name": "Hàng cận hạn",
+      "description": "Lô còn tồn có hạn dùng trong số ngày cảnh báo."
     },
     "INV-03": {
       "name": "Xuất — nhập — tồn",

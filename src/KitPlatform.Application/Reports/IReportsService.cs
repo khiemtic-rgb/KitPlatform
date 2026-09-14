@@ -35,6 +35,28 @@ public interface IReportsService
         Guid? warehouseId,
         CancellationToken cancellationToken = default);
 
+    Task<ReportTableResultDto> RunSalesRevenueByEmployeeAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        Guid? employeeId,
+        CancellationToken cancellationToken = default);
+
+    Task<ReportTableResultDto> RunSalesRevenueByEmployeeProductAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        Guid? employeeId,
+        string? search,
+        CancellationToken cancellationToken = default);
+
+    Task<ReportTableResultDto> RunSalesRevenueByCustomerAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        string? search,
+        CancellationToken cancellationToken = default);
+
     Task<ReportTableResultDto> RunProcurementGrnValueAsync(
         DateTime? fromUtc,
         DateTime? toUtc,
@@ -43,12 +65,22 @@ public interface IReportsService
         Guid? warehouseId,
         CancellationToken cancellationToken = default);
 
+    Task<ReportTableResultDto> RunProcurementGrnDocumentsAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        string groupBy,
+        Guid? supplierId,
+        Guid? warehouseId,
+        string? search,
+        CancellationToken cancellationToken = default);
+
     Task<ReportTableResultDto> RunProcurementPayablesSnapshotAsync(
         CancellationToken cancellationToken = default);
 
     Task<ReportTableResultDto> RunInventoryStockSnapshotAsync(
         Guid? warehouseId,
         string? search,
+        Guid? categoryId,
         CancellationToken cancellationToken = default);
 
     Task<ReportTableResultDto> RunInventoryNearExpiryAsync(

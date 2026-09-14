@@ -12,10 +12,451 @@
     "procurement": "Procurement",
     "inventory": "Inventory"
   },
+  "catalogHub": {
+    "title": "All reports",
+    "subtitle": "Sales, stock, and purchasing figures for running the pharmacy.",
+    "create": "Open a report",
+    "empty": "No data in this period",
+    "period": {
+      "today": "Today",
+      "week": "This week",
+      "month": "This month",
+      "quarter": "This quarter"
+    },
+    "kpi": {
+      "revenue": "Revenue",
+      "orders": "Sales tickets",
+      "customers": "Buyers",
+      "products": "SKUs sold",
+      "staff": "Selling staff",
+      "stock": "Lots on hand",
+      "vsPrior": "vs previous period",
+      "newPeriod": "no prior-period data",
+      "namedHint": "{{count}} named tickets",
+      "soldHint": "sold in period",
+      "staffHint": "sold in period",
+      "batches": "with quantity"
+    },
+    "charts": {
+      "time": "Revenue over time",
+      "mix": "Report mix",
+      "types": "Report types",
+      "used": "Frequently used",
+      "byDay": "By day",
+      "byWeek": "By week",
+      "byMonth": "By month"
+    },
+    "groups": {
+      "sales": "Sales",
+      "salesHint": "Revenue, tickets, payment mix, and margin.",
+      "inventory": "Inventory",
+      "inventoryHint": "On-hand, inbound / outbound, near expiry.",
+      "procurement": "Purchasing",
+      "procurementHint": "GRN value and supplier payables.",
+      "customers": "Customers",
+      "customersHint": "Named tickets and customer value.",
+      "staff": "Staff",
+      "staffHint": "Staff sales and shift performance.",
+      "other": "Other",
+      "otherHint": "Payables and remaining ops reports."
+    },
+    "pick": {
+      "title": "Choose a report type",
+      "subtitle": "Open a group to see the detail reports.",
+      "search": "Search reports…",
+      "count": "{{count}} reports"
+    },
+    "recent": {
+      "title": "Recently opened",
+      "empty": "No reports opened in this browser yet. We do not invent history.",
+      "name": "Report",
+      "group": "Type",
+      "period": "Period",
+      "by": "Opened by",
+      "at": "Opened at",
+      "action": "Action",
+      "open": "Open"
+    }
+  },
   "home": {
     "title": "Reports",
-    "description": "Revenue, shifts, goods receipts, supplier payables, stock, in–out–balance, and expiry alerts. Pick a report to filter by period, export, or print.",
+    "description": "Pharmacy operations by period — revenue, orders, customers, staff, and stock.",
     "favorites": "Favorites"
+  },
+  "hub": {
+    "subtitle": "Sales, stock, and purchasing figures for running the pharmacy.",
+    "export": "Export period",
+    "viewAll": "View details",
+    "empty": "No data in this period",
+    "other": "Other",
+    "period": {
+      "today": "Today",
+      "week": "This week",
+      "month": "This month"
+    },
+    "customersTitle": "Customers in period",
+    "customersNote": "No customer ranking report yet. This is the POS attach rate — real ticket data.",
+    "tabs": {
+      "overview": "Overview",
+      "sales": "Revenue",
+      "inventory": "Inventory",
+      "customers": "Customers",
+      "staff": "Staff",
+      "procurement": "Purchasing",
+      "list": "All reports"
+    },
+    "kpi": {
+      "revenue": "Revenue",
+      "orders": "Sales tickets",
+      "customers": "Buyers",
+      "products": "SKUs sold",
+      "staff": "Selling staff",
+      "stock": "Lots on hand",
+      "vsPrior": "vs previous period",
+      "newPeriod": "no prior-period data",
+      "customersHint": "{{count}} named tickets",
+      "soldHint": "sold in period",
+      "staffHint": "sold in period",
+      "batches": "with quantity"
+    },
+    "charts": {
+      "daily": "Revenue and orders by day",
+      "revenue": "Revenue",
+      "orders": "Orders",
+      "category": "Revenue by category",
+      "total": "Period total"
+    },
+    "tables": {
+      "topProducts": "Top selling products",
+      "staff": "Revenue by staff",
+      "customers": "Customer attach",
+      "product": "Product",
+      "qty": "Qty",
+      "revenue": "Revenue",
+      "namedOrders": "Named orders",
+      "walkIn": "Unnamed orders",
+      "attachRate": "Attach rate",
+      "bookCustomers": "Customers on file"
+    },
+    "help": {
+      "title": "What this is for",
+      "one": "See daily revenue and tickets — no guessing.",
+      "two": "See who sells and which SKUs move — for shifts and purchasing.",
+      "three": "Measure customer attach. Pharmacy CRM starts there."
+    },
+    "quick": {
+      "title": "Quick reports",
+      "products": "Sales by product",
+      "staff": "Staff sales",
+      "customers": "Attach rate",
+      "expiry": "Near expiry",
+      "all": "All reports"
+    },
+    "list": {
+      "code": "Code",
+      "name": "Report",
+      "group": "Group"
+    }
+  },
+  "revenue": {
+    "title": "Revenue by period",
+    "subtitle": "Gross sales, refunds, and net revenue by day / week / month.",
+    "export": "Export report",
+    "period": "Period",
+    "groupBy": "Group by",
+    "warehouse": "Warehouse / branch",
+    "warehouseAll": "All warehouses",
+    "run": "View",
+    "empty": "No data in this period",
+    "other": "Other",
+    "byCategory": "By product group",
+    "search": "Search…",
+    "columns": "Columns",
+    "total": "Total",
+    "rows": "{{count}} rows",
+    "kpi": {
+      "revenue": "Total revenue",
+      "orders": "Orders",
+      "aov": "Avg / order",
+      "refund": "Refunds",
+      "vsPrior": "vs previous period",
+      "newPeriod": "no prior-period data"
+    },
+    "charts": {
+      "day": "Revenue by day",
+      "week": "Revenue by week",
+      "month": "Revenue by month",
+      "revenue": "Revenue (₫)",
+      "orders": "Orders",
+      "category": "Revenue mix",
+      "total": "Period total"
+    },
+    "table": {
+      "day": "Daily revenue detail",
+      "week": "Weekly revenue detail",
+      "month": "Monthly revenue detail"
+    },
+    "cols": {
+      "period": "Date",
+      "periodBy": {
+        "day": "Date",
+        "week": "Week",
+        "month": "Month"
+      },
+      "sales": "Sales",
+      "refund": "Refunds",
+      "net": "Net",
+      "orders": "Orders",
+      "aov": "Avg / order",
+      "change": "Change",
+      "share": "Share"
+    }
+  },
+  "inventoryHub": {
+    "title": "Current stock",
+    "subtitle": "On-hand quantity and stock value by product and warehouse. Snapshot as of now.",
+    "export": "Export report",
+    "warehouse": "Warehouse",
+    "warehouseAll": "All warehouses",
+    "category": "Category",
+    "categoryAll": "All categories",
+    "search": "Find product",
+    "searchPh": "Code / product name",
+    "advanced": "More filters",
+    "onlyAlerts": "Only near-expiry / expired",
+    "openExpiry": "Near-expiry report",
+    "openMovement": "In — out — balance",
+    "filters": {
+      "all": "All stock",
+      "near": "Near expiry",
+      "expired": "Expired",
+      "stale": "No movement in 60 days"
+    },
+    "run": "View",
+    "loadError": "Could not load stock. Try again, or tell engineering if it keeps failing.",
+    "empty": "No stock on hand",
+    "uncategorized": "Uncategorized",
+    "asOf": "as of now",
+    "viewAll": "View all",
+    "columns": "Columns",
+    "total": "Total",
+    "rows": "{{count}} rows",
+    "kpi": {
+      "value": "Stock value (lot cost)",
+      "valueNote": "Value = on-hand × lot unit cost. A bad unit cost will skew this number.",
+      "qty": "Total quantity",
+      "sku": "SKUs on hand",
+      "expiry": "Near / expired SKUs"
+    },
+    "charts": {
+      "warehouse": "Stock value by warehouse",
+      "category": "Stock by product group",
+      "alerts": "Stock alerts",
+      "byValue": "By value",
+      "totalValue": "Total stock value"
+    },
+    "alerts": {
+      "d7": "Expiring (7 days)",
+      "d30": "Expiring (30 days)",
+      "expired": "Expired",
+      "idle": "No movement in 60 days"
+    },
+    "table": {
+      "title": "Stock list",
+      "count": "{{count}} products",
+      "search": "Search results…"
+    },
+    "cols": {
+      "code": "SKU",
+      "name": "Product",
+      "group": "Group",
+      "warehouse": "Warehouse",
+      "qty": "On hand",
+      "unit": "Unit",
+      "value": "Stock value",
+      "status": "Status",
+      "updated": "Updated"
+    },
+    "status": {
+      "ok": "Normal",
+      "soon": "Near expiry",
+      "expired": "Expired"
+    }
+  },
+  "customerHub": {
+    "title": "Customer report",
+    "subtitle": "Named POS customers, spend, and ticket behavior — real numbers, no invented ranking.",
+    "export": "Export report",
+    "periodToday": "Today",
+    "periodWeek": "This week",
+    "periodMonth": "This month",
+    "warehouseAll": "All branches",
+    "empty": "No named orders in this period",
+    "asOf": "in selected period",
+    "bookHint": "customers on file",
+    "kpi": {
+      "revenue": "Revenue from named customers",
+      "orders": "Named orders",
+      "buyers": "Customers who bought",
+      "first": "First-time buyers",
+      "attach": "Attach rate",
+      "book": "Customers on file"
+    },
+    "charts": {
+      "mix": "Orders by customer group",
+      "mixHint": "By ticket count",
+      "new": "First-time buyers by day",
+      "funnel": "Customer value",
+      "funnelBook": "On file",
+      "funnelBuy": "Bought in period",
+      "funnelRepeat": "2+ orders",
+      "funnelValue": "Top 20% revenue"
+    },
+    "mix": {
+      "first": "First-time",
+      "returning": "Returning",
+      "walkIn": "Unnamed orders"
+    },
+    "table": {
+      "title": "Customers who bought",
+      "count": "{{count}} customers",
+      "search": "Find customer…",
+      "rank": "#",
+      "code": "Code",
+      "name": "Customer",
+      "orders": "Orders",
+      "revenue": "Net",
+      "last": "Last order",
+      "segment": "Group",
+      "status": "Status",
+      "bought": "Bought"
+    },
+    "top": {
+      "title": "Top customers by revenue",
+      "limit": "Top 10",
+      "view": "Details"
+    },
+    "insight": {
+      "title": "Behavior in period",
+      "peak": "Busiest hour (named tickets)",
+      "weekend": "Weekend ticket share",
+      "aov": "Avg / named ticket",
+      "attach": "Attach rate"
+    }
+  },
+  "procurementHub": {
+    "title": "Goods receipt value",
+    "subtitle": "Completed receipts — amounts before VAT. Analyze inbound value over time.",
+    "export": "Export report",
+    "period": "Period",
+    "groupBy": "Group by",
+    "warehouse": "Warehouse",
+    "warehouseAll": "All warehouses",
+    "supplier": "Supplier",
+    "supplierAll": "All suppliers",
+    "run": "View",
+    "reset": "Reset",
+    "empty": "No data in this period",
+    "emptyChart": "No data yet",
+    "emptyDonut": "Nothing to group",
+    "columns": "Columns",
+    "rows": "{{count}} rows",
+    "other": "Other",
+    "open": "Open receipt",
+    "kpi": {
+      "value": "Total receipt value",
+      "preTaxHint": "{{count}} receipts",
+      "grn": "Receipts",
+      "grnHint": "Completed",
+      "qty": "Total quantity",
+      "qtyHint": "line items",
+      "suppliers": "Suppliers",
+      "suppliersHint": "with receipts"
+    },
+    "charts": {
+      "time": "Receipt value over time",
+      "bar": "Column chart",
+      "supplier": "Receipt value by supplier",
+      "top5": "Top 5 suppliers",
+      "total": "Total value"
+    },
+    "table": {
+      "title": "Receipt detail",
+      "search": "Search receipt / supplier…"
+    },
+    "cols": {
+      "period": "Period",
+      "grn": "GRN no.",
+      "grnCount": "Receipts",
+      "date": "Receipt date",
+      "supplier": "Supplier",
+      "warehouse": "Warehouse",
+      "qty": "Quantity",
+      "preTax": "Before VAT",
+      "tax": "VAT",
+      "total": "Total",
+      "status": "Status",
+      "action": "Action"
+    }
+  },
+  "staffHub": {
+    "title": "Staff sales",
+    "subtitle": "By POS cashier. Filter warehouse, period, and staff to see each employee’s sales.",
+    "export": "Export report",
+    "summary": "Summary",
+    "product": "By product",
+    "warehouse": "Warehouse",
+    "warehouseAll": "All warehouses",
+    "employee": "Employee",
+    "employeeAll": "All employees",
+    "productPh": "Search SKU / product name",
+    "run": "View",
+    "empty": "No data in this period",
+    "columns": "Columns",
+    "total": "Total",
+    "rows": "{{count}} rows",
+    "period": {
+      "today": "Today",
+      "week": "This week",
+      "month": "This month",
+      "quarter": "This quarter"
+    },
+    "kpi": {
+      "revenue": "Total revenue",
+      "orders": "Orders",
+      "staff": "Active staff",
+      "staffHint": "{{pct}}% of staff had orders",
+      "aov": "Average / order",
+      "vsPrior": "vs previous period",
+      "newPeriod": "no prior-period data"
+    },
+    "charts": {
+      "bars": "Sales by employee",
+      "share": "Share by employee",
+      "legend": "Revenue",
+      "total": "Total revenue"
+    },
+    "table": {
+      "summary": "Staff sales detail",
+      "product": "Sales by product",
+      "search": "Search employee…",
+      "namedHint": "{{count}} named-customer tickets"
+    },
+    "cols": {
+      "rank": "#",
+      "name": "Employee",
+      "orders": "Orders",
+      "named": "Named tickets",
+      "sales": "Sales",
+      "refund": "Refunds",
+      "net": "Net",
+      "aov": "AOV",
+      "share": "Share",
+      "sku": "SKU",
+      "product": "Product",
+      "qty": "Qty sold",
+      "netQty": "Net qty"
+    }
   },
   "view": {
     "notFound": "Report not found.",
@@ -24,13 +465,26 @@
     "groupBy": "Group by",
     "warehouse": "Warehouse",
     "warehouseAll": "All warehouses",
+    "employee": "Employee",
+    "employeeAll": "All employees",
     "supplier": "Supplier",
     "supplierAll": "All suppliers",
     "productSearch": "Product name",
     "productSearchPlaceholder": "Code / product name",
     "expiryDays": "Days to expiry",
-    "runReport": "Run report",
-    "exportCsv": "Export Excel/CSV",
+    "runReport": "Run",
+    "viewByProduct": "View by product",
+    "sales06ProductHint": "This table is totals by person. Click «View by product» or the employee name for SKU lines.",
+    "staffSalesTitle": "Staff sales",
+    "staffSalesDesc": "By POS cashier. Switch to «By product» for SKU lines.",
+    "summary": "Summary",
+    "byProduct": "By product",
+    "kpiNet": "Net sales",
+    "kpiOrders": "Orders",
+    "kpiAov": "Avg / order",
+    "kpiQty": "Net qty",
+    "kpiRefund": "Refunds",
+    "exportCsv": "Export",
     "print": "Print",
     "loadFailed": "Could not load report",
     "loadFailedHint": "Could not reach the reports server. Try again later or contact support.",
@@ -50,10 +504,12 @@
     "period": "Period",
     "groupBy": "Group by",
     "warehouse": "Warehouse",
+    "employee": "Employee",
     "supplier": "Supplier",
     "productSearch": "Product name",
     "expiryDays": "Days to expiry",
     "warehouseAll": "All warehouses",
+    "employeeAll": "All employees",
     "supplierAll": "All suppliers",
     "apiKeys": {
       "period": "As of",
@@ -76,16 +532,28 @@
       "description": "Net revenue by cash, card, bank transfer, and wallet."
     },
     "SALES-03": {
-      "name": "Shift report",
+      "name": "Sales shifts",
       "description": "Shift list, cash float, and net revenue per shift."
     },
     "SALES-04": {
-      "name": "Revenue by category",
-      "description": "Net revenue by product category for the selected period."
+      "name": "Revenue by product group",
+      "description": "Net revenue by product group for the selected period."
     },
     "SALES-05": {
       "name": "Sales by clinic / doctor",
       "description": "Connect clinic Rx sales rolled up by clinic and prescribing doctor — orders, sales, refunds, net."
+    },
+    "SALES-06": {
+      "name": "Staff sales",
+      "description": "By POS cashier. Switch to «By product» for SKU lines."
+    },
+    "SALES-07": {
+      "name": "Employee sales by product",
+      "description": "Quantity and net by seller and SKU — for product KPI / exceed-target commission."
+    },
+    "SALES-08": {
+      "name": "Sales by customer",
+      "description": "Net and tickets for named POS customers — no invented ranking."
     },
     "PROC-01": {
       "name": "Goods receipt value",
@@ -96,8 +564,8 @@
       "description": "Outstanding balance and aging at the time you view the report."
     },
     "INV-01": {
-      "name": "Stock and value",
-      "description": "On-hand quantity and value (quantity × batch cost) by product/warehouse."
+      "name": "Current stock",
+      "description": "On-hand quantity and value (quantity × lot cost) by product and warehouse."
     },
     "INV-02": {
       "name": "Near expiry",

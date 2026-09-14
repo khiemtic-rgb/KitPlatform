@@ -18,10 +18,13 @@ export interface ReportDefinition {
   supportsSupplier?: boolean;
   supportsSearch?: boolean;
   supportsExpiryDays?: boolean;
+  supportsEmployee?: boolean;
   favorite?: boolean;
   /** Connect PK report — hide without Connect module or during DEMO audit_slim_nav. */
   requiresConnect?: boolean;
   hideWhenAuditSlim?: boolean;
+  /** Keep route + API, hide from tabs / home (e.g. staff product view). */
+  hideFromNav?: boolean;
 }
 
 type ReportDefinitionMeta = Omit<ReportDefinition, 'name' | 'description'>;
@@ -29,6 +32,7 @@ type ReportDefinitionMeta = Omit<ReportDefinition, 'name' | 'description'>;
 export type ReportCatalogOptions = {
   auditSlimNav?: boolean;
   connectEnabled?: boolean;
+  includeHidden?: boolean;
 };
 
 const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
@@ -69,6 +73,37 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     supportsWarehouse: true,
     favorite: true,
   },
+  {
+    code: 'SALES-06',
+    category: 'sales',
+    path: '/reports/sales/revenue-by-employee',
+    apiPath: 'sales/revenue-by-employee',
+    supportsDateRange: true,
+    supportsWarehouse: true,
+    supportsEmployee: true,
+    favorite: true,
+  },
+  {
+    code: 'SALES-07',
+    category: 'sales',
+    path: '/reports/sales/revenue-by-employee-product',
+    apiPath: 'sales/revenue-by-employee-product',
+    supportsDateRange: true,
+    supportsWarehouse: true,
+    supportsEmployee: true,
+    supportsSearch: true,
+    hideFromNav: true,
+  },
+  {
+    code: 'SALES-08',
+    category: 'sales',
+    path: '/reports/customers',
+    apiPath: 'sales/revenue-by-customer',
+    supportsDateRange: true,
+    supportsWarehouse: true,
+    supportsSearch: true,
+    hideFromNav: true,
+  },
   // SALES-05: Connect PK — visible only when Connect enabled and not DEMO audit slim
   {
     code: 'SALES-05',
@@ -87,7 +122,7 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     path: '/reports/procurement/grn-value',
     apiPath: 'procurement/grn-value',
     supportsDateRange: true,
-    supportsGroupBy: ['supplier', 'month', 'day'],
+    supportsGroupBy: ['supplier', 'month', 'week', 'day'],
     supportsWarehouse: true,
     supportsSupplier: true,
     favorite: true,
@@ -141,10 +176,12 @@ function localizeReport(meta: ReportDefinitionMeta): ReportDefinition {
 export function getReportDefinitions(options?: ReportCatalogOptions): ReportDefinition[] {
   const auditSlimNav = options?.auditSlimNav === true;
   const connectEnabled = options?.connectEnabled === true;
+  const includeHidden = options?.includeHidden === true;
   return REPORT_DEFINITIONS_META
     .filter((meta) => {
       if (meta.requiresConnect && !connectEnabled) return false;
       if (auditSlimNav && meta.hideWhenAuditSlim) return false;
+      if (meta.hideFromNav && !includeHidden) return false;
       return true;
     })
     .map(localizeReport);
@@ -158,7 +195,10 @@ export function findReportByPath(
   pathname: string,
   options?: ReportCatalogOptions,
 ): ReportDefinition | undefined {
-  return getReportDefinitions(options).find((r) => pathname.startsWith(r.path));
+  const matches = getReportDefinitions({ ...options, includeHidden: true }).filter(
+    (r) => pathname === r.path || pathname.startsWith(`${r.path}/`),
+  );
+  return matches.sort((a, b) => b.path.length - a.path.length)[0];
 }
 
 export function reportsForCategory(

@@ -516,6 +516,24 @@ const ReportsHomePage = lazy(() =>
 const ReportViewPage = lazy(() =>
   import('@/modules/reports/ReportViewPage').then((m) => ({ default: m.ReportViewPage })),
 );
+const SalesRevenuePage = lazy(() =>
+  import('@/modules/reports/SalesRevenuePage').then((m) => ({ default: m.SalesRevenuePage })),
+);
+const InventoryStockPage = lazy(() =>
+  import('@/modules/reports/InventoryStockPage').then((m) => ({ default: m.InventoryStockPage })),
+);
+const CustomersReportPage = lazy(() =>
+  import('@/modules/reports/CustomersReportPage').then((m) => ({ default: m.CustomersReportPage })),
+);
+const StaffSalesPage = lazy(() =>
+  import('@/modules/reports/StaffSalesPage').then((m) => ({ default: m.StaffSalesPage })),
+);
+const ProcurementGrnPage = lazy(() =>
+  import('@/modules/reports/ProcurementGrnPage').then((m) => ({ default: m.ProcurementGrnPage })),
+);
+const ReportsCatalogPage = lazy(() =>
+  import('@/modules/reports/ReportsCatalogPage').then((m) => ({ default: m.ReportsCatalogPage })),
+);
 
 function RouteFallback() {
   const { t } = useTranslation('common', { keyPrefix: 'routeLoading' });
@@ -1111,10 +1129,26 @@ export function AppRouter() {
                   }
                 />
                 <Route
+                  path="catalog"
+                  element={
+                    <SuspenseRoute>
+                      <ReportsCatalogPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="customers"
+                  element={
+                    <SuspenseRoute>
+                      <CustomersReportPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
                   path="sales/revenue-by-period"
                   element={
                     <SuspenseRoute>
-                      <ReportViewPage />
+                      <SalesRevenuePage />
                     </SuspenseRoute>
                   }
                 />
@@ -1151,10 +1185,26 @@ export function AppRouter() {
                   }
                 />
                 <Route
+                  path="sales/revenue-by-employee"
+                  element={
+                    <SuspenseRoute>
+                      <StaffSalesPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/revenue-by-employee-product"
+                  element={
+                    <SuspenseRoute>
+                      <StaffSalesPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
                   path="procurement/grn-value"
                   element={
                     <SuspenseRoute>
-                      <ReportViewPage />
+                      <ProcurementGrnPage />
                     </SuspenseRoute>
                   }
                 />
@@ -1170,7 +1220,7 @@ export function AppRouter() {
                   path="inventory/stock-snapshot"
                   element={
                     <SuspenseRoute>
-                      <ReportViewPage />
+                      <InventoryStockPage />
                     </SuspenseRoute>
                   }
                 />

@@ -1,0 +1,338 @@
+.inv-stock {
+  max-width: 1400px;
+}
+
+.inv-stock__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.inv-stock__title {
+  margin: 0 !important;
+  font-size: 22px !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em;
+}
+
+.inv-stock__code {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f5f7fa;
+  color: #8c8c8c;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.inv-stock__desc {
+  margin: 6px 0 0 !important;
+  max-width: 48rem;
+}
+
+.inv-stock__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.inv-stock__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.inv-stock__field--grow {
+  flex: 1 1 220px;
+  min-width: 220px;
+}
+
+.inv-stock__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.inv-stock__kpi {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 96px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.inv-stock__kpi-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.inv-stock__kpi--value .inv-stock__kpi-icon { background: #e6f4ff; color: #1677ff; }
+.inv-stock__kpi--qty .inv-stock__kpi-icon { background: #e6fffb; color: #13c2c2; }
+.inv-stock__kpi--sku .inv-stock__kpi-icon { background: #fff7e6; color: #fa8c16; }
+.inv-stock__kpi--alert .inv-stock__kpi-icon { background: #fff1f0; color: #f5222d; }
+
+.inv-stock__kpi--value .inv-stock__kpi-value { color: #1677ff; }
+.inv-stock__kpi--qty .inv-stock__kpi-value { color: #08979c; }
+.inv-stock__kpi--sku .inv-stock__kpi-value { color: #d46b08; }
+.inv-stock__kpi--alert .inv-stock__kpi-value { color: #cf1322; }
+
+.inv-stock__kpi-label {
+  display: block;
+  margin-bottom: 4px;
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+.inv-stock__kpi-value {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-stock__charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 1fr) 240px;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.inv-stock__panel {
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.inv-stock__panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.inv-stock__panel-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.inv-stock__panel-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #f5f7fa;
+  color: #595959;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inv-stock__muted {
+  margin-left: auto;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.inv-stock__more {
+  margin-left: auto;
+  font-size: 12px;
+  color: #1677ff;
+}
+
+.inv-stock__hbar {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.inv-stock__hbar-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inv-stock__hbar-track {
+  height: 8px;
+  background: #f2f4f7;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.inv-stock__hbar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #69b1ff, #1677ff);
+  border-radius: 99px;
+}
+
+.inv-stock__hbar-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #595959;
+}
+
+.inv-stock__donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.inv-stock__donut {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inv-stock__donut-hole {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.inv-stock__donut-hole strong {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-stock__donut-hole span {
+  font-size: 10px;
+  color: #8c8c8c;
+}
+
+.inv-stock__cat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.inv-stock__cat-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.inv-stock__cat-list i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.inv-stock__alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inv-stock__alert {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: #fafafa;
+}
+
+.inv-stock__alert--warn { background: #fffbe6; }
+.inv-stock__alert--danger { background: #fff1f0; }
+.inv-stock__alert--muted { background: #f5f5f5; }
+
+.inv-stock__alert b {
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-stock__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.inv-stock__status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #52c41a;
+}
+
+.inv-stock__status--soon::before { background: #faad14; }
+.inv-stock__status--expired::before { background: #f5222d; }
+
+.inv-stock__table-panel .ant-table-wrapper {
+  margin: 0 -8px;
+}
+
+.inv-stock__cols {
+  min-width: 200px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgb(15 23 42 / 12%);
+}
+
+.inv-stock__cols .ant-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 1200px) {
+  .inv-stock__kpis,
+  .inv-stock__charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .inv-stock__head {
+    flex-direction: column;
+  }
+
+  .inv-stock__kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+}
