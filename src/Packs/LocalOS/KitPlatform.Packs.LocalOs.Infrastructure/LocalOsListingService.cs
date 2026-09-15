@@ -152,7 +152,11 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     @StartAt, @EndAt, @RegistrationUrl, @PriceMonth, @RoomType, @Trust, @SafetyFlag,
                     @Status, CASE WHEN @Status = 'ACTIVE' THEN NOW() ELSE NULL END, NOW(),
                     CASE WHEN @Kind = 'article' THEN NULL
-                         ELSE NOW() + CASE WHEN @Kind = 'event' THEN INTERVAL '30 days' ELSE INTERVAL '14 days' END
+                         ELSE NOW() + CASE
+                             WHEN @Kind = 'event' THEN INTERVAL '30 days'
+                             WHEN @Kind = 'job' THEN INTERVAL '45 days'
+                             ELSE INTERVAL '14 days'
+                         END
                     END
                 )
                 """,
@@ -221,6 +225,11 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     published_at = CASE
                         WHEN @Status = 'ACTIVE' THEN COALESCE(published_at, NOW())
                         ELSE published_at
+                    END,
+                    expires_at = CASE
+                        WHEN @Status = 'ACTIVE' AND kind = 'job' AND published_at IS NULL
+                            THEN NOW() + INTERVAL '45 days'
+                        ELSE expires_at
                     END,
                     last_checked_at = NOW(),
                     updated_at = NOW()
