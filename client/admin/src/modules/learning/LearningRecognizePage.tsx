@@ -882,39 +882,43 @@ export function LearningRecognizePage() {
           </div>
         </Space>
         <Row gutter={[10, 10]}>
-          <Col xs={24} sm={8}>
-            <Link to="/people/grow" style={{ display: 'block' }}>
-              <Button
-                block
-                size="large"
-                icon={<RiseOutlined />}
-                style={{
-                  borderColor: '#52c41a',
-                  color: '#389e0d',
-                  background: '#f6ffed',
-                }}
-              >
-                Phát triển nghề
-              </Button>
-            </Link>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Link to="/people/evaluations" style={{ display: 'block' }}>
-              <Button
-                block
-                size="large"
-                icon={<StarOutlined />}
-                style={{
-                  borderColor: '#722ed1',
-                  color: '#531dab',
-                  background: '#f9f0ff',
-                }}
-              >
-                Đánh giá tháng
-              </Button>
-            </Link>
-          </Col>
-          <Col xs={24} sm={8}>
+          {canWrite ? (
+            <>
+              <Col xs={24} sm={8}>
+                <Link to="/people/grow" style={{ display: 'block' }}>
+                  <Button
+                    block
+                    size="large"
+                    icon={<RiseOutlined />}
+                    style={{
+                      borderColor: '#52c41a',
+                      color: '#389e0d',
+                      background: '#f6ffed',
+                    }}
+                  >
+                    Phát triển nghề
+                  </Button>
+                </Link>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Link to="/people/evaluations" style={{ display: 'block' }}>
+                  <Button
+                    block
+                    size="large"
+                    icon={<StarOutlined />}
+                    style={{
+                      borderColor: '#722ed1',
+                      color: '#531dab',
+                      background: '#f9f0ff',
+                    }}
+                  >
+                    Đánh giá tháng
+                  </Button>
+                </Link>
+              </Col>
+            </>
+          ) : null}
+          <Col xs={24} sm={canWrite ? 8 : 24}>
             <Link to="/people/learn" style={{ display: 'block' }}>
               <Button
                 block
@@ -926,7 +930,7 @@ export function LearningRecognizePage() {
                   background: '#e6f4ff',
                 }}
               >
-                Đào tạo
+                {canWrite ? 'Đào tạo' : 'Học bài của tôi'}
               </Button>
             </Link>
           </Col>

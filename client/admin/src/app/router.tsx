@@ -685,14 +685,8 @@ export function AppRouter() {
                     </LearningWriteGuard>
                   }
                 />
-                <Route
-                  path="recognize"
-                  element={
-                    <LearningWriteGuard>
-                      <LearningRecognizePage />
-                    </LearningWriteGuard>
-                  }
-                />
+                {/* NV xem hồ sơ năng lực; khen/ghi nhận đội vẫn gate trong trang (learning.write). */}
+                <Route path="recognize" element={<LearningRecognizePage />} />
                 <Route
                   path="grow"
                   element={

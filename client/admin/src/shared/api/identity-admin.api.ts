@@ -189,14 +189,22 @@ export async function fetchPermissions(): Promise<PermissionLookup[]> {
 
 export async function fetchEmployees(): Promise<EmployeeLookup[]> {
   const { data } = await http.get<Record<string, unknown>[]>('/system/employees');
-  return (data ?? []).map((row) => ({
-    id: String(row.id ?? row.Id),
-    employeeCode: String(row.employeeCode ?? row.EmployeeCode ?? ''),
-    fullName: String(row.fullName ?? row.FullName ?? ''),
-    phone: (row.phone ?? row.Phone) as string | undefined,
-    hasUserAccount: Boolean(row.hasUserAccount ?? row.HasUserAccount),
-    branchCount: Number(row.branchCount ?? row.BranchCount ?? 0),
-  }));
+  const seen = new Set<string>();
+  const rows: EmployeeLookup[] = [];
+  for (const row of data ?? []) {
+    const id = String(row.id ?? row.Id ?? '');
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    rows.push({
+      id,
+      employeeCode: String(row.employeeCode ?? row.EmployeeCode ?? ''),
+      fullName: String(row.fullName ?? row.FullName ?? ''),
+      phone: (row.phone ?? row.Phone) as string | undefined,
+      hasUserAccount: Boolean(row.hasUserAccount ?? row.HasUserAccount),
+      branchCount: Number(row.branchCount ?? row.BranchCount ?? 0),
+    });
+  }
+  return rows;
 }
 
 function normalizeEmployeeDetail(row: Record<string, unknown>): EmployeeDetail {

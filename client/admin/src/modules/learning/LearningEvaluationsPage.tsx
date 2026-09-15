@@ -345,8 +345,13 @@ export function LearningEvaluationsPage() {
   const employeeCards = useMemo(() => {
     const q = employeeFilter.trim().toLowerCase();
     const evaluatedIds = new Set(rows.map((r) => r.employeeId));
+    const seen = new Set<string>();
     return employees
-      .filter((e) => !q || e.fullName.toLowerCase().includes(q))
+      .filter((e) => {
+        if (seen.has(e.id)) return false;
+        seen.add(e.id);
+        return !q || e.fullName.toLowerCase().includes(q);
+      })
       .map((e) => {
         const r = roster.find((x) => x.employeeId === e.id);
         const prior = rows.find((x) => x.employeeId === e.id);

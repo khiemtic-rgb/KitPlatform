@@ -660,10 +660,12 @@ internal sealed class IdentityAdminRepository
                 e.employee_code AS EmployeeCode,
                 e.full_name AS FullName,
                 e.phone AS Phone,
-                (u.id IS NOT NULL) AS HasUserAccount,
+                EXISTS(
+                    SELECT 1 FROM users u
+                    WHERE u.employee_id = e.id AND u.deleted_at IS NULL
+                ) AS HasUserAccount,
                 (SELECT COUNT(*)::int FROM employee_branches eb WHERE eb.employee_id = e.id) AS BranchCount
             FROM employees e
-            LEFT JOIN users u ON u.employee_id = e.id AND u.deleted_at IS NULL
             WHERE e.tenant_id = @TenantId AND e.deleted_at IS NULL
             ORDER BY e.full_name
             """;
@@ -731,10 +733,12 @@ internal sealed class IdentityAdminRepository
                 e.employee_code AS EmployeeCode,
                 e.full_name AS FullName,
                 e.phone AS Phone,
-                (u.id IS NOT NULL) AS HasUserAccount,
+                EXISTS(
+                    SELECT 1 FROM users u
+                    WHERE u.employee_id = e.id AND u.deleted_at IS NULL
+                ) AS HasUserAccount,
                 (SELECT COUNT(*)::int FROM employee_branches eb WHERE eb.employee_id = e.id) AS BranchCount
             FROM employees e
-            LEFT JOIN users u ON u.employee_id = e.id AND u.deleted_at IS NULL
             WHERE e.id = @EmployeeId AND e.tenant_id = @TenantId AND e.deleted_at IS NULL
             """;
 
