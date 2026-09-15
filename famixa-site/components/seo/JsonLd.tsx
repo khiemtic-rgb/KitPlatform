@@ -34,13 +34,12 @@ export function JsonLd({ content, locale = 'vi' }: Props) {
     url: absoluteUrl(path),
     inLanguage,
     description: content.seo.description,
-    offers: content.chapter8.plans.map((p) => ({
+    offers: {
       '@type': 'Offer',
-      name: p.name,
-      price: p.price.replace(/[^\d]/g, '') || '0',
+      name: locale === 'en' ? 'Start free' : 'Bắt đầu miễn phí',
+      price: '0',
       priceCurrency: currency,
-      description: p.items.join(', '),
-    })),
+    },
   };
 
   const faq = {

@@ -31,7 +31,6 @@
     { "id": "method", "label": "Technology" },
     { "id": "video", "label": "Growth loop" },
     { "id": "testimonials", "label": "Parents" },
-    { "id": "pricing", "label": "Plans" },
     { "id": "blog", "label": "FAQ" },
     { "id": "final-cta", "label": "Start" }
   ],
@@ -40,8 +39,7 @@
       { "href": "#hero", "label": "The problem" },
       { "href": "#giai-phap", "label": "Fami" },
       { "href": "#growth", "label": "Journey" },
-      { "href": "/en/stories/", "label": "Stories" },
-      { "href": "/en/plans/", "label": "Pricing" }
+      { "href": "/en/stories/", "label": "Stories" }
     ],
     "login": "Log in",
     "cta": "View demo home",
@@ -178,7 +176,7 @@
     "titleAccent": "your family",
     "lead": "Every small step today becomes tomorrow's foundation for happiness.",
     "cta": "See the journey",
-    "ctaHref": "#pricing",
+    "ctaHref": "#testimonials",
     "image": {
       "src": "/images/ch4-stages-art.png",
       "alt": "Fami's journey from seed to grown tree"
@@ -234,8 +232,8 @@
     "title": "Exclusive growth loop of Famixa",
     "titleAccent": "of Famixa",
     "lead": "Fami and your family learn and grow together every day.",
-    "cta": "Learn more",
-    "ctaHref": "#pricing",
+    "cta": "View demo home",
+    "ctaHref": "https://home.famixa.vn/demo",
     "image": {
       "src": "/images/chapter6-loop-cards.png",
       "alt": "Famixa growth loop: Observe, Understand, Suggest, Family practice, AI learns"
@@ -307,10 +305,10 @@
   "chapter8": {
     "id": "pricing",
     "eyebrow": "CHAPTER 8",
-    "title": "Plans for every family",
-    "lead": "Choose the fit and start growing with Famixa.",
-    "cta": "Compare plans",
-    "ctaHref": "/en/plans/",
+    "title": "Start when your home is ready",
+    "lead": "Start free. The 30-day trial has full Peace (Pro) access. Choose a plan after the house has settled in.",
+    "cta": "View demo home",
+    "ctaHref": "https://home.famixa.vn/demo",
     "perks": [
       {
         "icon": "shield",
@@ -319,8 +317,8 @@
       },
       {
         "icon": "refresh",
-        "title": "Flexible upgrades",
-        "hint": "Change plans anytime"
+        "title": "No card needed",
+        "hint": "Open the demo home or start a free account"
       },
       {
         "icon": "support",
@@ -418,8 +416,8 @@
         "a": "Yes. Data is protected under KIT Technology's privacy policy; you control access within the family."
       },
       {
-        "q": "Which plan should we start with?",
-        "a": "Start with Family (Free) for the daily rhythm. The 30-day trial unlocks Pro. Choose Premium for Timeline/Twin; Pro for Coach & evidence; Family Plus for Deep Playbook."
+        "q": "How do we start?",
+        "a": "Open the demo home or create a free account. The 30-day trial has full Peace (Pro) access — choose a plan after the house has settled in."
       }
     ]
   },
@@ -441,7 +439,7 @@
       { "href": "#method", "label": "Technology" },
       { "href": "#video", "label": "Growth loop" },
       { "href": "#growth", "label": "Journey" },
-      { "href": "/en/plans/", "label": "Plans" }
+      { "href": "https://home.famixa.vn/demo", "label": "View demo home" }
     ],
     "resources": [
       { "href": "/en/stories/", "label": "Stories" },

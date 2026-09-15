@@ -111,7 +111,7 @@ export function Testimonials({ content, locale }: Props) {
               <p className="mt-3 mb-0 text-[0.9rem] leading-[1.55] text-[#5E6A63]">{content.lead}</p>
               {content.cta ? (
                 <div className="mt-6">
-                  <PillCta href={content.ctaHref || '#pricing'} variant="ghost-white">
+                  <PillCta href={content.ctaHref || '#final-cta'} variant="ghost-white">
                     {content.cta}
                   </PillCta>
                 </div>
