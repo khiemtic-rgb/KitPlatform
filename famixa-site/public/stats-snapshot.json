@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-15T05:05:37.358Z",
+  "generatedAt": "2026-09-15T11:55:56.748Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 16,
-    "todayPageViews": 5,
-    "todayRequests": 28,
-    "last24hVisitors": 91,
-    "last24hPageViews": 70,
-    "last24hRequests": 259
+    "todayVisitors": 31,
+    "todayPageViews": 13,
+    "todayRequests": 136,
+    "last24hVisitors": 90,
+    "last24hPageViews": 69,
+    "last24hRequests": 301
   },
   "hourly": [
-    {
-      "time": "2026-09-14T06:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-14T07:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-14T08:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-14T09:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-14T10:00:00Z",
-      "visitors": 12,
-      "requests": 50
-    },
-    {
-      "time": "2026-09-14T11:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
     {
       "time": "2026-09-14T12:00:00Z",
       "visitors": 38,
@@ -120,6 +90,41 @@
       "time": "2026-09-15T04:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-09-15T05:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-15T06:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-15T07:00:00Z",
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-15T08:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-15T09:00:00Z",
+      "visitors": 6,
+      "requests": 69
+    },
+    {
+      "time": "2026-09-15T10:00:00Z",
+      "visitors": 7,
+      "requests": 15
+    },
+    {
+      "time": "2026-09-15T11:00:00Z",
+      "visitors": 5,
+      "requests": 6
     }
   ],
   "daily": [
@@ -161,71 +166,71 @@
     },
     {
       "date": "2026-09-15",
-      "visitors": 50,
-      "pageViews": 15,
-      "requests": 103
+      "visitors": 79,
+      "pageViews": 23,
+      "requests": 211
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 54
-    },
-    {
-      "path": "/vi/",
-      "views": 43
+      "views": 36
     },
     {
       "path": "/robots.txt",
-      "views": 24
+      "views": 25
     },
     {
-      "path": "/wp-json/gravitysmtp/v1/tests/mock-data",
-      "views": 17
+      "path": "/vi/",
+      "views": 23
     },
     {
       "path": "/sitemap.xml",
-      "views": 14
+      "views": 15
     },
     {
-      "path": "/index.php",
-      "views": 14
-    },
-    {
-      "path": "/wp-login.php",
+      "path": "/media/system/js/core.js",
       "views": 10
     },
     {
       "path": "/wp-includes/css/buttons.css",
-      "views": 8
-    },
-    {
-      "path": "/media/system/js/core.js",
-      "views": 8
+      "views": 10
     },
     {
       "path": "/wp-json/",
-      "views": 7
+      "views": 9
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 9
     },
     {
       "path": "/api/session/properties",
+      "views": 9
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 8
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
       "views": 6
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 6
+    },
+    {
+      "path": "/images/moment-chores.png",
+      "views": 6
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
+      "views": 5
     },
     {
       "path": "/vi/goi-cha-me/gia-dinh-la-de-yeu-thuong-khong-phai-de-quan-ly/",
       "views": 5
-    },
-    {
-      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
-      "views": 4
-    },
-    {
-      "path": "/favicon.ico",
-      "views": 4
-    },
-    {
-      "path": "/vi/goi-cha-me/cach-xay-dung-niem-tin-giua-cha-me-va-con-soi-day-ket-noi-giup-tre-tu-giac-truong-thanh/",
-      "views": 4
     }
   ]
 }
