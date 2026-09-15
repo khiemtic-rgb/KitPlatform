@@ -30,3 +30,4 @@
 321_pack_local_os_article_kind.sql
 322_pack_local_os_listing_cover.sql
 368_pack_local_os_job_public_45d.sql
+369_pack_local_os_room_keep_public.sql
