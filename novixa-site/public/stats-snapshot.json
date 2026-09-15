@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-15T17:02:01.917Z",
+  "generatedAt": "2026-09-15T21:23:38.578Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
     "todayVisitors": 0,
     "todayPageViews": 0,
     "todayRequests": 0,
-    "last24hVisitors": 168,
-    "last24hPageViews": 591,
-    "last24hRequests": 863
+    "last24hVisitors": 187,
+    "last24hPageViews": 838,
+    "last24hRequests": 1143
   },
   "hourly": [
-    {
-      "time": "2026-09-14T18:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-14T19:00:00Z",
-      "visitors": 11,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-14T20:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-14T21:00:00Z",
-      "visitors": 9,
-      "requests": 28
-    },
     {
       "time": "2026-09-14T22:00:00Z",
       "visitors": 4,
@@ -125,6 +105,31 @@
       "time": "2026-09-15T16:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-09-15T17:00:00Z",
+      "visitors": 10,
+      "requests": 276
+    },
+    {
+      "time": "2026-09-15T18:00:00Z",
+      "visitors": 30,
+      "requests": 44
+    },
+    {
+      "time": "2026-09-15T19:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-15T20:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-15T21:00:00Z",
+      "visitors": 2,
+      "requests": 5
     }
   ],
   "daily": [
@@ -160,46 +165,54 @@
     },
     {
       "date": "2026-09-15",
-      "visitors": 143,
-      "pageViews": 568,
-      "requests": 774
+      "visitors": 179,
+      "pageViews": 828,
+      "requests": 1108
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 68
+      "views": 61
     },
     {
       "path": "/robots.txt",
-      "views": 44
+      "views": 47
     },
     {
       "path": "/vi/",
-      "views": 43
+      "views": 34
+    },
+    {
+      "path": "/wordpress/.env",
+      "views": 28
+    },
+    {
+      "path": "/.env.dist",
+      "views": 26
     },
     {
       "path": "/phpinfo.php",
       "views": 23
     },
     {
-      "path": "/backup/.env",
-      "views": 21
+      "path": "/.env.save",
+      "views": 22
     },
     {
       "path": "/prod/.env",
       "views": 21
     },
     {
-      "path": "/cronlab/.env",
+      "path": "/backup/.env",
+      "views": 21
+    },
+    {
+      "path": "/.env.txt",
       "views": 18
     },
     {
-      "path": "/.env.dist",
-      "views": 18
-    },
-    {
-      "path": "/wordpress/.env",
+      "path": "/postmark/.env",
       "views": 18
     },
     {
@@ -207,24 +220,16 @@
       "views": 18
     },
     {
-      "path": "/.env.txt",
+      "path": "/cronlab/.env",
       "views": 18
-    },
-    {
-      "path": "/.env.save",
-      "views": 18
-    },
-    {
-      "path": "/.git/config",
-      "views": 15
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 14
+      "views": 16
     },
     {
-      "path": "/wp-login.php",
-      "views": 13
+      "path": "/apps/.env",
+      "views": 14
     }
   ]
 }
