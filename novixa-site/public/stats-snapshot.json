@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-15T04:57:48.328Z",
+  "generatedAt": "2026-09-15T11:47:13.737Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 40,
-    "todayPageViews": 458,
-    "todayRequests": 511,
-    "last24hVisitors": 162,
-    "last24hPageViews": 1025,
-    "last24hRequests": 7525
+    "todayVisitors": 123,
+    "todayPageViews": 515,
+    "todayRequests": 685,
+    "last24hVisitors": 195,
+    "last24hPageViews": 667,
+    "last24hRequests": 3656
   },
   "hourly": [
-    {
-      "time": "2026-09-14T05:00:00Z",
-      "visitors": 5,
-      "requests": 286
-    },
-    {
-      "time": "2026-09-14T06:00:00Z",
-      "visitors": 13,
-      "requests": 365
-    },
-    {
-      "time": "2026-09-14T07:00:00Z",
-      "visitors": 15,
-      "requests": 17
-    },
-    {
-      "time": "2026-09-14T08:00:00Z",
-      "visitors": 6,
-      "requests": 1058
-    },
-    {
-      "time": "2026-09-14T09:00:00Z",
-      "visitors": 9,
-      "requests": 40
-    },
-    {
-      "time": "2026-09-14T10:00:00Z",
-      "visitors": 12,
-      "requests": 368
-    },
-    {
-      "time": "2026-09-14T11:00:00Z",
-      "visitors": 5,
-      "requests": 1909
-    },
     {
       "time": "2026-09-14T12:00:00Z",
       "visitors": 13,
@@ -130,6 +95,41 @@
       "time": "2026-09-15T04:00:00Z",
       "visitors": 10,
       "requests": 11
+    },
+    {
+      "time": "2026-09-15T05:00:00Z",
+      "visitors": 12,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-15T06:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-15T07:00:00Z",
+      "visitors": 11,
+      "requests": 17
+    },
+    {
+      "time": "2026-09-15T08:00:00Z",
+      "visitors": 44,
+      "requests": 46
+    },
+    {
+      "time": "2026-09-15T09:00:00Z",
+      "visitors": 9,
+      "requests": 44
+    },
+    {
+      "time": "2026-09-15T10:00:00Z",
+      "visitors": 10,
+      "requests": 42
+    },
+    {
+      "time": "2026-09-15T11:00:00Z",
+      "visitors": 6,
+      "requests": 6
     }
   ],
   "daily": [
@@ -171,15 +171,15 @@
     },
     {
       "date": "2026-09-15",
-      "visitors": 40,
-      "pageViews": 458,
-      "requests": 511
+      "visitors": 123,
+      "pageViews": 515,
+      "requests": 685
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 1047
+      "views": 1052
     },
     {
       "path": "/index.php",
@@ -215,7 +215,7 @@
     },
     {
       "path": "/vi/",
-      "views": 127
+      "views": 131
     },
     {
       "path": "/wp-json/batch/v1/",
