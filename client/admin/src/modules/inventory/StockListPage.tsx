@@ -450,6 +450,12 @@ export function StockListPage() {
     { title: ts('warehouse'), dataIndex: 'warehouseName', width: 140 },
     { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
     { title: ts('productName'), dataIndex: 'productName' },
+    {
+      title: ts('unit'),
+      dataIndex: 'saleUnitName',
+      width: 72,
+      render: (v?: string) => v?.trim() || '—',
+    },
     { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 120 },
     {
       title: ts('expiryAbbr'),
@@ -689,7 +695,7 @@ export function StockListPage() {
 
       <Drawer
         title={t('revalueTitle')}
-        width={720}
+        width={880}
         open={revalueOpen}
         onClose={() => {
           setRevalueOpen(false);
@@ -736,30 +742,39 @@ export function StockListPage() {
           dataSource={revalueBatches}
           locale={{ emptyText: t('noBatches') }}
           columns={[
-            { title: ts('productCode'), dataIndex: 'productCode', width: 120 },
-            { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 130 },
+            { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
+            { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 120 },
+            {
+              title: ts('unit'),
+              dataIndex: 'saleUnitName',
+              width: 72,
+              render: (v?: string) => v?.trim() || '—',
+            },
             {
               title: ts('stockQty'),
               dataIndex: 'quantityAvailable',
               align: 'right',
-              width: 80,
-              render: (v: number) => formatQty(v),
+              width: 100,
+              render: (v: number, row) =>
+                `${formatQty(v)}${row.saleUnitName?.trim() ? ` ${row.saleUnitName.trim()}` : ''}`,
             },
             {
               title: ts('unitCost'),
               dataIndex: 'unitCost',
               align: 'right',
-              width: 120,
-              render: (v: number) => formatDisplayMoney(v),
+              width: 130,
+              render: (v: number, row) =>
+                `${formatDisplayMoney(v)}${row.saleUnitName?.trim() ? `/${row.saleUnitName.trim()}` : ''}`,
             },
             {
               title: t('newUnitCost'),
               key: 'next',
-              width: 150,
+              width: 180,
               render: (_, row) => (
                 <InputNumber
                   {...moneyInputNumberPropsAllowZero}
                   value={revalueDrafts[row.id]}
+                  addonAfter={row.saleUnitName?.trim() ? `₫/${row.saleUnitName.trim()}` : '₫'}
                   onChange={(v) =>
                     setRevalueDrafts((prev) => ({ ...prev, [row.id]: Number(v ?? 0) }))
                   }
