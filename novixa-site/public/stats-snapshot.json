@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-16T17:00:41.207Z",
+  "generatedAt": "2026-09-16T21:20:42.746Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
     "todayVisitors": 0,
     "todayPageViews": 0,
     "todayRequests": 0,
-    "last24hVisitors": 165,
-    "last24hPageViews": 941,
-    "last24hRequests": 1206
+    "last24hVisitors": 150,
+    "last24hPageViews": 940,
+    "last24hRequests": 1166
   },
   "hourly": [
-    {
-      "time": "2026-09-15T18:00:00Z",
-      "visitors": 30,
-      "requests": 44
-    },
-    {
-      "time": "2026-09-15T19:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-15T20:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-15T21:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
     {
       "time": "2026-09-15T22:00:00Z",
       "visitors": 2,
@@ -125,6 +105,26 @@
       "time": "2026-09-16T16:00:00Z",
       "visitors": 5,
       "requests": 9
+    },
+    {
+      "time": "2026-09-16T17:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-16T18:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-16T19:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-16T20:00:00Z",
+      "visitors": 6,
+      "requests": 7
     }
   ],
   "daily": [
@@ -160,34 +160,26 @@
     },
     {
       "date": "2026-09-16",
-      "visitors": 124,
-      "pageViews": 920,
-      "requests": 1116
+      "visitors": 141,
+      "pageViews": 927,
+      "requests": 1140
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 63
-    },
-    {
-      "path": "/robots.txt",
-      "views": 40
+      "views": 57
     },
     {
       "path": "/panel/.env",
       "views": 39
     },
     {
+      "path": "/robots.txt",
+      "views": 33
+    },
+    {
       "path": "/mail/.env",
-      "views": 24
-    },
-    {
-      "path": "/wp/.env",
-      "views": 24
-    },
-    {
-      "path": "/notifications/.env",
       "views": 24
     },
     {
@@ -195,12 +187,16 @@
       "views": 24
     },
     {
+      "path": "/notifications/.env",
+      "views": 24
+    },
+    {
       "path": "/includes/phpinfo.php",
       "views": 23
     },
     {
-      "path": "/drupal/.env",
-      "views": 21
+      "path": "/wp/.env",
+      "views": 22
     },
     {
       "path": "/dev/phpinfo.php",
@@ -211,15 +207,19 @@
       "views": 21
     },
     {
-      "path": "/user-panel/.env",
-      "views": 18
+      "path": "/drupal/.env",
+      "views": 21
     },
     {
       "path": "/site/phpinfo.php",
       "views": 18
     },
     {
-      "path": "/joomla/.env",
+      "path": "/actions/debug/default/index",
+      "views": 18
+    },
+    {
+      "path": "/preview/.env",
       "views": 18
     },
     {
