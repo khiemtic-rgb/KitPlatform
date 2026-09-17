@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-17T04:56:06.161Z",
+  "generatedAt": "2026-09-17T11:45:19.871Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 96,
-    "todayPageViews": 329,
-    "todayRequests": 1597,
-    "last24hVisitors": 222,
-    "last24hPageViews": 1140,
-    "last24hRequests": 2574
+    "todayVisitors": 132,
+    "todayPageViews": 796,
+    "todayRequests": 2255,
+    "last24hVisitors": 200,
+    "last24hPageViews": 839,
+    "last24hRequests": 2357
   },
   "hourly": [
-    {
-      "time": "2026-09-16T05:00:00Z",
-      "visitors": 5,
-      "requests": 22
-    },
-    {
-      "time": "2026-09-16T06:00:00Z",
-      "visitors": 2,
-      "requests": 202
-    },
-    {
-      "time": "2026-09-16T07:00:00Z",
-      "visitors": 8,
-      "requests": 247
-    },
-    {
-      "time": "2026-09-16T08:00:00Z",
-      "visitors": 7,
-      "requests": 76
-    },
-    {
-      "time": "2026-09-16T09:00:00Z",
-      "visitors": 14,
-      "requests": 21
-    },
-    {
-      "time": "2026-09-16T10:00:00Z",
-      "visitors": 9,
-      "requests": 33
-    },
-    {
-      "time": "2026-09-16T11:00:00Z",
-      "visitors": 17,
-      "requests": 274
-    },
     {
       "time": "2026-09-16T12:00:00Z",
       "visitors": 15,
@@ -130,6 +95,41 @@
       "time": "2026-09-17T04:00:00Z",
       "visitors": 4,
       "requests": 12
+    },
+    {
+      "time": "2026-09-17T05:00:00Z",
+      "visitors": 18,
+      "requests": 20
+    },
+    {
+      "time": "2026-09-17T06:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-17T07:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-17T08:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-17T09:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-17T10:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-17T11:00:00Z",
+      "visitors": 3,
+      "requests": 616
     }
   ],
   "daily": [
@@ -171,15 +171,15 @@
     },
     {
       "date": "2026-09-17",
-      "visitors": 96,
-      "pageViews": 329,
-      "requests": 1597
+      "visitors": 132,
+      "pageViews": 796,
+      "requests": 2255
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 320
+      "views": 303
     },
     {
       "path": "/index.php",
@@ -187,7 +187,7 @@
     },
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 122
+      "views": 123
     },
     {
       "path": "/blog/wp-json/batch/v1",
@@ -214,20 +214,12 @@
       "views": 57
     },
     {
-      "path": "/panel/.env",
-      "views": 39
-    },
-    {
       "path": "/wordpress/index.php",
       "views": 35
     },
     {
-      "path": "/robots.txt",
-      "views": 34
-    },
-    {
       "path": "/vi/",
-      "views": 31
+      "views": 30
     },
     {
       "path": "/wp/",
@@ -236,6 +228,14 @@
     {
       "path": "/blog/",
       "views": 29
+    },
+    {
+      "path": "/robots.txt",
+      "views": 28
+    },
+    {
+      "path": "/wp/v2/pages",
+      "views": 25
     }
   ]
 }
