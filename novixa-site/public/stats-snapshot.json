@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-16T21:20:42.746Z",
+  "generatedAt": "2026-09-17T04:56:06.161Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 150,
-    "last24hPageViews": 940,
-    "last24hRequests": 1166
+    "todayVisitors": 96,
+    "todayPageViews": 329,
+    "todayRequests": 1597,
+    "last24hVisitors": 222,
+    "last24hPageViews": 1140,
+    "last24hRequests": 2574
   },
   "hourly": [
-    {
-      "time": "2026-09-15T22:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-15T23:00:00Z",
-      "visitors": 6,
-      "requests": 24
-    },
-    {
-      "time": "2026-09-16T00:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-16T01:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-16T02:00:00Z",
-      "visitors": 6,
-      "requests": 24
-    },
-    {
-      "time": "2026-09-16T03:00:00Z",
-      "visitors": 5,
-      "requests": 129
-    },
-    {
-      "time": "2026-09-16T04:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-09-16T05:00:00Z",
       "visitors": 5,
@@ -125,6 +90,46 @@
       "time": "2026-09-16T20:00:00Z",
       "visitors": 6,
       "requests": 7
+    },
+    {
+      "time": "2026-09-16T21:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-16T22:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-16T23:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-17T00:00:00Z",
+      "visitors": 10,
+      "requests": 305
+    },
+    {
+      "time": "2026-09-17T01:00:00Z",
+      "visitors": 12,
+      "requests": 1195
+    },
+    {
+      "time": "2026-09-17T02:00:00Z",
+      "visitors": 62,
+      "requests": 76
+    },
+    {
+      "time": "2026-09-17T03:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-17T04:00:00Z",
+      "visitors": 4,
+      "requests": 12
     }
   ],
   "daily": [
@@ -160,14 +165,52 @@
     },
     {
       "date": "2026-09-16",
-      "visitors": 141,
-      "pageViews": 927,
-      "requests": 1140
+      "visitors": 150,
+      "pageViews": 932,
+      "requests": 1148
+    },
+    {
+      "date": "2026-09-17",
+      "visitors": 96,
+      "pageViews": 329,
+      "requests": 1597
     }
   ],
   "topPages": [
     {
       "path": "/",
+      "views": 320
+    },
+    {
+      "path": "/index.php",
+      "views": 145
+    },
+    {
+      "path": "/cdn-cgi/l/email-protection",
+      "views": 122
+    },
+    {
+      "path": "/blog/wp-json/batch/v1",
+      "views": 69
+    },
+    {
+      "path": "/wordpress/wp-json/batch/v1",
+      "views": 64
+    },
+    {
+      "path": "//wp-json/batch/v1",
+      "views": 63
+    },
+    {
+      "path": "/wp-json/Batch/v1",
+      "views": 61
+    },
+    {
+      "path": "/wp-json/batch/v1/",
+      "views": 58
+    },
+    {
+      "path": "/wp-json/batch/v1",
       "views": 57
     },
     {
@@ -175,56 +218,24 @@
       "views": 39
     },
     {
+      "path": "/wordpress/index.php",
+      "views": 35
+    },
+    {
       "path": "/robots.txt",
-      "views": 33
+      "views": 34
     },
     {
-      "path": "/mail/.env",
-      "views": 24
+      "path": "/vi/",
+      "views": 31
     },
     {
-      "path": "/htdocs/phpinfo.php",
-      "views": 24
+      "path": "/wp/",
+      "views": 29
     },
     {
-      "path": "/notifications/.env",
-      "views": 24
-    },
-    {
-      "path": "/includes/phpinfo.php",
-      "views": 23
-    },
-    {
-      "path": "/wp/.env",
-      "views": 22
-    },
-    {
-      "path": "/dev/phpinfo.php",
-      "views": 21
-    },
-    {
-      "path": "/docker/.env",
-      "views": 21
-    },
-    {
-      "path": "/drupal/.env",
-      "views": 21
-    },
-    {
-      "path": "/site/phpinfo.php",
-      "views": 18
-    },
-    {
-      "path": "/actions/debug/default/index",
-      "views": 18
-    },
-    {
-      "path": "/preview/.env",
-      "views": 18
-    },
-    {
-      "path": "/i.php",
-      "views": 18
+      "path": "/blog/",
+      "views": 29
     }
   ]
 }
