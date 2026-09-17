@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-17T11:45:19.871Z",
+  "generatedAt": "2026-09-17T17:01:57.627Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 132,
-    "todayPageViews": 796,
-    "todayRequests": 2255,
-    "last24hVisitors": 200,
-    "last24hPageViews": 839,
-    "last24hRequests": 2357
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 187,
+    "last24hPageViews": 823,
+    "last24hRequests": 2326
   },
   "hourly": [
-    {
-      "time": "2026-09-16T12:00:00Z",
-      "visitors": 15,
-      "requests": 27
-    },
-    {
-      "time": "2026-09-16T13:00:00Z",
-      "visitors": 15,
-      "requests": 19
-    },
-    {
-      "time": "2026-09-16T14:00:00Z",
-      "visitors": 9,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-16T15:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-16T16:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-16T17:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
     {
       "time": "2026-09-16T18:00:00Z",
       "visitors": 2,
@@ -130,15 +100,34 @@
       "time": "2026-09-17T11:00:00Z",
       "visitors": 3,
       "requests": 616
+    },
+    {
+      "time": "2026-09-17T12:00:00Z",
+      "visitors": 28,
+      "requests": 29
+    },
+    {
+      "time": "2026-09-17T13:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-17T14:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-17T15:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-17T16:00:00Z",
+      "visitors": 4,
+      "requests": 8
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-11",
-      "visitors": 142,
-      "pageViews": 639,
-      "requests": 1338
-    },
     {
       "date": "2026-09-12",
       "visitors": 223,
@@ -171,15 +160,15 @@
     },
     {
       "date": "2026-09-17",
-      "visitors": 132,
-      "pageViews": 796,
-      "requests": 2255
+      "visitors": 169,
+      "pageViews": 813,
+      "requests": 2302
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 303
+      "views": 292
     },
     {
       "path": "/index.php",
@@ -218,10 +207,6 @@
       "views": 35
     },
     {
-      "path": "/vi/",
-      "views": 30
-    },
-    {
       "path": "/wp/",
       "views": 29
     },
@@ -230,12 +215,16 @@
       "views": 29
     },
     {
-      "path": "/robots.txt",
-      "views": 28
+      "path": "/vi/",
+      "views": 27
     },
     {
       "path": "/wp/v2/pages",
       "views": 25
+    },
+    {
+      "path": "/robots.txt",
+      "views": 21
     }
   ]
 }
