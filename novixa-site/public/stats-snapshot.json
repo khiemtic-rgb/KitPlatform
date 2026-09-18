@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-17T21:24:52.730Z",
+  "generatedAt": "2026-09-18T04:47:25.943Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 184,
-    "last24hPageViews": 988,
-    "last24hRequests": 2932
+    "todayVisitors": 18,
+    "todayPageViews": 13,
+    "todayRequests": 191,
+    "last24hVisitors": 120,
+    "last24hPageViews": 673,
+    "last24hRequests": 1541
   },
   "hourly": [
-    {
-      "time": "2026-09-16T22:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-16T23:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-17T00:00:00Z",
-      "visitors": 10,
-      "requests": 305
-    },
-    {
-      "time": "2026-09-17T01:00:00Z",
-      "visitors": 12,
-      "requests": 1195
-    },
-    {
-      "time": "2026-09-17T02:00:00Z",
-      "visitors": 62,
-      "requests": 76
-    },
-    {
-      "time": "2026-09-17T03:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-17T04:00:00Z",
-      "visitors": 4,
-      "requests": 12
-    },
     {
       "time": "2026-09-17T05:00:00Z",
       "visitors": 18,
@@ -128,8 +93,43 @@
     },
     {
       "time": "2026-09-17T21:00:00Z",
-      "visitors": 1,
-      "requests": 326
+      "visitors": 2,
+      "requests": 327
+    },
+    {
+      "time": "2026-09-17T22:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-17T23:00:00Z",
+      "visitors": 14,
+      "requests": 16
+    },
+    {
+      "time": "2026-09-18T00:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-18T01:00:00Z",
+      "visitors": 3,
+      "requests": 164
+    },
+    {
+      "time": "2026-09-18T02:00:00Z",
+      "visitors": 5,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-18T03:00:00Z",
+      "visitors": 5,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-18T04:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-09-17",
-      "visitors": 180,
-      "pageViews": 984,
-      "requests": 2927
+      "visitors": 198,
+      "pageViews": 989,
+      "requests": 2947
+    },
+    {
+      "date": "2026-09-18",
+      "visitors": 18,
+      "pageViews": 13,
+      "requests": 191
     }
   ],
   "topPages": [
     {
-      "path": "/",
-      "views": 298
-    },
-    {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 285
+      "views": 163
     },
     {
-      "path": "/index.php",
-      "views": 145
+      "path": "/",
+      "views": 22
     },
     {
-      "path": "/blog/wp-json/batch/v1",
-      "views": 69
+      "path": "/temp/",
+      "views": 20
     },
     {
-      "path": "/wordpress/wp-json/batch/v1",
-      "views": 64
-    },
-    {
-      "path": "//wp-json/batch/v1",
-      "views": 63
-    },
-    {
-      "path": "/wp-json/Batch/v1",
-      "views": 61
-    },
-    {
-      "path": "/wp-json/batch/v1/",
-      "views": 58
-    },
-    {
-      "path": "/wp-json/batch/v1",
-      "views": 57
-    },
-    {
-      "path": "/wordpress/index.php",
-      "views": 35
+      "path": "/local.env",
+      "views": 16
     },
     {
       "path": "/vi/",
-      "views": 30
-    },
-    {
-      "path": "/blog/",
-      "views": 29
-    },
-    {
-      "path": "/wp/",
-      "views": 29
-    },
-    {
-      "path": "/wp/v2/pages",
-      "views": 25
+      "views": 14
     },
     {
       "path": "/robots.txt",
-      "views": 22
+      "views": 13
+    },
+    {
+      "path": "/test.php",
+      "views": 12
+    },
+    {
+      "path": "/actuator/env",
+      "views": 12
+    },
+    {
+      "path": "/.env.ci",
+      "views": 12
+    },
+    {
+      "path": "/api/config",
+      "views": 11
+    },
+    {
+      "path": "/.env.local",
+      "views": 11
+    },
+    {
+      "path": "/.env.old",
+      "views": 11
+    },
+    {
+      "path": "/server/.env",
+      "views": 11
+    },
+    {
+      "path": "/.env.bak",
+      "views": 11
+    },
+    {
+      "path": "/firebase-adminsdk.json",
+      "views": 10
     }
   ]
 }
