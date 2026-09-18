@@ -692,6 +692,7 @@
     },
     "history": {
       "title": "Shift history",
+      "clickHint": "Click a shift to reopen the close sheet",
       "filters": {
         "searchPlaceholder": "e.g. SH-000004",
         "warehouse": "Warehouse",
@@ -719,8 +720,19 @@
       "loadCurrentFailed": "Could not load current shift",
       "loadHistoryFailed": "Could not load shift history",
       "loadReportFailed": "Could not load report",
+      "loadSheetFailed": "Could not open the shift close sheet",
       "closeSuccess": "Shift closed",
       "closeFailed": "Could not close shift"
+    },
+    "sheet": {
+      "title": "Shift close sheet — {{number}}",
+      "titleFallback": "Shift close sheet",
+      "closedBy": "Closed by",
+      "closedAt": "Closed at",
+      "closingCash": "Closing cash",
+      "closeNotes": "Close notes",
+      "noShiftHint": "Orders were not linked to a shift — payment split only, no cash float.",
+      "empty": "No shift data."
     },
     "closeModal": {
       "title": "Close shift — {{shiftNumber}}",

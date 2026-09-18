@@ -29,8 +29,11 @@ import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
 import { runReport } from '@/shared/api/reports.api';
 import type { ReportTableResult } from '@/shared/api/reports.types';
+import { fetchReportSalesShift } from '@/shared/api/sales.api';
+import type { SalesShiftDetail } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { findReportByPath } from '@/modules/reports/reports-catalog';
+import { ShiftCloseSheetDrawer } from '@/modules/sales/ShiftCloseSheet';
 import { buildReportFilterDisplayEntries, filterHintsForReport } from '@/modules/reports/report-filter-ui';
 import { exportReportCsv, formatReportCell, printReportElement } from '@/modules/reports/report-export';
 import { useCanReportsExport } from '@/shared/auth/usePermission';
@@ -129,6 +132,9 @@ export function ReportViewPage() {
   const [result, setResult] = useState<ReportTableResult | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadedOnce, setLoadedOnce] = useState(false);
+  const [shiftSheetOpen, setShiftSheetOpen] = useState(false);
+  const [shiftSheetLoading, setShiftSheetLoading] = useState(false);
+  const [shiftSheet, setShiftSheet] = useState<SalesShiftDetail | null>(null);
 
   useEffect(() => {
     if (!definition) return;
@@ -271,6 +277,21 @@ export function ReportViewPage() {
       })),
     [visibleResultColumns, definition, range, warehouseId],
   );
+
+  const openShiftSheet = async (row: Record<string, unknown>) => {
+    const shiftId = row.shiftId ? String(row.shiftId) : '';
+    if (!shiftId) return;
+    setShiftSheetOpen(true);
+    setShiftSheet(null);
+    setShiftSheetLoading(true);
+    try {
+      setShiftSheet(await fetchReportSalesShift(shiftId));
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('openSheetFailed')));
+    } finally {
+      setShiftSheetLoading(false);
+    }
+  };
 
   const productSuggestions = useMemo(() => {
     const q = searchInput.trim().toLowerCase();
@@ -550,13 +571,14 @@ export function ReportViewPage() {
                     {displayFilterEntries.map(({ key, value }) => `${key} ${value}`).join(' · ')}
                     {' · '}
                     {t('generatedAt')} {dayjs(result.generatedAtUtc).format('DD/MM/YYYY HH:mm')}
+                    {definition?.code === 'SALES-03' ? ` · ${t('clickShiftHint')}` : ''}
                   </div>
                 )}
               </div>
             }
           >
             <Table
-              rowKey={(_, index) => String(index)}
+              rowKey={(_, index) => String(result.rows[index ?? 0]?.shiftId ?? index)}
               loading={loading}
               columns={columns}
               dataSource={result.rows}
@@ -564,6 +586,14 @@ export function ReportViewPage() {
               locale={{
                 emptyText: definition?.code === 'SALES-05' ? t('emptyDataConnectSales') : t('emptyData'),
               }}
+              onRow={
+                definition?.code === 'SALES-03'
+                  ? (row) => ({
+                      onClick: () => void openShiftSheet(row),
+                      style: { cursor: row.shiftId ? 'pointer' : undefined },
+                    })
+                  : undefined
+              }
               pagination={{
                 pageSize: 50,
                 showSizeChanger: false,
@@ -591,6 +621,16 @@ export function ReportViewPage() {
       )}
 
       {!loading && loadedOnce && !loadError && !result && <Empty description={t('noResult')} />}
+
+      <ShiftCloseSheetDrawer
+        open={shiftSheetOpen}
+        loading={shiftSheetLoading}
+        shift={shiftSheet}
+        onClose={() => {
+          setShiftSheetOpen(false);
+          setShiftSheet(null);
+        }}
+      />
     </div>
   );
 }

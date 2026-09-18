@@ -27,7 +27,7 @@ internal sealed class ReportsService : IReportsService
         new(ReportCodes.SalesRevenueByPaymentMethod, "Doanh thu theo hình thức thanh toán", "sales",
             "Thu ròng theo tiền mặt, thẻ, chuyển khoản, ví.", true, false, false),
         new(ReportCodes.SalesShifts, "Ca bán hàng", "sales",
-            "Danh sách ca, quỹ tiền mặt và doanh thu ròng trong ca.", true, false, false),
+            "Danh sách ca, quỹ tiền mặt và doanh thu ròng trong ca. Bấm một ca để xem lại tờ chốt.", true, false, false),
         new(ReportCodes.SalesRevenueByCategory, "Doanh thu theo nhóm sản phẩm", "sales",
             "Doanh thu ròng theo nhóm sản phẩm trong kỳ.", true, false, false),
         new(ReportCodes.SalesRevenueByClinicDoctor, "Đơn bán theo phòng khám / bác sĩ", "sales",
@@ -38,6 +38,8 @@ internal sealed class ReportsService : IReportsService
             "Số lượng và thu ròng từng mặt theo người bán — dùng đối soát KPI / hoa hồng vượt mốc.", true, false, false),
         new(ReportCodes.SalesRevenueByCustomer, "Doanh số theo khách hàng", "sales",
             "Thu ròng và số đơn POS gắn hồ sơ khách — không bịa xếp hạng.", true, false, false),
+        new(ReportCodes.SalesShiftCloseByEmployee, "Chốt ca theo nhân viên", "sales",
+            "Một dòng mỗi người × ca: số đơn, thu bán, hoàn, tiền mặt, chuyển khoản, khác, thu ròng. Bấm ca để mở lại tờ chốt.", true, false, false),
         new(ReportCodes.ProcurementGrnValue, "Giá trị nhập hàng", "procurement",
             "Tổng hợp phiếu nhập hoàn tất — số tiền trước thuế GTGT.", false, true, false),
         new(ReportCodes.ProcurementPayablesSnapshot, "Công nợ nhà cung cấp", "procurement",
@@ -267,6 +269,51 @@ internal sealed class ReportsService : IReportsService
             columns,
             rows,
             SumTotals(rows, "orderCount", "qty", "refundQty", "netQty", "salesAmount", "refundAmount", "netAmount"));
+    }
+
+    public async Task<ReportTableResultDto> RunSalesShiftCloseByEmployeeAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        Guid? employeeId,
+        Guid? branchId,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        if (branchId.HasValue)
+            await _branchAccess.EnsureBranchAccessAsync(branchId.Value, cancellationToken);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesShiftCloseByEmployeeAsync(
+            from, to, scopedWarehouseId, allowed, employeeId, branchId, cancellationToken);
+
+        var columns = new List<ReportColumnDto>
+        {
+            Col("employeeName", "Nhân viên", ReportColumnFormats.Text, "left"),
+            Col("branchName", "Chi nhánh", ReportColumnFormats.Text, "left"),
+            Col("warehouseName", "Kho", ReportColumnFormats.Text, "left"),
+            Col("shiftNumber", "Ca", ReportColumnFormats.Text, "left"),
+            Col("openedAt", "Mở ca / ngày", ReportColumnFormats.Date, "left"),
+            Col("statusLabel", "Trạng thái", ReportColumnFormats.Text, "left"),
+            Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
+            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
+            Col("cashNet", "Tiền mặt", ReportColumnFormats.Money, "right"),
+            Col("transferNet", "Chuyển khoản", ReportColumnFormats.Money, "right"),
+            Col("otherNet", "Khác", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+        };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        if (branchId.HasValue) filters["Chi nhánh"] = branchId.Value.ToString();
+        if (employeeId.HasValue) filters["Nhân viên"] = employeeId.Value.ToString();
+        filters["Ghi chú"] =
+            "Lọc chi nhánh lấy hết kho thuộc chi nhánh đó. Mỗi dòng = một người trên một ca (hoặc ngày nếu đơn không gắn ca). Bấm dòng có mã ca để mở lại tờ chốt. «Khác» = thẻ + ví + ghi nợ.";
+        return BuildTable(
+            ReportCodes.SalesShiftCloseByEmployee,
+            "Chốt ca theo nhân viên",
+            filters,
+            columns,
+            rows,
+            SumTotals(rows, "orderCount", "salesAmount", "refundAmount", "cashNet", "transferNet", "otherNet", "netAmount"));
     }
 
     public async Task<ReportTableResultDto> RunSalesRevenueByCustomerAsync(

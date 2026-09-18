@@ -19,6 +19,7 @@ export interface ReportDefinition {
   supportsSearch?: boolean;
   supportsExpiryDays?: boolean;
   supportsEmployee?: boolean;
+  supportsBranch?: boolean;
   favorite?: boolean;
   /** Connect PK report — hide without Connect module or during DEMO audit_slim_nav. */
   requiresConnect?: boolean;
@@ -103,6 +104,17 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     supportsWarehouse: true,
     supportsSearch: true,
     hideFromNav: true,
+  },
+  {
+    code: 'SALES-09',
+    category: 'sales',
+    path: '/reports/sales/shift-close-by-employee',
+    apiPath: 'sales/shift-close-by-employee',
+    supportsDateRange: true,
+    supportsWarehouse: true,
+    supportsEmployee: true,
+    supportsBranch: true,
+    favorite: true,
   },
   // SALES-05: Connect PK — visible only when Connect enabled and not DEMO audit slim
   {

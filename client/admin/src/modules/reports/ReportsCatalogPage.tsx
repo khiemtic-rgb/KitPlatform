@@ -34,7 +34,7 @@ import './reports-catalog-page.css';
 
 const { RangePicker } = DatePicker;
 const SLICE = ['#1677ff', '#13c2c2', '#722ed1', '#fa8c16', '#eb2f96', '#8c8c8c'];
-const FAVORITE_CODES = ['SALES-01', 'INV-01', 'SALES-04', 'SALES-08', 'SALES-06', 'PROC-01'];
+const FAVORITE_CODES = ['SALES-01', 'INV-01', 'SALES-04', 'SALES-08', 'SALES-06', 'SALES-09', 'PROC-01'];
 
 type GroupKey = 'sales' | 'inventory' | 'procurement' | 'customers' | 'staff' | 'other';
 type GroupBy = 'day' | 'week' | 'month';

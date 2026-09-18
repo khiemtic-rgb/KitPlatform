@@ -422,6 +422,7 @@
     "export": "Export report",
     "summary": "Summary",
     "product": "By product",
+    "shiftClose": "Shift close",
     "warehouse": "Warehouse",
     "warehouseAll": "All warehouses",
     "employee": "Employee",
@@ -509,7 +510,30 @@
     "emptyData": "No data for the selected period",
     "emptyDataConnectSales": "No POS sales linked to a Connect clinic Rx in this period. Open POS from «Pending Rx» and complete checkout — acknowledging the signal alone does not create report rows.",
     "paginationTotal": "{{count}} rows",
-    "noResult": "No results yet — click Run report"
+    "noResult": "No results yet — click Run report",
+    "openSheetFailed": "Could not open the shift close sheet",
+    "clickShiftHint": "Click a row to reopen the close sheet (cash / transfer)."
+  },
+  "shiftClose": {
+    "title": "Shift close by cashier",
+    "subtitle": "Filter by day, branch, warehouse, and cashier. A branch includes all of its warehouses. One row per person per shift — cash vs transfer for reconciliation. Click a row to reopen the same close sheet.",
+    "tabs": {
+      "close": "Shift close",
+      "product": "By product"
+    },
+    "branchAll": "All branches",
+    "warehouseAll": "All warehouses",
+    "employeeAll": "All employees",
+    "empty": "No orders in this period",
+    "total": "Total",
+    "openSheetFailed": "Could not open the shift close sheet",
+    "sheetTitle": "{{name}} — {{number}}",
+    "sheetTitleLoose": "{{name}} — no shift",
+    "period": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "week": "This week"
+    }
   },
   "groupBy": {
     "day": "Day",
@@ -550,7 +574,7 @@
     },
     "SALES-03": {
       "name": "Sales shifts",
-      "description": "Shift list, cash float, and net revenue per shift."
+      "description": "Shift list, cash float, and net revenue per shift. Click a row to reopen the close sheet."
     },
     "SALES-04": {
       "name": "Revenue by product group",
@@ -571,6 +595,10 @@
     "SALES-08": {
       "name": "Sales by customer",
       "description": "Net and tickets for named POS customers — no invented ranking."
+    },
+    "SALES-09": {
+      "name": "Shift close by cashier",
+      "description": "One row per cashier × shift: orders, sales, refunds, cash, transfer, other, net. Click a shift to reopen the close sheet."
     },
     "PROC-01": {
       "name": "Goods receipt value",

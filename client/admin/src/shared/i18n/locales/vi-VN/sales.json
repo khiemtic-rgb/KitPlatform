@@ -693,6 +693,7 @@
     },
     "history": {
       "title": "Lịch sử ca",
+      "clickHint": "Bấm một ca để xem lại tờ chốt",
       "filters": {
         "searchPlaceholder": "VD: SH-000004",
         "warehouse": "Kho",
@@ -720,8 +721,19 @@
       "loadCurrentFailed": "Không tải ca hiện tại",
       "loadHistoryFailed": "Không tải lịch sử ca",
       "loadReportFailed": "Không tải được báo cáo",
+      "loadSheetFailed": "Không mở được tờ chốt ca",
       "closeSuccess": "Đã đóng ca",
       "closeFailed": "Không đóng được ca"
+    },
+    "sheet": {
+      "title": "Tờ chốt ca — {{number}}",
+      "titleFallback": "Tờ chốt ca",
+      "closedBy": "Đóng bởi",
+      "closedAt": "Đóng lúc",
+      "closingCash": "Tiền mặt cuối ca",
+      "closeNotes": "Ghi chú đóng ca",
+      "noShiftHint": "Đơn không gắn ca — chỉ có số thu theo hình thức, không có quỹ đầu/cuối ca.",
+      "empty": "Không có dữ liệu ca."
     },
     "closeModal": {
       "title": "Đóng ca — {{shiftNumber}}",

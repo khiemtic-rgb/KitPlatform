@@ -10,6 +10,7 @@ public static class ReportCodes
     public const string SalesRevenueByEmployee = "SALES-06";
     public const string SalesRevenueByEmployeeProduct = "SALES-07";
     public const string SalesRevenueByCustomer = "SALES-08";
+    public const string SalesShiftCloseByEmployee = "SALES-09";
     public const string ProcurementGrnValue = "PROC-01";
     public const string ProcurementPayablesSnapshot = "PROC-03";
     public const string InventoryStockSnapshot = "INV-01";

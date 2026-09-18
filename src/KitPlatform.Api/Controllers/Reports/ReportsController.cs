@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Application.Reports;
+using KitPlatform.Packs.Pharmacy.Sales;
 
 namespace KitPlatform.Api.Controllers.Reports;
 
@@ -11,8 +12,13 @@ namespace KitPlatform.Api.Controllers.Reports;
 public sealed class ReportsController : ControllerBase
 {
     private readonly IReportsService _reports;
+    private readonly ISalesService _sales;
 
-    public ReportsController(IReportsService reports) => _reports = reports;
+    public ReportsController(IReportsService reports, ISalesService sales)
+    {
+        _reports = reports;
+        _sales = sales;
+    }
 
     [HttpGet("catalog")]
     [Authorize(Policy = ReportsPolicies.Read)]
@@ -47,6 +53,27 @@ public sealed class ReportsController : ControllerBase
         [FromQuery] Guid? warehouseId = null,
         CancellationToken cancellationToken = default) =>
         _reports.RunSalesShiftsAsync(from, to, warehouseId, cancellationToken);
+
+    [HttpGet("sales/shifts/{id:guid}")]
+    [Authorize(Policy = ReportsPolicies.Read)]
+    public async Task<ActionResult<SalesShiftDetailDto>> SalesShiftDetail(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var shift = await _sales.GetShiftAsync(id, cancellationToken);
+        return shift is null ? NotFound() : Ok(shift);
+    }
+
+    [HttpGet("sales/shift-close-by-employee")]
+    [Authorize(Policy = ReportsPolicies.Read)]
+    public Task<ReportTableResultDto> SalesShiftCloseByEmployee(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] Guid? warehouseId = null,
+        [FromQuery] Guid? employeeId = null,
+        [FromQuery] Guid? branchId = null,
+        CancellationToken cancellationToken = default) =>
+        _reports.RunSalesShiftCloseByEmployeeAsync(from, to, warehouseId, employeeId, branchId, cancellationToken);
 
     [HttpGet("sales/revenue-by-category")]
     [Authorize(Policy = ReportsPolicies.Read)]

@@ -33,6 +33,7 @@ export interface ReportQueryParams {
   groupBy?: string;
   warehouseId?: string;
   employeeId?: string;
+  branchId?: string;
   supplierId?: string;
   search?: string;
   expiryDays?: number;

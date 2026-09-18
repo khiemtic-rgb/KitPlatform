@@ -422,6 +422,7 @@
     "export": "Xuất báo cáo",
     "summary": "Tổng hợp",
     "product": "Theo sản phẩm",
+    "shiftClose": "Chốt ca",
     "warehouse": "Kho",
     "warehouseAll": "Tất cả kho",
     "employee": "Nhân viên",
@@ -509,7 +510,30 @@
     "emptyData": "Không có dữ liệu trong kỳ đã chọn",
     "emptyDataConnectSales": "Chưa có đơn POS gắn đơn phòng khám Connect trong kỳ. Mở quầy từ «Đơn chờ bán» rồi thanh toán — chỉ «Đã nhận tín hiệu» không tạo số liệu.",
     "paginationTotal": "{{count}} dòng",
-    "noResult": "Chưa có kết quả — bấm Xem báo cáo"
+    "noResult": "Chưa có kết quả — bấm Xem báo cáo",
+    "openSheetFailed": "Không mở được tờ chốt ca",
+    "clickShiftHint": "Bấm một dòng để xem lại tờ chốt (tiền mặt / chuyển khoản)."
+  },
+  "shiftClose": {
+    "title": "Chốt ca theo nhân viên",
+    "subtitle": "Lọc ngày, chi nhánh, kho, nhân viên. Chọn chi nhánh thì lấy hết kho của chi nhánh đó. Mỗi dòng một người trên một ca — tiền mặt và chuyển khoản để đối soát. Bấm dòng để mở lại tờ như lúc chốt.",
+    "tabs": {
+      "close": "Chốt ca",
+      "product": "Theo sản phẩm"
+    },
+    "branchAll": "Tất cả chi nhánh",
+    "warehouseAll": "Tất cả kho",
+    "employeeAll": "Tất cả nhân viên",
+    "empty": "Không có đơn trong kỳ đã chọn",
+    "total": "Tổng cộng",
+    "openSheetFailed": "Không mở được tờ chốt ca",
+    "sheetTitle": "{{name}} — {{number}}",
+    "sheetTitleLoose": "{{name}} — ngoài ca",
+    "period": {
+      "today": "Hôm nay",
+      "yesterday": "Hôm qua",
+      "week": "Tuần này"
+    }
   },
   "groupBy": {
     "day": "Ngày",
@@ -550,7 +574,7 @@
     },
     "SALES-03": {
       "name": "Ca bán hàng",
-      "description": "Danh sách ca, quỹ tiền mặt và doanh thu ròng trong ca."
+      "description": "Danh sách ca, quỹ tiền mặt và doanh thu ròng trong ca. Bấm một ca để xem lại tờ chốt."
     },
     "SALES-04": {
       "name": "Doanh thu theo nhóm sản phẩm",
@@ -571,6 +595,10 @@
     "SALES-08": {
       "name": "Doanh số theo khách hàng",
       "description": "Thu ròng và số đơn POS gắn hồ sơ khách — không bịa xếp hạng."
+    },
+    "SALES-09": {
+      "name": "Chốt ca theo nhân viên",
+      "description": "Một dòng mỗi người × ca: số đơn, thu bán, hoàn, tiền mặt, chuyển khoản, khác, thu ròng. Bấm ca để mở lại tờ chốt."
     },
     "PROC-01": {
       "name": "Giá trị nhập hàng",

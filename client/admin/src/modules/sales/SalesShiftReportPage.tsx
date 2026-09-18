@@ -22,6 +22,7 @@ import type { Warehouse } from '@/shared/api/inventory.types';
 import {
   closeSalesShift,
   fetchBatchModeSettings,
+  fetchSalesShift,
   fetchSalesShiftSummary,
   fetchSalesShifts,
   openSalesShift,
@@ -38,6 +39,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useHasPermission } from '@/shared/auth/usePermission';
 import { CloseShiftModal } from '@/modules/sales/CloseShiftModal';
 import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
+import { ShiftCloseSheetDrawer } from '@/modules/sales/ShiftCloseSheet';
 import { ShiftSummaryPanel } from '@/modules/sales/shift-summary-ui';
 import { enablesShiftFefoLotAlerts } from '@/modules/sales/tenant-batch-mode';
 import { formatDisplayMoney } from '@/shared/utils/money';
@@ -74,6 +76,9 @@ export function SalesShiftReportPage() {
   const [range, setRange] = useState<[Dayjs, Dayjs]>(() => todayRange());
   const [rangeSummary, setRangeSummary] = useState<SalesShiftSummary | null>(null);
   const [rangeLoading, setRangeLoading] = useState(false);
+  const [historySheetOpen, setHistorySheetOpen] = useState(false);
+  const [historySheetLoading, setHistorySheetLoading] = useState(false);
+  const [historySheet, setHistorySheet] = useState<SalesShiftDetail | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -198,6 +203,19 @@ export function SalesShiftReportPage() {
       message.error(apiErrorMessage(error, t('messages.closeFailed')));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openHistorySheet = async (row: SalesShiftListItem) => {
+    setHistorySheetOpen(true);
+    setHistorySheet(null);
+    setHistorySheetLoading(true);
+    try {
+      setHistorySheet(await fetchSalesShift(row.id));
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.loadSheetFailed')));
+    } finally {
+      setHistorySheetLoading(false);
     }
   };
 
@@ -358,7 +376,11 @@ export function SalesShiftReportPage() {
         )}
       </Card>
 
-      <Card title={t('history.title')} style={{ marginTop: 16 }}>
+      <Card
+        title={t('history.title')}
+        extra={<Typography.Text type="secondary">{t('history.clickHint')}</Typography.Text>}
+        style={{ marginTop: 16 }}
+      >
         <Space wrap style={{ marginBottom: 12, width: '100%' }} size={8}>
           <Input.Search
             allowClear
@@ -421,6 +443,10 @@ export function SalesShiftReportPage() {
           dataSource={shifts}
           columns={shiftColumns}
           pagination={{ pageSize: 10 }}
+          onRow={(row) => ({
+            onClick: () => void openHistorySheet(row),
+            style: { cursor: 'pointer' },
+          })}
         />
       </Card>
 
@@ -454,6 +480,16 @@ export function SalesShiftReportPage() {
         shift={openShift}
         onCancel={() => setCloseModal(false)}
         onConfirm={(cash, notes) => void handleCloseShift(cash, notes)}
+      />
+
+      <ShiftCloseSheetDrawer
+        open={historySheetOpen}
+        loading={historySheetLoading}
+        shift={historySheet}
+        onClose={() => {
+          setHistorySheetOpen(false);
+          setHistorySheet(null);
+        }}
       />
     </>
   );

@@ -528,6 +528,11 @@ const CustomersReportPage = lazy(() =>
 const StaffSalesPage = lazy(() =>
   import('@/modules/reports/StaffSalesPage').then((m) => ({ default: m.StaffSalesPage })),
 );
+const ShiftCloseByEmployeePage = lazy(() =>
+  import('@/modules/reports/ShiftCloseByEmployeePage').then((m) => ({
+    default: m.ShiftCloseByEmployeePage,
+  })),
+);
 const ProcurementGrnPage = lazy(() =>
   import('@/modules/reports/ProcurementGrnPage').then((m) => ({ default: m.ProcurementGrnPage })),
 );
@@ -1191,6 +1196,14 @@ export function AppRouter() {
                   element={
                     <SuspenseRoute>
                       <StaffSalesPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/shift-close-by-employee"
+                  element={
+                    <SuspenseRoute>
+                      <ShiftCloseByEmployeePage />
                     </SuspenseRoute>
                   }
                 />

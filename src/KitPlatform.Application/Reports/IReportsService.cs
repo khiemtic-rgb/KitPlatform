@@ -50,6 +50,14 @@ public interface IReportsService
         string? search,
         CancellationToken cancellationToken = default);
 
+    Task<ReportTableResultDto> RunSalesShiftCloseByEmployeeAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        Guid? employeeId,
+        Guid? branchId,
+        CancellationToken cancellationToken = default);
+
     Task<ReportTableResultDto> RunSalesRevenueByCustomerAsync(
         DateTime? fromUtc,
         DateTime? toUtc,

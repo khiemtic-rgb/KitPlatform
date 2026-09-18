@@ -495,10 +495,24 @@ export function StaffSalesPage() {
       <div className="staff-rep__mode">
         <Segmented
           value={isProduct ? 'product' : 'summary'}
-          onChange={(value) => goView(value === 'product' ? 'product' : 'summary')}
+          onChange={(value) => {
+            if (value === 'close') {
+              navigate(
+                `/reports/sales/shift-close-by-employee${staffQuery({
+                  employeeId,
+                  from: range[0],
+                  to: range[1],
+                  warehouseId,
+                })}`,
+              );
+              return;
+            }
+            goView(value === 'product' ? 'product' : 'summary');
+          }}
           options={[
             { label: t('summary'), value: 'summary' },
             { label: t('product'), value: 'product' },
+            { label: t('shiftClose'), value: 'close' },
           ]}
         />
       </div>

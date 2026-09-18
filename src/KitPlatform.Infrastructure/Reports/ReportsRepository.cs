@@ -556,6 +556,170 @@ internal sealed class ReportsRepository
         }).ToList();
     }
 
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> GetSalesShiftCloseByEmployeeAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        Guid? warehouseId,
+        Guid[]? allowedWarehouseIds,
+        Guid? employeeId,
+        Guid? branchId,
+        CancellationToken cancellationToken)
+    {
+        var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+        var employeeFilter = employeeId.HasValue ? "AND o.employee_id = @EmployeeId" : "";
+        var branchFilter = branchId.HasValue
+            ? """
+              AND (
+                    o.branch_id = @BranchId
+                 OR EXISTS (
+                        SELECT 1
+                        FROM warehouses bw
+                        WHERE bw.id = o.warehouse_id
+                          AND bw.tenant_id = @TenantId
+                          AND bw.deleted_at IS NULL
+                          AND bw.branch_id = @BranchId
+                    )
+              )
+              """
+            : "";
+        var cash = SalesPaymentMethods.Cash;
+        var transfer = SalesPaymentMethods.Transfer;
+
+        var sql = $"""
+            WITH sales AS (
+                SELECT
+                    o.employee_id AS EmployeeId,
+                    o.warehouse_id AS WarehouseId,
+                    o.sales_shift_id AS ShiftId,
+                    CASE
+                        WHEN o.sales_shift_id IS NULL
+                        THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', sp.paid_at))
+                        ELSE NULL
+                    END AS LooseDay,
+                    COUNT(DISTINCT o.id)::int AS OrderCount,
+                    COALESCE(SUM(sp.amount), 0) AS SalesAmount,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method = {cash}), 0) AS CashSales,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method = {transfer}), 0) AS TransferSales,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method NOT IN ({cash}, {transfer})), 0) AS OtherSales
+                FROM public.sales_orders o
+                INNER JOIN sales_payments sp ON sp.sales_order_id = o.id
+                WHERE o.tenant_id = @TenantId
+                  AND o.status = @OrderCompleted
+                  AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                  {warehouseFilter}
+                  {employeeFilter}
+                  {branchFilter}
+                GROUP BY o.employee_id, o.warehouse_id, o.sales_shift_id,
+                    CASE
+                        WHEN o.sales_shift_id IS NULL
+                        THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', sp.paid_at))
+                        ELSE NULL
+                    END
+            ),
+            refunds AS (
+                SELECT
+                    o.employee_id AS EmployeeId,
+                    o.warehouse_id AS WarehouseId,
+                    r.sales_shift_id AS ShiftId,
+                    CASE
+                        WHEN r.sales_shift_id IS NULL
+                        THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', rp.paid_at))
+                        ELSE NULL
+                    END AS LooseDay,
+                    COALESCE(SUM(rp.amount), 0) AS RefundAmount,
+                    COALESCE(SUM(rp.amount) FILTER (WHERE rp.payment_method = {cash}), 0) AS CashRefunds,
+                    COALESCE(SUM(rp.amount) FILTER (WHERE rp.payment_method = {transfer}), 0) AS TransferRefunds,
+                    COALESCE(SUM(rp.amount) FILTER (WHERE rp.payment_method NOT IN ({cash}, {transfer})), 0) AS OtherRefunds
+                FROM sales_return_payments rp
+                INNER JOIN sales_returns r ON r.id = rp.sales_return_id
+                INNER JOIN public.sales_orders o ON o.id = r.sales_order_id
+                WHERE r.tenant_id = @TenantId
+                  AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
+                  {warehouseFilter}
+                  {employeeFilter}
+                  {branchFilter}
+                GROUP BY o.employee_id, o.warehouse_id, r.sales_shift_id,
+                    CASE
+                        WHEN r.sales_shift_id IS NULL
+                        THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', rp.paid_at))
+                        ELSE NULL
+                    END
+            )
+            SELECT
+                COALESCE(s.EmployeeId, r.EmployeeId) AS EmployeeId,
+                COALESCE(e.full_name, 'Chưa gắn nhân viên') AS EmployeeName,
+                w.branch_id AS BranchId,
+                COALESCE(b.branch_name, '—') AS BranchName,
+                COALESCE(s.WarehouseId, r.WarehouseId) AS WarehouseId,
+                COALESCE(w.warehouse_name, '—') AS WarehouseName,
+                COALESCE(s.ShiftId, r.ShiftId) AS ShiftId,
+                COALESCE(sh.shift_number, 'Ngoài ca') AS ShiftNumber,
+                COALESCE(s.LooseDay, r.LooseDay) AS LooseDay,
+                COALESCE(sh.opened_at, (COALESCE(s.LooseDay, r.LooseDay) AT TIME ZONE 'Asia/Ho_Chi_Minh')) AS OpenedAt,
+                sh.closed_at AS ClosedAt,
+                sh.status AS ShiftStatus,
+                COALESCE(s.OrderCount, 0) AS OrderCount,
+                COALESCE(s.SalesAmount, 0) AS SalesAmount,
+                COALESCE(r.RefundAmount, 0) AS RefundAmount,
+                COALESCE(s.CashSales, 0) - COALESCE(r.CashRefunds, 0) AS CashNet,
+                COALESCE(s.TransferSales, 0) - COALESCE(r.TransferRefunds, 0) AS TransferNet,
+                COALESCE(s.OtherSales, 0) - COALESCE(r.OtherRefunds, 0) AS OtherNet,
+                COALESCE(s.SalesAmount, 0) - COALESCE(r.RefundAmount, 0) AS NetAmount
+            FROM sales s
+            FULL OUTER JOIN refunds r
+                ON COALESCE(r.EmployeeId, '00000000-0000-0000-0000-000000000000')
+                 = COALESCE(s.EmployeeId, '00000000-0000-0000-0000-000000000000')
+               AND r.WarehouseId = s.WarehouseId
+               AND COALESCE(r.ShiftId, '00000000-0000-0000-0000-000000000000')
+                 = COALESCE(s.ShiftId, '00000000-0000-0000-0000-000000000000')
+               AND COALESCE(r.LooseDay, TIMESTAMP '1970-01-01')
+                 = COALESCE(s.LooseDay, TIMESTAMP '1970-01-01')
+            LEFT JOIN employees e ON e.id = COALESCE(s.EmployeeId, r.EmployeeId)
+            LEFT JOIN {PackPharmacyReadViews.Warehouse} w ON w.id = COALESCE(s.WarehouseId, r.WarehouseId)
+            LEFT JOIN branches b ON b.id = w.branch_id AND b.deleted_at IS NULL
+            LEFT JOIN sales_shifts sh ON sh.id = COALESCE(s.ShiftId, r.ShiftId)
+            ORDER BY OpenedAt DESC NULLS LAST, EmployeeName
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<ShiftCloseByEmployeeRow>(
+            sql,
+            new
+            {
+                TenantId,
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+                WarehouseId = warehouseId,
+                AllowedWarehouseIds = allowedWarehouseIds,
+                EmployeeId = employeeId,
+                BranchId = branchId,
+                OrderCompleted = SalesOrderStatuses.Completed,
+            });
+
+        return rows.Select(r => new Dictionary<string, object?>
+        {
+            ["employeeId"] = r.EmployeeId,
+            ["employeeName"] = r.EmployeeName,
+            ["branchId"] = r.BranchId,
+            ["branchName"] = r.BranchName,
+            ["warehouseId"] = r.WarehouseId,
+            ["warehouseName"] = r.WarehouseName,
+            ["shiftId"] = r.ShiftId,
+            ["shiftNumber"] = r.ShiftNumber,
+            ["openedAt"] = r.OpenedAt,
+            ["closedAt"] = r.ClosedAt,
+            ["status"] = r.ShiftStatus,
+            ["statusLabel"] = r.ShiftId is null ? "Ngoài ca" : ShiftStatusLabel(r.ShiftStatus ?? 0),
+            ["orderCount"] = r.OrderCount,
+            ["salesAmount"] = r.SalesAmount,
+            ["refundAmount"] = r.RefundAmount,
+            ["cashNet"] = r.CashNet,
+            ["transferNet"] = r.TransferNet,
+            ["otherNet"] = r.OtherNet,
+            ["netAmount"] = r.NetAmount,
+        }).ToList();
+    }
+
     public async Task<IReadOnlyList<Dictionary<string, object?>>> GetSalesShiftsAsync(
         DateTime fromUtc,
         DateTime toUtc,
@@ -567,6 +731,7 @@ internal sealed class ReportsRepository
 
         var sql = $"""
             SELECT
+                sh.id AS ShiftId,
                 sh.shift_number AS ShiftNumber,
                 w.warehouse_name AS WarehouseName,
                 sh.opened_at AS OpenedAt,
@@ -607,6 +772,7 @@ internal sealed class ReportsRepository
 
         return rows.Select(r => new Dictionary<string, object?>
         {
+            ["shiftId"] = r.ShiftId,
             ["shiftNumber"] = r.ShiftNumber,
             ["warehouseName"] = r.WarehouseName,
             ["openedAt"] = r.OpenedAt,
@@ -1279,8 +1445,32 @@ internal sealed class ReportsRepository
         public decimal NetAmount { get; init; }
     }
 
+    private sealed class ShiftCloseByEmployeeRow
+    {
+        public Guid? EmployeeId { get; init; }
+        public string EmployeeName { get; init; } = "";
+        public Guid? BranchId { get; init; }
+        public string BranchName { get; init; } = "";
+        public Guid WarehouseId { get; init; }
+        public string WarehouseName { get; init; } = "";
+        public Guid? ShiftId { get; init; }
+        public string ShiftNumber { get; init; } = "";
+        public DateTime? LooseDay { get; init; }
+        public DateTime? OpenedAt { get; init; }
+        public DateTime? ClosedAt { get; init; }
+        public short? ShiftStatus { get; init; }
+        public int OrderCount { get; init; }
+        public decimal SalesAmount { get; init; }
+        public decimal RefundAmount { get; init; }
+        public decimal CashNet { get; init; }
+        public decimal TransferNet { get; init; }
+        public decimal OtherNet { get; init; }
+        public decimal NetAmount { get; init; }
+    }
+
     private sealed class ShiftReportRow
     {
+        public Guid ShiftId { get; init; }
         public string ShiftNumber { get; init; } = "";
         public string WarehouseName { get; init; } = "";
         public DateTime OpenedAt { get; init; }
