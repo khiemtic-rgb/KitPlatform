@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-18T20:56:02.260Z",
+  "generatedAt": "2026-09-19T04:40:46.048Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 141,
-    "last24hPageViews": 1088,
-    "last24hRequests": 2412
+    "todayVisitors": 63,
+    "todayPageViews": 37,
+    "todayRequests": 140,
+    "last24hVisitors": 166,
+    "last24hPageViews": 986,
+    "last24hRequests": 2080
   },
   "hourly": [
-    {
-      "time": "2026-09-17T21:00:00Z",
-      "visitors": 2,
-      "requests": 327
-    },
-    {
-      "time": "2026-09-17T22:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-17T23:00:00Z",
-      "visitors": 14,
-      "requests": 16
-    },
-    {
-      "time": "2026-09-18T00:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-18T01:00:00Z",
-      "visitors": 3,
-      "requests": 164
-    },
-    {
-      "time": "2026-09-18T02:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-18T03:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-18T04:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-09-18T05:00:00Z",
       "visitors": 4,
@@ -130,6 +90,46 @@
       "time": "2026-09-18T20:00:00Z",
       "visitors": 4,
       "requests": 5
+    },
+    {
+      "time": "2026-09-18T21:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-18T22:00:00Z",
+      "visitors": 4,
+      "requests": 51
+    },
+    {
+      "time": "2026-09-18T23:00:00Z",
+      "visitors": 5,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-19T00:00:00Z",
+      "visitors": 9,
+      "requests": 53
+    },
+    {
+      "time": "2026-09-19T01:00:00Z",
+      "visitors": 10,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-19T02:00:00Z",
+      "visitors": 1,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-19T03:00:00Z",
+      "visitors": 9,
+      "requests": 28
+    },
+    {
+      "time": "2026-09-19T04:00:00Z",
+      "visitors": 38,
+      "requests": 43
     }
   ],
   "daily": [
@@ -165,19 +165,25 @@
     },
     {
       "date": "2026-09-18",
-      "visitors": 123,
-      "pageViews": 923,
-      "requests": 2066
+      "visitors": 130,
+      "pageViews": 962,
+      "requests": 2131
+    },
+    {
+      "date": "2026-09-19",
+      "visitors": 63,
+      "pageViews": 37,
+      "requests": 140
     }
   ],
   "topPages": [
     {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 163
+      "path": "/",
+      "views": 63
     },
     {
-      "path": "/",
-      "views": 59
+      "path": "/robots.txt",
+      "views": 32
     },
     {
       "path": "/resources/.env",
@@ -185,22 +191,18 @@
     },
     {
       "path": "/.env~",
-      "views": 31
-    },
-    {
-      "path": "/.env",
       "views": 30
     },
     {
-      "path": "/robots.txt",
-      "views": 25
+      "path": "/.env",
+      "views": 28
     },
     {
       "path": "/test/.env",
       "views": 24
     },
     {
-      "path": "/.env.prod",
+      "path": "/.config/gcloud/application_default_credentials.json",
       "views": 23
     },
     {
@@ -213,10 +215,14 @@
     },
     {
       "path": "/vi/",
-      "views": 20
+      "views": 21
     },
     {
       "path": "/prod/.env",
+      "views": 20
+    },
+    {
+      "path": "/.env.prod",
       "views": 20
     },
     {
@@ -228,7 +234,7 @@
       "views": 19
     },
     {
-      "path": "/test.php",
+      "path": "/.env.remote",
       "views": 18
     }
   ]
