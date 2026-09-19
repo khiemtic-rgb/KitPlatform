@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-19T11:03:23.873Z",
+  "generatedAt": "2026-09-19T15:54:51.914Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 132,
-    "todayPageViews": 102,
-    "todayRequests": 280,
-    "last24hVisitors": 173,
-    "last24hPageViews": 714,
-    "last24hRequests": 978
+    "todayVisitors": 167,
+    "todayPageViews": 113,
+    "todayRequests": 338,
+    "last24hVisitors": 192,
+    "last24hPageViews": 716,
+    "last24hRequests": 1003
   },
   "hourly": [
-    {
-      "time": "2026-09-18T12:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-18T13:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-18T14:00:00Z",
-      "visitors": 7,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-18T15:00:00Z",
-      "visitors": 10,
-      "requests": 10
-    },
     {
       "time": "2026-09-18T16:00:00Z",
       "visitors": 4,
@@ -125,6 +105,31 @@
       "time": "2026-09-19T10:00:00Z",
       "visitors": 3,
       "requests": 6
+    },
+    {
+      "time": "2026-09-19T11:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-19T12:00:00Z",
+      "visitors": 11,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-19T13:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-19T14:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-19T15:00:00Z",
+      "visitors": 9,
+      "requests": 26
     }
   ],
   "daily": [
@@ -166,38 +171,38 @@
     },
     {
       "date": "2026-09-19",
-      "visitors": 132,
-      "pageViews": 102,
-      "requests": 280
+      "visitors": 167,
+      "pageViews": 113,
+      "requests": 338
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 47
+      "views": 58
     },
     {
       "path": "/.env~",
       "views": 28
     },
     {
-      "path": "/robots.txt",
-      "views": 27
+      "path": "/.env",
+      "views": 26
     },
     {
-      "path": "/.env",
-      "views": 23
+      "path": "/robots.txt",
+      "views": 25
     },
     {
       "path": "/vi/",
-      "views": 21
-    },
-    {
-      "path": "/prod/.env",
-      "views": 20
+      "views": 23
     },
     {
       "path": "/resources/.env",
+      "views": 18
+    },
+    {
+      "path": "/prod/.env",
       "views": 18
     },
     {
@@ -207,14 +212,6 @@
     {
       "path": "/.env.prod",
       "views": 16
-    },
-    {
-      "path": "/.env.production",
-      "views": 16
-    },
-    {
-      "path": "/smtp/.env",
-      "views": 14
     },
     {
       "path": "/deploy/.env",
@@ -229,8 +226,16 @@
       "views": 14
     },
     {
-      "path": "/development/.env",
-      "views": 13
+      "path": "/smtp/.env",
+      "views": 12
+    },
+    {
+      "path": "/.env.production",
+      "views": 12
+    },
+    {
+      "path": "/erp/.env",
+      "views": 12
     }
   ]
 }
