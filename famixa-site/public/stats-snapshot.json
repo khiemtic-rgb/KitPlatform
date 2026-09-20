@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-19T20:52:16.748Z",
+  "generatedAt": "2026-09-20T05:05:58.612Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 15,
-    "todayPageViews": 2,
-    "todayRequests": 17,
-    "last24hVisitors": 49,
-    "last24hPageViews": 20,
-    "last24hRequests": 148
+    "todayVisitors": 16,
+    "todayPageViews": 3,
+    "todayRequests": 99,
+    "last24hVisitors": 58,
+    "last24hPageViews": 22,
+    "last24hRequests": 226
   },
   "hourly": [
-    {
-      "time": "2026-09-18T22:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-18T23:00:00Z",
-      "visitors": 2,
-      "requests": 24
-    },
-    {
-      "time": "2026-09-19T00:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-19T02:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-19T03:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-19T04:00:00Z",
-      "visitors": 3,
-      "requests": 15
-    },
     {
       "time": "2026-09-19T06:00:00Z",
       "visitors": 2,
@@ -105,6 +75,36 @@
       "time": "2026-09-19T20:00:00Z",
       "visitors": 1,
       "requests": 2
+    },
+    {
+      "time": "2026-09-19T22:00:00Z",
+      "visitors": 4,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-19T23:00:00Z",
+      "visitors": 2,
+      "requests": 22
+    },
+    {
+      "time": "2026-09-20T00:00:00Z",
+      "visitors": 8,
+      "requests": 15
+    },
+    {
+      "time": "2026-09-20T02:00:00Z",
+      "visitors": 4,
+      "requests": 72
+    },
+    {
+      "time": "2026-09-20T03:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-20T04:00:00Z",
+      "visitors": 4,
+      "requests": 10
     }
   ],
   "daily": [
@@ -140,52 +140,64 @@
     },
     {
       "date": "2026-09-19",
-      "visitors": 44,
-      "pageViews": 18,
-      "requests": 119
+      "visitors": 48,
+      "pageViews": 21,
+      "requests": 154
     },
     {
       "date": "2026-09-20",
-      "visitors": 15,
-      "pageViews": 2,
-      "requests": 17
+      "visitors": 38,
+      "pageViews": 8,
+      "requests": 151
     }
   ],
   "topPages": [
+    {
+      "path": "/",
+      "views": 66
+    },
     {
       "path": "/robots.txt",
       "views": 22
     },
     {
       "path": "/vi/",
-      "views": 18
-    },
-    {
-      "path": "/",
-      "views": 16
+      "views": 19
     },
     {
       "path": "/sitemap.xml",
       "views": 13
     },
     {
+      "path": "/api",
+      "views": 10
+    },
+    {
+      "path": "/dashboard",
+      "views": 9
+    },
+    {
       "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
-      "views": 5
-    },
-    {
-      "path": "//wp1/wp-includes/wlwmanifest.xml",
-      "views": 4
-    },
-    {
-      "path": "//web/wp-includes/wlwmanifest.xml",
-      "views": 4
+      "views": 6
     },
     {
       "path": "/wp-login.php",
+      "views": 6
+    },
+    {
+      "path": "/admin",
+      "views": 6
+    },
+    {
+      "path": "/.git/config",
       "views": 4
     },
     {
-      "path": "/__vite_ping",
+      "path": "/wp-includes/js/jquery/jquery.js",
+      "views": 4
+    },
+    {
+      "path": "/login",
       "views": 4
     },
     {
@@ -193,24 +205,12 @@
       "views": 4
     },
     {
-      "path": "//cms/wp-includes/wlwmanifest.xml",
+      "path": "/__vite_ping",
       "views": 4
     },
     {
-      "path": "/images/hero-family.png",
+      "path": "/media/system/js/core.js",
       "views": 4
-    },
-    {
-      "path": "/llms.txt",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 3
-    },
-    {
-      "path": "/@vite/env",
-      "views": 3
     }
   ]
 }
