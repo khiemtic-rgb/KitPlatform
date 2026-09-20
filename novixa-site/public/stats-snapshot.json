@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-20T04:56:36.963Z",
+  "generatedAt": "2026-09-20T11:28:17.189Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 45,
-    "todayPageViews": 182,
-    "todayRequests": 367,
-    "last24hVisitors": 218,
-    "last24hPageViews": 302,
-    "last24hRequests": 679
+    "todayVisitors": 75,
+    "todayPageViews": 424,
+    "todayRequests": 777,
+    "last24hVisitors": 175,
+    "last24hPageViews": 496,
+    "last24hRequests": 965
   },
   "hourly": [
-    {
-      "time": "2026-09-19T05:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-19T06:00:00Z",
-      "visitors": 10,
-      "requests": 25
-    },
-    {
-      "time": "2026-09-19T07:00:00Z",
-      "visitors": 8,
-      "requests": 26
-    },
-    {
-      "time": "2026-09-19T08:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-19T09:00:00Z",
-      "visitors": 48,
-      "requests": 52
-    },
-    {
-      "time": "2026-09-19T10:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-19T11:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
     {
       "time": "2026-09-19T12:00:00Z",
       "visitors": 11,
@@ -128,8 +93,43 @@
     },
     {
       "time": "2026-09-20T04:00:00Z",
-      "visitors": 9,
-      "requests": 310
+      "visitors": 12,
+      "requests": 313
+    },
+    {
+      "time": "2026-09-20T05:00:00Z",
+      "visitors": 7,
+      "requests": 97
+    },
+    {
+      "time": "2026-09-20T06:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-20T07:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-20T08:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-20T09:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-20T10:00:00Z",
+      "visitors": 5,
+      "requests": 291
+    },
+    {
+      "time": "2026-09-20T11:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-09-20",
-      "visitors": 45,
-      "pageViews": 182,
-      "requests": 367
+      "visitors": 75,
+      "pageViews": 424,
+      "requests": 777
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 117
+      "views": 235
     },
     {
       "path": "/",
-      "views": 62
+      "views": 52
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 25
     },
     {
       "path": "/robots.txt",
-      "views": 20
+      "views": 22
     },
     {
-      "path": "/vi/tin-tuc/so-tay-quan-tri-chu-nha-thuoc-nen-lam-gi-moi-thang-de-kiem-soat-dong-tien-va-mo-rong-quy-mo/",
-      "views": 8
+      "path": "/.env.backup",
+      "views": 12
+    },
+    {
+      "path": "/.env.anthropic",
+      "views": 12
+    },
+    {
+      "path": "/.env.bak",
+      "views": 10
+    },
+    {
+      "path": "/.env.example",
+      "views": 10
     },
     {
       "path": "/wp-login.php",
-      "views": 7
+      "views": 9
     },
     {
-      "path": "/favicon.svg",
-      "views": 6
+      "path": "/vi/tin-tuc/so-tay-quan-tri-chu-nha-thuoc-nen-lam-gi-moi-thang-de-kiem-soat-dong-tien-va-mo-rong-quy-mo/",
+      "views": 9
     },
     {
-      "path": "/.git/config",
-      "views": 6
+      "path": "/.claude/settings.json",
+      "views": 8
     },
     {
-      "path": "/vi/tin-tuc/tu-du-lieu-hoc-tap-den-quyet-dinh-thang-tien/",
-      "views": 6
+      "path": "/.env.test",
+      "views": 8
     },
     {
-      "path": "/vi/tin-tuc/vi-sao-sop-quan-trong-hon-kinh-nghiem-ca-nhan/",
-      "views": 6
+      "path": "/.docker/secrets.json",
+      "views": 8
     },
     {
-      "path": "/vi/nguoi-dan/",
-      "views": 5
+      "path": "/.amplifyrc",
+      "views": 8
     },
     {
-      "path": "/.env",
-      "views": 5
-    },
-    {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 5
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 5
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 5
+      "path": "/.env.email",
+      "views": 8
     }
   ]
 }
