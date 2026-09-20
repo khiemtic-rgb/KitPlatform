@@ -1,31 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-20T16:19:50.284Z",
+  "generatedAt": "2026-09-20T20:57:29.189Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 36,
-    "todayPageViews": 256,
-    "todayRequests": 796,
-    "last24hVisitors": 51,
-    "last24hPageViews": 261,
-    "last24hRequests": 848
+    "todayVisitors": 13,
+    "todayPageViews": 1,
+    "todayRequests": 16,
+    "last24hVisitors": 42,
+    "last24hPageViews": 260,
+    "last24hRequests": 849
   },
   "hourly": [
-    {
-      "time": "2026-09-19T18:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-19T19:00:00Z",
-      "visitors": 12,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-19T20:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-09-19T22:00:00Z",
       "visitors": 4,
@@ -100,15 +85,34 @@
       "time": "2026-09-20T15:00:00Z",
       "visitors": 7,
       "requests": 52
+    },
+    {
+      "time": "2026-09-20T16:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-20T17:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-20T18:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-20T19:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-20T20:00:00Z",
+      "visitors": 5,
+      "requests": 6
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-14",
-      "visitors": 87,
-      "pageViews": 79,
-      "requests": 309
-    },
     {
       "date": "2026-09-15",
       "visitors": 54,
@@ -141,19 +145,25 @@
     },
     {
       "date": "2026-09-20",
-      "visitors": 71,
-      "pageViews": 261,
-      "requests": 848
+      "visitors": 40,
+      "pageViews": 257,
+      "requests": 814
+    },
+    {
+      "date": "2026-09-21",
+      "visitors": 13,
+      "pageViews": 1,
+      "requests": 16
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 81
+      "views": 79
     },
     {
       "path": "/vi/",
-      "views": 38
+      "views": 36
     },
     {
       "path": "/src/.env",
@@ -172,12 +182,12 @@
       "views": 24
     },
     {
-      "path": "/.git/.env",
+      "path": "/robots.txt",
       "views": 24
     },
     {
-      "path": "/robots.txt",
-      "views": 22
+      "path": "/.git/.env",
+      "views": 24
     },
     {
       "path": "/phpversion.php",
@@ -193,7 +203,7 @@
     },
     {
       "path": "/.env",
-      "views": 12
+      "views": 11
     },
     {
       "path": "/.env.old",
