@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-21T04:59:34.059Z",
+  "generatedAt": "2026-09-21T12:52:47.397Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 26,
-    "todayPageViews": 270,
-    "todayRequests": 311,
-    "last24hVisitors": 94,
-    "last24hPageViews": 1110,
-    "last24hRequests": 1919
+    "todayVisitors": 59,
+    "todayPageViews": 449,
+    "todayRequests": 536,
+    "last24hVisitors": 91,
+    "last24hPageViews": 755,
+    "last24hRequests": 1425
   },
   "hourly": [
-    {
-      "time": "2026-09-20T05:00:00Z",
-      "visitors": 7,
-      "requests": 97
-    },
-    {
-      "time": "2026-09-20T06:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-20T07:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-20T08:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-20T09:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-20T10:00:00Z",
-      "visitors": 5,
-      "requests": 291
-    },
-    {
-      "time": "2026-09-20T11:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-20T12:00:00Z",
-      "visitors": 5,
-      "requests": 304
-    },
     {
       "time": "2026-09-20T13:00:00Z",
       "visitors": 4,
@@ -125,6 +85,46 @@
       "time": "2026-09-21T04:00:00Z",
       "visitors": 5,
       "requests": 11
+    },
+    {
+      "time": "2026-09-21T05:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-21T06:00:00Z",
+      "visitors": 8,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-21T07:00:00Z",
+      "visitors": 9,
+      "requests": 167
+    },
+    {
+      "time": "2026-09-21T08:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-21T09:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-21T10:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-21T11:00:00Z",
+      "visitors": 3,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-21T12:00:00Z",
+      "visitors": 6,
+      "requests": 7
     }
   ],
   "daily": [
@@ -166,63 +166,23 @@
     },
     {
       "date": "2026-09-21",
-      "visitors": 26,
-      "pageViews": 270,
-      "requests": 311
+      "visitors": 59,
+      "pageViews": 449,
+      "requests": 536
     }
   ],
   "topPages": [
     {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 118
-    },
-    {
       "path": "/",
-      "views": 51
+      "views": 44
     },
     {
       "path": "/vi/",
-      "views": 41
-    },
-    {
-      "path": "/storage/.env",
-      "views": 36
-    },
-    {
-      "path": "/sparkpost/.env",
-      "views": 30
+      "views": 40
     },
     {
       "path": "/robots.txt",
       "views": 30
-    },
-    {
-      "path": "/nuxt/.env",
-      "views": 28
-    },
-    {
-      "path": "/_phpinfo.php",
-      "views": 27
-    },
-    {
-      "path": "/jenkins/.env",
-      "views": 24
-    },
-    {
-      "path": "/wordpress/.env",
-      "views": 24
-    },
-    {
-      "path": "/newsletter/.env",
-      "views": 24
-    },
-    {
-      "path": "/.env.example",
-      "views": 19
-    },
-    {
-      "path": "/.env.staging",
-      "views": 19
     },
     {
       "path": "/cache/.env",
@@ -231,6 +191,46 @@
     {
       "path": "/lib/.env",
       "views": 18
+    },
+    {
+      "path": "/.env.example",
+      "views": 15
+    },
+    {
+      "path": "/shopify/.env",
+      "views": 14
+    },
+    {
+      "path": "/mailing/.env",
+      "views": 14
+    },
+    {
+      "path": "/ses/.env",
+      "views": 12
+    },
+    {
+      "path": "/.nuget/packages.config",
+      "views": 12
+    },
+    {
+      "path": "/.gitignore",
+      "views": 12
+    },
+    {
+      "path": "/storage/.env",
+      "views": 12
+    },
+    {
+      "path": "/www/phpinfo.php",
+      "views": 12
+    },
+    {
+      "path": "/administrator/phpinfo.php",
+      "views": 12
+    },
+    {
+      "path": "/_profiler/phpinfo",
+      "views": 12
     }
   ]
 }
