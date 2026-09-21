@@ -103,6 +103,8 @@ function normalizeOverview(row: UnknownRow): DashboardOverview {
       todayNetTotal: num(sales.todayNetTotal ?? sales.TodayNetTotal),
       weekNetTotal: num(sales.weekNetTotal ?? sales.WeekNetTotal),
       todayOrderCount: num(sales.todayOrderCount ?? sales.TodayOrderCount),
+      todayCollected: num(sales.todayCollected ?? sales.TodayCollected),
+      todayNewDebt: num(sales.todayNewDebt ?? sales.TodayNewDebt),
     },
     catalog: {
       productCount: num(catalog.productCount ?? catalog.ProductCount),

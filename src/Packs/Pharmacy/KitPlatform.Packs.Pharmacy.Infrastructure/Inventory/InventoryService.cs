@@ -114,6 +114,82 @@ internal sealed class InventoryService : IInventoryService
         return new PagedStockProductsResult(items, total, page, pageSize);
     }
 
+    public Task<InventoryLotIdentity> FindLotIdentityAsync(
+        Guid productId,
+        string batchNumber,
+        CancellationToken cancellationToken = default) =>
+        _repository.FindLotIdentityAsync(productId, batchNumber, cancellationToken);
+
+    public async Task<IReadOnlyList<InventoryLotConflictDto>> GetLotConflictsAsync(
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        var scope = await _branchAccess.GetScopeAsync(cancellationToken);
+        Guid[]? allowed = scope.Unrestricted ? null : scope.WarehouseIds.ToArray();
+        if (!scope.Unrestricted && (allowed is null || allowed.Length == 0))
+            return [];
+
+        var items = await _repository.GetLotConflictsAsync(search, cancellationToken);
+        if (allowed is { Length: > 0 })
+        {
+            items = items
+                .Where(item => item.Cards.Any(card => allowed.Contains(card.WarehouseId)))
+                .Select(item => item with
+                {
+                    CanUnify = item.Cards.All(card => allowed.Contains(card.WarehouseId)),
+                })
+                .ToList();
+        }
+
+        return items;
+    }
+
+    public async Task<UnifyLotDatesResult> UnifyLotDatesAsync(
+        UnifyLotDatesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var lot = InventoryLotRules.NormalizeBatchNumber(request.BatchNumber);
+        if (lot.Length == 0)
+            throw new InvalidOperationException("Số lô không được để trống.");
+        if (request.ExpiryDate == default)
+            throw new InvalidOperationException("Chọn hạn dùng đúng trước khi sửa lô.");
+
+        var identity = await _repository.FindLotIdentityAsync(request.ProductId, lot, cancellationToken);
+        if (!identity.Exists)
+            throw new InvalidOperationException("Không tìm thấy lô cần sửa.");
+        if (!identity.HasConflict)
+            throw new InvalidOperationException("Số lô này đã cùng một NSX và một HSD.");
+
+        var conflicts = await GetLotConflictsAsync(lot, cancellationToken);
+        var group = conflicts.FirstOrDefault(item =>
+            item.ProductId == request.ProductId && item.BatchNumber == lot)
+            ?? throw new InvalidOperationException("Không xem được lô lệch NSX/HSD.");
+        if (!group.CanUnify)
+            throw new InvalidOperationException("Cần quyền mọi kho đang giữ số lô này.");
+
+        foreach (var warehouseId in group.Cards.Select(card => card.WarehouseId).Distinct())
+            await _branchAccess.EnsureWarehouseAccessAsync(warehouseId, cancellationToken);
+
+        var updated = await _repository.UnifyLotDatesAsync(
+            request.ProductId, lot, request.ManufactureDate, request.ExpiryDate, cancellationToken);
+
+        await _audit.WriteAsync(
+            "inventory_batch",
+            request.ProductId,
+            "unify_lot_dates",
+            new
+            {
+                productId = request.ProductId,
+                batchNumber = lot,
+                request.ManufactureDate,
+                request.ExpiryDate,
+                cardsUpdated = updated,
+            },
+            cancellationToken);
+
+        return new UnifyLotDatesResult(request.ProductId, lot, updated);
+    }
+
     public async Task<OpeningBalanceResultDto> CreateOpeningBalanceAsync(
         CreateOpeningBalanceRequest request,
         CancellationToken cancellationToken = default)
@@ -135,6 +211,15 @@ internal sealed class InventoryService : IInventoryService
                 throw new InvalidOperationException("Giá vốn không hợp lệ.");
             if (!await _repository.ProductExistsAsync(line.ProductId, cancellationToken))
                 throw new InvalidOperationException($"Sản phẩm không tồn tại: {line.ProductId}");
+        }
+
+        InventoryLotRules.EnsureDocumentLotsConsistent(
+            request.Lines.Select(line => (line.ProductId, line.BatchNumber, line.ManufactureDate, line.ExpiryDate)));
+
+        foreach (var line in request.Lines)
+        {
+            var identity = await _repository.FindLotIdentityAsync(line.ProductId, line.BatchNumber, cancellationToken);
+            InventoryLotRules.Resolve(line.BatchNumber, line.ManufactureDate, line.ExpiryDate, identity);
         }
 
         var batchIds = await _repository.ProcessOpeningBalanceAsync(

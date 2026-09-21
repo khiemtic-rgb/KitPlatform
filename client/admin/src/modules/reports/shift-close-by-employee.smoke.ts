@@ -36,6 +36,7 @@ ok(catalog.includes("code: 'SALES-09'"), 'catalog SALES-09');
 ok(catalog.includes("path: '/reports/sales/shift-close-by-employee'"), 'catalog path');
 ok(router.includes('sales/shift-close-by-employee'), 'router page');
 ok(page.includes("runReport('sales/shift-close-by-employee'"), 'page calls report API');
+ok(page.includes('filterCloseRows'), 'page filters selected employee locally');
 ok(page.includes('branchId') && page.includes('branchAll'), 'page has branch filter');
 ok(controller.includes('Guid? branchId'), 'API accepts branchId');
 ok(repo.includes('o.branch_id = @BranchId'), 'sql filters by branch');
@@ -49,6 +50,7 @@ ok(controller.includes('[HttpGet("sales/shift-close-by-employee")]'), 'list endp
 ok(controller.includes('[HttpGet("sales/shifts/{id:guid}")]'), 'reports GetShift');
 ok(controller.includes('ReportsPolicies.Read'), 'reports.read gate kept');
 ok(repo.includes('GetSalesShiftCloseByEmployeeAsync'), 'sql group by employee × shift');
+ok(repo.includes('@EmployeeId IS NULL OR o.employee_id = @EmployeeId'), 'sql always binds employee');
 ok(repo.includes('["shiftId"] = r.ShiftId'), 'SALES-03 rows carry shiftId');
 ok(auth.includes('reports.read'), 'auth still reports.* not sales.*');
 ok(!auth.includes('sales.read'), 'reports policy not opened to sales.read');

@@ -39,7 +39,7 @@ import './reports-hub.css';
 const { RangePicker } = DatePicker;
 
 type HubPoint = { label: string; netAmount: number; orderCount: number };
-type Tone = 'revenue' | 'orders' | 'customers' | 'products' | 'staff' | 'stock';
+type Tone = 'revenue' | 'paid' | 'debt' | 'collection' | 'orders' | 'stock';
 
 function defaultRange(): [Dayjs, Dayjs] {
   return [dayjs().startOf('month'), dayjs().endOf('day')];
@@ -75,7 +75,7 @@ function pointsFromPeriodRows(rows: Record<string, unknown>[]): HubPoint[] {
     const short = label.length >= 5 ? label.slice(0, 5) : label;
     return {
       label: short,
-      netAmount: readReportFieldNumber(row, 'netAmount'),
+      netAmount: readReportFieldNumber(row, 'salesAmount'),
       orderCount: readReportFieldNumber(row, 'orderCount'),
     };
   });
@@ -148,7 +148,6 @@ export function ReportsHomePage() {
   const [staffTotals, setStaffTotals] = useState<Record<string, unknown> | null>(null);
   const [productRows, setProductRows] = useState<Record<string, unknown>[]>([]);
   const [customerCount, setCustomerCount] = useState(0);
-  const [buyerCount, setBuyerCount] = useState(0);
   const [batchCount, setBatchCount] = useState(0);
 
   const load = useCallback(async () => {
@@ -156,13 +155,12 @@ export function ReportsHomePage() {
     const current = toIsoRange(range);
     const previous = toIsoRange(priorRange(range));
     try {
-      const [periodRes, priorRes, categoryRes, staffRes, productRes, customerRes, overview] = await Promise.all([
+      const [periodRes, priorRes, categoryRes, staffRes, productRes, overview] = await Promise.all([
         runReport('sales/revenue-by-period', { ...current, groupBy: 'day' }),
         runReport('sales/revenue-by-period', { ...previous, groupBy: 'day' }),
         runReport('sales/revenue-by-category', current),
         runReport('sales/revenue-by-employee', current),
         runReport('sales/revenue-by-employee-product', current).catch(() => null),
-        runReport('sales/revenue-by-customer', current).catch(() => null),
         fetchDashboardOverview().catch(() => null),
       ]);
       setPeriod(periodRes);
@@ -171,7 +169,6 @@ export function ReportsHomePage() {
       setStaffRows(staffRes.rows);
       setStaffTotals(staffRes.totals ?? null);
       setProductRows(productRes?.rows ?? []);
-      setBuyerCount(customerRes?.rows.length ?? 0);
       setCustomerCount(overview?.catalog.customerCount ?? 0);
       setBatchCount(overview?.inventory.activeBatchCount ?? 0);
     } finally {
@@ -184,19 +181,18 @@ export function ReportsHomePage() {
   }, [load]);
 
   const points = useMemo(() => pointsFromPeriodRows(period?.rows ?? []), [period]);
+  const sales = period?.totals ? readReportFieldNumber(period.totals, 'salesAmount') : 0;
+  const checkoutPaid = period?.totals ? readReportFieldNumber(period.totals, 'checkoutPaid') : 0;
+  const newDebt = period?.totals ? readReportFieldNumber(period.totals, 'newDebt') : 0;
+  const collectionAmount = period?.totals ? readReportFieldNumber(period.totals, 'collectionAmount') : 0;
   const net = period?.totals ? readReportFieldNumber(period.totals, 'netAmount') : 0;
   const orders = period?.totals ? readReportFieldNumber(period.totals, 'orderCount') : 0;
-  const priorNet = prior?.totals ? readReportFieldNumber(prior.totals, 'netAmount') : 0;
+  const priorSales = prior?.totals ? readReportFieldNumber(prior.totals, 'salesAmount') : 0;
+  const priorPaid = prior?.totals ? readReportFieldNumber(prior.totals, 'checkoutPaid') : 0;
+  const priorDebt = prior?.totals ? readReportFieldNumber(prior.totals, 'newDebt') : 0;
+  const priorCollection = prior?.totals ? readReportFieldNumber(prior.totals, 'collectionAmount') : 0;
   const priorOrders = prior?.totals ? readReportFieldNumber(prior.totals, 'orderCount') : 0;
   const namedOrders = staffTotals ? readReportFieldNumber(staffTotals, 'namedOrderCount') : 0;
-  const soldSkuCount = useMemo(() => {
-    const codes = new Set(
-      productRows
-        .map((row) => readReportFieldString(row, 'productCode') || readReportFieldString(row, 'productName'))
-        .filter(Boolean),
-    );
-    return codes.size;
-  }, [productRows]);
   const slices = useMemo(
     () => buildCategoryChartSlices(categoryRows, t('other'), 7),
     [categoryRows, t],
@@ -234,11 +230,38 @@ export function ReportsHomePage() {
     {
       key: 'revenue',
       label: t('kpi.revenue'),
-      value: formatDisplayMoney(net),
-      delta: describeDelta(net, priorNet, t),
+      value: formatDisplayMoney(sales),
+      delta: describeDelta(sales, priorSales, t),
       hint: t('kpi.vsPrior'),
       to: '/reports/sales/revenue-by-period',
       icon: <ShopOutlined />,
+    },
+    {
+      key: 'paid',
+      label: t('kpi.paid'),
+      value: formatDisplayMoney(checkoutPaid),
+      delta: describeDelta(checkoutPaid, priorPaid, t),
+      hint: t('kpi.paidHint'),
+      to: '/reports/sales/revenue-by-period',
+      icon: <ShoppingCartOutlined />,
+    },
+    {
+      key: 'debt',
+      label: t('kpi.debt'),
+      value: formatDisplayMoney(newDebt),
+      delta: describeDelta(newDebt, priorDebt, t),
+      hint: t('kpi.debtHint'),
+      to: '/reports/sales/receivables-movement',
+      icon: <UserOutlined />,
+    },
+    {
+      key: 'collection',
+      label: t('kpi.collection'),
+      value: formatDisplayMoney(collectionAmount),
+      delta: describeDelta(collectionAmount, priorCollection, t),
+      hint: t('kpi.collectionHint'),
+      to: '/reports/sales/receivables-movement',
+      icon: <ThunderboltOutlined />,
     },
     {
       key: 'orders',
@@ -247,31 +270,7 @@ export function ReportsHomePage() {
       delta: describeDelta(orders, priorOrders, t),
       hint: t('kpi.vsPrior'),
       to: '/reports/sales/revenue-by-period',
-      icon: <ShoppingCartOutlined />,
-    },
-    {
-      key: 'customers',
-      label: t('kpi.customers'),
-      value: buyerCount.toLocaleString('vi-VN'),
-      hint: t('kpi.customersHint', { count: namedOrders.toLocaleString('vi-VN') }),
-      to: '/reports/customers',
-      icon: <UserOutlined />,
-    },
-    {
-      key: 'products',
-      label: t('kpi.products'),
-      value: soldSkuCount.toLocaleString('vi-VN'),
-      hint: t('kpi.soldHint'),
-      to: '/reports/inventory/stock-snapshot',
       icon: <AppstoreOutlined />,
-    },
-    {
-      key: 'staff',
-      label: t('kpi.staff'),
-      value: String(staffRows.length),
-      hint: t('kpi.staffHint'),
-      to: '/reports/sales/revenue-by-employee',
-      icon: <TeamOutlined />,
     },
     {
       key: 'stock',

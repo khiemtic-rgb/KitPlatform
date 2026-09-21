@@ -61,7 +61,7 @@
   "kpis": {
     "todayRevenue": {
       "title": "Doanh thu hôm nay",
-      "hint": "7 ngày (VN): {{amount}}"
+      "hint": "Đã thu {{collected}} · Nợ mới {{debt}}"
     },
     "todayOrders": {
       "title": "Đơn bán hôm nay",

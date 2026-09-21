@@ -116,6 +116,15 @@ const REPORT_DEFINITIONS_META: ReportDefinitionMeta[] = [
     supportsBranch: true,
     favorite: true,
   },
+  {
+    code: 'SALES-10',
+    category: 'sales',
+    path: '/reports/sales/receivables-movement',
+    apiPath: 'sales/receivables-movement',
+    supportsDateRange: true,
+    supportsWarehouse: true,
+    favorite: true,
+  },
   // SALES-05: Connect PK — visible only when Connect enabled and not DEMO audit slim
   {
     code: 'SALES-05',

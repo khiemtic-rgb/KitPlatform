@@ -124,6 +124,15 @@ public sealed class ReportsController : ControllerBase
         CancellationToken cancellationToken = default) =>
         _reports.RunSalesRevenueByCustomerAsync(from, to, warehouseId, search, cancellationToken);
 
+    [HttpGet("sales/receivables-movement")]
+    [Authorize(Policy = ReportsPolicies.Read)]
+    public Task<ReportTableResultDto> SalesReceivablesMovement(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] Guid? warehouseId = null,
+        CancellationToken cancellationToken = default) =>
+        _reports.RunSalesReceivablesMovementAsync(from, to, warehouseId, cancellationToken);
+
     [HttpGet("procurement/grn-value")]
     [Authorize(Policy = ReportsPolicies.Read)]
     public Task<ReportTableResultDto> ProcurementGrnValue(

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, DatePicker, Segmented, Select, Table, Typography, message } from 'antd';
@@ -72,6 +72,54 @@ function asNumber(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function fieldOf(row: Record<string, unknown>, key: string): string {
+  const direct = row[key];
+  if (direct != null && String(direct) !== '') return String(direct);
+  const found = Object.keys(row).find((k) => k.toLowerCase() === key.toLowerCase());
+  return found != null && row[found] != null ? String(row[found]) : '';
+}
+
+function sameId(left?: string, right?: string) {
+  return Boolean(left && right && left.toLowerCase() === right.toLowerCase());
+}
+
+function filterCloseRows(
+  rows: Record<string, unknown>[],
+  opts: { employeeId?: string; employeeName?: string; branchId?: string; warehouseId?: string },
+) {
+  return rows.filter((row) => {
+    if (opts.employeeId) {
+      const matchesId = sameId(fieldOf(row, 'employeeId'), opts.employeeId);
+      const matchesName = Boolean(opts.employeeName) && fieldOf(row, 'employeeName') === opts.employeeName;
+      if (!matchesId && !matchesName) return false;
+    }
+    if (opts.branchId && !sameId(fieldOf(row, 'branchId'), opts.branchId)) return false;
+    if (opts.warehouseId && !sameId(fieldOf(row, 'warehouseId'), opts.warehouseId)) return false;
+    return true;
+  });
+}
+
+const CLOSE_TOTAL_KEYS = [
+  'orderCount',
+  'revenueAmount',
+  'newDebt',
+  'collectionAmount',
+  'salesAmount',
+  'refundAmount',
+  'cashNet',
+  'transferNet',
+  'otherNet',
+  'netAmount',
+] as const;
+
+function sumCloseTotals(rows: Record<string, unknown>[]): Record<string, unknown> {
+  const totals: Record<string, unknown> = {};
+  for (const key of CLOSE_TOTAL_KEYS) {
+    totals[key] = rows.reduce((sum, row) => sum + asNumber(fieldOf(row, key)), 0);
+  }
+  return totals;
+}
+
 function summaryFromCloseRow(row: Record<string, unknown>): SalesShiftSummary {
   const cash = asNumber(row.cashNet);
   const transfer = asNumber(row.transferNet);
@@ -121,6 +169,7 @@ export function ShiftCloseByEmployeePage() {
   const [sheetShift, setSheetShift] = useState<SalesShiftDetail | null>(null);
   const [sheetFallback, setSheetFallback] = useState<SalesShiftSummary | null>(null);
   const [sheetTitle, setSheetTitle] = useState<string>();
+  const loadGen = useRef(0);
 
   useEffect(() => {
     void Promise.all([fetchWarehouses(), fetchEmployees()])
@@ -132,21 +181,23 @@ export function ShiftCloseByEmployeePage() {
   }, []);
 
   const load = useCallback(async () => {
+    const gen = ++loadGen.current;
     setLoading(true);
     try {
-      setResult(
-        await runReport('sales/shift-close-by-employee', {
-          ...toIsoRange(range),
-          ...(branchId ? { branchId } : {}),
-          ...(warehouseId ? { warehouseId } : {}),
-          ...(employeeId ? { employeeId } : {}),
-        }),
-      );
+      const next = await runReport('sales/shift-close-by-employee', {
+        ...toIsoRange(range),
+        ...(branchId ? { branchId } : {}),
+        ...(warehouseId ? { warehouseId } : {}),
+        ...(employeeId ? { employeeId } : {}),
+      });
+      if (gen !== loadGen.current) return;
+      setResult(next);
     } catch (error) {
+      if (gen !== loadGen.current) return;
       setResult(null);
       message.error(apiErrorMessage(error, tv('loadFailed')));
     } finally {
-      setLoading(false);
+      if (gen === loadGen.current) setLoading(false);
     }
   }, [range, branchId, warehouseId, employeeId, tv]);
 
@@ -229,13 +280,28 @@ export function ShiftCloseByEmployeePage() {
     [result],
   );
 
+  const selectedEmployeeName = employees.find((e) => e.id === employeeId)?.fullName;
+  const visibleRows = useMemo(
+    () =>
+      filterCloseRows(result?.rows ?? [], {
+        employeeId,
+        employeeName: selectedEmployeeName,
+        branchId,
+        warehouseId,
+      }),
+    [result, employeeId, selectedEmployeeName, branchId, warehouseId],
+  );
+  const visibleTotals = useMemo(() => (visibleRows.length ? sumCloseTotals(visibleRows) : null), [visibleRows]);
   const dataSource: CloseRow[] = useMemo(
     () =>
-      (result?.rows ?? []).map((row, index) => ({
+      visibleRows.map((row, index) => ({
         ...row,
-        key: String(row.shiftId ?? `${row.employeeId ?? 'none'}-${row.warehouseId ?? index}-${index}`),
+        key: String(
+          fieldOf(row, 'shiftId') ||
+            `${fieldOf(row, 'employeeId') || 'none'}-${fieldOf(row, 'warehouseId') || index}-${index}`,
+        ),
       })),
-    [result],
+    [visibleRows],
   );
 
   const presets = [
@@ -304,7 +370,7 @@ export function ShiftCloseByEmployeePage() {
               style={{ marginRight: 8 }}
               onClick={() => {
                 setRange(preset.value);
-                syncParams(employeeId, warehouseId, preset.value);
+                syncParams(employeeId, warehouseId, preset.value, branchId);
               }}
             >
               {preset.label}
@@ -359,7 +425,7 @@ export function ShiftCloseByEmployeePage() {
           options={employees.map((e) => ({ value: e.id, label: e.fullName }))}
           onChange={(id) => {
             setEmployeeId(id);
-            syncParams(id, warehouseId, range);
+            syncParams(id, warehouseId, range, branchId);
           }}
         />
         <Button type="primary" icon={<ReloadOutlined />} loading={loading} onClick={() => void load()}>
@@ -381,13 +447,13 @@ export function ShiftCloseByEmployeePage() {
           style: { cursor: 'pointer' },
         })}
         summary={() =>
-          result?.totals ? (
+          visibleTotals ? (
             <Table.Summary fixed>
               <Table.Summary.Row>
-                {(result.columns ?? []).map((col, index) => (
+                {(result?.columns ?? []).map((col, index) => (
                   <Table.Summary.Cell key={col.key} index={index} align={col.align}>
                     <Typography.Text strong>
-                      {index === 0 ? t('total') : formatReportCell(result.totals?.[col.key], col.format)}
+                      {index === 0 ? t('total') : formatReportCell(visibleTotals[col.key], col.format)}
                     </Typography.Text>
                   </Table.Summary.Cell>
                 ))}

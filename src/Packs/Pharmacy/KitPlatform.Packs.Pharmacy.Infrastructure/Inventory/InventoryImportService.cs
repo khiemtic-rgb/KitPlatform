@@ -1,4 +1,4 @@
-﻿using KitPlatform.Packs.Pharmacy.Catalog;
+using KitPlatform.Packs.Pharmacy.Catalog;
 using KitPlatform.Packs.Pharmacy.Inventory;
 using KitPlatform.Packs.Pharmacy.Infrastructure;
 
@@ -53,18 +53,39 @@ internal sealed class InventoryImportService : IInventoryImportService
             }
 
             var unitCost = row.UnitCost < 0 ? 0m : row.UnitCost;
+            var identity = await _inventory.FindLotIdentityAsync(productId.Value, row.BatchNumber, cancellationToken);
+            try
+            {
+                InventoryLotRules.Resolve(row.BatchNumber, row.ManufactureDate, row.ExpiryDate, identity);
+            }
+            catch (InvalidOperationException ex)
+            {
+                errors.Add(new OpeningBalanceImportErrorDto(row.RowNumber, ex.Message));
+                continue;
+            }
 
             lines.Add(new OpeningBalanceLineRequest(
                 productId.Value,
-                row.BatchNumber.Trim(),
+                InventoryLotRules.NormalizeBatchNumber(row.BatchNumber),
                 row.ExpiryDate,
-                null,
+                row.ManufactureDate,
                 unitCost,
                 row.Quantity));
         }
 
         if (lines.Count == 0)
             return new OpeningBalanceImportResultDto(0, [], errors);
+
+        try
+        {
+            InventoryLotRules.EnsureDocumentLotsConsistent(
+                lines.Select(line => (line.ProductId, line.BatchNumber, line.ManufactureDate, line.ExpiryDate)));
+        }
+        catch (InvalidOperationException ex)
+        {
+            errors.Add(new OpeningBalanceImportErrorDto(0, ex.Message));
+            return new OpeningBalanceImportResultDto(0, [], errors);
+        }
 
         var result = await _inventory.CreateOpeningBalanceAsync(
             new CreateOpeningBalanceRequest(warehouseId, notes, lines),

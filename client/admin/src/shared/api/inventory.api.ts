@@ -82,6 +82,7 @@ function normalizeStockBatch(row: Record<string, unknown>): StockBatch {
     productName: String(row.productName ?? row.ProductName ?? ''),
     saleUnitName: (row.saleUnitName ?? row.SaleUnitName) as string | undefined,
     batchNumber: String(row.batchNumber ?? row.BatchNumber ?? ''),
+    manufactureDate: (row.manufactureDate ?? row.ManufactureDate) as string | undefined,
     expiryDate: (row.expiryDate ?? row.ExpiryDate) as string | undefined,
     unitCost: Number(row.unitCost ?? row.UnitCost ?? 0),
     quantityAvailable: Number(row.quantityAvailable ?? row.QuantityAvailable ?? 0),
@@ -121,6 +122,7 @@ function normalizeTransferDetail(data: Record<string, unknown>): TransferDetail 
       productCode: String(row.productCode ?? row.ProductCode ?? ''),
       productName: String(row.productName ?? row.ProductName ?? ''),
       batchNumber: String(row.batchNumber ?? row.BatchNumber ?? ''),
+      manufactureDate: (row.manufactureDate ?? row.ManufactureDate) as string | undefined,
       expiryDate: (row.expiryDate ?? row.ExpiryDate) as string | undefined,
       unitName: (row.unitName ?? row.UnitName) as string | undefined,
       quantity: Number(row.quantity ?? row.Quantity ?? 0),
@@ -209,6 +211,103 @@ export async function deleteWarehouse(id: string): Promise<void> {
   await http.delete(`/inventory/warehouses/${id}`);
 }
 
+export type InventoryLotIdentity = {
+  exists: boolean;
+  hasConflict: boolean;
+  batchNumber: string;
+  manufactureDate?: string;
+  expiryDate?: string;
+};
+
+export type InventoryLotConflictCard = {
+  batchId: string;
+  warehouseId: string;
+  warehouseName: string;
+  batchNumber: string;
+  manufactureDate?: string;
+  expiryDate?: string;
+  quantityAvailable: number;
+};
+
+export type InventoryLotConflict = {
+  productId: string;
+  productCode: string;
+  productName: string;
+  saleUnitName?: string;
+  batchNumber: string;
+  warehouseCount: number;
+  cardCount: number;
+  quantityAvailable: number;
+  manufactureDates: string[];
+  expiryDates: string[];
+  cards: InventoryLotConflictCard[];
+  canUnify: boolean;
+};
+
+function normalizeLotConflict(row: Record<string, unknown>): InventoryLotConflict {
+  const cards = ((row.cards ?? row.Cards ?? []) as Record<string, unknown>[]).map((card) => ({
+    batchId: String(card.batchId ?? card.BatchId),
+    warehouseId: String(card.warehouseId ?? card.WarehouseId),
+    warehouseName: String(card.warehouseName ?? card.WarehouseName ?? ''),
+    batchNumber: String(card.batchNumber ?? card.BatchNumber ?? ''),
+    manufactureDate: (card.manufactureDate ?? card.ManufactureDate) as string | undefined,
+    expiryDate: (card.expiryDate ?? card.ExpiryDate) as string | undefined,
+    quantityAvailable: Number(card.quantityAvailable ?? card.QuantityAvailable ?? 0),
+  }));
+  return {
+    productId: String(row.productId ?? row.ProductId),
+    productCode: String(row.productCode ?? row.ProductCode ?? ''),
+    productName: String(row.productName ?? row.ProductName ?? ''),
+    saleUnitName: (row.saleUnitName ?? row.SaleUnitName) as string | undefined,
+    batchNumber: String(row.batchNumber ?? row.BatchNumber ?? ''),
+    warehouseCount: Number(row.warehouseCount ?? row.WarehouseCount ?? 0),
+    cardCount: Number(row.cardCount ?? row.CardCount ?? 0),
+    quantityAvailable: Number(row.quantityAvailable ?? row.QuantityAvailable ?? 0),
+    manufactureDates: ((row.manufactureDates ?? row.ManufactureDates ?? []) as unknown[]).map(String),
+    expiryDates: ((row.expiryDates ?? row.ExpiryDates ?? []) as unknown[]).map(String),
+    cards,
+    canUnify: Boolean(row.canUnify ?? row.CanUnify),
+  };
+}
+
+export async function fetchLotConflicts(search?: string): Promise<InventoryLotConflict[]> {
+  const { data } = await http.get<unknown>('/inventory/stock/lot-conflicts', {
+    params: search ? { search } : undefined,
+  });
+  const rows = Array.isArray(data) ? data : [];
+  return rows.map((row) => normalizeLotConflict(row as Record<string, unknown>));
+}
+
+export async function unifyLotDates(payload: {
+  productId: string;
+  batchNumber: string;
+  manufactureDate?: string;
+  expiryDate: string;
+}): Promise<{ productId: string; batchNumber: string; cardsUpdated: number }> {
+  const { data } = await http.post<Record<string, unknown>>('/inventory/stock/lot-conflicts/unify', payload);
+  return {
+    productId: String(data.productId ?? data.ProductId ?? payload.productId),
+    batchNumber: String(data.batchNumber ?? data.BatchNumber ?? payload.batchNumber),
+    cardsUpdated: Number(data.cardsUpdated ?? data.CardsUpdated ?? 0),
+  };
+}
+
+export async function fetchLotIdentity(
+  productId: string,
+  batchNumber: string,
+): Promise<InventoryLotIdentity> {
+  const { data } = await http.get<Record<string, unknown>>('/inventory/stock/lot-identity', {
+    params: { productId, batchNumber },
+  });
+  return {
+    exists: Boolean(data.exists ?? data.Exists),
+    hasConflict: Boolean(data.hasConflict ?? data.HasConflict),
+    batchNumber: String(data.batchNumber ?? data.BatchNumber ?? batchNumber),
+    manufactureDate: (data.manufactureDate ?? data.ManufactureDate) as string | undefined,
+    expiryDate: (data.expiryDate ?? data.ExpiryDate) as string | undefined,
+  };
+}
+
 export async function fetchStockBatches(params: {
   warehouseId?: string;
   productId?: string;
@@ -270,6 +369,7 @@ function normalizeOpeningBalanceBatch(row: Record<string, unknown>): OpeningBala
     productName: String(row.productName ?? row.ProductName ?? ''),
     saleUnitName: (row.saleUnitName ?? row.SaleUnitName) as string | undefined,
     batchNumber: String(row.batchNumber ?? row.BatchNumber ?? ''),
+    manufactureDate: (row.manufactureDate ?? row.ManufactureDate) as string | undefined,
     expiryDate: (row.expiryDate ?? row.ExpiryDate) as string | undefined,
     unitCost: Number(row.unitCost ?? row.UnitCost ?? 0),
     quantityAvailable: Number(row.quantityAvailable ?? row.QuantityAvailable ?? 0),
@@ -578,6 +678,7 @@ type OpeningBalanceImportRow = {
   rowNumber: number;
   productKey: string;
   batchNumber: string;
+  manufactureDate?: string;
   expiryDate?: string;
   quantity: number;
   unitCost: number;

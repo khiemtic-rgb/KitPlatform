@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.Pharmacy.Inventory;
@@ -46,14 +46,56 @@ internal sealed class ReportsRepository
         };
 
         var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var isCheckout = SalesAccrualSql.IsCheckout();
+        var isCollection = SalesAccrualSql.IsCollection();
+        var cash = SalesPaymentMethods.Cash;
+        var card = SalesPaymentMethods.Card;
+        var transfer = SalesPaymentMethods.Transfer;
+        var ewallet = SalesPaymentMethods.EWallet;
 
         var sql = $"""
             WITH sales AS (
                 SELECT
+                    date_trunc('{trunc}', timezone('Asia/Ho_Chi_Minh', o.order_date)) AS period_start,
+                    COUNT(*)::int AS order_count,
+                    COALESCE(SUM({originalTotal}), 0) AS sales_amount,
+                    COALESCE(SUM(COALESCE(ck.checkout_paid, 0)), 0) AS checkout_paid
+                FROM public.sales_orders o
+                LEFT JOIN LATERAL (
+                    SELECT COALESCE(SUM(sp.amount), 0) AS checkout_paid
+                    FROM sales_payments sp
+                    WHERE sp.sales_order_id = o.id
+                      AND {isCheckout}
+                ) ck ON TRUE
+                WHERE o.tenant_id = @TenantId
+                  AND {soldStatus}
+                  AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
+                  {warehouseFilter}
+                GROUP BY 1
+            ),
+            collections AS (
+                SELECT
                     date_trunc('{trunc}', timezone('Asia/Ho_Chi_Minh', sp.paid_at)) AS period_start,
-                    COALESCE(SUM(sp.amount), 0) AS sales_amount
+                    COALESCE(SUM(sp.amount), 0) AS collection_amount
                 FROM sales_payments sp
-                INNER JOIN {PackPharmacyReadViews.SalesOrder} o ON o.id = sp.sales_order_id
+                INNER JOIN public.sales_orders o ON o.id = sp.sales_order_id
+                WHERE o.tenant_id = @TenantId
+                  AND {isCollection}
+                  AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                  {warehouseFilter}
+                GROUP BY 1
+            ),
+            receipts AS (
+                SELECT
+                    date_trunc('{trunc}', timezone('Asia/Ho_Chi_Minh', sp.paid_at)) AS period_start,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method = {cash}), 0) AS cash_amount,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method = {card}), 0) AS card_amount,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method = {transfer}), 0) AS transfer_amount,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method = {ewallet}), 0) AS ewallet_amount
+                FROM sales_payments sp
+                INNER JOIN public.sales_orders o ON o.id = sp.sales_order_id
                 WHERE o.tenant_id = @TenantId
                   AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
                   {warehouseFilter}
@@ -61,36 +103,53 @@ internal sealed class ReportsRepository
             ),
             refunds AS (
                 SELECT
-                    date_trunc('{trunc}', timezone('Asia/Ho_Chi_Minh', rp.paid_at)) AS period_start,
-                    COALESCE(SUM(rp.amount), 0) AS refund_amount
-                FROM sales_return_payments rp
-                INNER JOIN sales_returns r ON r.id = rp.sales_return_id
-                INNER JOIN {PackPharmacyReadViews.SalesOrder} o ON o.id = r.sales_order_id
-                WHERE r.tenant_id = @TenantId
-                  AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
-                  {warehouseFilter}
-                GROUP BY 1
-            ),
-            orders AS (
-                SELECT
-                    date_trunc('{trunc}', timezone('Asia/Ho_Chi_Minh', o.order_date)) AS period_start,
-                    COUNT(*)::int AS order_count
-                FROM {PackPharmacyReadViews.SalesOrder} o
-                WHERE o.tenant_id = @TenantId
-                  AND o.status = @OrderCompleted
-                  AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
-                  {warehouseFilter}
+                    x.period_start,
+                    COALESCE(SUM(x.refund_amount), 0) AS refund_amount,
+                    COALESCE(SUM(x.refund_cash), 0) AS refund_cash
+                FROM (
+                    SELECT
+                        date_trunc('{trunc}', timezone('Asia/Ho_Chi_Minh', r.return_date)) AS period_start,
+                        r.id,
+                        COALESCE((
+                            SELECT SUM(ri.refund_amount)
+                            FROM sales_return_items ri
+                            WHERE ri.sales_return_id = r.id
+                        ), 0) AS refund_amount,
+                        COALESCE((
+                            SELECT SUM(rp.amount)
+                            FROM sales_return_payments rp
+                            WHERE rp.sales_return_id = r.id
+                        ), 0) AS refund_cash
+                    FROM sales_returns r
+                    INNER JOIN public.sales_orders o ON o.id = r.sales_order_id
+                    WHERE r.tenant_id = @TenantId
+                      AND r.status = @ReturnCompleted
+                      AND r.return_date >= @FromUtc AND r.return_date < @ToUtc
+                      {warehouseFilter}
+                ) x
                 GROUP BY 1
             )
             SELECT
-                COALESCE(s.period_start, r.period_start, ord.period_start) AS PeriodStart,
+                COALESCE(s.period_start, c.period_start, rec.period_start, rf.period_start) AS PeriodStart,
+                COALESCE(s.order_count, 0) AS OrderCount,
                 COALESCE(s.sales_amount, 0) AS SalesAmount,
-                COALESCE(r.refund_amount, 0) AS RefundAmount,
-                COALESCE(s.sales_amount, 0) - COALESCE(r.refund_amount, 0) AS NetAmount,
-                COALESCE(ord.order_count, 0) AS OrderCount
+                COALESCE(s.checkout_paid, 0) AS CheckoutPaid,
+                GREATEST(0, COALESCE(s.sales_amount, 0) - COALESCE(s.checkout_paid, 0)) AS NewDebt,
+                COALESCE(c.collection_amount, 0) AS CollectionAmount,
+                COALESCE(rec.cash_amount, 0) AS CashAmount,
+                COALESCE(rec.card_amount, 0) AS CardAmount,
+                COALESCE(rec.transfer_amount, 0) AS TransferAmount,
+                COALESCE(rec.ewallet_amount, 0) AS EwalletAmount,
+                COALESCE(rf.refund_amount, 0) AS RefundAmount,
+                COALESCE(rf.refund_cash, 0) AS RefundCash,
+                GREATEST(0, COALESCE(rf.refund_amount, 0) - COALESCE(rf.refund_cash, 0)) AS RefundDebt,
+                COALESCE(s.sales_amount, 0) - COALESCE(rf.refund_amount, 0) AS NetAmount
             FROM sales s
-            FULL OUTER JOIN refunds r ON r.period_start = s.period_start
-            FULL OUTER JOIN orders ord ON ord.period_start = COALESCE(s.period_start, r.period_start)
+            FULL OUTER JOIN collections c ON c.period_start = s.period_start
+            FULL OUTER JOIN receipts rec
+                ON rec.period_start = COALESCE(s.period_start, c.period_start)
+            FULL OUTER JOIN refunds rf
+                ON rf.period_start = COALESCE(s.period_start, c.period_start, rec.period_start)
             ORDER BY PeriodStart
             """;
 
@@ -104,16 +163,25 @@ internal sealed class ReportsRepository
                 ToUtc = toUtc,
                 WarehouseId = warehouseId,
                 AllowedWarehouseIds = allowedWarehouseIds,
-                OrderCompleted = SalesOrderStatuses.Completed,
+                ReturnCompleted = SalesReturnStatuses.Completed,
             });
 
         return rows.Select(r => new Dictionary<string, object?>
         {
             ["periodLabel"] = FormatPeriodLabel(r.PeriodStart, groupBy),
-            ["salesAmount"] = r.SalesAmount,
-            ["refundAmount"] = r.RefundAmount,
-            ["netAmount"] = r.NetAmount,
             ["orderCount"] = r.OrderCount,
+            ["salesAmount"] = r.SalesAmount,
+            ["checkoutPaid"] = r.CheckoutPaid,
+            ["newDebt"] = r.NewDebt,
+            ["collectionAmount"] = r.CollectionAmount,
+            ["cashAmount"] = r.CashAmount,
+            ["cardAmount"] = r.CardAmount,
+            ["transferAmount"] = r.TransferAmount,
+            ["ewalletAmount"] = r.EwalletAmount,
+            ["refundAmount"] = r.RefundAmount,
+            ["refundCash"] = r.RefundCash,
+            ["refundDebt"] = r.RefundDebt,
+            ["netAmount"] = r.NetAmount,
         }).ToList();
     }
 
@@ -125,29 +193,37 @@ internal sealed class ReportsRepository
         CancellationToken cancellationToken)
     {
         var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+        var isCheckout = SalesAccrualSql.IsCheckout();
+        var isCollection = SalesAccrualSql.IsCollection();
 
         var sql = $"""
             WITH sales AS (
-                SELECT sp.payment_method AS PaymentMethod, COALESCE(SUM(sp.amount), 0) AS Amount
+                SELECT
+                    sp.payment_method AS PaymentMethod,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE {isCheckout}), 0) AS CheckoutAmount,
+                    COALESCE(SUM(sp.amount) FILTER (WHERE {isCollection}), 0) AS CollectionAmount,
+                    COALESCE(SUM(sp.amount), 0) AS Amount
                 FROM sales_payments sp
-                INNER JOIN {PackPharmacyReadViews.SalesOrder} o ON o.id = sp.sales_order_id
+                INNER JOIN public.sales_orders o ON o.id = sp.sales_order_id
                 WHERE o.tenant_id = @TenantId
                   AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
-                  /**warehouse**/
+                  {warehouseFilter}
                 GROUP BY sp.payment_method
             ),
             refunds AS (
                 SELECT rp.payment_method AS PaymentMethod, COALESCE(SUM(rp.amount), 0) AS Amount
                 FROM sales_return_payments rp
                 INNER JOIN sales_returns r ON r.id = rp.sales_return_id
-                INNER JOIN {PackPharmacyReadViews.SalesOrder} o ON o.id = r.sales_order_id
+                INNER JOIN public.sales_orders o ON o.id = r.sales_order_id
                 WHERE r.tenant_id = @TenantId
                   AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
-                  /**warehouse**/
+                  {warehouseFilter}
                 GROUP BY rp.payment_method
             )
             SELECT
                 COALESCE(s.PaymentMethod, r.PaymentMethod) AS PaymentMethod,
+                COALESCE(s.CheckoutAmount, 0) AS CheckoutAmount,
+                COALESCE(s.CollectionAmount, 0) AS CollectionAmount,
                 COALESCE(s.Amount, 0) AS SalesAmount,
                 COALESCE(r.Amount, 0) AS RefundAmount,
                 COALESCE(s.Amount, 0) - COALESCE(r.Amount, 0) AS NetAmount
@@ -156,17 +232,17 @@ internal sealed class ReportsRepository
             ORDER BY PaymentMethod
             """;
 
-        var finalSql = sql.Replace("/**warehouse**/", warehouseFilter);
-
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var rows = await conn.QueryAsync<PaymentMethodRow>(
-            finalSql,
+            sql,
             new { TenantId, FromUtc = fromUtc, ToUtc = toUtc, WarehouseId = warehouseId, AllowedWarehouseIds = allowedWarehouseIds });
 
         return rows.Select(r => new Dictionary<string, object?>
         {
             ["paymentMethod"] = r.PaymentMethod,
             ["paymentMethodLabel"] = PaymentMethodLabel(r.PaymentMethod),
+            ["checkoutAmount"] = r.CheckoutAmount,
+            ["collectionAmount"] = r.CollectionAmount,
             ["salesAmount"] = r.SalesAmount,
             ["refundAmount"] = r.RefundAmount,
             ["netAmount"] = r.NetAmount,
@@ -181,26 +257,23 @@ internal sealed class ReportsRepository
         CancellationToken cancellationToken)
     {
         var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var lineRevenue = SalesAccrualSql.AllocatedLineRevenue();
 
         var sql = $"""
             WITH sales AS (
                 SELECT
                     COALESCE(c.id::text, 'uncategorized') AS CategoryKey,
                     COALESCE(c.category_name, 'Chưa phân loại') AS CategoryLabel,
-                    COALESCE(SUM(i.line_total), 0) AS SalesAmount
+                    COALESCE(SUM({lineRevenue}), 0) AS SalesAmount
                 FROM sales_order_items i
-                INNER JOIN {PackPharmacyReadViews.SalesOrder} o ON o.id = i.sales_order_id
+                INNER JOIN public.sales_orders o ON o.id = i.sales_order_id
                 INNER JOIN {PackPharmacyReadViews.Product} p ON p.id = i.product_id AND p.tenant_id = o.tenant_id
                 LEFT JOIN product_categories c
                     ON c.id = p.category_id AND c.tenant_id = p.tenant_id AND c.deleted_at IS NULL
                 WHERE o.tenant_id = @TenantId
-                  AND o.status = @OrderCompleted
-                  AND EXISTS (
-                      SELECT 1
-                      FROM sales_payments sp
-                      WHERE sp.sales_order_id = o.id
-                        AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
-                  )
+                  AND {soldStatus}
+                  AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
                   {warehouseFilter}
                 GROUP BY c.id, c.category_name
             ),
@@ -212,17 +285,13 @@ internal sealed class ReportsRepository
                 FROM sales_return_items ri
                 INNER JOIN sales_returns r ON r.id = ri.sales_return_id
                 INNER JOIN sales_order_items i ON i.id = ri.sales_order_item_id
-                INNER JOIN {PackPharmacyReadViews.SalesOrder} o ON o.id = r.sales_order_id
+                INNER JOIN public.sales_orders o ON o.id = r.sales_order_id
                 INNER JOIN {PackPharmacyReadViews.Product} p ON p.id = i.product_id AND p.tenant_id = o.tenant_id
                 LEFT JOIN product_categories c
                     ON c.id = p.category_id AND c.tenant_id = p.tenant_id AND c.deleted_at IS NULL
                 WHERE r.tenant_id = @TenantId
-                  AND EXISTS (
-                      SELECT 1
-                      FROM sales_return_payments rp
-                      WHERE rp.sales_return_id = r.id
-                        AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
-                  )
+                  AND r.status = @ReturnCompleted
+                  AND r.return_date >= @FromUtc AND r.return_date < @ToUtc
                   {warehouseFilter}
                 GROUP BY c.id, c.category_name
             )
@@ -247,7 +316,7 @@ internal sealed class ReportsRepository
                 ToUtc = toUtc,
                 WarehouseId = warehouseId,
                 AllowedWarehouseIds = allowedWarehouseIds,
-                OrderCompleted = SalesOrderStatuses.Completed,
+                ReturnCompleted = SalesReturnStatuses.Completed,
             });
 
         return rows.Select(r => new Dictionary<string, object?>
@@ -268,12 +337,15 @@ internal sealed class ReportsRepository
         CancellationToken cancellationToken)
     {
         var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
 
         var sql = $"""
             WITH base AS (
                 SELECT
                     o.id AS OrderId,
-                    o.warehouse_id,
+                    o.order_date,
+                    {originalTotal} AS OriginalTotal,
                     COALESCE(NULLIF(BTRIM(ct.tenant_name), ''), '(Không rõ PK)') AS ClinicName,
                     COALESCE(
                         NULLIF(BTRIM(h.provider_display_name), ''),
@@ -286,29 +358,29 @@ internal sealed class ReportsRepository
                 INNER JOIN public.tenants ct ON ct.id = h.clinic_tenant_id
                 WHERE o.tenant_id = @TenantId
                   AND o.connect_rx_handoff_id IS NOT NULL
-                  AND o.status = @OrderCompleted
+                  AND {soldStatus}
                   {warehouseFilter}
             ),
             sales AS (
                 SELECT
                     b.ClinicName,
                     b.DoctorName,
-                    COUNT(DISTINCT b.OrderId)::int AS OrderCount,
-                    COALESCE(SUM(sp.amount), 0) AS SalesAmount
+                    COUNT(*)::int AS OrderCount,
+                    COALESCE(SUM(b.OriginalTotal), 0) AS SalesAmount
                 FROM base b
-                INNER JOIN sales_payments sp ON sp.sales_order_id = b.OrderId
-                WHERE sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                WHERE b.order_date >= @FromUtc AND b.order_date < @ToUtc
                 GROUP BY b.ClinicName, b.DoctorName
             ),
             refunds AS (
                 SELECT
                     b.ClinicName,
                     b.DoctorName,
-                    COALESCE(SUM(rp.amount), 0) AS RefundAmount
+                    COALESCE(SUM(ri.refund_amount), 0) AS RefundAmount
                 FROM base b
                 INNER JOIN sales_returns r ON r.sales_order_id = b.OrderId
-                INNER JOIN sales_return_payments rp ON rp.sales_return_id = r.id
-                WHERE rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
+                INNER JOIN sales_return_items ri ON ri.sales_return_id = r.id
+                WHERE r.status = @ReturnCompleted
+                  AND r.return_date >= @FromUtc AND r.return_date < @ToUtc
                 GROUP BY b.ClinicName, b.DoctorName
             )
             SELECT
@@ -335,6 +407,7 @@ internal sealed class ReportsRepository
                 WarehouseId = warehouseId,
                 AllowedWarehouseIds = allowedWarehouseIds,
                 OrderCompleted = SalesOrderStatuses.Completed,
+                ReturnCompleted = SalesReturnStatuses.Completed,
             });
 
         return rows.Select(r => new Dictionary<string, object?>
@@ -358,19 +431,20 @@ internal sealed class ReportsRepository
     {
         var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
         var employeeFilter = employeeId.HasValue ? "AND o.employee_id = @EmployeeId" : "";
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
 
         var sql = $"""
             WITH sales AS (
                 SELECT
                     o.employee_id AS EmployeeId,
-                    COUNT(DISTINCT o.id)::int AS OrderCount,
-                    COUNT(DISTINCT o.id) FILTER (WHERE o.customer_id IS NOT NULL)::int AS NamedOrderCount,
-                    COALESCE(SUM(sp.amount), 0) AS SalesAmount
+                    COUNT(*)::int AS OrderCount,
+                    COUNT(*) FILTER (WHERE o.customer_id IS NOT NULL)::int AS NamedOrderCount,
+                    COALESCE(SUM({originalTotal}), 0) AS SalesAmount
                 FROM public.sales_orders o
-                INNER JOIN sales_payments sp ON sp.sales_order_id = o.id
                 WHERE o.tenant_id = @TenantId
-                  AND o.status = @OrderCompleted
-                  AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                  AND {soldStatus}
+                  AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
                   {warehouseFilter}
                   {employeeFilter}
                 GROUP BY o.employee_id
@@ -378,12 +452,13 @@ internal sealed class ReportsRepository
             refunds AS (
                 SELECT
                     o.employee_id AS EmployeeId,
-                    COALESCE(SUM(rp.amount), 0) AS RefundAmount
-                FROM sales_return_payments rp
-                INNER JOIN sales_returns r ON r.id = rp.sales_return_id
+                    COALESCE(SUM(ri.refund_amount), 0) AS RefundAmount
+                FROM sales_return_items ri
+                INNER JOIN sales_returns r ON r.id = ri.sales_return_id
                 INNER JOIN public.sales_orders o ON o.id = r.sales_order_id
                 WHERE r.tenant_id = @TenantId
-                  AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
+                  AND r.status = @ReturnCompleted
+                  AND r.return_date >= @FromUtc AND r.return_date < @ToUtc
                   {warehouseFilter}
                   {employeeFilter}
                 GROUP BY o.employee_id
@@ -416,6 +491,7 @@ internal sealed class ReportsRepository
                 AllowedWarehouseIds = allowedWarehouseIds,
                 EmployeeId = employeeId,
                 OrderCompleted = SalesOrderStatuses.Completed,
+                ReturnCompleted = SalesReturnStatuses.Completed,
             });
 
         return rows.Select(r =>
@@ -454,6 +530,8 @@ internal sealed class ReportsRepository
                  OR p.product_name ILIKE '%' || @Search || '%'
               )
               """;
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var lineRevenue = SalesAccrualSql.AllocatedLineRevenue();
 
         var sql = $"""
             WITH sales AS (
@@ -464,17 +542,13 @@ internal sealed class ReportsRepository
                     p.product_name AS ProductName,
                     COUNT(DISTINCT o.id)::int AS OrderCount,
                     COALESCE(SUM(i.quantity), 0) AS Qty,
-                    COALESCE(SUM(i.line_total), 0) AS SalesAmount
+                    COALESCE(SUM({lineRevenue}), 0) AS SalesAmount
                 FROM sales_order_items i
                 INNER JOIN public.sales_orders o ON o.id = i.sales_order_id
                 INNER JOIN {PackPharmacyReadViews.Product} p ON p.id = i.product_id AND p.tenant_id = o.tenant_id
                 WHERE o.tenant_id = @TenantId
-                  AND o.status = @OrderCompleted
-                  AND EXISTS (
-                      SELECT 1 FROM sales_payments sp
-                      WHERE sp.sales_order_id = o.id
-                        AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
-                  )
+                  AND {soldStatus}
+                  AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
                   {warehouseFilter}
                   {employeeFilter}
                   {searchFilter}
@@ -494,11 +568,8 @@ internal sealed class ReportsRepository
                 INNER JOIN public.sales_orders o ON o.id = r.sales_order_id
                 INNER JOIN {PackPharmacyReadViews.Product} p ON p.id = i.product_id AND p.tenant_id = o.tenant_id
                 WHERE r.tenant_id = @TenantId
-                  AND EXISTS (
-                      SELECT 1 FROM sales_return_payments rp
-                      WHERE rp.sales_return_id = r.id
-                        AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
-                  )
+                  AND r.status = @ReturnCompleted
+                  AND r.return_date >= @FromUtc AND r.return_date < @ToUtc
                   {warehouseFilter}
                   {employeeFilter}
                   {searchFilter}
@@ -538,6 +609,7 @@ internal sealed class ReportsRepository
                 EmployeeId = employeeId,
                 Search = search?.Trim(),
                 OrderCompleted = SalesOrderStatuses.Completed,
+                ReturnCompleted = SalesReturnStatuses.Completed,
             });
 
         return rows.Select(r => new Dictionary<string, object?>
@@ -566,7 +638,9 @@ internal sealed class ReportsRepository
         CancellationToken cancellationToken)
     {
         var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
-        var employeeFilter = employeeId.HasValue ? "AND o.employee_id = @EmployeeId" : "";
+        var employeeFilter = """
+              AND (@EmployeeId IS NULL OR o.employee_id = @EmployeeId)
+              """;
         var branchFilter = branchId.HasValue
             ? """
               AND (
@@ -584,37 +658,94 @@ internal sealed class ReportsRepository
             : "";
         var cash = SalesPaymentMethods.Cash;
         var transfer = SalesPaymentMethods.Transfer;
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
+        var isCheckout = SalesAccrualSql.IsCheckout();
+        var isCollection = SalesAccrualSql.IsCollection();
 
         var sql = $"""
-            WITH sales AS (
+            WITH order_metrics AS (
                 SELECT
                     o.employee_id AS EmployeeId,
                     o.warehouse_id AS WarehouseId,
                     o.sales_shift_id AS ShiftId,
                     CASE
                         WHEN o.sales_shift_id IS NULL
-                        THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', sp.paid_at))
+                        THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', o.order_date))
                         ELSE NULL
                     END AS LooseDay,
-                    COUNT(DISTINCT o.id)::int AS OrderCount,
-                    COALESCE(SUM(sp.amount), 0) AS SalesAmount,
-                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method = {cash}), 0) AS CashSales,
-                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method = {transfer}), 0) AS TransferSales,
-                    COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method NOT IN ({cash}, {transfer})), 0) AS OtherSales
+                    COUNT(*)::int AS OrderCount,
+                    COALESCE(SUM({originalTotal}), 0) AS RevenueAmount,
+                    COALESCE(SUM(COALESCE(ck.checkout_paid, 0)), 0) AS CheckoutPaid
                 FROM public.sales_orders o
-                INNER JOIN sales_payments sp ON sp.sales_order_id = o.id
+                LEFT JOIN LATERAL (
+                    SELECT COALESCE(SUM(sp.amount), 0) AS checkout_paid
+                    FROM sales_payments sp
+                    WHERE sp.sales_order_id = o.id
+                      AND {isCheckout}
+                ) ck ON TRUE
                 WHERE o.tenant_id = @TenantId
-                  AND o.status = @OrderCompleted
-                  AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                  AND {soldStatus}
+                  AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
                   {warehouseFilter}
                   {employeeFilter}
                   {branchFilter}
                 GROUP BY o.employee_id, o.warehouse_id, o.sales_shift_id,
                     CASE
                         WHEN o.sales_shift_id IS NULL
-                        THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', sp.paid_at))
+                        THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', o.order_date))
                         ELSE NULL
                     END
+            ),
+            sales AS (
+                SELECT
+                    x.EmployeeId,
+                    x.WarehouseId,
+                    x.ShiftId,
+                    x.LooseDay,
+                    COALESCE(SUM(x.amount), 0) AS SalesAmount,
+                    COALESCE(SUM(x.amount) FILTER (WHERE x.is_collection), 0) AS CollectionAmount,
+                    COALESCE(SUM(x.amount) FILTER (WHERE x.payment_method = {cash}), 0) AS CashSales,
+                    COALESCE(SUM(x.amount) FILTER (WHERE x.payment_method = {transfer}), 0) AS TransferSales,
+                    COALESCE(SUM(x.amount) FILTER (WHERE x.payment_method NOT IN ({cash}, {transfer})), 0) AS OtherSales
+                FROM (
+                    SELECT
+                        o.employee_id AS EmployeeId,
+                        o.warehouse_id AS WarehouseId,
+                        CASE
+                            WHEN {isCollection} THEN coll_shift.id
+                            ELSE o.sales_shift_id
+                        END AS ShiftId,
+                        CASE
+                            WHEN {isCollection} AND coll_shift.id IS NULL
+                            THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', sp.paid_at))
+                            WHEN NOT {isCollection} AND o.sales_shift_id IS NULL
+                            THEN date_trunc('day', timezone('Asia/Ho_Chi_Minh', sp.paid_at))
+                            ELSE NULL
+                        END AS LooseDay,
+                        sp.amount,
+                        {isCollection} AS is_collection,
+                        sp.payment_method
+                    FROM public.sales_orders o
+                    INNER JOIN sales_payments sp ON sp.sales_order_id = o.id
+                    LEFT JOIN LATERAL (
+                        SELECT sh.id
+                        FROM sales_shifts sh
+                        WHERE sh.tenant_id = o.tenant_id
+                          AND sh.warehouse_id = o.warehouse_id
+                          AND sp.paid_at >= sh.opened_at
+                          AND sp.paid_at < COALESCE(sh.closed_at, TIMESTAMPTZ 'infinity')
+                        ORDER BY sh.opened_at DESC
+                        LIMIT 1
+                    ) coll_shift ON {isCollection}
+                    WHERE o.tenant_id = @TenantId
+                      AND {soldStatus}
+                      AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                      {warehouseFilter}
+                      {employeeFilter}
+                      {branchFilter}
+                ) x
+                GROUP BY x.EmployeeId, x.WarehouseId, x.ShiftId, x.LooseDay
             ),
             refunds AS (
                 SELECT
@@ -646,38 +777,50 @@ internal sealed class ReportsRepository
                     END
             )
             SELECT
-                COALESCE(s.EmployeeId, r.EmployeeId) AS EmployeeId,
+                COALESCE(om.EmployeeId, s.EmployeeId, r.EmployeeId) AS EmployeeId,
                 COALESCE(e.full_name, 'Chưa gắn nhân viên') AS EmployeeName,
                 w.branch_id AS BranchId,
                 COALESCE(b.branch_name, '—') AS BranchName,
-                COALESCE(s.WarehouseId, r.WarehouseId) AS WarehouseId,
+                COALESCE(om.WarehouseId, s.WarehouseId, r.WarehouseId) AS WarehouseId,
                 COALESCE(w.warehouse_name, '—') AS WarehouseName,
-                COALESCE(s.ShiftId, r.ShiftId) AS ShiftId,
+                COALESCE(om.ShiftId, s.ShiftId, r.ShiftId) AS ShiftId,
                 COALESCE(sh.shift_number, 'Ngoài ca') AS ShiftNumber,
-                COALESCE(s.LooseDay, r.LooseDay) AS LooseDay,
-                COALESCE(sh.opened_at, (COALESCE(s.LooseDay, r.LooseDay) AT TIME ZONE 'Asia/Ho_Chi_Minh')) AS OpenedAt,
+                COALESCE(om.LooseDay, s.LooseDay, r.LooseDay) AS LooseDay,
+                COALESCE(sh.opened_at, (COALESCE(om.LooseDay, s.LooseDay, r.LooseDay) AT TIME ZONE 'Asia/Ho_Chi_Minh')) AS OpenedAt,
                 sh.closed_at AS ClosedAt,
                 sh.status AS ShiftStatus,
-                COALESCE(s.OrderCount, 0) AS OrderCount,
+                COALESCE(om.OrderCount, 0) AS OrderCount,
+                COALESCE(om.RevenueAmount, 0) AS RevenueAmount,
+                COALESCE(om.CheckoutPaid, 0) AS CheckoutPaid,
+                GREATEST(0, COALESCE(om.RevenueAmount, 0) - COALESCE(om.CheckoutPaid, 0)) AS NewDebt,
+                COALESCE(s.CollectionAmount, 0) AS CollectionAmount,
                 COALESCE(s.SalesAmount, 0) AS SalesAmount,
                 COALESCE(r.RefundAmount, 0) AS RefundAmount,
                 COALESCE(s.CashSales, 0) - COALESCE(r.CashRefunds, 0) AS CashNet,
                 COALESCE(s.TransferSales, 0) - COALESCE(r.TransferRefunds, 0) AS TransferNet,
                 COALESCE(s.OtherSales, 0) - COALESCE(r.OtherRefunds, 0) AS OtherNet,
                 COALESCE(s.SalesAmount, 0) - COALESCE(r.RefundAmount, 0) AS NetAmount
-            FROM sales s
+            FROM order_metrics om
+            FULL OUTER JOIN sales s
+                ON COALESCE(s.EmployeeId, '00000000-0000-0000-0000-000000000000')
+                 = COALESCE(om.EmployeeId, '00000000-0000-0000-0000-000000000000')
+               AND s.WarehouseId = om.WarehouseId
+               AND COALESCE(s.ShiftId, '00000000-0000-0000-0000-000000000000')
+                 = COALESCE(om.ShiftId, '00000000-0000-0000-0000-000000000000')
+               AND COALESCE(s.LooseDay, TIMESTAMP '1970-01-01')
+                 = COALESCE(om.LooseDay, TIMESTAMP '1970-01-01')
             FULL OUTER JOIN refunds r
                 ON COALESCE(r.EmployeeId, '00000000-0000-0000-0000-000000000000')
-                 = COALESCE(s.EmployeeId, '00000000-0000-0000-0000-000000000000')
-               AND r.WarehouseId = s.WarehouseId
+                 = COALESCE(om.EmployeeId, s.EmployeeId, '00000000-0000-0000-0000-000000000000')
+               AND r.WarehouseId = COALESCE(om.WarehouseId, s.WarehouseId)
                AND COALESCE(r.ShiftId, '00000000-0000-0000-0000-000000000000')
-                 = COALESCE(s.ShiftId, '00000000-0000-0000-0000-000000000000')
+                 = COALESCE(om.ShiftId, s.ShiftId, '00000000-0000-0000-0000-000000000000')
                AND COALESCE(r.LooseDay, TIMESTAMP '1970-01-01')
-                 = COALESCE(s.LooseDay, TIMESTAMP '1970-01-01')
-            LEFT JOIN employees e ON e.id = COALESCE(s.EmployeeId, r.EmployeeId)
-            LEFT JOIN {PackPharmacyReadViews.Warehouse} w ON w.id = COALESCE(s.WarehouseId, r.WarehouseId)
+                 = COALESCE(om.LooseDay, s.LooseDay, TIMESTAMP '1970-01-01')
+            LEFT JOIN employees e ON e.id = COALESCE(om.EmployeeId, s.EmployeeId, r.EmployeeId)
+            LEFT JOIN {PackPharmacyReadViews.Warehouse} w ON w.id = COALESCE(om.WarehouseId, s.WarehouseId, r.WarehouseId)
             LEFT JOIN branches b ON b.id = w.branch_id AND b.deleted_at IS NULL
-            LEFT JOIN sales_shifts sh ON sh.id = COALESCE(s.ShiftId, r.ShiftId)
+            LEFT JOIN sales_shifts sh ON sh.id = COALESCE(om.ShiftId, s.ShiftId, r.ShiftId)
             ORDER BY OpenedAt DESC NULLS LAST, EmployeeName
             """;
 
@@ -711,6 +854,10 @@ internal sealed class ReportsRepository
             ["status"] = r.ShiftStatus,
             ["statusLabel"] = r.ShiftId is null ? "Ngoài ca" : ShiftStatusLabel(r.ShiftStatus ?? 0),
             ["orderCount"] = r.OrderCount,
+            ["revenueAmount"] = r.RevenueAmount,
+            ["checkoutPaid"] = r.CheckoutPaid,
+            ["newDebt"] = r.NewDebt,
+            ["collectionAmount"] = r.CollectionAmount,
             ["salesAmount"] = r.SalesAmount,
             ["refundAmount"] = r.RefundAmount,
             ["cashNet"] = r.CashNet,
@@ -728,8 +875,15 @@ internal sealed class ReportsRepository
         CancellationToken cancellationToken)
     {
         var warehouseFilter = BuildWarehouseFilter("sh.warehouse_id", warehouseId, allowedWarehouseIds);
+        var looseWarehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
+        var isCheckout = SalesAccrualSql.IsCheckout();
+        var isCollection = SalesAccrualSql.IsCollection();
+        var isCollectionOx = SalesAccrualSql.IsCollection("sp", "ox");
 
         var sql = $"""
+            SELECT * FROM (
             SELECT
                 sh.id AS ShiftId,
                 sh.shift_number AS ShiftNumber,
@@ -740,6 +894,37 @@ internal sealed class ReportsRepository
                 sh.closing_cash AS ClosingCash,
                 sh.cash_variance AS CashVariance,
                 sh.status AS Status,
+                COALESCE((
+                    SELECT SUM({originalTotal})
+                    FROM public.sales_orders o
+                    WHERE o.tenant_id = @TenantId
+                      AND o.warehouse_id = sh.warehouse_id
+                      AND o.sales_shift_id = sh.id
+                      AND {soldStatus}
+                ), 0) AS RevenueAmount,
+                COALESCE((
+                    SELECT SUM({originalTotal}) - SUM(COALESCE(ck.checkout_paid, 0))
+                    FROM public.sales_orders o
+                    LEFT JOIN LATERAL (
+                        SELECT COALESCE(SUM(sp.amount), 0) AS checkout_paid
+                        FROM sales_payments sp
+                        WHERE sp.sales_order_id = o.id AND {isCheckout}
+                    ) ck ON TRUE
+                    WHERE o.tenant_id = @TenantId
+                      AND o.warehouse_id = sh.warehouse_id
+                      AND o.sales_shift_id = sh.id
+                      AND {soldStatus}
+                ), 0) AS NewDebt,
+                COALESCE((
+                    SELECT SUM(sp.amount)
+                    FROM sales_payments sp
+                    INNER JOIN public.sales_orders o ON o.id = sp.sales_order_id
+                    WHERE o.tenant_id = @TenantId
+                      AND o.warehouse_id = sh.warehouse_id
+                      AND {isCollection}
+                      AND sp.paid_at >= sh.opened_at
+                      AND sp.paid_at < COALESCE(sh.closed_at, @ToUtc)
+                ), 0) AS CollectionAmount,
                 COALESCE((
                     SELECT SUM(sp.amount)
                     FROM sales_payments sp
@@ -760,9 +945,87 @@ internal sealed class ReportsRepository
             FROM sales_shifts sh
             INNER JOIN {PackPharmacyReadViews.Warehouse} w ON w.id = sh.warehouse_id
             WHERE sh.tenant_id = @TenantId
-              AND sh.opened_at >= @FromUtc AND sh.opened_at < @ToUtc
+              AND (
+                    (sh.opened_at >= @FromUtc AND sh.opened_at < @ToUtc)
+                    OR EXISTS (
+                        SELECT 1
+                        FROM public.sales_orders o
+                        WHERE o.sales_shift_id = sh.id
+                          AND o.tenant_id = @TenantId
+                          AND {soldStatus}
+                          AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM sales_payments sp
+                        INNER JOIN public.sales_orders o ON o.id = sp.sales_order_id
+                        WHERE o.tenant_id = @TenantId
+                          AND o.warehouse_id = sh.warehouse_id
+                          AND {isCollection}
+                          AND sp.paid_at >= GREATEST(sh.opened_at, @FromUtc)
+                          AND sp.paid_at < LEAST(COALESCE(sh.closed_at, @ToUtc), @ToUtc)
+                    )
+              )
               {warehouseFilter}
-            ORDER BY sh.opened_at DESC
+
+            UNION ALL
+
+            SELECT
+                NULL::uuid AS ShiftId,
+                'Ngoài ca' AS ShiftNumber,
+                w.warehouse_name AS WarehouseName,
+                MIN(o.order_date) AS OpenedAt,
+                NULL::timestamptz AS ClosedAt,
+                0::numeric AS OpeningCash,
+                NULL::numeric AS ClosingCash,
+                NULL::numeric AS CashVariance,
+                NULL::smallint AS Status,
+                COALESCE(SUM({originalTotal}), 0) AS RevenueAmount,
+                COALESCE(SUM({originalTotal} - COALESCE(ck.checkout_paid, 0)), 0) AS NewDebt,
+                COALESCE((
+                    SELECT SUM(sp.amount)
+                    FROM sales_payments sp
+                    INNER JOIN public.sales_orders ox ON ox.id = sp.sales_order_id
+                    WHERE ox.tenant_id = @TenantId
+                      AND ox.warehouse_id = w.id
+                      AND ox.sales_shift_id IS NULL
+                      AND {isCollectionOx}
+                      AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                ), 0) AS CollectionAmount,
+                COALESCE((
+                    SELECT SUM(sp.amount)
+                    FROM sales_payments sp
+                    INNER JOIN public.sales_orders ox ON ox.id = sp.sales_order_id
+                    WHERE ox.tenant_id = @TenantId
+                      AND ox.warehouse_id = w.id
+                      AND ox.sales_shift_id IS NULL
+                      AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                ), 0)
+                - COALESCE((
+                    SELECT SUM(rp.amount)
+                    FROM sales_return_payments rp
+                    INNER JOIN sales_returns r ON r.id = rp.sales_return_id
+                    INNER JOIN public.sales_orders ox ON ox.id = r.sales_order_id
+                    WHERE r.tenant_id = @TenantId
+                      AND ox.warehouse_id = w.id
+                      AND ox.sales_shift_id IS NULL
+                      AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
+                ), 0) AS NetAmount
+            FROM public.sales_orders o
+            INNER JOIN {PackPharmacyReadViews.Warehouse} w ON w.id = o.warehouse_id
+            LEFT JOIN LATERAL (
+                SELECT COALESCE(SUM(sp.amount), 0) AS checkout_paid
+                FROM sales_payments sp
+                WHERE sp.sales_order_id = o.id AND {isCheckout}
+            ) ck ON TRUE
+            WHERE o.tenant_id = @TenantId
+              AND o.sales_shift_id IS NULL
+              AND {soldStatus}
+              AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
+              {looseWarehouseFilter}
+            GROUP BY w.id, w.warehouse_name
+            ) q
+            ORDER BY OpenedAt DESC
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -781,7 +1044,10 @@ internal sealed class ReportsRepository
             ["closingCash"] = r.ClosingCash,
             ["cashVariance"] = r.CashVariance,
             ["status"] = r.Status,
-            ["statusLabel"] = ShiftStatusLabel(r.Status),
+            ["statusLabel"] = r.ShiftId is null ? "Ngoài ca" : ShiftStatusLabel(r.Status ?? 0),
+            ["revenueAmount"] = r.RevenueAmount,
+            ["newDebt"] = r.NewDebt,
+            ["collectionAmount"] = r.CollectionAmount,
             ["netAmount"] = r.NetAmount,
         }).ToList();
     }
@@ -984,34 +1250,36 @@ internal sealed class ReportsRepository
         var searchFilter = string.IsNullOrWhiteSpace(search)
             ? ""
             : "AND (c.customer_code ILIKE @Search OR c.full_name ILIKE @Search)";
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
 
         var sql = $"""
             WITH sales AS (
                 SELECT
                     o.customer_id AS CustomerId,
-                    COUNT(DISTINCT o.id)::int AS OrderCount,
-                    COALESCE(SUM(sp.amount), 0) AS SalesAmount,
+                    COUNT(*)::int AS OrderCount,
+                    COALESCE(SUM({originalTotal}), 0) AS SalesAmount,
                     MAX(o.order_date) AS LastOrderAt,
                     MIN(o.order_date) AS FirstInPeriodAt
                 FROM public.sales_orders o
-                INNER JOIN sales_payments sp ON sp.sales_order_id = o.id
                 WHERE o.tenant_id = @TenantId
-                  AND o.status = @OrderCompleted
+                  AND {soldStatus}
                   AND o.customer_id IS NOT NULL
-                  AND sp.paid_at >= @FromUtc AND sp.paid_at < @ToUtc
+                  AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
                   {warehouseFilter}
                 GROUP BY o.customer_id
             ),
             refunds AS (
                 SELECT
                     o.customer_id AS CustomerId,
-                    COALESCE(SUM(rp.amount), 0) AS RefundAmount
-                FROM sales_return_payments rp
-                INNER JOIN sales_returns r ON r.id = rp.sales_return_id
+                    COALESCE(SUM(ri.refund_amount), 0) AS RefundAmount
+                FROM sales_return_items ri
+                INNER JOIN sales_returns r ON r.id = ri.sales_return_id
                 INNER JOIN public.sales_orders o ON o.id = r.sales_order_id
                 WHERE r.tenant_id = @TenantId
+                  AND r.status = @ReturnCompleted
                   AND o.customer_id IS NOT NULL
-                  AND rp.paid_at >= @FromUtc AND rp.paid_at < @ToUtc
+                  AND r.return_date >= @FromUtc AND r.return_date < @ToUtc
                   {warehouseFilter}
                 GROUP BY o.customer_id
             ),
@@ -1055,6 +1323,7 @@ internal sealed class ReportsRepository
                 AllowedWarehouseIds = allowedWarehouseIds,
                 Search = string.IsNullOrWhiteSpace(search) ? null : $"%{search.Trim()}%",
                 OrderCompleted = SalesOrderStatuses.Completed,
+                ReturnCompleted = SalesReturnStatuses.Completed,
             });
 
         return rows.Select(r => new Dictionary<string, object?>
@@ -1088,7 +1357,7 @@ internal sealed class ReportsRepository
                     timezone('Asia/Ho_Chi_Minh', o.order_date) AS vn_at
                 FROM public.sales_orders o
                 WHERE o.tenant_id = @TenantId
-                  AND o.status = @OrderCompleted
+                  AND {SalesAccrualSql.SoldStatusFilter()}
                   AND o.order_date >= @FromUtc AND o.order_date < @ToUtc
                   {warehouseFilter}
             )
@@ -1134,6 +1403,177 @@ internal sealed class ReportsRepository
                 OrderCompleted = SalesOrderStatuses.Completed,
             });
         return row ?? new CustomerInsightRow();
+    }
+
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> GetSalesReceivablesMovementAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        Guid? warehouseId,
+        Guid[]? allowedWarehouseIds,
+        CancellationToken cancellationToken)
+    {
+        var warehouseFilter = BuildWarehouseFilter("o.warehouse_id", warehouseId, allowedWarehouseIds);
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
+        var isCheckout = SalesAccrualSql.IsCheckout();
+        var isCollectionOnSold = SalesAccrualSql.IsCollection("sp", "s");
+        var agingDays = SalesAccrualSql.AgingDaysExpr("s.order_date");
+
+        var sql = $"""
+            WITH sold AS (
+                SELECT
+                    o.id,
+                    o.customer_id,
+                    o.order_date,
+                    o.outstanding,
+                    {originalTotal} AS original_total,
+                    COALESCE(ck.checkout_paid, 0) AS checkout_paid
+                FROM public.sales_orders o
+                LEFT JOIN LATERAL (
+                    SELECT COALESCE(SUM(sp.amount), 0) AS checkout_paid
+                    FROM sales_payments sp
+                    WHERE sp.sales_order_id = o.id AND {isCheckout}
+                ) ck ON TRUE
+                WHERE o.tenant_id = @TenantId
+                  AND {soldStatus}
+                  AND o.customer_id IS NOT NULL
+                  {warehouseFilter}
+            ),
+            coll AS (
+                SELECT
+                    s.customer_id,
+                    sp.amount,
+                    sp.paid_at
+                FROM sales_payments sp
+                INNER JOIN sold s ON s.id = sp.sales_order_id
+                WHERE {isCollectionOnSold}
+            ),
+            ret AS (
+                SELECT
+                    s.customer_id,
+                    r.return_date,
+                    GREATEST(0,
+                        COALESCE((
+                            SELECT SUM(ri.refund_amount)
+                            FROM sales_return_items ri
+                            WHERE ri.sales_return_id = r.id
+                        ), 0)
+                        - COALESCE((
+                            SELECT SUM(rp.amount)
+                            FROM sales_return_payments rp
+                            WHERE rp.sales_return_id = r.id
+                        ), 0)
+                    ) AS debt_reduced
+                FROM sales_returns r
+                INNER JOIN sold s ON s.id = r.sales_order_id
+                WHERE r.status = @ReturnCompleted
+            ),
+            order_agg AS (
+                SELECT
+                    s.customer_id,
+                    COALESCE(SUM(s.original_total - s.checkout_paid) FILTER (WHERE s.order_date < @FromUtc), 0) AS DebtBefore,
+                    COALESCE(SUM(s.original_total - s.checkout_paid) FILTER (
+                        WHERE s.order_date >= @FromUtc AND s.order_date < @ToUtc
+                    ), 0) AS CreditSales,
+                    COALESCE(SUM(s.outstanding) FILTER (WHERE s.outstanding > 0.009), 0) AS CurrentOutstanding,
+                    COALESCE(SUM(s.outstanding) FILTER (
+                        WHERE s.outstanding > 0.009
+                          AND {agingDays} <= 30
+                    ), 0) AS AgingCurrent,
+                    COALESCE(SUM(s.outstanding) FILTER (
+                        WHERE s.outstanding > 0.009
+                          AND {agingDays} BETWEEN 31 AND 60
+                    ), 0) AS Aging31To60,
+                    COALESCE(SUM(s.outstanding) FILTER (
+                        WHERE s.outstanding > 0.009
+                          AND {agingDays} BETWEEN 61 AND 90
+                    ), 0) AS Aging61To90,
+                    COALESCE(SUM(s.outstanding) FILTER (
+                        WHERE s.outstanding > 0.009
+                          AND {agingDays} > 90
+                    ), 0) AS AgingOver90,
+                    COUNT(*) FILTER (WHERE s.outstanding > 0.009)::int AS OpenDocuments
+                FROM sold s
+                GROUP BY s.customer_id
+            ),
+            coll_agg AS (
+                SELECT
+                    customer_id,
+                    COALESCE(SUM(amount) FILTER (WHERE paid_at < @FromUtc), 0) AS Before,
+                    COALESCE(SUM(amount) FILTER (WHERE paid_at >= @FromUtc AND paid_at < @ToUtc), 0) AS InPeriod
+                FROM coll
+                GROUP BY customer_id
+            ),
+            ret_agg AS (
+                SELECT
+                    customer_id,
+                    COALESCE(SUM(debt_reduced) FILTER (WHERE return_date < @FromUtc), 0) AS Before,
+                    COALESCE(SUM(debt_reduced) FILTER (WHERE return_date >= @FromUtc AND return_date < @ToUtc), 0) AS InPeriod
+                FROM ret
+                GROUP BY customer_id
+            )
+            SELECT
+                oa.customer_id AS CustomerId,
+                COALESCE(c.customer_code, '') AS CustomerCode,
+                COALESCE(c.full_name, 'Khách đã xóa') AS CustomerName,
+                GREATEST(0, oa.DebtBefore - COALESCE(ca.Before, 0) - COALESCE(ra.Before, 0)) AS Opening,
+                oa.CreditSales,
+                COALESCE(ca.InPeriod, 0) AS Collections,
+                COALESCE(ra.InPeriod, 0) AS ReturnAgainstDebt,
+                GREATEST(0,
+                    oa.DebtBefore - COALESCE(ca.Before, 0) - COALESCE(ra.Before, 0)
+                    + oa.CreditSales
+                    - COALESCE(ca.InPeriod, 0)
+                    - COALESCE(ra.InPeriod, 0)
+                ) AS Closing,
+                oa.CurrentOutstanding,
+                oa.AgingCurrent,
+                oa.Aging31To60,
+                oa.Aging61To90,
+                oa.AgingOver90,
+                oa.OpenDocuments
+            FROM order_agg oa
+            LEFT JOIN coll_agg ca ON ca.customer_id = oa.customer_id
+            LEFT JOIN ret_agg ra ON ra.customer_id = oa.customer_id
+            LEFT JOIN customers c ON c.id = oa.customer_id
+            WHERE GREATEST(0, oa.DebtBefore - COALESCE(ca.Before, 0) - COALESCE(ra.Before, 0)) > 0.009
+               OR oa.CreditSales > 0.009
+               OR COALESCE(ca.InPeriod, 0) > 0.009
+               OR COALESCE(ra.InPeriod, 0) > 0.009
+               OR oa.CurrentOutstanding > 0.009
+            ORDER BY Closing DESC, CustomerName
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<ReceivablesMovementRow>(
+            sql,
+            new
+            {
+                TenantId,
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+                WarehouseId = warehouseId,
+                AllowedWarehouseIds = allowedWarehouseIds,
+                ReturnCompleted = SalesReturnStatuses.Completed,
+            });
+
+        return rows.Select(r => new Dictionary<string, object?>
+        {
+            ["customerId"] = r.CustomerId,
+            ["customerCode"] = r.CustomerCode,
+            ["customerName"] = r.CustomerName,
+            ["opening"] = r.Opening,
+            ["creditSales"] = r.CreditSales,
+            ["collections"] = r.Collections,
+            ["returnAgainstDebt"] = r.ReturnAgainstDebt,
+            ["closing"] = r.Closing,
+            ["currentOutstanding"] = r.CurrentOutstanding,
+            ["agingCurrent"] = r.AgingCurrent,
+            ["aging31To60"] = r.Aging31To60,
+            ["aging61To90"] = r.Aging61To90,
+            ["agingOver90"] = r.AgingOver90,
+            ["openDocuments"] = r.OpenDocuments,
+        }).ToList();
     }
 
     public async Task<IReadOnlyList<Dictionary<string, object?>>> GetInventoryStockSnapshotAsync(
@@ -1365,6 +1805,7 @@ internal sealed class ReportsRepository
         SalesPaymentMethods.Card => "Thẻ",
         SalesPaymentMethods.Transfer => "Chuyển khoản",
         SalesPaymentMethods.EWallet => "Ví điện tử",
+        SalesPaymentMethods.Credit => "Ghi nợ",
         _ => method.ToString(),
     };
 
@@ -1386,15 +1827,26 @@ internal sealed class ReportsRepository
     private sealed class SalesPeriodRow
     {
         public DateTime PeriodStart { get; init; }
-        public decimal SalesAmount { get; init; }
-        public decimal RefundAmount { get; init; }
-        public decimal NetAmount { get; init; }
         public int OrderCount { get; init; }
+        public decimal SalesAmount { get; init; }
+        public decimal CheckoutPaid { get; init; }
+        public decimal NewDebt { get; init; }
+        public decimal CollectionAmount { get; init; }
+        public decimal CashAmount { get; init; }
+        public decimal CardAmount { get; init; }
+        public decimal TransferAmount { get; init; }
+        public decimal EwalletAmount { get; init; }
+        public decimal RefundAmount { get; init; }
+        public decimal RefundCash { get; init; }
+        public decimal RefundDebt { get; init; }
+        public decimal NetAmount { get; init; }
     }
 
     private sealed class PaymentMethodRow
     {
         public short PaymentMethod { get; init; }
+        public decimal CheckoutAmount { get; init; }
+        public decimal CollectionAmount { get; init; }
         public decimal SalesAmount { get; init; }
         public decimal RefundAmount { get; init; }
         public decimal NetAmount { get; init; }
@@ -1460,6 +1912,10 @@ internal sealed class ReportsRepository
         public DateTime? ClosedAt { get; init; }
         public short? ShiftStatus { get; init; }
         public int OrderCount { get; init; }
+        public decimal RevenueAmount { get; init; }
+        public decimal CheckoutPaid { get; init; }
+        public decimal NewDebt { get; init; }
+        public decimal CollectionAmount { get; init; }
         public decimal SalesAmount { get; init; }
         public decimal RefundAmount { get; init; }
         public decimal CashNet { get; init; }
@@ -1470,7 +1926,7 @@ internal sealed class ReportsRepository
 
     private sealed class ShiftReportRow
     {
-        public Guid ShiftId { get; init; }
+        public Guid? ShiftId { get; init; }
         public string ShiftNumber { get; init; } = "";
         public string WarehouseName { get; init; } = "";
         public DateTime OpenedAt { get; init; }
@@ -1478,8 +1934,29 @@ internal sealed class ReportsRepository
         public decimal OpeningCash { get; init; }
         public decimal? ClosingCash { get; init; }
         public decimal? CashVariance { get; init; }
-        public short Status { get; init; }
+        public short? Status { get; init; }
+        public decimal RevenueAmount { get; init; }
+        public decimal NewDebt { get; init; }
+        public decimal CollectionAmount { get; init; }
         public decimal NetAmount { get; init; }
+    }
+
+    private sealed class ReceivablesMovementRow
+    {
+        public Guid CustomerId { get; init; }
+        public string CustomerCode { get; init; } = "";
+        public string CustomerName { get; init; } = "";
+        public decimal Opening { get; init; }
+        public decimal CreditSales { get; init; }
+        public decimal Collections { get; init; }
+        public decimal ReturnAgainstDebt { get; init; }
+        public decimal Closing { get; init; }
+        public decimal CurrentOutstanding { get; init; }
+        public decimal AgingCurrent { get; init; }
+        public decimal Aging31To60 { get; init; }
+        public decimal Aging61To90 { get; init; }
+        public decimal AgingOver90 { get; init; }
+        public int OpenDocuments { get; init; }
     }
 
     private sealed class GrnSupplierRow

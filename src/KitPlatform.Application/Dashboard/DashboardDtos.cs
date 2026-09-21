@@ -10,7 +10,9 @@ public sealed record DashboardOverviewDto(
 public sealed record DashboardSalesSnapshotDto(
     decimal TodayNetTotal,
     decimal WeekNetTotal,
-    int TodayOrderCount);
+    int TodayOrderCount,
+    decimal TodayCollected = 0,
+    decimal TodayNewDebt = 0);
 
 public sealed record DashboardCatalogSnapshotDto(
     int ProductCount,

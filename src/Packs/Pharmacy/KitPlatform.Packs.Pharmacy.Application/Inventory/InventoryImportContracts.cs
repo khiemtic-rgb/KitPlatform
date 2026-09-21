@@ -1,4 +1,4 @@
-﻿namespace KitPlatform.Packs.Pharmacy.Inventory;
+namespace KitPlatform.Packs.Pharmacy.Inventory;
 
 public sealed class OpeningBalanceImportRowRequest
 {
@@ -6,6 +6,7 @@ public sealed class OpeningBalanceImportRowRequest
     /// <summary>Mã SP hoặc barcode.</summary>
     public required string ProductKey { get; init; }
     public required string BatchNumber { get; init; }
+    public DateOnly? ManufactureDate { get; init; }
     public DateOnly? ExpiryDate { get; init; }
     public decimal Quantity { get; init; }
     public decimal UnitCost { get; init; }

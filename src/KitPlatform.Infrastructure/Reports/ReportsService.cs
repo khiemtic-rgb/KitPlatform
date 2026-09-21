@@ -1,4 +1,4 @@
-﻿using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.Pharmacy.Procurement;
 using KitPlatform.Application.Reports;
 
@@ -23,11 +23,11 @@ internal sealed class ReportsService : IReportsService
     public IReadOnlyList<ReportCatalogItemDto> GetCatalog() =>
     [
         new(ReportCodes.SalesRevenueByPeriod, "Doanh thu theo kỳ", "sales",
-            "Doanh thu bán, hoàn trả và thu ròng theo ngày/tuần/tháng (giờ Việt Nam).", true, false, false),
-        new(ReportCodes.SalesRevenueByPaymentMethod, "Doanh thu theo hình thức thanh toán", "sales",
-            "Thu ròng theo tiền mặt, thẻ, chuyển khoản, ví.", true, false, false),
+            "Doanh thu theo ngày bán (kể cả nợ), khách trả, khách nợ, thu công nợ và hình thức thanh toán.", true, false, false),
+        new(ReportCodes.SalesRevenueByPaymentMethod, "Thu tiền theo hình thức", "sales",
+            "Tiền đã thu theo tiền mặt, thẻ, chuyển khoản, ví — tách thu tại quầy và thu công nợ.", true, false, false),
         new(ReportCodes.SalesShifts, "Ca bán hàng", "sales",
-            "Danh sách ca, quỹ tiền mặt và doanh thu ròng trong ca. Bấm một ca để xem lại tờ chốt.", true, false, false),
+            "Danh sách ca và dòng Ngoài ca (đơn không gắn ca). Quỹ tiền mặt, doanh thu, nợ mới, thu công nợ.", true, false, false),
         new(ReportCodes.SalesRevenueByCategory, "Doanh thu theo nhóm sản phẩm", "sales",
             "Doanh thu ròng theo nhóm sản phẩm trong kỳ.", true, false, false),
         new(ReportCodes.SalesRevenueByClinicDoctor, "Đơn bán theo phòng khám / bác sĩ", "sales",
@@ -37,9 +37,11 @@ internal sealed class ReportsService : IReportsService
         new(ReportCodes.SalesRevenueByEmployeeProduct, "Doanh số nhân viên theo sản phẩm", "sales",
             "Số lượng và thu ròng từng mặt theo người bán — dùng đối soát KPI / hoa hồng vượt mốc.", true, false, false),
         new(ReportCodes.SalesRevenueByCustomer, "Doanh số theo khách hàng", "sales",
-            "Thu ròng và số đơn POS gắn hồ sơ khách — không bịa xếp hạng.", true, false, false),
+            "Doanh thu và số đơn POS gắn hồ sơ khách theo ngày bán.", true, false, false),
         new(ReportCodes.SalesShiftCloseByEmployee, "Chốt ca theo nhân viên", "sales",
-            "Một dòng mỗi người × ca: số đơn, thu bán, hoàn, tiền mặt, chuyển khoản, khác, thu ròng. Bấm ca để mở lại tờ chốt.", true, false, false),
+            "Một dòng mỗi người × ca: doanh thu, nợ mới, thu công nợ, tiền mặt, chuyển khoản, thu ròng.", true, false, false),
+        new(ReportCodes.SalesReceivablesMovement, "Công nợ khách theo kỳ", "sales",
+            "Nợ đầu, bán chịu, thu nợ, hoàn trừ nợ, nợ cuối và tuổi nợ còn lại.", true, false, false),
         new(ReportCodes.ProcurementGrnValue, "Giá trị nhập hàng", "procurement",
             "Tổng hợp phiếu nhập hoàn tất — số tiền trước thuế GTGT.", false, true, false),
         new(ReportCodes.ProcurementPayablesSnapshot, "Công nợ nhà cung cấp", "procurement",
@@ -66,18 +68,32 @@ internal sealed class ReportsService : IReportsService
         var columns = new List<ReportColumnDto>
         {
             Col("periodLabel", "Kỳ", ReportColumnFormats.Text, "left"),
-            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
-            Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
-            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
             Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
+            Col("salesAmount", "Doanh thu", ReportColumnFormats.Money, "right"),
+            Col("checkoutPaid", "Khách trả", ReportColumnFormats.Money, "right"),
+            Col("newDebt", "Khách nợ", ReportColumnFormats.Money, "right"),
+            Col("collectionAmount", "Thu công nợ", ReportColumnFormats.Money, "right"),
+            Col("cashAmount", "Tiền mặt", ReportColumnFormats.Money, "right"),
+            Col("transferAmount", "Chuyển khoản", ReportColumnFormats.Money, "right"),
+            Col("cardAmount", "Thẻ", ReportColumnFormats.Money, "right"),
+            Col("ewalletAmount", "Ví", ReportColumnFormats.Money, "right"),
+            Col("refundAmount", "Hoàn", ReportColumnFormats.Money, "right"),
+            Col("refundCash", "Hoàn tiền", ReportColumnFormats.Money, "right"),
+            Col("refundDebt", "Hoàn trừ nợ", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "DT ròng", ReportColumnFormats.Money, "right"),
         };
+        var filters = FilterLabels(from, to, groupBy, warehouseId);
+        filters["Ghi chú"] =
+            "Doanh thu = giá trị đơn theo ngày bán (kể cả nợ). Khách trả = thu tại quầy. Thu công nợ không tính vào doanh thu. Hoàn tiền = trả mặt; hoàn trừ nợ = giảm công nợ.";
         return BuildTable(
             ReportCodes.SalesRevenueByPeriod,
             "Doanh thu theo kỳ",
-            FilterLabels(from, to, groupBy, warehouseId),
+            filters,
             columns,
             rows,
-            SumTotals(rows, "salesAmount", "refundAmount", "netAmount", "orderCount"));
+            SumTotals(rows, "orderCount", "salesAmount", "checkoutPaid", "newDebt", "collectionAmount",
+                "cashAmount", "transferAmount", "cardAmount", "ewalletAmount", "refundAmount",
+                "refundCash", "refundDebt", "netAmount"));
     }
 
     public async Task<ReportTableResultDto> RunSalesRevenueByPaymentMethodAsync(
@@ -92,17 +108,21 @@ internal sealed class ReportsService : IReportsService
         var columns = new List<ReportColumnDto>
         {
             Col("paymentMethodLabel", "Hình thức", ReportColumnFormats.Text, "left"),
-            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
-            Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
+            Col("checkoutAmount", "Thu tại quầy", ReportColumnFormats.Money, "right"),
+            Col("collectionAmount", "Thu công nợ", ReportColumnFormats.Money, "right"),
+            Col("salesAmount", "Tổng thu", ReportColumnFormats.Money, "right"),
+            Col("refundAmount", "Hoàn tiền", ReportColumnFormats.Money, "right"),
             Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
         };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        filters["Ghi chú"] = "Sổ quỹ theo ngày thu — không phải doanh thu. Đơn nợ không tạo dòng hình thức.";
         return BuildTable(
             ReportCodes.SalesRevenueByPaymentMethod,
-            "Doanh thu theo hình thức thanh toán",
-            FilterLabels(from, to, null, warehouseId),
+            "Thu tiền theo hình thức",
+            filters,
             columns,
             rows,
-            SumTotals(rows, "salesAmount", "refundAmount", "netAmount"));
+            SumTotals(rows, "checkoutAmount", "collectionAmount", "salesAmount", "refundAmount", "netAmount"));
     }
 
     public async Task<ReportTableResultDto> RunSalesShiftsAsync(
@@ -124,15 +144,21 @@ internal sealed class ReportsService : IReportsService
             Col("openingCash", "Quỹ đầu ca", ReportColumnFormats.Money, "right"),
             Col("closingCash", "Quỹ cuối ca", ReportColumnFormats.Money, "right"),
             Col("cashVariance", "Chênh lệch TM", ReportColumnFormats.Money, "right"),
+            Col("revenueAmount", "Doanh thu ca", ReportColumnFormats.Money, "right"),
+            Col("newDebt", "Nợ mới", ReportColumnFormats.Money, "right"),
+            Col("collectionAmount", "Thu công nợ", ReportColumnFormats.Money, "right"),
             Col("netAmount", "Thu ròng ca", ReportColumnFormats.Money, "right"),
         };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        filters["Ghi chú"] =
+            "Dòng «Ngoài ca» gộp đơn bán không gắn ca trong kỳ (cùng kho). Thu công nợ trên dòng ca theo thời điểm thu.";
         return BuildTable(
             ReportCodes.SalesShifts,
             "Báo cáo ca làm việc",
-            FilterLabels(from, to, null, warehouseId),
+            filters,
             columns,
             rows,
-            SumTotals(rows, "netAmount"));
+            SumTotals(rows, "revenueAmount", "newDebt", "collectionAmount", "netAmount"));
     }
 
     public async Task<ReportTableResultDto> RunSalesRevenueByCategoryAsync(
@@ -149,9 +175,9 @@ internal sealed class ReportsService : IReportsService
         var columns = new List<ReportColumnDto>
         {
             Col("categoryLabel", "Danh mục", ReportColumnFormats.Text, "left"),
-            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("salesAmount", "Doanh thu", ReportColumnFormats.Money, "right"),
             Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
-            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "DT ròng", ReportColumnFormats.Money, "right"),
             Col("sharePercent", "Tỷ lệ %", ReportColumnFormats.Qty, "right"),
         };
         return BuildTable(
@@ -179,14 +205,14 @@ internal sealed class ReportsService : IReportsService
             Col("clinicName", "Phòng khám", ReportColumnFormats.Text, "left"),
             Col("doctorName", "Bác sĩ", ReportColumnFormats.Text, "left"),
             Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
-            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("salesAmount", "Doanh thu", ReportColumnFormats.Money, "right"),
             Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
-            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "DT ròng", ReportColumnFormats.Money, "right"),
             Col("sharePercent", "Tỷ lệ %", ReportColumnFormats.Qty, "right"),
         };
         var filters = FilterLabels(from, to, null, warehouseId);
         filters["Ghi chú"] =
-            "Chỉ đơn POS gắn đơn PK Connect (mở quầy từ handoff). «Đã nhận tín hiệu» không tạo số liệu.";
+            "Theo ngày bán, kể cả đơn nợ. Chỉ đơn POS gắn handoff Connect.";
         return BuildTable(
             ReportCodes.SalesRevenueByClinicDoctor,
             "Đơn bán theo phòng khám / bác sĩ",
@@ -214,15 +240,15 @@ internal sealed class ReportsService : IReportsService
             Col("employeeName", "Nhân viên", ReportColumnFormats.Text, "left"),
             Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
             Col("namedOrderCount", "Đơn gắn khách", ReportColumnFormats.Integer, "right"),
-            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("salesAmount", "Doanh thu", ReportColumnFormats.Money, "right"),
             Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
-            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "DT ròng", ReportColumnFormats.Money, "right"),
             Col("aov", "AOV", ReportColumnFormats.Money, "right"),
             Col("sharePercent", "Tỷ lệ %", ReportColumnFormats.Qty, "right"),
         };
         var filters = FilterLabels(from, to, null, warehouseId);
         if (employeeId.HasValue) filters["Nhân viên"] = employeeId.Value.ToString();
-        filters["Ghi chú"] = "Gán theo người trên đơn POS. Hoàn trả về người của đơn gốc.";
+        filters["Ghi chú"] = "Theo ngày bán, kể cả đơn nợ. Hoàn về người của đơn gốc.";
         return BuildTable(
             ReportCodes.SalesRevenueByEmployee,
             "Doanh số theo nhân viên",
@@ -254,14 +280,14 @@ internal sealed class ReportsService : IReportsService
             Col("qty", "SL bán", ReportColumnFormats.Qty, "right"),
             Col("refundQty", "SL trả", ReportColumnFormats.Qty, "right"),
             Col("netQty", "SL ròng", ReportColumnFormats.Qty, "right"),
-            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
+            Col("salesAmount", "Doanh thu", ReportColumnFormats.Money, "right"),
             Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
-            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "DT ròng", ReportColumnFormats.Money, "right"),
         };
         var filters = FilterLabels(from, to, null, warehouseId);
         if (employeeId.HasValue) filters["Nhân viên"] = employeeId.Value.ToString();
         if (!string.IsNullOrWhiteSpace(search)) filters["Tìm kiếm"] = search.Trim();
-        filters["Ghi chú"] = "SL ròng = bán − trả. Dùng đối soát KPI hộp / hoa hồng vượt mốc.";
+        filters["Ghi chú"] = "Theo ngày bán, kể cả đơn nợ. SL ròng = bán − trả.";
         return BuildTable(
             ReportCodes.SalesRevenueByEmployeeProduct,
             "Doanh số nhân viên theo sản phẩm",
@@ -285,6 +311,10 @@ internal sealed class ReportsService : IReportsService
         var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
         var rows = await _repository.GetSalesShiftCloseByEmployeeAsync(
             from, to, scopedWarehouseId, allowed, employeeId, branchId, cancellationToken);
+        rows = FilterRowsByGuid(rows, "employeeId", employeeId);
+        rows = FilterRowsByGuid(rows, "branchId", branchId);
+        if (scopedWarehouseId.HasValue)
+            rows = FilterRowsByGuid(rows, "warehouseId", scopedWarehouseId);
 
         var columns = new List<ReportColumnDto>
         {
@@ -295,8 +325,12 @@ internal sealed class ReportsService : IReportsService
             Col("openedAt", "Mở ca / ngày", ReportColumnFormats.Date, "left"),
             Col("statusLabel", "Trạng thái", ReportColumnFormats.Text, "left"),
             Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
-            Col("salesAmount", "Thu bán", ReportColumnFormats.Money, "right"),
-            Col("refundAmount", "Hoàn trả", ReportColumnFormats.Money, "right"),
+            Col("revenueAmount", "Doanh thu", ReportColumnFormats.Money, "right"),
+            Col("checkoutPaid", "Khách trả", ReportColumnFormats.Money, "right"),
+            Col("newDebt", "Nợ mới", ReportColumnFormats.Money, "right"),
+            Col("collectionAmount", "Thu công nợ", ReportColumnFormats.Money, "right"),
+            Col("salesAmount", "Tiền thu", ReportColumnFormats.Money, "right"),
+            Col("refundAmount", "Hoàn tiền", ReportColumnFormats.Money, "right"),
             Col("cashNet", "Tiền mặt", ReportColumnFormats.Money, "right"),
             Col("transferNet", "Chuyển khoản", ReportColumnFormats.Money, "right"),
             Col("otherNet", "Khác", ReportColumnFormats.Money, "right"),
@@ -306,14 +340,15 @@ internal sealed class ReportsService : IReportsService
         if (branchId.HasValue) filters["Chi nhánh"] = branchId.Value.ToString();
         if (employeeId.HasValue) filters["Nhân viên"] = employeeId.Value.ToString();
         filters["Ghi chú"] =
-            "Lọc chi nhánh lấy hết kho thuộc chi nhánh đó. Mỗi dòng = một người trên một ca (hoặc ngày nếu đơn không gắn ca). Bấm dòng có mã ca để mở lại tờ chốt. «Khác» = thẻ + ví + ghi nợ.";
+            "Doanh thu / nợ mới theo ngày bán. Tiền thu / TM / CK là sổ quỹ theo ngày thu. Bấm dòng có mã ca để mở tờ chốt.";
         return BuildTable(
             ReportCodes.SalesShiftCloseByEmployee,
             "Chốt ca theo nhân viên",
             filters,
             columns,
             rows,
-            SumTotals(rows, "orderCount", "salesAmount", "refundAmount", "cashNet", "transferNet", "otherNet", "netAmount"));
+            SumTotals(rows, "orderCount", "revenueAmount", "checkoutPaid", "newDebt", "collectionAmount", "salesAmount",
+                "refundAmount", "cashNet", "transferNet", "otherNet", "netAmount"));
     }
 
     public async Task<ReportTableResultDto> RunSalesRevenueByCustomerAsync(
@@ -336,14 +371,14 @@ internal sealed class ReportsService : IReportsService
             Col("customerCode", "Mã khách", ReportColumnFormats.Text, "left"),
             Col("customerName", "Tên khách", ReportColumnFormats.Text, "left"),
             Col("orderCount", "Số đơn", ReportColumnFormats.Integer, "right"),
-            Col("netAmount", "Thu ròng", ReportColumnFormats.Money, "right"),
+            Col("netAmount", "DT ròng", ReportColumnFormats.Money, "right"),
             Col("lastOrderAt", "Đơn gần nhất", ReportColumnFormats.Date, "left"),
             Col("segmentLabel", "Nhóm", ReportColumnFormats.Text, "left"),
             Col("sharePercent", "Tỷ lệ %", ReportColumnFormats.Qty, "right"),
         };
         var filters = FilterLabels(from, to, null, warehouseId);
         if (!string.IsNullOrWhiteSpace(search)) filters["Tìm kiếm"] = search.Trim();
-        filters["Ghi chú"] = "Chỉ đơn POS đã thanh toán có gắn hồ sơ khách.";
+        filters["Ghi chú"] = "Theo ngày bán, kể cả đơn nợ. Chỉ đơn gắn hồ sơ khách.";
 
         var totals = SumTotals(rows, "orderCount", "salesAmount", "refundAmount", "netAmount")
             ?? new Dictionary<string, object?>();
@@ -364,6 +399,45 @@ internal sealed class ReportsService : IReportsService
             columns,
             rows,
             totals);
+    }
+
+    public async Task<ReportTableResultDto> RunSalesReceivablesMovementAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        var rows = await _repository.GetSalesReceivablesMovementAsync(
+            from, to, scopedWarehouseId, allowed, cancellationToken);
+
+        var columns = new List<ReportColumnDto>
+        {
+            Col("customerCode", "Mã khách", ReportColumnFormats.Text, "left"),
+            Col("customerName", "Tên khách", ReportColumnFormats.Text, "left"),
+            Col("opening", "Nợ đầu", ReportColumnFormats.Money, "right"),
+            Col("creditSales", "Bán chịu", ReportColumnFormats.Money, "right"),
+            Col("collections", "Thu nợ", ReportColumnFormats.Money, "right"),
+            Col("returnAgainstDebt", "Hoàn trừ nợ", ReportColumnFormats.Money, "right"),
+            Col("closing", "Nợ cuối", ReportColumnFormats.Money, "right"),
+            Col("agingCurrent", "0–30 ngày", ReportColumnFormats.Money, "right"),
+            Col("aging31To60", "31–60", ReportColumnFormats.Money, "right"),
+            Col("aging61To90", "61–90", ReportColumnFormats.Money, "right"),
+            Col("agingOver90", "> 90", ReportColumnFormats.Money, "right"),
+            Col("openDocuments", "Đơn còn nợ", ReportColumnFormats.Integer, "right"),
+        };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        filters["Ghi chú"] =
+            "Nợ đầu/cuối tái lập từ đơn bán − thu tại quầy − thu nợ − hoàn trừ nợ. Tuổi nợ theo số còn hiện tại.";
+        return BuildTable(
+            ReportCodes.SalesReceivablesMovement,
+            "Công nợ khách theo kỳ",
+            filters,
+            columns,
+            rows,
+            SumTotals(rows, "opening", "creditSales", "collections", "returnAgainstDebt", "closing",
+                "agingCurrent", "aging31To60", "aging61To90", "agingOver90", "openDocuments"));
     }
 
     public async Task<ReportTableResultDto> RunProcurementGrnValueAsync(
@@ -660,6 +734,19 @@ internal sealed class ReportsService : IReportsService
         IReadOnlyDictionary<string, object?>? totals) =>
         new(code, title, DateTime.UtcNow, filterLabels, columns, rows, totals);
 
+    private static List<Dictionary<string, object?>> FilterRowsByGuid(
+        IReadOnlyList<Dictionary<string, object?>> rows,
+        string key,
+        Guid? id)
+    {
+        if (!id.HasValue) return rows as List<Dictionary<string, object?>> ?? rows.ToList();
+        return rows.Where(row =>
+        {
+            if (!row.TryGetValue(key, out var raw) || raw is null) return false;
+            return Guid.TryParse(Convert.ToString(raw), out var parsed) && parsed == id.Value;
+        }).ToList();
+    }
+
     private static Dictionary<string, object?>? SumTotals(
         IReadOnlyList<Dictionary<string, object?>> rows,
         params string[] numericKeys)
@@ -673,6 +760,7 @@ internal sealed class ReportsService : IReportsService
             ["paymentMethodLabel"] = "Tổng cộng",
             ["categoryLabel"] = "Tổng cộng",
             ["employeeName"] = "Tổng cộng",
+            ["customerName"] = "Tổng cộng",
         };
         foreach (var key in numericKeys)
         {

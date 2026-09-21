@@ -25,6 +25,9 @@
     },
     "kpi": {
       "revenue": "Doanh thu",
+      "paid": "Khách trả",
+      "debt": "Khách nợ",
+      "collection": "Thu công nợ",
       "orders": "Đơn bán",
       "customers": "Khách mua",
       "products": "Mặt hàng bán",
@@ -32,6 +35,9 @@
       "stock": "Lô tồn",
       "vsPrior": "so với kỳ trước",
       "newPeriod": "kỳ trước chưa có số",
+      "paidHint": "thu tại quầy",
+      "debtHint": "ghi nợ trong kỳ",
+      "collectionHint": "thu phiếu công nợ",
       "namedHint": "{{count}} phiếu gắn hồ sơ",
       "soldHint": "có bán trong kỳ",
       "staffHint": "có bán trong kỳ",
@@ -107,6 +113,9 @@
     },
     "kpi": {
       "revenue": "Doanh thu",
+      "paid": "Khách trả",
+      "debt": "Khách nợ",
+      "collection": "Thu công nợ",
       "orders": "Đơn bán",
       "customers": "Khách mua",
       "products": "Mặt hàng bán",
@@ -114,6 +123,9 @@
       "stock": "Lô tồn",
       "vsPrior": "so với kỳ trước",
       "newPeriod": "kỳ trước chưa có số",
+      "paidHint": "thu tại quầy",
+      "debtHint": "ghi nợ trong kỳ",
+      "collectionHint": "thu phiếu công nợ",
       "customersHint": "{{count}} phiếu gắn hồ sơ",
       "soldHint": "có bán trong kỳ",
       "staffHint": "có bán trong kỳ",
@@ -160,7 +172,7 @@
   },
   "revenue": {
     "title": "Doanh thu theo kỳ",
-    "subtitle": "Doanh thu bán, hoàn trả và doanh thu ròng theo ngày / tuần / tháng.",
+    "subtitle": "Doanh thu theo ngày bán (kể cả khách nợ). Tách khách trả, khách nợ, thu công nợ và hình thức thanh toán.",
     "export": "Xuất báo cáo",
     "period": "Thời gian",
     "groupBy": "Nhóm theo thời gian",
@@ -176,9 +188,12 @@
     "rows": "{{count}} dòng",
     "kpi": {
       "revenue": "Tổng doanh thu",
+      "paid": "Khách trả",
+      "debt": "Khách nợ",
+      "collection": "Thu công nợ",
       "orders": "Số đơn bán",
       "aov": "Doanh thu TB/đơn",
-      "refund": "Doanh thu hoàn trả",
+      "refund": "Hoàn trả",
       "vsPrior": "so với kỳ trước",
       "newPeriod": "kỳ trước chưa có số"
     },
@@ -204,8 +219,17 @@
         "month": "Tháng"
       },
       "sales": "Doanh thu",
-      "refund": "Hoàn trả",
-      "net": "Doanh thu ròng",
+      "checkout": "Khách trả",
+      "debt": "Khách nợ",
+      "collection": "Thu công nợ",
+      "cash": "Tiền mặt",
+      "transfer": "Chuyển khoản",
+      "card": "Thẻ",
+      "ewallet": "Ví",
+      "refund": "Hoàn",
+      "refundCash": "Hoàn tiền",
+      "refundDebt": "Hoàn trừ nợ",
+      "net": "DT ròng",
       "orders": "Số đơn",
       "aov": "Doanh thu TB/đơn",
       "change": "Thay đổi",
@@ -566,19 +590,19 @@
   "reports": {
     "SALES-01": {
       "name": "Doanh thu theo kỳ",
-      "description": "Doanh thu bán, hoàn trả và thu ròng theo ngày/tuần/tháng (giờ Việt Nam)."
+      "description": "Doanh thu theo ngày bán (kể cả nợ), khách trả, khách nợ, thu công nợ và hình thức thanh toán."
     },
     "SALES-02": {
-      "name": "Doanh thu theo hình thức thanh toán",
-      "description": "Thu ròng theo tiền mặt, thẻ, chuyển khoản, ví."
+      "name": "Thu tiền theo hình thức",
+      "description": "Tiền đã thu theo tiền mặt, thẻ, chuyển khoản, ví — tách thu tại quầy và thu công nợ."
     },
     "SALES-03": {
       "name": "Ca bán hàng",
-      "description": "Danh sách ca, quỹ tiền mặt và doanh thu ròng trong ca. Bấm một ca để xem lại tờ chốt."
+      "description": "Danh sách ca, quỹ tiền mặt, doanh thu ca, nợ mới và thu ròng. Bấm một ca để xem lại tờ chốt."
     },
     "SALES-04": {
       "name": "Doanh thu theo nhóm sản phẩm",
-      "description": "Doanh thu ròng theo nhóm sản phẩm trong kỳ."
+      "description": "Doanh thu theo ngày bán (kể cả nợ) theo nhóm sản phẩm."
     },
     "SALES-05": {
       "name": "Đơn bán theo phòng khám / bác sĩ",
@@ -598,7 +622,11 @@
     },
     "SALES-09": {
       "name": "Chốt ca theo nhân viên",
-      "description": "Một dòng mỗi người × ca: số đơn, thu bán, hoàn, tiền mặt, chuyển khoản, khác, thu ròng. Bấm ca để mở lại tờ chốt."
+      "description": "Một dòng mỗi người × ca: doanh thu, nợ mới, thu công nợ, tiền mặt, chuyển khoản, thu ròng. Bấm ca để mở lại tờ chốt."
+    },
+    "SALES-10": {
+      "name": "Công nợ khách theo kỳ",
+      "description": "Nợ đầu, bán chịu, thu nợ, hoàn trừ nợ, nợ cuối và tuổi nợ còn lại."
     },
     "PROC-01": {
       "name": "Giá trị nhập hàng",

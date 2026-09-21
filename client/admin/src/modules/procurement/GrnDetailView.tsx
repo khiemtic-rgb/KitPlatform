@@ -127,6 +127,13 @@ export function buildGrnDetailLineColumns(detail: GoodsReceiptDetail): ColumnsTy
       ),
     },
     {
+      title: t('shared.columns.manufacture'),
+      dataIndex: 'manufactureDate',
+      width: 96,
+      className: 'grn-col-nowrap',
+      render: (v?: string) => (v ? formatDisplayDate(v) : emDash),
+    },
+    {
       title: t('shared.columns.expiryFull'),
       dataIndex: 'expiryDate',
       width: 96,

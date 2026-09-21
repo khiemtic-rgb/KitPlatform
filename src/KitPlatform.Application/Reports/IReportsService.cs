@@ -65,6 +65,12 @@ public interface IReportsService
         string? search,
         CancellationToken cancellationToken = default);
 
+    Task<ReportTableResultDto> RunSalesReceivablesMovementAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid? warehouseId,
+        CancellationToken cancellationToken = default);
+
     Task<ReportTableResultDto> RunProcurementGrnValueAsync(
         DateTime? fromUtc,
         DateTime? toUtc,

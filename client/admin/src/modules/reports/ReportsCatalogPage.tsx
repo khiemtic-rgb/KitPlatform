@@ -34,11 +34,11 @@ import './reports-catalog-page.css';
 
 const { RangePicker } = DatePicker;
 const SLICE = ['#1677ff', '#13c2c2', '#722ed1', '#fa8c16', '#eb2f96', '#8c8c8c'];
-const FAVORITE_CODES = ['SALES-01', 'INV-01', 'SALES-04', 'SALES-08', 'SALES-06', 'SALES-09', 'PROC-01'];
+const FAVORITE_CODES = ['SALES-01', 'SALES-10', 'INV-01', 'SALES-04', 'SALES-08', 'SALES-06', 'SALES-09', 'PROC-01'];
 
 type GroupKey = 'sales' | 'inventory' | 'procurement' | 'customers' | 'staff' | 'other';
 type GroupBy = 'day' | 'week' | 'month';
-type Tone = 'revenue' | 'orders' | 'customers' | 'products' | 'staff' | 'stock';
+type Tone = 'revenue' | 'paid' | 'debt' | 'collection' | 'orders' | 'stock';
 
 function defaultRange(): [Dayjs, Dayjs] {
   return [dayjs().startOf('month'), dayjs().endOf('day')];
@@ -186,10 +186,6 @@ export function ReportsCatalogPage() {
   const [loading, setLoading] = useState(false);
   const [period, setPeriod] = useState<ReportTableResult | null>(null);
   const [prior, setPrior] = useState<ReportTableResult | null>(null);
-  const [staffRows, setStaffRows] = useState<Record<string, unknown>[]>([]);
-  const [staffTotals, setStaffTotals] = useState<Record<string, unknown> | null>(null);
-  const [productRows, setProductRows] = useState<Record<string, unknown>[]>([]);
-  const [buyerCount, setBuyerCount] = useState(0);
   const [batchCount, setBatchCount] = useState(0);
   const [recentTick, setRecentTick] = useState(0);
 
@@ -203,20 +199,13 @@ export function ReportsCatalogPage() {
     const current = toIsoRange(range);
     const previous = toIsoRange(priorRange(range));
     try {
-      const [periodRes, priorRes, staffRes, productRes, customerRes, overview] = await Promise.all([
+      const [periodRes, priorRes, overview] = await Promise.all([
         runReport('sales/revenue-by-period', { ...current, groupBy }),
         runReport('sales/revenue-by-period', { ...previous, groupBy }),
-        runReport('sales/revenue-by-employee', current),
-        runReport('sales/revenue-by-employee-product', current).catch(() => null),
-        runReport('sales/revenue-by-customer', current).catch(() => null),
         fetchDashboardOverview().catch(() => null),
       ]);
       setPeriod(periodRes);
       setPrior(priorRes);
-      setStaffRows(staffRes.rows);
-      setStaffTotals(staffRes.totals ?? null);
-      setProductRows(productRes?.rows ?? []);
-      setBuyerCount(customerRes?.rows.length ?? 0);
       setBatchCount(overview?.inventory.activeBatchCount ?? 0);
     } finally {
       setLoading(false);
@@ -289,24 +278,21 @@ export function ReportsCatalogPage() {
     [recent, q, t],
   );
 
-  const net = period?.totals ? readReportFieldNumber(period.totals, 'netAmount') : 0;
+  const sales = period?.totals ? readReportFieldNumber(period.totals, 'salesAmount') : 0;
+  const checkoutPaid = period?.totals ? readReportFieldNumber(period.totals, 'checkoutPaid') : 0;
+  const newDebt = period?.totals ? readReportFieldNumber(period.totals, 'newDebt') : 0;
+  const collectionAmount = period?.totals ? readReportFieldNumber(period.totals, 'collectionAmount') : 0;
   const orders = period?.totals ? readReportFieldNumber(period.totals, 'orderCount') : 0;
-  const priorNet = prior?.totals ? readReportFieldNumber(prior.totals, 'netAmount') : 0;
+  const priorSales = prior?.totals ? readReportFieldNumber(prior.totals, 'salesAmount') : 0;
+  const priorPaid = prior?.totals ? readReportFieldNumber(prior.totals, 'checkoutPaid') : 0;
+  const priorDebt = prior?.totals ? readReportFieldNumber(prior.totals, 'newDebt') : 0;
+  const priorCollection = prior?.totals ? readReportFieldNumber(prior.totals, 'collectionAmount') : 0;
   const priorOrders = prior?.totals ? readReportFieldNumber(prior.totals, 'orderCount') : 0;
-  const namedOrders = staffTotals ? readReportFieldNumber(staffTotals, 'namedOrderCount') : 0;
-  const soldSkuCount = useMemo(() => {
-    const codes = new Set(
-      productRows
-        .map((row) => readReportFieldString(row, 'productCode') || readReportFieldString(row, 'productName'))
-        .filter(Boolean),
-    );
-    return codes.size;
-  }, [productRows]);
   const points = useMemo(
     () =>
       (period?.rows ?? []).map((row) => ({
         label: readReportFieldString(row, 'periodLabel'),
-        net: readReportFieldNumber(row, 'netAmount'),
+        net: readReportFieldNumber(row, 'salesAmount'),
       })),
     [period],
   );
@@ -319,11 +305,11 @@ export function ReportsCatalogPage() {
   ];
 
   const kpis: { key: Tone; label: string; value: string; hint: string; to: string; icon: ReactNode; delta?: ReturnType<typeof describeDelta> }[] = [
-    { key: 'revenue', label: t('kpi.revenue'), value: formatDisplayMoney(net), hint: t('kpi.vsPrior'), to: '/reports/sales/revenue-by-period', icon: <BarChartOutlined />, delta: describeDelta(net, priorNet, t('kpi.newPeriod')) },
-    { key: 'orders', label: t('kpi.orders'), value: orders.toLocaleString('vi-VN'), hint: t('kpi.vsPrior'), to: '/reports/sales/revenue-by-period', icon: <ShoppingCartOutlined />, delta: describeDelta(orders, priorOrders, t('kpi.newPeriod')) },
-    { key: 'customers', label: t('kpi.customers'), value: buyerCount.toLocaleString('vi-VN'), hint: t('kpi.namedHint', { count: namedOrders.toLocaleString('vi-VN') }), to: '/reports/customers', icon: <UserOutlined /> },
-    { key: 'products', label: t('kpi.products'), value: soldSkuCount.toLocaleString('vi-VN'), hint: t('kpi.soldHint'), to: '/reports/inventory/stock-snapshot', icon: <AppstoreOutlined /> },
-    { key: 'staff', label: t('kpi.staff'), value: String(staffRows.length), hint: t('kpi.staffHint'), to: '/reports/sales/revenue-by-employee', icon: <TeamOutlined /> },
+    { key: 'revenue', label: t('kpi.revenue'), value: formatDisplayMoney(sales), hint: t('kpi.vsPrior'), to: '/reports/sales/revenue-by-period', icon: <BarChartOutlined />, delta: describeDelta(sales, priorSales, t('kpi.newPeriod')) },
+    { key: 'paid', label: t('kpi.paid'), value: formatDisplayMoney(checkoutPaid), hint: t('kpi.paidHint'), to: '/reports/sales/revenue-by-period', icon: <ShoppingCartOutlined />, delta: describeDelta(checkoutPaid, priorPaid, t('kpi.newPeriod')) },
+    { key: 'debt', label: t('kpi.debt'), value: formatDisplayMoney(newDebt), hint: t('kpi.debtHint'), to: '/reports/sales/receivables-movement', icon: <UserOutlined />, delta: describeDelta(newDebt, priorDebt, t('kpi.newPeriod')) },
+    { key: 'collection', label: t('kpi.collection'), value: formatDisplayMoney(collectionAmount), hint: t('kpi.collectionHint'), to: '/reports/sales/receivables-movement', icon: <ShopOutlined />, delta: describeDelta(collectionAmount, priorCollection, t('kpi.newPeriod')) },
+    { key: 'orders', label: t('kpi.orders'), value: orders.toLocaleString('vi-VN'), hint: t('kpi.vsPrior'), to: '/reports/sales/revenue-by-period', icon: <AppstoreOutlined />, delta: describeDelta(orders, priorOrders, t('kpi.newPeriod')) },
     { key: 'stock', label: t('kpi.stock'), value: batchCount.toLocaleString('vi-VN'), hint: t('kpi.batches'), to: '/reports/inventory/stock-snapshot', icon: <InboxOutlined /> },
   ];
 

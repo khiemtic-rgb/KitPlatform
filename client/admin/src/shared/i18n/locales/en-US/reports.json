@@ -25,6 +25,9 @@
     },
     "kpi": {
       "revenue": "Revenue",
+      "paid": "Collected",
+      "debt": "On account",
+      "collection": "AR collections",
       "orders": "Sales tickets",
       "customers": "Buyers",
       "products": "SKUs sold",
@@ -32,6 +35,9 @@
       "stock": "Lots on hand",
       "vsPrior": "vs previous period",
       "newPeriod": "no prior-period data",
+      "paidHint": "at checkout",
+      "debtHint": "new AR in period",
+      "collectionHint": "posted collections",
       "namedHint": "{{count}} named tickets",
       "soldHint": "sold in period",
       "staffHint": "sold in period",
@@ -107,6 +113,9 @@
     },
     "kpi": {
       "revenue": "Revenue",
+      "paid": "Collected",
+      "debt": "On account",
+      "collection": "AR collections",
       "orders": "Sales tickets",
       "customers": "Buyers",
       "products": "SKUs sold",
@@ -114,6 +123,9 @@
       "stock": "Lots on hand",
       "vsPrior": "vs previous period",
       "newPeriod": "no prior-period data",
+      "paidHint": "at checkout",
+      "debtHint": "new AR in period",
+      "collectionHint": "posted collections",
       "customersHint": "{{count}} named tickets",
       "soldHint": "sold in period",
       "staffHint": "sold in period",
@@ -160,7 +172,7 @@
   },
   "revenue": {
     "title": "Revenue by period",
-    "subtitle": "Gross sales, refunds, and net revenue by day / week / month.",
+    "subtitle": "Revenue on sale date (including credit). Split paid, new AR, collections, and payment methods.",
     "export": "Export report",
     "period": "Period",
     "groupBy": "Group by",
@@ -176,6 +188,9 @@
     "rows": "{{count}} rows",
     "kpi": {
       "revenue": "Total revenue",
+      "paid": "Collected",
+      "debt": "On account",
+      "collection": "AR collections",
       "orders": "Orders",
       "aov": "Avg / order",
       "refund": "Refunds",
@@ -203,9 +218,18 @@
         "week": "Week",
         "month": "Month"
       },
-      "sales": "Sales",
+      "sales": "Revenue",
+      "checkout": "Collected",
+      "debt": "On account",
+      "collection": "AR collections",
+      "cash": "Cash",
+      "transfer": "Transfer",
+      "card": "Card",
+      "ewallet": "Wallet",
       "refund": "Refunds",
-      "net": "Net",
+      "refundCash": "Cash refund",
+      "refundDebt": "Refund vs AR",
+      "net": "Net revenue",
       "orders": "Orders",
       "aov": "Avg / order",
       "change": "Change",
@@ -566,11 +590,11 @@
   "reports": {
     "SALES-01": {
       "name": "Revenue by period",
-      "description": "Gross sales, returns, and net revenue by day/week/month (Vietnam time)."
+      "description": "Revenue on sale date (including credit), collected, new AR, collections, and payment methods."
     },
     "SALES-02": {
-      "name": "Revenue by payment method",
-      "description": "Net revenue by cash, card, bank transfer, and wallet."
+      "name": "Receipts by payment method",
+      "description": "Cash collected by cash, card, transfer, wallet — checkout vs AR collection."
     },
     "SALES-03": {
       "name": "Sales shifts",
@@ -598,7 +622,11 @@
     },
     "SALES-09": {
       "name": "Shift close by cashier",
-      "description": "One row per cashier × shift: orders, sales, refunds, cash, transfer, other, net. Click a shift to reopen the close sheet."
+      "description": "One row per cashier × shift: revenue, new AR, collections, cash, transfer, net. Click a shift to reopen the close sheet."
+    },
+    "SALES-10": {
+      "name": "Customer receivables by period",
+      "description": "Opening AR, credit sales, collections, return-against-debt, closing, and aging."
     },
     "PROC-01": {
       "name": "Goods receipt value",

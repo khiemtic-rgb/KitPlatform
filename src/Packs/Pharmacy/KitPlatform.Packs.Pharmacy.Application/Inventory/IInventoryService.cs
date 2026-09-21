@@ -26,6 +26,19 @@ public interface IInventoryService
         int pageSize,
         CancellationToken cancellationToken = default);
 
+    Task<InventoryLotIdentity> FindLotIdentityAsync(
+        Guid productId,
+        string batchNumber,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InventoryLotConflictDto>> GetLotConflictsAsync(
+        string? search,
+        CancellationToken cancellationToken = default);
+
+    Task<UnifyLotDatesResult> UnifyLotDatesAsync(
+        UnifyLotDatesRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<OpeningBalanceResultDto> CreateOpeningBalanceAsync(
         CreateOpeningBalanceRequest request,
         CancellationToken cancellationToken = default);

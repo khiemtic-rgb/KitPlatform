@@ -39,6 +39,7 @@ public sealed record StockBatchListItemDto(
     string ProductName,
     string? SaleUnitName,
     string BatchNumber,
+    DateOnly? ManufactureDate,
     DateOnly? ExpiryDate,
     decimal UnitCost,
     decimal QuantityAvailable,
@@ -100,6 +101,7 @@ public sealed record OpeningBalanceBatchListItemDto(
     string ProductName,
     string? SaleUnitName,
     string BatchNumber,
+    DateOnly? ManufactureDate,
     DateOnly? ExpiryDate,
     decimal UnitCost,
     decimal QuantityAvailable,
@@ -159,6 +161,7 @@ public sealed record TransferItemDto(
     string ProductCode,
     string ProductName,
     string BatchNumber,
+    DateOnly? ManufactureDate,
     DateOnly? ExpiryDate,
     string? UnitName,
     decimal Quantity,
@@ -310,4 +313,38 @@ public sealed record RevalueBatchCostResult(
     Guid BatchId,
     decimal PreviousUnitCost,
     decimal UnitCost);
+
+public sealed record InventoryLotConflictCardDto(
+    Guid BatchId,
+    Guid WarehouseId,
+    string WarehouseName,
+    string BatchNumber,
+    DateOnly? ManufactureDate,
+    DateOnly? ExpiryDate,
+    decimal QuantityAvailable);
+
+public sealed record InventoryLotConflictDto(
+    Guid ProductId,
+    string ProductCode,
+    string ProductName,
+    string? SaleUnitName,
+    string BatchNumber,
+    int WarehouseCount,
+    int CardCount,
+    decimal QuantityAvailable,
+    IReadOnlyList<DateOnly> ManufactureDates,
+    IReadOnlyList<DateOnly> ExpiryDates,
+    IReadOnlyList<InventoryLotConflictCardDto> Cards,
+    bool CanUnify);
+
+public sealed record UnifyLotDatesRequest(
+    Guid ProductId,
+    string BatchNumber,
+    DateOnly? ManufactureDate,
+    DateOnly ExpiryDate);
+
+public sealed record UnifyLotDatesResult(
+    Guid ProductId,
+    string BatchNumber,
+    int CardsUpdated);
 

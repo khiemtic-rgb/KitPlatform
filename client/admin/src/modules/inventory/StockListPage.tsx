@@ -21,7 +21,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { fetchProduct } from '@/shared/api/catalog.api';
-import { fetchStockBatches, fetchStockProducts, fetchWarehouses, revalueBatchUnitCost } from '@/shared/api/inventory.api';
+import { fetchLotConflicts, fetchStockBatches, fetchStockProducts, fetchWarehouses, revalueBatchUnitCost } from '@/shared/api/inventory.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useCanInventoryWrite } from '@/shared/auth/usePermission';
 import type { StockBatch, StockProductSummary, Warehouse } from '@/shared/api/inventory.types';
@@ -78,6 +78,7 @@ export function StockListPage() {
   const [revalueDrafts, setRevalueDrafts] = useState<Record<string, number>>({});
   const [revalueReason, setRevalueReason] = useState('');
   const [revalueSavingId, setRevalueSavingId] = useState<string>();
+  const [lotConflictCount, setLotConflictCount] = useState(0);
   const [revalueJustSaved, setRevalueJustSaved] = useState(false);
   const fromAnomaly = searchParams.get('from') === 'anomaly' || searchParams.get('revalue') === '1';
   const revalueContext = {
@@ -257,6 +258,20 @@ export function StockListPage() {
   }, [load]);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetchLotConflicts()
+      .then((rows) => {
+        if (!cancelled) setLotConflictCount(rows.length);
+      })
+      .catch(() => {
+        if (!cancelled) setLotConflictCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!revalueOpen) return;
     let cancelled = false;
     void (async () => {
@@ -370,6 +385,12 @@ export function StockListPage() {
   const detailBatchColumns: ColumnsType<StockBatch> = [
     { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 110 },
     {
+      title: ts('manufactureAbbr'),
+      dataIndex: 'manufactureDate',
+      width: 100,
+      render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+    },
+    {
       title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',
       width: 100,
@@ -457,6 +478,12 @@ export function StockListPage() {
       render: (v?: string) => v?.trim() || '—',
     },
     { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 120 },
+    {
+      title: ts('manufactureAbbr'),
+      dataIndex: 'manufactureDate',
+      width: 110,
+      render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+    },
     {
       title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',
@@ -590,6 +617,19 @@ export function StockListPage() {
 
   return (
     <Card title={t('title')}>
+      {lotConflictCount > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={t('lotConflictBanner', { count: lotConflictCount })}
+          action={
+            <Link to="/inventory/lot-conflicts">
+              <Button size="small">{t('openLotConflicts')}</Button>
+            </Link>
+          }
+        />
+      )}
       <Tabs
         activeKey={activeTab}
         onChange={(key) => {

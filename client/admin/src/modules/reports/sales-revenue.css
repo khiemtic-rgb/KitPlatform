@@ -62,7 +62,7 @@
 
 .sales-rev__kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -90,13 +90,17 @@
 }
 
 .sales-rev__kpi--revenue .sales-rev__kpi-icon { background: #e6f4ff; color: #1677ff; }
+.sales-rev__kpi--paid .sales-rev__kpi-icon { background: #f6ffed; color: #389e0d; }
+.sales-rev__kpi--debt .sales-rev__kpi-icon { background: #fff7e6; color: #fa8c16; }
+.sales-rev__kpi--collection .sales-rev__kpi-icon { background: #f9f0ff; color: #722ed1; }
 .sales-rev__kpi--orders .sales-rev__kpi-icon { background: #e6fffb; color: #13c2c2; }
-.sales-rev__kpi--aov .sales-rev__kpi-icon { background: #fff7e6; color: #fa8c16; }
 .sales-rev__kpi--refund .sales-rev__kpi-icon { background: #fff1f0; color: #f5222d; }
 
 .sales-rev__kpi--revenue .sales-rev__kpi-value { color: #1677ff; }
+.sales-rev__kpi--paid .sales-rev__kpi-value { color: #389e0d; }
+.sales-rev__kpi--debt .sales-rev__kpi-value { color: #d46b08; }
+.sales-rev__kpi--collection .sales-rev__kpi-value { color: #531dab; }
 .sales-rev__kpi--orders .sales-rev__kpi-value { color: #08979c; }
-.sales-rev__kpi--aov .sales-rev__kpi-value { color: #d46b08; }
 .sales-rev__kpi--refund .sales-rev__kpi-value { color: #cf1322; }
 
 .sales-rev__kpi-label {
@@ -327,7 +331,10 @@
 .sales-rev__down { color: #c0392b; }
 
 @media (max-width: 1100px) {
-  .sales-rev__kpis,
+  .sales-rev__kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .sales-rev__charts {
     grid-template-columns: 1fr;
   }

@@ -36,7 +36,9 @@ internal sealed class DashboardService : IDashboardService
                 Sales = new DashboardSalesSnapshotDto(
                     TodayNetTotal: 0,
                     WeekNetTotal: 0,
-                    TodayOrderCount: 0),
+                    TodayOrderCount: 0,
+                    TodayCollected: 0,
+                    TodayNewDebt: 0),
             };
         }
 

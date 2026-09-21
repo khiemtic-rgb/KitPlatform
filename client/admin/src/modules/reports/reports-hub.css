@@ -127,6 +127,9 @@
 }
 
 .reports-hub__kpi--revenue .reports-hub__kpi-icon { background: #e6f4ff; color: #1677ff; }
+.reports-hub__kpi--paid .reports-hub__kpi-icon { background: #f6ffed; color: #389e0d; }
+.reports-hub__kpi--debt .reports-hub__kpi-icon { background: #fff7e6; color: #fa8c16; }
+.reports-hub__kpi--collection .reports-hub__kpi-icon { background: #f9f0ff; color: #722ed1; }
 .reports-hub__kpi--orders .reports-hub__kpi-icon { background: #e6fffb; color: #13c2c2; }
 .reports-hub__kpi--customers .reports-hub__kpi-icon { background: #f9f0ff; color: #722ed1; }
 .reports-hub__kpi--products .reports-hub__kpi-icon { background: #fff7e6; color: #fa8c16; }
@@ -134,6 +137,9 @@
 .reports-hub__kpi--stock .reports-hub__kpi-icon { background: #f6ffed; color: #52c41a; }
 
 .reports-hub__kpi--revenue .reports-hub__kpi-value { color: #1677ff; }
+.reports-hub__kpi--paid .reports-hub__kpi-value { color: #389e0d; }
+.reports-hub__kpi--debt .reports-hub__kpi-value { color: #d46b08; }
+.reports-hub__kpi--collection .reports-hub__kpi-value { color: #531dab; }
 .reports-hub__kpi--orders .reports-hub__kpi-value { color: #08979c; }
 .reports-hub__kpi--customers .reports-hub__kpi-value { color: #531dab; }
 .reports-hub__kpi--products .reports-hub__kpi-value { color: #d46b08; }

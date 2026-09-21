@@ -33,7 +33,28 @@
       "opening": "Tồn đầu kỳ",
       "warehouses": "Danh mục kho",
       "gppChecklist": "GPP vận hành",
-      "qd540Export": "QĐ 540"
+      "qd540Export": "QĐ 540",
+      "lotConflicts": "Lô lệch NSX/HSD"
+    }
+  },
+  "lotConflicts": {
+    "title": "Lô lệch ngày sản xuất / hạn dùng",
+    "hint": "Cùng một số lô của một thuốc chỉ được có một NSX và một HSD trên mọi kho. Chọn ngày đúng rồi bấm Áp dụng — phần mềm ghi đè ngày trên các thẻ tồn, không đổi số lượng.",
+    "searchPlaceholder": "Tìm mã SP, tên thuốc hoặc số lô",
+    "count": "{{count}} số lô cần sửa",
+    "empty": "Không có lô lệch NSX/HSD",
+    "lot": "Số lô",
+    "storedLot": "Số lô trên thẻ",
+    "manufactureDates": "Các NSX đang có",
+    "expiryDates": "Các HSD đang có",
+    "warehouses": "Số kho",
+    "pickCorrect": "Chọn ngày đúng",
+    "apply": "Áp dụng",
+    "messages": {
+      "loadFailed": "Không tải được danh sách lô lệch",
+      "expiryRequired": "Chọn hạn dùng đúng trước khi áp dụng",
+      "unifySuccess": "Đã ghi NSX/HSD cho {{count}} thẻ tồn của lô {{lot}}",
+      "unifyFailed": "Không sửa được lô"
     }
   },
   "qd540Export": {
@@ -77,6 +98,7 @@
     "varianceAbbr": "Lệch",
     "countAbbr": "Đếm",
     "expiryAbbr": "HSD",
+    "manufactureAbbr": "NSX",
     "stockOnHand": "tồn {{qty}}",
     "batchLabel": "Lô {{number}}",
     "batchWithExpiry": "{{number}}{{expiry}} · tồn {{qty}}",
@@ -203,6 +225,8 @@
     "viewFefo": "Xem theo lô FEFO",
     "loadingBatches": "Đang tải chi tiết lô…",
     "noBatches": "Không có lô tồn.",
+    "lotConflictBanner": "{{count}} số lô đang có nhiều NSX hoặc HSD. Chủ nhà thuốc chọn ngày đúng rồi áp dụng cho mọi kho.",
+    "openLotConflicts": "Mở bảng sửa lô",
     "messages": {
       "loadFailed": "Không tải được tồn kho",
       "detailLoadFailed": "Không tải được chi tiết lô",
@@ -564,7 +588,7 @@
     "importingBatch": "Đang import lô {{current}}/{{total}}…",
     "importResult": "Đã nhập: {{processed}} lô · Lỗi: {{errors}}",
     "importRowError": "Dòng {{row}}: {{message}}",
-    "columnsHint": "Cột: product_key (mã SP/barcode), batch_number, quantity, unit_cost, expiry_date",
+    "columnsHint": "Cột: product_key (mã SP/barcode), batch_number, manufacture_date, expiry_date, quantity, unit_cost",
     "manualEntryTitle": "Nhập tồn đầu kỳ",
     "notesPlaceholder": "VD: Go-live chi nhánh mới...",
     "selectProduct": "Chọn SP",
@@ -629,6 +653,8 @@
       "voidFailed": "Không xóa được lô tồn đầu kỳ",
       "selectWarehouse": "Chọn kho nhập tồn",
       "addValidLine": "Thêm ít nhất một dòng hợp lệ",
+      "expiryRequired": "Mỗi dòng phải có hạn dùng",
+      "lotConflict": "Số lô đang có nhiều NSX/HSD trên các kho. Sửa tồn kho trước khi nhập thêm.",
       "invalidUnitCost": "Giá vốn không hợp lệ",
       "saveSuccess": "Đã lưu {{count}} dòng tồn đầu kỳ",
       "saveFailed": "Không nhập được tồn đầu kỳ",

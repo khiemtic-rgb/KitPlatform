@@ -37,6 +37,41 @@ public sealed class StockController : ControllerBase
         CancellationToken cancellationToken = default) =>
         Ok(await _inventory.GetStockProductsAsync(warehouseId, search, expiry, page, pageSize, cancellationToken));
 
+    [HttpGet("lot-identity")]
+    [Authorize(Policy = InventoryPolicies.Read)]
+    public async Task<ActionResult<InventoryLotIdentity>> LotIdentity(
+        [FromQuery] Guid productId,
+        [FromQuery] string? batchNumber,
+        CancellationToken cancellationToken = default)
+    {
+        if (productId == Guid.Empty || string.IsNullOrWhiteSpace(batchNumber))
+            return BadRequest(new { message = "Thiếu sản phẩm hoặc số lô." });
+        return Ok(await _inventory.FindLotIdentityAsync(productId, batchNumber, cancellationToken));
+    }
+
+    [HttpGet("lot-conflicts")]
+    [Authorize(Policy = InventoryPolicies.Read)]
+    public async Task<ActionResult<IReadOnlyList<InventoryLotConflictDto>>> LotConflicts(
+        [FromQuery] string? search,
+        CancellationToken cancellationToken = default) =>
+        Ok(await _inventory.GetLotConflictsAsync(search, cancellationToken));
+
+    [HttpPost("lot-conflicts/unify")]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    public async Task<ActionResult<UnifyLotDatesResult>> UnifyLotDates(
+        [FromBody] UnifyLotDatesRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _inventory.UnifyLotDatesAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("low-stock")]
     [Authorize(Policy = InventoryPolicies.Read)]
     public async Task<ActionResult<IReadOnlyList<LowStockProductDto>>> LowStock(

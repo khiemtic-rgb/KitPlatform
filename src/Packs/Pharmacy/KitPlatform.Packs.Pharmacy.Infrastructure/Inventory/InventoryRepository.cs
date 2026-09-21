@@ -222,6 +222,7 @@ internal sealed class InventoryRepository
                  WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
                  ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
                 b.batch_number AS BatchNumber,
+                b.manufacture_date AS ManufactureDate,
                 b.expiry_date AS ExpiryDate,
                 b.unit_cost AS UnitCost,
                 b.quantity_available AS QuantityAvailable,
@@ -270,6 +271,7 @@ internal sealed class InventoryRepository
                  WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
                  ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
                 b.batch_number AS BatchNumber,
+                b.manufacture_date AS ManufactureDate,
                 b.expiry_date AS ExpiryDate,
                 b.unit_cost AS UnitCost,
                 b.quantity_available AS QuantityAvailable,
@@ -569,15 +571,46 @@ internal sealed class InventoryRepository
             """;
     }
 
-    public async Task<bool> ProductExistsAsync(Guid productId, CancellationToken cancellationToken)
+    public async Task<bool> ProductExistsAsync(
+        Guid productId,
+        CancellationToken cancellationToken,
+        bool includeHidden = false)
     {
-        const string sql = """
+        var sql = includeHidden
+            ? """
+            SELECT EXISTS(
+                SELECT 1 FROM products WHERE id = @ProductId AND tenant_id = @TenantId
+            )
+            """
+            : """
             SELECT EXISTS(
                 SELECT 1 FROM products WHERE id = @ProductId AND tenant_id = @TenantId AND deleted_at IS NULL
             )
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         return await conn.QuerySingleAsync<bool>(sql, new { ProductId = productId, TenantId });
+    }
+
+    public async Task<(string Code, string Name, bool Hidden)?> GetProductRefAsync(
+        Guid productId,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT product_code AS Code, product_name AS Name, (deleted_at IS NOT NULL) AS Hidden
+            FROM products
+            WHERE id = @ProductId AND tenant_id = @TenantId
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var row = await conn.QuerySingleOrDefaultAsync<ProductRefRow>(
+            sql, new { ProductId = productId, TenantId });
+        return row is null ? null : (row.Code, row.Name, row.Hidden);
+    }
+
+    private sealed class ProductRefRow
+    {
+        public string Code { get; init; } = "";
+        public string Name { get; init; } = "";
+        public bool Hidden { get; init; }
     }
 
     public async Task<bool> WarehouseExistsAsync(Guid warehouseId, CancellationToken cancellationToken)
@@ -637,16 +670,239 @@ internal sealed class InventoryRepository
         const string sql = """
             SELECT id FROM inventory_batches
             WHERE tenant_id = @TenantId AND warehouse_id = @WarehouseId
-              AND product_id = @ProductId AND batch_number = @BatchNumber
+              AND product_id = @ProductId
+              AND upper(btrim(regexp_replace(batch_number, '\s+', ' ', 'g'))) = @Normalized
             """;
         var id = await conn.QuerySingleOrDefaultAsync<Guid>(sql, new
         {
             TenantId,
             WarehouseId = warehouseId,
             ProductId = productId,
-            BatchNumber = batchNumber,
+            Normalized = InventoryLotRules.NormalizeBatchNumber(batchNumber),
         }, tx);
         return id == Guid.Empty ? null : id;
+    }
+
+    public Task<InventoryLotIdentity> FindLotIdentityAsync(
+        Guid productId,
+        string batchNumber,
+        CancellationToken cancellationToken) =>
+        FindLotIdentityCoreAsync(null, null, productId, batchNumber, cancellationToken);
+
+    public Task<InventoryLotIdentity> FindLotIdentityAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid productId,
+        string batchNumber,
+        CancellationToken cancellationToken) =>
+        FindLotIdentityCoreAsync(conn, tx, productId, batchNumber, cancellationToken);
+
+    private async Task<InventoryLotIdentity> FindLotIdentityCoreAsync(
+        IDbConnection? conn,
+        IDbTransaction? tx,
+        Guid productId,
+        string batchNumber,
+        CancellationToken cancellationToken)
+    {
+        var normalized = InventoryLotRules.NormalizeBatchNumber(batchNumber);
+        if (normalized.Length == 0)
+            return new InventoryLotIdentity(false, false, string.Empty, null, null);
+
+        const string sql = """
+            SELECT
+                batch_number AS BatchNumber,
+                manufacture_date AS ManufactureDate,
+                expiry_date AS ExpiryDate
+            FROM inventory_batches
+            WHERE tenant_id = @TenantId
+              AND product_id = @ProductId
+              AND upper(btrim(regexp_replace(batch_number, '\s+', ' ', 'g'))) = @Normalized
+            """;
+        IReadOnlyList<LotDateRow> rows;
+        if (conn is null)
+        {
+            await using var owned = await _db.CreateOpenConnectionAsync(cancellationToken);
+            rows = (await owned.QueryAsync<LotDateRow>(sql, new { TenantId, ProductId = productId, Normalized = normalized })).ToList();
+        }
+        else
+        {
+            rows = (await conn.QueryAsync<LotDateRow>(
+                sql, new { TenantId, ProductId = productId, Normalized = normalized }, tx)).ToList();
+        }
+
+        if (rows.Count == 0)
+            return new InventoryLotIdentity(false, false, normalized, null, null);
+
+        var mfgs = rows.Select(r => r.ManufactureDate).Where(d => d.HasValue).Select(d => d!.Value).Distinct().ToList();
+        var exps = rows.Select(r => r.ExpiryDate).Where(d => d.HasValue).Select(d => d!.Value).Distinct().ToList();
+        return new InventoryLotIdentity(
+            true,
+            mfgs.Count > 1 || exps.Count > 1,
+            normalized,
+            mfgs.Count == 1 ? mfgs[0] : null,
+            exps.Count == 1 ? exps[0] : null);
+    }
+
+    public async Task FillBatchDatesIfEmptyAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid batchId,
+        DateOnly? manufactureDate,
+        DateOnly? expiryDate,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            UPDATE inventory_batches SET
+                manufacture_date = COALESCE(manufacture_date, @ManufactureDate),
+                expiry_date = COALESCE(expiry_date, @ExpiryDate),
+                updated_at = NOW()
+            WHERE id = @BatchId AND tenant_id = @TenantId
+            """;
+        await conn.ExecuteAsync(sql, new
+        {
+            BatchId = batchId,
+            TenantId,
+            ManufactureDate = manufactureDate,
+            ExpiryDate = expiryDate,
+        }, tx);
+    }
+
+    private sealed class LotDateRow
+    {
+        public string BatchNumber { get; init; } = "";
+        public DateOnly? ManufactureDate { get; init; }
+        public DateOnly? ExpiryDate { get; init; }
+    }
+
+    public async Task<IReadOnlyList<InventoryLotConflictDto>> GetLotConflictsAsync(
+        string? search,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            WITH lots AS (
+                SELECT
+                    b.product_id AS ProductId,
+                    upper(btrim(regexp_replace(b.batch_number, '\s+', ' ', 'g'))) AS Lot
+                FROM inventory_batches b
+                INNER JOIN products p ON p.id = b.product_id AND p.deleted_at IS NULL
+                WHERE b.tenant_id = @TenantId
+                  AND (
+                    @Search IS NULL
+                    OR p.product_code ILIKE @Search
+                    OR p.product_name ILIKE @Search
+                    OR upper(btrim(regexp_replace(b.batch_number, '\s+', ' ', 'g'))) LIKE @LotSearch
+                  )
+                GROUP BY b.product_id, upper(btrim(regexp_replace(b.batch_number, '\s+', ' ', 'g')))
+                HAVING COUNT(DISTINCT b.manufacture_date) FILTER (WHERE b.manufacture_date IS NOT NULL) > 1
+                    OR COUNT(DISTINCT b.expiry_date) FILTER (WHERE b.expiry_date IS NOT NULL) > 1
+            )
+            SELECT
+                b.id AS BatchId,
+                b.warehouse_id AS WarehouseId,
+                w.warehouse_name AS WarehouseName,
+                b.product_id AS ProductId,
+                p.product_code AS ProductCode,
+                p.product_name AS ProductName,
+                (SELECT u.unit_name FROM product_units u
+                 WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
+                 ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
+                l.Lot AS Lot,
+                b.batch_number AS BatchNumber,
+                b.manufacture_date AS ManufactureDate,
+                b.expiry_date AS ExpiryDate,
+                b.quantity_available AS QuantityAvailable
+            FROM inventory_batches b
+            INNER JOIN lots l
+                ON l.ProductId = b.product_id
+               AND upper(btrim(regexp_replace(b.batch_number, '\s+', ' ', 'g'))) = l.Lot
+            INNER JOIN products p ON p.id = b.product_id AND p.deleted_at IS NULL
+            INNER JOIN warehouses w ON w.id = b.warehouse_id AND w.deleted_at IS NULL
+            WHERE b.tenant_id = @TenantId
+            ORDER BY p.product_name, l.Lot, w.warehouse_name
+            """;
+
+        var term = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = (await conn.QueryAsync<LotConflictCardRow>(sql, new
+        {
+            TenantId,
+            Search = term is null ? null : $"%{term}%",
+            LotSearch = term is null ? null : $"%{InventoryLotRules.NormalizeBatchNumber(term)}%",
+        })).ToList();
+
+        return rows
+            .GroupBy(row => (row.ProductId, row.Lot))
+            .Select(group =>
+            {
+                var first = group.First();
+                var mfgs = group.Select(x => x.ManufactureDate).Where(d => d.HasValue).Select(d => d!.Value).Distinct().OrderBy(d => d).ToList();
+                var exps = group.Select(x => x.ExpiryDate).Where(d => d.HasValue).Select(d => d!.Value).Distinct().OrderBy(d => d).ToList();
+                return new InventoryLotConflictDto(
+                    first.ProductId,
+                    first.ProductCode,
+                    first.ProductName,
+                    first.SaleUnitName,
+                    first.Lot,
+                    group.Select(x => x.WarehouseId).Distinct().Count(),
+                    group.Count(),
+                    group.Sum(x => x.QuantityAvailable),
+                    mfgs,
+                    exps,
+                    group.Select(x => new InventoryLotConflictCardDto(
+                        x.BatchId,
+                        x.WarehouseId,
+                        x.WarehouseName,
+                        x.BatchNumber,
+                        x.ManufactureDate,
+                        x.ExpiryDate,
+                        x.QuantityAvailable)).ToList(),
+                    true);
+            })
+            .ToList();
+    }
+
+    public async Task<int> UnifyLotDatesAsync(
+        Guid productId,
+        string batchNumber,
+        DateOnly? manufactureDate,
+        DateOnly expiryDate,
+        CancellationToken cancellationToken)
+    {
+        var lot = InventoryLotRules.NormalizeBatchNumber(batchNumber);
+        const string sql = """
+            UPDATE inventory_batches SET
+                manufacture_date = @ManufactureDate,
+                expiry_date = @ExpiryDate,
+                updated_at = NOW()
+            WHERE tenant_id = @TenantId
+              AND product_id = @ProductId
+              AND upper(btrim(regexp_replace(batch_number, '\s+', ' ', 'g'))) = @Normalized
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteAsync(sql, new
+        {
+            TenantId,
+            ProductId = productId,
+            Normalized = lot,
+            ManufactureDate = manufactureDate,
+            ExpiryDate = expiryDate,
+        });
+    }
+
+    private sealed class LotConflictCardRow
+    {
+        public Guid BatchId { get; init; }
+        public Guid WarehouseId { get; init; }
+        public string WarehouseName { get; init; } = "";
+        public Guid ProductId { get; init; }
+        public string ProductCode { get; init; } = "";
+        public string ProductName { get; init; } = "";
+        public string? SaleUnitName { get; init; }
+        public string Lot { get; init; } = "";
+        public string BatchNumber { get; init; } = "";
+        public DateOnly? ManufactureDate { get; init; }
+        public DateOnly? ExpiryDate { get; init; }
+        public decimal QuantityAvailable { get; init; }
     }
 
     public async Task<Guid> InsertBatchAsync(
@@ -788,22 +1044,25 @@ internal sealed class InventoryRepository
 
         foreach (var line in lines)
         {
-            var batchNumber = line.BatchNumber.Trim();
+            var batchNumber = InventoryLotRules.NormalizeBatchNumber(line.BatchNumber);
             var qty = line.Quantity;
             if (qty <= 0) throw new InvalidOperationException("Số lượng phải lớn hơn 0.");
+            var identity = await FindLotIdentityAsync(conn, tx, line.ProductId, batchNumber, cancellationToken);
+            var dates = InventoryLotRules.Resolve(batchNumber, line.ManufactureDate, line.ExpiryDate, identity);
 
             var existingId = await FindBatchIdByKeyAsync(conn, tx, warehouseId, line.ProductId, batchNumber, cancellationToken);
             Guid batchId;
             if (existingId is Guid id)
             {
                 batchId = id;
+                await FillBatchDatesIfEmptyAsync(conn, tx, batchId, dates.ManufactureDate, dates.ExpiryDate, cancellationToken);
                 await IncreaseBatchQuantityAsync(conn, tx, batchId, qty, cancellationToken);
             }
             else
             {
                 batchId = await InsertBatchAsync(
                     conn, tx, warehouseId, line.ProductId, batchNumber,
-                    line.ManufactureDate, line.ExpiryDate, line.UnitCost, qty, cancellationToken);
+                    dates.ManufactureDate, dates.ExpiryDate, line.UnitCost, qty, cancellationToken);
             }
 
             batchIds.Add(batchId);
@@ -959,6 +1218,7 @@ internal sealed class InventoryRepository
                  WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
                  ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
                 b.batch_number AS BatchNumber,
+                b.manufacture_date AS ManufactureDate,
                 b.expiry_date AS ExpiryDate,
                 b.unit_cost AS UnitCost,
                 b.quantity_available AS QuantityAvailable,
@@ -1503,12 +1763,33 @@ internal sealed class InventoryRepository
 
                 if (destBatchId is Guid existingDest)
                 {
+                    var destIdentity = await FindLotIdentityAsync(conn, tx, source.ProductId, source.BatchNumber, cancellationToken);
+                    if (destIdentity.HasConflict)
+                    {
+                        throw new InvalidOperationException(
+                            $"Số lô {InventoryLotRules.NormalizeBatchNumber(source.BatchNumber)} đang có nhiều NSX/HSD. Sửa tồn kho trước khi điều chuyển.");
+                    }
+
+                    if (destIdentity.ExpiryDate is DateOnly destExp && source.ExpiryDate is DateOnly srcExp && destExp != srcExp)
+                    {
+                        throw new InvalidOperationException(
+                            $"Số lô {destIdentity.BatchNumber} đã có HSD {destExp:dd/MM/yyyy}. Không thể điều chuyển lô HSD {srcExp:dd/MM/yyyy}.");
+                    }
+
+                    if (destIdentity.ManufactureDate is DateOnly destMfg && source.ManufactureDate is DateOnly srcMfg && destMfg != srcMfg)
+                    {
+                        throw new InvalidOperationException(
+                            $"Số lô {destIdentity.BatchNumber} đã có NSX {destMfg:dd/MM/yyyy}. Không thể điều chuyển lô NSX {srcMfg:dd/MM/yyyy}.");
+                    }
+
+                    await FillBatchDatesIfEmptyAsync(conn, tx, existingDest, source.ManufactureDate, source.ExpiryDate, cancellationToken);
                     await IncreaseBatchQuantityAsync(conn, tx, existingDest, item.Received, cancellationToken);
                 }
                 else
                 {
                     destBatchId = await InsertBatchAsync(
-                        conn, tx, header.ToWarehouseId, source.ProductId, source.BatchNumber,
+                        conn, tx, header.ToWarehouseId, source.ProductId,
+                        InventoryLotRules.NormalizeBatchNumber(source.BatchNumber),
                         source.ManufactureDate, source.ExpiryDate, source.UnitCost, item.Received, cancellationToken);
                 }
 
@@ -1725,6 +2006,7 @@ internal sealed class InventoryRepository
                 p.product_code AS ProductCode,
                 p.product_name AS ProductName,
                 b.batch_number AS BatchNumber,
+                b.manufacture_date AS ManufactureDate,
                 b.expiry_date AS ExpiryDate,
                 (SELECT u.unit_name FROM product_units u
                  WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1

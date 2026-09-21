@@ -134,6 +134,9 @@ const InventoryLayout = lazy(() =>
 const StockListPage = lazy(() =>
   import('@/modules/inventory/StockListPage').then((m) => ({ default: m.StockListPage })),
 );
+const LotConflictPage = lazy(() =>
+  import('@/modules/inventory/LotConflictPage').then((m) => ({ default: m.LotConflictPage })),
+);
 const WarehouseListPage = lazy(() =>
   import('@/modules/inventory/WarehouseListPage').then((m) => ({ default: m.WarehouseListPage })),
 );
@@ -741,6 +744,7 @@ export function AppRouter() {
               >
                 <Route index element={<Navigate to="/inventory/stock" replace />} />
                 <Route path="stock" element={<StockListPage />} />
+                <Route path="lot-conflicts" element={<LotConflictPage />} />
                 <Route path="low-stock" element={<LowStockPage />} />
                 <Route path="gpp-checklist" element={<GppOperationalChecklistPage />} />
                 <Route path="warehouses" element={<WarehouseListPage />} />
@@ -1204,6 +1208,14 @@ export function AppRouter() {
                   element={
                     <SuspenseRoute>
                       <ShiftCloseByEmployeePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/receivables-movement"
+                  element={
+                    <SuspenseRoute>
+                      <ReportViewPage />
                     </SuspenseRoute>
                   }
                 />

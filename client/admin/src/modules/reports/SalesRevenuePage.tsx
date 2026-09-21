@@ -49,13 +49,22 @@ import './sales-revenue.css';
 const { RangePicker } = DatePicker;
 
 type GroupBy = 'day' | 'week' | 'month';
-type Tone = 'revenue' | 'orders' | 'aov' | 'refund';
+type Tone = 'revenue' | 'paid' | 'debt' | 'collection' | 'orders' | 'refund';
 
 type DetailRow = {
   key: string;
   periodLabel: string;
   salesAmount: number;
+  checkoutPaid: number;
+  newDebt: number;
+  collectionAmount: number;
+  cashAmount: number;
+  transferAmount: number;
+  cardAmount: number;
+  ewalletAmount: number;
   refundAmount: number;
+  refundCash: number;
+  refundDebt: number;
   netAmount: number;
   orderCount: number;
   aov: number;
@@ -144,23 +153,24 @@ export function SalesRevenuePage() {
 
   const net = period?.totals ? readReportFieldNumber(period.totals, 'netAmount') : 0;
   const sales = period?.totals ? readReportFieldNumber(period.totals, 'salesAmount') : 0;
+  const checkoutPaid = period?.totals ? readReportFieldNumber(period.totals, 'checkoutPaid') : 0;
+  const newDebt = period?.totals ? readReportFieldNumber(period.totals, 'newDebt') : 0;
+  const collectionAmount = period?.totals ? readReportFieldNumber(period.totals, 'collectionAmount') : 0;
   const refund = period?.totals ? readReportFieldNumber(period.totals, 'refundAmount') : 0;
   const orders = period?.totals ? readReportFieldNumber(period.totals, 'orderCount') : 0;
-  const aov = orders > 0 ? Math.round(net / orders) : 0;
-  const priorNet = prior?.totals ? readReportFieldNumber(prior.totals, 'netAmount') : 0;
+  const aov = orders > 0 ? Math.round(sales / orders) : 0;
+  const priorSales = prior?.totals ? readReportFieldNumber(prior.totals, 'salesAmount') : 0;
+  const priorPaid = prior?.totals ? readReportFieldNumber(prior.totals, 'checkoutPaid') : 0;
+  const priorDebt = prior?.totals ? readReportFieldNumber(prior.totals, 'newDebt') : 0;
+  const priorCollection = prior?.totals ? readReportFieldNumber(prior.totals, 'collectionAmount') : 0;
   const priorOrders = prior?.totals ? readReportFieldNumber(prior.totals, 'orderCount') : 0;
-  const priorAov = (() => {
-    const priorOrd = priorOrders;
-    const priorN = priorNet;
-    return priorOrd > 0 ? Math.round(priorN / priorOrd) : 0;
-  })();
   const priorRefund = prior?.totals ? readReportFieldNumber(prior.totals, 'refundAmount') : 0;
 
   const points = useMemo(
     () =>
       (period?.rows ?? []).map((row) => ({
         label: readReportFieldString(row, 'periodLabel'),
-        netAmount: readReportFieldNumber(row, 'netAmount'),
+        netAmount: readReportFieldNumber(row, 'salesAmount'),
         orderCount: readReportFieldNumber(row, 'orderCount'),
       })),
     [period],
@@ -174,26 +184,36 @@ export function SalesRevenuePage() {
   const detailRows = useMemo<DetailRow[]>(() => {
     const rows = period?.rows ?? [];
     return rows.map((row, index) => {
+      const salesAmount = readReportFieldNumber(row, 'salesAmount');
       const netAmount = readReportFieldNumber(row, 'netAmount');
       const orderCount = readReportFieldNumber(row, 'orderCount');
-      const prevNet = index > 0 ? readReportFieldNumber(rows[index - 1], 'netAmount') : null;
+      const prevSales = index > 0 ? readReportFieldNumber(rows[index - 1], 'salesAmount') : null;
       const changePct =
-        prevNet != null && prevNet !== 0
-          ? Math.round(((netAmount - prevNet) / prevNet) * 1000) / 10
+        prevSales != null && prevSales !== 0
+          ? Math.round(((salesAmount - prevSales) / prevSales) * 1000) / 10
           : null;
       return {
         key: `${readReportFieldString(row, 'periodLabel')}-${index}`,
         periodLabel: readReportFieldString(row, 'periodLabel'),
-        salesAmount: readReportFieldNumber(row, 'salesAmount'),
+        salesAmount,
+        checkoutPaid: readReportFieldNumber(row, 'checkoutPaid'),
+        newDebt: readReportFieldNumber(row, 'newDebt'),
+        collectionAmount: readReportFieldNumber(row, 'collectionAmount'),
+        cashAmount: readReportFieldNumber(row, 'cashAmount'),
+        transferAmount: readReportFieldNumber(row, 'transferAmount'),
+        cardAmount: readReportFieldNumber(row, 'cardAmount'),
+        ewalletAmount: readReportFieldNumber(row, 'ewalletAmount'),
         refundAmount: readReportFieldNumber(row, 'refundAmount'),
+        refundCash: readReportFieldNumber(row, 'refundCash'),
+        refundDebt: readReportFieldNumber(row, 'refundDebt'),
         netAmount,
         orderCount,
-        aov: orderCount > 0 ? Math.round(netAmount / orderCount) : 0,
+        aov: orderCount > 0 ? Math.round(salesAmount / orderCount) : 0,
         changePct,
-        sharePct: net > 0 ? Math.round((netAmount / net) * 1000) / 10 : 0,
+        sharePct: sales > 0 ? Math.round((salesAmount / sales) * 1000) / 10 : 0,
       };
     });
-  }, [period, net]);
+  }, [period, sales]);
 
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -204,10 +224,19 @@ export function SalesRevenuePage() {
   const columnDefs = useMemo(
     () => [
       { key: 'periodLabel', title: t(`cols.periodBy.${groupBy}`), align: 'left' as const },
-      { key: 'salesAmount', title: t('cols.sales'), align: 'right' as const },
-      { key: 'refundAmount', title: t('cols.refund'), align: 'right' as const },
-      { key: 'netAmount', title: t('cols.net'), align: 'right' as const },
       { key: 'orderCount', title: t('cols.orders'), align: 'right' as const },
+      { key: 'salesAmount', title: t('cols.sales'), align: 'right' as const },
+      { key: 'checkoutPaid', title: t('cols.checkout'), align: 'right' as const },
+      { key: 'newDebt', title: t('cols.debt'), align: 'right' as const },
+      { key: 'collectionAmount', title: t('cols.collection'), align: 'right' as const },
+      { key: 'cashAmount', title: t('cols.cash'), align: 'right' as const },
+      { key: 'transferAmount', title: t('cols.transfer'), align: 'right' as const },
+      { key: 'cardAmount', title: t('cols.card'), align: 'right' as const },
+      { key: 'ewalletAmount', title: t('cols.ewallet'), align: 'right' as const },
+      { key: 'refundAmount', title: t('cols.refund'), align: 'right' as const },
+      { key: 'refundCash', title: t('cols.refundCash'), align: 'right' as const },
+      { key: 'refundDebt', title: t('cols.refundDebt'), align: 'right' as const },
+      { key: 'netAmount', title: t('cols.net'), align: 'right' as const },
       { key: 'aov', title: t('cols.aov'), align: 'right' as const },
       { key: 'changePct', title: t('cols.change'), align: 'right' as const },
       { key: 'sharePct', title: t('cols.share'), align: 'right' as const },
@@ -260,14 +289,28 @@ export function SalesRevenuePage() {
         changePct: row.changePct == null ? '—' : `${row.changePct}%`,
         sharePct: `${row.sharePct}%`,
         salesAmount: formatReportCell(row.salesAmount, 'money'),
+        checkoutPaid: formatReportCell(row.checkoutPaid, 'money'),
+        newDebt: formatReportCell(row.newDebt, 'money'),
+        collectionAmount: formatReportCell(row.collectionAmount, 'money'),
+        cashAmount: formatReportCell(row.cashAmount, 'money'),
+        transferAmount: formatReportCell(row.transferAmount, 'money'),
+        cardAmount: formatReportCell(row.cardAmount, 'money'),
+        ewalletAmount: formatReportCell(row.ewalletAmount, 'money'),
         refundAmount: formatReportCell(row.refundAmount, 'money'),
+        refundCash: formatReportCell(row.refundCash, 'money'),
+        refundDebt: formatReportCell(row.refundDebt, 'money'),
         netAmount: formatReportCell(row.netAmount, 'money'),
         aov: formatReportCell(row.aov, 'money'),
       })),
       totals: {
         periodLabel: t('total'),
         salesAmount: formatReportCell(sales, 'money'),
+        checkoutPaid: formatReportCell(checkoutPaid, 'money'),
+        newDebt: formatReportCell(newDebt, 'money'),
+        collectionAmount: formatReportCell(collectionAmount, 'money'),
         refundAmount: formatReportCell(refund, 'money'),
+        refundCash: formatReportCell(readReportFieldNumber(period.totals ?? {}, 'refundCash'), 'money'),
+        refundDebt: formatReportCell(readReportFieldNumber(period.totals ?? {}, 'refundDebt'), 'money'),
         netAmount: formatReportCell(net, 'money'),
         orderCount: orders,
         aov: formatReportCell(aov, 'money'),
@@ -275,15 +318,36 @@ export function SalesRevenuePage() {
         sharePct: '100%',
       },
     };
-  }, [period, columnDefs, detailRows, t, sales, refund, net, orders, aov]);
+  }, [period, columnDefs, detailRows, t, sales, checkoutPaid, newDebt, collectionAmount, refund, net, orders, aov]);
 
   const kpis = [
     {
       key: 'revenue' as Tone,
       label: t('kpi.revenue'),
-      value: formatDisplayMoney(net),
-      delta: describeDelta(net, priorNet, t('kpi.newPeriod')),
+      value: formatDisplayMoney(sales),
+      delta: describeDelta(sales, priorSales, t('kpi.newPeriod')),
       icon: <FundOutlined />,
+    },
+    {
+      key: 'paid' as Tone,
+      label: t('kpi.paid'),
+      value: formatDisplayMoney(checkoutPaid),
+      delta: describeDelta(checkoutPaid, priorPaid, t('kpi.newPeriod')),
+      icon: <BarChartOutlined />,
+    },
+    {
+      key: 'debt' as Tone,
+      label: t('kpi.debt'),
+      value: formatDisplayMoney(newDebt),
+      delta: describeDelta(newDebt, priorDebt, t('kpi.newPeriod')),
+      icon: <ShoppingCartOutlined />,
+    },
+    {
+      key: 'collection' as Tone,
+      label: t('kpi.collection'),
+      value: formatDisplayMoney(collectionAmount),
+      delta: describeDelta(collectionAmount, priorCollection, t('kpi.newPeriod')),
+      icon: <UndoOutlined />,
     },
     {
       key: 'orders' as Tone,
@@ -291,13 +355,6 @@ export function SalesRevenuePage() {
       value: orders.toLocaleString('vi-VN'),
       delta: describeDelta(orders, priorOrders, t('kpi.newPeriod')),
       icon: <ShoppingCartOutlined />,
-    },
-    {
-      key: 'aov' as Tone,
-      label: t('kpi.aov'),
-      value: formatDisplayMoney(aov),
-      delta: describeDelta(aov, priorAov, t('kpi.newPeriod')),
-      icon: <BarChartOutlined />,
     },
     {
       key: 'refund' as Tone,
@@ -426,7 +483,7 @@ export function SalesRevenuePage() {
               <div className="sales-rev__donut-wrap">
                 <div className="sales-rev__donut" style={{ background: buildConicGradient(slices) }}>
                   <div className="sales-rev__donut-hole">
-                    <strong>{compactMoney(net)}</strong>
+                    <strong>{compactMoney(sales)}</strong>
                     <span>{t('charts.total')}</span>
                   </div>
                 </div>
