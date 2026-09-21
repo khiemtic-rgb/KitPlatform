@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-21T12:52:47.397Z",
+  "generatedAt": "2026-09-21T22:00:12.650Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 59,
-    "todayPageViews": 449,
-    "todayRequests": 536,
-    "last24hVisitors": 91,
-    "last24hPageViews": 755,
-    "last24hRequests": 1425
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 79,
+    "last24hPageViews": 501,
+    "last24hRequests": 634
   },
   "hourly": [
-    {
-      "time": "2026-09-20T13:00:00Z",
-      "visitors": 4,
-      "requests": 531
-    },
-    {
-      "time": "2026-09-20T14:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-20T15:00:00Z",
-      "visitors": 3,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-20T16:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-20T17:00:00Z",
-      "visitors": 7,
-      "requests": 15
-    },
-    {
-      "time": "2026-09-20T18:00:00Z",
-      "visitors": 8,
-      "requests": 17
-    },
-    {
-      "time": "2026-09-20T19:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-20T20:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-20T21:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-20T22:00:00Z",
-      "visitors": 6,
-      "requests": 284
-    },
     {
       "time": "2026-09-21T00:00:00Z",
       "visitors": 5,
@@ -125,15 +75,54 @@
       "time": "2026-09-21T12:00:00Z",
       "visitors": 6,
       "requests": 7
+    },
+    {
+      "time": "2026-09-21T13:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-21T14:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-21T15:00:00Z",
+      "visitors": 5,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-21T16:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-21T17:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-21T18:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-21T19:00:00Z",
+      "visitors": 4,
+      "requests": 44
+    },
+    {
+      "time": "2026-09-21T20:00:00Z",
+      "visitors": 4,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-21T21:00:00Z",
+      "visitors": 2,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-15",
-      "visitors": 187,
-      "pageViews": 842,
-      "requests": 1140
-    },
     {
       "date": "2026-09-16",
       "visitors": 150,
@@ -166,15 +155,15 @@
     },
     {
       "date": "2026-09-21",
-      "visitors": 59,
-      "pageViews": 449,
-      "requests": 536
+      "visitors": 79,
+      "pageViews": 501,
+      "requests": 634
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 44
+      "views": 45
     },
     {
       "path": "/vi/",
@@ -182,14 +171,14 @@
     },
     {
       "path": "/robots.txt",
-      "views": 30
-    },
-    {
-      "path": "/cache/.env",
-      "views": 18
+      "views": 25
     },
     {
       "path": "/lib/.env",
+      "views": 18
+    },
+    {
+      "path": "/cache/.env",
       "views": 18
     },
     {
@@ -205,19 +194,11 @@
       "views": 14
     },
     {
+      "path": "/administrator/phpinfo.php",
+      "views": 12
+    },
+    {
       "path": "/ses/.env",
-      "views": 12
-    },
-    {
-      "path": "/.nuget/packages.config",
-      "views": 12
-    },
-    {
-      "path": "/.gitignore",
-      "views": 12
-    },
-    {
-      "path": "/storage/.env",
       "views": 12
     },
     {
@@ -225,11 +206,19 @@
       "views": 12
     },
     {
-      "path": "/administrator/phpinfo.php",
+      "path": "/_profiler/phpinfo",
       "views": 12
     },
     {
-      "path": "/_profiler/phpinfo",
+      "path": "/.nuget/packages.config",
+      "views": 12
+    },
+    {
+      "path": "/.dbeaver/data-sources.json",
+      "views": 12
+    },
+    {
+      "path": "/bin/.env",
       "views": 12
     }
   ]
