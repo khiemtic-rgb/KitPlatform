@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-22T05:00:17.704Z",
+  "generatedAt": "2026-09-22T11:42:50.353Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 23,
-    "todayPageViews": 8,
-    "todayRequests": 36,
-    "last24hVisitors": 92,
-    "last24hPageViews": 564,
-    "last24hRequests": 990
+    "todayVisitors": 51,
+    "todayPageViews": 68,
+    "todayRequests": 123,
+    "last24hVisitors": 96,
+    "last24hPageViews": 451,
+    "last24hRequests": 870
   },
   "hourly": [
-    {
-      "time": "2026-09-21T06:00:00Z",
-      "visitors": 8,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-21T07:00:00Z",
-      "visitors": 9,
-      "requests": 167
-    },
-    {
-      "time": "2026-09-21T08:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-21T09:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-21T10:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-21T11:00:00Z",
-      "visitors": 3,
-      "requests": 14
-    },
     {
       "time": "2026-09-21T12:00:00Z",
       "visitors": 6,
@@ -125,6 +95,41 @@
       "time": "2026-09-22T04:00:00Z",
       "visitors": 5,
       "requests": 7
+    },
+    {
+      "time": "2026-09-22T05:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-22T06:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-22T07:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-22T08:00:00Z",
+      "visitors": 3,
+      "requests": 53
+    },
+    {
+      "time": "2026-09-22T09:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-22T10:00:00Z",
+      "visitors": 8,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-22T11:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,26 +171,22 @@
     },
     {
       "date": "2026-09-22",
-      "visitors": 23,
-      "pageViews": 8,
-      "requests": 36
+      "visitors": 51,
+      "pageViews": 68,
+      "requests": 123
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 60
+      "views": 56
     },
     {
       "path": "/robots.txt",
-      "views": 26
+      "views": 29
     },
     {
-      "path": "/kubernetes/.env",
-      "views": 21
-    },
-    {
-      "path": "/mailgun/.env",
+      "path": "/angular/.env",
       "views": 21
     },
     {
@@ -193,7 +194,11 @@
       "views": 21
     },
     {
-      "path": "/angular/.env",
+      "path": "/shop/.env",
+      "views": 21
+    },
+    {
+      "path": "/mailgun/.env",
       "views": 21
     },
     {
@@ -201,11 +206,7 @@
       "views": 21
     },
     {
-      "path": "/release/.env",
-      "views": 21
-    },
-    {
-      "path": "/shop/.env",
+      "path": "/kubernetes/.env",
       "views": 21
     },
     {
@@ -213,8 +214,12 @@
       "views": 21
     },
     {
+      "path": "/release/.env",
+      "views": 21
+    },
+    {
       "path": "/vi/",
-      "views": 19
+      "views": 18
     },
     {
       "path": "/.env.stage",
@@ -225,11 +230,11 @@
       "views": 16
     },
     {
-      "path": "/express/.env",
+      "path": "/actions/.env",
       "views": 16
     },
     {
-      "path": "/actions/.env",
+      "path": "/express/.env",
       "views": 16
     }
   ]
