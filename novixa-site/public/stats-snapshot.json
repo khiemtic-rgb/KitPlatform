@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-22T16:59:27.930Z",
+  "generatedAt": "2026-09-22T21:21:47.889Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 90,
-    "todayPageViews": 2151,
-    "todayRequests": 2960,
-    "last24hVisitors": 121,
-    "last24hPageViews": 2523,
-    "last24hRequests": 3671
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 130,
+    "last24hPageViews": 2577,
+    "last24hRequests": 3765
   },
   "hourly": [
-    {
-      "time": "2026-09-21T17:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-21T18:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-21T19:00:00Z",
-      "visitors": 4,
-      "requests": 44
-    },
-    {
-      "time": "2026-09-21T20:00:00Z",
-      "visitors": 4,
-      "requests": 11
-    },
-    {
-      "time": "2026-09-21T21:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
     {
       "time": "2026-09-21T22:00:00Z",
       "visitors": 8,
@@ -130,15 +105,34 @@
       "time": "2026-09-22T16:00:00Z",
       "visitors": 12,
       "requests": 32
+    },
+    {
+      "time": "2026-09-22T17:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-22T18:00:00Z",
+      "visitors": 7,
+      "requests": 24
+    },
+    {
+      "time": "2026-09-22T19:00:00Z",
+      "visitors": 9,
+      "requests": 125
+    },
+    {
+      "time": "2026-09-22T20:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-22T21:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-16",
-      "visitors": 150,
-      "pageViews": 932,
-      "requests": 1148
-    },
     {
       "date": "2026-09-17",
       "visitors": 198,
@@ -171,26 +165,26 @@
     },
     {
       "date": "2026-09-22",
-      "visitors": 90,
-      "pageViews": 2151,
-      "requests": 2960
+      "visitors": 109,
+      "pageViews": 2248,
+      "requests": 3123
     }
   ],
   "topPages": [
+    {
+      "path": "/",
+      "views": 76
+    },
     {
       "path": "/.env",
       "views": 74
     },
     {
-      "path": "/",
-      "views": 73
-    },
-    {
-      "path": "/@fs/app/.env.local",
+      "path": "/swagger.json",
       "views": 59
     },
     {
-      "path": "/swagger.json",
+      "path": "/@fs/app/.env.local",
       "views": 59
     },
     {
@@ -198,12 +192,16 @@
       "views": 50
     },
     {
-      "path": "/img../.env",
-      "views": 46
+      "path": "/@fs/.env",
+      "views": 49
     },
     {
       "path": "/read-document",
-      "views": 45
+      "views": 47
+    },
+    {
+      "path": "/img../.env",
+      "views": 46
     },
     {
       "path": "/.env.backup",
@@ -214,28 +212,24 @@
       "views": 41
     },
     {
-      "path": "/@fs/.env",
-      "views": 41
-    },
-    {
       "path": "/.env.local",
       "views": 40
     },
     {
-      "path": "/.env.development",
-      "views": 38
+      "path": "/vi/",
+      "views": 40
     },
     {
       "path": "/pi.php",
       "views": 37
     },
     {
-      "path": "/@fs/home/ubuntu/.aws/credentials",
-      "views": 36
+      "path": "/.env.development",
+      "views": 37
     },
     {
-      "path": "/credentials.json",
-      "views": 32
+      "path": "/@fs/home/ubuntu/.aws/credentials",
+      "views": 36
     }
   ]
 }
