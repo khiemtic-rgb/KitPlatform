@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-21T22:05:14.443Z",
+  "generatedAt": "2026-09-22T05:12:09.144Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 12,
-    "todayPageViews": 241,
-    "todayRequests": 355,
-    "last24hVisitors": 58,
-    "last24hPageViews": 258,
-    "last24hRequests": 513
+    "todayVisitors": 8,
+    "todayPageViews": 1,
+    "todayRequests": 43,
+    "last24hVisitors": 47,
+    "last24hPageViews": 259,
+    "last24hRequests": 545
   },
   "hourly": [
-    {
-      "time": "2026-09-20T23:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-21T00:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-21T02:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-21T03:00:00Z",
-      "visitors": 16,
-      "requests": 22
-    },
-    {
-      "time": "2026-09-21T04:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-21T05:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-09-21T06:00:00Z",
       "visitors": 4,
@@ -120,6 +90,36 @@
       "time": "2026-09-21T21:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-09-21T22:00:00Z",
+      "visitors": 3,
+      "requests": 17
+    },
+    {
+      "time": "2026-09-21T23:00:00Z",
+      "visitors": 4,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-22T00:00:00Z",
+      "visitors": 2,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-22T01:00:00Z",
+      "visitors": 5,
+      "requests": 22
+    },
+    {
+      "time": "2026-09-22T02:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-22T04:00:00Z",
+      "visitors": 3,
+      "requests": 10
     }
   ],
   "daily": [
@@ -155,25 +155,25 @@
     },
     {
       "date": "2026-09-21",
-      "visitors": 58,
-      "pageViews": 257,
-      "requests": 510
+      "visitors": 61,
+      "pageViews": 261,
+      "requests": 537
     },
     {
       "date": "2026-09-22",
-      "visitors": 12,
-      "pageViews": 241,
-      "requests": 355
+      "visitors": 30,
+      "pageViews": 246,
+      "requests": 425
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 39
+      "views": 52
     },
     {
       "path": "/robots.txt",
-      "views": 29
+      "views": 27
     },
     {
       "path": "/vi/",
@@ -184,12 +184,12 @@
       "views": 14
     },
     {
-      "path": "/vi/goi-cha-me/",
+      "path": "/en/",
       "views": 10
     },
     {
-      "path": "/en/",
-      "views": 9
+      "path": "/vi/goi-cha-me/",
+      "views": 10
     },
     {
       "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
@@ -200,7 +200,19 @@
       "views": 7
     },
     {
-      "path": "/vi/goi-cha-me/cha-me-ban-ron-van-co-the-dong-hanh-cung-con-bi-quyet-tu-thoi-gian-chat-luong/",
+      "path": "/vi/goi-cha-me/gia-dinh-la-noi-con-hoc-cach-lam-nguoi-moi-truong-giao-duc-dau-tien-va-quan-trong-nhat/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/lam-sao-de-con-hop-tac-thay-vi-chong-doi-bi-quyet-chuyen-tu-cuong-nhau-sang-dong-hanh/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/dong-hanh-cung-con-dung-chi-kiem-tra-khi-con-lam-sai/",
+      "views": 6
+    },
+    {
+      "path": "/zzx9q7_not_exist_8123x/",
       "views": 6
     },
     {
@@ -212,19 +224,7 @@
       "views": 6
     },
     {
-      "path": "/vi/goi-cha-me/gia-dinh-la-noi-con-hoc-cach-lam-nguoi-moi-truong-giao-duc-dau-tien-va-quan-trong-nhat/",
-      "views": 6
-    },
-    {
-      "path": "/en/about/",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/dong-hanh-cung-con-dung-chi-kiem-tra-khi-con-lam-sai/",
-      "views": 6
-    },
-    {
-      "path": "/vi/huong-dan/tao-tai-khoan/",
+      "path": "/wp-includes/js/wp-emoji.js",
       "views": 6
     }
   ]
