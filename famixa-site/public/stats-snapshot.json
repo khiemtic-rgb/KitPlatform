@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-22T05:12:09.144Z",
+  "generatedAt": "2026-09-22T11:54:46.053Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 8,
-    "todayPageViews": 1,
-    "todayRequests": 43,
-    "last24hVisitors": 47,
-    "last24hPageViews": 259,
-    "last24hRequests": 545
+    "todayVisitors": 25,
+    "todayPageViews": 6,
+    "todayRequests": 373,
+    "last24hVisitors": 49,
+    "last24hPageViews": 255,
+    "last24hRequests": 807
   },
   "hourly": [
-    {
-      "time": "2026-09-21T06:00:00Z",
-      "visitors": 4,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-21T07:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-21T08:00:00Z",
-      "visitors": 10,
-      "requests": 33
-    },
-    {
-      "time": "2026-09-21T09:00:00Z",
-      "visitors": 2,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-21T10:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-21T11:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
     {
       "time": "2026-09-21T12:00:00Z",
       "visitors": 3,
@@ -120,6 +90,41 @@
       "time": "2026-09-22T04:00:00Z",
       "visitors": 3,
       "requests": 10
+    },
+    {
+      "time": "2026-09-22T05:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-22T06:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-22T07:00:00Z",
+      "visitors": 4,
+      "requests": 24
+    },
+    {
+      "time": "2026-09-22T08:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-22T09:00:00Z",
+      "visitors": 2,
+      "requests": 279
+    },
+    {
+      "time": "2026-09-22T10:00:00Z",
+      "visitors": 5,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-22T11:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -161,71 +166,71 @@
     },
     {
       "date": "2026-09-22",
-      "visitors": 30,
-      "pageViews": 246,
-      "requests": 425
+      "visitors": 50,
+      "pageViews": 251,
+      "requests": 755
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 52
+      "views": 55
     },
     {
       "path": "/robots.txt",
-      "views": 27
+      "views": 25
     },
     {
       "path": "/vi/",
-      "views": 20
+      "views": 23
+    },
+    {
+      "path": "/.env.stage",
+      "views": 22
+    },
+    {
+      "path": "/joomla/.env",
+      "views": 21
+    },
+    {
+      "path": "/.env.json",
+      "views": 21
+    },
+    {
+      "path": "/test/.env",
+      "views": 21
+    },
+    {
+      "path": "/mailer/.env",
+      "views": 21
+    },
+    {
+      "path": "/core/app/.env",
+      "views": 21
+    },
+    {
+      "path": "/test/phpinfo.php",
+      "views": 21
     },
     {
       "path": "/sitemap.xml",
-      "views": 14
+      "views": 13
     },
     {
-      "path": "/en/",
-      "views": 10
+      "path": "/site/phpinfo.php",
+      "views": 12
     },
     {
-      "path": "/vi/goi-cha-me/",
-      "views": 10
+      "path": "/cron/.env",
+      "views": 12
     },
     {
-      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
-      "views": 8
+      "path": "/infrastructure/.env",
+      "views": 12
     },
     {
-      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh/",
-      "views": 7
-    },
-    {
-      "path": "/vi/goi-cha-me/gia-dinh-la-noi-con-hoc-cach-lam-nguoi-moi-truong-giao-duc-dau-tien-va-quan-trong-nhat/",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/lam-sao-de-con-hop-tac-thay-vi-chong-doi-bi-quyet-chuyen-tu-cuong-nhau-sang-dong-hanh/",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/dong-hanh-cung-con-dung-chi-kiem-tra-khi-con-lam-sai/",
-      "views": 6
-    },
-    {
-      "path": "/zzx9q7_not_exist_8123x/",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/thoa-thuan-man-hinh-thay-vi-cam/",
-      "views": 6
-    },
-    {
-      "path": "/.boto",
-      "views": 6
-    },
-    {
-      "path": "/wp-includes/js/wp-emoji.js",
-      "views": 6
+      "path": "/includes/phpinfo.php",
+      "views": 12
     }
   ]
 }
