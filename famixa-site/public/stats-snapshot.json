@@ -1,26 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-23T17:19:34.892Z",
+  "generatedAt": "2026-09-23T21:37:20.530Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 3,
-    "todayPageViews": 1,
-    "todayRequests": 4,
-    "last24hVisitors": 38,
-    "last24hPageViews": 13,
-    "last24hRequests": 444
+    "todayVisitors": 14,
+    "todayPageViews": 3,
+    "todayRequests": 22,
+    "last24hVisitors": 45,
+    "last24hPageViews": 15,
+    "last24hRequests": 449
   },
   "hourly": [
-    {
-      "time": "2026-09-22T18:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-22T20:00:00Z",
-      "visitors": 2,
-      "requests": 8
-    },
     {
       "time": "2026-09-22T22:00:00Z",
       "visitors": 3,
@@ -113,8 +103,28 @@
     },
     {
       "time": "2026-09-23T17:00:00Z",
+      "visitors": 5,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-23T18:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-23T19:00:00Z",
       "visitors": 3,
-      "requests": 4
+      "requests": 5
+    },
+    {
+      "time": "2026-09-23T20:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-23T21:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -150,25 +160,29 @@
     },
     {
       "date": "2026-09-23",
-      "visitors": 34,
-      "pageViews": 12,
-      "requests": 425
+      "visitors": 42,
+      "pageViews": 14,
+      "requests": 443
     },
     {
       "date": "2026-09-24",
-      "visitors": 3,
-      "pageViews": 1,
-      "requests": 4
+      "visitors": 14,
+      "pageViews": 3,
+      "requests": 22
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 68
+      "views": 66
     },
     {
       "path": "/vi/",
       "views": 22
+    },
+    {
+      "path": "/robots.txt",
+      "views": 21
     },
     {
       "path": "/ansible/.env",
@@ -179,19 +193,11 @@
       "views": 21
     },
     {
-      "path": "/robots.txt",
-      "views": 19
-    },
-    {
-      "path": "/local/.env",
-      "views": 18
-    },
-    {
       "path": "/drupal/.env",
       "views": 18
     },
     {
-      "path": "/i.php",
+      "path": "/local/.env",
       "views": 18
     },
     {
@@ -199,16 +205,12 @@
       "views": 18
     },
     {
+      "path": "/i.php",
+      "views": 18
+    },
+    {
       "path": "/sitemap.xml",
-      "views": 14
-    },
-    {
-      "path": "/project/.env",
-      "views": 10
-    },
-    {
-      "path": "/.env.development",
-      "views": 10
+      "views": 13
     },
     {
       "path": "/react/.env",
@@ -216,6 +218,14 @@
     },
     {
       "path": "/phpinfo.php.bak",
+      "views": 10
+    },
+    {
+      "path": "/project/.env",
+      "views": 10
+    },
+    {
+      "path": "/.env.development",
       "views": 10
     },
     {
