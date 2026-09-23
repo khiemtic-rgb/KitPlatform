@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-23T04:56:34.388Z",
+  "generatedAt": "2026-09-23T11:53:40.743Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 9,
-    "todayPageViews": 1,
-    "todayRequests": 15,
-    "last24hVisitors": 52,
-    "last24hPageViews": 17,
-    "last24hRequests": 687
+    "todayVisitors": 19,
+    "todayPageViews": 3,
+    "todayRequests": 313,
+    "last24hVisitors": 45,
+    "last24hPageViews": 14,
+    "last24hRequests": 655
   },
   "hourly": [
-    {
-      "time": "2026-09-22T05:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-22T06:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-22T07:00:00Z",
-      "visitors": 4,
-      "requests": 24
-    },
-    {
-      "time": "2026-09-22T08:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-22T09:00:00Z",
-      "visitors": 2,
-      "requests": 279
-    },
-    {
-      "time": "2026-09-22T10:00:00Z",
-      "visitors": 5,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-22T11:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-09-22T12:00:00Z",
       "visitors": 2,
@@ -120,6 +85,36 @@
       "time": "2026-09-23T04:00:00Z",
       "visitors": 2,
       "requests": 3
+    },
+    {
+      "time": "2026-09-23T05:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-23T06:00:00Z",
+      "visitors": 3,
+      "requests": 16
+    },
+    {
+      "time": "2026-09-23T07:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-23T08:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-23T09:00:00Z",
+      "visitors": 1,
+      "requests": 263
+    },
+    {
+      "time": "2026-09-23T10:00:00Z",
+      "visitors": 4,
+      "requests": 11
     }
   ],
   "daily": [
@@ -161,71 +156,71 @@
     },
     {
       "date": "2026-09-23",
-      "visitors": 26,
-      "pageViews": 5,
-      "requests": 44
+      "visitors": 39,
+      "pageViews": 7,
+      "requests": 342
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 35
+      "views": 27
     },
     {
-      "path": "/.env.json",
-      "views": 29
-    },
-    {
-      "path": "/robots.txt",
+      "path": "/html/.env",
       "views": 23
     },
     {
-      "path": "/joomla/.env",
-      "views": 21
-    },
-    {
-      "path": "/.env.stage",
-      "views": 21
-    },
-    {
-      "path": "/test/phpinfo.php",
-      "views": 21
-    },
-    {
-      "path": "/core/app/.env",
-      "views": 21
-    },
-    {
-      "path": "/test/.env",
-      "views": 21
-    },
-    {
-      "path": "/mailer/.env",
-      "views": 21
-    },
-    {
       "path": "/vi/",
-      "views": 17
+      "views": 22
     },
     {
-      "path": "/backups/.env",
-      "views": 17
+      "path": "/ansible/.env",
+      "views": 21
+    },
+    {
+      "path": "/robots.txt",
+      "views": 20
+    },
+    {
+      "path": "/local/.env",
+      "views": 18
+    },
+    {
+      "path": "/i.php",
+      "views": 18
+    },
+    {
+      "path": "/drupal/.env",
+      "views": 18
+    },
+    {
+      "path": "/cronlab/.env",
+      "views": 18
+    },
+    {
+      "path": "/job/.env",
+      "views": 16
     },
     {
       "path": "/sitemap.xml",
       "views": 14
     },
     {
-      "path": "/infrastructure/.env",
-      "views": 12
+      "path": "/test.php",
+      "views": 10
     },
     {
-      "path": "/site/phpinfo.php",
-      "views": 12
+      "path": "/travis/.env",
+      "views": 10
     },
     {
-      "path": "/core/phpinfo.php",
-      "views": 12
+      "path": "/store/.env",
+      "views": 10
+    },
+    {
+      "path": "/vue/.env",
+      "views": 10
     }
   ]
 }
