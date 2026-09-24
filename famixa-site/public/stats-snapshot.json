@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-24T12:01:12.285Z",
+  "generatedAt": "2026-09-24T17:24:24.429Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 23,
-    "todayPageViews": 2,
-    "todayRequests": 36,
-    "last24hVisitors": 48,
-    "last24hPageViews": 14,
-    "last24hRequests": 484
+    "todayVisitors": 1,
+    "todayPageViews": 4,
+    "todayRequests": 10,
+    "last24hVisitors": 45,
+    "last24hPageViews": 9,
+    "last24hRequests": 418
   },
   "hourly": [
-    {
-      "time": "2026-09-23T13:00:00Z",
-      "visitors": 6,
-      "requests": 14
-    },
-    {
-      "time": "2026-09-23T14:00:00Z",
-      "visitors": 3,
-      "requests": 72
-    },
-    {
-      "time": "2026-09-23T15:00:00Z",
-      "visitors": 3,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-23T16:00:00Z",
-      "visitors": 2,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-23T17:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
     {
       "time": "2026-09-23T18:00:00Z",
       "visitors": 1,
@@ -120,15 +95,34 @@
       "time": "2026-09-24T11:00:00Z",
       "visitors": 1,
       "requests": 1
+    },
+    {
+      "time": "2026-09-24T12:00:00Z",
+      "visitors": 9,
+      "requests": 30
+    },
+    {
+      "time": "2026-09-24T14:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-24T15:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-24T16:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-24T17:00:00Z",
+      "visitors": 1,
+      "requests": 10
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-18",
-      "visitors": 41,
-      "pageViews": 15,
-      "requests": 446
-    },
     {
       "date": "2026-09-19",
       "visitors": 48,
@@ -161,43 +155,33 @@
     },
     {
       "date": "2026-09-24",
-      "visitors": 48,
-      "pageViews": 6,
-      "requests": 381
+      "visitors": 34,
+      "pageViews": 7,
+      "requests": 82
+    },
+    {
+      "date": "2026-09-25",
+      "visitors": 1,
+      "pageViews": 4,
+      "requests": 10
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 103
+      "views": 60
     },
     {
       "path": "/robots.txt",
       "views": 26
     },
     {
-      "path": "/login",
-      "views": 17
-    },
-    {
       "path": "/sitemap.xml",
-      "views": 14
+      "views": 15
     },
     {
       "path": "/.env.js",
       "views": 14
-    },
-    {
-      "path": "/.htpasswd",
-      "views": 12
-    },
-    {
-      "path": "/dashboard",
-      "views": 12
-    },
-    {
-      "path": "/local_settings.py",
-      "views": 12
     },
     {
       "path": "/docker-compose.yml",
@@ -208,7 +192,7 @@
       "views": 12
     },
     {
-      "path": "/.my.cnf",
+      "path": "/.htpasswd",
       "views": 12
     },
     {
@@ -216,7 +200,15 @@
       "views": 12
     },
     {
-      "path": "/vi/",
+      "path": "/.my.cnf",
+      "views": 12
+    },
+    {
+      "path": "/local_settings.py",
+      "views": 12
+    },
+    {
+      "path": "/login",
       "views": 11
     },
     {
@@ -224,7 +216,15 @@
       "views": 10
     },
     {
+      "path": "/.bash_history",
+      "views": 10
+    },
+    {
       "path": "/.github/workflows/deploy.yml",
+      "views": 10
+    },
+    {
+      "path": "/.git-credentials",
       "views": 10
     }
   ]
