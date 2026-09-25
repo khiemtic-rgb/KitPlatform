@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-24T21:33:00.928Z",
+  "generatedAt": "2026-09-25T05:00:50.986Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 103,
-    "last24hPageViews": 106,
-    "last24hRequests": 547
+    "todayVisitors": 41,
+    "todayPageViews": 14,
+    "todayRequests": 61,
+    "last24hVisitors": 128,
+    "last24hPageViews": 116,
+    "last24hRequests": 283
   },
   "hourly": [
-    {
-      "time": "2026-09-23T22:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-23T23:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-24T00:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-24T01:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-24T02:00:00Z",
-      "visitors": 13,
-      "requests": 69
-    },
-    {
-      "time": "2026-09-24T04:00:00Z",
-      "visitors": 5,
-      "requests": 269
-    },
-    {
-      "time": "2026-09-24T05:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
     {
       "time": "2026-09-24T06:00:00Z",
       "visitors": 2,
@@ -123,8 +88,43 @@
     },
     {
       "time": "2026-09-24T21:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-24T22:00:00Z",
+      "visitors": 12,
+      "requests": 21
+    },
+    {
+      "time": "2026-09-24T23:00:00Z",
       "visitors": 2,
-      "requests": 3
+      "requests": 2
+    },
+    {
+      "time": "2026-09-25T00:00:00Z",
+      "visitors": 8,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-25T01:00:00Z",
+      "visitors": 7,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-25T02:00:00Z",
+      "visitors": 20,
+      "requests": 27
+    },
+    {
+      "time": "2026-09-25T03:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-25T04:00:00Z",
+      "visitors": 7,
+      "requests": 10
     }
   ],
   "daily": [
@@ -160,71 +160,77 @@
     },
     {
       "date": "2026-09-24",
-      "visitors": 101,
-      "pageViews": 105,
-      "requests": 545
+      "visitors": 114,
+      "pageViews": 114,
+      "requests": 569
+    },
+    {
+      "date": "2026-09-25",
+      "visitors": 41,
+      "pageViews": 14,
+      "requests": 61
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 51
-    },
-    {
-      "path": "/robots.txt",
-      "views": 25
-    },
-    {
-      "path": "/public/.env",
-      "views": 24
+      "views": 58
     },
     {
       "path": "/vi/",
-      "views": 24
+      "views": 29
     },
     {
-      "path": "/.env.bak",
-      "views": 21
+      "path": "/robots.txt",
+      "views": 29
     },
     {
-      "path": "/server/.env",
-      "views": 21
+      "path": "/api/session/properties",
+      "views": 20
     },
     {
-      "path": "/cache/.env",
-      "views": 21
+      "path": "//2019/wp-includes/wlwmanifest.xml",
+      "views": 6
     },
     {
-      "path": "/nest/.env",
-      "views": 21
-    },
-    {
-      "path": "/kafka/.env",
-      "views": 21
-    },
-    {
-      "path": "/.env.dist",
-      "views": 21
-    },
-    {
-      "path": "/svelte/.env",
-      "views": 18
-    },
-    {
-      "path": "/stage/.env",
-      "views": 18
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 11
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 5
     },
     {
       "path": "/.git/config",
-      "views": 11
+      "views": 5
     },
     {
-      "path": "/test.php",
-      "views": 8
+      "path": "//test/wp-includes/wlwmanifest.xml",
+      "views": 4
+    },
+    {
+      "path": "//web/wp-includes/wlwmanifest.xml",
+      "views": 4
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 4
+    },
+    {
+      "path": "//xmlrpc.php",
+      "views": 4
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 4
+    },
+    {
+      "path": "//wp/wp-includes/wlwmanifest.xml",
+      "views": 4
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 4
+    },
+    {
+      "path": "//wordpress/wp-includes/wlwmanifest.xml",
+      "views": 4
     }
   ]
 }
