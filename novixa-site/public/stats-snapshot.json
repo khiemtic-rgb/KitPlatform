@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-25T11:54:22.561Z",
+  "generatedAt": "2026-09-25T17:14:53.515Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 86,
-    "todayPageViews": 59,
-    "todayRequests": 423,
-    "last24hVisitors": 140,
-    "last24hPageViews": 132,
-    "last24hRequests": 585
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 138,
+    "last24hPageViews": 119,
+    "last24hRequests": 551
   },
   "hourly": [
-    {
-      "time": "2026-09-24T12:00:00Z",
-      "visitors": 10,
-      "requests": 32
-    },
-    {
-      "time": "2026-09-24T13:00:00Z",
-      "visitors": 3,
-      "requests": 29
-    },
-    {
-      "time": "2026-09-24T14:00:00Z",
-      "visitors": 5,
-      "requests": 25
-    },
-    {
-      "time": "2026-09-24T15:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-24T16:00:00Z",
-      "visitors": 8,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-24T17:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
     {
       "time": "2026-09-24T18:00:00Z",
       "visitors": 3,
@@ -128,17 +98,41 @@
     },
     {
       "time": "2026-09-25T11:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-25T12:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-25T13:00:00Z",
+      "visitors": 7,
+      "requests": 40
+    },
+    {
+      "time": "2026-09-25T14:00:00Z",
+      "visitors": 11,
+      "requests": 21
+    },
+    {
+      "time": "2026-09-25T15:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-25T16:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-25T17:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-19",
-      "visitors": 236,
-      "pageViews": 176,
-      "requests": 476
-    },
     {
       "date": "2026-09-20",
       "visitors": 120,
@@ -171,30 +165,22 @@
     },
     {
       "date": "2026-09-25",
-      "visitors": 86,
-      "pageViews": 59,
-      "requests": 423
+      "visitors": 121,
+      "pageViews": 103,
+      "requests": 504
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 75
+      "views": 74
     },
     {
-      "path": "/vi/",
-      "views": 26
+      "path": "/api/session/properties",
+      "views": 25
     },
     {
-      "path": "/robots.txt",
-      "views": 26
-    },
-    {
-      "path": "/releases/.env",
-      "views": 24
-    },
-    {
-      "path": "/webroot/index.php/_environment",
+      "path": "/mail/phpinfo.php",
       "views": 24
     },
     {
@@ -206,11 +192,19 @@
       "views": 24
     },
     {
-      "path": "/mail/phpinfo.php",
+      "path": "/releases/.env",
       "views": 24
     },
     {
-      "path": "/kafka/.env",
+      "path": "/webroot/index.php/_environment",
+      "views": 24
+    },
+    {
+      "path": "/robots.txt",
+      "views": 22
+    },
+    {
+      "path": "/public_html/phpinfo.php",
       "views": 21
     },
     {
@@ -218,11 +212,11 @@
       "views": 21
     },
     {
-      "path": "/public_html/phpinfo.php",
+      "path": "/kafka/.env",
       "views": 21
     },
     {
-      "path": "/api/session/properties",
+      "path": "/vi/",
       "views": 18
     },
     {
