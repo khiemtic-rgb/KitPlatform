@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-25T12:01:31.492Z",
+  "generatedAt": "2026-09-25T17:23:25.980Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 122,
-    "todayPageViews": 379,
-    "todayRequests": 1468,
-    "last24hVisitors": 141,
-    "last24hPageViews": 392,
-    "last24hRequests": 1540
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 209,
+    "last24hPageViews": 529,
+    "last24hRequests": 2439
   },
   "hourly": [
-    {
-      "time": "2026-09-24T14:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-24T15:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-24T16:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-24T17:00:00Z",
-      "visitors": 2,
-      "requests": 11
-    },
     {
       "time": "2026-09-24T18:00:00Z",
       "visitors": 4,
@@ -120,15 +100,34 @@
       "time": "2026-09-25T11:00:00Z",
       "visitors": 12,
       "requests": 64
+    },
+    {
+      "time": "2026-09-25T12:00:00Z",
+      "visitors": 22,
+      "requests": 156
+    },
+    {
+      "time": "2026-09-25T13:00:00Z",
+      "visitors": 48,
+      "requests": 450
+    },
+    {
+      "time": "2026-09-25T14:00:00Z",
+      "visitors": 14,
+      "requests": 296
+    },
+    {
+      "time": "2026-09-25T15:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-25T16:00:00Z",
+      "visitors": 6,
+      "requests": 8
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-19",
-      "visitors": 48,
-      "pageViews": 21,
-      "requests": 154
-    },
     {
       "date": "2026-09-20",
       "visitors": 42,
@@ -161,71 +160,71 @@
     },
     {
       "date": "2026-09-25",
-      "visitors": 173,
-      "pageViews": 392,
-      "requests": 1534
+      "visitors": 197,
+      "pageViews": 520,
+      "requests": 2384
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 160
+      "views": 229
     },
     {
       "path": "/vi/",
-      "views": 94
-    },
-    {
-      "path": "/robots.txt",
-      "views": 37
+      "views": 163
     },
     {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 29
-    },
-    {
-      "path": "/.env",
-      "views": 27
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 26
+      "views": 64
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 21
-    },
-    {
-      "path": "/en/",
-      "views": 21
-    },
-    {
-      "path": "/.git/config",
-      "views": 21
+      "views": 51
     },
     {
       "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 21
+      "views": 46
     },
     {
-      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
-      "views": 20
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 45
     },
     {
-      "path": "/_next/static/chunks/polyfills-42372ed130431b0a.js",
-      "views": 18
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 39
+    },
+    {
+      "path": "/robots.txt",
+      "views": 39
+    },
+    {
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 35
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 18
+      "views": 34
     },
     {
-      "path": "/sitemap.xml",
-      "views": 18
+      "path": "/.env",
+      "views": 33
     },
     {
-      "path": "/.well-known/acme-challenge/Ru8XSCbRaS0oc_a42azHTIuh9c4AbZCHbl4S1GyIJxIKLnG_ZwllUbF-BpkV676s",
-      "views": 17
+      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
+      "views": 29
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
+      "views": 28
+    },
+    {
+      "path": "/images/social/zalo.png",
+      "views": 27
+    },
+    {
+      "path": "/en/",
+      "views": 26
     }
   ]
 }
