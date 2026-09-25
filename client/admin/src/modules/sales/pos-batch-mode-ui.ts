@@ -7,8 +7,13 @@ export function showsBatchHints(mode: TenantBatchModeValue): boolean {
   return mode === 'suggest';
 }
 
+/** Cột / nút chọn lô trên POS — gợi ý FEFO cũng hiện, không chỉ chế độ nhãn. */
+export function showsBatchPicker(mode: TenantBatchModeValue): boolean {
+  return mode !== 'off';
+}
+
 export function showsBatchLabelField(mode: TenantBatchModeValue): boolean {
-  return mode === 'label_optional' || mode === 'label_required';
+  return mode === 'suggest' || mode === 'label_optional' || mode === 'label_required';
 }
 
 export function requiresBatchLabel(mode: TenantBatchModeValue): boolean {
@@ -37,7 +42,7 @@ export function validateCartBatchLabels(
   mode: TenantBatchModeValue,
   t?: TFunction<'sales'>,
 ): string | null {
-  if (!showsBatchLabelField(mode)) return null;
+  if (!showsBatchPicker(mode)) return null;
 
   for (const line of cart) {
     const label = line.batchLabel?.trim() ?? '';

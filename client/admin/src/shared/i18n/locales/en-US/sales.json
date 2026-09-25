@@ -1159,7 +1159,7 @@
     },
     "hints": {
       "off": "POS shows no batch hints; backend still uses FEFO when completing orders.",
-      "suggest": "Staff see FEFO batch hints (tooltip) when selling; batches are not shown on customer receipt.",
+      "suggest": "POS shows the FEFO lot on the cart line and lets staff change it; customers do not see the lot on the receipt.",
       "label_optional": "POS shows a batch column; can be left blank (no shift FEFO alerts).",
       "label_required": "POS requires a batch matching stock; enables FEFO compliance alerts on work shift (standard FEFO)."
     }
