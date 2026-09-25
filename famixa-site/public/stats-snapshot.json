@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-25T05:09:00.399Z",
+  "generatedAt": "2026-09-25T12:01:31.492Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 12,
-    "todayPageViews": 5,
-    "todayRequests": 24,
-    "last24hVisitors": 54,
-    "last24hPageViews": 20,
-    "last24hRequests": 147
+    "todayVisitors": 122,
+    "todayPageViews": 379,
+    "todayRequests": 1468,
+    "last24hVisitors": 141,
+    "last24hPageViews": 392,
+    "last24hRequests": 1540
   },
   "hourly": [
-    {
-      "time": "2026-09-24T06:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-24T07:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-24T08:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-24T10:00:00Z",
-      "visitors": 9,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-24T11:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-09-24T12:00:00Z",
-      "visitors": 9,
-      "requests": 30
-    },
     {
       "time": "2026-09-24T14:00:00Z",
       "visitors": 1,
@@ -115,6 +85,41 @@
       "time": "2026-09-25T04:00:00Z",
       "visitors": 2,
       "requests": 3
+    },
+    {
+      "time": "2026-09-25T05:00:00Z",
+      "visitors": 1,
+      "requests": 76
+    },
+    {
+      "time": "2026-09-25T06:00:00Z",
+      "visitors": 4,
+      "requests": 61
+    },
+    {
+      "time": "2026-09-25T07:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-09-25T08:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-25T09:00:00Z",
+      "visitors": 53,
+      "requests": 461
+    },
+    {
+      "time": "2026-09-25T10:00:00Z",
+      "visitors": 65,
+      "requests": 778
+    },
+    {
+      "time": "2026-09-25T11:00:00Z",
+      "visitors": 12,
+      "requests": 64
     }
   ],
   "daily": [
@@ -156,71 +161,71 @@
     },
     {
       "date": "2026-09-25",
-      "visitors": 35,
-      "pageViews": 18,
-      "requests": 90
+      "visitors": 173,
+      "pageViews": 392,
+      "requests": 1534
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 34
-    },
-    {
       "path": "/",
-      "views": 26
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 15
+      "views": 160
     },
     {
       "path": "/vi/",
-      "views": 14
+      "views": 94
     },
     {
-      "path": "/.git/config",
-      "views": 8
-    },
-    {
-      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 3
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 2
-    },
-    {
-      "path": "/cdn-cgi/trace",
-      "views": 2
-    },
-    {
-      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
-      "views": 2
+      "path": "/robots.txt",
+      "views": 37
     },
     {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 2
+      "views": 29
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 2
+      "path": "/.env",
+      "views": 27
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
+      "views": 26
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 21
+    },
+    {
+      "path": "/en/",
+      "views": 21
+    },
+    {
+      "path": "/.git/config",
+      "views": 21
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 21
     },
     {
       "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
-      "views": 2
-    },
-    {
-      "path": "/llms.txt",
-      "views": 2
+      "views": 20
     },
     {
       "path": "/_next/static/chunks/polyfills-42372ed130431b0a.js",
-      "views": 2
+      "views": 18
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 18
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 18
+    },
+    {
+      "path": "/.well-known/acme-challenge/Ru8XSCbRaS0oc_a42azHTIuh9c4AbZCHbl4S1GyIJxIKLnG_ZwllUbF-BpkV676s",
+      "views": 17
     }
   ]
 }
