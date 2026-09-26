@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-26T05:02:35.734Z",
+  "generatedAt": "2026-09-26T11:28:20.624Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 33,
-    "todayPageViews": 19,
-    "todayRequests": 47,
-    "last24hVisitors": 137,
-    "last24hPageViews": 122,
-    "last24hRequests": 289
+    "todayVisitors": 90,
+    "todayPageViews": 421,
+    "todayRequests": 545,
+    "last24hVisitors": 152,
+    "last24hPageViews": 480,
+    "last24hRequests": 689
   },
   "hourly": [
-    {
-      "time": "2026-09-25T06:00:00Z",
-      "visitors": 7,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-25T07:00:00Z",
-      "visitors": 11,
-      "requests": 11
-    },
-    {
-      "time": "2026-09-25T08:00:00Z",
-      "visitors": 4,
-      "requests": 50
-    },
-    {
-      "time": "2026-09-25T09:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-25T10:00:00Z",
-      "visitors": 15,
-      "requests": 16
-    },
-    {
-      "time": "2026-09-25T11:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
     {
       "time": "2026-09-25T12:00:00Z",
       "visitors": 4,
@@ -125,6 +95,41 @@
       "time": "2026-09-26T04:00:00Z",
       "visitors": 8,
       "requests": 8
+    },
+    {
+      "time": "2026-09-26T05:00:00Z",
+      "visitors": 1,
+      "requests": 16
+    },
+    {
+      "time": "2026-09-26T06:00:00Z",
+      "visitors": 6,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-26T07:00:00Z",
+      "visitors": 6,
+      "requests": 15
+    },
+    {
+      "time": "2026-09-26T08:00:00Z",
+      "visitors": 10,
+      "requests": 383
+    },
+    {
+      "time": "2026-09-26T09:00:00Z",
+      "visitors": 21,
+      "requests": 36
+    },
+    {
+      "time": "2026-09-26T10:00:00Z",
+      "visitors": 15,
+      "requests": 21
+    },
+    {
+      "time": "2026-09-26T11:00:00Z",
+      "visitors": 4,
+      "requests": 16
     }
   ],
   "daily": [
@@ -166,71 +171,71 @@
     },
     {
       "date": "2026-09-26",
-      "visitors": 33,
-      "pageViews": 19,
-      "requests": 47
+      "visitors": 90,
+      "pageViews": 421,
+      "requests": 545
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 71
+      "views": 89
     },
     {
       "path": "/robots.txt",
       "views": 26
     },
     {
-      "path": "/sbin/.env",
-      "views": 24
-    },
-    {
-      "path": "/webroot/index.php/_environment",
-      "views": 24
-    },
-    {
-      "path": "/site/.env",
-      "views": 24
-    },
-    {
-      "path": "/mail/phpinfo.php",
-      "views": 24
-    },
-    {
-      "path": "/releases/.env",
-      "views": 24
-    },
-    {
-      "path": "/kafka/.env",
-      "views": 21
-    },
-    {
-      "path": "/bootstrap/.env",
-      "views": 21
-    },
-    {
-      "path": "/public_html/phpinfo.php",
-      "views": 21
+      "path": "/api/session/properties",
+      "views": 22
     },
     {
       "path": "/vi/",
-      "views": 14
+      "views": 21
     },
     {
-      "path": "/info.php",
-      "views": 12
+      "path": "/.git/config",
+      "views": 10
     },
     {
-      "path": "/actions/.env",
-      "views": 12
+      "path": "/wp-login.php",
+      "views": 9
     },
     {
-      "path": "/api/session/properties",
-      "views": 12
+      "path": "/.env.production",
+      "views": 7
     },
     {
-      "path": "/circleci/.env",
-      "views": 12
+      "path": "/api/.env",
+      "views": 7
+    },
+    {
+      "path": "/config.inc.php.bak",
+      "views": 6
+    },
+    {
+      "path": "/.config.php.swp",
+      "views": 6
+    },
+    {
+      "path": "/repository/.git/config",
+      "views": 6
+    },
+    {
+      "path": "/prod/.git/config",
+      "views": 6
+    },
+    {
+      "path": "/dev/.git/config",
+      "views": 6
+    },
+    {
+      "path": "/storage/.env",
+      "views": 6
+    },
+    {
+      "path": "/www/.git-credentials",
+      "views": 6
     }
   ]
 }
