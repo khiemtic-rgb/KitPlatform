@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-26T11:37:00.028Z",
+  "generatedAt": "2026-09-26T16:33:33.473Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 61,
-    "todayPageViews": 42,
-    "todayRequests": 689,
-    "last24hVisitors": 158,
-    "last24hPageViews": 198,
-    "last24hRequests": 2097
+    "todayVisitors": 77,
+    "todayPageViews": 48,
+    "todayRequests": 1122,
+    "last24hVisitors": 98,
+    "last24hPageViews": 63,
+    "last24hRequests": 1614
   },
   "hourly": [
-    {
-      "time": "2026-09-25T12:00:00Z",
-      "visitors": 22,
-      "requests": 156
-    },
-    {
-      "time": "2026-09-25T13:00:00Z",
-      "visitors": 48,
-      "requests": 450
-    },
-    {
-      "time": "2026-09-25T14:00:00Z",
-      "visitors": 14,
-      "requests": 296
-    },
-    {
-      "time": "2026-09-25T15:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-25T16:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
     {
       "time": "2026-09-25T17:00:00Z",
       "visitors": 2,
@@ -128,8 +103,33 @@
     },
     {
       "time": "2026-09-26T11:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-26T12:00:00Z",
+      "visitors": 4,
+      "requests": 145
+    },
+    {
+      "time": "2026-09-26T13:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-26T14:00:00Z",
+      "visitors": 6,
+      "requests": 275
+    },
+    {
+      "time": "2026-09-26T15:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-26T16:00:00Z",
       "visitors": 1,
-      "requests": 2
+      "requests": 3
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-09-26",
-      "visitors": 95,
-      "pageViews": 57,
-      "requests": 1181
+      "visitors": 112,
+      "pageViews": 63,
+      "requests": 1614
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 151
+      "views": 79
     },
     {
       "path": "/vi/",
-      "views": 130
+      "views": 62
     },
     {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 45
+      "path": "/.env",
+      "views": 29
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 44
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 44
-    },
-    {
-      "path": "/images/logo-famixa-icon.png",
-      "views": 41
-    },
-    {
-      "path": "/images/quote-lan-card.png",
-      "views": 41
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 36
-    },
-    {
-      "path": "/images/banner-right.png",
-      "views": 34
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 32
-    },
-    {
-      "path": "/images/moment-sleep.png",
-      "views": 31
-    },
-    {
-      "path": "/images/social/zalo.png",
-      "views": 31
-    },
-    {
-      "path": "/_next/static/css/78acefc735dfdfa0.css",
-      "views": 30
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 30
+      "path": "/config/.env",
+      "views": 26
     },
     {
       "path": "/robots.txt",
-      "views": 29
+      "views": 26
+    },
+    {
+      "path": "/images/logo-famixa-icon.png",
+      "views": 24
+    },
+    {
+      "path": "/.env.production",
+      "views": 24
+    },
+    {
+      "path": "/.env.backup",
+      "views": 23
+    },
+    {
+      "path": "/images/quote-lan-card.png",
+      "views": 22
+    },
+    {
+      "path": "/mailjet/.env",
+      "views": 21
+    },
+    {
+      "path": "/shop/.env",
+      "views": 21
+    },
+    {
+      "path": "/live/.env",
+      "views": 21
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 21
+    },
+    {
+      "path": "/core/app/.env",
+      "views": 21
+    },
+    {
+      "path": "/codeigniter/.env",
+      "views": 21
     }
   ]
 }
