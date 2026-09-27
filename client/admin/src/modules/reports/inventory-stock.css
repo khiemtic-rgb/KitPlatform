@@ -309,10 +309,22 @@
 }
 
 .inv-stock__anomaly-hint {
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   font-size: 13px;
   color: #8c8c8c;
   max-width: 52rem;
+}
+
+.inv-stock__anomaly-share {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ad4e00;
+  max-width: 52rem;
+}
+
+.inv-stock__anomaly .ant-tabs {
+  margin-bottom: 4px;
 }
 
 .inv-stock__reason-tags {

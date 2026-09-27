@@ -8,16 +8,20 @@ import {
   Dropdown,
   Empty,
   Input,
+  Popconfirm,
   Select,
   Spin,
   Table,
+  Tabs,
   Tag,
   Typography,
+  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   AlertOutlined,
   AppstoreOutlined,
+  CheckCircleOutlined,
   DownloadOutlined,
   EditOutlined,
   FilterOutlined,
@@ -26,6 +30,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
   SettingOutlined,
+  UndoOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -35,7 +40,8 @@ import { fetchWarehouses } from '@/shared/api/inventory.api';
 import type { Warehouse } from '@/shared/api/inventory.types';
 import { runReport } from '@/shared/api/reports.api';
 import type { ReportColumn, ReportTableResult } from '@/shared/api/reports.types';
-import { useCanReportsExport } from '@/shared/auth/usePermission';
+import { confirmStockReview, fetchStockReviews, unconfirmStockReview } from '@/shared/api/inventory.api';
+import { useCanInventoryWrite, useCanReportsExport } from '@/shared/auth/usePermission';
 import { formatDisplayDateTime } from '@/shared/utils/date';
 import { formatDisplayMoney, formatDisplayQuantity } from '@/shared/utils/money';
 import { exportReportCsv } from '@/modules/reports/report-export';
@@ -50,8 +56,16 @@ import {
 import {
   classifyStockAnomaly,
   impliedUnitCost,
+  stockAnomalyNeedsCostFix,
+  stockAnomalyNeedsQtyFix,
   type StockAnomalyReason,
 } from '@/modules/reports/stock-anomaly';
+import {
+  filterStockReviewRows,
+  isStockLineConfirmed,
+  stockReviewKey,
+  type StockReviewTab,
+} from '@/modules/reports/stock-review';
 import {
   inventoryAdjustFixPath,
   inventoryRevaluePath,
@@ -109,6 +123,7 @@ function isFocusedStockRow(
 export function InventoryStockPage() {
   const { t } = useTranslation('reports', { keyPrefix: 'inventoryHub' });
   const canExport = useCanReportsExport();
+  const canConfirmReview = useCanInventoryWrite();
   const [searchParams] = useSearchParams();
   const urlApplied = useRef(false);
 
@@ -129,6 +144,9 @@ export function InventoryStockPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [expiryRows, setExpiryRows] = useState<Record<string, unknown>[]>([]);
   const [staleKeys, setStaleKeys] = useState<Set<string>>(new Set());
+  const [reviewTab, setReviewTab] = useState<StockReviewTab>('pending');
+  const [confirmedKeys, setConfirmedKeys] = useState<Set<string>>(new Set());
+  const [reviewBusyKey, setReviewBusyKey] = useState<string>();
 
   useEffect(() => {
     void Promise.all([
@@ -167,14 +185,22 @@ export function InventoryStockPage() {
     const to = dayjs().add(1, 'day').startOf('day').toISOString();
     try {
       setLoadError(null);
-      const [stockRes, expiryRes, movementRes] = await Promise.all([
+      const [stockRes, expiryRes, movementRes, reviews] = await Promise.all([
         runReport('inventory/stock-snapshot', extra).catch(async () => {
           await new Promise((resolve) => setTimeout(resolve, 400));
           return runReport('inventory/stock-snapshot', extra);
         }),
         runReport('inventory/near-expiry', { ...extra, expiryDays: 365 }).catch(() => null),
         runReport('inventory/movement-summary', { ...extra, from, to }).catch(() => null),
+        fetchStockReviews().catch(() => []),
       ]);
+      setConfirmedKeys(
+        new Set(
+          reviews
+            .filter((row) => row.productId && row.warehouseId)
+            .map((row) => stockReviewKey(row.productId, row.warehouseId)),
+        ),
+      );
       setStock(stockRes);
       setExpiryRows(expiryRes?.rows ?? []);
       const stale = new Set<string>();
@@ -192,6 +218,7 @@ export function InventoryStockPage() {
       setStock(null);
       setExpiryRows([]);
       setStaleKeys(new Set());
+      setConfirmedKeys(new Set());
       setLoadError(t('loadError'));
     } finally {
       setLoading(false);
@@ -201,6 +228,42 @@ export function InventoryStockPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const markReview = useCallback(
+    async (row: AnomalyRow, next: StockReviewTab) => {
+      if (!row.productId || !row.warehouseId) {
+        message.error(t('anomaly.reviewMissing'));
+        return;
+      }
+      const key = stockReviewKey(row.productId, row.warehouseId);
+      setReviewBusyKey(key);
+      try {
+        if (next === 'confirmed') {
+          await confirmStockReview({
+            productId: row.productId,
+            warehouseId: row.warehouseId,
+            qty: row.totalQty,
+            value: row.stockValue,
+          });
+          setConfirmedKeys((prev) => new Set([...prev, key]));
+          message.success(t('anomaly.reviewConfirmed', { code: row.productCode }));
+        } else {
+          await unconfirmStockReview(row.productId, row.warehouseId);
+          setConfirmedKeys((prev) => {
+            const nextSet = new Set(prev);
+            nextSet.delete(key);
+            return nextSet;
+          });
+          message.success(t('anomaly.reviewReopened', { code: row.productCode }));
+        }
+      } catch {
+        message.error(t('anomaly.reviewError'));
+      } finally {
+        setReviewBusyKey(undefined);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (loading) return;
@@ -257,7 +320,10 @@ export function InventoryStockPage() {
       if (advanced === 'near' && row.status !== 'soon') return false;
       if (advanced === 'expired' && row.status !== 'expired') return false;
       if (advanced === 'stale' && !row.stale) return false;
-      if (advanced === 'abnormal' && classifyStockAnomaly(row.totalQty, row.stockValue).length === 0) {
+      if (
+        advanced === 'abnormal' &&
+        isStockLineConfirmed(row.productId, row.warehouseId, confirmedKeys)
+      ) {
         return false;
       }
       if (!q) return true;
@@ -268,28 +334,41 @@ export function InventoryStockPage() {
         row.warehouseName.toLowerCase().includes(q)
       );
     });
-  }, [rows, tableQuery, advanced]);
+  }, [rows, tableQuery, advanced, confirmedKeys]);
 
-  const anomalyRows = useMemo<AnomalyRow[]>(
-    () =>
-      rows
-        .map((row) => ({
-          ...row,
-          reasons: classifyStockAnomaly(row.totalQty, row.stockValue),
-          unitCost: impliedUnitCost(row.totalQty, row.stockValue),
-        }))
-        .filter((row) => row.reasons.length > 0)
-        .sort((a, b) => {
-          const focus = { productId: focusProductId, productCode: focusProductCode };
-          const aFocus = isFocusedStockRow(a, focus) ? 0 : 1;
-          const bFocus = isFocusedStockRow(b, focus) ? 0 : 1;
-          if (aFocus !== bFocus) return aFocus - bFocus;
-          return b.stockValue - a.stockValue || b.totalQty - a.totalQty;
-        }),
-    [rows, focusProductId, focusProductCode],
+  const reviewRows = useMemo<AnomalyRow[]>(() => {
+    const focus = { productId: focusProductId, productCode: focusProductCode };
+    return filterStockReviewRows(
+      rows.map((row) => ({
+        ...row,
+        reasons: classifyStockAnomaly(row.totalQty, row.stockValue),
+        unitCost: impliedUnitCost(row.totalQty, row.stockValue),
+      })),
+      confirmedKeys,
+      reviewTab,
+    ).sort((a, b) => {
+      const aFocus = isFocusedStockRow(a, focus) ? 0 : 1;
+      const bFocus = isFocusedStockRow(b, focus) ? 0 : 1;
+      if (aFocus !== bFocus) return aFocus - bFocus;
+      return b.stockValue - a.stockValue || b.totalQty - a.totalQty;
+    });
+  }, [rows, confirmedKeys, reviewTab, focusProductId, focusProductCode]);
+
+  const pendingCount = useMemo(
+    () => filterStockReviewRows(rows, confirmedKeys, 'pending').length,
+    [rows, confirmedKeys],
+  );
+  const confirmedCount = useMemo(
+    () => filterStockReviewRows(rows, confirmedKeys, 'confirmed').length,
+    [rows, confirmedKeys],
   );
 
   const value = rows.reduce((sum, row) => sum + row.stockValue, 0);
+  const pendingValue = filterStockReviewRows(rows, confirmedKeys, 'pending').reduce(
+    (sum, row) => sum + row.stockValue,
+    0,
+  );
+  const anomalyShare = value > 0 ? Math.round((pendingValue / value) * 100) : 0;
   const qty = rows.reduce((sum, row) => sum + row.totalQty, 0);
   const skuCount = new Set(rows.map((row) => row.productCode)).size;
   const nearCount = new Set(rows.filter((row) => row.status === 'soon' || row.status === 'expired').map((r) => r.productCode)).size;
@@ -521,21 +600,43 @@ export function InventoryStockPage() {
           ))}
         </div>
 
-        {anomalyRows.length > 0 ? (
-          <section id="inv-stock-anomaly" className="inv-stock__panel inv-stock__anomaly">
-            <div className="inv-stock__panel-head">
-              <span className="inv-stock__panel-icon inv-stock__panel-icon--warn">
-                <WarningOutlined />
-              </span>
-              <h3>{t('anomaly.title')}</h3>
-              <span className="inv-stock__muted">{t('anomaly.count', { count: anomalyRows.length })}</span>
-            </div>
-            <p className="inv-stock__anomaly-hint">{t('anomaly.hint')}</p>
+        <section id="inv-stock-anomaly" className="inv-stock__panel inv-stock__anomaly">
+          <div className="inv-stock__panel-head">
+            <span className="inv-stock__panel-icon inv-stock__panel-icon--warn">
+              <WarningOutlined />
+            </span>
+            <h3>{t('anomaly.title')}</h3>
+            <span className="inv-stock__muted">{t('anomaly.count', { count: pendingCount })}</span>
+          </div>
+          <p className="inv-stock__anomaly-hint">{t('anomaly.hint')}</p>
+          {reviewTab === 'pending' && pendingCount > 0 && anomalyShare >= 30 ? (
+            <p className="inv-stock__anomaly-share">
+              {t('anomaly.shareHint', {
+                count: pendingCount,
+                share: anomalyShare,
+                value: compactMoney(pendingValue),
+              })}
+            </p>
+          ) : null}
+          <Tabs
+            activeKey={reviewTab}
+            onChange={(key) => setReviewTab(key as StockReviewTab)}
+            items={[
+              { key: 'pending', label: t('anomaly.tabPending', { count: pendingCount }) },
+              { key: 'confirmed', label: t('anomaly.tabConfirmed', { count: confirmedCount }) },
+            ]}
+          />
+          {reviewRows.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={reviewTab === 'confirmed' ? t('anomaly.emptyConfirmed') : t('anomaly.empty')}
+            />
+          ) : (
             <Table<AnomalyRow>
               rowKey="key"
               size="small"
-              pagination={anomalyRows.length > 8 ? { pageSize: 8, showSizeChanger: false } : false}
-              dataSource={anomalyRows}
+              pagination={reviewRows.length > 12 ? { pageSize: 12, showSizeChanger: true } : false}
+              dataSource={reviewRows}
               rowClassName={(row) =>
                 isFocusedStockRow(row, { productId: focusProductId, productCode: focusProductCode })
                   ? 'inv-stock__row--focus'
@@ -577,37 +678,66 @@ export function InventoryStockPage() {
                 {
                   title: t('cols.status'),
                   dataIndex: 'reasons',
-                  width: 260,
-                  render: (reasons: StockAnomalyReason[]) => (
-                    <span className="inv-stock__reason-tags">
-                      {reasons.includes('qty') ? <Tag color="orange">{t('anomaly.reasonQty')}</Tag> : null}
-                      {reasons.includes('cost') ? <Tag color="red">{t('anomaly.reasonCost')}</Tag> : null}
-                      {reasons.includes('value') ? <Tag color="magenta">{t('anomaly.reasonValue')}</Tag> : null}
-                    </span>
-                  ),
+                  width: 220,
+                  render: (reasons: StockAnomalyReason[]) =>
+                    reasons.length === 0 ? (
+                      <span className="inv-stock__muted">{t('anomaly.reasonNone')}</span>
+                    ) : (
+                      <span className="inv-stock__reason-tags">
+                        {reasons.includes('qty') ? <Tag color="orange">{t('anomaly.reasonQty')}</Tag> : null}
+                        {reasons.includes('cost') ? <Tag color="red">{t('anomaly.reasonCost')}</Tag> : null}
+                        {reasons.includes('value') ? <Tag color="magenta">{t('anomaly.reasonValue')}</Tag> : null}
+                      </span>
+                    ),
                 },
                 {
                   title: t('anomaly.fix'),
                   key: 'fix',
-                  width: 280,
+                  width: 320,
                   render: (_: unknown, row: AnomalyRow) => {
-                    const needCost = row.reasons.includes('cost') || row.reasons.includes('value');
-                    const needQty = row.reasons.includes('qty');
+                    const busy = reviewBusyKey === stockReviewKey(row.productId, row.warehouseId);
+                    const needCost = stockAnomalyNeedsCostFix(row.reasons);
+                    const needQty = stockAnomalyNeedsQtyFix(row.totalQty, row.reasons);
                     return (
                       <span className="inv-stock__fix-links">
-                        {needCost && needQty ? (
+                        {reviewTab === 'pending' && needCost && needQty ? (
                           <span className="inv-stock__fix-order">{t('anomaly.bothOrder')}</span>
                         ) : null}
                         <Link to={inventoryStockFixPath(row)}>{t('anomaly.openStock')}</Link>
-                        {needCost ? (
-                          <Link to={inventoryRevaluePath(row)}>
-                            <EditOutlined /> {t('anomaly.openCost')}
-                          </Link>
+                        {reviewTab === 'pending' ? (
+                          <>
+                            <Link to={inventoryRevaluePath(row)}>
+                              <EditOutlined /> {t('anomaly.openCost')}
+                            </Link>
+                            <Link to={inventoryAdjustFixPath({ ...row, from: 'anomaly' })}>
+                              {t('anomaly.openAdjust')}
+                            </Link>
+                          </>
                         ) : null}
-                        {needQty ? (
-                          <Link to={inventoryAdjustFixPath({ ...row, from: 'anomaly' })}>
-                            {t('anomaly.openAdjust')}
-                          </Link>
+                        {canConfirmReview && reviewTab === 'pending' ? (
+                          <Popconfirm
+                            title={t('anomaly.confirmTitle')}
+                            description={t('anomaly.confirmBody', { code: row.productCode })}
+                            okText={t('anomaly.confirmOk')}
+                            cancelText={t('anomaly.confirmCancel')}
+                            onConfirm={() => void markReview(row, 'confirmed')}
+                          >
+                            <Button type="link" size="small" icon={<CheckCircleOutlined />} loading={busy}>
+                              {t('anomaly.markClean')}
+                            </Button>
+                          </Popconfirm>
+                        ) : null}
+                        {canConfirmReview && reviewTab === 'confirmed' ? (
+                          <Popconfirm
+                            title={t('anomaly.reopenTitle')}
+                            okText={t('anomaly.reopenOk')}
+                            cancelText={t('anomaly.confirmCancel')}
+                            onConfirm={() => void markReview(row, 'pending')}
+                          >
+                            <Button type="link" size="small" icon={<UndoOutlined />} loading={busy}>
+                              {t('anomaly.markDirty')}
+                            </Button>
+                          </Popconfirm>
                         ) : null}
                       </span>
                     );
@@ -615,8 +745,8 @@ export function InventoryStockPage() {
                 },
               ]}
             />
-          </section>
-        ) : null}
+          )}
+        </section>
 
         <div className="inv-stock__charts">
           <section className="inv-stock__panel">

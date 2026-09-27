@@ -320,6 +320,38 @@ export async function fetchStockBatches(params: {
   return normalizePaged(data, normalizeStockBatch);
 }
 
+export async function fetchStockReviews(): Promise<
+  { productId: string; warehouseId: string }[]
+> {
+  const { data } = await http.get<unknown>('/inventory/stock/reviews');
+  const rows = Array.isArray(data) ? data : [];
+  return rows.map((row) => {
+    const item = (row ?? {}) as Record<string, unknown>;
+    return {
+      productId: String(item.productId ?? item.ProductId ?? ''),
+      warehouseId: String(item.warehouseId ?? item.WarehouseId ?? ''),
+    };
+  });
+}
+
+export async function confirmStockReview(payload: {
+  productId: string;
+  warehouseId: string;
+  qty: number;
+  value: number;
+}): Promise<void> {
+  await http.post('/inventory/stock/reviews/confirm', {
+    productId: payload.productId,
+    warehouseId: payload.warehouseId,
+    qty: payload.qty,
+    value: payload.value,
+  });
+}
+
+export async function unconfirmStockReview(productId: string, warehouseId: string): Promise<void> {
+  await http.delete(`/inventory/stock/reviews/${productId}/${warehouseId}`);
+}
+
 export async function revalueBatchUnitCost(
   batchId: string,
   payload: { unitCost: number; reason?: string },

@@ -30,6 +30,15 @@ public static class InventoryAuthorizationExtensions
             policy.RequireAssertion(ctx =>
                 AdminTokenRules.IsAdminPrincipal(ctx.User)
                 && (HasPermission(ctx, "inventory.approve") || ctx.User.IsInRole("ADMIN"))));
+
+        options.AddPolicy(InventoryPolicies.ReviewRead, policy =>
+            policy.RequireAssertion(ctx =>
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && (ctx.User.IsInRole("ADMIN")
+                    || HasPermission(ctx, "reports.read")
+                    || HasPermission(ctx, "reports.export")
+                    || HasPermission(ctx, "inventory.read")
+                    || HasPermission(ctx, "inventory.write"))));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>
