@@ -1025,6 +1025,44 @@ export async function fetchHomeSummary() {
       };
     })(),
     connectInbox: normalizeConnectInbox(connectRaw),
+    careCard: normalizeCareCard(data.careCard ?? data.CareCard),
+  };
+}
+
+export type CustomerCareCard = {
+  code: string;
+  group: string;
+  title: string;
+  body: string;
+  disclaimer: string;
+  ctaLabel: string;
+  ctaPath: string;
+  climate: string | null;
+  elderly: boolean;
+  matchedHint: string | null;
+};
+
+export function normalizeCareCard(raw: unknown): CustomerCareCard | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const row = raw as Record<string, unknown>;
+  const title = String(row.title ?? row.Title ?? '').trim();
+  const body = String(row.body ?? row.Body ?? '').trim();
+  if (!title || !body) return null;
+  const ctaPath = String(row.ctaPath ?? row.CtaPath ?? '/chat').trim() || '/chat';
+  return {
+    code: String(row.code ?? row.Code ?? ''),
+    group: String(row.group ?? row.Group ?? ''),
+    title,
+    body,
+    disclaimer: String(row.disclaimer ?? row.Disclaimer ?? ''),
+    ctaLabel: String(row.ctaLabel ?? row.CtaLabel ?? 'Hỏi dược sĩ'),
+    ctaPath: ctaPath.startsWith('/') ? ctaPath : '/chat',
+    climate: (row.climate ?? row.Climate) != null ? String(row.climate ?? row.Climate) : null,
+    elderly: Boolean(row.elderly ?? row.Elderly ?? false),
+    matchedHint: (() => {
+      const hint = row.matchedHint ?? row.MatchedHint;
+      return hint != null && String(hint).trim() ? String(hint).trim() : null;
+    })(),
   };
 }
 

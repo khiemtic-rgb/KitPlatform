@@ -33,6 +33,7 @@ import {
   fetchRepurchaseSuggestions,
   getApiErrorMessage,
   respondMedicationReminder,
+  type CustomerCareCard,
   type CustomerConnectInbox,
 } from '@/shared/api/customer-app.api';
 import axios from 'axios';
@@ -177,6 +178,7 @@ export function HomePage() {
     showMissedAlert: false,
   });
   const [connectInbox, setConnectInbox] = useState<CustomerConnectInbox | null>(null);
+  const [careCard, setCareCard] = useState<CustomerCareCard | null>(null);
   const [dueItems, setDueItems] = useState<MedicationReminder[]>([]);
   const [doneMedTasks, setDoneMedTasks] = useState<Extract<HomeTask, { kind: 'med' }>[]>([]);
   const [family, setFamily] = useState<FamilyMember[]>([]);
@@ -191,6 +193,7 @@ export function HomePage() {
       repurchase: { status: string }[],
       summary: Adherence,
       connect?: CustomerConnectInbox | null,
+      nextCareCard?: CustomerCareCard | null,
     ) => {
       void loyalty;
       setPendingOrders(
@@ -213,6 +216,7 @@ export function HomePage() {
       );
       setAdherence(summary);
       if (connect !== undefined) setConnectInbox(connect);
+      if (nextCareCard !== undefined) setCareCard(nextCareCard);
     },
     [],
   );
@@ -233,6 +237,7 @@ export function HomePage() {
             summary.repurchaseSuggestions,
             summary.adherence,
             summary.connectInbox,
+            summary.careCard,
           );
         } catch (overviewError) {
           if (axios.isAxiosError(overviewError) && overviewError.response?.status === 404) {
@@ -256,6 +261,7 @@ export function HomePage() {
                     missedStreakDays: 0,
                     showMissedAlert: false,
                   },
+              null,
               null,
             );
           } else {
@@ -656,6 +662,30 @@ export function HomePage() {
         </div>
         <img className="home-v2-hero-art" src="/home/hero-meds.jpg" alt="" />
       </section>
+
+      {careCard ? (
+        <section className="home-v2-care-card" aria-label={t('home.careCardAria')}>
+          <div className="home-v2-care-card-kicker">{t('home.careCardKicker')}</div>
+          <h2 className="home-v2-care-card-title">{careCard.title}</h2>
+          <p className="home-v2-care-card-body">{careCard.body}</p>
+          {careCard.matchedHint ? (
+            <p className="home-v2-care-card-hint">{careCard.matchedHint}</p>
+          ) : null}
+          {careCard.disclaimer ? (
+            <p className="home-v2-care-card-disc">{careCard.disclaimer}</p>
+          ) : null}
+          <button
+            type="button"
+            className="home-v2-care-card-cta"
+            onClick={() => {
+              if (!requireLink(t('pharmacyLink.intentChat'))) return;
+              navigate(careCard.ctaPath || '/chat');
+            }}
+          >
+            {careCard.ctaLabel || t('home.shortcutChatPharm')}
+          </button>
+        </section>
+      ) : null}
 
       <section className="home-v2-stats" aria-label={t('home.statsAria')}>
         <div className="home-v2-stat">
