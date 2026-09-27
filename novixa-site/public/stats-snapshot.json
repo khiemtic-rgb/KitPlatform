@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-26T21:12:47.174Z",
+  "generatedAt": "2026-09-27T05:21:50.110Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 170,
-    "last24hPageViews": 542,
-    "last24hRequests": 777
+    "todayVisitors": 21,
+    "todayPageViews": 11,
+    "todayRequests": 305,
+    "last24hVisitors": 174,
+    "last24hPageViews": 583,
+    "last24hRequests": 1099
   },
   "hourly": [
-    {
-      "time": "2026-09-25T22:00:00Z",
-      "visitors": 5,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-25T23:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-26T00:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
-    {
-      "time": "2026-09-26T01:00:00Z",
-      "visitors": 7,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-26T02:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-26T03:00:00Z",
-      "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-09-26T04:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-26T05:00:00Z",
-      "visitors": 1,
-      "requests": 16
-    },
     {
       "time": "2026-09-26T06:00:00Z",
       "visitors": 6,
@@ -125,6 +85,41 @@
       "time": "2026-09-26T20:00:00Z",
       "visitors": 6,
       "requests": 7
+    },
+    {
+      "time": "2026-09-26T22:00:00Z",
+      "visitors": 5,
+      "requests": 67
+    },
+    {
+      "time": "2026-09-26T23:00:00Z",
+      "visitors": 4,
+      "requests": 28
+    },
+    {
+      "time": "2026-09-27T00:00:00Z",
+      "visitors": 9,
+      "requests": 11
+    },
+    {
+      "time": "2026-09-27T01:00:00Z",
+      "visitors": 3,
+      "requests": 14
+    },
+    {
+      "time": "2026-09-27T02:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-27T04:00:00Z",
+      "visitors": 3,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-27T05:00:00Z",
+      "visitors": 3,
+      "requests": 266
     }
   ],
   "daily": [
@@ -160,71 +155,77 @@
     },
     {
       "date": "2026-09-26",
-      "visitors": 168,
-      "pageViews": 539,
-      "requests": 762
+      "visitors": 176,
+      "pageViews": 591,
+      "requests": 857
+    },
+    {
+      "date": "2026-09-27",
+      "visitors": 21,
+      "pageViews": 11,
+      "requests": 305
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 116
+      "views": 112
+    },
+    {
+      "path": "/server-info.php",
+      "views": 24
+    },
+    {
+      "path": "/next/.env",
+      "views": 24
+    },
+    {
+      "path": "/htdocs/.env",
+      "views": 24
+    },
+    {
+      "path": "/backup/.env",
+      "views": 24
     },
     {
       "path": "/robots.txt",
-      "views": 28
+      "views": 23
     },
     {
       "path": "/vi/",
-      "views": 21
+      "views": 22
     },
     {
-      "path": "/api/session/properties",
-      "views": 19
-    },
-    {
-      "path": "/.claude/settings.json",
-      "views": 14
-    },
-    {
-      "path": "/.env.production",
-      "views": 14
-    },
-    {
-      "path": "/.git/config",
-      "views": 10
+      "path": "/backend/.env",
+      "views": 18
     },
     {
       "path": "/.aws/credentials",
-      "views": 10
+      "views": 16
     },
     {
-      "path": "/.docker/config.json",
-      "views": 8
+      "path": "/api/session/properties",
+      "views": 16
     },
     {
-      "path": "/.env.prod",
-      "views": 8
+      "path": "/graphql/.env",
+      "views": 16
     },
     {
-      "path": "/api/.env",
-      "views": 7
+      "path": "/mail/phpinfo.php",
+      "views": 16
     },
     {
-      "path": "/.env.sample",
-      "views": 7
+      "path": "/wp-admin/phpinfo.php",
+      "views": 16
     },
     {
-      "path": "/.env.dev",
-      "views": 7
+      "path": "/.env.yaml",
+      "views": 16
     },
     {
-      "path": "/config.inc.php.bak",
-      "views": 6
-    },
-    {
-      "path": "/app/config/parameters.yml",
-      "views": 6
+      "path": "/gcp/.env",
+      "views": 16
     }
   ]
 }
