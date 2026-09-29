@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-29T12:57:08.635Z",
+  "generatedAt": "2026-09-29T22:18:43.428Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 77,
-    "todayPageViews": 80,
-    "todayRequests": 346,
-    "last24hVisitors": 134,
-    "last24hPageViews": 150,
-    "last24hRequests": 498
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 135,
+    "last24hPageViews": 195,
+    "last24hRequests": 545
   },
   "hourly": [
-    {
-      "time": "2026-09-28T13:00:00Z",
-      "visitors": 16,
-      "requests": 20
-    },
-    {
-      "time": "2026-09-28T14:00:00Z",
-      "visitors": 6,
-      "requests": 54
-    },
-    {
-      "time": "2026-09-28T15:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-28T16:00:00Z",
-      "visitors": 10,
-      "requests": 18
-    },
-    {
-      "time": "2026-09-28T17:00:00Z",
-      "visitors": 16,
-      "requests": 22
-    },
-    {
-      "time": "2026-09-28T18:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-28T19:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-28T20:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-28T21:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-28T22:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
     {
       "time": "2026-09-28T23:00:00Z",
       "visitors": 6,
@@ -125,15 +75,59 @@
       "time": "2026-09-29T12:00:00Z",
       "visitors": 15,
       "requests": 19
+    },
+    {
+      "time": "2026-09-29T13:00:00Z",
+      "visitors": 20,
+      "requests": 23
+    },
+    {
+      "time": "2026-09-29T14:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-09-29T15:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-29T16:00:00Z",
+      "visitors": 7,
+      "requests": 120
+    },
+    {
+      "time": "2026-09-29T17:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-29T18:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-29T19:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-29T20:00:00Z",
+      "visitors": 1,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-29T21:00:00Z",
+      "visitors": 3,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-29T22:00:00Z",
+      "visitors": 1,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-23",
-      "visitors": 134,
-      "pageViews": 77,
-      "requests": 5586
-    },
     {
       "date": "2026-09-24",
       "visitors": 114,
@@ -166,23 +160,31 @@
     },
     {
       "date": "2026-09-29",
-      "visitors": 77,
-      "pageViews": 80,
-      "requests": 346
+      "visitors": 132,
+      "pageViews": 194,
+      "requests": 538
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 51
+      "views": 55
     },
     {
       "path": "/robots.txt",
-      "views": 33
+      "views": 29
     },
     {
       "path": "/vi/",
-      "views": 19
+      "views": 20
+    },
+    {
+      "path": "/.git/index",
+      "views": 18
+    },
+    {
+      "path": "/.git/config",
+      "views": 16
     },
     {
       "path": "/azure/secrets.env",
@@ -197,19 +199,23 @@
       "views": 12
     },
     {
+      "path": "/.env.sample",
+      "views": 10
+    },
+    {
       "path": "/config/azure.php",
       "views": 10
     },
     {
-      "path": "/.git/index",
-      "views": 10
-    },
-    {
-      "path": "/.aws/credentials",
+      "path": "/.docker/laravel/app/.env",
       "views": 8
     },
     {
-      "path": "/.docker/laravel/app/.env",
+      "path": "/.boto",
+      "views": 8
+    },
+    {
+      "path": "/.aws/credentials",
       "views": 8
     },
     {
@@ -217,20 +223,8 @@
       "views": 8
     },
     {
-      "path": "/config/aws.yml",
+      "path": "/.claude/settings.local.json",
       "views": 8
-    },
-    {
-      "path": "/claude/config.json",
-      "views": 7
-    },
-    {
-      "path": "/wp-includes/core.php",
-      "views": 6
-    },
-    {
-      "path": "/wp-includes/core/SrHD3odefault.php",
-      "views": 6
     }
   ]
 }
