@@ -62,6 +62,7 @@ import { AppBrandLogo } from '@/shared/components/AppBrandLogo';
 import { resolveLoginBrandByTenantCode, resolveShellBrand } from '@/shared/config/app-brand';
 import {
   CONTENT_NAV_ITEMS,
+  CONTENT_NAV_OUTSIDE,
   CONTENT_NAV_SETUP,
   CONTENT_NAV_WORK,
   resolveContentNavKey,
@@ -206,8 +207,8 @@ function AppLayoutShell() {
   const activeModuleLabel = resolveContentNavLabel(location.pathname) ?? t(`modules.${activeKey}`);
 
   const menuItems = useMemo(
-    () =>
-      moduleRegistry
+    () => {
+      const items = moduleRegistry
         .filter((module) => !TEMP_HIDDEN_MODULE_KEYS.includes(module.key))
         .filter((module) => {
           // Trước khi biết vertical tenant: chỉ hiện module dùng chung (dashboard, connect, system…).
@@ -238,6 +239,7 @@ function AppLayoutShell() {
           if (adminVertical === 'marketing' && module.key === 'localOs') {
             return [
               { type: 'divider' as const },
+              ...CONTENT_NAV_OUTSIDE.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
               ...LOCAL_OS_NAV.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
             ];
           }
@@ -248,7 +250,18 @@ function AppLayoutShell() {
               label: t(`modules.${module.key}`),
             },
           ];
-        }),
+        });
+      if (
+        adminVertical === 'marketing' &&
+        !items.some((item) => item && 'key' in item && item.key === 'content-videos')
+      ) {
+        items.push(
+          { type: 'divider' as const },
+          ...CONTENT_NAV_OUTSIDE.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
+        );
+      }
+      return items;
+    },
     [
       t,
       adminVertical,

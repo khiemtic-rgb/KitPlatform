@@ -56,6 +56,7 @@ import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
 import { writeClipboardImage } from '@/modules/content/content-manual-dest';
 import { ContentPackageBriefCard } from '@/modules/content/ContentPackageBriefCard';
 import { ContentPackagePerformanceCard } from '@/modules/content/ContentPackagePerformanceCard';
+import { PackageLineageBlock, contentStatusApproved, useTopicLineageIndex } from '@/modules/content/content-lineage';
 import {
   CONTENT_BRIEF_EMOTIONS,
   CONTENT_BRIEF_FORMATS,
@@ -101,6 +102,9 @@ export function ContentPackagesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<ContentPackageDetail | null>(null);
+  const lineageIndex = useTopicLineageIndex();
+  const packageRewriteBlocked = (pkg: { topicId: string; status: string }) =>
+    !lineageIndex || lineageIndex.has(pkg.topicId) || contentStatusApproved(pkg.status);
   const [detailLoading, setDetailLoading] = useState(false);
   const [channels, setChannels] = useState<ContentChannelTarget[]>([]);
   const [sites, setSites] = useState<ContentSiteTarget[]>([]);
@@ -251,6 +255,7 @@ export function ContentPackagesPage() {
   };
 
   const onGenerateAll = async (pkg: ContentPackage, skipImages = false, variantKinds?: string[]) => {
+    if (packageRewriteBlocked(pkg)) return;
     setBusy(true);
     try {
       const res = await generateContentPackage(pkg.id, { skipImages, variantKinds });
@@ -265,6 +270,7 @@ export function ContentPackagesPage() {
   };
 
   const confirmGenerate = (pkg: ContentPackage) => {
+    if (packageRewriteBlocked(pkg)) return;
     const plan = writePlans.find((p) => p.brandId === pkg.brandId);
     if (!plan || plan.slots.length === 0) {
       modal.confirm({
@@ -343,7 +349,7 @@ export function ContentPackagesPage() {
       ),
       okText: 'Generate',
       onOk: async () => {
-        const targets = rows.filter((p) => p.sourcePackageId);
+        const targets = rows.filter((p) => p.sourcePackageId && !packageRewriteBlocked(p));
         if (targets.length === 0) {
           message.warning('Chọn góc brand — ý tưởng gốc không Generate');
           return;
@@ -684,7 +690,7 @@ export function ContentPackagesPage() {
                   type="primary"
                   icon={<ThunderboltOutlined />}
                   loading={busy}
-                  disabled={!row.sourcePackageId}
+                  disabled={!row.sourcePackageId || packageRewriteBlocked(row)}
                   onClick={() => confirmGenerate(row)}
                 >
                   Generate
@@ -924,7 +930,7 @@ export function ContentPackagesPage() {
                 type="primary"
                 icon={<ThunderboltOutlined />}
                 loading={busy}
-                disabled={!detail.package.sourcePackageId}
+                disabled={!detail.package.sourcePackageId || packageRewriteBlocked(detail.package)}
                 onClick={() => confirmGenerate(detail.package)}
               >
                 Generate
@@ -972,6 +978,13 @@ export function ContentPackagesPage() {
                 message={`Thuộc ý tưởng: ${detail.package.sourceTitle}`}
                 description={detail.package.angle || detail.package.title}
               />
+            ) : null}
+
+            {detail.package.sourcePackageId ? (
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                <PackageLineageBlock packageId={detail.package.id} />
+                <Link to="/content/article-series">Danh sách Series</Link>
+              </Space>
             ) : null}
 
             <div>

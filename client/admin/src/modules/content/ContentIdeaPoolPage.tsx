@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { App, Button, Card, Checkbox, Input, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { ClusterOutlined, PlusOutlined, ReloadOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { ContentBrandOpportunityList } from '@/modules/content/content-lineage';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   analyzeContentPool,
@@ -361,6 +362,7 @@ export function ContentIdeaPoolPage() {
                     {row.adaptationCount} góc
                   </Tag>
                 ) : null}
+                <ContentBrandOpportunityList corePackageId={row.id} fits={row.brandFits ?? []} />
               </div>
             ),
           },

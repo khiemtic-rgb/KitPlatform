@@ -153,7 +153,7 @@ export function ContentOpsPage() {
             Hôm nay
           </Typography.Title>
           <Typography.Paragraph type="secondary" style={{ margin: '6px 0 0' }}>
-            Idea Pool → Góc brand → duyệt → đăng Fanpage/web. Group chỉ copy tay.
+            Bàn việc trong ngày. Câu chuyện dài nằm ở Series. Group chỉ copy tay.
           </Typography.Paragraph>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>

@@ -6241,3 +6241,177 @@ export function contentAssetAuthHeaders(): Record<string, string> {
   const token = useAuthStore.getState().accessToken;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+
+export type ContentArticleSeries = {
+  id: string;
+  brandId: string;
+  brandCode: string;
+  brandName: string;
+  sourcePackageId: string;
+  sourcePackageTitle: string;
+  corePackageId: string;
+  coreIdeaTitle: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  objective?: string | null;
+  audience?: string | null;
+  coreMessage?: string | null;
+  status: string;
+  episodeCount: number;
+  currentEpisodeNo: number;
+  plannedEpisodeRows: number;
+  publishedCount: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  blueprint: unknown;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContentArticleEpisode = {
+  id: string;
+  seriesId: string;
+  episodeNo: number;
+  code: string;
+  title: string;
+  objective?: string | null;
+  angle?: string | null;
+  keyMessage?: string | null;
+  status: string;
+  plannedAt?: string | null;
+  publishedAt?: string | null;
+  previousEpisodeId?: string | null;
+  nextEpisodeId?: string | null;
+  continuity: unknown;
+  contentTopicId?: string | null;
+  topicStatus?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ContentArticleSeriesDetail = {
+  series: ContentArticleSeries;
+  episodes: ContentArticleEpisode[];
+};
+
+export type ContentArticleEpisodeDetail = {
+  series: ContentArticleSeries;
+  episode: ContentArticleEpisode;
+  previous?: ContentArticleEpisode | null;
+  next?: ContentArticleEpisode | null;
+  topicDetail?: ContentTopicDetail | null;
+  continuityContext: string;
+};
+
+export async function fetchContentArticleSeries(params?: {
+  brandId?: string;
+  status?: string;
+  corePackageId?: string;
+  from?: string;
+  to?: string;
+}) {
+  const { data } = await http.get<ContentArticleSeries[]>('/content/article-series', { params });
+  return data;
+}
+
+export async function fetchContentArticleSeriesDetail(id: string) {
+  const { data } = await http.get<ContentArticleSeriesDetail>(`/content/article-series/${id}`);
+  return data;
+}
+
+export async function createContentArticleSeries(body: {
+  sourcePackageId: string;
+  name?: string;
+  description?: string;
+  episodeCount?: number;
+}) {
+  const { data } = await http.post<ContentArticleSeries>('/content/article-series', body);
+  return data;
+}
+
+export async function updateContentArticleSeries(id: string, body: Record<string, unknown>) {
+  const { data } = await http.put<ContentArticleSeries>(`/content/article-series/${id}`, body);
+  return data;
+}
+
+export async function deleteContentArticleSeries(id: string) {
+  await http.delete(`/content/article-series/${id}`);
+}
+
+export async function approveContentArticleSeries(id: string) {
+  const { data } = await http.post<ContentArticleSeries>(`/content/article-series/${id}/approve`);
+  return data;
+}
+
+export async function generateContentArticleSeriesBlueprint(
+  id: string,
+  body?: { episodeCount?: number; planBatch?: number; replaceExistingPlan?: boolean },
+  regenerate = false,
+) {
+  const path = regenerate
+    ? `/content/article-series/${id}/blueprint/regenerate`
+    : `/content/article-series/${id}/blueprint/generate`;
+  const { data } = await http.post<ContentArticleSeriesDetail>(path, body ?? {}, { timeout: 180_000 });
+  return data;
+}
+
+export async function fetchContentArticleEpisodeDetail(seriesId: string, episodeId: string) {
+  const { data } = await http.get<ContentArticleEpisodeDetail>(
+    `/content/article-series/${seriesId}/episodes/${episodeId}`,
+  );
+  return data;
+}
+
+export async function addContentArticleEpisode(seriesId: string, body?: Record<string, unknown>) {
+  const { data } = await http.post<ContentArticleEpisode>(`/content/article-series/${seriesId}/episodes`, body ?? {});
+  return data;
+}
+
+export async function updateContentArticleEpisode(
+  seriesId: string,
+  episodeId: string,
+  body: Record<string, unknown>,
+) {
+  const { data } = await http.put<ContentArticleEpisode>(
+    `/content/article-series/${seriesId}/episodes/${episodeId}`,
+    body,
+  );
+  return data;
+}
+
+export async function deleteContentArticleEpisode(seriesId: string, episodeId: string) {
+  await http.delete(`/content/article-series/${seriesId}/episodes/${episodeId}`);
+}
+
+export async function briefContentArticleEpisode(seriesId: string, episodeId: string) {
+  const { data } = await http.post<ContentArticleEpisode>(
+    `/content/article-series/${seriesId}/episodes/${episodeId}/brief`,
+    {},
+    { timeout: 180_000 },
+  );
+  return data;
+}
+
+export async function generateContentArticleEpisode(seriesId: string, episodeId: string) {
+  const { data } = await http.post<{ episode: ContentArticleEpisode; work?: ContentWorkEnqueueResult['job']; message: string }>(
+    `/content/article-series/${seriesId}/episodes/${episodeId}/generate`,
+    {},
+    { timeout: 60_000 },
+  );
+  return data;
+}
+
+export async function generateNextContentArticleEpisodes(
+  seriesId: string,
+  body?: { count?: number; mode?: 'plan' | 'brief' | 'content' },
+) {
+  const { data } = await http.post<{
+    episodes: ContentArticleEpisode[];
+    jobs: unknown[];
+    message: string;
+  }>(`/content/article-series/${seriesId}/episodes/generate-next`, body ?? { count: 10, mode: 'plan' }, {
+    timeout: 180_000,
+  });
+  return data;
+}

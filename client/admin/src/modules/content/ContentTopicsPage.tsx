@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   App,
@@ -49,6 +49,7 @@ import {
   fetchContentSites,
   fetchContentTopicDetail,
   fetchContentTopics,
+  generateContentArticleEpisode,
   generateContentTopic,
   publishContentTopic,
   runContentPublishJob,
@@ -81,6 +82,19 @@ import {
   requestLocalImageLibraryPermission,
   revokeLocalPreviewUrls,
 } from '@/modules/content/content-local-image-library';
+import {
+  ContentKindTag,
+  ContentLineageTrail,
+  contentStatusApproved,
+  episodeSequenceLabel,
+  packageForTopic,
+  qualityGateLabel,
+  seriesContentTrail,
+  standaloneContentTrail,
+  usePackagesForBrand,
+  useTopicLineageIndex,
+  variantKindLabel,
+} from '@/modules/content/content-lineage';
 import {
   downloadCsvTemplate,
   parseOptionalDate,
@@ -239,6 +253,16 @@ export function ContentTopicsPage() {
   const [editing, setEditing] = useState<ContentTopic | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<ContentTopicDetail | null>(null);
+  const lineageIndex = useTopicLineageIndex();
+  const topicPackages = usePackagesForBrand(detail?.topic.brandId);
+  const topicLineage = detail?.topic.id ? lineageIndex?.get(detail.topic.id) ?? null : null;
+  const rewriteBlocked = (topicId?: string | null, status?: string | null) => {
+    if (!topicId || !lineageIndex) return true;
+    if (lineageIndex.has(topicId)) return true;
+    return contentStatusApproved(status);
+  };
+  const openPackage = packageForTopic(topicPackages, detail?.topic.id);
+  const standaloneAngleLabel = openPackage?.angle?.trim() || openPackage?.title?.trim() || '';
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailAction, setDetailAction] = useState<
     'write' | 'writeText' | 'images' | 'approve' | 'publish' | 'pickImage' | null
@@ -553,6 +577,7 @@ export function ContentTopicsPage() {
   };
 
   const save = async (andGenerate: boolean) => {
+    if (editing && rewriteBlocked(editing.id, editing.status)) return;
     try {
       const v = await form.validateFields();
       setBusy(true);
@@ -706,6 +731,7 @@ export function ContentTopicsPage() {
   };
 
   const onGenerateRow = async (row: ContentTopic) => {
+    if (rewriteBlocked(row.id, row.status)) return;
     setRowBusyId(row.id);
     try {
       const res = await generateContentTopic(row.id);
@@ -721,6 +747,7 @@ export function ContentTopicsPage() {
   };
 
   const confirmGenerateRow = (row: ContentTopic) => {
+    if (rewriteBlocked(row.id, row.status)) return;
     modal.confirm({
       title: 'AI viết + ảnh bài này?',
       content: row.title,
@@ -731,7 +758,7 @@ export function ContentTopicsPage() {
   };
 
   const onGenerate = async (skipImages = false) => {
-    if (!detail) return;
+    if (!detail || rewriteBlocked(detail.topic.id, detail.topic.status)) return;
     setDetailAction(skipImages ? 'writeText' : 'write');
     try {
       const res = await generateContentTopic(detail.topic.id, { skipImages });
@@ -747,7 +774,7 @@ export function ContentTopicsPage() {
   };
 
   const confirmGenerate = (skipImages: boolean) => {
-    if (!detail) return;
+    if (!detail || rewriteBlocked(detail.topic.id, detail.topic.status)) return;
     if (detail.variants.length === 0) {
       void onGenerate(skipImages);
       return;
@@ -763,8 +790,23 @@ export function ContentTopicsPage() {
     });
   };
 
+  const regenerateFromEpisode = async () => {
+    if (!detail || !topicLineage || contentStatusApproved(detail.topic.status)) return;
+    setDetailAction('write');
+    try {
+      const result = await generateContentArticleEpisode(topicLineage.series.id, topicLineage.episode.id);
+      message.success(result.message);
+      await loadDetail(detail.topic.id, { silent: true });
+      await load();
+    } catch (e) {
+      message.error(apiErrorMessage(e, 'Lỗi'));
+    } finally {
+      setDetailAction(null);
+    }
+  };
+
   const onGenerateImages = async () => {
-    if (!detail) return;
+    if (!detail || rewriteBlocked(detail.topic.id, detail.topic.status)) return;
     setDetailAction('images');
     try {
       const res = await generateContentTopic(detail.topic.id, { imagesOnly: true });
@@ -785,7 +827,7 @@ export function ContentTopicsPage() {
   };
 
   const confirmGenerateImages = () => {
-    if (!detail) return;
+    if (!detail || rewriteBlocked(detail.topic.id, detail.topic.status)) return;
     if (detail.assets.length === 0) {
       void onGenerateImages();
       return;
@@ -1412,16 +1454,30 @@ export function ContentTopicsPage() {
             {
               title: 'Tiêu đề',
               dataIndex: 'title',
-              render: (title: string, row: ContentTopic) => (
+              render: (title: string, row: ContentTopic) => {
+                const seriesLine = lineageIndex?.get(row.id);
+                return (
                 <div>
                   <div>{title}</div>
+                  {lineageIndex ? (
+                    <ContentKindTag kind={seriesLine ? 'series' : 'standalone'} />
+                  ) : null}
+                  {seriesLine ? (
+                    <div>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {seriesLine.series.code} · {episodeSequenceLabel(seriesLine.episode.episodeNo)} ·{' '}
+                        {seriesLine.episode.title}
+                      </Typography.Text>
+                    </div>
+                  ) : null}
                   {row.coreTitle && row.coreTitle !== title ? (
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       Từ ý tưởng: {row.coreTitle}
                     </Typography.Text>
                   ) : null}
                 </div>
-              ),
+                );
+              },
             },
             {
               title: 'Bản viết',
@@ -1455,6 +1511,7 @@ export function ContentTopicsPage() {
                       type="link"
                       icon={<ThunderboltOutlined />}
                       loading={rowBusyId === row.id}
+                      disabled={rewriteBlocked(row.id, row.status)}
                       onClick={() => confirmGenerateRow(row)}
                     >
                       AI viết + ảnh
@@ -1463,7 +1520,11 @@ export function ContentTopicsPage() {
                   <Button type="link" onClick={() => openDetail(row)}>
                     Xem / duyệt
                   </Button>
-                  <Button type="link" onClick={() => openEdit(row)}>
+                  <Button
+                    type="link"
+                    disabled={rewriteBlocked(row.id, row.status)}
+                    onClick={() => openEdit(row)}
+                  >
                     Sửa
                   </Button>
                   <Popconfirm
@@ -1672,14 +1733,14 @@ export function ContentTopicsPage() {
                 type={detail.variants.length === 0 ? 'primary' : 'default'}
                 icon={<ThunderboltOutlined />}
                 loading={detailAction === 'write'}
-                disabled={!!detailAction && detailAction !== 'write'}
+                disabled={rewriteBlocked(detail.topic.id, detail.topic.status) || (!!detailAction && detailAction !== 'write')}
                 onClick={() => confirmGenerate(false)}
               >
                 AI viết + ảnh
               </Button>
               <Button
                 loading={detailAction === 'writeText'}
-                disabled={!!detailAction && detailAction !== 'writeText'}
+                disabled={rewriteBlocked(detail.topic.id, detail.topic.status) || (!!detailAction && detailAction !== 'writeText')}
                 onClick={() => confirmGenerate(true)}
               >
                 Chỉ viết chữ
@@ -1687,11 +1748,21 @@ export function ContentTopicsPage() {
               <Button
                 icon={<PictureOutlined />}
                 loading={detailAction === 'images'}
-                disabled={!!detailAction && detailAction !== 'images'}
+                disabled={rewriteBlocked(detail.topic.id, detail.topic.status) || (!!detailAction && detailAction !== 'images')}
                 onClick={() => confirmGenerateImages()}
               >
                 Tạo ảnh
               </Button>
+              {topicLineage ? (
+                <Link to={`/content/article-series/${topicLineage.series.id}/episodes/${topicLineage.episode.id}`}>
+                  Quay lại Episode
+                </Link>
+              ) : null}
+              {topicLineage && !contentStatusApproved(detail.topic.status) ? (
+                <Button loading={detailAction === 'write'} onClick={() => void regenerateFromEpisode()}>
+                  Regenerate từ Episode
+                </Button>
+              ) : null}
               <Button
                 icon={<CheckOutlined />}
                 loading={detailAction === 'approve'}
@@ -1714,13 +1785,54 @@ export function ContentTopicsPage() {
       >
         {detail ? (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            <Card size="small" title="Nguồn bài">
+              {lineageIndex && topicLineage ? (
+                <Space direction="vertical" size={4}>
+                  <ContentKindTag kind="series" />
+                  <ContentLineageTrail items={seriesContentTrail(topicLineage, detail.topic.title)} />
+                  <Space>
+                    <Link to={`/content/article-series/${topicLineage.series.id}/episodes/${topicLineage.episode.id}`}>
+                      Quay lại Episode
+                    </Link>
+                    <Link to={`/content/article-series/${topicLineage.series.id}`}>Quay lại Series</Link>
+                  </Space>
+                  {contentStatusApproved(detail.topic.status) ? (
+                    <div>Episode đã được duyệt. Canon đã khóa.</div>
+                  ) : (
+                    <div>Series content. Viết lại chỉ từ Episode.</div>
+                  )}
+                </Space>
+              ) : lineageIndex ? (
+                <Space direction="vertical" size={4}>
+                  <ContentKindTag kind="standalone" />
+                  <ContentLineageTrail
+                    items={standaloneContentTrail(
+                      detail.topic.brandName,
+                      standaloneAngleLabel ? { label: standaloneAngleLabel, packageId: openPackage?.id } : null,
+                    )}
+                  />
+                </Space>
+              ) : (
+                <Typography.Text type="secondary">Đang nối nguồn bài…</Typography.Text>
+              )}
+              <div style={{ marginTop: 8 }}>
+                Quality Gate:{' '}
+                {qualityGateLabel(packageForTopic(topicPackages, detail.topic.id)?.qualityGate)}
+              </div>
+              <div>
+                Bản viết:{' '}
+                {detail.variants.map((variant) => variantKindLabel(variant.kind)).join(' · ') || 'Chưa có'}
+              </div>
+            </Card>
             <div>
               <StatusTag status={detail.topic.status} />
               <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
                 {detail.topic.brandName}
               </Typography.Text>
               <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
-                {localLibName ? (
+                {topicLineage ? (
+                  <>Bài này thuộc Episode. Không viết lại từ trang bài.</>
+                ) : localLibName ? (
                   <>
                     «Chỉ viết chữ» / «AI viết + ảnh» xong → tab <strong>Ảnh</strong>: chọn từ kho «{localLibName}»
                     hoặc <strong>Tạo ảnh</strong> AI khi thiếu (tiết kiệm phí nếu nhân viên chọn ảnh sẵn). Rồi{' '}
@@ -1844,7 +1956,7 @@ export function ContentTopicsPage() {
                     ghost
                     icon={<PictureOutlined />}
                     loading={detailAction === 'images'}
-                    disabled={!!detailAction && detailAction !== 'images'}
+                    disabled={rewriteBlocked(detail.topic.id, detail.topic.status) || (!!detailAction && detailAction !== 'images')}
                     onClick={() => confirmGenerateImages()}
                   >
                     Tạo ảnh
@@ -2017,6 +2129,7 @@ export function ContentTopicsPage() {
                         <Button
                           icon={<PictureOutlined />}
                           loading={detailAction === 'images'}
+                          disabled={rewriteBlocked(detail.topic.id, detail.topic.status)}
                           onClick={() => confirmGenerateImages()}
                         >
                           Tạo ảnh
@@ -2037,7 +2150,7 @@ export function ContentTopicsPage() {
                     size="small"
                     icon={<PictureOutlined />}
                     loading={detailAction === 'images'}
-                    disabled={!!detailAction && detailAction !== 'images'}
+                    disabled={rewriteBlocked(detail.topic.id, detail.topic.status) || (!!detailAction && detailAction !== 'images')}
                     onClick={() => confirmGenerateImages()}
                   >
                     Tạo ảnh
