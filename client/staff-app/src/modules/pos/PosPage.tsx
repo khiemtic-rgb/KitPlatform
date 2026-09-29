@@ -40,7 +40,7 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { formatMoney } from '@/shared/utils/money';
 import { priceCart } from '@/modules/sales/pos-pricing';
-import { defaultBatchLabel, showsBatchLabelField, showsBatchPicker, validateCartBatchLabels } from '@/modules/sales/pos-batch';
+import { defaultBatchLabel, formatCartLotButton, showsBatchLabelField, showsBatchPicker, validateCartBatchLabels } from '@/modules/sales/pos-batch';
 import { buildCreateSalePayload, buildDraftUpdatePayload } from '@/modules/sales/pos-sale-payload';
 import {
   clearPosDraftEdit,
@@ -115,7 +115,7 @@ export function PosPage() {
   const [searching, setSearching] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [shift, setShift] = useState<SalesShiftDetail | null>(null);
-  const [batchMode, setBatchMode] = useState<TenantBatchModeValue>('off');
+  const [batchMode, setBatchMode] = useState<TenantBatchModeValue>('suggest');
   const [rxSettings, setRxSettings] = useState<TenantRxSettings>({ enforcementMode: 'off', posBlockedAudit: true });
   const [shiftModal, setShiftModal] = useState(false);
   const [closeShiftModal, setCloseShiftModal] = useState(false);
@@ -750,8 +750,7 @@ export function PosPage() {
                       style={{ padding: 0, height: 'auto', fontSize: 14, fontWeight: 600 }}
                       onClick={() => setBatchLineKey(line.key)}
                     >
-                      Lô: {line.batchLabel || defaultBatchLabel(line.batchHints) || 'Chọn lô'}
-                      {line.batchHints?.some((h) => h.isSuggested) ? ' · FEFO' : ''}
+                      {formatCartLotButton(line)}
                     </Button>
                   ) : null}
                 </div>

@@ -296,7 +296,6 @@ img { max-width: 100%; }
   background: #eee;
 }
 .cat-item strong { font-size: 15px; font-weight: 700; color: #111827; }
-.cat-item span:last-child { color: #6b7280; font-size: 13px; }
 .cat-ico {
   width: 52px; height: 52px; border-radius: 50%;
   display: grid; place-items: center;
@@ -2008,7 +2007,6 @@ img { max-width: 100%; }
   .cat-bar { grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 16px 4px; }
   .cat-item { padding: 4px 2px; gap: 4px; }
   .cat-item strong { font-size: 12.5px; }
-  .cat-item span:last-child { font-size: 11px; }
   .cat-ico { width: 44px; height: 44px; }
   .cat-ico svg { width: 20px; height: 20px; }
   .cards-4 { grid-template-columns: repeat(2, 1fr); }
@@ -2068,7 +2066,6 @@ img { max-width: 100%; }
   .cat-bar { padding: 14px 4px; border-radius: 18px; }
   .cat-item { padding: 4px 2px; gap: 4px; }
   .cat-item strong { font-size: 13.5px; }
-  .cat-item span:last-child { font-size: 12px; }
   .cat-ico { width: 44px; height: 44px; }
   .cat-ico svg { width: 20px; height: 20px; }
   .section-head { flex-wrap: wrap; margin: 22px 0 10px; }

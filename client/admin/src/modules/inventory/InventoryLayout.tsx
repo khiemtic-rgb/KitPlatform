@@ -5,6 +5,7 @@ import {
   AuditOutlined,
   CheckSquareOutlined,
   DatabaseOutlined,
+  ExceptionOutlined,
   ExportOutlined,
   HomeOutlined,
   ImportOutlined,
@@ -21,6 +22,12 @@ export function InventoryLayout() {
   const tabs = useMemo(
     () => [
       { key: 'stock', label: t('stock'), path: '/inventory/stock', icon: <DatabaseOutlined /> },
+      {
+        key: 'lot-conflicts',
+        label: t('lotConflicts'),
+        path: '/inventory/lot-conflicts',
+        icon: <ExceptionOutlined />,
+      },
       { key: 'low-stock', label: t('lowStock'), path: '/inventory/low-stock', icon: <WarningOutlined /> },
       { key: 'adjustments', label: t('adjustments'), path: '/inventory/adjustments', icon: <AuditOutlined /> },
       { key: 'transfers', label: t('transfers'), path: '/inventory/transfers', icon: <SwapOutlined /> },

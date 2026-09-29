@@ -1609,6 +1609,12 @@ export function TransferListPage() {
                 { title: ts('unit'), dataIndex: 'unitName', width: 70 },
                 { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 120 },
                 {
+                  title: ts('manufactureAbbr'),
+                  dataIndex: 'manufactureDate',
+                  width: 110,
+                  render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+                },
+                {
                   title: ts('expiryAbbr'),
                   dataIndex: 'expiryDate',
                   width: 110,

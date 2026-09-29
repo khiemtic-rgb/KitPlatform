@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
+  Alert,
   App,
   AutoComplete,
   Button,
@@ -9,6 +10,7 @@ import {
   Descriptions,
   Drawer,
   Input,
+  InputNumber,
   Select,
   Space,
   Table,
@@ -17,14 +19,16 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { EditOutlined, EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { fetchProduct } from '@/shared/api/catalog.api';
-import { fetchStockBatches, fetchStockProducts, fetchWarehouses } from '@/shared/api/inventory.api';
+import { fetchLotConflicts, fetchStockBatches, fetchStockProducts, fetchWarehouses, revalueBatchUnitCost } from '@/shared/api/inventory.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { useCanInventoryWrite } from '@/shared/auth/usePermission';
 import type { StockBatch, StockProductSummary, Warehouse } from '@/shared/api/inventory.types';
+import { inventoryAdjustFixPath, inventoryAnomalyReturnPath } from '@/modules/reports/stock-fix-links';
 import { ListFilterBar } from '@/shared/ui/ListFilterBar';
 import { formatDisplayDate } from '@/shared/utils/date';
-import { formatDisplayMoney } from '@/shared/utils/money';
+import { formatDisplayMoney, moneyInputNumberPropsAllowZero } from '@/shared/utils/money';
 
 type StockTab = 'summary' | 'fefo';
 
@@ -68,6 +72,25 @@ export function StockListPage() {
   const [detailProduct, setDetailProduct] = useState<StockProductSummary | null>(null);
   const [detailBatches, setDetailBatches] = useState<StockBatch[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const canWrite = useCanInventoryWrite();
+  const [revalueOpen, setRevalueOpen] = useState(false);
+  const [revalueBatches, setRevalueBatches] = useState<StockBatch[]>([]);
+  const [revalueDrafts, setRevalueDrafts] = useState<Record<string, number>>({});
+  const [revalueReason, setRevalueReason] = useState('');
+  const [revalueSavingId, setRevalueSavingId] = useState<string>();
+  const [lotConflictCount, setLotConflictCount] = useState(0);
+  const [revalueJustSaved, setRevalueJustSaved] = useState(false);
+  const fromAnomaly = searchParams.get('from') === 'anomaly' || searchParams.get('revalue') === '1';
+  const revalueContext = {
+    warehouseId,
+    warehouseName: warehouses.find((w) => w.id === warehouseId)?.warehouseName,
+    productId: fefoProductId ?? revalueBatches[0]?.productId,
+    productCode:
+      searchParams.get('q')?.trim() || revalueBatches[0]?.productCode || search || undefined,
+    from: fromAnomaly ? ('anomaly' as const) : undefined,
+  };
+  const anomalyReturnPath = inventoryAnomalyReturnPath(revalueContext);
+  const adjustNextPath = inventoryAdjustFixPath(revalueContext);
 
   const expiryParam = expiryFilter === 'all' ? undefined : expiryFilter;
 
@@ -199,6 +222,21 @@ export function StockListPage() {
     if (tab === 'fefo') setActiveTab('fefo');
     else if (tab === 'summary') setActiveTab('summary');
 
+    const q = (searchParams.get('q') ?? searchParams.get('search') ?? '').trim();
+    if (q) {
+      setSearchInput(q);
+      setSearch(q);
+      setPage(1);
+    }
+
+    const warehouseFromUrl = searchParams.get('warehouseId');
+    if (warehouseFromUrl) setWarehouseId(warehouseFromUrl);
+
+    if (searchParams.get('revalue') === '1') {
+      setActiveTab('fefo');
+      setRevalueOpen(true);
+    }
+
     const productId = searchParams.get('productId');
     if (productId) {
       setActiveTab('fefo');
@@ -218,6 +256,64 @@ export function StockListPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchLotConflicts()
+      .then((rows) => {
+        if (!cancelled) setLotConflictCount(rows.length);
+      })
+      .catch(() => {
+        if (!cancelled) setLotConflictCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!revalueOpen) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await fetchStockBatches({
+          warehouseId,
+          productId: fefoProductId,
+          search: fefoProductId ? undefined : search || undefined,
+          page: 1,
+          pageSize: 100,
+        });
+        if (cancelled) return;
+        setRevalueBatches(result.items);
+        setRevalueDrafts(Object.fromEntries(result.items.map((b) => [b.id, b.unitCost])));
+      } catch (error) {
+        if (!cancelled) message.error(apiErrorMessage(error, t('messages.loadFailed')));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [revalueOpen, warehouseId, fefoProductId, search, message, t]);
+
+  const saveRevalue = async (batch: StockBatch) => {
+    const next = revalueDrafts[batch.id];
+    if (next == null || next < 0) return;
+    setRevalueSavingId(batch.id);
+    try {
+      await revalueBatchUnitCost(batch.id, {
+        unitCost: next,
+        reason: revalueReason.trim() || undefined,
+      });
+      message.success(t('messages.revalueOk', { batch: batch.batchNumber }));
+      setRevalueJustSaved(true);
+      setRevalueBatches((rows) => rows.map((row) => (row.id === batch.id ? { ...row, unitCost: next } : row)));
+      void load();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.revalueFailed')));
+    } finally {
+      setRevalueSavingId(undefined);
+    }
+  };
 
   const applySearch = (value?: string) => {
     const text = (value ?? searchInput).trim();
@@ -288,6 +384,12 @@ export function StockListPage() {
 
   const detailBatchColumns: ColumnsType<StockBatch> = [
     { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 110 },
+    {
+      title: ts('manufactureAbbr'),
+      dataIndex: 'manufactureDate',
+      width: 100,
+      render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+    },
     {
       title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',
@@ -369,7 +471,19 @@ export function StockListPage() {
     { title: ts('warehouse'), dataIndex: 'warehouseName', width: 140 },
     { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
     { title: ts('productName'), dataIndex: 'productName' },
+    {
+      title: ts('unit'),
+      dataIndex: 'saleUnitName',
+      width: 72,
+      render: (v?: string) => v?.trim() || '—',
+    },
     { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 120 },
+    {
+      title: ts('manufactureAbbr'),
+      dataIndex: 'manufactureDate',
+      width: 110,
+      render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+    },
     {
       title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',
@@ -394,6 +508,28 @@ export function StockListPage() {
         <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatQty(v)}</span>
       ),
     },
+    ...(canWrite
+      ? [
+          {
+            title: '',
+            width: 120,
+            render: (_: unknown, row: StockBatch) => (
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => {
+                  setRevalueOpen(true);
+                  setRevalueBatches([row]);
+                  setRevalueDrafts({ [row.id]: row.unitCost });
+                }}
+              >
+                {t('revalueTitle')}
+              </Button>
+            ),
+          } satisfies ColumnsType<StockBatch>[number],
+        ]
+      : []),
   ];
 
   const filterBar = (
@@ -481,6 +617,19 @@ export function StockListPage() {
 
   return (
     <Card title={t('title')}>
+      {lotConflictCount > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={t('lotConflictBanner', { count: lotConflictCount })}
+          action={
+            <Link to="/inventory/lot-conflicts">
+              <Button size="small">{t('openLotConflicts')}</Button>
+            </Link>
+          }
+        />
+      )}
       <Tabs
         activeKey={activeTab}
         onChange={(key) => {
@@ -582,6 +731,114 @@ export function StockListPage() {
             )}
           </>
         )}
+      </Drawer>
+
+      <Drawer
+        title={t('revalueTitle')}
+        width={880}
+        open={revalueOpen}
+        onClose={() => {
+          setRevalueOpen(false);
+          setRevalueJustSaved(false);
+        }}
+        extra={
+          fromAnomaly ? (
+            <Link to={anomalyReturnPath}>
+              <Button>{t('revalueBackReport')}</Button>
+            </Link>
+          ) : null
+        }
+      >
+        {fromAnomaly ? (
+          <Alert
+            type={revalueJustSaved ? 'success' : 'info'}
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={revalueJustSaved ? t('revalueSavedNext') : t('revalueFromReport')}
+            action={
+              <Space>
+                <Link to={adjustNextPath}>{t('revalueThenQty')}</Link>
+                <Link to={anomalyReturnPath}>{t('revalueBackReport')}</Link>
+              </Space>
+            }
+          />
+        ) : (
+          <Typography.Paragraph>
+            <Link to={adjustNextPath}>{t('revalueThenQty')}</Link>
+          </Typography.Paragraph>
+        )}
+        <Typography.Paragraph type="secondary">{t('revalueHint')}</Typography.Paragraph>
+        <Input.TextArea
+          rows={2}
+          placeholder={t('revalueReasonPh')}
+          value={revalueReason}
+          onChange={(e) => setRevalueReason(e.target.value)}
+          style={{ marginBottom: 12 }}
+        />
+        <Table<StockBatch>
+          rowKey="id"
+          size="small"
+          pagination={false}
+          dataSource={revalueBatches}
+          locale={{ emptyText: t('noBatches') }}
+          columns={[
+            { title: ts('productCode'), dataIndex: 'productCode', width: 110 },
+            { title: ts('batchAbbr'), dataIndex: 'batchNumber', width: 120 },
+            {
+              title: ts('unit'),
+              dataIndex: 'saleUnitName',
+              width: 72,
+              render: (v?: string) => v?.trim() || '—',
+            },
+            {
+              title: ts('stockQty'),
+              dataIndex: 'quantityAvailable',
+              align: 'right',
+              width: 100,
+              render: (v: number, row) =>
+                `${formatQty(v)}${row.saleUnitName?.trim() ? ` ${row.saleUnitName.trim()}` : ''}`,
+            },
+            {
+              title: ts('unitCost'),
+              dataIndex: 'unitCost',
+              align: 'right',
+              width: 130,
+              render: (v: number, row) =>
+                `${formatDisplayMoney(v)}${row.saleUnitName?.trim() ? `/${row.saleUnitName.trim()}` : ''}`,
+            },
+            {
+              title: t('newUnitCost'),
+              key: 'next',
+              width: 180,
+              render: (_, row) => (
+                <InputNumber
+                  {...moneyInputNumberPropsAllowZero}
+                  value={revalueDrafts[row.id]}
+                  addonAfter={row.saleUnitName?.trim() ? `₫/${row.saleUnitName.trim()}` : '₫'}
+                  onChange={(v) =>
+                    setRevalueDrafts((prev) => ({ ...prev, [row.id]: Number(v ?? 0) }))
+                  }
+                />
+              ),
+            },
+            {
+              title: '',
+              width: 90,
+              render: (_, row) =>
+                canWrite ? (
+                  <Button
+                    type="primary"
+                    size="small"
+                    loading={revalueSavingId === row.id}
+                    disabled={revalueDrafts[row.id] === row.unitCost}
+                    onClick={() => void saveRevalue(row)}
+                  >
+                    {tc('actions.save')}
+                  </Button>
+                ) : null,
+            },
+          ]}
+        />
       </Drawer>
     </Card>
   );

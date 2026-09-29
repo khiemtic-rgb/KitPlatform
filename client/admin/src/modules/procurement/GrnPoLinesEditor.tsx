@@ -11,7 +11,7 @@ import { GrnLineDiscountFields, PROCUREMENT_LINE_ACTION_COL_WIDTH } from '@/modu
 import { PROCUREMENT_MONEY_COL_WIDTH } from '@/modules/procurement/GrnPoTaxSummary';
 import { ProcurementQuantityCell } from '@/modules/procurement/procurement-quantity-cell';
 import { PoUnitPriceField } from '@/modules/procurement/PoUnitPriceField';
-import { PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
+import { PharmaDatePicker, PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
 import type { PurchaseOrderDetail } from '@/shared/api/procurement.types';
 import { formatDisplayMoney, formatDisplayQuantity, quantityInputNumberProps } from '@/shared/utils/money';
 
@@ -25,7 +25,10 @@ export interface GrnLineFormProps {
   orderedQty?: number;
   receivedQty?: number;
   batchNumber: string;
+  manufactureDate?: string;
   expiryDate: string;
+  lotLocked?: boolean;
+  lotConflict?: boolean;
   quantity: number;
   unitCost: number;
 }
@@ -150,23 +153,65 @@ export function GrnPoLinesEditor({
       render: (_, field) => {
         const productId = watchedItems?.[field.name]?.productId;
         return (
-          <Form.Item
-            name={[field.name, 'batchNumber']}
-            rules={[{ required: true, message: tVal('enterBatch') }]}
-            style={{ marginBottom: 0 }}
-          >
-            <GrnBatchNumberField
-              warehouseId={warehouseId}
-              productId={productId}
-              onPickExisting={(batch) => {
-                if (batch.expiryDate) {
-                  form.setFieldValue(['items', field.name, 'expiryDate'], batch.expiryDate);
-                }
-              }}
-            />
-          </Form.Item>
+          <>
+            <Form.Item
+              name={[field.name, 'batchNumber']}
+              rules={[{ required: true, message: tVal('enterBatch') }]}
+              style={{ marginBottom: 0 }}
+              help={watchedItems?.[field.name]?.lotConflict ? tShared('columns.lotConflict') : undefined}
+              validateStatus={watchedItems?.[field.name]?.lotConflict ? 'error' : undefined}
+            >
+              <GrnBatchNumberField
+                warehouseId={warehouseId}
+                productId={productId}
+                onPickExisting={(batch) => {
+                  if (batch.hasConflict) {
+                    form.setFieldValue(['items', field.name, 'lotConflict'], true);
+                    form.setFieldValue(['items', field.name, 'lotLocked'], false);
+                    return;
+                  }
+                  form.setFieldValue(['items', field.name, 'lotConflict'], false);
+                  if (batch.exists) {
+                    if (batch.manufactureDate) {
+                      form.setFieldValue(['items', field.name, 'manufactureDate'], batch.manufactureDate);
+                    }
+                    if (batch.expiryDate) {
+                      form.setFieldValue(['items', field.name, 'expiryDate'], batch.expiryDate);
+                    }
+                    form.setFieldValue(['items', field.name, 'lotLocked'], true);
+                    return;
+                  }
+                  form.setFieldValue(['items', field.name, 'lotLocked'], false);
+                }}
+              />
+            </Form.Item>
+            <Form.Item name={[field.name, 'lotLocked']} hidden>
+              <Input />
+            </Form.Item>
+            <Form.Item name={[field.name, 'lotConflict']} hidden>
+              <Input />
+            </Form.Item>
+          </>
         );
       },
+    },
+    {
+      title: tShared('columns.manufacture'),
+      width: 118,
+      className: 'grn-col-nowrap',
+      render: (_, field) => (
+        <Form.Item name={[field.name, 'manufactureDate']} style={{ marginBottom: 0 }}>
+          <PharmaDatePicker
+            style={{ width: '100%' }}
+            inTable
+            allowClear
+            disabled={Boolean(
+              watchedItems?.[field.name]?.lotLocked && watchedItems?.[field.name]?.manufactureDate,
+            )}
+            yearTo={new Date().getFullYear()}
+          />
+        </Form.Item>
+      ),
     },
     {
       title: tShared('columns.expiry'),
@@ -178,7 +223,11 @@ export function GrnPoLinesEditor({
           rules={[{ required: true, message: tVal('selectExpiry') }]}
           style={{ marginBottom: 0 }}
         >
-          <PharmaExpiryPicker style={{ width: '100%' }} inTable />
+          <PharmaExpiryPicker
+            style={{ width: '100%' }}
+            inTable
+            disabled={Boolean(watchedItems?.[field.name]?.lotLocked && watchedItems?.[field.name]?.expiryDate)}
+          />
         </Form.Item>
       ),
     },

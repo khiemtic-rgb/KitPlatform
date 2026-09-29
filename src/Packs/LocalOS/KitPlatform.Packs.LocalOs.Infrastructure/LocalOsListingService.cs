@@ -151,8 +151,12 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     @EmploymentType, @Category, @Requirements,
                     @StartAt, @EndAt, @RegistrationUrl, @PriceMonth, @RoomType, @Trust, @SafetyFlag,
                     @Status, CASE WHEN @Status = 'ACTIVE' THEN NOW() ELSE NULL END, NOW(),
-                    CASE WHEN @Kind = 'article' THEN NULL
-                         ELSE NOW() + CASE WHEN @Kind = 'event' THEN INTERVAL '30 days' ELSE INTERVAL '14 days' END
+                    CASE WHEN @Kind IN ('article', 'room') THEN NULL
+                         ELSE NOW() + CASE
+                             WHEN @Kind = 'event' THEN INTERVAL '30 days'
+                             WHEN @Kind = 'job' THEN INTERVAL '45 days'
+                             ELSE INTERVAL '14 days'
+                         END
                     END
                 )
                 """,
@@ -183,7 +187,7 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     price_month = @PriceMonth, room_type = @RoomType,
                     trust = @Trust, safety_flag = @SafetyFlag, status = @Status,
                     last_checked_at = NOW(), updated_at = NOW(),
-                    expires_at = CASE WHEN @Kind = 'article' THEN NULL ELSE expires_at END
+                    expires_at = CASE WHEN @Kind IN ('article', 'room') THEN NULL ELSE expires_at END
                 WHERE id = @Id
                 """,
                 Bind(id, request),
@@ -221,6 +225,11 @@ internal sealed class LocalOsListingService : ILocalOsListingService
                     published_at = CASE
                         WHEN @Status = 'ACTIVE' THEN COALESCE(published_at, NOW())
                         ELSE published_at
+                    END,
+                    expires_at = CASE
+                        WHEN @Status = 'ACTIVE' AND kind = 'job' AND published_at IS NULL
+                            THEN NOW() + INTERVAL '45 days'
+                        ELSE expires_at
                     END,
                     last_checked_at = NOW(),
                     updated_at = NOW()

@@ -33,6 +33,7 @@ export type StockBatch = Req<
   | 'status'
 > &
   Pick<StockBatchListItemDto, 'saleUnitName'> & {
+    manufactureDate?: string;
     expiryDate?: string;
   };
 
@@ -79,7 +80,11 @@ export type OpeningBalanceBatch = Req<
   | 'openingQuantity'
   | 'firstOpeningDate'
   | 'canVoid'
-> & Pick<OpeningBalanceBatchListItemDto, 'saleUnitName'>;
+> &
+  Pick<OpeningBalanceBatchListItemDto, 'saleUnitName'> & {
+    manufactureDate?: string;
+    expiryDate?: string;
+  };
 
 export type PagedOpeningBalanceBatches = {
   items: OpeningBalanceBatch[];
@@ -151,6 +156,7 @@ export type TransferItem = Req<
   | 'batchNumber'
   | 'quantity'
 > & {
+  manufactureDate?: string | null;
   expiryDate?: string | null;
   unitName?: string | null;
   receivedQuantity?: number | null;

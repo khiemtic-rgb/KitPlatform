@@ -496,7 +496,12 @@ function PharmacyDashboardPage() {
               <Link to="/sales/shift" className="dashboard-hero__stat dashboard-hero__stat--featured">
                 <span className="dashboard-hero__label">{t('kpis.todayRevenue.title')}</span>
                 <span className="dashboard-hero__value">{formatDisplayMoney(sales?.todayNetTotal)}</span>
-                <span className="dashboard-hero__hint">{t('kpis.todayOrders.hint')}</span>
+                <span className="dashboard-hero__hint">
+                  {t('kpis.todayRevenue.hint', {
+                    collected: formatDisplayMoney(sales?.todayCollected),
+                    debt: formatDisplayMoney(sales?.todayNewDebt),
+                  })}
+                </span>
               </Link>
               <Link to="/reports/sales/revenue-by-period" className="dashboard-hero__stat">
                 <span className="dashboard-hero__label">{t('hero.weekRevenue')}</span>

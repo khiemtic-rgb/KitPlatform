@@ -61,7 +61,7 @@
   "kpis": {
     "todayRevenue": {
       "title": "Today's revenue",
-      "hint": "7 days (VN): {{amount}}"
+      "hint": "Collected {{collected}} · New AR {{debt}}"
     },
     "todayOrders": {
       "title": "Today's orders",

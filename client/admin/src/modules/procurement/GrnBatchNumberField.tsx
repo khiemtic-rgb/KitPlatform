@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AutoComplete } from 'antd';
-import { fetchStockBatches } from '@/shared/api/inventory.api';
+import { fetchLotIdentity, fetchStockBatches } from '@/shared/api/inventory.api';
 import type { StockBatch } from '@/shared/api/inventory.types';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
 
 export type GrnExistingBatchPick = {
   batchNumber: string;
+  manufactureDate?: string;
   expiryDate?: string;
+  exists: boolean;
+  hasConflict: boolean;
 };
 
 type Props = {
@@ -16,7 +19,7 @@ type Props = {
   onChange?: (value: string) => void;
   warehouseId?: string;
   productId?: string;
-  /** Khi chọn lô đã có trong kho — caller điền HSD (và các field liên quan). */
+  /** Tra cứu lô theo tenant (không chỉ kho đang nhập). */
   onPickExisting?: (batch: GrnExistingBatchPick) => void;
   placeholder?: string;
   style?: CSSProperties;
@@ -24,7 +27,7 @@ type Props = {
   status?: '' | 'warning' | 'error';
 };
 
-function toExpiryFieldValue(iso?: string): string | undefined {
+function toDateField(iso?: string): string | undefined {
   if (!iso) return undefined;
   return iso.length >= 10 ? iso.slice(0, 10) : iso;
 }
@@ -44,6 +47,8 @@ export function GrnBatchNumberField({
   const { t } = useTranslation('procurement', { keyPrefix: 'shared' });
   const [batches, setBatches] = useState<StockBatch[]>([]);
   const [loading, setLoading] = useState(false);
+  const onPickRef = useRef(onPickExisting);
+  onPickRef.current = onPickExisting;
 
   useEffect(() => {
     if (!warehouseId || !productId) {
@@ -66,6 +71,37 @@ export function GrnBatchNumberField({
       cancelled = true;
     };
   }, [warehouseId, productId]);
+
+  useEffect(() => {
+    const lot = value?.trim() ?? '';
+    if (!productId || lot.length === 0) {
+      onPickRef.current?.({ batchNumber: lot, exists: false, hasConflict: false });
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void fetchLotIdentity(productId, lot)
+        .then((identity) => {
+          if (cancelled) return;
+          onPickRef.current?.({
+            batchNumber: identity.batchNumber || lot,
+            manufactureDate: toDateField(identity.manufactureDate),
+            expiryDate: toDateField(identity.expiryDate),
+            exists: identity.exists,
+            hasConflict: identity.hasConflict,
+          });
+        })
+        .catch(() => {
+          if (!cancelled) {
+            onPickRef.current?.({ batchNumber: lot, exists: false, hasConflict: false });
+          }
+        });
+    }, 280);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [productId, value]);
 
   const options = useMemo(
     () =>
@@ -103,16 +139,7 @@ export function GrnBatchNumberField({
       }
       onSearch={(text) => onChange?.(text)}
       onChange={(text) => onChange?.(text)}
-      onSelect={(selected) => {
-        const match = batches.find((b) => b.batchNumber === selected);
-        onChange?.(selected);
-        if (match) {
-          onPickExisting?.({
-            batchNumber: match.batchNumber,
-            expiryDate: toExpiryFieldValue(match.expiryDate),
-          });
-        }
-      }}
+      onSelect={(selected) => onChange?.(selected)}
       allowClear
     />
   );

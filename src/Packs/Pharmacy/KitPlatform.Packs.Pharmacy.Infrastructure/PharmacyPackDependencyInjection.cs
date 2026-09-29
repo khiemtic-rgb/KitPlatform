@@ -66,6 +66,7 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<IInventoryEngine>(sp => sp.GetRequiredService<BatchResolver>());
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<IInventoryImportService, InventoryImportService>();
+        services.AddScoped<IInventoryStockReviewService, InventoryStockReviewService>();
         services.AddScoped<ILowStockSettingsService, LowStockSettingsService>();
 
         // Procurement

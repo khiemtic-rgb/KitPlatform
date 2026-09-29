@@ -48,7 +48,6 @@ const upcoming = [...events]
   .slice(0, 4);
 const featuredRooms = rooms.slice(0, 4);
 const latestArticles = articles.slice(0, 4);
-const liveCount = jobs.length + events.length + rooms.length + articles.length;
 ---
 <Layout
   title="Thái Nguyên Life – Hiểu Thái Nguyên, sống trọn trải nghiệm"
@@ -125,35 +124,30 @@ const liveCount = jobs.length + events.length + rooms.length + articles.length;
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>
         </span>
         <strong>Việc làm</strong>
-        <span>{jobs.length} tin</span>
       </a>
       <a class="cat-item" href="/su-kien">
         <span class="cat-ico event" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
         </span>
         <strong>Sự kiện</strong>
-        <span>{events.length} sự kiện</span>
       </a>
       <a class="cat-item" href="/tin">
         <span class="cat-ico news" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2V4z"/><path d="M7 8h9M7 12h9M7 16h6"/></svg>
         </span>
         <strong>Tin</strong>
-        <span>{articles.length} bài</span>
       </a>
       <a class="cat-item" href="/tro">
         <span class="cat-ico room" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
         </span>
         <strong>Phòng trọ</strong>
-        <span>{rooms.length} tin</span>
       </a>
       <a class="cat-item" href="#cong-dong">
         <span class="cat-ico community" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="2.4"/><circle cx="15.5" cy="8.4" r="2"/><path d="M4.8 17.2c.4-2.4 2.4-3.8 4.2-3.8s3.8 1.4 4.2 3.8"/><path d="M13.2 13.8c1.6-.2 3.4 1 3.8 3.4"/></svg>
         </span>
         <strong>Cộng đồng</strong>
-        <span>{groups.length} nhóm</span>
       </a>
     </nav>
   </div>
@@ -398,8 +392,8 @@ const liveCount = jobs.length + events.length + rooms.length + articles.length;
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v6c0 4.2 2.8 7.2 7 8.5 4.2-1.3 7-4.3 7-8.5V6z"/><path d="m9 12 2 2 4-4"/></svg>
             </span>
             <div>
-              <b>{liveCount}</b>
-              <span>Tin đang đăng</span>
+              <b>Tin địa phương</b>
+              <span>đang được cập nhật</span>
             </div>
           </div>
           <div class="life-stat">
@@ -425,8 +419,8 @@ const liveCount = jobs.length + events.length + rooms.length + articles.length;
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="2.2"/><path d="M7 17.2c.5-2.4 2.4-3.7 5-3.7s4.5 1.3 5 3.7"/><circle cx="12" cy="12" r="9"/></svg>
             </span>
             <div>
-              <b>{groups.length}</b>
-              <span>Cộng đồng gợi ý</span>
+              <b>Cộng đồng</b>
+              <span>gợi ý quanh Thái Nguyên</span>
             </div>
           </div>
         </div>

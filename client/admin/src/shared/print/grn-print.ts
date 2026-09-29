@@ -13,6 +13,7 @@ export function printGoodsReceipt(grn: GoodsReceiptDetail, tenantName?: string):
         <td>${line.productCode}</td>
         <td>${line.productName}</td>
         <td>${line.batchNumber ?? '—'}</td>
+        <td class="center">${line.manufactureDate ? formatDisplayDate(line.manufactureDate) : '—'}</td>
         <td class="center">${line.expiryDate ? formatDisplayDate(line.expiryDate) : '—'}</td>
         <td class="num">${formatDisplayQuantity(line.quantity)}</td>
         <td class="num">${formatDisplayMoney(line.unitCost)}</td>
@@ -48,6 +49,7 @@ export function printGoodsReceipt(grn: GoodsReceiptDetail, tenantName?: string):
           <th>${t('print.columns.productCode')}</th>
           <th>${t('print.columns.productName')}</th>
           <th>${t('print.columns.batchNumber')}</th>
+          <th class="center">${t('print.columns.manufacture')}</th>
           <th class="center">${t('print.columns.expiry')}</th>
           <th class="num">${t('print.columns.quantity')}</th>
           <th class="num">${t('print.columns.unitCost')}</th>
@@ -57,7 +59,7 @@ export function printGoodsReceipt(grn: GoodsReceiptDetail, tenantName?: string):
       <tbody>${rows}</tbody>
       <tfoot>
         <tr>
-          <td colspan="7" class="num">${t('print.total')}</td>
+          <td colspan="8" class="num">${t('print.total')}</td>
           <td class="num">${formatDisplayMoney(total)}</td>
         </tr>
       </tfoot>

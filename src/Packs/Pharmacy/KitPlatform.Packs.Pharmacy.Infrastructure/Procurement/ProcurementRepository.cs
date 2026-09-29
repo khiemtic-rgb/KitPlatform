@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Core.Engines;
@@ -893,7 +893,7 @@ internal sealed class ProcurementRepository
                 item.PurchaseOrderItemId,
                 item.ProductId,
                 item.ProductUnitId,
-                BatchNumber = item.BatchNumber.Trim(),
+                BatchNumber = InventoryLotRules.NormalizeBatchNumber(item.BatchNumber),
                 item.ManufactureDate,
                 item.ExpiryDate,
                 item.Quantity,
@@ -1054,7 +1054,7 @@ internal sealed class ProcurementRepository
                 item.PurchaseOrderItemId,
                 item.ProductId,
                 item.ProductUnitId,
-                BatchNumber = item.BatchNumber.Trim(),
+                BatchNumber = InventoryLotRules.NormalizeBatchNumber(item.BatchNumber),
                 item.ManufactureDate,
                 item.ExpiryDate,
                 item.Quantity,
@@ -1115,13 +1115,18 @@ internal sealed class ProcurementRepository
 
         foreach (var item in items)
         {
+            var lot = InventoryLotRules.NormalizeBatchNumber(item.BatchNumber);
+            var identity = await _inventory.FindLotIdentityAsync(conn, tx, item.ProductId, lot, cancellationToken);
+            var dates = InventoryLotRules.Resolve(lot, item.ManufactureDate, item.ExpiryDate, identity);
+
             var existingId = await _inventory.FindBatchIdByKeyAsync(
-                conn, tx, header.WarehouseId, item.ProductId, item.BatchNumber, cancellationToken);
+                conn, tx, header.WarehouseId, item.ProductId, lot, cancellationToken);
 
             Guid batchId;
             if (existingId is Guid id)
             {
                 batchId = id;
+                await _inventory.FillBatchDatesIfEmptyAsync(conn, tx, batchId, dates.ManufactureDate, dates.ExpiryDate, cancellationToken);
                 await _inventory.IncreaseBatchQuantityAsync(conn, tx, batchId, item.Quantity, cancellationToken);
                 await conn.ExecuteAsync(
                     "UPDATE inventory_batches SET supplier_id = @SupplierId, goods_receipt_item_id = @GrnItemId, updated_at = NOW() WHERE id = @BatchId AND tenant_id = @TenantId",
@@ -1130,7 +1135,8 @@ internal sealed class ProcurementRepository
             else
             {
                 batchId = await InsertBatchFromGrnAsync(
-                    conn, tx, header.WarehouseId, header.SupplierId, item, cancellationToken);
+                    conn, tx, header.WarehouseId, header.SupplierId, item,
+                    lot, dates.ManufactureDate, dates.ExpiryDate, cancellationToken);
             }
 
             await _inventory.InsertMovementAsync(
@@ -1217,6 +1223,9 @@ internal sealed class ProcurementRepository
         Guid warehouseId,
         Guid supplierId,
         GrnItemRow item,
+        string batchNumber,
+        DateOnly? manufactureDate,
+        DateOnly expiryDate,
         CancellationToken cancellationToken)
     {
         const string sql = """
@@ -1237,9 +1246,9 @@ internal sealed class ProcurementRepository
             TenantId,
             WarehouseId = warehouseId,
             item.ProductId,
-            BatchNumber = item.BatchNumber,
-            item.ManufactureDate,
-            item.ExpiryDate,
+            BatchNumber = batchNumber,
+            ManufactureDate = manufactureDate,
+            ExpiryDate = expiryDate,
             UnitCost = item.InventoryUnitCost,
             item.Quantity,
             SupplierId = supplierId,
@@ -1888,8 +1897,16 @@ internal sealed class ProcurementRepository
     public async Task<bool> WarehouseExistsAsync(Guid warehouseId, CancellationToken cancellationToken) =>
         await _inventory.WarehouseExistsAsync(warehouseId, cancellationToken);
 
-    public async Task<bool> ProductExistsAsync(Guid productId, CancellationToken cancellationToken) =>
-        await _inventory.ProductExistsAsync(productId, cancellationToken);
+    public Task<bool> ProductExistsAsync(Guid productId, CancellationToken cancellationToken) =>
+        _inventory.ProductExistsAsync(productId, cancellationToken);
+
+    public Task<bool> ProductExistsAsync(Guid productId, bool includeHidden, CancellationToken cancellationToken) =>
+        _inventory.ProductExistsAsync(productId, cancellationToken, includeHidden);
+
+    public Task<(string Code, string Name, bool Hidden)?> GetProductRefAsync(
+        Guid productId,
+        CancellationToken cancellationToken) =>
+        _inventory.GetProductRefAsync(productId, cancellationToken);
 
     private sealed class VatTreatmentCalcRow
     {

@@ -6,6 +6,7 @@ using KitPlatform.Packs.Pharmacy.Inventory;
 using KitPlatform.Packs.Pharmacy.Procurement;
 using KitPlatform.Packs.Pharmacy.Sales;
 using KitPlatform.Infrastructure.Data;
+using KitPlatform.Infrastructure.Reports;
 using KitPlatform.Infrastructure.Security;
 
 namespace KitPlatform.Infrastructure.Dashboard;
@@ -55,8 +56,56 @@ internal sealed class DashboardRepository
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
 
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
+        var isCheckout = SalesAccrualSql.IsCheckout();
+
         var salesTodaySql = $"""
             SELECT
+                COALESCE((
+                    SELECT SUM({originalTotal})
+                    FROM sales_orders o
+                    WHERE o.tenant_id = @TenantId
+                      AND {soldStatus}
+                      AND o.order_date >= @TodayStart AND o.order_date < @TodayEnd
+                      {orderWarehouseFilter}
+                ), 0)
+                - COALESCE((
+                    SELECT SUM(ri.refund_amount)
+                    FROM sales_return_items ri
+                    INNER JOIN sales_returns r ON r.id = ri.sales_return_id
+                    INNER JOIN sales_orders o ON o.id = r.sales_order_id
+                    WHERE r.tenant_id = @TenantId
+                      AND r.status = @ReturnCompleted
+                      AND r.return_date >= @TodayStart AND r.return_date < @TodayEnd
+                      {orderWarehouseFilter}
+                ), 0) AS TodayNetTotal,
+                COALESCE((
+                    SELECT SUM({originalTotal})
+                    FROM sales_orders o
+                    WHERE o.tenant_id = @TenantId
+                      AND {soldStatus}
+                      AND o.order_date >= @WeekStart AND o.order_date < @WeekEnd
+                      {orderWarehouseFilter}
+                ), 0)
+                - COALESCE((
+                    SELECT SUM(ri.refund_amount)
+                    FROM sales_return_items ri
+                    INNER JOIN sales_returns r ON r.id = ri.sales_return_id
+                    INNER JOIN sales_orders o ON o.id = r.sales_order_id
+                    WHERE r.tenant_id = @TenantId
+                      AND r.status = @ReturnCompleted
+                      AND r.return_date >= @WeekStart AND r.return_date < @WeekEnd
+                      {orderWarehouseFilter}
+                ), 0) AS WeekNetTotal,
+                COALESCE((
+                    SELECT COUNT(*)::int
+                    FROM sales_orders o
+                    WHERE o.tenant_id = @TenantId
+                      AND {soldStatus}
+                      AND o.order_date >= @TodayStart AND o.order_date < @TodayEnd
+                      {orderWarehouseFilter}
+                ), 0) AS TodayOrderCount,
                 COALESCE((
                     SELECT SUM(sp.amount)
                     FROM sales_payments sp
@@ -73,32 +122,20 @@ internal sealed class DashboardRepository
                     WHERE r.tenant_id = @TenantId
                       AND rp.paid_at >= @TodayStart AND rp.paid_at < @TodayEnd
                       {orderWarehouseFilter}
-                ), 0) AS TodayNetTotal,
+                ), 0) AS TodayCollected,
                 COALESCE((
-                    SELECT SUM(sp.amount)
-                    FROM sales_payments sp
-                    INNER JOIN sales_orders o ON o.id = sp.sales_order_id
-                    WHERE o.tenant_id = @TenantId
-                      AND sp.paid_at >= @WeekStart AND sp.paid_at < @WeekEnd
-                      {orderWarehouseFilter}
-                ), 0)
-                - COALESCE((
-                    SELECT SUM(rp.amount)
-                    FROM sales_return_payments rp
-                    INNER JOIN sales_returns r ON r.id = rp.sales_return_id
-                    INNER JOIN sales_orders o ON o.id = r.sales_order_id
-                    WHERE r.tenant_id = @TenantId
-                      AND rp.paid_at >= @WeekStart AND rp.paid_at < @WeekEnd
-                      {orderWarehouseFilter}
-                ), 0) AS WeekNetTotal,
-                COALESCE((
-                    SELECT COUNT(*)::int
+                    SELECT SUM({originalTotal} - COALESCE(ck.checkout_paid, 0))
                     FROM sales_orders o
+                    LEFT JOIN LATERAL (
+                        SELECT COALESCE(SUM(sp.amount), 0) AS checkout_paid
+                        FROM sales_payments sp
+                        WHERE sp.sales_order_id = o.id AND {isCheckout}
+                    ) ck ON TRUE
                     WHERE o.tenant_id = @TenantId
-                      AND o.status = @OrderCompleted
+                      AND {soldStatus}
                       AND o.order_date >= @TodayStart AND o.order_date < @TodayEnd
                       {orderWarehouseFilter}
-                ), 0) AS TodayOrderCount
+                ), 0) AS TodayNewDebt
             """;
 
         var queryParams = new
@@ -109,10 +146,16 @@ internal sealed class DashboardRepository
             WeekStart = weekStart,
             WeekEnd = weekEnd,
             OrderCompleted = SalesOrderStatuses.Completed,
+            ReturnCompleted = SalesReturnStatuses.Completed,
             AllowedWarehouseIds = allowedWarehouseIds,
         };
 
-        var sales = await conn.QuerySingleAsync<(decimal TodayNetTotal, decimal WeekNetTotal, int TodayOrderCount)>(
+        var sales = await conn.QuerySingleAsync<(
+            decimal TodayNetTotal,
+            decimal WeekNetTotal,
+            int TodayOrderCount,
+            decimal TodayCollected,
+            decimal TodayNewDebt)>(
             salesTodaySql,
             queryParams);
 
@@ -250,7 +293,12 @@ internal sealed class DashboardRepository
             });
 
         return new DashboardOverviewDto(
-            new DashboardSalesSnapshotDto(sales.TodayNetTotal, sales.WeekNetTotal, sales.TodayOrderCount),
+            new DashboardSalesSnapshotDto(
+                sales.TodayNetTotal,
+                sales.WeekNetTotal,
+                sales.TodayOrderCount,
+                sales.TodayCollected,
+                sales.TodayNewDebt),
             new DashboardCatalogSnapshotDto(catalog.ProductCount, catalog.CustomerCount),
             new DashboardInventorySnapshotDto(
                 inventory.ActiveBatchCount,

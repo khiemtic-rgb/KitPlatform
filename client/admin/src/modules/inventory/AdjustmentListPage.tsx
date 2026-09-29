@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  Alert,
   App,
   Button,
   Card,
@@ -42,6 +43,7 @@ import type {
 } from '@/shared/api/inventory.types';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayQuantity } from '@/shared/utils/money';
+import { inventoryAnomalyReturnPath } from '@/modules/reports/stock-fix-links';
 import { ListFilterBar } from '@/shared/ui/ListFilterBar';
 import { InventoryCountBatchPickModal } from '@/modules/inventory/InventoryCountBatchPickModal';
 import { InventoryCountWorkflowSteps } from '@/modules/inventory/InventoryCountWorkflowSteps';
@@ -65,6 +67,13 @@ interface AdjustmentLineForm {
 
 export function AdjustmentListPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromAnomaly = searchParams.get('from') === 'anomaly';
+  const anomalyReturnPath = inventoryAnomalyReturnPath({
+    productId: searchParams.get('productId')?.trim() || undefined,
+    productCode: searchParams.get('q')?.trim() || undefined,
+    warehouseId: searchParams.get('warehouseId')?.trim() || undefined,
+  });
   const { message, modal } = App.useApp();
   const { t, i18n } = useTranslation('inventory', { keyPrefix: 'adjustmentList' });
   const { t: ts } = useTranslation('inventory', { keyPrefix: 'shared' });
@@ -161,11 +170,77 @@ export function AdjustmentListPage() {
     return map;
   }, [warehouseBatches]);
 
-  const openCreate = () => {
+  const openCreate = (preset?: { warehouseId?: string }) => {
     form.resetFields();
-    form.setFieldsValue({ items: [] });
+    form.setFieldsValue({
+      items: [],
+      warehouseId: preset?.warehouseId,
+    });
     setDrawerOpen(true);
   };
+
+  const deepLinkApplied = useRef(false);
+  useEffect(() => {
+    if (deepLinkApplied.current) return;
+    if (searchParams.get('create') !== '1') return;
+    if (warehouses.length === 0) return;
+
+    const productId = searchParams.get('productId')?.trim() || undefined;
+    const productCode = searchParams.get('q')?.trim() || undefined;
+    const warehouseFromUrl = searchParams.get('warehouseId')?.trim() || undefined;
+    const warehouseName = searchParams.get('warehouse')?.trim() || undefined;
+
+    deepLinkApplied.current = true;
+    setDrawerOpen(true);
+
+    void (async () => {
+      try {
+        let warehouseId = warehouseFromUrl;
+        if (!warehouseId && warehouseName) {
+          warehouseId = warehouses.find((w) => w.warehouseName === warehouseName)?.id;
+        }
+
+        const result = await fetchStockBatches({
+          warehouseId,
+          productId,
+          search: productId ? undefined : productCode,
+          page: 1,
+          pageSize: 100,
+        });
+        let batches = result.items;
+        if (!warehouseId && batches[0]) {
+          const preferred =
+            (warehouseName && batches.find((b) => b.warehouseName === warehouseName)?.warehouseId) ||
+            batches[0].warehouseId;
+          warehouseId = preferred;
+          batches = batches.filter((b) => b.warehouseId === preferred);
+        }
+
+        form.resetFields();
+        form.setFieldsValue({
+          warehouseId,
+          reason: productCode ? t('anomalyPrefillReason', { code: productCode }) : undefined,
+          items: batches.map((b) => ({
+            batchId: b.id,
+            actualQuantity: Math.max(0, b.quantityAvailable),
+          })),
+        });
+
+        if (warehouseId) {
+          const allInWh = await fetchStockBatches({ warehouseId, page: 1, pageSize: 200 });
+          setWarehouseBatches(sortBatchesForCount(allInWh.items));
+        }
+
+        if (batches.length === 0) {
+          message.warning(t('anomalyPrefillEmpty', { code: productCode ?? '' }));
+          return;
+        }
+        message.success(t('anomalyPrefillOk', { count: batches.length, code: productCode ?? '' }));
+      } catch (error) {
+        message.error(apiErrorMessage(error, t('messages.loadFailed')));
+      }
+    })();
+  }, [searchParams, warehouses, form, message, t]);
 
   const openBatchPick = (fieldIndex: number | null) => {
     if (!warehouseId) {
@@ -320,6 +395,10 @@ export function AdjustmentListPage() {
     try {
       await approveAdjustment(id);
       message.success(t('messages.approveSuccess'));
+      if (fromAnomaly) {
+        navigate(anomalyReturnPath);
+        return;
+      }
       if (detail?.id === id) {
         setDetail(await fetchAdjustment(id));
       }
@@ -450,6 +529,20 @@ export function AdjustmentListPage() {
         ]}
       />
 
+      {fromAnomaly ? (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message={t('fromAnomalyTip')}
+          action={
+            <Link to={anomalyReturnPath}>
+              <Button size="small">{t('backToAnomaly')}</Button>
+            </Link>
+          }
+        />
+      ) : null}
+
       <Card
         title={t('title')}
         extra={
@@ -539,6 +632,11 @@ export function AdjustmentListPage() {
         onClose={() => setDrawerOpen(false)}
         extra={
           <Space>
+            {fromAnomaly ? (
+              <Link to={anomalyReturnPath}>
+                <Button>{t('backToAnomaly')}</Button>
+              </Link>
+            ) : null}
             <Button onClick={() => setDrawerOpen(false)}>{tc('actions.cancel')}</Button>
             <Button type="primary" loading={saving} onClick={handleCreate}>
               {tc('actions.save')}
@@ -547,6 +645,9 @@ export function AdjustmentListPage() {
         }
       >
         <Form form={form} layout="vertical">
+          {fromAnomaly ? (
+            <Alert type="info" showIcon style={{ marginBottom: 12 }} message={t('fromAnomalyTip')} />
+          ) : null}
           <Typography.Paragraph type="secondary" style={{ marginTop: 0, fontSize: 13 }}>
             {t('batchDrawerTip')}
           </Typography.Paragraph>

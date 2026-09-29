@@ -859,6 +859,11 @@ export async function fetchSalesShift(id: string): Promise<SalesShiftDetail> {
   return normalizeSalesShiftDetail(data);
 }
 
+export async function fetchReportSalesShift(id: string): Promise<SalesShiftDetail> {
+  const { data } = await http.get<Record<string, unknown>>(`/reports/sales/shifts/${id}`);
+  return normalizeSalesShiftDetail(data);
+}
+
 export async function openSalesShift(payload: {
   warehouseId: string;
   openingCash: number;

@@ -3,6 +3,7 @@ using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Success;
 using KitPlatform.Infrastructure.Dashboard;
 using KitPlatform.Infrastructure.Data;
+using KitPlatform.Infrastructure.Reports;
 using KitPlatform.Packs.Pharmacy.Sales;
 
 namespace KitPlatform.Infrastructure.Success;
@@ -60,30 +61,34 @@ internal sealed class OwnerCockpitRepository
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
 
+        var soldStatus = SalesAccrualSql.SoldStatusFilter();
+        var originalTotal = SalesAccrualSql.OriginalTotalExpr();
+
         var salesSql = $"""
             SELECT
                 COALESCE((
-                    SELECT SUM(sp.amount)
-                    FROM sales_payments sp
-                    INNER JOIN sales_orders o ON o.id = sp.sales_order_id
+                    SELECT SUM({originalTotal})
+                    FROM sales_orders o
                     WHERE o.tenant_id = @TenantId
-                      AND sp.paid_at >= @MonthStart AND sp.paid_at < @MonthEnd
+                      AND {soldStatus}
+                      AND o.order_date >= @MonthStart AND o.order_date < @MonthEnd
                       {orderWarehouseFilter}
                 ), 0)
                 - COALESCE((
-                    SELECT SUM(rp.amount)
-                    FROM sales_return_payments rp
-                    INNER JOIN sales_returns r ON r.id = rp.sales_return_id
+                    SELECT SUM(ri.refund_amount)
+                    FROM sales_return_items ri
+                    INNER JOIN sales_returns r ON r.id = ri.sales_return_id
                     INNER JOIN sales_orders o ON o.id = r.sales_order_id
                     WHERE r.tenant_id = @TenantId
-                      AND rp.paid_at >= @MonthStart AND rp.paid_at < @MonthEnd
+                      AND r.status = {SalesReturnStatuses.Completed}
+                      AND r.return_date >= @MonthStart AND r.return_date < @MonthEnd
                       {orderWarehouseFilter}
                 ), 0) AS MonthNetTotal,
                 COALESCE((
                     SELECT COUNT(*)::int
                     FROM sales_orders o
                     WHERE o.tenant_id = @TenantId
-                      AND o.status = @OrderCompleted
+                      AND {soldStatus}
                       AND o.order_date >= @WeekStart AND o.order_date < @WeekEnd
                       {orderWarehouseFilter}
                 ), 0) AS WeekOrderCount,
@@ -91,7 +96,7 @@ internal sealed class OwnerCockpitRepository
                     SELECT COUNT(*)::int
                     FROM sales_orders o
                     WHERE o.tenant_id = @TenantId
-                      AND o.status = @OrderCompleted
+                      AND {soldStatus}
                       AND o.order_date >= @MonthStart AND o.order_date < @MonthEnd
                       {orderWarehouseFilter}
                 ), 0) AS MonthOrderCount

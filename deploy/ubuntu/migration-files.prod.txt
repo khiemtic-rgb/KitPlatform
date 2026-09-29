@@ -222,3 +222,4 @@ seed-prod/001_base_permissions.sql
 298_pharmacy_consultation_ent_otc.sql
 299_pharmacy_consultation_preliminary_assessment.sql
 300_pharmacy_consultation_customer_snapshot.sql
+371_inventory_stock_review.sql

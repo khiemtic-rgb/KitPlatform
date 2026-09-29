@@ -220,6 +220,14 @@ export const SALES_SHIFT_STATUSES = {
   Closed: 2,
 } as const;
 
+export const SALES_PAYMENT_METHODS = {
+  Cash: 1,
+  Card: 2,
+  Transfer: 3,
+  EWallet: 4,
+  Credit: 5,
+} as const;
+
 export type SalesOrderDetail = Omit<
   Req<
     SalesOrderDetailDto,

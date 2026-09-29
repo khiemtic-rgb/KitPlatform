@@ -35,11 +35,10 @@ import { PosCheckoutModal } from '@/modules/sales/PosCheckoutModal';
 import { PosCartQuantityInput } from '@/modules/sales/PosCartQuantityInput';
 import { PosCounterOtpButton } from '@/modules/sales/PosCounterOtpButton';
 import { ActiveCounterOtpPanel } from '@/modules/customer/ActiveCounterOtpPanel';
-import { formatSuggestedBatch } from '@/modules/sales/pos-batch-display';
+import { formatBatchHintLine, suggestedBatchHint } from '@/modules/sales/pos-batch-display';
 import {
   initialBatchLabelForMode,
-  showsBatchHints,
-  showsBatchLabelField,
+  showsBatchPicker,
   validateCartBatchLabels,
 } from '@/modules/sales/pos-batch-mode-ui';
 import { applyBatchLabelScan } from '@/modules/sales/pos-batch-scan';
@@ -1116,7 +1115,7 @@ export function PosPage() {
         });
         setBarcode('');
       } catch (error) {
-        if (showsBatchLabelField(batchMode)) {
+        if (showsBatchPicker(batchMode)) {
           const batchResult = applyBatchLabelScan(cart, value);
           if (batchResult) {
             setCart(batchResult.cart);
@@ -1447,13 +1446,16 @@ export function PosPage() {
       title: t('pos.columns.product'),
       ellipsis: true,
       render: (_, row) => {
-        const suggestedBatch = formatSuggestedBatch(row.batchHints);
+        const selectedHint =
+          (row.batchHints ?? []).find((h) => h.batchNumber === row.batchLabel) ??
+          suggestedBatchHint(row.batchHints);
+        const lotLine = selectedHint ? formatBatchHintLine(selectedHint) : null;
         const stockWarning =
           row.qtyWarning ??
           (row.stockAvailable != null && row.stockAvailable <= 0
             ? outOfStockWarningText(row.unitName, t)
             : null);
-        const body = (
+        return (
           <div style={{ lineHeight: 1.45, minWidth: 0 }}>
             <Typography.Text type="secondary" style={{ fontSize: 11, lineHeight: 1.35 }}>
               {t('pos.columns.productCode')}: {row.productCode}
@@ -1468,17 +1470,17 @@ export function PosPage() {
                 {t('pos.columns.stockInline', { count: (row.stockAvailable ?? 0).toLocaleString() })}
               </Typography.Text>
             </div>
+            {showsBatchPicker(batchMode) && lotLine ? (
+              <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>
+                {lotLine}
+              </Typography.Text>
+            ) : null}
             {stockWarning ? (
               <Typography.Text type="warning" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
                 {stockWarning}
               </Typography.Text>
             ) : null}
           </div>
-        );
-        return showsBatchHints(batchMode) && suggestedBatch !== '—' ? (
-          <Tooltip title={t('pos.columns.fefoHint', { batch: suggestedBatch })}>{body}</Tooltip>
-        ) : (
-          body
         );
       },
     },
@@ -1492,22 +1494,22 @@ export function PosPage() {
         <Typography.Text style={{ fontSize: 12 }}>{value}</Typography.Text>
       ),
     },
-    ...(showsBatchLabelField(batchMode)
+    ...(showsBatchPicker(batchMode)
       ? ([
           {
             title: t('pos.columns.batch'),
-            width: 128,
+            width: 168,
             render: (_, row) => (
               <Select
                 showSearch
                 allowClear={batchMode !== 'label_required'}
                 placeholder={t('pos.columns.batchPlaceholder')}
-                style={{ width: 120 }}
-                disabled={!canWrite || cartLocked}
+                style={{ width: 156 }}
+                disabled={!canWrite || cartLocked || !(row.batchHints?.length)}
                 value={row.batchLabel || undefined}
                 options={(row.batchHints ?? []).map((hint) => ({
                   value: hint.batchNumber,
-                  label: formatSuggestedBatch([hint]),
+                  label: formatBatchHintLine(hint),
                 }))}
                 onChange={(value) =>
                   setCart((prev) =>

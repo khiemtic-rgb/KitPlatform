@@ -33,7 +33,28 @@
       "opening": "Opening balance",
       "warehouses": "Warehouses",
       "gppChecklist": "GPP ops",
-      "qd540Export": "QĐ 540"
+      "qd540Export": "QĐ 540",
+      "lotConflicts": "Lot date conflicts"
+    }
+  },
+  "lotConflicts": {
+    "title": "Lots with conflicting manufacture / expiry dates",
+    "hint": "One product lot must have a single manufacture date and a single expiry date in every warehouse. Pick the correct dates and apply — the app overwrites dates on stock cards and does not change quantity.",
+    "searchPlaceholder": "Search product code, name, or lot",
+    "count": "{{count}} lots need fixing",
+    "empty": "No lots with conflicting dates",
+    "lot": "Lot",
+    "storedLot": "Lot on card",
+    "manufactureDates": "Manufacture dates found",
+    "expiryDates": "Expiry dates found",
+    "warehouses": "Warehouses",
+    "pickCorrect": "Pick correct dates",
+    "apply": "Apply",
+    "messages": {
+      "loadFailed": "Could not load conflicting lots",
+      "expiryRequired": "Pick the correct expiry date before applying",
+      "unifySuccess": "Updated manufacture/expiry on {{count}} stock cards for lot {{lot}}",
+      "unifyFailed": "Could not update the lot"
     }
   },
   "qd540Export": {
@@ -77,6 +98,7 @@
     "varianceAbbr": "Var",
     "countAbbr": "Count",
     "expiryAbbr": "Exp",
+    "manufactureAbbr": "Mfg",
     "stockOnHand": "on hand {{qty}}",
     "batchLabel": "Batch {{number}}",
     "batchWithExpiry": "{{number}}{{expiry}} · on hand {{qty}}",
@@ -203,11 +225,24 @@
     "viewFefo": "View by batch (FEFO)",
     "loadingBatches": "Loading batch details…",
     "noBatches": "No batches in stock.",
+    "lotConflictBanner": "{{count}} lots have more than one manufacture or expiry date. Pick the correct dates and apply them to every warehouse.",
+    "openLotConflicts": "Open lot fix table",
     "messages": {
       "loadFailed": "Could not load stock",
       "detailLoadFailed": "Could not load batch details",
-      "emptySearchHint": "No matching products, or stock is still 0 because the goods receipt was not completed."
-    }
+      "emptySearchHint": "No matching products, or stock is still 0 because the goods receipt was not completed.",
+      "revalueOk": "Updated unit cost for lot {{batch}}.",
+      "revalueFailed": "Could not update lot unit cost"
+    },
+    "revalueTitle": "Fix lot unit cost",
+    "revalueHint": "This changes unit cost only. Quantity stays the same. If on-hand is also wrong: save the correct cost first, then open a count — a count against a dirty cost books a huge movement.",
+    "revalueThenQty": "Next: fix quantity",
+    "revalueBackReport": "Back to the list",
+    "revalueFromReport": "Opened from the abnormal stock report. When done, return to this SKU.",
+    "revalueSavedNext": "Unit cost saved. Fix quantity next, or go back to the list.",
+    "revalueReason": "Reason",
+    "revalueReasonPh": "e.g. extra zeros / wrong unit",
+    "newUnitCost": "New unit cost"
   },
   "transferList": {
     "title": "Transfer documents",
@@ -304,6 +339,11 @@
     "batchDocument": "Quick batch count",
     "createBatchTitle": "Enter actual quantities by batch",
     "batchDrawerTip": "Select batches to adjust → edit «Counted» if different from system stock → Save. Approve from the list to update inventory.",
+    "anomalyPrefillReason": "Review abnormal stock: {{code}}",
+    "anomalyPrefillOk": "Selected {{count}} lots of {{code}}. Edit Counted, then Save.",
+    "anomalyPrefillEmpty": "No on-hand lots for {{code}} in this warehouse.",
+    "backToAnomaly": "Back to the list",
+    "fromAnomalyTip": "Opened from the abnormal stock report. Save → approve to update on-hand → Back to the list (this SKU is already selected).",
     "sessionStep1Title": "Step 1 — Open count session",
     "startCounting": "Start counting",
     "countWarehouse": "Warehouse being counted",
@@ -548,7 +588,7 @@
     "importingBatch": "Importing batch {{current}}/{{total}}…",
     "importResult": "Imported: {{processed}} batches · Errors: {{errors}}",
     "importRowError": "Row {{row}}: {{message}}",
-    "columnsHint": "Columns: product_key (code/barcode), batch_number, quantity, unit_cost, expiry_date",
+    "columnsHint": "Columns: product_key (code/barcode), batch_number, manufacture_date, expiry_date, quantity, unit_cost",
     "manualEntryTitle": "Enter opening balance",
     "notesPlaceholder": "e.g. New branch go-live...",
     "selectProduct": "Select product",
@@ -613,6 +653,8 @@
       "voidFailed": "Could not delete opening balance batch",
       "selectWarehouse": "Select warehouse for opening balance",
       "addValidLine": "Add at least one valid line",
+      "expiryRequired": "Each line must have an expiry date",
+      "lotConflict": "This lot already has more than one manufacture/expiry date. Fix stock first.",
       "invalidUnitCost": "Invalid unit cost",
       "saveSuccess": "Saved {{count}} opening balance line(s)",
       "saveFailed": "Could not save opening balance",

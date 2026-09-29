@@ -76,7 +76,8 @@ import { ProductUnitSelect } from '@/modules/procurement/ProductUnitSelect';
 import { ProductSearchSelect } from '@/modules/procurement/ProductSearchSelect';
 import { formatUnitLabel, pickDefaultProductUnitId } from '@/modules/procurement/product-unit.helpers';
 import { GrnBatchNumberField } from '@/modules/procurement/GrnBatchNumberField';
-import { PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
+import { PharmaDatePicker, PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
+import type { GrnExistingBatchPick } from '@/modules/procurement/GrnBatchNumberField';
 import { GoodsReceiptFilterBar } from '@/modules/procurement/GoodsReceiptFilterBar';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { downloadCsv } from '@/shared/utils/download-csv';
@@ -101,7 +102,10 @@ interface GrnLineForm {
   orderedQty?: number;
   receivedQty?: number;
   batchNumber: string;
+  manufactureDate?: string;
   expiryDate: string;
+  lotLocked?: boolean;
+  lotConflict?: boolean;
   quantity: number;
   unitCost: number;
   discountType?: number;
@@ -112,13 +116,7 @@ function todayDateString(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function defaultExpiryDate(): string {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() + 2);
-  return d.toISOString().slice(0, 10);
-}
-
-type ManualLineCell = 'product' | 'unit' | 'batch' | 'expiry' | 'qty' | 'unitCost' | 'discount';
+type ManualLineCell = 'product' | 'unit' | 'batch' | 'manufacture' | 'expiry' | 'qty' | 'unitCost' | 'discount';
 
 function productOptionLabel(p: { productCode: string; productName: string }): string {
   return `${p.productCode} — ${p.productName}`;
@@ -225,7 +223,6 @@ function ManualLineClickCell({
 }
 
 function buildGrnLinesFromPo(po: PurchaseOrderDetail): GrnLineForm[] {
-  const expiry = defaultExpiryDate();
   return po.items
     .filter((line) => line.receivedQty < line.orderedQty)
     .map((line) => ({
@@ -238,10 +235,29 @@ function buildGrnLinesFromPo(po: PurchaseOrderDetail): GrnLineForm[] {
       orderedQty: line.orderedQty,
       receivedQty: line.receivedQty,
       batchNumber: '',
-      expiryDate: expiry,
+      manufactureDate: undefined,
+      expiryDate: '',
       quantity: line.orderedQty - line.receivedQty,
       unitCost: line.unitPrice,
     }));
+}
+
+function applyLotPickToLine(
+  current: { manufactureDate?: string; expiryDate?: string },
+  pick: GrnExistingBatchPick,
+): Pick<GrnLineForm, 'manufactureDate' | 'expiryDate' | 'lotLocked' | 'lotConflict'> {
+  if (pick.hasConflict) {
+    return { ...current, lotLocked: false, lotConflict: true };
+  }
+  if (pick.exists) {
+    return {
+      manufactureDate: pick.manufactureDate ?? current.manufactureDate,
+      expiryDate: pick.expiryDate ?? current.expiryDate,
+      lotLocked: true,
+      lotConflict: false,
+    };
+  }
+  return { ...current, lotLocked: false, lotConflict: false };
 }
 
 export function GoodsReceiptListPage() {
@@ -267,6 +283,7 @@ export function GoodsReceiptListPage() {
   const [filters, setFilters] = useState<GoodsReceiptListFilters>(emptyFilters);
   const [searchInput, setSearchInput] = useState('');
   const [linkedPo, setLinkedPo] = useState<PurchaseOrderDetail | null>(null);
+  const [hiddenPoProducts, setHiddenPoProducts] = useState<{ code: string; name: string }[]>([]);
   const [poDraftGrn, setPoDraftGrn] = useState<GoodsReceiptListItem | null>(null);
   const [poLoading, setPoLoading] = useState(false);
   const [grnDetailCache, setGrnDetailCache] = useState<Record<string, GoodsReceiptDetail>>({});
@@ -288,7 +305,10 @@ export function GoodsReceiptListPage() {
   const [draftProductId, setDraftProductId] = useState<string | undefined>();
   const [draftUnitId, setDraftUnitId] = useState<string | undefined>();
   const [draftBatch, setDraftBatch] = useState('');
-  const [draftExpiry, setDraftExpiry] = useState(defaultExpiryDate);
+  const [draftManufacture, setDraftManufacture] = useState<string | undefined>();
+  const [draftExpiry, setDraftExpiry] = useState('');
+  const [draftLotLocked, setDraftLotLocked] = useState(false);
+  const [draftLotConflict, setDraftLotConflict] = useState(false);
   const [draftQty, setDraftQty] = useState(1);
   const [draftUnitCost, setDraftUnitCost] = useState(0);
   const [draftDiscountType, setDraftDiscountType] = useState<ProcurementDiscountType | undefined>();
@@ -305,7 +325,10 @@ export function GoodsReceiptListPage() {
     setDraftProductId(undefined);
     setDraftUnitId(undefined);
     setDraftBatch('');
-    setDraftExpiry(defaultExpiryDate());
+    setDraftManufacture(undefined);
+    setDraftExpiry('');
+    setDraftLotLocked(false);
+    setDraftLotConflict(false);
     setDraftQty(1);
     setDraftUnitCost(0);
     setDraftDiscountType(undefined);
@@ -420,6 +443,7 @@ export function GoodsReceiptListPage() {
     if (!purchaseOrderId) {
       setLinkedPo(null);
       setPoDraftGrn(null);
+      setHiddenPoProducts([]);
       setPoLoading(false);
       return;
     }
@@ -436,6 +460,7 @@ export function GoodsReceiptListPage() {
         const draft = result.items[0];
         if (draft) {
           setPoDraftGrn(draft);
+          setHiddenPoProducts([]);
           return;
         }
 
@@ -449,6 +474,19 @@ export function GoodsReceiptListPage() {
           vatTreatmentId: po.vatTreatmentId || defaultVatTreatmentId(vatTreatments),
           items: lines,
         });
+        const hidden = (
+          await Promise.all(
+            lines.map(async (line) => {
+              try {
+                await fetchProduct(line.productId);
+                return null;
+              } catch {
+                return { code: line.productCode ?? '', name: line.productName ?? '' };
+              }
+            }),
+          )
+        ).filter((row): row is { code: string; name: string } => row !== null);
+        if (!cancelled) setHiddenPoProducts(hidden);
         if (lines.length === 0) {
           message.info(t('poFullyReceivedInfo'));
         }
@@ -457,6 +495,7 @@ export function GoodsReceiptListPage() {
         if (!cancelled) {
           setLinkedPo(null);
           setPoDraftGrn(null);
+          setHiddenPoProducts([]);
           message.error(t('poLoadError'));
         }
       })
@@ -535,7 +574,8 @@ export function GoodsReceiptListPage() {
         productName: line.productName,
         unitName: line.unitName,
         batchNumber: line.batchNumber,
-        expiryDate: line.expiryDate?.slice(0, 10) || defaultExpiryDate(),
+        manufactureDate: line.manufactureDate?.slice(0, 10),
+        expiryDate: line.expiryDate?.slice(0, 10) || '',
         quantity: line.quantity,
         unitCost: line.unitCost,
         discountType: line.discountType || undefined,
@@ -566,7 +606,8 @@ export function GoodsReceiptListPage() {
               orderedQty: poLine?.orderedQty ?? line.quantity,
               receivedQty: poLine?.receivedQty ?? 0,
               batchNumber: line.batchNumber,
-              expiryDate: line.expiryDate?.slice(0, 10) || defaultExpiryDate(),
+              manufactureDate: line.manufactureDate?.slice(0, 10),
+              expiryDate: line.expiryDate?.slice(0, 10) || '',
               quantity: line.quantity,
               unitCost: line.unitCost,
               discountType: line.discountType || undefined,
@@ -620,6 +661,10 @@ export function GoodsReceiptListPage() {
         message.warning(t('minOneLine'));
         return;
       }
+      if (lines.some((i) => i.lotConflict)) {
+        message.warning(tShared('columns.lotConflict'));
+        return;
+      }
       const supplier = suppliers.find((s) => s.id === values.supplierId);
       if (!supplier || isPlaceholderSupplier(supplier)) {
         message.warning(t('realSupplierRequired'));
@@ -640,6 +685,7 @@ export function GoodsReceiptListPage() {
           productId: i.productId,
           productUnitId: i.productUnitId,
           batchNumber: i.batchNumber,
+          manufactureDate: i.manufactureDate || undefined,
           expiryDate: i.expiryDate,
           quantity: i.quantity,
           unitCost: i.unitCost,
@@ -802,6 +848,12 @@ export function GoodsReceiptListPage() {
         message.warning(tVal('enterBatch'));
         return;
       }
+      if (draftLotConflict) {
+        setComposerInvalid('batch');
+        setComposerError(tShared('columns.lotConflict'));
+        message.warning(tShared('columns.lotConflict'));
+        return;
+      }
       if (!draftExpiry) {
         setComposerInvalid('expiry');
         setComposerError(tVal('selectExpiry'));
@@ -827,7 +879,10 @@ export function GoodsReceiptListPage() {
         productCode: seed?.productCode,
         productName: seed?.productName,
         batchNumber: batch,
+        manufactureDate: draftManufacture,
         expiryDate: draftExpiry,
+        lotLocked: draftLotLocked,
+        lotConflict: draftLotConflict,
         quantity: draftQty,
         unitCost: draftUnitCost,
         discountType: draftDiscountType,
@@ -937,9 +992,35 @@ export function GoodsReceiptListPage() {
                 onPickExisting={(batchPick) => {
                   setComposerError(null);
                   setComposerInvalid(null);
-                  setDraftBatch(batchPick.batchNumber);
-                  if (batchPick.expiryDate) setDraftExpiry(batchPick.expiryDate);
+                  if (batchPick.batchNumber) setDraftBatch(batchPick.batchNumber);
+                  const next = applyLotPickToLine(
+                    { manufactureDate: draftManufacture, expiryDate: draftExpiry },
+                    batchPick,
+                  );
+                  setDraftManufacture(next.manufactureDate);
+                  setDraftExpiry(next.expiryDate ?? '');
+                  setDraftLotLocked(Boolean(next.lotLocked));
+                  setDraftLotConflict(Boolean(next.lotConflict));
                 }}
+              />
+              {draftLotConflict && (
+                <Typography.Text type="danger" style={{ fontSize: 11, display: 'block' }}>
+                  {tShared('columns.lotConflict')}
+                </Typography.Text>
+              )}
+            </div>
+            <div style={{ flex: '0 0 124px' }}>
+              <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.manufacture')}</Typography.Text>
+              <PharmaDatePicker
+                value={draftManufacture}
+                disabled={draftLotLocked && Boolean(draftManufacture)}
+                yearTo={new Date().getFullYear()}
+                onChange={(value) => {
+                  setComposerError(null);
+                  setComposerInvalid(null);
+                  setDraftManufacture(value || undefined);
+                }}
+                style={{ width: 124 }}
               />
             </div>
             <div style={{ flex: '0 0 112px' }}>
@@ -948,6 +1029,7 @@ export function GoodsReceiptListPage() {
               </Typography.Text>
               <PharmaExpiryPicker
                 value={draftExpiry}
+                disabled={draftLotLocked && Boolean(draftExpiry)}
                 onChange={(value) => {
                   setComposerError(null);
                   setComposerInvalid(null);
@@ -1063,6 +1145,7 @@ export function GoodsReceiptListPage() {
             <div style={{ flex: '2 1 320px', minWidth: 240, ...headerCellStyle }}>{tShared('columns.product')}</div>
             <div style={{ flex: '0 0 84px', ...headerCellStyle }}>{tShared('columns.unit')}</div>
             <div style={{ flex: '0 0 140px', ...headerCellStyle }}>{tShared('columns.batchNumber')}</div>
+            <div style={{ flex: '0 0 118px', ...headerCellStyle }}>{tShared('columns.manufacture')}</div>
             <div style={{ flex: '0 0 112px', ...headerCellStyle }}>{tShared('columns.expiry')}</div>
             <div style={{ flex: '0 0 80px', ...headerCellStyle, textAlign: 'right' }}>{tShared('columns.qty')}</div>
             <div style={{ flex: '0 0 120px', ...headerCellStyle, textAlign: 'right' }}>{tShared('columns.unitCost')}</div>
@@ -1187,9 +1270,17 @@ export function GoodsReceiptListPage() {
                         warehouseId={warehouseId}
                         productId={productId}
                         onPickExisting={(batchPick) => {
-                          if (batchPick.expiryDate) {
-                            form.setFieldValue(['items', field.name, 'expiryDate'], batchPick.expiryDate);
-                          }
+                          const next = applyLotPickToLine(
+                            {
+                              manufactureDate: form.getFieldValue(['items', field.name, 'manufactureDate']),
+                              expiryDate: form.getFieldValue(['items', field.name, 'expiryDate']),
+                            },
+                            batchPick,
+                          );
+                          form.setFieldValue(['items', field.name, 'manufactureDate'], next.manufactureDate);
+                          form.setFieldValue(['items', field.name, 'expiryDate'], next.expiryDate);
+                          form.setFieldValue(['items', field.name, 'lotLocked'], next.lotLocked);
+                          form.setFieldValue(['items', field.name, 'lotConflict'], next.lotConflict);
                           setEditingManualCell(null);
                         }}
                       />
@@ -1197,8 +1288,29 @@ export function GoodsReceiptListPage() {
                   </ManualLineClickCell>
 
                   <ManualLineClickCell
+                    editing={isCellEditing(field.key, 'manufacture')}
+                    onEdit={() => {
+                      if (!(line?.lotLocked && line?.manufactureDate)) openCell('manufacture');
+                    }}
+                    style={{ flex: '0 0 118px' }}
+                    display={line?.manufactureDate ? formatDisplayDate(line.manufactureDate) : tShared('emDash')}
+                  >
+                    <Form.Item {...field} name={[field.name, 'manufactureDate']} style={{ marginBottom: 0 }}>
+                      <PharmaDatePicker
+                        style={{ width: 118 }}
+                        inTable
+                        disabled={Boolean(line?.lotLocked && line?.manufactureDate)}
+                        yearTo={new Date().getFullYear()}
+                        onChange={() => setEditingManualCell(null)}
+                      />
+                    </Form.Item>
+                  </ManualLineClickCell>
+
+                  <ManualLineClickCell
                     editing={isCellEditing(field.key, 'expiry')}
-                    onEdit={() => openCell('expiry')}
+                    onEdit={() => {
+                      if (!(line?.lotLocked && line?.expiryDate)) openCell('expiry');
+                    }}
                     style={{ flex: '0 0 112px' }}
                     display={formatExpiryMmYyyy(line?.expiryDate)}
                   >
@@ -1210,6 +1322,7 @@ export function GoodsReceiptListPage() {
                     >
                       <PharmaExpiryPicker
                         style={{ width: 112 }}
+                        disabled={Boolean(line?.lotLocked && line?.expiryDate)}
                         onChange={() => setEditingManualCell(null)}
                       />
                     </Form.Item>
@@ -1413,6 +1526,20 @@ export function GoodsReceiptListPage() {
           />
           {!poDraftGrn && <GrnPricingControls vatTreatments={vatTreatments} />}
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            {hiddenPoProducts.length > 0 && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 8 }}
+                message={t('hiddenPoProducts', {
+                  count: hiddenPoProducts.length,
+                  names: hiddenPoProducts
+                    .map((row) => row.code || row.name)
+                    .filter(Boolean)
+                    .join(', '),
+                })}
+              />
+            )}
             {poDraftGrn && (
               <Alert
                 type="warning"

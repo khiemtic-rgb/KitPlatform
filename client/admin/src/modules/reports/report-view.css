@@ -1,0 +1,138 @@
+.report-view {
+  max-width: 1280px;
+}
+
+.report-view__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.report-view__title {
+  margin: 0 !important;
+  font-size: 20px !important;
+  line-height: 1.3 !important;
+}
+
+.report-view__desc {
+  margin: 4px 0 0 !important;
+  max-width: 52rem;
+}
+
+.report-view__code {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #8c8c8c;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.report-view__toolbar-card .ant-card-body {
+  padding: 12px 16px;
+}
+
+.report-view__mode {
+  margin-bottom: 12px;
+}
+
+.report-view__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+}
+
+.report-view__field {
+  flex: 1 1 160px;
+  min-width: 150px;
+}
+
+.report-view__field--period {
+  flex: 1 1 240px;
+  min-width: 220px;
+}
+
+.report-view__field--search {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+.report-view__field-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.report-view__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.report-view__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.report-view__kpi {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.report-view__kpi-label {
+  display: block;
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.report-view__kpi-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.report-view__table-card .ant-card-body {
+  padding: 0;
+}
+
+.report-view__table-card .ant-table-wrapper {
+  padding: 0;
+}
+
+.report-view__table-card .ant-table-title {
+  padding: 12px 16px 0;
+}
+
+.report-view__meta {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+@media (max-width: 767px) {
+  .report-view__head {
+    flex-direction: column;
+  }
+
+  .report-view__actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .report-view__field,
+  .report-view__field--period,
+  .report-view__field--search {
+    flex: 1 1 100%;
+  }
+}

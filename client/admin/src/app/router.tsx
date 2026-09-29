@@ -134,6 +134,9 @@ const InventoryLayout = lazy(() =>
 const StockListPage = lazy(() =>
   import('@/modules/inventory/StockListPage').then((m) => ({ default: m.StockListPage })),
 );
+const LotConflictPage = lazy(() =>
+  import('@/modules/inventory/LotConflictPage').then((m) => ({ default: m.LotConflictPage })),
+);
 const WarehouseListPage = lazy(() =>
   import('@/modules/inventory/WarehouseListPage').then((m) => ({ default: m.WarehouseListPage })),
 );
@@ -516,6 +519,29 @@ const ReportsHomePage = lazy(() =>
 const ReportViewPage = lazy(() =>
   import('@/modules/reports/ReportViewPage').then((m) => ({ default: m.ReportViewPage })),
 );
+const SalesRevenuePage = lazy(() =>
+  import('@/modules/reports/SalesRevenuePage').then((m) => ({ default: m.SalesRevenuePage })),
+);
+const InventoryStockPage = lazy(() =>
+  import('@/modules/reports/InventoryStockPage').then((m) => ({ default: m.InventoryStockPage })),
+);
+const CustomersReportPage = lazy(() =>
+  import('@/modules/reports/CustomersReportPage').then((m) => ({ default: m.CustomersReportPage })),
+);
+const StaffSalesPage = lazy(() =>
+  import('@/modules/reports/StaffSalesPage').then((m) => ({ default: m.StaffSalesPage })),
+);
+const ShiftCloseByEmployeePage = lazy(() =>
+  import('@/modules/reports/ShiftCloseByEmployeePage').then((m) => ({
+    default: m.ShiftCloseByEmployeePage,
+  })),
+);
+const ProcurementGrnPage = lazy(() =>
+  import('@/modules/reports/ProcurementGrnPage').then((m) => ({ default: m.ProcurementGrnPage })),
+);
+const ReportsCatalogPage = lazy(() =>
+  import('@/modules/reports/ReportsCatalogPage').then((m) => ({ default: m.ReportsCatalogPage })),
+);
 
 function RouteFallback() {
   const { t } = useTranslation('common', { keyPrefix: 'routeLoading' });
@@ -667,14 +693,8 @@ export function AppRouter() {
                     </LearningWriteGuard>
                   }
                 />
-                <Route
-                  path="recognize"
-                  element={
-                    <LearningWriteGuard>
-                      <LearningRecognizePage />
-                    </LearningWriteGuard>
-                  }
-                />
+                {/* NV xem hồ sơ năng lực; khen/ghi nhận đội vẫn gate trong trang (learning.write). */}
+                <Route path="recognize" element={<LearningRecognizePage />} />
                 <Route
                   path="grow"
                   element={
@@ -724,6 +744,7 @@ export function AppRouter() {
               >
                 <Route index element={<Navigate to="/inventory/stock" replace />} />
                 <Route path="stock" element={<StockListPage />} />
+                <Route path="lot-conflicts" element={<LotConflictPage />} />
                 <Route path="low-stock" element={<LowStockPage />} />
                 <Route path="gpp-checklist" element={<GppOperationalChecklistPage />} />
                 <Route path="warehouses" element={<WarehouseListPage />} />
@@ -1111,10 +1132,26 @@ export function AppRouter() {
                   }
                 />
                 <Route
+                  path="catalog"
+                  element={
+                    <SuspenseRoute>
+                      <ReportsCatalogPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="customers"
+                  element={
+                    <SuspenseRoute>
+                      <CustomersReportPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
                   path="sales/revenue-by-period"
                   element={
                     <SuspenseRoute>
-                      <ReportViewPage />
+                      <SalesRevenuePage />
                     </SuspenseRoute>
                   }
                 />
@@ -1151,10 +1188,42 @@ export function AppRouter() {
                   }
                 />
                 <Route
-                  path="procurement/grn-value"
+                  path="sales/revenue-by-employee"
+                  element={
+                    <SuspenseRoute>
+                      <StaffSalesPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/revenue-by-employee-product"
+                  element={
+                    <SuspenseRoute>
+                      <StaffSalesPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/shift-close-by-employee"
+                  element={
+                    <SuspenseRoute>
+                      <ShiftCloseByEmployeePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="sales/receivables-movement"
                   element={
                     <SuspenseRoute>
                       <ReportViewPage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="procurement/grn-value"
+                  element={
+                    <SuspenseRoute>
+                      <ProcurementGrnPage />
                     </SuspenseRoute>
                   }
                 />
@@ -1170,7 +1239,7 @@ export function AppRouter() {
                   path="inventory/stock-snapshot"
                   element={
                     <SuspenseRoute>
-                      <ReportViewPage />
+                      <InventoryStockPage />
                     </SuspenseRoute>
                   }
                 />

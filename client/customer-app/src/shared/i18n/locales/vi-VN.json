@@ -117,6 +117,8 @@
     "pharmacyServices": "Dịch vụ nhà thuốc",
     "shortcutOrderMeds": "Đặt thuốc",
     "shortcutChatPharm": "Chat dược sĩ",
+    "careCardAria": "Lời nhắc chăm sóc theo đơn",
+    "careCardKicker": "Lời nhắc theo đơn",
     "shortcutHealthRecord": "Hồ sơ sức khỏe",
     "activityTitle": "Hoạt động gần đây",
     "activityOrder": "Đơn thuốc #{{code}}",

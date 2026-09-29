@@ -41,7 +41,8 @@ import { fetchProducts } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import type { OpeningBalanceBatch, StockBatch, Warehouse } from '@/shared/api/inventory.types';
 import type { ProductListItem } from '@/shared/api/catalog.types';
-import { PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
+import { GrnBatchNumberField } from '@/modules/procurement/GrnBatchNumberField';
+import { PharmaDatePicker, PharmaExpiryPicker } from '@/shared/ui/PharmaDatePicker';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZero, moneyInputNumberStyle } from '@/shared/utils/money';
 import {
@@ -69,7 +70,10 @@ interface LineRow {
   key: string;
   productId?: string;
   batchNumber?: string;
+  manufactureDate?: string;
   expiryDate?: string;
+  lotLocked?: boolean;
+  lotConflict?: boolean;
   unitCost?: number;
   quantity?: number;
 }
@@ -78,6 +82,7 @@ interface ExcelImportRow {
   rowNumber: number;
   productKey: string;
   batchNumber: string;
+  manufactureDate?: string;
   expiryDate?: string;
   quantity: number;
   unitCost: number;
@@ -88,6 +93,7 @@ interface SavedImportLine {
   productName: string;
   saleUnitName?: string;
   batchNumber: string;
+  manufactureDate?: string;
   expiryDate?: string;
   unitCost: number;
   quantity: number;
@@ -118,6 +124,7 @@ function mapOpeningBalanceRows(rows: Record<string, string>[]): ExcelImportRow[]
       rowNumber: index + 2,
       productKey: pickRowValue(row, 'product_key', 'ma_sp', 'mã_sp', 'barcode', 'ma_vach'),
       batchNumber: pickRowValue(row, 'batch_number', 'so_lo', 'số_lô', 'lot'),
+      manufactureDate: parseOptionalDate(pickRowValue(row, 'manufacture_date', 'nsx', 'ngay_sx')),
       expiryDate: parseOptionalDate(pickRowValue(row, 'expiry_date', 'hsd', 'han_dung')),
       quantity: parseDecimal(pickRowValue(row, 'quantity', 'so_luong', 'số_lượng', 'sl')) ?? 0,
       unitCost: Math.max(0, parseDecimal(pickRowValue(row, 'unit_cost', 'gia_von', 'giá_vốn', 'cost')) ?? 0),
@@ -288,6 +295,16 @@ export function OpeningBalancePage() {
       return;
     }
 
+    if (validLines.some((l) => l.lotConflict)) {
+      message.warning(t('messages.lotConflict'));
+      return;
+    }
+
+    if (validLines.some((l) => !l.expiryDate)) {
+      message.warning(t('messages.expiryRequired'));
+      return;
+    }
+
     for (const line of validLines) {
       if ((line.unitCost ?? 0) < 0) {
         message.warning(t('messages.invalidUnitCost'));
@@ -303,6 +320,7 @@ export function OpeningBalancePage() {
         lines: validLines.map((l) => ({
           productId: l.productId!,
           batchNumber: l.batchNumber!.trim(),
+          manufactureDate: l.manufactureDate,
           expiryDate: l.expiryDate,
           unitCost: l.unitCost ?? 0,
           quantity: l.quantity!,
@@ -317,6 +335,7 @@ export function OpeningBalancePage() {
           productName: product?.productName ?? '—',
           saleUnitName: product?.saleUnitName,
           batchNumber: l.batchNumber!.trim(),
+          manufactureDate: l.manufactureDate,
           expiryDate: l.expiryDate,
           unitCost: l.unitCost ?? 0,
           quantity: l.quantity!,
@@ -358,7 +377,13 @@ export function OpeningBalancePage() {
           style={{ width: '100%' }}
           placeholder={t('selectProduct')}
           value={row.productId}
-          onChange={(v) => updateLine(row.key, { productId: v })}
+          onChange={(v) =>
+            updateLine(row.key, {
+              productId: v,
+              lotLocked: false,
+              lotConflict: false,
+            })
+          }
           options={products.map((p) => ({
             value: p.id,
             label: `${p.productCode} — ${p.productName}`,
@@ -369,11 +394,51 @@ export function OpeningBalancePage() {
     {
       title: t('batchNumber'),
       dataIndex: 'batchNumber',
-      width: 130,
+      width: 150,
       render: (_, row) => (
-        <Input
-          value={row.batchNumber}
-          onChange={(e) => updateLine(row.key, { batchNumber: e.target.value })}
+        <div>
+          <GrnBatchNumberField
+            value={row.batchNumber}
+            warehouseId={warehouseId}
+            productId={row.productId}
+            onChange={(value) => updateLine(row.key, { batchNumber: value })}
+            onPickExisting={(pick) => {
+              if (pick.hasConflict) {
+                updateLine(row.key, { lotConflict: true, lotLocked: false });
+                return;
+              }
+              if (pick.exists) {
+                updateLine(row.key, {
+                  lotConflict: false,
+                  lotLocked: true,
+                  manufactureDate: pick.manufactureDate ?? row.manufactureDate,
+                  expiryDate: pick.expiryDate ?? row.expiryDate,
+                });
+                return;
+              }
+              updateLine(row.key, { lotConflict: false, lotLocked: false });
+            }}
+          />
+          {row.lotConflict && (
+            <Typography.Text type="danger" style={{ fontSize: 11 }}>
+              {t('messages.lotConflict')}
+            </Typography.Text>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: ts('manufactureAbbr'),
+      dataIndex: 'manufactureDate',
+      width: 140,
+      render: (_, row) => (
+        <PharmaDatePicker
+          style={{ width: 130 }}
+          inTable
+          disabled={Boolean(row.lotLocked && row.manufactureDate)}
+          yearTo={new Date().getFullYear()}
+          value={row.manufactureDate}
+          onChange={(value) => updateLine(row.key, { manufactureDate: value || undefined })}
         />
       ),
     },
@@ -385,6 +450,7 @@ export function OpeningBalancePage() {
         <PharmaExpiryPicker
           style={{ width: 130 }}
           inTable
+          disabled={Boolean(row.lotLocked && row.expiryDate)}
           value={row.expiryDate}
           onChange={(value) => updateLine(row.key, { expiryDate: value || undefined })}
         />
@@ -435,6 +501,12 @@ export function OpeningBalancePage() {
     },
     { title: t('batchNumber'), dataIndex: 'batchNumber', width: 120 },
     {
+      title: ts('manufactureAbbr'),
+      dataIndex: 'manufactureDate',
+      width: 110,
+      render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+    },
+    {
       title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',
       width: 110,
@@ -471,6 +543,12 @@ export function OpeningBalancePage() {
       render: (_, row) => renderProductCell(row.productCode, row.productName, productCodeLabel),
     },
     { title: t('batchNumber'), dataIndex: 'batchNumber', width: 120 },
+    {
+      title: ts('manufactureAbbr'),
+      dataIndex: 'manufactureDate',
+      width: 110,
+      render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+    },
     {
       title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',
@@ -573,6 +651,12 @@ export function OpeningBalancePage() {
       render: (_, row) => renderProductCell(row.productCode, row.productName, productCodeLabel),
     },
     { title: t('batchNumber'), dataIndex: 'batchNumber', width: 120 },
+    {
+      title: ts('manufactureAbbr'),
+      dataIndex: 'manufactureDate',
+      width: 110,
+      render: (v?: string) => (v ? formatDisplayDate(v) : '—'),
+    },
     {
       title: ts('expiryAbbr'),
       dataIndex: 'expiryDate',

@@ -3,9 +3,10 @@ import type { Warehouse } from '@/shared/api/inventory.types';
 import { reportsT } from '@/shared/i18n';
 import type { ReportDefinition } from '@/modules/reports/reports-catalog';
 
-const API_FILTER_KEY_MAP: Record<string, 'period' | 'warehouse' | 'supplier' | 'productSearch'> = {
+const API_FILTER_KEY_MAP: Record<string, 'period' | 'warehouse' | 'employee' | 'supplier' | 'productSearch'> = {
   'Thời điểm': 'period',
   Kho: 'warehouse',
+  'Nhân viên': 'employee',
   NCC: 'supplier',
   'Nhà cung cấp': 'supplier',
   'Tìm kiếm': 'productSearch',
@@ -23,6 +24,7 @@ export function filterHintsForReport(definition: ReportDefinition): string[] {
   if (definition.supportsDateRange) hints.push(t('filters.period'));
   if (definition.supportsGroupBy?.length) hints.push(t('filters.groupBy'));
   if (definition.supportsWarehouse) hints.push(t('filters.warehouse'));
+  if (definition.supportsEmployee) hints.push(t('filters.employee'));
   if (definition.supportsSupplier) hints.push(t('filters.supplier'));
   if (definition.supportsSearch) hints.push(t('filters.productSearch'));
   if (definition.supportsExpiryDays) hints.push(t('filters.expiryDays'));

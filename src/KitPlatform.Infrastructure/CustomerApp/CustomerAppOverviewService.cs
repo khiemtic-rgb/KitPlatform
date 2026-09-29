@@ -18,6 +18,7 @@ internal sealed class CustomerAppOverviewService : ICustomerAppOverviewService
     private readonly ICustomerChatService _chat;
     private readonly ITenantPlatformSettings _platform;
     private readonly ICustomerAppConnectService _connect;
+    private readonly ICustomerCareCardService _careCards;
 
     public CustomerAppOverviewService(
         ICustomerLoyaltyService loyalty,
@@ -31,7 +32,8 @@ internal sealed class CustomerAppOverviewService : ICustomerAppOverviewService
         ICustomerAppConsentService consents,
         ICustomerChatService chat,
         ITenantPlatformSettings platform,
-        ICustomerAppConnectService connect)
+        ICustomerAppConnectService connect,
+        ICustomerCareCardService careCards)
     {
         _loyalty = loyalty;
         _draftOrders = draftOrders;
@@ -45,6 +47,7 @@ internal sealed class CustomerAppOverviewService : ICustomerAppOverviewService
         _chat = chat;
         _platform = platform;
         _connect = connect;
+        _careCards = careCards;
     }
 
     public async Task<CustomerHomeSummaryDto> GetHomeSummaryAsync(
@@ -58,15 +61,17 @@ internal sealed class CustomerAppOverviewService : ICustomerAppOverviewService
         var repurchaseTask = _repurchase.ListAsync(tenantId, customerId, accountId, cancellationToken);
         var adherenceTask = _adherence.GetSummaryAsync(tenantId, customerId, cancellationToken);
         var connectTask = _connect.GetInboxAsync(tenantId, customerId, cancellationToken);
+        var careCardTask = _careCards.GetTodayAsync(tenantId, customerId, cancellationToken);
 
-        await Task.WhenAll(loyaltyTask, draftsTask, repurchaseTask, adherenceTask, connectTask);
+        await Task.WhenAll(loyaltyTask, draftsTask, repurchaseTask, adherenceTask, connectTask, careCardTask);
 
         return new CustomerHomeSummaryDto(
             await loyaltyTask,
             await draftsTask,
             await repurchaseTask,
             await adherenceTask,
-            await connectTask);
+            await connectTask,
+            await careCardTask);
     }
 
     public async Task<CustomerOrdersOverviewDto> GetOrdersOverviewAsync(

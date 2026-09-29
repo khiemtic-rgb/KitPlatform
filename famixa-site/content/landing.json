@@ -56,10 +56,6 @@
       "label": "Cha mẹ"
     },
     {
-      "id": "pricing",
-      "label": "Gói"
-    },
-    {
       "id": "blog",
       "label": "Hỏi đáp"
     },
@@ -85,10 +81,6 @@
       {
         "href": "/vi/cau-chuyen/",
         "label": "Câu chuyện"
-      },
-      {
-        "href": "/vi/goi/",
-        "label": "Bảng giá"
       }
     ],
     "login": "Đăng nhập",
@@ -270,7 +262,7 @@
     "titleAccent": "gia đình bạn",
     "lead": "Mỗi bước tiến nhỏ hôm nay là nền tảng cho hạnh phúc mai sau.",
     "cta": "Xem hành trình",
-    "ctaHref": "#pricing",
+    "ctaHref": "#testimonials",
     "image": {
       "src": "/images/ch4-stages-art.png",
       "alt": "Hành trình Fami từ hạt mầm đến cây trưởng thành"
@@ -341,8 +333,8 @@
     "title": "Vòng lặp tăng trưởng độc quyền của Famixa",
     "titleAccent": "của Famixa",
     "lead": "Fami và gia đình cùng học hỏi, cùng tiến bộ mỗi ngày.",
-    "cta": "Tìm hiểu thêm",
-    "ctaHref": "#pricing",
+    "cta": "Xem nhà demo",
+    "ctaHref": "https://home.famixa.vn/demo",
     "image": {
       "src": "/images/chapter6-loop-cards.png",
       "alt": "Vòng lặp tăng trưởng Famixa: Quan sát, Thấu hiểu, Đề xuất, Gia đình thực hành, AI học hỏi"
@@ -414,10 +406,10 @@
   "chapter8": {
     "id": "pricing",
     "eyebrow": "CHƯƠNG 8",
-    "title": "Gói đồng hành cho mọi gia đình",
-    "lead": "Chọn gói phù hợp và bắt đầu hành trình trưởng thành cùng Famixa.",
-    "cta": "So sánh chi tiết",
-    "ctaHref": "/vi/goi/",
+    "title": "Bắt đầu khi nhà bạn sẵn sàng",
+    "lead": "Bắt đầu miễn phí. Dùng thử 30 ngày đủ quyền Peace. Chọn gói khi nhà đã quen.",
+    "cta": "Xem nhà demo",
+    "ctaHref": "https://home.famixa.vn/demo",
     "perks": [
       {
         "icon": "shield",
@@ -426,8 +418,8 @@
       },
       {
         "icon": "refresh",
-        "title": "Linh hoạt nâng cấp",
-        "hint": "Thay đổi gói bất cứ lúc nào"
+        "title": "Không cần thẻ",
+        "hint": "Vào nhà demo hoặc tạo tài khoản miễn phí"
       },
       {
         "icon": "support",
@@ -525,8 +517,8 @@
         "a": "Có. Dữ liệu được bảo vệ theo chính sách bảo mật của KIT Technology; bạn kiểm soát quyền truy cập trong gia đình."
       },
       {
-        "q": "Gói nào phù hợp để bắt đầu?",
-        "a": "Free để trải nghiệm nhịp ngày. Dùng thử 30 ngày = quyền Peace (Pro). Growth khi cần dòng thời gian / bản đôi hành vi; Peace khi cần huấn luyện AI & chứng cứ; AI+ khi cần playbook sâu theo tuần."
+        "q": "Bắt đầu thế nào?",
+        "a": "Vào nhà demo hoặc tạo tài khoản miễn phí. Dùng thử 30 ngày đủ quyền Peace — chọn gói sau khi nhà đã quen."
       }
     ]
   },
@@ -548,7 +540,7 @@
       { "href": "#method", "label": "Công nghệ" },
       { "href": "#video", "label": "Vòng lặp tăng trưởng" },
       { "href": "#growth", "label": "Hành trình" },
-      { "href": "/vi/goi/", "label": "Gói đồng hành" }
+      { "href": "https://home.famixa.vn/demo", "label": "Xem nhà demo" }
     ],
     "resources": [
       { "href": "/vi/goi-cha-me/", "label": "Góc cha mẹ" },

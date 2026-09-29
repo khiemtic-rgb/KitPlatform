@@ -2,6 +2,8 @@ export type DashboardSalesSnapshot = {
   todayNetTotal: number;
   weekNetTotal: number;
   todayOrderCount: number;
+  todayCollected: number;
+  todayNewDebt: number;
 };
 
 export type DashboardCatalogSnapshot = {

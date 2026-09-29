@@ -166,11 +166,13 @@ export function PharmaExpiryPicker({
   onChange,
   style,
   inTable = false,
+  disabled = false,
 }: {
   value?: string;
   onChange?: (value: string) => void;
   style?: CSSProperties;
   inTable?: boolean;
+  disabled?: boolean;
 }) {
   const { t } = useTranslation('common', { keyPrefix: 'datePicker' });
   return (
@@ -185,6 +187,7 @@ export function PharmaExpiryPicker({
         format="MM/YYYY"
         placeholder={t('monthYear')}
         allowClear
+        disabled={disabled}
         value={toDayjs(value)}
         style={{ width: '100%', ...style }}
         getPopupContainer={() => document.body}

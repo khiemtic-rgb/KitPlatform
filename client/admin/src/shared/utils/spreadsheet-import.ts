@@ -129,6 +129,7 @@ export const PRODUCT_IMPORT_TEMPLATE_HEADERS = [
 export const OPENING_BALANCE_TEMPLATE_HEADERS = [
   'product_key',
   'batch_number',
+  'manufacture_date',
   'expiry_date',
   'quantity',
   'unit_cost',

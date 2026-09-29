@@ -13,6 +13,8 @@ function normalizeSales(data: Record<string, unknown>) {
     todayNetTotal: num(data, 'todayNetTotal', 'TodayNetTotal'),
     weekNetTotal: num(data, 'weekNetTotal', 'WeekNetTotal'),
     todayOrderCount: num(data, 'todayOrderCount', 'TodayOrderCount'),
+    todayCollected: num(data, 'todayCollected', 'TodayCollected'),
+    todayNewDebt: num(data, 'todayNewDebt', 'TodayNewDebt'),
   };
 }
 
