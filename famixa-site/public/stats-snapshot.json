@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-28T23:24:29.440Z",
+  "generatedAt": "2026-09-29T05:55:55.260Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 30,
-    "todayPageViews": 11,
-    "todayRequests": 200,
-    "last24hVisitors": 79,
-    "last24hPageViews": 33,
-    "last24hRequests": 855
+    "todayVisitors": 38,
+    "todayPageViews": 22,
+    "todayRequests": 146,
+    "last24hVisitors": 98,
+    "last24hPageViews": 50,
+    "last24hRequests": 618
   },
   "hourly": [
-    {
-      "time": "2026-09-28T00:00:00Z",
-      "visitors": 8,
-      "requests": 223
-    },
-    {
-      "time": "2026-09-28T01:00:00Z",
-      "visitors": 4,
-      "requests": 11
-    },
-    {
-      "time": "2026-09-28T02:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-28T03:00:00Z",
-      "visitors": 8,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-28T04:00:00Z",
-      "visitors": 6,
-      "requests": 134
-    },
-    {
-      "time": "2026-09-28T05:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-09-28T06:00:00Z",
       "visitors": 9,
@@ -125,6 +95,41 @@
       "time": "2026-09-28T22:00:00Z",
       "visitors": 3,
       "requests": 15
+    },
+    {
+      "time": "2026-09-28T23:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-09-29T00:00:00Z",
+      "visitors": 2,
+      "requests": 25
+    },
+    {
+      "time": "2026-09-29T01:00:00Z",
+      "visitors": 7,
+      "requests": 25
+    },
+    {
+      "time": "2026-09-29T02:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-29T03:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-09-29T04:00:00Z",
+      "visitors": 12,
+      "requests": 12
+    },
+    {
+      "time": "2026-09-29T05:00:00Z",
+      "visitors": 11,
+      "requests": 72
     }
   ],
   "daily": [
@@ -160,37 +165,29 @@
     },
     {
       "date": "2026-09-28",
-      "visitors": 79,
+      "visitors": 81,
       "pageViews": 33,
-      "requests": 855
+      "requests": 859
     },
     {
       "date": "2026-09-29",
-      "visitors": 30,
-      "pageViews": 11,
-      "requests": 200
+      "visitors": 74,
+      "pageViews": 33,
+      "requests": 350
     }
   ],
   "topPages": [
     {
-      "path": "/.env.dev",
-      "views": 100
-    },
-    {
       "path": "/",
-      "views": 94
+      "views": 62
     },
     {
       "path": "/robots.txt",
-      "views": 38
+      "views": 39
     },
     {
       "path": "/vi/",
-      "views": 30
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 20
+      "views": 35
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js.map",
@@ -201,35 +198,43 @@
       "views": 19
     },
     {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 19
+    },
+    {
       "path": "/sitemap.xml",
+      "views": 19
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
       "views": 18
     },
     {
-      "path": "/.env.testing",
-      "views": 12
+      "path": "/favicon-32.png",
+      "views": 16
     },
     {
-      "path": "/.git-credentials",
-      "views": 12
-    },
-    {
-      "path": "/.env.staging",
-      "views": 12
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 16
     },
     {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 12
+      "views": 13
     },
     {
-      "path": "/favicon-32.png",
-      "views": 11
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 12
     },
     {
       "path": "/images/logo-famixa-icon.png",
       "views": 11
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
+      "views": 10
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "views": 10
     }
   ]
