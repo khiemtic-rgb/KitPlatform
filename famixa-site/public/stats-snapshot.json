@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-29T13:10:43.836Z",
+  "generatedAt": "2026-09-29T22:27:28.622Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 69,
-    "todayPageViews": 33,
-    "todayRequests": 367,
-    "last24hVisitors": 97,
-    "last24hPageViews": 47,
-    "last24hRequests": 650
+    "todayVisitors": 26,
+    "todayPageViews": 54,
+    "todayRequests": 332,
+    "last24hVisitors": 107,
+    "last24hPageViews": 150,
+    "last24hRequests": 956
   },
   "hourly": [
-    {
-      "time": "2026-09-28T14:00:00Z",
-      "visitors": 3,
-      "requests": 22
-    },
-    {
-      "time": "2026-09-28T15:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-28T16:00:00Z",
-      "visitors": 5,
-      "requests": 52
-    },
-    {
-      "time": "2026-09-28T17:00:00Z",
-      "visitors": 7,
-      "requests": 28
-    },
-    {
-      "time": "2026-09-28T18:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-28T19:00:00Z",
-      "visitors": 5,
-      "requests": 11
-    },
-    {
-      "time": "2026-09-28T20:00:00Z",
-      "visitors": 9,
-      "requests": 106
-    },
-    {
-      "time": "2026-09-28T21:00:00Z",
-      "visitors": 2,
-      "requests": 33
-    },
-    {
-      "time": "2026-09-28T22:00:00Z",
-      "visitors": 3,
-      "requests": 15
-    },
     {
       "time": "2026-09-28T23:00:00Z",
       "visitors": 3,
@@ -128,17 +83,51 @@
     },
     {
       "time": "2026-09-29T13:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 8,
+      "requests": 107
+    },
+    {
+      "time": "2026-09-29T14:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-29T15:00:00Z",
+      "visitors": 14,
+      "requests": 16
+    },
+    {
+      "time": "2026-09-29T16:00:00Z",
+      "visitors": 4,
+      "requests": 125
+    },
+    {
+      "time": "2026-09-29T17:00:00Z",
+      "visitors": 10,
+      "requests": 134
+    },
+    {
+      "time": "2026-09-29T18:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-09-29T19:00:00Z",
+      "visitors": 6,
+      "requests": 168
+    },
+    {
+      "time": "2026-09-29T20:00:00Z",
+      "visitors": 4,
+      "requests": 15
+    },
+    {
+      "time": "2026-09-29T21:00:00Z",
+      "visitors": 4,
+      "requests": 13
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-23",
-      "visitors": 47,
-      "pageViews": 15,
-      "requests": 766
-    },
     {
       "date": "2026-09-24",
       "visitors": 52,
@@ -171,46 +160,60 @@
     },
     {
       "date": "2026-09-29",
-      "visitors": 114,
-      "pageViews": 44,
-      "requests": 571
+      "visitors": 106,
+      "pageViews": 150,
+      "requests": 952
+    },
+    {
+      "date": "2026-09-30",
+      "visitors": 26,
+      "pageViews": 54,
+      "requests": 332
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 49
+      "views": 50
     },
     {
       "path": "/robots.txt",
-      "views": 41
+      "views": 45
     },
     {
       "path": "/vi/",
-      "views": 30
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 20
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js.map",
-      "views": 20
+      "views": 31
     },
     {
       "path": "/sitemap.xml",
+      "views": 21
+    },
+    {
+      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
       "views": 20
     },
     {
-      "path": "/images/fami-appear.png",
-      "views": 19
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 16
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 16
     },
     {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 16
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 16
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 15
+    },
+    {
+      "path": "/_next/static/chunks/polyfills-42372ed130431b0a.js",
       "views": 15
     },
     {
@@ -218,15 +221,7 @@
       "views": 12
     },
     {
-      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
-      "views": 12
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 12
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "path": "/.svn/wc.db",
       "views": 11
     },
     {
@@ -234,7 +229,7 @@
       "views": 10
     },
     {
-      "path": "/favicon-32.png",
+      "path": "/core/.env",
       "views": 10
     }
   ]
