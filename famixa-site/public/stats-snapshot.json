@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-29T05:55:55.260Z",
+  "generatedAt": "2026-09-29T13:10:43.836Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 38,
-    "todayPageViews": 22,
-    "todayRequests": 146,
-    "last24hVisitors": 98,
-    "last24hPageViews": 50,
-    "last24hRequests": 618
+    "todayVisitors": 69,
+    "todayPageViews": 33,
+    "todayRequests": 367,
+    "last24hVisitors": 97,
+    "last24hPageViews": 47,
+    "last24hRequests": 650
   },
   "hourly": [
-    {
-      "time": "2026-09-28T06:00:00Z",
-      "visitors": 9,
-      "requests": 31
-    },
-    {
-      "time": "2026-09-28T07:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-28T08:00:00Z",
-      "visitors": 9,
-      "requests": 32
-    },
-    {
-      "time": "2026-09-28T09:00:00Z",
-      "visitors": 5,
-      "requests": 70
-    },
-    {
-      "time": "2026-09-28T10:00:00Z",
-      "visitors": 4,
-      "requests": 25
-    },
-    {
-      "time": "2026-09-28T11:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-28T12:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-09-28T13:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
     {
       "time": "2026-09-28T14:00:00Z",
       "visitors": 3,
@@ -130,6 +90,46 @@
       "time": "2026-09-29T05:00:00Z",
       "visitors": 11,
       "requests": 72
+    },
+    {
+      "time": "2026-09-29T06:00:00Z",
+      "visitors": 7,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-29T07:00:00Z",
+      "visitors": 9,
+      "requests": 33
+    },
+    {
+      "time": "2026-09-29T08:00:00Z",
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-09-29T09:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-29T10:00:00Z",
+      "visitors": 6,
+      "requests": 140
+    },
+    {
+      "time": "2026-09-29T11:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-29T12:00:00Z",
+      "visitors": 5,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-29T13:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -171,26 +171,34 @@
     },
     {
       "date": "2026-09-29",
-      "visitors": 74,
-      "pageViews": 33,
-      "requests": 350
+      "visitors": 114,
+      "pageViews": 44,
+      "requests": 571
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 62
+      "views": 49
     },
     {
       "path": "/robots.txt",
-      "views": 39
+      "views": 41
     },
     {
       "path": "/vi/",
-      "views": 35
+      "views": 30
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 20
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js.map",
+      "views": 20
+    },
+    {
+      "path": "/sitemap.xml",
       "views": 20
     },
     {
@@ -198,43 +206,35 @@
       "views": 19
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 19
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 19
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 18
-    },
-    {
-      "path": "/favicon-32.png",
-      "views": 16
-    },
-    {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
       "views": 16
     },
     {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 13
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 15
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "path": "/.env.staging",
       "views": 12
     },
     {
-      "path": "/images/logo-famixa-icon.png",
-      "views": 11
-    },
-    {
       "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
-      "views": 10
+      "views": 12
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 12
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 11
+    },
+    {
+      "path": "/_profiler/phpinfo",
+      "views": 10
+    },
+    {
+      "path": "/favicon-32.png",
       "views": 10
     }
   ]
