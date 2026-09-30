@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-09-30T12:38:47.810Z",
+  "generatedAt": "2026-09-30T22:18:49.126Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 87,
-    "todayPageViews": 103,
-    "todayRequests": 228,
-    "last24hVisitors": 161,
-    "last24hPageViews": 225,
-    "last24hRequests": 456
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 146,
+    "last24hPageViews": 147,
+    "last24hRequests": 698
   },
   "hourly": [
-    {
-      "time": "2026-09-29T13:00:00Z",
-      "visitors": 20,
-      "requests": 23
-    },
-    {
-      "time": "2026-09-29T14:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-09-29T15:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-09-29T16:00:00Z",
-      "visitors": 7,
-      "requests": 120
-    },
-    {
-      "time": "2026-09-29T17:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-29T18:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-29T19:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-29T20:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-29T21:00:00Z",
-      "visitors": 3,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-29T22:00:00Z",
-      "visitors": 21,
-      "requests": 24
-    },
     {
       "time": "2026-09-29T23:00:00Z",
       "visitors": 9,
@@ -128,17 +78,56 @@
     },
     {
       "time": "2026-09-30T12:00:00Z",
-      "visitors": 5,
+      "visitors": 8,
+      "requests": 10
+    },
+    {
+      "time": "2026-09-30T13:00:00Z",
+      "visitors": 14,
+      "requests": 24
+    },
+    {
+      "time": "2026-09-30T14:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-09-30T15:00:00Z",
+      "visitors": 7,
+      "requests": 13
+    },
+    {
+      "time": "2026-09-30T16:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-09-30T17:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-30T18:00:00Z",
+      "visitors": 6,
       "requests": 7
+    },
+    {
+      "time": "2026-09-30T19:00:00Z",
+      "visitors": 6,
+      "requests": 18
+    },
+    {
+      "time": "2026-09-30T20:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-09-30T21:00:00Z",
+      "visitors": 12,
+      "requests": 366
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-24",
-      "visitors": 114,
-      "pageViews": 114,
-      "requests": 569
-    },
     {
       "date": "2026-09-25",
       "visitors": 151,
@@ -171,39 +160,47 @@
     },
     {
       "date": "2026-09-30",
-      "visitors": 87,
-      "pageViews": 103,
-      "requests": 228
+      "visitors": 138,
+      "pageViews": 140,
+      "requests": 682
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 71
+      "views": 67
     },
     {
       "path": "/robots.txt",
-      "views": 27
+      "views": 29
     },
     {
       "path": "/vi/",
-      "views": 25
-    },
-    {
-      "path": "/.git/config",
-      "views": 16
+      "views": 20
     },
     {
       "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
       "views": 13
     },
     {
-      "path": "/.env.sample",
-      "views": 10
+      "path": "/.env.live",
+      "views": 12
     },
     {
       "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
       "views": 10
+    },
+    {
+      "path": "/.env",
+      "views": 9
+    },
+    {
+      "path": "/.docker/secrets.json",
+      "views": 8
+    },
+    {
+      "path": "/.docker/.env",
+      "views": 8
     },
     {
       "path": "/images/tin-tuc/chu-nha-thuoc-nen-lam-moi-thang.png",
@@ -214,28 +211,20 @@
       "views": 8
     },
     {
-      "path": "/.docker/secrets.json",
-      "views": 8
+      "path": "/images/tin-tuc/giup-danh-gia-nang-luc-thuc-te.png",
+      "views": 7
     },
     {
-      "path": "/.env.live",
-      "views": 8
+      "path": "/release.zip",
+      "views": 6
     },
     {
-      "path": "/.boto",
-      "views": 8
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 6
     },
     {
-      "path": "/.env.php",
-      "views": 8
-    },
-    {
-      "path": "/.env.bak",
-      "views": 8
-    },
-    {
-      "path": "/.config/gcloud/application_default_credentials.json",
-      "views": 8
+      "path": "/.aws/credentials",
+      "views": 6
     }
   ]
 }
