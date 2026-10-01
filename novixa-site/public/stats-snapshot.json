@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-01T13:21:38.403Z",
+  "generatedAt": "2026-10-01T22:43:16.915Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 83,
-    "todayPageViews": 38,
-    "todayRequests": 220,
-    "last24hVisitors": 132,
-    "last24hPageViews": 73,
-    "last24hRequests": 656
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 139,
+    "last24hPageViews": 79,
+    "last24hRequests": 420
   },
   "hourly": [
-    {
-      "time": "2026-09-30T14:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-09-30T15:00:00Z",
-      "visitors": 7,
-      "requests": 13
-    },
-    {
-      "time": "2026-09-30T16:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-09-30T17:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-30T18:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-30T19:00:00Z",
-      "visitors": 6,
-      "requests": 18
-    },
-    {
-      "time": "2026-09-30T20:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-30T21:00:00Z",
-      "visitors": 12,
-      "requests": 366
-    },
-    {
-      "time": "2026-09-30T22:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
     {
       "time": "2026-09-30T23:00:00Z",
       "visitors": 6,
@@ -128,17 +83,56 @@
     },
     {
       "time": "2026-10-01T13:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-01T14:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-01T15:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-01T16:00:00Z",
+      "visitors": 10,
+      "requests": 90
+    },
+    {
+      "time": "2026-10-01T17:00:00Z",
+      "visitors": 11,
+      "requests": 20
+    },
+    {
+      "time": "2026-10-01T18:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-01T19:00:00Z",
+      "visitors": 8,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-01T20:00:00Z",
+      "visitors": 4,
+      "requests": 27
+    },
+    {
+      "time": "2026-10-01T21:00:00Z",
+      "visitors": 10,
+      "requests": 19
+    },
+    {
+      "time": "2026-10-01T22:00:00Z",
+      "visitors": 3,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-25",
-      "visitors": 151,
-      "pageViews": 118,
-      "requests": 568
-    },
     {
       "date": "2026-09-26",
       "visitors": 176,
@@ -171,26 +165,42 @@
     },
     {
       "date": "2026-10-01",
-      "visitors": 83,
-      "pageViews": 38,
-      "requests": 220
+      "visitors": 135,
+      "pageViews": 77,
+      "requests": 414
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 64
+      "views": 79
     },
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 20
     },
     {
       "path": "/vi/",
-      "views": 15
+      "views": 18
+    },
+    {
+      "path": "/laravel/.env",
+      "views": 13
+    },
+    {
+      "path": "/.env",
+      "views": 12
     },
     {
       "path": "/.env.aws",
+      "views": 12
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 11
+    },
+    {
+      "path": "/.aws/config.json",
       "views": 10
     },
     {
@@ -206,36 +216,20 @@
       "views": 9
     },
     {
-      "path": "/wp-login.php",
+      "path": "/wp-links-opml.php",
+      "views": 8
+    },
+    {
+      "path": "/ai/config.yml",
+      "views": 8
+    },
+    {
+      "path": "/ai/config.yaml",
       "views": 8
     },
     {
       "path": "/.env.dev",
       "views": 8
-    },
-    {
-      "path": "/.env",
-      "views": 7
-    },
-    {
-      "path": "/htdocs/.env",
-      "views": 6
-    },
-    {
-      "path": "/shop/.git/config",
-      "views": 6
-    },
-    {
-      "path": "/panel/.env",
-      "views": 6
-    },
-    {
-      "path": "/wp-content.zip",
-      "views": 6
-    },
-    {
-      "path": "/test.zip",
-      "views": 6
     }
   ]
 }
