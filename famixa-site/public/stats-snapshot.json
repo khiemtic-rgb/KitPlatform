@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-01T13:37:41.233Z",
+  "generatedAt": "2026-10-01T22:48:37.910Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 50,
-    "todayPageViews": 18,
-    "todayRequests": 132,
-    "last24hVisitors": 86,
-    "last24hPageViews": 25,
-    "last24hRequests": 207
+    "todayVisitors": 21,
+    "todayPageViews": 27,
+    "todayRequests": 146,
+    "last24hVisitors": 76,
+    "last24hPageViews": 47,
+    "last24hRequests": 443
   },
   "hourly": [
-    {
-      "time": "2026-09-30T14:00:00Z",
-      "visitors": 6,
-      "requests": 12
-    },
-    {
-      "time": "2026-09-30T15:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-09-30T16:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
-    {
-      "time": "2026-09-30T17:00:00Z",
-      "visitors": 7,
-      "requests": 11
-    },
-    {
-      "time": "2026-09-30T18:00:00Z",
-      "visitors": 16,
-      "requests": 21
-    },
-    {
-      "time": "2026-09-30T19:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-09-30T20:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-30T22:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
     {
       "time": "2026-09-30T23:00:00Z",
       "visitors": 1,
@@ -123,17 +83,56 @@
     },
     {
       "time": "2026-10-01T13:00:00Z",
-      "visitors": 5,
-      "requests": 7
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-01T14:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-01T15:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-01T16:00:00Z",
+      "visitors": 7,
+      "requests": 158
+    },
+    {
+      "time": "2026-10-01T17:00:00Z",
+      "visitors": 4,
+      "requests": 72
+    },
+    {
+      "time": "2026-10-01T18:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-01T19:00:00Z",
+      "visitors": 4,
+      "requests": 26
+    },
+    {
+      "time": "2026-10-01T20:00:00Z",
+      "visitors": 3,
+      "requests": 34
+    },
+    {
+      "time": "2026-10-01T21:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-01T22:00:00Z",
+      "visitors": 3,
+      "requests": 5
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-25",
-      "visitors": 218,
-      "pageViews": 535,
-      "requests": 2876
-    },
     {
       "date": "2026-09-26",
       "visitors": 142,
@@ -166,71 +165,77 @@
     },
     {
       "date": "2026-10-01",
-      "visitors": 101,
-      "pageViews": 23,
-      "requests": 184
+      "visitors": 75,
+      "pageViews": 47,
+      "requests": 442
+    },
+    {
+      "date": "2026-10-02",
+      "visitors": 21,
+      "pageViews": 27,
+      "requests": 146
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 46
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 31
+      "views": 38
     },
     {
       "path": "/",
-      "views": 27
+      "views": 30
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 20
     },
     {
       "path": "/vi/",
-      "views": 11
+      "views": 16
     },
     {
       "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
+      "views": 13
+    },
+    {
+      "path": "/env",
+      "views": 12
+    },
+    {
+      "path": "/old/.env",
+      "views": 12
+    },
+    {
+      "path": "/config/config.js",
+      "views": 12
+    },
+    {
+      "path": "/phpinfo.php",
+      "views": 11
+    },
+    {
+      "path": "/config.yaml",
+      "views": 10
+    },
+    {
+      "path": "/.env.php",
+      "views": 10
+    },
+    {
+      "path": "/.gitmodules",
+      "views": 10
+    },
+    {
+      "path": "/backup/.env",
       "views": 10
     },
     {
       "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 9
+      "views": 10
     },
     {
-      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 6
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 4
-    },
-    {
-      "path": "/images/logo-famixa-icon.png",
-      "views": 4
-    },
-    {
-      "path": "/images/social/zalo.png",
-      "views": 4
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 3
-    },
-    {
-      "path": "/images/banner-right.png",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 3
+      "path": "/v2/.env",
+      "views": 10
     }
   ]
 }
