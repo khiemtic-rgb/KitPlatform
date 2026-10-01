@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-01T06:14:10.674Z",
+  "generatedAt": "2026-10-01T13:37:41.233Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 30,
-    "todayPageViews": 12,
-    "todayRequests": 59,
-    "last24hVisitors": 90,
-    "last24hPageViews": 44,
-    "last24hRequests": 338
+    "todayVisitors": 50,
+    "todayPageViews": 18,
+    "todayRequests": 132,
+    "last24hVisitors": 86,
+    "last24hPageViews": 25,
+    "last24hRequests": 207
   },
   "hourly": [
-    {
-      "time": "2026-09-30T08:00:00Z",
-      "visitors": 6,
-      "requests": 69
-    },
-    {
-      "time": "2026-09-30T09:00:00Z",
-      "visitors": 8,
-      "requests": 51
-    },
-    {
-      "time": "2026-09-30T10:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-09-30T11:00:00Z",
-      "visitors": 2,
-      "requests": 22
-    },
-    {
-      "time": "2026-09-30T12:00:00Z",
-      "visitors": 3,
-      "requests": 41
-    },
-    {
-      "time": "2026-09-30T13:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
     {
       "time": "2026-09-30T14:00:00Z",
       "visitors": 6,
@@ -115,6 +85,46 @@
       "time": "2026-10-01T05:00:00Z",
       "visitors": 2,
       "requests": 6
+    },
+    {
+      "time": "2026-10-01T06:00:00Z",
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-01T07:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-01T08:00:00Z",
+      "visitors": 8,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-01T09:00:00Z",
+      "visitors": 3,
+      "requests": 36
+    },
+    {
+      "time": "2026-10-01T10:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-01T11:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-01T12:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-01T13:00:00Z",
+      "visitors": 5,
+      "requests": 7
     }
   ],
   "daily": [
@@ -156,9 +166,9 @@
     },
     {
       "date": "2026-10-01",
-      "visitors": 73,
-      "pageViews": 17,
-      "requests": 111
+      "visitors": 101,
+      "pageViews": 23,
+      "requests": 184
     }
   ],
   "topPages": [
@@ -167,60 +177,60 @@
       "views": 46
     },
     {
-      "path": "/",
-      "views": 43
-    },
-    {
       "path": "/sitemap.xml",
       "views": 31
     },
     {
+      "path": "/",
+      "views": 27
+    },
+    {
       "path": "/vi/",
-      "views": 23
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
+      "views": 10
     },
     {
       "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 14
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 8
+      "views": 9
     },
     {
       "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
-      "views": 8
+      "views": 6
     },
     {
-      "path": "/wp-json/wp/v2/pages",
-      "views": 8
-    },
-    {
-      "path": "/index.php",
-      "views": 7
+      "path": "/wp-login.php",
+      "views": 5
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 6
+      "views": 4
     },
     {
-      "path": "/wp-sitemap-posts-page-1.xml",
-      "views": 6
+      "path": "/images/logo-famixa-icon.png",
+      "views": 4
     },
     {
-      "path": "/images/moment-sleep.png",
-      "views": 6
+      "path": "/images/social/zalo.png",
+      "views": 4
     },
     {
-      "path": "/images/chapter5-scene.png",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/css/78acefc735dfdfa0.css",
-      "views": 5
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 3
     },
     {
       "path": "/images/banner-right.png",
-      "views": 5
+      "views": 3
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 3
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 3
     }
   ]
 }
