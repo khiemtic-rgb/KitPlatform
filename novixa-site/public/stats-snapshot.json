@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-02T12:40:26.382Z",
+  "generatedAt": "2026-10-02T22:16:54.645Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 99,
-    "todayPageViews": 92,
-    "todayRequests": 235,
-    "last24hVisitors": 158,
-    "last24hPageViews": 195,
-    "last24hRequests": 528
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 160,
+    "last24hPageViews": 182,
+    "last24hRequests": 443
   },
   "hourly": [
-    {
-      "time": "2026-10-01T13:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-01T14:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-01T15:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-01T16:00:00Z",
-      "visitors": 10,
-      "requests": 90
-    },
-    {
-      "time": "2026-10-01T17:00:00Z",
-      "visitors": 11,
-      "requests": 20
-    },
-    {
-      "time": "2026-10-01T18:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-01T19:00:00Z",
-      "visitors": 8,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-01T20:00:00Z",
-      "visitors": 4,
-      "requests": 27
-    },
-    {
-      "time": "2026-10-01T21:00:00Z",
-      "visitors": 10,
-      "requests": 19
-    },
-    {
-      "time": "2026-10-01T22:00:00Z",
-      "visitors": 6,
-      "requests": 100
-    },
     {
       "time": "2026-10-01T23:00:00Z",
       "visitors": 2,
@@ -123,17 +73,61 @@
     },
     {
       "time": "2026-10-02T12:00:00Z",
+      "visitors": 4,
+      "requests": 51
+    },
+    {
+      "time": "2026-10-02T13:00:00Z",
+      "visitors": 14,
+      "requests": 15
+    },
+    {
+      "time": "2026-10-02T14:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-02T15:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-02T16:00:00Z",
+      "visitors": 15,
+      "requests": 54
+    },
+    {
+      "time": "2026-10-02T17:00:00Z",
+      "visitors": 8,
+      "requests": 89
+    },
+    {
+      "time": "2026-10-02T18:00:00Z",
       "visitors": 3,
-      "requests": 50
+      "requests": 4
+    },
+    {
+      "time": "2026-10-02T19:00:00Z",
+      "visitors": 1,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-02T20:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-02T21:00:00Z",
+      "visitors": 4,
+      "requests": 17
+    },
+    {
+      "time": "2026-10-02T22:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-26",
-      "visitors": 176,
-      "pageViews": 591,
-      "requests": 857
-    },
     {
       "date": "2026-09-27",
       "visitors": 118,
@@ -166,70 +160,70 @@
     },
     {
       "date": "2026-10-02",
-      "visitors": 99,
-      "pageViews": 92,
-      "requests": 235
+      "visitors": 158,
+      "pageViews": 181,
+      "requests": 441
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 78
-    },
-    {
-      "path": "/vi/",
-      "views": 22
+      "views": 64
     },
     {
       "path": "/robots.txt",
-      "views": 19
+      "views": 21
     },
     {
-      "path": "/.env",
-      "views": 13
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 12
+      "path": "/vi/",
+      "views": 20
     },
     {
       "path": "/frontend/.env",
       "views": 11
     },
     {
+      "path": "/sendgrid.env",
+      "views": 10
+    },
+    {
+      "path": "/images/tin-tuc/tien-dang-nam-o-dau-trong-kho-cua-nha-thuoc.jpg",
+      "views": 10
+    },
+    {
       "path": "/env-config.js",
       "views": 10
     },
     {
-      "path": "/.aws/config.json",
-      "views": 10
+      "path": "/gifclass.php",
+      "views": 9
     },
     {
-      "path": "/sendgrid.env",
-      "views": 10
+      "path": "/.git/config",
+      "views": 9
     },
     {
       "path": "/info.php",
       "views": 9
     },
     {
-      "path": "/phpinfo.php",
-      "views": 9
+      "path": "/database.sql",
+      "views": 8
     },
     {
-      "path": "/laravel/.env",
-      "views": 9
+      "path": "/wp-login.php",
+      "views": 8
+    },
+    {
+      "path": "/wp-json/wp/v2/pages",
+      "views": 8
     },
     {
       "path": "/index.js",
       "views": 8
     },
     {
-      "path": "/ai/config.yaml",
-      "views": 8
-    },
-    {
-      "path": "/database.sql",
+      "path": "/phpinfo.php",
       "views": 8
     }
   ]
