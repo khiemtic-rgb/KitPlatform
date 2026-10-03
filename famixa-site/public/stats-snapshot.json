@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-03T05:31:09.186Z",
+  "generatedAt": "2026-10-03T11:51:48.656Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 18,
-    "todayPageViews": 4,
-    "todayRequests": 33,
-    "last24hVisitors": 68,
-    "last24hPageViews": 21,
-    "last24hRequests": 1684
+    "todayVisitors": 30,
+    "todayPageViews": 7,
+    "todayRequests": 64,
+    "last24hVisitors": 58,
+    "last24hPageViews": 14,
+    "last24hRequests": 1509
   },
   "hourly": [
-    {
-      "time": "2026-10-02T06:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-02T07:00:00Z",
-      "visitors": 5,
-      "requests": 135
-    },
-    {
-      "time": "2026-10-02T08:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-02T09:00:00Z",
-      "visitors": 5,
-      "requests": 39
-    },
-    {
-      "time": "2026-10-02T10:00:00Z",
-      "visitors": 8,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-02T11:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
     {
       "time": "2026-10-02T12:00:00Z",
       "visitors": 2,
@@ -123,8 +93,38 @@
     },
     {
       "time": "2026-10-03T05:00:00Z",
+      "visitors": 2,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-03T06:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-03T07:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-03T08:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-03T09:00:00Z",
       "visitors": 1,
       "requests": 1
+    },
+    {
+      "time": "2026-10-03T10:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-03T11:00:00Z",
+      "visitors": 4,
+      "requests": 4
     }
   ],
   "daily": [
@@ -166,26 +166,30 @@
     },
     {
       "date": "2026-10-03",
-      "visitors": 48,
-      "pageViews": 9,
-      "requests": 153
+      "visitors": 66,
+      "pageViews": 12,
+      "requests": 184
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 44
-    },
-    {
-      "path": "/",
-      "views": 24
+      "views": 43
     },
     {
       "path": "/sitemap.xml",
-      "views": 21
+      "views": 20
+    },
+    {
+      "path": "/templates/beez/",
+      "views": 18
     },
     {
       "path": "/wp-includes/block-bindings/",
+      "views": 18
+    },
+    {
+      "path": "/",
       "views": 18
     },
     {
@@ -193,35 +197,7 @@
       "views": 18
     },
     {
-      "path": "/templates/beez/",
-      "views": 18
-    },
-    {
-      "path": "/wp-includes/Text/Diff/Engine/",
-      "views": 14
-    },
-    {
-      "path": "/upload/bilder/",
-      "views": 12
-    },
-    {
       "path": "/wp-content/themes/twentytwentyfour/",
-      "views": 12
-    },
-    {
-      "path": "/themes/twentyseventeen/page/",
-      "views": 12
-    },
-    {
-      "path": "/wp-content/themes/seotheme/",
-      "views": 12
-    },
-    {
-      "path": "/wp-content/uploads/2026/",
-      "views": 12
-    },
-    {
-      "path": "/wp-admin/js/file/",
       "views": 12
     },
     {
@@ -229,7 +205,31 @@
       "views": 12
     },
     {
-      "path": "/wp-content/uploads/link.php",
+      "path": "/wp-content/themes/pridmag/",
+      "views": 12
+    },
+    {
+      "path": "/wp-admin/js/file/",
+      "views": 12
+    },
+    {
+      "path": "/themes/twentyseventeen/page/",
+      "views": 12
+    },
+    {
+      "path": "/upload/bilder/",
+      "views": 12
+    },
+    {
+      "path": "/wp-includes/Text/Diff/Engine/",
+      "views": 12
+    },
+    {
+      "path": "/wp-content/themes/seotheme/",
+      "views": 12
+    },
+    {
+      "path": "/templates/beez3/",
       "views": 12
     }
   ]
