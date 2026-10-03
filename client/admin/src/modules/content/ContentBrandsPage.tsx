@@ -29,6 +29,7 @@ import {
   BgColorsOutlined,
   BookOutlined,
   CodeOutlined,
+  DeleteOutlined,
   DollarOutlined,
   EditOutlined,
   FolderOpenOutlined,
@@ -52,6 +53,8 @@ import {
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   createContentBrand,
+  deleteContentChannel,
+  deleteContentSite,
   disconnectFacebookChannel,
   fetchContentBrands,
   fetchContentChannels,
@@ -330,7 +333,7 @@ function secretHint(kind?: string): { label: string; pasteLabel: string; extra: 
 type BrandTargets = { sites: number; channels: number };
 
 export function ContentBrandsPage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -547,6 +550,30 @@ export function ContentBrandsPage() {
     destForm.resetFields();
     destForm.setFieldsValue({ kind, configJson: '{}', secret: '' });
     setSecretConfigured(false);
+  };
+
+  const removeDestination = (row: DestRow) => {
+    if (!editing) return;
+    modal.confirm({
+      title: `Xóa nơi đăng «${row.name || row.code}»?`,
+      content: 'Gỡ khỏi thương hiệu này. Bài đã xuất không bị xóa. Generate lần sau không còn chỗ này.',
+      okText: 'Xóa',
+      okButtonProps: { danger: true },
+      cancelText: 'Giữ',
+      onOk: async () => {
+        try {
+          if (row.group === 'site') await deleteContentSite(editing.id, row.raw.id);
+          else await deleteContentChannel(editing.id, row.raw.id);
+          const editingCode = destForm.getFieldValue('code');
+          if (editingCode === row.code) resetDestForm();
+          await loadTargets(editing.id);
+          message.success('Đã xóa nơi đăng');
+        } catch (e) {
+          message.error(apiErrorMessage(e, 'Không xóa được nơi đăng'));
+          throw e;
+        }
+      },
+    });
   };
 
   const openEdit = async (row: ContentBrand, tab: 'info' | 'targets' = 'info') => {
@@ -1472,7 +1499,7 @@ export function ContentBrandsPage() {
                     }
                     extra={
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        Bấm một dòng để sửa
+                        Bấm dòng để sửa · Xóa nếu nhập sai
                       </Typography.Text>
                     }
                     style={{ marginBottom: 16 }}
@@ -1522,13 +1549,32 @@ export function ContentBrandsPage() {
                         {
                           title: 'Cấu hình',
                           key: 'cfg',
-                          width: 120,
+                          width: 88,
                           render: (_, row) =>
                             row.configWarning ? (
                               <Tag color="error">{row.configWarning}</Tag>
                             ) : (
                               <Tag color="success">OK</Tag>
                             ),
+                        },
+                        {
+                          title: '',
+                          key: 'del',
+                          width: 64,
+                          render: (_, row) => (
+                            <Button
+                              type="link"
+                              danger
+                              size="small"
+                              icon={<DeleteOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeDestination(row);
+                              }}
+                            >
+                              Xóa
+                            </Button>
+                          ),
                         },
                       ]}
                     />
@@ -2072,6 +2118,18 @@ export function ContentBrandsPage() {
                         <Button onClick={() => resetDestForm((destKind as DestKind) || 'site:manual')}>
                           Xoá form
                         </Button>
+                        {destRows.some((r) => r.code === destCode) ? (
+                          <Button
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              const row = destRows.find((r) => r.code === destCode);
+                              if (row) removeDestination(row);
+                            }}
+                          >
+                            Xóa nơi đăng này
+                          </Button>
+                        ) : null}
                       </Space>
                     </Form>
                   </Card>
