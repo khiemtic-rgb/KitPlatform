@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-03T16:33:24.122Z",
+  "generatedAt": "2026-10-03T21:34:37.911Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 44,
-    "todayPageViews": 278,
-    "todayRequests": 447,
+    "todayVisitors": 15,
+    "todayPageViews": 9,
+    "todayRequests": 108,
     "last24hVisitors": 60,
-    "last24hPageViews": 283,
-    "last24hRequests": 567
+    "last24hPageViews": 288,
+    "last24hRequests": 605
   },
   "hourly": [
-    {
-      "time": "2026-10-02T17:00:00Z",
-      "visitors": 3,
-      "requests": 31
-    },
-    {
-      "time": "2026-10-02T18:00:00Z",
-      "visitors": 3,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-02T20:00:00Z",
-      "visitors": 6,
-      "requests": 28
-    },
-    {
-      "time": "2026-10-02T21:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
     {
       "time": "2026-10-02T22:00:00Z",
       "visitors": 3,
@@ -123,17 +103,31 @@
     },
     {
       "time": "2026-10-03T16:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-03T18:00:00Z",
+      "visitors": 3,
+      "requests": 38
+    },
+    {
+      "time": "2026-10-03T19:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-03T20:00:00Z",
       "visitors": 2,
-      "requests": 3
+      "requests": 30
+    },
+    {
+      "time": "2026-10-03T21:00:00Z",
+      "visitors": 7,
+      "requests": 36
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-27",
-      "visitors": 98,
-      "pageViews": 40,
-      "requests": 988
-    },
     {
       "date": "2026-09-28",
       "visitors": 81,
@@ -166,71 +160,77 @@
     },
     {
       "date": "2026-10-03",
-      "visitors": 86,
-      "pageViews": 283,
-      "requests": 567
+      "visitors": 55,
+      "pageViews": 285,
+      "requests": 556
+    },
+    {
+      "date": "2026-10-04",
+      "visitors": 15,
+      "pageViews": 9,
+      "requests": 108
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 41
+      "views": 44
     },
     {
       "path": "/",
-      "views": 21
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 20
+      "views": 30
     },
     {
       "path": "/vi/",
-      "views": 20
+      "views": 24
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 21
     },
     {
       "path": "/vi/goi-cha-me/",
       "views": 10
     },
     {
-      "path": "/en/",
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 10
+    },
+    {
+      "path": "/.git/config",
+      "views": 10
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "views": 8
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 7
+      "path": "/en/",
+      "views": 8
     },
     {
       "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh/",
       "views": 7
     },
     {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 7
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/khi-cha-me-bat-dong-cach-day-con-lam-sao-de-khong-bien-ngoi-nha-thanh-toa-an/",
+      "views": 6
+    },
+    {
       "path": "/vi/goi-cha-me/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat-khi-binh-yen-nam-o-nhung-tuong-tac-hang-ngay/",
       "views": 6
     },
     {
-      "path": "/.git/config",
+      "path": "/_next/static/chunks/app/layout-d376300fde4c07c8.js",
       "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/ngay-nao-cung-phai-nhac-con-co-le-gia-dinh-dang-can-mot-cach-khac/",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/khen-con-the-nao-de-con-tu-tin-nghe-thuat-khen-ngoi-dung-cach-phu-huynh-nen-biet/",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/gia-dinh-la-noi-con-hoc-cach-lam-nguoi-moi-truong-giao-duc-dau-tien-va-quan-trong-nhat/",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/cach-xay-dung-niem-tin-giua-cha-me-va-con-soi-day-ket-noi-giup-tre-tu-giac-truong-thanh/",
-      "views": 5
-    },
-    {
-      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
-      "views": 5
     }
   ]
 }
