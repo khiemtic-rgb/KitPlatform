@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-03T11:51:48.656Z",
+  "generatedAt": "2026-10-03T16:33:24.122Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 30,
-    "todayPageViews": 7,
-    "todayRequests": 64,
-    "last24hVisitors": 58,
-    "last24hPageViews": 14,
-    "last24hRequests": 1509
+    "todayVisitors": 44,
+    "todayPageViews": 278,
+    "todayRequests": 447,
+    "last24hVisitors": 60,
+    "last24hPageViews": 283,
+    "last24hRequests": 567
   },
   "hourly": [
-    {
-      "time": "2026-10-02T12:00:00Z",
-      "visitors": 2,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-02T13:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-02T14:00:00Z",
-      "visitors": 6,
-      "requests": 1292
-    },
-    {
-      "time": "2026-10-02T15:00:00Z",
-      "visitors": 5,
-      "requests": 21
-    },
-    {
-      "time": "2026-10-02T16:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-10-02T17:00:00Z",
       "visitors": 3,
@@ -123,8 +98,33 @@
     },
     {
       "time": "2026-10-03T11:00:00Z",
-      "visitors": 4,
-      "requests": 4
+      "visitors": 5,
+      "requests": 345
+    },
+    {
+      "time": "2026-10-03T12:00:00Z",
+      "visitors": 8,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-03T13:00:00Z",
+      "visitors": 3,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-03T14:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-03T15:00:00Z",
+      "visitors": 5,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-03T16:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,71 +166,71 @@
     },
     {
       "date": "2026-10-03",
-      "visitors": 66,
-      "pageViews": 12,
-      "requests": 184
+      "visitors": 86,
+      "pageViews": 283,
+      "requests": 567
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 43
+      "views": 41
+    },
+    {
+      "path": "/",
+      "views": 21
     },
     {
       "path": "/sitemap.xml",
       "views": 20
     },
     {
-      "path": "/templates/beez/",
-      "views": 18
+      "path": "/vi/",
+      "views": 20
     },
     {
-      "path": "/wp-includes/block-bindings/",
-      "views": 18
+      "path": "/vi/goi-cha-me/",
+      "views": 10
     },
     {
-      "path": "/",
-      "views": 18
+      "path": "/en/",
+      "views": 8
     },
     {
-      "path": "/wp-includes/sodium_compat/src/",
-      "views": 18
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 7
     },
     {
-      "path": "/wp-content/themes/twentytwentyfour/",
-      "views": 12
+      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh/",
+      "views": 7
     },
     {
-      "path": "/wp-includes/assets/wp-includes/assets/",
-      "views": 12
+      "path": "/vi/goi-cha-me/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat-khi-binh-yen-nam-o-nhung-tuong-tac-hang-ngay/",
+      "views": 6
     },
     {
-      "path": "/wp-content/themes/pridmag/",
-      "views": 12
+      "path": "/.git/config",
+      "views": 6
     },
     {
-      "path": "/wp-admin/js/file/",
-      "views": 12
+      "path": "/vi/goi-cha-me/ngay-nao-cung-phai-nhac-con-co-le-gia-dinh-dang-can-mot-cach-khac/",
+      "views": 6
     },
     {
-      "path": "/themes/twentyseventeen/page/",
-      "views": 12
+      "path": "/vi/goi-cha-me/khen-con-the-nao-de-con-tu-tin-nghe-thuat-khen-ngoi-dung-cach-phu-huynh-nen-biet/",
+      "views": 6
     },
     {
-      "path": "/upload/bilder/",
-      "views": 12
+      "path": "/vi/goi-cha-me/gia-dinh-la-noi-con-hoc-cach-lam-nguoi-moi-truong-giao-duc-dau-tien-va-quan-trong-nhat/",
+      "views": 6
     },
     {
-      "path": "/wp-includes/Text/Diff/Engine/",
-      "views": 12
+      "path": "/vi/goi-cha-me/cach-xay-dung-niem-tin-giua-cha-me-va-con-soi-day-ket-noi-giup-tre-tu-giac-truong-thanh/",
+      "views": 5
     },
     {
-      "path": "/wp-content/themes/seotheme/",
-      "views": 12
-    },
-    {
-      "path": "/templates/beez3/",
-      "views": 12
+      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
+      "views": 5
     }
   ]
 }
