@@ -206,6 +206,11 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    [HttpGet("ops/episodes-need-content")]
+    public async Task<ActionResult<IReadOnlyList<EpisodeNeedContentDto>>> GetEpisodesNeedContent(
+        CancellationToken cancellationToken) =>
+        Ok(await _ops.ListEpisodesNeedContentAsync(cancellationToken));
+
     [HttpGet("work")]
     public async Task<ActionResult<IReadOnlyList<ContentWorkJobDto>>> ListActiveWork(
         CancellationToken cancellationToken) =>
@@ -240,6 +245,7 @@ public sealed class ContentController : ControllerBase
     public async Task<ActionResult<ContentVideoTestResultDto>> TestVideo(CancellationToken cancellationToken) =>
         Ok(await _settings.TestVideoAsync(cancellationToken));
 
+    // AUTHORITY-STABILIZATION-01E-GAP-CLOSURE. LEGACY_EXECUTION. Does not submit a provider job.
     [HttpPost("series/turbo")]
     [RequestSizeLimit(16_000_000)]
     public async Task<ActionResult<ContentSeriesTurboTaskDto>> StartSeriesTurbo(
@@ -304,6 +310,7 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    // AUTHORITY-STABILIZATION-01E-GAP-CLOSURE. LEGACY_EXECUTION. Does not submit a provider job.
     [HttpPost("series/lipsync")]
     [RequestSizeLimit(16_000_000)]
     public async Task<ActionResult<ContentSeriesTurboTaskDto>> StartSeriesLipsync(
@@ -324,6 +331,7 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    // AUTHORITY-STABILIZATION-01F. EXPORT_ONLY. File response. No Production OS write.
     [HttpPost("series/assemble")]
     [RequestSizeLimit(40_000_000)]
     [RequestFormLimits(MultipartBodyLengthLimit = 40_000_000)]
@@ -344,6 +352,24 @@ public sealed class ContentController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("series/veo-video")]
+    public IActionResult GetSeriesVeoVideo([FromQuery] string? taskId)
+    {
+        var bytes = _seriesTake.ReadVeoTake(taskId);
+        if (bytes is null || bytes.Length < 32)
+            return NotFound(new { message = "Chưa có file Veo trên máy API. Tạo lại video — không gửi Runway / Wan." });
+        return File(bytes, "video/mp4");
+    }
+
+    [HttpGet("series/fal-video")]
+    public IActionResult GetSeriesFalVideo([FromQuery] string? taskId)
+    {
+        var bytes = _seriesTake.ReadFalTake(taskId);
+        if (bytes is null || bytes.Length < 32)
+            return NotFound(new { message = "Chưa có file Fal trên máy API. Hỏi lại môi · 0$ — đừng Confirm job mới." });
+        return File(bytes, "video/mp4");
     }
 
     [HttpPost("series/take-probe")]
@@ -420,6 +446,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpGet("series/builds")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<IReadOnlyList<ContentSeriesBuildSummaryDto>>> ListSeriesBuilds(
         [FromQuery] string? code,
         CancellationToken cancellationToken)
@@ -435,6 +462,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpGet("series/builds/{id:guid}")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<ContentSeriesBuildDto>> GetSeriesBuild(
         Guid id,
         CancellationToken cancellationToken)
@@ -454,6 +482,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpPut("series/builds")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<ContentSeriesBuildDto>> PutSeriesBuild(
         [FromBody] UpsertContentSeriesBuildRequest request,
         CancellationToken cancellationToken)
@@ -473,6 +502,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpDelete("series/builds/{id:guid}")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<IActionResult> DeleteSeriesBuild(Guid id, CancellationToken cancellationToken)
     {
         try
@@ -1936,6 +1966,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpGet("video-engine/production-progress")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<ProductionProgressListDto>> ListProductionProgress(
         [FromQuery] string seriesCode = "FAMIXA",
         CancellationToken cancellationToken = default)
@@ -1951,6 +1982,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpGet("video-engine/series/builds/{id:guid}/production-progress")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<ProductionProgressDto>> GetProductionProgress(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -4726,6 +4758,7 @@ public sealed class ContentController : ControllerBase
         catch (InvalidOperationException ex) { return VideoGenerationError(ex); }
     }
 
+    // AUTHORITY-STABILIZATION-01E-GAP-CLOSURE. LEGACY_EXECUTION. Does not submit a provider job.
     [HttpPost("video-engine/shots/{id:guid}/video-generation-execution/execute")]
     [HttpPost("/api/production/shots/{id:guid}/video-generation-execution/execute")]
     public async Task<ActionResult<VideoGenerationExecutionDto>> ExecuteVideoGenerationExecution(

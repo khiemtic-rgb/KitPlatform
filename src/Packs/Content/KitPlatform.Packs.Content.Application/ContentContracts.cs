@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace KitPlatform.Packs.Content;
 
@@ -40,7 +41,10 @@ public sealed record ContentVideoConfigDto(
     string? RunwayApiKeySecretRef,
     bool RunwayConfigured,
     string? FalApiKeySecretRef,
-    bool FalConfigured);
+    bool FalConfigured,
+    string? VeoJoinSecretRef,
+    bool VeoJoinConfigured,
+    string? VeoJoinFileName);
 
 public sealed record UpdateContentOrgSettingsRequest(
     decimal? MonthlyCeilingUsd,
@@ -89,7 +93,10 @@ public sealed record UpdateContentVideoConfigRequest(
     string? RunwayApiKeySecretRef,
     string? RunwayApiKey,
     string? FalApiKeySecretRef,
-    string? FalApiKey);
+    string? FalApiKey,
+    string? VeoJoinSecretRef,
+    string? VeoJoinFile,
+    string? VeoJoinFileName);
 
 public sealed record ContentVideoTestResultDto(
     bool CreatomateOk,
@@ -104,7 +111,10 @@ public sealed record ContentVideoTestResultDto(
     bool RunwayConfigured,
     bool FalOk,
     string? FalMessage,
-    bool FalConfigured);
+    bool FalConfigured,
+    bool VeoJoinOk,
+    string? VeoJoinMessage,
+    bool VeoJoinConfigured);
 
 public sealed record ContentSeriesTurboStartRequest(
     string ClipId,
@@ -153,7 +163,12 @@ public sealed record ContentSeriesLipsyncStartRequest(
     IReadOnlyList<ContentSeriesLipsyncVoiceDto>? Voices = null,
     double? ProductionDurationSec = null,
     double? PerformanceDurationSec = null,
-    string? TakeTaskId = null);
+    string? TakeTaskId = null,
+    double? SpeakerX = null,
+    double? SpeakerY = null,
+    int? SpeakerVideoWidth = null,
+    int? SpeakerVideoHeight = null,
+    int? SpeakerFrameNumber = null);
 
 public sealed record ContentSeriesStillRefDto(
     string Name,
@@ -598,7 +613,13 @@ public sealed record ContentBrandFitDto(
     string? Audience,
     string? Cta,
     Guid? PackageId,
-    string? Outline = null);
+    string? Outline = null,
+    [property: JsonPropertyName("fit")] bool? NarrativeFit = null,
+    string? Territory = null,
+    string? TerritoryId = null,
+    string? BrandAngle = null,
+    double? Confidence = null,
+    IReadOnlyList<string>? BoundaryWarnings = null);
 
 public sealed record ContentPackageDto(
     Guid Id,
@@ -856,6 +877,10 @@ public interface IContentSeriesTakeProxyService
     Task<ContentSeriesTakeProbeDto> ProbeAsync(
         string url,
         CancellationToken cancellationToken = default);
+
+    byte[]? ReadVeoTake(string? taskIdOrUrl);
+
+    byte[]? ReadFalTake(string? taskIdOrUrl);
 }
 
 public interface IContentSeriesStillService
@@ -1166,6 +1191,12 @@ public sealed class ContentOptions
     /// <summary>Optional Fal API key (Wan 2.1 I2V). Falls back to env FAL_KEY.</summary>
     public string? FalApiKey { get; set; }
 
+    /// <summary>Optional Veo Join file body. Falls back to env VEO_JOIN_FILE. Never a Gemini API key.</summary>
+    public string? VeoJoinFile { get; set; }
+
+    /// <summary>Vertex location for Veo. Env Content:VeoLocation. Default us-central1.</summary>
+    public string VeoLocation { get; set; } = "us-central1";
+
     /// <summary>Optional ElevenLabs API key. Falls back to env ELEVENLABS_API_KEY.</summary>
     public string? ElevenLabsApiKey { get; set; }
 
@@ -1295,6 +1326,19 @@ public sealed record ContentCalendarItemDto(
     string? Channel,
     string Status);
 
+public sealed record EpisodeNeedContentDto(
+    Guid EpisodeId,
+    int EpisodeNo,
+    string Title,
+    string? Objective,
+    Guid SeriesId,
+    string SeriesCode,
+    string SeriesName,
+    Guid BrandId,
+    string BrandCode,
+    string BrandName,
+    string Status);
+
 public interface IContentOpsService
 {
     Task<ContentOpsSnapshotDto> GetSnapshotAsync(CancellationToken cancellationToken = default);
@@ -1303,6 +1347,9 @@ public interface IContentOpsService
         DateTimeOffset fromUtc,
         DateTimeOffset toUtc,
         Guid? brandId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<EpisodeNeedContentDto>> ListEpisodesNeedContentAsync(
         CancellationToken cancellationToken = default);
 }
 

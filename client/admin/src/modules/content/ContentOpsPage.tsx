@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Alert, App, Button, Card, Col, Progress, Row, Spin, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Col, Progress, Row, Space, Spin, Table, Tag, Typography } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
@@ -8,6 +8,7 @@ import {
   ExclamationCircleOutlined,
   FileTextOutlined,
   PlusOutlined,
+  ReadOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
@@ -16,16 +17,74 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   fetchContentOps,
+  fetchContentPackages,
+  fetchContentTopics,
+  fetchContentEpisodesNeedContent,
   runContentPublishJob,
   type ContentCalendarItem,
   type ContentOpsFailedPublish,
   type ContentOpsSnapshot,
   type ContentPackage,
+  type ContentTopic,
   type ContentWorkJob,
+  type EpisodeNeedContent,
 } from '@/shared/api/content.api';
 import { brandColor, channelLabel, fitMark } from './content-brand';
+import {
+  episodeSequenceLabel,
+  formatCompactLineage,
+  packageForTopic,
+  qualityGateLabel,
+  useTopicLineageIndex,
+  type TopicSeriesLineage,
+} from './content-lineage';
+import { PublishJobStatusTag, StatusTag, connectorLabel } from './ContentTopicsPage';
 
 dayjs.extend(isoWeek);
+
+function LineageLine({
+  lineageIndex,
+  topicId,
+  brandName,
+}: {
+  lineageIndex: Map<string, TopicSeriesLineage> | null;
+  topicId?: string | null;
+  brandName?: string | null;
+}) {
+  const textStyle = { fontSize: 12 };
+  if (topicId && !lineageIndex) {
+    return (
+      <div style={{ marginTop: 4 }}>
+        <Typography.Text type="secondary" style={textStyle}>
+          {brandName ? `${brandName} · ` : ''}Đang tải nguồn bài…
+        </Typography.Text>
+      </div>
+    );
+  }
+  const lineage = topicId ? lineageIndex?.get(topicId) : undefined;
+  if (lineage) {
+    const { series, episode } = lineage;
+    return (
+      <div style={{ marginTop: 4 }}>
+        <Typography.Text type="secondary" style={textStyle}>
+          {series.brandName} · {series.code} ·{' '}
+          <Link to={`/content/article-series/${series.id}/episodes/${episode.id}`}>
+            {episodeSequenceLabel(episode.episodeNo)} · {episode.title}
+          </Link>
+        </Typography.Text>
+      </div>
+    );
+  }
+  const parts = [brandName, topicId ? 'Bài độc lập' : null].filter(Boolean);
+  if (parts.length === 0) return null;
+  return (
+    <div style={{ marginTop: 4 }}>
+      <Typography.Text type="secondary" style={textStyle}>
+        {parts.join(' · ')}
+      </Typography.Text>
+    </div>
+  );
+}
 
 const KIND_LABEL: Record<string, string> = {
   generate_topic: 'Viết bài',
@@ -34,6 +93,13 @@ const KIND_LABEL: Record<string, string> = {
   video_mvp: 'Video MVP',
   video_render: 'Render video',
   brand_adapt: 'Brand Fit',
+};
+
+const CONNECTOR_LABEL: Record<string, string> = {
+  facebook_page: 'Facebook Page',
+  facebook_group: 'Facebook Group',
+  site: 'Website',
+  wordpress: 'WordPress',
 };
 
 function money(n: number) {
@@ -50,11 +116,25 @@ export function ContentOpsPage() {
   const [data, setData] = useState<ContentOpsSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const lineageIndex = useTopicLineageIndex();
+  const [topics, setTopics] = useState<ContentTopic[]>([]);
+  const [episodesNeedContent, setEpisodesNeedContent] = useState<EpisodeNeedContent[]>([]);
+  const [packages, setPackages] = useState<ContentPackage[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await fetchContentOps());
+      const [opsData, reviewData, approvedData, episodesData, packageRows] = await Promise.all([
+        fetchContentOps(),
+        fetchContentTopics({ status: 'Review' }),
+        fetchContentTopics({ status: 'Approved' }),
+        fetchContentEpisodesNeedContent(),
+        fetchContentPackages(),
+      ]);
+      setData(opsData);
+      setTopics([...reviewData, ...approvedData]);
+      setEpisodesNeedContent(episodesData);
+      setPackages(packageRows);
       setError(null);
     } catch (e) {
       setError(apiErrorMessage(e, 'Không tải được bảng điều khiển'));
@@ -80,6 +160,19 @@ export function ContentOpsPage() {
     return map;
   }, [data?.weekItems]);
 
+  const nextEpisodes = useMemo(() => {
+    const bySeries = new Map<string, EpisodeNeedContent[]>();
+    for (const ep of episodesNeedContent) {
+      const list = bySeries.get(ep.seriesId);
+      if (list) list.push(ep);
+      else bySeries.set(ep.seriesId, [ep]);
+    }
+    return [...bySeries.values()].map((list) => {
+      const sorted = [...list].sort((a, b) => a.episodeNo - b.episodeNo);
+      return { episode: sorted[0], laterCount: sorted.length - 1 };
+    });
+  }, [episodesNeedContent]);
+
   if (loading && !data) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
@@ -92,58 +185,20 @@ export function ContentOpsPage() {
   const spendPct =
     s && s.monthCeilingUsd > 0 ? Math.min(100, Math.round((s.monthSpendUsd / s.monthCeilingUsd) * 100)) : 0;
 
-  const tiles = s
-    ? [
-        {
-          title: 'Ý tưởng gốc',
-          value: s.coreIdeaCount,
-          hint: `${s.coreDraftCount} nháp · ${s.coreUnscoredCount} chưa chấm Fit`,
-          to: '/content/pool',
-          icon: <FileTextOutlined />,
-          tone: s.coreUnscoredCount > 0 ? 'info' : 'default',
-        },
-        {
-          title: 'Góc brand',
-          value: s.adaptationCount,
-          hint: 'Không phải 1 idea × mọi brand',
-          to: '/content/packages',
-          icon: <ThunderboltOutlined />,
-          tone: 'default',
-        },
-        {
-          title: 'Chờ duyệt bài',
-          value: s.reviewCount,
-          hint: s.generatingCount > 0 ? `${s.generatingCount} đang tạo` : 'Generate xong mới duyệt',
-          to: '/content/packages',
-          icon: <CheckCircleOutlined />,
-          tone: s.reviewCount > 0 ? 'info' : 'default',
-        },
-        {
-          title: 'Lịch tuần này',
-          value: s.scheduledThisWeek,
-          hint: `${s.scheduledCount} đang scheduled`,
-          to: '/content/calendar?view=week',
-          icon: <ClockCircleOutlined />,
-          tone: 'default',
-        },
-        {
-          title: 'Đã đăng tuần',
-          value: s.publishedThisWeek,
-          hint: `${s.publishedTodayCount} hôm nay`,
-          to: '/content/packages',
-          icon: <CalendarOutlined />,
-          tone: 'default',
-        },
-        {
-          title: 'Lỗi cần xử lý',
-          value: s.errorCount,
-          hint: 'Job / xuất bản / video',
-          to: '/content/packages',
-          icon: <ExclamationCircleOutlined />,
-          tone: s.errorCount > 0 ? 'danger' : 'default',
-        },
-      ]
-    : [];
+  // Queue: Chờ duyệt (Review)
+  const reviewTopics = topics.filter((t) => t.status === 'Review');
+  
+  // Queue: Đã duyệt (Approved)
+  const approvedTopics = topics.filter((t) => t.status === 'Approved');
+  
+  // Queue: Lịch hôm nay (Today's schedule)
+  const today = dayjs().format('YYYY-MM-DD');
+  const todayItems = (byDay.get(today) ?? []).filter((it) => it.status === 'Scheduled' || it.status === 'Queued');
+  
+  // Queue: Có vấn đề (Issues)
+  const failedPublishJobs = data?.failedPublishJobs ?? [];
+  const shownErrors = (data?.recentErrors ?? []).slice(0, 3);
+  const issues = [...failedPublishJobs, ...shownErrors];
 
   return (
     <div className="content-desk">
@@ -153,23 +208,17 @@ export function ContentOpsPage() {
             Hôm nay
           </Typography.Title>
           <Typography.Paragraph type="secondary" style={{ margin: '6px 0 0' }}>
-            Bàn việc trong ngày. Câu chuyện dài nằm ở Series. Group chỉ copy tay.
+            Bàn điều hành sản xuất nội dung. Episode → Content → Publish.
           </Typography.Paragraph>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-          <Link to="/content/pool">
-            <Button type="primary" icon={<PlusOutlined />}>
-              Idea Pool
+          <Link to="/content/article-series">
+            <Button type="primary" icon={<ReadOutlined />}>
+              Series
             </Button>
           </Link>
-          <Link to="/content/packages">
-            <Button icon={<ThunderboltOutlined />}>Góc brand</Button>
-          </Link>
-          <Link to="/content/calendar?view=week">
-            <Button icon={<CalendarOutlined />}>Lịch tuần</Button>
-          </Link>
-          <Link to="/local-os/listings">
-            <Button>Thái Nguyên Life</Button>
+          <Link to="/content/calendar">
+            <Button icon={<CalendarOutlined />}>Lịch</Button>
           </Link>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
             Tải lại
@@ -178,6 +227,282 @@ export function ContentOpsPage() {
       </div>
 
       {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
+
+      {/* Summary Counts */}
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+        <Col xs={12} sm={8} md={4}>
+          <Card size="small" style={{ textAlign: 'center' }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+              Cần viết
+            </Typography.Text>
+            <Typography.Title level={3} style={{ margin: '4px 0 0', color: '#722ed1' }}>
+              {nextEpisodes.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={12} sm={8} md={4}>
+          <Card size="small" style={{ textAlign: 'center' }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+              Chờ duyệt
+            </Typography.Text>
+            <Typography.Title level={3} style={{ margin: '4px 0 0', color: '#1677ff' }}>
+              {reviewTopics.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={12} sm={8} md={4}>
+          <Card size="small" style={{ textAlign: 'center' }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+              Đã duyệt
+            </Typography.Text>
+            <Typography.Title level={3} style={{ margin: '4px 0 0', color: '#52c41a' }}>
+              {approvedTopics.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={12} sm={8} md={4}>
+          <Card size="small" style={{ textAlign: 'center' }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+              Lịch hôm nay
+            </Typography.Text>
+            <Typography.Title level={3} style={{ margin: '4px 0 0', color: '#13c2c2' }}>
+              {todayItems.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={12} sm={8} md={4}>
+          <Card size="small" style={{ textAlign: 'center' }}>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+              Có vấn đề
+            </Typography.Text>
+            <Typography.Title level={3} style={{ margin: '4px 0 0', color: '#ff4d4f' }}>
+              {issues.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Queue 1: CẦN VIẾT */}
+      <Card 
+        size="small" 
+        title={<><FileTextOutlined style={{ marginRight: 8, color: '#722ed1' }} />Cần viết ({nextEpisodes.length})</>}
+        style={{ marginBottom: 16 }}
+      >
+        {nextEpisodes.length === 0 ? (
+          <Typography.Text type="secondary">Không có Episode nào đang chờ sản xuất.</Typography.Text>
+        ) : (
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            {nextEpisodes.slice(0, 10).map(({ episode, laterCount }) => (
+              <div key={episode.episodeId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                <div style={{ flex: 1 }}>
+                  <Typography.Text strong>{episode.brandName}</Typography.Text>
+                  <div style={{ marginTop: 4 }}>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {episode.seriesName} · E{String(episode.episodeNo).padStart(2, '0')}
+                    </Typography.Text>
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    <Typography.Text>{episode.title}</Typography.Text>
+                  </div>
+                  {episode.objective && (
+                    <div style={{ marginTop: 4 }}>
+                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                        {episode.objective}
+                      </Typography.Text>
+                    </div>
+                  )}
+                  {laterCount > 0 && (
+                    <div style={{ marginTop: 4 }}>
+                      <Link to={`/content/article-series/${episode.seriesId}`} style={{ fontSize: 12 }}>
+                        +{laterCount} Episode sau
+                      </Link>
+                    </div>
+                  )}
+                </div>
+                <Space direction="vertical" size={4} style={{ alignItems: 'flex-end' }}>
+                  <Tag color="purple">Chưa có Content</Tag>
+                  <Link to={`/content/article-series/${episode.seriesId}/episodes/${episode.episodeId}`}>
+                    <Button size="small" type="primary">Tạo nội dung</Button>
+                  </Link>
+                </Space>
+              </div>
+            ))}
+            {nextEpisodes.length > 10 && (
+              <Typography.Text type="secondary">
+                ... và {nextEpisodes.length - 10} Series khác
+              </Typography.Text>
+            )}
+          </Space>
+        )}
+      </Card>
+
+      {/* Queue 2: CHỜ DUYỆT */}
+      <Card
+        size="small"
+        title={<><CheckCircleOutlined style={{ marginRight: 8, color: '#1677ff' }} />Chờ duyệt ({reviewTopics.length})</>}
+        style={{ marginBottom: 16 }}
+      >
+        {reviewTopics.length === 0 ? (
+          <Typography.Text type="secondary">Không có bài chờ duyệt</Typography.Text>
+        ) : (
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            {reviewTopics.slice(0, 10).map((topic) => {
+              const gate = packageForTopic(packages, topic.id)?.qualityGate;
+              return (
+                <div key={topic.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <div style={{ flex: 1 }}>
+                    <Link to={`/content/topics/${topic.id}`} style={{ fontWeight: 600 }}>{topic.title}</Link>
+                    <LineageLine lineageIndex={lineageIndex} topicId={topic.id} brandName={topic.brandName} />
+                    <div style={{ marginTop: 4 }}>
+                      <Typography.Text type={!gate ? 'secondary' : gate.passed ? 'success' : 'warning'} style={{ fontSize: 12 }}>
+                        Quality Gate: {qualityGateLabel(gate)}
+                      </Typography.Text>
+                    </div>
+                  </div>
+                  <Space direction="vertical" size={4} style={{ alignItems: 'flex-end' }}>
+                    <StatusTag status={topic.status} />
+                    <Link to={`/content/topics/${topic.id}`}>
+                      <Button size="small" type="primary">Duyệt</Button>
+                    </Link>
+                  </Space>
+                </div>
+              );
+            })}
+            {reviewTopics.length > 10 && (
+              <Link to="/content/topics">Xem tất cả {reviewTopics.length} bài</Link>
+            )}
+          </Space>
+        )}
+      </Card>
+
+      {/* Queue 3: ĐÃ DUYỆT */}
+      <Card
+        size="small"
+        title={<><CheckCircleOutlined style={{ marginRight: 8, color: '#52c41a' }} />Đã duyệt ({approvedTopics.length})</>}
+        style={{ marginBottom: 16 }}
+      >
+        {approvedTopics.length === 0 ? (
+          <Typography.Text type="secondary">Không có bài đã duyệt chưa lên lịch</Typography.Text>
+        ) : (
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            {approvedTopics.slice(0, 10).map((topic) => (
+                <div key={topic.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <div style={{ flex: 1 }}>
+                    <Link to={`/content/topics/${topic.id}`} style={{ fontWeight: 600 }}>{topic.title}</Link>
+                    <LineageLine lineageIndex={lineageIndex} topicId={topic.id} brandName={topic.brandName} />
+                  </div>
+                  <Space>
+                    <StatusTag status={topic.status} />
+                    <Link to={`/content/topics/${topic.id}`}>
+                      <Button size="small">Xem</Button>
+                    </Link>
+                  </Space>
+                </div>
+            ))}
+            {approvedTopics.length > 10 && (
+              <Link to="/content/topics">Xem tất cả {approvedTopics.length} bài</Link>
+            )}
+          </Space>
+        )}
+      </Card>
+
+      <Row gutter={[16, 16]}>
+        {/* Queue 4: LỊCH HÔM NAY */}
+        <Col xs={24} md={12}>
+          <Card
+            size="small"
+            title={<><CalendarOutlined style={{ marginRight: 8, color: '#13c2c2' }} />Lịch hôm nay ({todayItems.length})</>}
+            extra={<Link to="/content/calendar">Xem lịch</Link>}
+          >
+            {todayItems.length === 0 ? (
+              <Typography.Text type="secondary">Không có lịch hôm nay</Typography.Text>
+            ) : (
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                {todayItems.map((item) => {
+                  const time = dayjs(item.at).format('HH:mm');
+                  return (
+                    <div key={`${item.kind}-${item.topicId}-${item.at}`} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                        <Typography.Text strong style={{ minWidth: 40 }}>{time}</Typography.Text>
+                        <div style={{ flex: 1 }}>
+                          <div>
+                            {item.channel ? <Tag>{channelLabel(item.channel)}</Tag> : null}
+                            {item.topicId ? (
+                              <Link to={`/content/topics/${item.topicId}`} style={{ fontSize: 12 }}>{item.title}</Link>
+                            ) : (
+                              <Typography.Text style={{ fontSize: 12 }}>{item.title}</Typography.Text>
+                            )}
+                          </div>
+                          <LineageLine lineageIndex={lineageIndex} topicId={item.topicId} brandName={item.brandName} />
+                          <div style={{ marginTop: 4 }}>
+                            {item.status === 'Queued' ? (
+                              <PublishJobStatusTag status={item.status} />
+                            ) : (
+                              <StatusTag status={item.status} />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </Space>
+            )}
+          </Card>
+        </Col>
+
+        {/* Queue 5: CÓ VẤN ĐỀ */}
+        <Col xs={24} md={12}>
+          <Card
+            size="small"
+            title={<><ExclamationCircleOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />Có vấn đề ({issues.length})</>}
+          >
+            {issues.length === 0 ? (
+              <Typography.Text type="secondary">Không có vấn đề</Typography.Text>
+            ) : (
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                {failedPublishJobs.map((job) => (
+                    <div key={job.jobId} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                      <Space size={4}>
+                        <PublishJobStatusTag status="Failed" />
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          Xuất bản · {CONNECTOR_LABEL[job.connectorType] ?? connectorLabel(job.connectorType).title}
+                        </Typography.Text>
+                      </Space>
+                      <div style={{ marginTop: 4 }}>
+                        <Link to={`/content/topics/${job.topicId}`}>{job.topicTitle}</Link>
+                      </div>
+                      <LineageLine lineageIndex={lineageIndex} topicId={job.topicId} />
+                      {job.lastError ? (
+                        <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                          {job.lastError}
+                        </Typography.Text>
+                      ) : null}
+                    </div>
+                ))}
+                {shownErrors.map((job) => (
+                  <div key={job.id} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                    <Space size={4}>
+                      <PublishJobStatusTag status="Failed" />
+                      {job.topicId ? (
+                        <Link to={`/content/topics/${job.topicId}`}>{KIND_LABEL[job.kind] ?? job.kind}</Link>
+                      ) : (
+                        <Typography.Text>{KIND_LABEL[job.kind] ?? job.kind}</Typography.Text>
+                      )}
+                    </Space>
+                    <LineageLine lineageIndex={lineageIndex} topicId={job.topicId} brandName={job.brandName} />
+                    <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                      {job.errorMessage || job.title || 'Job thất bại'}
+                    </Typography.Text>
+                  </div>
+                ))}
+              </Space>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* System Alerts */}
       {s && !s.facebookAppConfigured ? (
         <Alert
           type="warning"
@@ -211,301 +536,6 @@ export function ContentOpsPage() {
           }
         />
       ) : null}
-
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        {tiles.map((t) => (
-          <Col xs={12} sm={8} md={4} key={t.title}>
-            <Link to={t.to} className={`dashboard-tile dashboard-tile--${t.tone}`} style={{ height: '100%' }}>
-              <div className="dashboard-tile__icon">{t.icon}</div>
-              <div className="dashboard-tile__body">
-                <span className="dashboard-tile__label">{t.title}</span>
-                <span className="dashboard-tile__value">{t.value}</span>
-                {t.hint ? <span className="dashboard-tile__hint">{t.hint}</span> : null}
-              </div>
-            </Link>
-          </Col>
-        ))}
-      </Row>
-
-      {s ? (
-        <Card size="small" style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div>
-              <Typography.Text strong>AI Usage tháng này</Typography.Text>
-              <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
-                {money(s.monthSpendUsd)} / {money(s.monthCeilingUsd)}
-              </Typography.Text>
-            </div>
-            <Progress
-              percent={spendPct}
-              size="small"
-              style={{ minWidth: 220, flex: 1, maxWidth: 360, margin: 0 }}
-              status={spendPct >= 90 ? 'exception' : undefined}
-            />
-            <Link to="/content/budget">Giới hạn chi phí</Link>
-          </div>
-        </Card>
-      ) : null}
-
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col xs={24} lg={10}>
-          <QueueCard snapshot={s} onReload={() => void load()} />
-        </Col>
-        <Col xs={24} lg={14}>
-          <IdeaRail snapshot={s} />
-        </Col>
-      </Row>
-
-      <Card
-        size="small"
-        title="Tuần này"
-        extra={<Link to="/content/calendar?view=week">Mở lịch tuần</Link>}
-        style={{ marginBottom: 16 }}
-      >
-        <div className="content-week-grid">
-          {weekDays().map((d) => {
-            const key = d.format('YYYY-MM-DD');
-            const items = (byDay.get(key) ?? []).slice(0, 3);
-            const extra = (byDay.get(key) ?? []).length - items.length;
-            const today = d.isSame(dayjs(), 'day');
-            return (
-              <button
-                key={key}
-                type="button"
-                className={`content-week-col${today ? ' content-week-col--today' : ''}`}
-                onClick={() => navigate(`/content/calendar?view=week&day=${key}`)}
-              >
-                <div className="content-week-col__head">
-                  <span>{d.format('dd')}</span>
-                  <strong>{d.format('DD/MM')}</strong>
-                </div>
-                {items.length === 0 ? (
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    —
-                  </Typography.Text>
-                ) : (
-                  items.map((it) => <WeekLine key={`${it.kind}-${it.topicId}-${it.publishJobId}-${it.at}`} item={it} />)
-                )}
-                {extra > 0 ? <span className="content-week-more">+{extra}</span> : null}
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      <Card title="Thương hiệu" size="small">
-        <Table
-          size="small"
-          rowKey="brandId"
-          pagination={false}
-          dataSource={s?.brands ?? []}
-          locale={{ emptyText: 'Chưa có thương hiệu — vào Thương hiệu & nơi đăng để thêm.' }}
-          columns={[
-            {
-              title: 'Brand',
-              dataIndex: 'brandName',
-              render: (n: string, r) => (
-                <span>
-                  <span className="content-brand-dot" style={{ background: brandColor(r.brandCode) }} />
-                  {n} <Typography.Text type="secondary">({r.brandCode})</Typography.Text>
-                </span>
-              ),
-            },
-            { title: 'Chờ duyệt', dataIndex: 'reviewCount', width: 100 },
-            { title: 'Lịch', dataIndex: 'scheduledCount', width: 80 },
-            { title: 'Đăng tháng', dataIndex: 'publishedMonthCount', width: 110 },
-            { title: 'AI $', dataIndex: 'spendUsd', width: 90, render: (n: number) => money(n) },
-          ]}
-        />
-      </Card>
-    </div>
-  );
-}
-
-const CONNECTOR_LABEL: Record<string, string> = {
-  facebook_page: 'Fanpage',
-  astro_git: 'Astro',
-  local_os: 'Thái Nguyên Life',
-  wordpress_rest: 'WordPress',
-  manual: 'Xuất tay',
-};
-
-function QueueCard({ snapshot, onReload }: { snapshot: ContentOpsSnapshot | null; onReload: () => void }) {
-  const { message } = App.useApp();
-  const [retryId, setRetryId] = useState<string | null>(null);
-  const errors = snapshot?.recentErrors ?? [];
-  const jobs = snapshot?.activeJobs ?? [];
-  const failedPublish = snapshot?.failedPublishJobs ?? [];
-
-  const retry = async (job: ContentOpsFailedPublish) => {
-    setRetryId(job.jobId);
-    try {
-      const updated = await runContentPublishJob(job.jobId);
-      if (updated.status === 'Succeeded') message.success(`Đã đăng lại ${CONNECTOR_LABEL[job.connectorType] ?? job.connectorType}`);
-      else message.error(updated.lastError || 'Chạy lại thất bại');
-      onReload();
-    } catch (e) {
-      message.error(apiErrorMessage(e, 'Chạy lại thất bại'));
-    } finally {
-      setRetryId(null);
-    }
-  };
-
-  return (
-    <Card size="small" title="Hàng đợi — làm ngay" style={{ height: '100%' }}>
-      {!snapshot || (snapshot.errorCount === 0 && snapshot.reviewCount === 0 && snapshot.coreUnscoredCount === 0 && jobs.length === 0 && failedPublish.length === 0 && snapshot.budgetBlockedCount === 0) ? (
-        <Typography.Text type="secondary">Không có việc gấp. Vào Idea Pool nghĩ ý tưởng tuần.</Typography.Text>
-      ) : null}
-
-      {snapshot && snapshot.coreUnscoredCount > 0 ? (
-        <div className="content-queue-row">
-          <Tag color="blue">Fit</Tag>
-          <Link to="/content/pool">{snapshot.coreUnscoredCount} ý tưởng chưa chấm Brand Fit</Link>
-        </div>
-      ) : null}
-      {snapshot && snapshot.reviewCount > 0 ? (
-        <div className="content-queue-row">
-          <Tag color="cyan">Duyệt</Tag>
-          <Link to="/content/packages">{snapshot.reviewCount} bài chờ duyệt — góc đã viết</Link>
-        </div>
-      ) : null}
-      {failedPublish.map((job) => (
-        <div key={job.jobId} className="content-queue-row" style={{ alignItems: 'flex-start' }}>
-          <Tag color="red">Xuất bản</Tag>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Link to={`/content/topics?topic=${job.topicId}`}>{job.topicTitle}</Link>
-            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-              {CONNECTOR_LABEL[job.connectorType] ?? job.connectorType}
-              {job.lastError ? ` · ${job.lastError}` : ''}
-            </Typography.Text>
-          </div>
-          <Button
-            size="small"
-            type="link"
-            loading={retryId === job.jobId}
-            onClick={() => void retry(job)}
-          >
-            Chạy lại
-          </Button>
-        </div>
-      ))}
-      {errors.map((job) => (
-        <div key={job.id} className="content-queue-row">
-          <Tag color="red">Job</Tag>
-          <div>
-            <div>
-              {KIND_LABEL[job.kind] ?? job.kind}
-              {job.brandName ? ` · ${job.brandName}` : ''}
-            </div>
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {job.errorMessage || job.title || 'Job thất bại'}
-            </Typography.Text>
-          </div>
-        </div>
-      ))}
-      {jobs.length > 0 ? (
-        <Table<ContentWorkJob>
-          size="small"
-          rowKey="id"
-          pagination={false}
-          style={{ marginTop: 8 }}
-          dataSource={jobs}
-          columns={[
-            { title: 'Job nền', dataIndex: 'kind', width: 120, render: (k: string) => KIND_LABEL[k] ?? k },
-            { title: 'Nội dung', dataIndex: 'title', ellipsis: true },
-            {
-              title: '',
-              dataIndex: 'status',
-              width: 90,
-              render: (st: string) => (
-                <Tag color={st === 'Running' ? 'processing' : 'default'}>{st === 'Running' ? 'Chạy' : 'Chờ'}</Tag>
-              ),
-            },
-          ]}
-        />
-      ) : null}
-    </Card>
-  );
-}
-
-function IdeaRail({ snapshot }: { snapshot: ContentOpsSnapshot | null }) {
-  const ideas = snapshot?.coreIdeas ?? [];
-  const brands = snapshot?.brands ?? [];
-  return (
-    <Card
-      size="small"
-      title="Ý tưởng tuần"
-      extra={<Link to="/content/pool">Mở Idea Pool</Link>}
-      style={{ height: '100%' }}
-    >
-      {ideas.length === 0 ? (
-        <Typography.Text type="secondary">
-          Chưa có Core Idea. Dán 10 ý tưởng trong Pool — AI chấm Fit từng brand, không ép đủ 6 bài.
-        </Typography.Text>
-      ) : (
-        <div className="content-idea-rail">
-          {ideas.map((idea) => (
-            <IdeaCard key={idea.id} idea={idea} brands={brands} />
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function IdeaCard({
-  idea,
-  brands,
-}: {
-  idea: ContentPackage;
-  brands: ContentOpsSnapshot['brands'];
-}) {
-  return (
-    <Link to="/content/pool" className="content-idea-card">
-      <Typography.Text strong>{idea.title}</Typography.Text>
-      {idea.coreIdea?.insight ? (
-        <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ margin: '4px 0 8px', fontSize: 12 }}>
-          {idea.coreIdea.insight}
-        </Typography.Paragraph>
-      ) : (
-        <div style={{ height: 8 }} />
-      )}
-      <div className="content-idea-chips">
-        {brands.map((b) => {
-          const fit = (idea.brandFits ?? []).find((f) => f.brandId === b.brandId);
-          return (
-            <span
-              key={b.brandId}
-              className="content-brand-chip"
-              style={{ borderColor: brandColor(b.brandCode), color: brandColor(b.brandCode) }}
-              title={fit?.reason || fit?.angle || b.brandName}
-            >
-              {b.brandCode} {fitMark(fit?.verdict)}
-            </span>
-          );
-        })}
-      </div>
-      {(idea.adaptationCount ?? 0) > 0 ? (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {idea.adaptationCount} góc đã tạo
-        </Typography.Text>
-      ) : (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          Chưa tạo góc — chấm Fit rồi tick
-        </Typography.Text>
-      )}
-    </Link>
-  );
-}
-
-function WeekLine({ item }: { item: ContentCalendarItem }) {
-  return (
-    <div className="content-week-item">
-      <span className="content-brand-dot" style={{ background: brandColor(item.brandCode) }} />
-      <span className="content-week-item__text">
-        {item.brandCode}
-        {item.channel ? ` · ${channelLabel(item.channel)}` : ''} · {item.title}
-      </span>
     </div>
   );
 }

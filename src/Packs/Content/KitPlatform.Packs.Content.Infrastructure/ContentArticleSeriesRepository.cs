@@ -61,6 +61,21 @@ internal sealed class ContentArticleSeriesRepository
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
+    public sealed class EpisodeNeedContentRow
+    {
+        public Guid EpisodeId { get; set; }
+        public int EpisodeNo { get; set; }
+        public string EpisodeTitle { get; set; } = "";
+        public string? EpisodeObjective { get; set; }
+        public string EpisodeStatus { get; set; } = "";
+        public Guid SeriesId { get; set; }
+        public string SeriesCode { get; set; } = "";
+        public string SeriesName { get; set; } = "";
+        public Guid BrandId { get; set; }
+        public string BrandCode { get; set; } = "";
+        public string BrandName { get; set; } = "";
+    }
+
     private const string SeriesSelect = """
         SELECT s.id AS Id, s.brand_id AS BrandId, b.code AS BrandCode, b.name AS BrandName,
                s.source_package_id AS SourcePackageId, p.title AS SourcePackageTitle,
@@ -444,6 +459,25 @@ internal sealed class ContentArticleSeriesRepository
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         await conn.ExecuteAsync(sql, new { TopicId = topicId });
+    }
+
+    public async Task<IReadOnlyList<EpisodeNeedContentRow>> ListEpisodesNeedContentAsync(CancellationToken cancellationToken = default)
+    {
+        const string query = """
+            SELECT e.id AS EpisodeId, e.episode_no AS EpisodeNo,
+                   e.title AS EpisodeTitle, e.objective AS EpisodeObjective, e.status AS EpisodeStatus,
+                   s.id AS SeriesId, s.code AS SeriesCode, s.name AS SeriesName,
+                   b.id AS BrandId, b.code AS BrandCode, b.name AS BrandName
+            FROM pack_content.content_episode e
+            INNER JOIN pack_content.content_series s ON s.id = e.series_id
+            INNER JOIN pack_content.brand b ON b.id = s.brand_id
+            WHERE e.content_topic_id IS NULL
+              AND s.status IN ('ACTIVE', 'PLANNED')
+              AND e.status IN ('READY', 'PLANNED')
+            ORDER BY b.name, s.name, e.episode_no
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return (await conn.QueryAsync<EpisodeNeedContentRow>(query)).ToList();
     }
 
     public static ContentArticleSeriesDto MapSeries(SeriesRow row) =>

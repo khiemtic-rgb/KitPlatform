@@ -471,6 +471,9 @@ const ContentAiSettingsPage = lazy(() =>
 const ContentBrandsPage = lazy(() =>
   import('@/modules/content/ContentBrandsPage').then((m) => ({ default: m.ContentBrandsPage })),
 );
+const ContentBrandViewPage = lazy(() =>
+  import('@/modules/content/ContentBrandViewPage').then((m) => ({ default: m.ContentBrandViewPage })),
+);
 const ContentFacebookCallbackPage = lazy(() =>
   import('@/modules/content/ContentFacebookCallbackPage').then((m) => ({
     default: m.ContentFacebookCallbackPage,
@@ -479,11 +482,25 @@ const ContentFacebookCallbackPage = lazy(() =>
 const ContentTopicsPage = lazy(() =>
   import('@/modules/content/ContentTopicsPage').then((m) => ({ default: m.ContentTopicsPage })),
 );
+const ContentTopicWorkspacePage = lazy(() =>
+  import('@/modules/content/ContentTopicWorkspacePage').then((m) => ({ default: m.ContentTopicWorkspacePage })),
+);
 const ContentPackagesPage = lazy(() =>
   import('@/modules/content/ContentPackagesPage').then((m) => ({ default: m.ContentPackagesPage })),
 );
 const ContentIdeaPoolPage = lazy(() =>
   import('@/modules/content/ContentIdeaPoolPage').then((m) => ({ default: m.ContentIdeaPoolPage })),
+);
+const ContentArticleSeriesPage = lazy(() =>
+  import('@/modules/content/ContentArticleSeriesPage').then((m) => ({ default: m.ContentArticleSeriesPage })),
+);
+const ContentArticleSeriesDetailPage = lazy(() =>
+  import('@/modules/content/ContentArticleSeriesDetailPage').then((m) => ({
+    default: m.ContentArticleSeriesDetailPage,
+  })),
+);
+const ContentArticleEpisodePage = lazy(() =>
+  import('@/modules/content/ContentArticleEpisodePage').then((m) => ({ default: m.ContentArticleEpisodePage })),
 );
 const ContentVideosPage = lazy(() =>
   import('@/modules/content/ContentVideosPage').then((m) => ({ default: m.ContentVideosPage })),
@@ -1044,19 +1061,26 @@ export function AppRouter() {
                   </Suspense>
                 }
               >
-                <Route index element={<Navigate to="/content/ops" replace />} />
-                <Route path="ops" element={<ContentOpsPage />} />
-                <Route path="calendar" element={<ContentCalendarPage />} />
-                <Route path="budget" element={<ContentBudgetPage />} />
-                <Route path="ai" element={<ContentAiSettingsPage />} />
-                <Route path="settings" element={<ContentSettingsPage />} />
-                <Route path="brands" element={<ContentBrandsPage />} />
+              <Route index element={<Navigate to="/content/ops" replace />} />
+              <Route path="ops" element={<ContentOpsPage />} />
+              <Route path="calendar" element={<ContentCalendarPage />} />
+              <Route path="budget" element={<ContentBudgetPage />} />
+              <Route path="ai" element={<ContentAiSettingsPage />} />
+              <Route path="settings" element={<ContentSettingsPage />} />
+              <Route path="brands" element={<ContentBrandsPage />} />
+              <Route path="brand-view" element={<ContentBrandViewPage />} />
                 <Route
                   path="facebook/callback"
                   element={<ContentFacebookCallbackPage />}
                 />
                 <Route path="packages" element={<ContentPackagesPage />} />
                 <Route path="pool" element={<ContentIdeaPoolPage />} />
+                <Route path="article-series" element={<ContentArticleSeriesPage />} />
+                <Route path="article-series/:id" element={<ContentArticleSeriesDetailPage />} />
+                <Route
+                  path="article-series/:seriesId/episodes/:episodeId"
+                  element={<ContentArticleEpisodePage />}
+                />
                 <Route
                   path="videos"
                   element={
@@ -1082,6 +1106,7 @@ export function AppRouter() {
                   }
                 />
                 <Route path="topics" element={<ContentTopicsPage />} />
+                <Route path="topics/:id" element={<ContentTopicWorkspacePage />} />
               </Route>
               <Route
                 path="local-os/duyet"

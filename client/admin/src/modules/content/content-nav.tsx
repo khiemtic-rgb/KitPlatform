@@ -22,11 +22,12 @@ export type ContentNavItem = {
 
 export const CONTENT_NAV_WORK: ContentNavItem[] = [
   { key: 'content-ops', label: 'Hôm nay', path: '/content/ops', icon: <DashboardOutlined /> },
-  { key: 'content-pool', label: 'Idea Pool', path: '/content/pool', icon: <ClusterOutlined /> },
+  { key: 'content-pool', label: 'Ý tưởng', path: '/content/pool', icon: <ClusterOutlined /> },
+  { key: 'content-brand-view', label: 'Thương hiệu', path: '/content/brand-view', icon: <TagsOutlined /> },
   { key: 'content-packages', label: 'Góc brand', path: '/content/packages', icon: <FileTextOutlined /> },
   { key: 'content-article-series', label: 'Series', path: '/content/article-series', icon: <ReadOutlined /> },
-  { key: 'content-topics', label: 'Bài viết', path: '/content/topics', icon: <UnorderedListOutlined /> },
-  { key: 'content-calendar', label: 'Lịch tuần', path: '/content/calendar', icon: <CalendarOutlined /> },
+  { key: 'content-topics', label: 'Nội dung', path: '/content/topics', icon: <UnorderedListOutlined /> },
+  { key: 'content-calendar', label: 'Lịch', path: '/content/calendar', icon: <CalendarOutlined /> },
 ];
 
 /** Videos sits outside the Idea → Episode → Content model, beside Thái Nguyên Life. */
@@ -35,7 +36,7 @@ export const CONTENT_NAV_OUTSIDE: ContentNavItem[] = [
 ];
 
 export const CONTENT_NAV_SETUP: ContentNavItem[] = [
-  { key: 'content-brands', label: 'Thương hiệu', path: '/content/brands', icon: <TagsOutlined /> },
+  { key: 'content-brands', label: 'Cấu hình thương hiệu', path: '/content/brands', icon: <TagsOutlined /> },
   { key: 'content-budget', label: 'Chi phí AI', path: '/content/budget', icon: <FundOutlined /> },
   { key: 'content-ai', label: 'Model AI', path: '/content/ai', icon: <ApiOutlined /> },
   { key: 'content-settings', label: 'Tuỳ chọn', path: '/content/settings', icon: <SettingOutlined /> },

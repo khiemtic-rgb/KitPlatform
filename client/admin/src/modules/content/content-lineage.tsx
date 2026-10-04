@@ -18,6 +18,10 @@ export type ContentLineageTrailItem = {
   to?: string;
 };
 
+export function brandViewPath(brandId?: string | null) {
+  return brandId ? `/content/brand-view?brand=${encodeURIComponent(brandId)}` : '/content/brand-view';
+}
+
 export function ContentKindTag({ kind }: { kind: 'series' | 'standalone' }) {
   return kind === 'series' ? <Tag color="blue">Series content</Tag> : <Tag>Standalone</Tag>;
 }
@@ -29,7 +33,7 @@ export function seriesContentTrail(
   const { series, episode } = lineage;
   const angle = seriesBrandAngle(series);
   return [
-    { label: series.brandName, to: '/content/brands' },
+    { label: series.brandName, to: brandViewPath(series.brandId) },
     {
       label: angle || series.sourcePackageTitle,
       to: `/content/packages?package=${series.sourcePackageId}`,
@@ -61,7 +65,7 @@ export function episodeDetailTrail(
 ): ContentLineageTrailItem[] {
   const angle = seriesBrandAngle(series);
   return [
-    { label: series.brandName, to: '/content/brands' },
+    { label: series.brandName, to: brandViewPath(series.brandId) },
     {
       label: angle || series.sourcePackageTitle,
       to: `/content/packages?package=${series.sourcePackageId}`,
@@ -97,9 +101,10 @@ export function ContentCanonFields({
 export function standaloneContentTrail(
   brandName: string,
   brandAngle?: { label: string; packageId?: string | null } | null,
+  brandId?: string | null,
 ): ContentLineageTrailItem[] {
   const angle = brandAngle?.label?.trim() ?? '';
-  const items: ContentLineageTrailItem[] = [{ label: brandName, to: '/content/brands' }];
+  const items: ContentLineageTrailItem[] = [{ label: brandName, to: brandViewPath(brandId) }];
   if (angle) {
     items.push({
       label: angle,
@@ -548,3 +553,38 @@ export function useTopicSeriesLineage(topicId?: string | null) {
   }, [topicId]);
   return lineage;
 }
+
+/**
+ * Format compact lineage for display in queues/lists
+ * Brand · Series · Episode
+ */
+export function formatCompactLineage(lineage: {
+  brandName?: string | null;
+  seriesName?: string | null;
+  seriesCode?: string | null;
+  episodeNo?: number | null;
+  episodeTitle?: string | null;
+}): string {
+  const parts: string[] = [];
+  if (lineage.brandName) parts.push(lineage.brandName);
+  if (lineage.seriesName) parts.push(lineage.seriesName);
+  else if (lineage.seriesCode) parts.push(lineage.seriesCode);
+  if (lineage.episodeNo != null && lineage.episodeTitle) {
+    parts.push(`${episodeSequenceLabel(lineage.episodeNo)} · ${lineage.episodeTitle}`);
+  } else if (lineage.episodeNo != null) {
+    parts.push(episodeSequenceLabel(lineage.episodeNo));
+  }
+  return parts.join(' · ');
+}
+
+/**
+ * Format series+episode short label
+ * "Series Name · E02"
+ */
+export function formatSeriesEpisodeShort(
+  seriesName: string,
+  episodeNo: number,
+): string {
+  return `${seriesName} · ${episodeSequenceLabel(episodeNo)}`;
+}
+

@@ -82,14 +82,14 @@ export function ContentArticleSeriesPage() {
       <Space wrap style={{ justifyContent: "space-between", width: "100%" }}>
         <div>
           <Typography.Title level={3} style={{ margin: 0 }}>
-            Series
+            Series — Story Control Center
           </Typography.Title>
           <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            Series là câu chuyện dài hạn. Episode là từng bước. Bài viết là output — không phải 100 bài rời.
+            Mỗi Series là một câu chuyện đang tiến triển. Episode là từng bước. Content là sản phẩm.
           </Typography.Paragraph>
           <ContentLineageTrail
             items={[
-              { label: "Idea Pool", to: "/content/pool" },
+              { label: "Ý tưởng", to: "/content/pool" },
               { label: "Góc brand", to: "/content/packages" },
               { label: "Series" },
             ]}
@@ -141,44 +141,105 @@ export function ContentArticleSeriesPage() {
         />
         <DatePicker.RangePicker value={range} onChange={setRange} />
       </Space>
-      <Table
-        rowKey="id"
-        loading={loading}
-        dataSource={rows}
-        onRow={(row) => ({ onClick: () => navigate(`/content/article-series/${row.id}`) })}
-        columns={[
-          { title: "Brand", dataIndex: "brandName", width: 110 },
-          { title: "Code", dataIndex: "code", width: 140 },
-          {
-            title: "Series",
-            dataIndex: "name",
-            render: (v, r) => <Link to={`/content/article-series/${r.id}`}>{v}</Link>,
-          },
-          { title: "Core Idea", dataIndex: "coreIdeaTitle", ellipsis: true },
-          {
-            title: "Brand Angle",
-            ellipsis: true,
-            render: (_, r) => seriesBrandAngle(r) || "Chưa có",
-          },
-          {
-            title: "Territory",
-            width: 180,
-            ellipsis: true,
-            render: (_, r) => seriesTerritory(r) || "Chưa có",
-          },
-          { title: "Status", dataIndex: "status", width: 110, render: (v) => <Tag>{v}</Tag> },
-          {
-            title: "Episodes",
-            width: 100,
-            render: (_, r) => `${r.plannedEpisodeRows}/${r.episodeCount}`,
-          },
-          {
-            title: "Progress",
-            width: 180,
-            render: (_, r) => seriesProgressLabel(r),
-          },
-        ]}
-      />
+      
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 48 }}>
+          <Typography.Text type="secondary">Đang tải...</Typography.Text>
+        </div>
+      ) : rows.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 48 }}>
+          <Typography.Text type="secondary">Chưa có Series</Typography.Text>
+        </div>
+      ) : (
+        <Space direction="vertical" size={16} style={{ width: "100%" }}>
+          {rows.map((series) => {
+            const brandAngle = seriesBrandAngle(series);
+            const territory = seriesTerritory(series);
+            const progress = seriesProgressLabel(series);
+            
+            return (
+              <div
+                key={series.id}
+                onClick={() => navigate(`/content/article-series/${series.id}`)}
+                style={{
+                  border: "1px solid #f0f0f0",
+                  borderRadius: 8,
+                  padding: "16px 20px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  background: "#fff",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#1677ff";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#f0f0f0";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                {/* Brand */}
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
+                  {series.brandName}
+                </Typography.Text>
+                
+                {/* Series Name - Visual Anchor */}
+                <Typography.Title level={4} style={{ margin: "0 0 8px", fontSize: 18 }}>
+                  {series.name}
+                </Typography.Title>
+                
+                {/* Story Premise / Objective */}
+                {series.objective && (
+                  <Typography.Paragraph 
+                    type="secondary" 
+                    style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5 }}
+                    ellipsis={{ rows: 2 }}
+                  >
+                    {series.objective}
+                  </Typography.Paragraph>
+                )}
+                
+                <Space split={<span style={{ color: "#d9d9d9" }}>·</span>} wrap>
+                  {/* Episode Progress */}
+                  <Typography.Text strong style={{ color: "#1677ff" }}>
+                    {series.plannedEpisodeRows}/{series.episodeCount} Episodes
+                  </Typography.Text>
+                  
+                  {/* Production State */}
+                  {progress && (
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {progress}
+                    </Typography.Text>
+                  )}
+                  
+                  {/* Status */}
+                  <Tag color={series.status === "ACTIVE" ? "green" : series.status === "DRAFT" ? "default" : "blue"}>
+                    {series.status}
+                  </Tag>
+                </Space>
+                
+                {/* Context: Brand Angle & Territory (Secondary) */}
+                {(brandAngle || territory) && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f5f5f5" }}>
+                    <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                      {brandAngle && (
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <span style={{ color: "#8c8c8c" }}>Brand Angle:</span> {brandAngle}
+                        </Typography.Text>
+                      )}
+                      {territory && (
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <span style={{ color: "#8c8c8c" }}>Territory:</span> {territory}
+                        </Typography.Text>
+                      )}
+                    </Space>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </Space>
+      )}
       <Modal
         title="Tạo Series từ Brand Adaptation"
         open={open}

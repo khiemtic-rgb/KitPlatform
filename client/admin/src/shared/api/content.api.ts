@@ -5725,6 +5725,20 @@ export type ContentCalendarItem = {
   status: string;
 };
 
+export type EpisodeNeedContent = {
+  episodeId: string;
+  episodeNo: number;
+  title: string;
+  objective?: string | null;
+  seriesId: string;
+  seriesCode: string;
+  seriesName: string;
+  brandId: string;
+  brandCode: string;
+  brandName: string;
+  status: string;
+};
+
 export type ContentOpsSnapshot = {
   reviewCount: number;
   generatingCount: number;
@@ -5773,6 +5787,11 @@ export async function fetchContentOps() {
 
 export async function fetchContentCalendar(params: { from: string; to: string; brandId?: string }) {
   const { data } = await http.get<ContentCalendarItem[]>('/content/calendar', { params });
+  return data;
+}
+
+export async function fetchContentEpisodesNeedContent() {
+  const { data } = await http.get<EpisodeNeedContent[]>('/content/ops/episodes-need-content');
   return data;
 }
 

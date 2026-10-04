@@ -10,17 +10,20 @@ internal sealed class ContentOpsService : IContentOpsService
     private readonly ContentRepository _repo;
     private readonly IContentPackageService _packages;
     private readonly ContentFacebookClient _facebook;
+    private readonly ContentArticleSeriesRepository _stories;
 
     public ContentOpsService(
         ContentWorkRepository work,
         ContentRepository repo,
         IContentPackageService packages,
-        ContentFacebookClient facebook)
+        ContentFacebookClient facebook,
+        ContentArticleSeriesRepository stories)
     {
         _work = work;
         _repo = repo;
         _packages = packages;
         _facebook = facebook;
+        _stories = stories;
     }
 
     public async Task<ContentOpsSnapshotDto> GetSnapshotAsync(CancellationToken cancellationToken = default)
@@ -98,6 +101,24 @@ internal sealed class ContentOpsService : IContentOpsService
         return rows.Select(r => new ContentCalendarItemDto(
             r.At, r.Kind, r.PackageId, r.TopicId, r.PublishJobId,
             r.BrandId, r.BrandCode, r.BrandName, r.Title, r.Channel, r.Status)).ToList();
+    }
+
+    public async Task<IReadOnlyList<EpisodeNeedContentDto>> ListEpisodesNeedContentAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _stories.ListEpisodesNeedContentAsync(cancellationToken);
+        return rows.Select(r => new EpisodeNeedContentDto(
+            r.EpisodeId,
+            r.EpisodeNo,
+            r.EpisodeTitle,
+            r.EpisodeObjective,
+            r.SeriesId,
+            r.SeriesCode,
+            r.SeriesName,
+            r.BrandId,
+            r.BrandCode,
+            r.BrandName,
+            r.EpisodeStatus)).ToList();
     }
 
     private static DateTimeOffset StartOfLocalDay(DateTimeOffset utc)
