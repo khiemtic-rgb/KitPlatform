@@ -2,7 +2,7 @@ using System.Data;
 using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Configuration;
-using KitPlatform.Application.Core.Engines;
+using KitPlatform.Packs.Pharmacy.Workflow;
 using KitPlatform.Application.Integration;
 using KitPlatform.Application.Platform.Events;
 using KitPlatform.Packs.Pharmacy;
@@ -20,8 +20,7 @@ internal sealed class SalesRepository
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
     private readonly InventoryRepository _inventory;
-    private readonly IInventoryEngine _inventoryEngine;
-    private readonly IPricingEngine _pricing;
+    private readonly IBatchResolver _batchResolver;
     private readonly ITenantSettingsService _tenantSettings;
     private readonly IIntegrationOutboxWriter _outbox;
     private readonly IPlatformEventWriter _platformEvents;
@@ -34,8 +33,7 @@ internal sealed class SalesRepository
         IDbConnectionFactory db,
         ITenantContext tenant,
         InventoryRepository inventory,
-        IInventoryEngine inventoryEngine,
-        IPricingEngine pricing,
+        IBatchResolver batchResolver,
         ITenantSettingsService tenantSettings,
         IIntegrationOutboxWriter outbox,
         IPlatformEventWriter platformEvents,
@@ -47,8 +45,7 @@ internal sealed class SalesRepository
         _db = db;
         _tenant = tenant;
         _inventory = inventory;
-        _inventoryEngine = inventoryEngine;
-        _pricing = pricing;
+        _batchResolver = batchResolver;
         _tenantSettings = tenantSettings;
         _outbox = outbox;
         _platformEvents = platformEvents;
@@ -212,7 +209,7 @@ internal sealed class SalesRepository
             };
         }
 
-        var batches = await _inventoryEngine.GetAvailableBatchesAsync(
+        var batches = await _batchResolver.GetAvailableBatchesAsync(
             conn, warehouseId, lookup.ProductId, cancellationToken);
         var hints = batches
             .Select((b, index) => new PosBatchHintDto(
@@ -570,13 +567,13 @@ internal sealed class SalesRepository
                     "Đơn vị bán không còn hiệu lực. Xóa dòng lỗi và chọn lại sản phẩm trên POS.");
             }
 
-            var batches = await _inventoryEngine.GetAvailableBatchesAsync(
+            var batches = await _batchResolver.GetAvailableBatchesAsync(
                 conn, request.WarehouseId, item.ProductId, cancellationToken);
             var baseNeeded = item.Quantity * unit.ConversionFactor;
             IReadOnlyList<FifoAllocationResult> allocations;
             try
             {
-                allocations = _inventoryEngine.AllocateFromBatches(batches, baseNeeded);
+                allocations = _batchResolver.AllocateFromBatches(batches, baseNeeded);
             }
             catch (InvalidOperationException)
             {
@@ -864,7 +861,7 @@ internal sealed class SalesRepository
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, items, priceType, allowPriceOverride, cancellationToken);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(pricing, discountPolicy, cancellationToken: cancellationToken);
         await tx.CommitAsync(cancellationToken);
         return pricing;
@@ -893,7 +890,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1092,7 +1089,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1144,7 +1141,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1258,7 +1255,7 @@ internal sealed class SalesRepository
             ? new SaleDiscountInput(request!.OrderDiscountType, request.OrderDiscountValue)
             : new SaleDiscountInput(header.OrderDiscountType, header.OrderDiscountValue);
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, saleItems, header.PriceType, allowPriceOverride, cancellationToken);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1660,7 +1657,7 @@ internal sealed class SalesRepository
                 "SELECT unit_cost FROM inventory_batches WHERE id = @BatchId AND tenant_id = @TenantId",
                 new { item.BatchId, TenantId }, tx);
 
-            var refundAmount = _pricing.ComputeSaleLineRefundAmount(
+            var refundAmount = SalesPricing.ComputeLineRefundAmount(
                 item.LineTotal,
                 item.SoldQuantity,
                 line.Quantity,
@@ -2378,7 +2375,7 @@ internal sealed class SalesRepository
         return result;
     }
 
-    private static List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)> ForPricingEngine(
+    private static List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)> ToSalePricingLines(
         IReadOnlyList<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ListUnitPrice, decimal ConversionFactor)> inputs)
         => inputs.Select(x => (x.Request, x.UnitPrice, x.ConversionFactor)).ToList();
 
@@ -2574,7 +2571,7 @@ internal sealed class SalesRepository
             {
                 try
                 {
-                    allocations = await _inventoryEngine.AllocateFifoAsync(
+                    allocations = await _batchResolver.AllocateFifoAsync(
                         conn, tx, warehouseId, pricedLine.ProductId, baseQtyNeeded, cancellationToken);
                 }
                 catch (InvalidOperationException)
@@ -2588,7 +2585,7 @@ internal sealed class SalesRepository
                         WHERE u.id = @UnitId AND u.tenant_id = @TenantId
                         """,
                         new { UnitId = pricedLine.ProductUnitId, TenantId }, tx);
-                    var batches = await _inventoryEngine.GetAvailableBatchesAsync(
+                    var batches = await _batchResolver.GetAvailableBatchesAsync(
                         conn, warehouseId, pricedLine.ProductId, cancellationToken);
                     var availableSale = SumSaleStock(batches, pricedLine.ConversionFactor);
                     var code = unit?.ProductCode ?? pricedLine.ProductId.ToString();

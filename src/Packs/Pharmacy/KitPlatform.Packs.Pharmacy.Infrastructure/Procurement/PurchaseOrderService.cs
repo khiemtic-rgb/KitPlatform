@@ -1,5 +1,6 @@
 ﻿using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Core.Engines;
+using KitPlatform.Packs.Pharmacy.Workflow;
 using KitPlatform.Packs.Pharmacy.Procurement;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
@@ -11,7 +12,7 @@ internal sealed class PurchaseOrderService : IPurchaseOrderService
     private readonly IAuditEngine _audit;
     private readonly IBranchAccessService _branchAccess;
     private readonly IWorkflowEngine _workflow;
-    private readonly IPermissionEngine _permissions;
+    private readonly ICurrentUserAccessor _user;
 
     public PurchaseOrderService(
         ProcurementRepository repository,
@@ -19,14 +20,14 @@ internal sealed class PurchaseOrderService : IPurchaseOrderService
         IAuditEngine audit,
         IBranchAccessService branchAccess,
         IWorkflowEngine workflow,
-        IPermissionEngine permissions)
+        ICurrentUserAccessor user)
     {
         _repository = repository;
         _tenant = tenant;
         _audit = audit;
         _branchAccess = branchAccess;
         _workflow = workflow;
-        _permissions = permissions;
+        _user = user;
     }
 
     public async Task<ProcurementPagedListResult<PurchaseOrderListItemDto>> GetAllAsync(
@@ -136,7 +137,7 @@ internal sealed class PurchaseOrderService : IPurchaseOrderService
         ApprovePurchaseOrderRequest? request,
         CancellationToken cancellationToken = default)
     {
-        if (!_permissions.IsAdmin())
+        if (!_user.IsInRole("ADMIN"))
             throw new InvalidOperationException("Chỉ quản trị viên mới duyệt trực tiếp PO. Hãy gửi duyệt qua workflow.");
 
         return await ApproveInternalAsync(id, request, cancellationToken);
@@ -179,7 +180,7 @@ internal sealed class PurchaseOrderService : IPurchaseOrderService
         string? notes = null,
         CancellationToken cancellationToken = default)
     {
-        if (!_permissions.IsAdmin())
+        if (!_user.IsInRole("ADMIN"))
             throw new InvalidOperationException("Chỉ quản trị viên mới xử lý phê duyệt PO.");
 
         var purchaseOrderId = await _workflow.GetPurchaseOrderIdForPendingTaskAsync(taskId, cancellationToken)

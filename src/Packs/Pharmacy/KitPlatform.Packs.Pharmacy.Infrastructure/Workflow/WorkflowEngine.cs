@@ -3,9 +3,10 @@ using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Core.Engines;
 using KitPlatform.Packs.Pharmacy.Sales;
+using KitPlatform.Packs.Pharmacy.Workflow;
 using KitPlatform.Infrastructure.Data;
 
-namespace KitPlatform.Infrastructure.Core.Engines;
+namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
 internal sealed class WorkflowEngine : IWorkflowEngine
 {

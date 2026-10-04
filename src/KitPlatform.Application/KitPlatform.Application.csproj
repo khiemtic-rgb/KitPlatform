@@ -1,8 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\KitPlatform.Domain\KitPlatform.Domain.csproj" />
-    <ProjectReference Include="..\Packs\Pharmacy\KitPlatform.Packs.Pharmacy.Application\KitPlatform.Packs.Pharmacy.Application.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

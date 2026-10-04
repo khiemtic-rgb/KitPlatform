@@ -1,4 +1,4 @@
-﻿namespace KitPlatform.Application.Core.Engines;
+namespace KitPlatform.Packs.Pharmacy.Workflow;
 
 public sealed record WorkflowTaskListItemDto(
     Guid TaskId,

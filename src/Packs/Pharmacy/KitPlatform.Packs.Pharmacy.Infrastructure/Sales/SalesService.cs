@@ -14,7 +14,6 @@ internal sealed class SalesService : ISalesService
     private readonly ICurrentUserAccessor _user;
     private readonly IAuditEngine _audit;
     private readonly IBranchAccessService _branchAccess;
-    private readonly IPermissionEngine _permissions;
 
     public SalesService(
         SalesRepository repository,
@@ -23,8 +22,7 @@ internal sealed class SalesService : ISalesService
         ITenantContext tenant,
         ICurrentUserAccessor user,
         IAuditEngine audit,
-        IBranchAccessService branchAccess,
-        IPermissionEngine permissions)
+        IBranchAccessService branchAccess)
     {
         _repository = repository;
         _loyaltyPos = loyaltyPos;
@@ -33,11 +31,16 @@ internal sealed class SalesService : ISalesService
         _user = user;
         _audit = audit;
         _branchAccess = branchAccess;
-        _permissions = permissions;
     }
 
-    private SalesDiscountPolicy DiscountPolicy => _permissions.GetSalesDiscountPolicy();
-    private bool AllowPriceOverride => _permissions.GetSalesPriceOverridePolicy().CanOverride;
+    private SalesDiscountPolicy DiscountPolicy =>
+        SalesDiscountPolicy.FromPermissions(_user.Permissions, _user.IsInRole("ADMIN"));
+
+    private bool AllowPriceOverride =>
+        SalesPriceOverridePolicy.FromPermissions(
+            _user.Permissions,
+            _user.IsInRole("ADMIN"),
+            _user.IsInRole("MANAGER")).CanOverride;
 
     public Task<PagedCustomerSearchResult> SearchCustomersAsync(
         string? search = null,

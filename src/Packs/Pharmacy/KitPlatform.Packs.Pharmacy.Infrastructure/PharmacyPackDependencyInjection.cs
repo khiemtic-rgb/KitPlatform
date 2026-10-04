@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using KitPlatform.Application.Core.Engines;
 using KitPlatform.Application.Healthcare;
 using KitPlatform.Application.Platform.Events;
 using KitPlatform.Packs.Pharmacy.Care;
@@ -17,6 +16,7 @@ using KitPlatform.Packs.Pharmacy.Integration.Qd540;
 using KitPlatform.Packs.Pharmacy.Procurement;
 using KitPlatform.Packs.Pharmacy.Rx;
 using KitPlatform.Packs.Pharmacy.Sales;
+using KitPlatform.Packs.Pharmacy.Workflow;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Healthcare;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Integration.Qd540;
 using KitPlatform.Packs.Pharmacy.Infrastructure.Catalog.CsdlDuoc;
@@ -63,7 +63,6 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<InventoryRepository>();
         services.AddScoped<BatchResolver>();
         services.AddScoped<IBatchResolver>(sp => sp.GetRequiredService<BatchResolver>());
-        services.AddScoped<IInventoryEngine>(sp => sp.GetRequiredService<BatchResolver>());
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<IInventoryImportService, InventoryImportService>();
         services.AddScoped<IInventoryStockReviewService, InventoryStockReviewService>();
@@ -73,6 +72,7 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<ProcurementRepository>();
         services.AddScoped<ISupplierService, SupplierService>();
         services.AddScoped<ISupplierImportService, SupplierImportService>();
+        services.AddScoped<IWorkflowEngine, WorkflowEngine>();
         services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
         services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
         services.AddScoped<ISupplierPaymentService, SupplierPaymentService>();

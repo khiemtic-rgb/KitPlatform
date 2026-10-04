@@ -1,9 +1,9 @@
-﻿using KitPlatform.Packs.Pharmacy.Sales;
+using KitPlatform.Packs.Pharmacy.Sales;
 
-namespace KitPlatform.Application.Core.Engines;
+namespace KitPlatform.Packs.Pharmacy.Workflow;
 
 /// <summary>
-/// Core Workflow Engine (POL-WF). Pilot: POS discount override via seeded <c>pos_discount_override</c>.
+/// Pharmacy workflow (POL-WF). Pilot: POS discount override via seeded <c>pos_discount_override</c>.
 /// </summary>
 public interface IWorkflowEngine
 {

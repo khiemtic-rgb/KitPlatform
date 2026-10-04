@@ -214,12 +214,8 @@ public static class DependencyInjection
         services.AddScoped<AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IAuditLogQuery, AuditLogQueryService>();
-        // Core Engines (EA) — wrap existing pilot logic; additive, no behavior change.
-        services.AddScoped<IPricingEngine, PricingEngine>();
-        services.AddScoped<IPermissionEngine, PermissionEngine>();
         services.AddScoped<IAuditEngine, AuditEngine>();
         services.AddScoped<INotificationEngine, NotificationEngine>();
-        services.AddScoped<IWorkflowEngine, WorkflowEngine>();
         services.AddScoped<AiConversationRepository>();
         services.AddScoped<IAiConversationRepository>(sp => sp.GetRequiredService<AiConversationRepository>());
         services.AddScoped<IAiOrchestrator, AiOrchestrator>();
