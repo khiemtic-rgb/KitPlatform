@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-04T05:57:58.832Z",
+  "generatedAt": "2026-10-04T12:25:14.982Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 32,
-    "todayPageViews": 9,
-    "todayRequests": 46,
-    "last24hVisitors": 135,
-    "last24hPageViews": 55,
-    "last24hRequests": 252
+    "todayVisitors": 46,
+    "todayPageViews": 17,
+    "todayRequests": 94,
+    "last24hVisitors": 106,
+    "last24hPageViews": 46,
+    "last24hRequests": 209
   },
   "hourly": [
-    {
-      "time": "2026-10-03T06:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-03T07:00:00Z",
-      "visitors": 15,
-      "requests": 26
-    },
-    {
-      "time": "2026-10-03T08:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-03T09:00:00Z",
-      "visitors": 13,
-      "requests": 18
-    },
-    {
-      "time": "2026-10-03T10:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-03T11:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-03T12:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
     {
       "time": "2026-10-03T13:00:00Z",
       "visitors": 9,
@@ -130,6 +95,41 @@
       "time": "2026-10-04T05:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-10-04T06:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-04T07:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-04T08:00:00Z",
+      "visitors": 4,
+      "requests": 10
+    },
+    {
+      "time": "2026-10-04T09:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-04T10:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-04T11:00:00Z",
+      "visitors": 3,
+      "requests": 18
+    },
+    {
+      "time": "2026-10-04T12:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -171,38 +171,34 @@
     },
     {
       "date": "2026-10-04",
-      "visitors": 32,
-      "pageViews": 9,
-      "requests": 46
+      "visitors": 46,
+      "pageViews": 17,
+      "requests": 94
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 58
+      "views": 51
     },
     {
       "path": "/vi/",
-      "views": 21
+      "views": 18
     },
     {
       "path": "/robots.txt",
-      "views": 20
+      "views": 16
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 10
     },
     {
       "path": "/favicon.svg",
-      "views": 9
-    },
-    {
-      "path": "/favicon.ico",
       "views": 8
     },
     {
-      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
-      "views": 7
-    },
-    {
-      "path": "/blog/xmlrpc.php",
+      "path": "/favicon.ico",
       "views": 7
     },
     {
@@ -210,19 +206,19 @@
       "views": 5
     },
     {
-      "path": "/wp/xmlrpc.php",
-      "views": 5
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 5
-    },
-    {
       "path": "/vi/tin-tuc/tu-du-lieu-hoc-tap-den-quyet-dinh-thang-tien/",
       "views": 5
     },
     {
-      "path": "/wordpress/xmlrpc.php",
+      "path": "/images/tin-tuc/nhung-viec-giao-cho-nhan-vien.png",
+      "views": 5
+    },
+    {
+      "path": "/vi/tin-tuc/cach-giam-hang-can-han-tai-nha-thuoc-giai-phap-triet-tieu-rui-ro-va-bao-ve-loi-nhuan/",
+      "views": 3
+    },
+    {
+      "path": "/.env",
       "views": 3
     },
     {
@@ -231,11 +227,15 @@
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 3
+      "views": 2
     },
     {
-      "path": "/vi/tin-tuc/cach-giam-hang-can-han-tai-nha-thuoc-giai-phap-triet-tieu-rui-ro-va-bao-ve-loi-nhuan/",
-      "views": 3
+      "path": "/wp-admin/css/",
+      "views": 2
+    },
+    {
+      "path": "/public/.env",
+      "views": 2
     }
   ]
 }
