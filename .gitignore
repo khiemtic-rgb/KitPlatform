@@ -14,11 +14,18 @@ docs/*
 !docs/novixa/**
 !docs/novixa-deploy.md
 !docs/novixa-production.env.example
+!docs/architecture/
+docs/architecture/*
+!docs/architecture/INDEX.md
+!docs/architecture/GOVERNANCE.md
+!docs/KIT-PLATFORM-MASTER-ARCHITECTURE-V1.md
+!docs/KIT-PLATFORM-ARCHITECTURE-DECISION-REGISTER-V1.md
+!docs/KIT-PLATFORM-ADR-03-DECISION-V1.md
+!docs/KIT-PLATFORM-ADR-04-DECISION-V1.md
 .env
 .env.*
 !.env.example
-src/KitPlatform.Api/App_Data/kit-video-kf/
-src/KitPlatform.Api/App_Data/kit-video-i2v/
+src/KitPlatform.Api/App_Data/
 src/**/uploads/
 uploads/
 
