@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-06T00:12:31.092Z",
+  "generatedAt": "2026-10-06T06:37:08.007Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 45,
-    "todayPageViews": 11,
-    "todayRequests": 87,
-    "last24hVisitors": 101,
-    "last24hPageViews": 31,
-    "last24hRequests": 601
+    "todayVisitors": 23,
+    "todayPageViews": 6,
+    "todayRequests": 40,
+    "last24hVisitors": 100,
+    "last24hPageViews": 33,
+    "last24hRequests": 433
   },
   "hourly": [
-    {
-      "time": "2026-10-05T01:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-05T02:00:00Z",
-      "visitors": 6,
-      "requests": 26
-    },
-    {
-      "time": "2026-10-05T04:00:00Z",
-      "visitors": 6,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-05T05:00:00Z",
-      "visitors": 6,
-      "requests": 31
-    },
-    {
-      "time": "2026-10-05T06:00:00Z",
-      "visitors": 7,
-      "requests": 136
-    },
     {
       "time": "2026-10-05T07:00:00Z",
       "visitors": 2,
@@ -115,6 +90,36 @@
       "time": "2026-10-05T23:00:00Z",
       "visitors": 1,
       "requests": 3
+    },
+    {
+      "time": "2026-10-06T00:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-06T02:00:00Z",
+      "visitors": 4,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-06T03:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-06T04:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-06T05:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-06T06:00:00Z",
+      "visitors": 14,
+      "requests": 18
     }
   ],
   "daily": [
@@ -156,26 +161,22 @@
     },
     {
       "date": "2026-10-06",
-      "visitors": 45,
-      "pageViews": 11,
-      "requests": 87
+      "visitors": 72,
+      "pageViews": 17,
+      "requests": 128
     }
   ],
   "topPages": [
     {
-      "path": "/",
-      "views": 37
+      "path": "/robots.txt",
+      "views": 31
     },
     {
-      "path": "/robots.txt",
-      "views": 34
+      "path": "/",
+      "views": 31
     },
     {
       "path": "/vi/",
-      "views": 20
-    },
-    {
-      "path": "/.env.anthropic",
       "views": 20
     },
     {
@@ -184,26 +185,10 @@
     },
     {
       "path": "/config/aws.yml",
-      "views": 14
-    },
-    {
-      "path": "/config/.env",
-      "views": 12
-    },
-    {
-      "path": "/app.config.js",
       "views": 10
     },
     {
-      "path": "/wp-config.php.bak",
-      "views": 10
-    },
-    {
-      "path": "/app.js",
-      "views": 10
-    },
-    {
-      "path": "/env-config.js",
+      "path": "/.env.anthropic",
       "views": 10
     },
     {
@@ -211,15 +196,35 @@
       "views": 10
     },
     {
+      "path": "/.env.local",
+      "views": 10
+    },
+    {
+      "path": "/app.config.js",
+      "views": 10
+    },
+    {
       "path": "/appsettings.Development.json",
       "views": 10
     },
     {
-      "path": "/v2/.env",
+      "path": "/app.js",
       "views": 10
     },
     {
-      "path": "/.env.swp",
+      "path": "/wp-config.php.bak",
+      "views": 10
+    },
+    {
+      "path": "/docker-compose.yml",
+      "views": 10
+    },
+    {
+      "path": "/env.txt",
+      "views": 10
+    },
+    {
+      "path": "/config.json",
       "views": 10
     }
   ]
