@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-05T15:03:47.242Z",
+  "generatedAt": "2026-10-06T00:12:31.092Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 60,
-    "todayPageViews": 16,
-    "todayRequests": 480,
-    "last24hVisitors": 77,
-    "last24hPageViews": 18,
-    "last24hRequests": 540
+    "todayVisitors": 45,
+    "todayPageViews": 11,
+    "todayRequests": 87,
+    "last24hVisitors": 101,
+    "last24hPageViews": 31,
+    "last24hRequests": 601
   },
   "hourly": [
-    {
-      "time": "2026-10-04T16:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-04T17:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-04T18:00:00Z",
-      "visitors": 3,
-      "requests": 24
-    },
-    {
-      "time": "2026-10-04T19:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-04T20:00:00Z",
-      "visitors": 9,
-      "requests": 13
-    },
-    {
-      "time": "2026-10-04T21:00:00Z",
-      "visitors": 1,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-04T22:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-04T23:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-05T00:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-10-05T01:00:00Z",
       "visitors": 5,
@@ -120,15 +75,49 @@
       "time": "2026-10-05T14:00:00Z",
       "visitors": 5,
       "requests": 170
+    },
+    {
+      "time": "2026-10-05T16:00:00Z",
+      "visitors": 4,
+      "requests": 37
+    },
+    {
+      "time": "2026-10-05T17:00:00Z",
+      "visitors": 18,
+      "requests": 19
+    },
+    {
+      "time": "2026-10-05T18:00:00Z",
+      "visitors": 6,
+      "requests": 10
+    },
+    {
+      "time": "2026-10-05T19:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-05T20:00:00Z",
+      "visitors": 4,
+      "requests": 35
+    },
+    {
+      "time": "2026-10-05T21:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-05T22:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-05T23:00:00Z",
+      "visitors": 1,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-09-29",
-      "visitors": 110,
-      "pageViews": 152,
-      "requests": 963
-    },
     {
       "date": "2026-09-30",
       "visitors": 82,
@@ -161,19 +150,29 @@
     },
     {
       "date": "2026-10-05",
-      "visitors": 95,
-      "pageViews": 18,
-      "requests": 537
+      "visitors": 102,
+      "pageViews": 31,
+      "requests": 604
+    },
+    {
+      "date": "2026-10-06",
+      "visitors": 45,
+      "pageViews": 11,
+      "requests": 87
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 36
+      "views": 37
     },
     {
       "path": "/robots.txt",
-      "views": 36
+      "views": 34
+    },
+    {
+      "path": "/vi/",
+      "views": 20
     },
     {
       "path": "/.env.anthropic",
@@ -192,19 +191,7 @@
       "views": 12
     },
     {
-      "path": "/vi/",
-      "views": 12
-    },
-    {
-      "path": "/env-config.js",
-      "views": 10
-    },
-    {
-      "path": "/admin/.env",
-      "views": 10
-    },
-    {
-      "path": "/env.txt",
+      "path": "/app.config.js",
       "views": 10
     },
     {
@@ -212,11 +199,15 @@
       "views": 10
     },
     {
-      "path": "/v2/.env",
+      "path": "/app.js",
       "views": 10
     },
     {
-      "path": "/.aws/config",
+      "path": "/env-config.js",
+      "views": 10
+    },
+    {
+      "path": "/.env-sample",
       "views": 10
     },
     {
@@ -224,7 +215,11 @@
       "views": 10
     },
     {
-      "path": "/app.config.js",
+      "path": "/v2/.env",
+      "views": 10
+    },
+    {
+      "path": "/.env.swp",
       "views": 10
     }
   ]
