@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-07T13:40:14.180Z",
+  "generatedAt": "2026-10-07T23:13:30.605Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 55,
-    "todayPageViews": 22,
-    "todayRequests": 476,
-    "last24hVisitors": 106,
-    "last24hPageViews": 44,
-    "last24hRequests": 937
+    "todayVisitors": 20,
+    "todayPageViews": 7,
+    "todayRequests": 86,
+    "last24hVisitors": 84,
+    "last24hPageViews": 32,
+    "last24hRequests": 626
   },
   "hourly": [
-    {
-      "time": "2026-10-06T14:00:00Z",
-      "visitors": 12,
-      "requests": 23
-    },
-    {
-      "time": "2026-10-06T15:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-06T16:00:00Z",
-      "visitors": 8,
-      "requests": 363
-    },
-    {
-      "time": "2026-10-06T17:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-06T18:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-06T19:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-06T20:00:00Z",
-      "visitors": 9,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-06T21:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-06T22:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-06T23:00:00Z",
-      "visitors": 6,
-      "requests": 26
-    },
     {
       "time": "2026-10-07T00:00:00Z",
       "visitors": 2,
@@ -123,17 +73,56 @@
     },
     {
       "time": "2026-10-07T13:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-07T14:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-07T15:00:00Z",
+      "visitors": 2,
+      "requests": 52
+    },
+    {
+      "time": "2026-10-07T16:00:00Z",
       "visitors": 2,
       "requests": 3
+    },
+    {
+      "time": "2026-10-07T17:00:00Z",
+      "visitors": 3,
+      "requests": 13
+    },
+    {
+      "time": "2026-10-07T18:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-07T19:00:00Z",
+      "visitors": 1,
+      "requests": 51
+    },
+    {
+      "time": "2026-10-07T20:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-07T21:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-07T22:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-01",
-      "visitors": 77,
-      "pageViews": 48,
-      "requests": 446
-    },
     {
       "date": "2026-10-02",
       "visitors": 61,
@@ -166,26 +155,32 @@
     },
     {
       "date": "2026-10-07",
-      "visitors": 91,
-      "pageViews": 34,
-      "requests": 546
+      "visitors": 84,
+      "pageViews": 32,
+      "requests": 626
+    },
+    {
+      "date": "2026-10-08",
+      "visitors": 20,
+      "pageViews": 7,
+      "requests": 86
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 46
+      "views": 35
     },
     {
       "path": "/robots.txt",
-      "views": 39
-    },
-    {
-      "path": "/vi/",
       "views": 27
     },
     {
-      "path": "/local_settings.py",
+      "path": "/vi/",
+      "views": 24
+    },
+    {
+      "path": "/config/master.key",
       "views": 18
     },
     {
@@ -194,30 +189,30 @@
     },
     {
       "path": "/.aws/config",
-      "views": 16
+      "views": 18
     },
     {
-      "path": "/metrics",
-      "views": 14
+      "path": "/local_settings.py",
+      "views": 18
+    },
+    {
+      "path": "/.npmrc",
+      "views": 15
     },
     {
       "path": "/kubeconfig",
       "views": 14
     },
     {
-      "path": "/sitemap.xml",
+      "path": "/metrics",
       "views": 14
     },
     {
-      "path": "/.env",
-      "views": 13
-    },
-    {
-      "path": "/.msmtprc",
+      "path": "/.env.development",
       "views": 12
     },
     {
-      "path": "/.env.development",
+      "path": "/.kube/config",
       "views": 12
     },
     {
@@ -225,11 +220,11 @@
       "views": 12
     },
     {
-      "path": "/id_rsa",
+      "path": "/.svn/entries",
       "views": 12
     },
     {
-      "path": "/config/master.key",
+      "path": "/.msmtprc",
       "views": 12
     }
   ]
