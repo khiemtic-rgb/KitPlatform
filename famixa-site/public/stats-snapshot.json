@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-07T06:14:16.683Z",
+  "generatedAt": "2026-10-07T13:40:14.180Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 29,
-    "todayPageViews": 18,
-    "todayRequests": 48,
-    "last24hVisitors": 116,
-    "last24hPageViews": 51,
-    "last24hRequests": 593
+    "todayVisitors": 55,
+    "todayPageViews": 22,
+    "todayRequests": 476,
+    "last24hVisitors": 106,
+    "last24hPageViews": 44,
+    "last24hRequests": 937
   },
   "hourly": [
-    {
-      "time": "2026-10-06T07:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-06T08:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-06T09:00:00Z",
-      "visitors": 7,
-      "requests": 20
-    },
-    {
-      "time": "2026-10-06T10:00:00Z",
-      "visitors": 8,
-      "requests": 19
-    },
-    {
-      "time": "2026-10-06T11:00:00Z",
-      "visitors": 4,
-      "requests": 21
-    },
-    {
-      "time": "2026-10-06T12:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-06T13:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
     {
       "time": "2026-10-06T14:00:00Z",
       "visitors": 12,
@@ -120,6 +85,46 @@
       "time": "2026-10-07T05:00:00Z",
       "visitors": 1,
       "requests": 3
+    },
+    {
+      "time": "2026-10-07T06:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-07T07:00:00Z",
+      "visitors": 4,
+      "requests": 395
+    },
+    {
+      "time": "2026-10-07T08:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-07T09:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-07T10:00:00Z",
+      "visitors": 7,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-07T11:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-07T12:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-07T13:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
@@ -161,15 +166,15 @@
     },
     {
       "date": "2026-10-07",
-      "visitors": 64,
-      "pageViews": 30,
-      "requests": 118
+      "visitors": 91,
+      "pageViews": 34,
+      "requests": 546
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 54
+      "views": 46
     },
     {
       "path": "/robots.txt",
@@ -177,55 +182,55 @@
     },
     {
       "path": "/vi/",
-      "views": 32
+      "views": 27
+    },
+    {
+      "path": "/local_settings.py",
+      "views": 18
+    },
+    {
+      "path": "/sites/default/settings.php",
+      "views": 18
+    },
+    {
+      "path": "/.aws/config",
+      "views": 16
+    },
+    {
+      "path": "/metrics",
+      "views": 14
+    },
+    {
+      "path": "/kubeconfig",
+      "views": 14
     },
     {
       "path": "/sitemap.xml",
-      "views": 17
+      "views": 14
     },
     {
-      "path": "/favicon.ico",
+      "path": "/.env",
+      "views": 13
+    },
+    {
+      "path": "/.msmtprc",
       "views": 12
     },
     {
-      "path": "/config/.env",
-      "views": 8
+      "path": "/.env.development",
+      "views": 12
     },
     {
-      "path": "/new/.git/config",
-      "views": 8
+      "path": "/firebase.json",
+      "views": 12
     },
     {
-      "path": "/apple-touch-icon.png",
-      "views": 7
+      "path": "/id_rsa",
+      "views": 12
     },
     {
-      "path": "/favicon-32.png",
-      "views": 7
-    },
-    {
-      "path": "/docker-compose.yaml",
-      "views": 6
-    },
-    {
-      "path": "/.env.old",
-      "views": 6
-    },
-    {
-      "path": "/.env.dev",
-      "views": 6
-    },
-    {
-      "path": "/js/config.js",
-      "views": 6
-    },
-    {
-      "path": "/.travis.yml",
-      "views": 6
-    },
-    {
-      "path": "/old/package.json",
-      "views": 6
+      "path": "/config/master.key",
+      "views": 12
     }
   ]
 }
