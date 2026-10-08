@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-07T23:07:23.031Z",
+  "generatedAt": "2026-10-08T06:09:24.314Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 163,
-    "last24hPageViews": 131,
-    "last24hRequests": 1495
+    "todayVisitors": 119,
+    "todayPageViews": 96,
+    "todayRequests": 418,
+    "last24hVisitors": 221,
+    "last24hPageViews": 213,
+    "last24hRequests": 1811
   },
   "hourly": [
-    {
-      "time": "2026-10-07T00:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-07T01:00:00Z",
-      "visitors": 16,
-      "requests": 29
-    },
-    {
-      "time": "2026-10-07T02:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-07T03:00:00Z",
-      "visitors": 12,
-      "requests": 17
-    },
-    {
-      "time": "2026-10-07T04:00:00Z",
-      "visitors": 21,
-      "requests": 25
-    },
-    {
-      "time": "2026-10-07T05:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-07T06:00:00Z",
-      "visitors": 4,
-      "requests": 17
-    },
     {
       "time": "2026-10-07T07:00:00Z",
       "visitors": 3,
@@ -128,8 +93,38 @@
     },
     {
       "time": "2026-10-07T23:00:00Z",
-      "visitors": 2,
-      "requests": 3
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-08T00:00:00Z",
+      "visitors": 15,
+      "requests": 23
+    },
+    {
+      "time": "2026-10-08T01:00:00Z",
+      "visitors": 15,
+      "requests": 36
+    },
+    {
+      "time": "2026-10-08T02:00:00Z",
+      "visitors": 42,
+      "requests": 96
+    },
+    {
+      "time": "2026-10-08T03:00:00Z",
+      "visitors": 33,
+      "requests": 58
+    },
+    {
+      "time": "2026-10-08T04:00:00Z",
+      "visitors": 6,
+      "requests": 185
+    },
+    {
+      "time": "2026-10-08T05:00:00Z",
+      "visitors": 12,
+      "requests": 18
     }
   ],
   "daily": [
@@ -165,34 +160,56 @@
     },
     {
       "date": "2026-10-07",
-      "visitors": 163,
-      "pageViews": 131,
-      "requests": 1495
+      "visitors": 167,
+      "pageViews": 133,
+      "requests": 1500
+    },
+    {
+      "date": "2026-10-08",
+      "visitors": 119,
+      "pageViews": 96,
+      "requests": 418
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 200
+      "views": 256
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 30
     },
     {
       "path": "/vi/",
-      "views": 22
+      "views": 26
+    },
+    {
+      "path": "/robots.txt",
+      "views": 25
     },
     {
       "path": "/_internal/api/setup.php",
       "views": 20
     },
     {
-      "path": "/robots.txt",
-      "views": 19
-    },
-    {
-      "path": "/.git/config",
-      "views": 15
-    },
-    {
       "path": "/.env",
+      "views": 14
+    },
+    {
+      "path": "/vi/tin-tuc/cach-giam-hang-can-han-tai-nha-thuoc-giai-phap-triet-tieu-rui-ro-va-bao-ve-loi-nhuan/",
+      "views": 13
+    },
+    {
+      "path": "/vi/tin-tuc/the-nao-la-ton-kho-chet-sat-thu-am-tham-bao-mon-dong-tien-nha-thuoc/",
+      "views": 12
+    },
+    {
+      "path": "/phpinfo.php",
+      "views": 12
+    },
+    {
+      "path": "/backend/.env",
       "views": 12
     },
     {
@@ -200,36 +217,20 @@
       "views": 11
     },
     {
-      "path": "/setup/",
+      "path": "/info.php",
+      "views": 11
+    },
+    {
+      "path": "/.git/config",
+      "views": 10
+    },
+    {
+      "path": "/test.php",
       "views": 10
     },
     {
       "path": "/assets/js/telegram_redirect.js",
       "views": 10
-    },
-    {
-      "path": "/api/",
-      "views": 10
-    },
-    {
-      "path": "/tracking.php",
-      "views": 10
-    },
-    {
-      "path": "/env",
-      "views": 9
-    },
-    {
-      "path": "/phpinfo.php",
-      "views": 9
-    },
-    {
-      "path": "/test.php",
-      "views": 9
-    },
-    {
-      "path": "/backend/.env",
-      "views": 9
     }
   ]
 }
