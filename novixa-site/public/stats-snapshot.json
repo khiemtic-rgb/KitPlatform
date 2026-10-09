@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-09T13:26:00.343Z",
+  "generatedAt": "2026-10-09T22:40:57.627Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 98,
-    "todayPageViews": 342,
-    "todayRequests": 603,
-    "last24hVisitors": 136,
-    "last24hPageViews": 414,
-    "last24hRequests": 1246
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 139,
+    "last24hPageViews": 380,
+    "last24hRequests": 1417
   },
   "hourly": [
-    {
-      "time": "2026-10-08T14:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-08T15:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-08T16:00:00Z",
-      "visitors": 7,
-      "requests": 79
-    },
-    {
-      "time": "2026-10-08T17:00:00Z",
-      "visitors": 8,
-      "requests": 21
-    },
-    {
-      "time": "2026-10-08T18:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-08T19:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-08T20:00:00Z",
-      "visitors": 6,
-      "requests": 490
-    },
-    {
-      "time": "2026-10-08T21:00:00Z",
-      "visitors": 4,
-      "requests": 13
-    },
-    {
-      "time": "2026-10-08T22:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
     {
       "time": "2026-10-08T23:00:00Z",
       "visitors": 6,
@@ -128,17 +83,56 @@
     },
     {
       "time": "2026-10-09T13:00:00Z",
+      "visitors": 7,
+      "requests": 158
+    },
+    {
+      "time": "2026-10-09T14:00:00Z",
+      "visitors": 5,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-09T15:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-09T16:00:00Z",
+      "visitors": 11,
+      "requests": 28
+    },
+    {
+      "time": "2026-10-09T17:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-09T18:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-09T19:00:00Z",
+      "visitors": 8,
+      "requests": 290
+    },
+    {
+      "time": "2026-10-09T20:00:00Z",
+      "visitors": 4,
+      "requests": 285
+    },
+    {
+      "time": "2026-10-09T21:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-09T22:00:00Z",
       "visitors": 1,
       "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-03",
-      "visitors": 128,
-      "pageViews": 62,
-      "requests": 379
-    },
     {
       "date": "2026-10-04",
       "visitors": 105,
@@ -171,39 +165,43 @@
     },
     {
       "date": "2026-10-09",
-      "visitors": 98,
-      "pageViews": 342,
-      "requests": 603
+      "visitors": 133,
+      "pageViews": 373,
+      "requests": 1397
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 81
+      "views": 92
     },
     {
       "path": "/vi/",
-      "views": 30
+      "views": 38
     },
     {
       "path": "/robots.txt",
-      "views": 29
-    },
-    {
-      "path": "/.git-credentials",
-      "views": 26
+      "views": 30
     },
     {
       "path": "/.env.dist",
       "views": 25
     },
     {
-      "path": "/prod/.env",
+      "path": "/store/.env",
+      "views": 25
+    },
+    {
+      "path": "/backend/.env",
+      "views": 22
+    },
+    {
+      "path": "/.env~",
       "views": 21
     },
     {
-      "path": "/.env.docker",
-      "views": 19
+      "path": "/prod/.env",
+      "views": 21
     },
     {
       "path": "/en/.env",
@@ -214,28 +212,24 @@
       "views": 18
     },
     {
-      "path": "/store/.env",
+      "path": "/api/.env",
+      "views": 18
+    },
+    {
+      "path": "/nuxt/.env",
+      "views": 17
+    },
+    {
+      "path": "/old/phpinfo.php",
+      "views": 17
+    },
+    {
+      "path": "/.git-credentials",
       "views": 16
     },
     {
-      "path": "/config.json",
-      "views": 13
-    },
-    {
-      "path": "/.env.prod",
-      "views": 13
-    },
-    {
-      "path": "/.aws/config",
-      "views": 13
-    },
-    {
-      "path": "/credentials.json",
-      "views": 12
-    },
-    {
-      "path": "/web/.env",
-      "views": 12
+      "path": "/.env.stage",
+      "views": 16
     }
   ]
 }
