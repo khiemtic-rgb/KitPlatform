@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-09T13:37:20.134Z",
+  "generatedAt": "2026-10-09T22:46:38.213Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 52,
-    "todayPageViews": 15,
-    "todayRequests": 739,
-    "last24hVisitors": 98,
-    "last24hPageViews": 33,
-    "last24hRequests": 1093
+    "todayVisitors": 21,
+    "todayPageViews": 6,
+    "todayRequests": 81,
+    "last24hVisitors": 80,
+    "last24hPageViews": 21,
+    "last24hRequests": 839
   },
   "hourly": [
-    {
-      "time": "2026-10-08T14:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-08T15:00:00Z",
-      "visitors": 2,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-08T16:00:00Z",
-      "visitors": 7,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-08T17:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-08T18:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-08T19:00:00Z",
-      "visitors": 5,
-      "requests": 27
-    },
-    {
-      "time": "2026-10-08T20:00:00Z",
-      "visitors": 8,
-      "requests": 257
-    },
-    {
-      "time": "2026-10-08T21:00:00Z",
-      "visitors": 9,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-08T22:00:00Z",
-      "visitors": 5,
-      "requests": 18
-    },
     {
       "time": "2026-10-08T23:00:00Z",
       "visitors": 7,
@@ -128,17 +83,56 @@
     },
     {
       "time": "2026-10-09T13:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-09T14:00:00Z",
       "visitors": 3,
       "requests": 4
+    },
+    {
+      "time": "2026-10-09T15:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-09T16:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-09T17:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-09T18:00:00Z",
+      "visitors": 6,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-09T19:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-09T20:00:00Z",
+      "visitors": 3,
+      "requests": 24
+    },
+    {
+      "time": "2026-10-09T21:00:00Z",
+      "visitors": 4,
+      "requests": 27
+    },
+    {
+      "time": "2026-10-09T22:00:00Z",
+      "visitors": 2,
+      "requests": 9
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-03",
-      "visitors": 58,
-      "pageViews": 288,
-      "requests": 566
-    },
     {
       "date": "2026-10-04",
       "visitors": 59,
@@ -171,23 +165,25 @@
     },
     {
       "date": "2026-10-09",
-      "visitors": 101,
-      "pageViews": 28,
-      "requests": 1070
+      "visitors": 74,
+      "pageViews": 21,
+      "requests": 829
+    },
+    {
+      "date": "2026-10-10",
+      "visitors": 21,
+      "pageViews": 6,
+      "requests": 81
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 45
+      "views": 42
     },
     {
       "path": "/",
-      "views": 36
-    },
-    {
-      "path": "/.s3cfg",
-      "views": 36
+      "views": 39
     },
     {
       "path": "/wp-config.bak",
@@ -198,35 +194,23 @@
       "views": 27
     },
     {
-      "path": "/config.js",
-      "views": 26
-    },
-    {
-      "path": "/composer.json",
-      "views": 24
-    },
-    {
-      "path": "/api/.env",
-      "views": 24
-    },
-    {
       "path": "/.travis.yml",
       "views": 21
     },
     {
-      "path": "/.git/index",
+      "path": "/sitemap.xml",
       "views": 20
     },
     {
-      "path": "/vi/",
-      "views": 19
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 19
-    },
-    {
       "path": "/frontend/.env",
+      "views": 18
+    },
+    {
+      "path": "/aws-exports.js",
+      "views": 18
+    },
+    {
+      "path": "/.env.prod",
       "views": 18
     },
     {
@@ -234,8 +218,24 @@
       "views": 18
     },
     {
-      "path": "/.env.prod",
-      "views": 18
+      "path": "/.gitlab-ci.yml",
+      "views": 17
+    },
+    {
+      "path": "/vi/",
+      "views": 17
+    },
+    {
+      "path": "/config.yml",
+      "views": 16
+    },
+    {
+      "path": "/config.js",
+      "views": 16
+    },
+    {
+      "path": "/.s3cfg",
+      "views": 16
     }
   ]
 }
