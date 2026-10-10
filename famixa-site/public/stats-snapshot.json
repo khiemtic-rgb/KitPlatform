@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-10T06:06:16.544Z",
+  "generatedAt": "2026-10-10T12:47:07.471Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 20,
-    "todayPageViews": 5,
-    "todayRequests": 32,
-    "last24hVisitors": 63,
-    "last24hPageViews": 15,
-    "last24hRequests": 162
+    "todayVisitors": 63,
+    "todayPageViews": 15,
+    "todayRequests": 385,
+    "last24hVisitors": 88,
+    "last24hPageViews": 22,
+    "last24hRequests": 484
   },
   "hourly": [
-    {
-      "time": "2026-10-09T07:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-09T08:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-09T09:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-09T10:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-09T11:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-09T12:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
     {
       "time": "2026-10-09T13:00:00Z",
       "visitors": 5,
@@ -120,6 +90,41 @@
       "time": "2026-10-10T05:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-10-10T06:00:00Z",
+      "visitors": 3,
+      "requests": 251
+    },
+    {
+      "time": "2026-10-10T07:00:00Z",
+      "visitors": 10,
+      "requests": 20
+    },
+    {
+      "time": "2026-10-10T08:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-10T09:00:00Z",
+      "visitors": 12,
+      "requests": 56
+    },
+    {
+      "time": "2026-10-10T10:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-10T11:00:00Z",
+      "visitors": 17,
+      "requests": 19
+    },
+    {
+      "time": "2026-10-10T12:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -161,71 +166,71 @@
     },
     {
       "date": "2026-10-10",
-      "visitors": 47,
-      "pageViews": 11,
-      "requests": 117
+      "visitors": 95,
+      "pageViews": 21,
+      "requests": 471
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 39
-    },
-    {
       "path": "/",
-      "views": 32
+      "views": 44
     },
     {
-      "path": "/sitemap.xml",
-      "views": 20
+      "path": "/robots.txt",
+      "views": 33
     },
     {
       "path": "/vi/",
+      "views": 22
+    },
+    {
+      "path": "/env",
+      "views": 22
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 19
+    },
+    {
+      "path": "/backend/.env",
       "views": 12
     },
     {
-      "path": "//wp1/wp-includes/wlwmanifest.xml",
-      "views": 6
+      "path": "/.aws/credentials",
+      "views": 12
     },
     {
-      "path": "//web/wp-includes/wlwmanifest.xml",
-      "views": 4
+      "path": "/config.env",
+      "views": 12
     },
     {
-      "path": "//blog/wp-includes/wlwmanifest.xml",
-      "views": 4
+      "path": "/.aws/credentials.bak",
+      "views": 12
     },
     {
-      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
-      "views": 3
+      "path": "/composer.json",
+      "views": 12
     },
     {
-      "path": "//wp/wp-includes/wlwmanifest.xml",
-      "views": 3
+      "path": "/credentials.ini",
+      "views": 12
     },
     {
-      "path": "//wp2/wp-includes/wlwmanifest.xml",
-      "views": 3
+      "path": "/laravel/.env",
+      "views": 10
     },
     {
-      "path": "//wordpress/wp-includes/wlwmanifest.xml",
-      "views": 2
+      "path": "/.env.production",
+      "views": 10
     },
     {
-      "path": "//wp-includes/wlwmanifest.xml",
-      "views": 2
+      "path": "/.env.backup",
+      "views": 10
     },
     {
-      "path": "//xmlrpc.php",
-      "views": 2
-    },
-    {
-      "path": "/.git/config",
-      "views": 2
-    },
-    {
-      "path": "/media/system/js/core.js",
-      "views": 2
+      "path": "/settings.json",
+      "views": 10
     }
   ]
 }
