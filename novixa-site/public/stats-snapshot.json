@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-10T05:56:17.518Z",
+  "generatedAt": "2026-10-10T12:36:14.491Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 33,
-    "todayPageViews": 16,
-    "todayRequests": 49,
-    "last24hVisitors": 133,
-    "last24hPageViews": 78,
-    "last24hRequests": 1089
+    "todayVisitors": 62,
+    "todayPageViews": 64,
+    "todayRequests": 171,
+    "last24hVisitors": 106,
+    "last24hPageViews": 104,
+    "last24hRequests": 988
   },
   "hourly": [
-    {
-      "time": "2026-10-09T06:00:00Z",
-      "visitors": 16,
-      "requests": 136
-    },
-    {
-      "time": "2026-10-09T07:00:00Z",
-      "visitors": 16,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-09T08:00:00Z",
-      "visitors": 18,
-      "requests": 28
-    },
-    {
-      "time": "2026-10-09T09:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-09T10:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-09T11:00:00Z",
-      "visitors": 11,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-09T12:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
     {
       "time": "2026-10-09T13:00:00Z",
       "visitors": 7,
@@ -130,6 +95,41 @@
       "time": "2026-10-10T05:00:00Z",
       "visitors": 2,
       "requests": 2
+    },
+    {
+      "time": "2026-10-10T06:00:00Z",
+      "visitors": 11,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-10T07:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-10T08:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-10T09:00:00Z",
+      "visitors": 3,
+      "requests": 30
+    },
+    {
+      "time": "2026-10-10T10:00:00Z",
+      "visitors": 5,
+      "requests": 58
+    },
+    {
+      "time": "2026-10-10T11:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-10T12:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
@@ -171,43 +171,31 @@
     },
     {
       "date": "2026-10-10",
-      "visitors": 33,
-      "pageViews": 16,
-      "requests": 49
+      "visitors": 62,
+      "pageViews": 64,
+      "requests": 171
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 77
+      "views": 63
     },
     {
       "path": "/vi/",
-      "views": 27
+      "views": 25
     },
     {
       "path": "/robots.txt",
-      "views": 27
+      "views": 22
     },
     {
       "path": "/.env~",
       "views": 18
     },
     {
-      "path": "/api/.env",
-      "views": 18
-    },
-    {
       "path": "/old/phpinfo.php",
       "views": 17
-    },
-    {
-      "path": "/aws/bedrock",
-      "views": 14
-    },
-    {
-      "path": "/config/.env",
-      "views": 14
     },
     {
       "path": "/.env.sample",
@@ -218,23 +206,35 @@
       "views": 14
     },
     {
+      "path": "/aws/bedrock",
+      "views": 14
+    },
+    {
+      "path": "/gitlab/.env",
+      "views": 12
+    },
+    {
+      "path": "/deploy/terraform.tfstate",
+      "views": 12
+    },
+    {
       "path": "/aws-exports.json",
       "views": 12
     },
     {
+      "path": "/.aws/config.bak",
+      "views": 12
+    },
+    {
+      "path": "/public/aws-exports.js",
+      "views": 12
+    },
+    {
+      "path": "/.env.dev",
+      "views": 12
+    },
+    {
       "path": "/google-credentials.json",
-      "views": 12
-    },
-    {
-      "path": "/.env.credentials",
-      "views": 12
-    },
-    {
-      "path": "/appsettings.json",
-      "views": 12
-    },
-    {
-      "path": "/config.json",
       "views": 12
     }
   ]
