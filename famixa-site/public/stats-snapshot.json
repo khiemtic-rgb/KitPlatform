@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-09T22:46:38.213Z",
+  "generatedAt": "2026-10-10T06:06:16.544Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 21,
-    "todayPageViews": 6,
-    "todayRequests": 81,
-    "last24hVisitors": 80,
-    "last24hPageViews": 21,
-    "last24hRequests": 839
+    "todayVisitors": 20,
+    "todayPageViews": 5,
+    "todayRequests": 32,
+    "last24hVisitors": 63,
+    "last24hPageViews": 15,
+    "last24hRequests": 162
   },
   "hourly": [
-    {
-      "time": "2026-10-08T23:00:00Z",
-      "visitors": 7,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-09T00:00:00Z",
-      "visitors": 11,
-      "requests": 414
-    },
-    {
-      "time": "2026-10-09T01:00:00Z",
-      "visitors": 1,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-09T02:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-09T03:00:00Z",
-      "visitors": 5,
-      "requests": 254
-    },
-    {
-      "time": "2026-10-09T04:00:00Z",
-      "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-09T05:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-09T06:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
     {
       "time": "2026-10-09T07:00:00Z",
       "visitors": 5,
@@ -130,6 +90,36 @@
       "time": "2026-10-09T22:00:00Z",
       "visitors": 2,
       "requests": 9
+    },
+    {
+      "time": "2026-10-09T23:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-10T00:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-10T01:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-10T02:00:00Z",
+      "visitors": 9,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-10T04:00:00Z",
+      "visitors": 8,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-10T05:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -165,77 +155,77 @@
     },
     {
       "date": "2026-10-09",
-      "visitors": 74,
+      "visitors": 75,
       "pageViews": 21,
-      "requests": 829
+      "requests": 833
     },
     {
       "date": "2026-10-10",
-      "visitors": 21,
-      "pageViews": 6,
-      "requests": 81
+      "visitors": 47,
+      "pageViews": 11,
+      "requests": 117
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 42
-    },
-    {
-      "path": "/",
       "views": 39
     },
     {
-      "path": "/wp-config.bak",
-      "views": 27
-    },
-    {
-      "path": "/wp-config.php~",
-      "views": 27
-    },
-    {
-      "path": "/.travis.yml",
-      "views": 21
+      "path": "/",
+      "views": 32
     },
     {
       "path": "/sitemap.xml",
       "views": 20
     },
     {
-      "path": "/frontend/.env",
-      "views": 18
-    },
-    {
-      "path": "/aws-exports.js",
-      "views": 18
-    },
-    {
-      "path": "/.env.prod",
-      "views": 18
-    },
-    {
-      "path": "/appsettings.Development.json",
-      "views": 18
-    },
-    {
-      "path": "/.gitlab-ci.yml",
-      "views": 17
-    },
-    {
       "path": "/vi/",
-      "views": 17
+      "views": 12
     },
     {
-      "path": "/config.yml",
-      "views": 16
+      "path": "//wp1/wp-includes/wlwmanifest.xml",
+      "views": 6
     },
     {
-      "path": "/config.js",
-      "views": 16
+      "path": "//web/wp-includes/wlwmanifest.xml",
+      "views": 4
     },
     {
-      "path": "/.s3cfg",
-      "views": 16
+      "path": "//blog/wp-includes/wlwmanifest.xml",
+      "views": 4
+    },
+    {
+      "path": "/images/blog/cha-me-nen-xin-loi-con-khi-nao.png",
+      "views": 3
+    },
+    {
+      "path": "//wp/wp-includes/wlwmanifest.xml",
+      "views": 3
+    },
+    {
+      "path": "//wp2/wp-includes/wlwmanifest.xml",
+      "views": 3
+    },
+    {
+      "path": "//wordpress/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "//wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "//xmlrpc.php",
+      "views": 2
+    },
+    {
+      "path": "/.git/config",
+      "views": 2
+    },
+    {
+      "path": "/media/system/js/core.js",
+      "views": 2
     }
   ]
 }
