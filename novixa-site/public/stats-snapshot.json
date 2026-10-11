@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-11T12:54:52.357Z",
+  "generatedAt": "2026-10-11T22:00:39.747Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 69,
-    "todayPageViews": 80,
-    "todayRequests": 180,
-    "last24hVisitors": 142,
-    "last24hPageViews": 473,
-    "last24hRequests": 964
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 126,
+    "last24hPageViews": 177,
+    "last24hRequests": 484
   },
   "hourly": [
-    {
-      "time": "2026-10-10T13:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-10T14:00:00Z",
-      "visitors": 10,
-      "requests": 289
-    },
-    {
-      "time": "2026-10-10T15:00:00Z",
-      "visitors": 11,
-      "requests": 119
-    },
-    {
-      "time": "2026-10-10T16:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-10T17:00:00Z",
-      "visitors": 17,
-      "requests": 112
-    },
-    {
-      "time": "2026-10-10T18:00:00Z",
-      "visitors": 15,
-      "requests": 229
-    },
-    {
-      "time": "2026-10-10T20:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-10T21:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-10T22:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
     {
       "time": "2026-10-10T23:00:00Z",
       "visitors": 3,
@@ -125,15 +80,54 @@
       "time": "2026-10-11T12:00:00Z",
       "visitors": 6,
       "requests": 53
+    },
+    {
+      "time": "2026-10-11T13:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-11T14:00:00Z",
+      "visitors": 12,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-11T15:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-11T16:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-11T17:00:00Z",
+      "visitors": 10,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-11T18:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-11T19:00:00Z",
+      "visitors": 9,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-11T20:00:00Z",
+      "visitors": 11,
+      "requests": 106
+    },
+    {
+      "time": "2026-10-11T21:00:00Z",
+      "visitors": 7,
+      "requests": 126
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-05",
-      "visitors": 225,
-      "pageViews": 1089,
-      "requests": 1497
-    },
     {
       "date": "2026-10-06",
       "visitors": 308,
@@ -166,71 +160,71 @@
     },
     {
       "date": "2026-10-11",
-      "visitors": 69,
-      "pageViews": 80,
-      "requests": 180
+      "visitors": 123,
+      "pageViews": 176,
+      "requests": 481
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 93
-    },
-    {
-      "path": "/.env.testing",
-      "views": 29
+      "views": 53
     },
     {
       "path": "/robots.txt",
-      "views": 28
+      "views": 29
     },
     {
-      "path": "/.env.test",
-      "views": 24
-    },
-    {
-      "path": "/vi/",
-      "views": 22
-    },
-    {
-      "path": "/.aws/config",
-      "views": 20
-    },
-    {
-      "path": "/env",
-      "views": 14
-    },
-    {
-      "path": "/config.js",
-      "views": 14
-    },
-    {
-      "path": "/.docker/.env",
-      "views": 14
-    },
-    {
-      "path": "/demo/.env",
-      "views": 14
-    },
-    {
-      "path": "/.env.backup",
-      "views": 11
-    },
-    {
-      "path": "/.env.example",
-      "views": 11
-    },
-    {
-      "path": "/.env.php",
-      "views": 10
+      "path": "/.env",
+      "views": 21
     },
     {
       "path": "/.env.openai",
-      "views": 10
+      "views": 20
+    },
+    {
+      "path": "/.amplifyrc",
+      "views": 18
     },
     {
       "path": "/.env.swp",
-      "views": 9
+      "views": 18
+    },
+    {
+      "path": "/.env.anthropic",
+      "views": 18
+    },
+    {
+      "path": "/.aws/config",
+      "views": 14
+    },
+    {
+      "path": "/vi/",
+      "views": 14
+    },
+    {
+      "path": "/new/.env",
+      "views": 14
+    },
+    {
+      "path": "/phpinfo",
+      "views": 14
+    },
+    {
+      "path": "/src/.env",
+      "views": 14
+    },
+    {
+      "path": "/.git/logs/HEAD",
+      "views": 12
+    },
+    {
+      "path": "/.env.test",
+      "views": 12
+    },
+    {
+      "path": "/.env.production",
+      "views": 10
     }
   ]
 }
