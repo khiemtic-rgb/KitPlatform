@@ -148,13 +148,7 @@ Status of other ADRs is **unchanged**.
 
 ## Implementation Status
 
-The four lines that originally stood here said implementation had not started and the database was unchanged. That was true for the decision checkpoint.
-
-Current state, without changing the tenant-only decision:
-
-- **DECIDED:** Tenant is the Production isolation boundary. Workspace is not mandatory and is not a Famixa Production workspace.
-- **IMPLEMENTED:** `migrations/376_pack_content_production_tenant_boundary.sql` adds nullable `tenant_id` on `series_build` and production tables and does not backfill. New official Production OS writes carry `tenant_id` and fail closed (`docs/forensics/KIT-PLATFORM-OPEN-AUTHORITY-DECISION-RECORD-01.md` §3; Master Architecture §28.1).
-- **NOT IMPLEMENTED:** backfill of historical NULL `tenant_id` rows.
+- **DECIDED:** Tenant is the Production isolation boundary. Workspace is not mandatory and is not a Famixa Production workspace. A status of DECIDED is not a status of IMPLEMENTED.
 - Local OS is not covered by this Production decision. It is a dedicated single-tenant park.
 
-Sentences earlier in this file that say Production lacks `tenant_id` describe the pre-376 schema.
+Sentences earlier in this file that say Production lacks `tenant_id` remain part of this decision. This section does not replace them.

@@ -188,7 +188,7 @@ Architectural sequencing only. Not migrations. Not a backlog of tickets.
 |-------|------|--------|-------------|
 | 0 | CURRENT | public.* SoT + kit_* overlays + product islands | Pretend a single SoT exists |
 | 1 | STABILIZE AUTHORITY | Classify authorities (this document + KPA-07). Keep dual-live paths labelled. | Genericize, rename, “fix” conflicts |
-| 2 | ESTABLISH TENANT / WORKSPACE BOUNDARIES | Partial. Pharmacy and TEST_PACK are tenant-scoped. New Famixa Production writes are tenant-scoped. Local OS is dedicated single-tenant on purpose. Historical Famixa NULL `tenant_id` rows remain. Workspace is not the boundary | Extract a Production Engine first |
+| 2 | ESTABLISH TENANT / WORKSPACE BOUNDARIES | Partial. Pharmacy and TEST_PACK are tenant-scoped. Local OS is dedicated single-tenant on purpose. Workspace is not the boundary | Extract a Production Engine first |
 | 3 | STORAGE / ARTIFACT FOUNDATION | Separate blob store, artifact identity, content hash, location, integrity | Promote `IProductionArtifactFileStore` to `IFileStore` |
 | 4 | EXECUTION FOUNDATION | Generic execution **concepts** only when proven outside one product | Move `ProductionTask` into Core |
 | 5 | PRODUCTION ENGINE | **New** generic types. Famixa semantics stay in Famixa. | Rename Famixa classes into an “engine” |
@@ -430,7 +430,7 @@ KPA-07 is preserved. Conflicts are **not** solved here. Where KPA-07 says UNKNOW
 | Layer | CURRENT | TARGET | Gap |
 |-------|---------|--------|-----|
 | User | `public.users` | Keep | OS actor is VARCHAR `created_by` / `selected_by` — PARTIAL (KPA-06 §12) |
-| Tenant | `public.tenants` | Keep; required on product execution rows | Historical Production and `series_build` rows may have NULL `tenant_id`. Migration 376 added the nullable column and did not backfill. New official Production writes carry `tenant_id` and fail closed (§28.1). The older "no TenantId" sentence is the pre-376 state |
+| Tenant | `public.tenants` | Keep; required on product execution rows | Production OS and `series_build` lack TenantId |
 | Workspace | `kit_workspace` exists | Not the isolation boundary (ADR-03; `CoreAuthority.WorkspaceRequiredForTenantAuthorization` is false). Generic workspace meaning stays deferred | OS has **no WorkspaceId** |
 | Product | Implicit pack / module | Explicit product identity if cross-product execution appears | PARTIAL (schema name, not a column) |
 | Project / domain | Famixa: `series_code` / BuildId | Product-owned | Not a platform project |
@@ -952,18 +952,15 @@ Source: `docs/forensics/PRODUCTION-OS-V1-CLOSEOUT-REVIEW-01.md`.
 
 These are product-specific. They are not a Production Engine.
 
-- Tenant-scoped Production writes and reads for a caller tenant, with historical NULL-tenant rows left unmapped.
 - Frozen `ProductionTaskInputSnapshot` for official execution, including provider and model.
 - Tenant-owned credential identity and version freeze, encrypted credential storage, and credential rotation, proven by their regressions. Not promoted to a platform credential plane.
 - Artifact identity distinct from SHA and storage key. Official preview re-reads bytes and compares SHA.
 - Binding is the official state pointer. Episode output for the tested EP01 uses `CURRENT:ASSEMBLY` and `VISIBLE:ASSEMBLY`.
-- One tenant-owned EP01 episode assembly executed, replayed, and isolated. See the closeout for ids and hashes.
 
 ### 28.2 Current platform gaps
 
 - `graph_json` is still both script state and a residual take document (ADR-01, ADR-06).
 - Legacy `video_generation_execution` is not retired (ADR-02).
-- Historical Production rows with NULL `tenant_id` are fail-closed, not owned.
 - First-insert concurrency for a new episode identity is not proven.
 - CK23B historical lipsync regression throws `PRODUCTION_CREDENTIAL_UNRESOLVED`. Cause not classified here.
 - The original ADR-07 analysis said preview does not rehash. The code does, through `OfficialPreviewIntegrityV1`. The Decision Register and the ADR-07 brief status line now record that implemented Famixa behavior. It is not a Core artifact primitive.

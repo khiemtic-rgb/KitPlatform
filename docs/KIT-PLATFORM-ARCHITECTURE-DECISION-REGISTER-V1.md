@@ -161,7 +161,7 @@ Famixa Product + API. UI (Director/Series cards). Platform Architecture (strangl
 
 **DECIDED.** Tenant-only Production scope. Workspace is not the isolation boundary.
 
-Implementation of the tenant column is **not** "not started". `migrations/376_pack_content_production_tenant_boundary.sql` adds nullable `tenant_id` and does not backfill. `docs/forensics/KIT-PLATFORM-OPEN-AUTHORITY-DECISION-RECORD-01.md` §3 and Master Architecture §28.1 record that new official Production OS writes carry `tenant_id` and fail closed. Historical NULL rows stay unmapped. Sentences in the CURRENT MODEL below that say production tables have no TenantId are historical.
+A status of DECIDED is not a status of IMPLEMENTED. Sentences in the CURRENT MODEL below that say production tables have no TenantId stay in this record.
 
 Local OS is a separate dedicated single-tenant park (`docs/forensics/KIT-PLATFORM-LOCALOS-TENANT-BOUNDARY-01.md`). It is not a second universal tenancy rule. TEST_PACK and Pharmacy stay tenant-scoped (`docs/forensics/KIT-PLATFORM-PACK-ONBOARDING-02.md`, `docs/forensics/KIT-PLATFORM-PACK-ONBOARDING-03.md`).
 
@@ -521,7 +521,7 @@ Famixa Product + API (preview endpoint). Security (integrity). Platform Architec
 
 **IMPLEMENTED** as a Famixa Production OS action. **Not a Core capability.** The original letters A/B/C were not voted in an ADR. Further product policy (retire the action, or expand who may call it) stays **OPEN**.
 
-`migrations/380_pack_content_production_assemble_episode_action.sql` allows `ASSEMBLE_EPISODE`. `ContentProductionController` calls `AssembleEpisodeOsAsync`. Master Architecture §28.1 records one tenant-owned EP01 assembly. The table below that says the controller throws `HiddenFallbackForbidden` and that migration 372 omits the action is historical.
+`migrations/380_pack_content_production_assemble_episode_action.sql` allows `ASSEMBLE_EPISODE`. `ContentProductionController` calls `AssembleEpisodeOsAsync`. The table below that says the controller throws `HiddenFallbackForbidden` and that migration 372 omits the action is historical.
 
 Shot `ASSEMBLE`, legacy desk assemble, and `FilmAssembly` stay separate Famixa meanings. Episode assembly is not promoted to Core.
 
@@ -588,7 +588,7 @@ A further product letter (retire, or widen the callers) is **OPEN**. Do not prom
 |-----|----------|--------|----------|------------|
 | 01 | graph is script/story; Production OS is execution/artifact/binding | **DECIDED** | Historical key deletion still open (ADR-06) | OPEN-AUTHORITY §7 |
 | 02 | OS is official execution; legacy execute is fail-closed | **DECIDED**. Surface retirement **not** implemented | Removing routes/UI/table | OPEN-AUTHORITY §8 |
-| 03 | Tenant-only Production scope. Workspace is not isolation | **DECIDED**. Nullable `tenant_id` **implemented** (migration 376). Historical NULL rows remain | Not a universal tenancy pattern for Local OS | ADR-03 decision file; OPEN-AUTHORITY §3–4 |
+| 03 | Tenant-only Production scope. Workspace is not isolation | **DECIDED**. Not IMPLEMENTED | Not a universal tenancy pattern for Local OS | ADR-03 decision file |
 | 04 | Tenant-owned Production AI credentials. Secret storage Option A | **DECIDED**. Gates A–D and rotation regressions recorded. Content-key reuse by other packs remains | Not a Core credential plane | Register ADR-04 body; §28.1; post-pack audit |
 | 05 | Identity/Tenant/Authz shared. Event and Audit have an operating dual-write rule. Notification open. Storage and Execution not shared | **SPLIT** | Notification; event/audit table merge; handler idempotency | OPEN-AUTHORITY §5–6, §9 |
 | 06 | Hidden UI state | **OPEN** | Client and historical cleanup | OPEN-AUTHORITY §7.D |
@@ -601,12 +601,12 @@ A further product letter (retire, or widen the callers) is **OPEN**. Do not prom
 
 | Outcome | Must resolve first |
 |---------|-------------------|
-| A. Tenant-safe Production Engine | **Still not authorized.** ADR-03 is decided and new Famixa writes are tenant-scoped. The engine still requires **new types**. "GATE A not executed" is stale for the tenant column. It is not stale as a ban on extracting the engine. |
+| A. Tenant-safe Production Engine | **Still not authorized.** ADR-03 is decided. A status of DECIDED is not a status of IMPLEMENTED. The engine still requires **new types**. GATE A is not executed. |
 | B. Generic Storage/Artifact foundation | **Still not authorized.** Famixa preview rehash exists. Do not promote `IProductionArtifactFileStore`. |
 | C. Legacy execution retirement | **Not required for authority.** ADR-02 closed official execute. Deleting the compatibility surface is still open. |
 | D. AI credential consolidation | **ADR-04 DECIDED.** Production gates A–D and rotation regressions are recorded. Cross-pack Content Gemini reuse is still live and is pack boundary debt, not a Core plane. |
 | E. Shared platform Event/Audit/Notify | Event and Audit have an operating dual-write rule. **Do not merge** tables or `production_task_events`. Notification stays open. |
-| F. Stages 3–6 and Agent Runtime | **Not authorized.** Stage 2 tenant scope is partial: Pharmacy and TEST_PACK are tenant-scoped, new Famixa writes are tenant-scoped, Local OS is dedicated single-tenant, historical Famixa NULL rows remain. That partial stage does not unlock a generic primitive. |
+| F. Stages 3–6 and Agent Runtime | **Not authorized.** Pharmacy and TEST_PACK are tenant-scoped. Local OS is dedicated single-tenant. That does not unlock a generic primitive. |
 
 Do not invent further dependencies.
 
@@ -627,9 +627,9 @@ Work that may continue **without** resolving this register (still must not promo
 - Family OS / Local OS on their own manifests.
 - Documentation and further decision records.
 
-A cross-product engine is still **not** authorized. "GATE A has not been executed" is stale for migration 376 and for fail-closed new Production writes. It remains true that historical NULL `tenant_id` rows were not backfilled and that no Production Engine exists.
+A cross-product engine is still **not** authorized. GATE A is not executed. No Production Engine exists.
 
-ADR-03 is **DECIDED**. New Famixa Production writes are tenant-scoped. Historical NULL rows remain.
+ADR-03 is **DECIDED**. A status of DECIDED is not a status of IMPLEMENTED.
 
 ADR-04 is **DECIDED** (tenant-owned Production AI credentials). Secret storage is **DECIDED** and Gate B stores AES-256-GCM ciphertext on the credential version. The key is not in the database. Provider resolution is unchanged. Current `org_settings` credentials stay unscoped until a later gate proves ownership.
 
@@ -674,7 +674,7 @@ Unresolved items that remain after synchronization:
 3. ADR-08 further caller policy  
 4. Legacy surface retirement under ADR-02 (authority is already closed)
 
-ADR-03 is **DECIDED**. New Famixa writes are tenant-scoped. "GATE A not started" is stale for migration 376.
+ADR-03 is **DECIDED**. A status of DECIDED is not a status of IMPLEMENTED. GATE A is not executed.
 
 ADR-04 is **DECIDED** (tenant-owned Production AI credentials). Gates A–D are implemented. Official freeze pins CredentialId and CredentialVersionId on the existing execution snapshot. Retry reads that frozen reference. Gates E–F are not started. The next implementation checkpoint is PRODUCTION-CREDENTIAL-ROTATION-01. Legacy Content Park and Kit Video clients can still read `org_settings`. That is not the official Production transport path.
 
@@ -690,12 +690,12 @@ This section does not replace the ADR text above. It records which later evidenc
 |-----|------------------------------|----------------|----------------|--------|
 | ADR-01 | DECISION REQUIRED | Episode assembly rejects `graph_json` as timing. Desk persist still writes take fields (ADR-06 inventory). | DECISION REQUIRED. DOCUMENTATION DRIFT: none on the decision itself. The split remains. | No later decision file chose script-only vs dual-write. |
 | ADR-02 | DECISION REQUIRED | Legacy video-generation routes are still described as live in this register. Episode legacy assemble cannot create official artifacts (`ProductionLegacyExportAuthorityV1` assertions passed inside the episode suite). | DECISION REQUIRED | Retirement was not decided. Export-only is proven for the legacy series assemble flags, not for `video_generation_execution`. |
-| ADR-03 | DECIDED, with "GATE A not executed" and "no TenantId" | Migration 376 added nullable `tenant_id` without backfill. Tenant-owned EP01 build `c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c101` executed episode assembly. Tenant B reads returned null. | DECIDED. DOCUMENTATION DRIFT on "GATE A not executed" and "Production is not tenant-safe today." | The decision (tenant-only, workspace not mandatory) stands. Implementation for new Famixa writes is proven. Historical NULL rows were not backfilled. `docs/KIT-PLATFORM-ADR-03-DECISION-V1.md` still says Production lacks TenantId. |
+| ADR-03 | DECIDED, with "GATE A not executed" and "no TenantId" | The decision file. | DECIDED. Not IMPLEMENTED. | The decision (tenant-only, workspace not mandatory) stands. GATE A is not executed. |
 | ADR-04 | DECIDED. Body says Gates A–D implemented and rotation not started. Header of the decision file still says implementation NOT STARTED. | `ProductionCredentialFreezeV1Regression`, `ProductionCredentialRotationV1Regression`, and `ProductionCredentialOfficialPathClosureV1Regression` returned 0 failures in PRODUCTION-EPISODE-ASSEMBLY-REGRESSION-01. Episode assembly pinned no credential because the provider was `server`. | DECIDED. DOCUMENTATION DRIFT: "rotation is not implemented" and "Implementation: NOT STARTED" in `docs/KIT-PLATFORM-ADR-04-DECISION-V1.md`. | Ownership and storage decisions stand. Rotation code and its regression exist. This closeout did not rotate a live credential. |
 | ADR-05 | DECISION REQUIRED for Audit/Event/Notify. Execution PRODUCT-SPECIFIC. | No new shared primitive was extracted. | Unchanged | Famixa Production OS stayed product-specific. |
 | ADR-06 | DECISION REQUIRED. Fact: hidden state exists. | No new inventory. | Unchanged | Not re-audited in this closeout. |
-| ADR-07 | DECISION REQUIRED. Body says preview does not rehash. | `ReadPreviewMediaAsync` calls `OfficialPreviewIntegrityV1.ReadVerifiedPhysicalBytes`, which compares live SHA to `ByteSha256` and returns null on mismatch. `OfficialPreviewIntegrityV1Regression` is included by the tenant-boundary suite, which returned 0 failures. | DECISION REQUIRED. DOCUMENTATION DRIFT in this ADR body and in `docs/KIT-PLATFORM-ADR-07-PREVIEW-SHA-DECISION-BRIEF-V1.md` ("no rehash", "implementation not started"). | The policy options were not formally chosen in a decision file. The code behaves as rehash-before-stream. Do not mark the ADR DECIDED from the code alone. |
-| ADR-08 | DECISION REQUIRED. Facts say not SQL-allowed, not callable, do not add a CHECK. | Migration 380 allows `ASSEMBLE_EPISODE`. Controller calls `AssembleEpisodeOsAsync`. Live execute, replay, and tenant isolation passed for one tenant-owned EP01. | IMPLEMENTED as Famixa behavior. Further caller policy OPEN. Not Core. See the synchronization section. | The tested path is proven. The action is not a platform primitive. |
+| ADR-07 | DECISION REQUIRED. Body says preview does not rehash. | `ReadPreviewMediaAsync` calls `OfficialPreviewIntegrityV1.ReadVerifiedPhysicalBytes`, which compares live SHA to `ByteSha256` and returns null on mismatch. | DECISION REQUIRED. DOCUMENTATION DRIFT in this ADR body and in `docs/KIT-PLATFORM-ADR-07-PREVIEW-SHA-DECISION-BRIEF-V1.md` ("no rehash", "implementation not started"). | The policy options were not formally chosen in a decision file. The code behaves as rehash-before-stream. Do not mark the ADR DECIDED from the code alone. |
+| ADR-08 | DECISION REQUIRED. Facts say not SQL-allowed, not callable, do not add a CHECK. | Migration 380 allows `ASSEMBLE_EPISODE`. Controller calls `AssembleEpisodeOsAsync`. | IMPLEMENTED as Famixa behavior. Further caller policy OPEN. Not Core. See the synchronization section. | The action is not a platform primitive. |
 
 ---
 
@@ -707,7 +707,7 @@ This section is the current reading. It does not delete the closeout table above
 |---|---|---|---|
 | ADR-01 | Graph is script/story. Production OS is execution, artifact, binding, and official preview | OPEN-AUTHORITY §7 | Deleting historical media keys |
 | ADR-02 | Official execute is Production OS. Legacy `ExecuteAsync` throws `LEGACY_EXECUTION_CLOSED` | OPEN-AUTHORITY §8; `VideoGenerationExecutionService.cs` | Removing the compatibility surface |
-| ADR-03 | Tenant is the Production isolation boundary. Workspace is not | ADR-03 decision; `CoreAuthority.WorkspaceRequiredForTenantAuthorization == false` | Historical NULL `tenant_id` rows |
+| ADR-03 | Tenant is the Production isolation boundary. Workspace is not | ADR-03 decision; `CoreAuthority.WorkspaceRequiredForTenantAuthorization == false` | GATE A is not executed |
 | ADR-04 | Tenant-owned Production credentials are decided. Production gates are recorded as implemented | Register ADR-04 body; §28.1 | Content Gemini key still read by Pharmacy and Kit Sales |
 | ADR-05 Event/Audit | Dual-write stays. Outbox is the named event target. No table merge | OPEN-AUTHORITY §5–6 | Notification. Handler idempotency. Physical merge |
 | ADR-06 | Hidden client state cleanup | OPEN-AUTHORITY §7.D | The cleanup itself |
@@ -716,3 +716,66 @@ This section is the current reading. It does not delete the closeout table above
 | Tenancy shapes | Pharmacy and TEST_PACK are tenant-scoped. Local OS is dedicated single-tenant (`KIT_LOCAL`, operator `KIT_MKT`). Do not generalize Local OS | PACK-ONBOARDING-02, PACK-ONBOARDING-03, LOCALOS-TENANT-BOUNDARY-01 | — |
 | Core | Identity, Tenant, Authorization, Module enablement, Event/Outbox port. STATE B. No new Agent-chain primitive | ARCHITECTURE-AUDIT-POST-PACK-01 | Pack boundary debt listed in that audit |
 | Invariant 1 | The rule "Core must not depend on Pharmacy types" still stands. `KitPlatform.Infrastructure` still references Pharmacy.Application. That is pack boundary debt, not a repeal of the rule | Post-pack audit §3 | The reference itself |
+---
+
+# MANIFEST DISPOSITION — CONTENT MIGRATIONS 383 AND 384
+
+## Status
+
+**DECIDED** for manifest ownership of the two files named in this section. **NOT IMPLEMENTED.**
+
+A status of DECIDED is not a status of IMPLEMENTED. This section does not authorize implementation.
+
+## Decision Owner
+
+Architect.
+
+## Decision
+
+This section is limited to manifest ownership of two tracked files.
+
+1. `migrations/383_pack_content_article_series.sql` is included in `deploy/ubuntu/migration-files.content.txt`. The manifest line uses the tracked filename exactly: `383_pack_content_article_series.sql`.
+2. `migrations/384_pack_content_brand_narrative_dna.sql` is included in the same manifest. The manifest line uses the tracked filename exactly: `384_pack_content_brand_narrative_dna.sql`.
+3. Neither SQL file is renamed to match its comment label. The labels `KitPlatform 370` and `KitPlatform 371` are not manifest lines and are not prefix assignments.
+4. The reference `370_pack_content_article_series.sql` is a separate stale filename reference. This section does not change that reference.
+
+## Limits
+
+This section does not authorize implementation.
+
+It does not authorize a change to the smoke test, to application contracts, to SQL files, or to any database. It does not authorize an edit of `deploy/ubuntu/migration-files.content.txt`.
+
+It does not grant D-05 implementation permission. It does not select a migration prefix, a D-05 filename, or a manifest line position.
+
+It does not lift line 231. It does not decide any content migration other than the two files named above. It does not mark Phase 1.5 PASS.
+
+---
+
+# D-05 — SCOPE DISPOSITION FOR `pack_content.series_build.tenant_id`
+
+## Status
+
+**DECIDED** — OPTION A — OUT OF SCOPE FOR PHASE 1.5. **NOT IMPLEMENTED.**
+
+A status of DECIDED is not a status of IMPLEMENTED. This section does not authorize implementation.
+
+## Decision Owner
+
+Architect.
+
+## Decision
+
+1. The addition of `tenant_id` to `pack_content.series_build` is outside the scope of Phase 1.5.
+2. Decision Register line 231 remains binding. This decision grants no implementation permission for TenantId, WorkspaceId, RLS, API, migration, or deployment changes.
+3. No migration is to be created or modified for this purpose in Phase 1.5. No historical backfill is authorized.
+4. ADR-03 Option 1 remains DECIDED. This scope decision does not establish that Production tenant isolation has been implemented or verified.
+5. Any future proposal to add `tenant_id` must be submitted as a separate Architect decision, with explicit migration and manifest details and a separate implementation authorization.
+6. This decision does not close other Phase 1.5 acceptance-gate rows or authorize any unrelated repository changes.
+
+## Limits
+
+**Implementation permission: NOT GRANTED.**
+
+This section does not add `tenant_id` to `pack_content.series_build`. It does not create or modify a migration. It does not authorize a historical backfill. It does not select a migration prefix, a D-05 filename, or a manifest line.
+
+It does not lift line 231. It does not change ADR-03 Option 1. It does not mark Phase 1.5 PASS.
