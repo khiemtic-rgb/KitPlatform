@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-12T15:31:40.422Z",
+  "generatedAt": "2026-10-13T00:44:17.881Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 121,
-    "todayPageViews": 94,
-    "todayRequests": 230,
-    "last24hVisitors": 178,
-    "last24hPageViews": 192,
-    "last24hRequests": 548
+    "todayVisitors": 2,
+    "todayPageViews": 33,
+    "todayRequests": 48,
+    "last24hVisitors": 174,
+    "last24hPageViews": 171,
+    "last24hRequests": 469
   },
   "hourly": [
-    {
-      "time": "2026-10-11T16:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-11T17:00:00Z",
-      "visitors": 10,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-11T18:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-11T19:00:00Z",
-      "visitors": 9,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-11T20:00:00Z",
-      "visitors": 11,
-      "requests": 106
-    },
-    {
-      "time": "2026-10-11T21:00:00Z",
-      "visitors": 7,
-      "requests": 126
-    },
-    {
-      "time": "2026-10-11T22:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-11T23:00:00Z",
-      "visitors": 24,
-      "requests": 37
-    },
-    {
-      "time": "2026-10-12T00:00:00Z",
-      "visitors": 10,
-      "requests": 19
-    },
     {
       "time": "2026-10-12T01:00:00Z",
       "visitors": 7,
@@ -128,17 +83,56 @@
     },
     {
       "time": "2026-10-12T15:00:00Z",
-      "visitors": 1,
-      "requests": 1
+      "visitors": 6,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-12T16:00:00Z",
+      "visitors": 17,
+      "requests": 22
+    },
+    {
+      "time": "2026-10-12T17:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-12T18:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-12T19:00:00Z",
+      "visitors": 5,
+      "requests": 111
+    },
+    {
+      "time": "2026-10-12T20:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-12T21:00:00Z",
+      "visitors": 11,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-12T22:00:00Z",
+      "visitors": 5,
+      "requests": 20
+    },
+    {
+      "time": "2026-10-12T23:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-13T00:00:00Z",
+      "visitors": 3,
+      "requests": 51
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-06",
-      "visitors": 308,
-      "pageViews": 957,
-      "requests": 2150
-    },
     {
       "date": "2026-10-07",
       "visitors": 167,
@@ -171,71 +165,77 @@
     },
     {
       "date": "2026-10-12",
-      "visitors": 121,
-      "pageViews": 94,
-      "requests": 230
+      "visitors": 178,
+      "pageViews": 139,
+      "requests": 437
+    },
+    {
+      "date": "2026-10-13",
+      "visitors": 2,
+      "pageViews": 33,
+      "requests": 48
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 57
+      "views": 65
     },
     {
       "path": "/robots.txt",
-      "views": 31
+      "views": 29
     },
     {
-      "path": "/.env",
-      "views": 21
-    },
-    {
-      "path": "/.amplifyrc",
+      "path": "/.git/logs/refs/heads/main",
       "views": 18
-    },
-    {
-      "path": "/.env.openai",
-      "views": 17
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 15
     },
     {
       "path": "/vi/",
       "views": 14
     },
     {
-      "path": "/new/.env",
-      "views": 14
+      "path": "/favicon.svg",
+      "views": 9
     },
     {
-      "path": "/src/.env",
-      "views": 14
+      "path": "/vi/tin-tuc/nha-thuoc-van-ban-tot-nhung-ban-co-chac-dang-quan-ly-tot/",
+      "views": 5
     },
     {
-      "path": "/phpinfo",
-      "views": 14
+      "path": "/sitemap-index.xml",
+      "views": 5
     },
     {
-      "path": "/.git/logs/HEAD",
-      "views": 12
+      "path": "/license.txt",
+      "views": 5
     },
     {
-      "path": "/.env.test",
-      "views": 12
+      "path": "/vi/tin-tuc/cach-giam-hang-can-han-tai-nha-thuoc-giai-phap-triet-tieu-rui-ro-va-bao-ve-loi-nhuan/",
+      "views": 5
     },
     {
-      "path": "/.env.anthropic",
-      "views": 10
+      "path": "/favicon.ico",
+      "views": 5
     },
     {
-      "path": "/.env.swp",
-      "views": 10
+      "path": "/.git/config",
+      "views": 4
     },
     {
-      "path": "/.env.production",
-      "views": 10
+      "path": "/vi/tin-tuc/cach-giam-thoi-gian-phuc-vu-moi-khach-tai-nha-thuoc-ma-khong-lam-giam-chat-luong-tu-van/",
+      "views": 4
+    },
+    {
+      "path": "/vi/tin-tuc/manager-validation-giup-danh-gia-nang-luc-thuc-te/",
+      "views": 4
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 4
+    },
+    {
+      "path": "/images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png",
+      "views": 4
     }
   ]
 }
