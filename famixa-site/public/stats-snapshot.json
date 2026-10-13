@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-12T15:49:22.486Z",
+  "generatedAt": "2026-10-13T00:52:52.182Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 69,
-    "todayPageViews": 20,
-    "todayRequests": 423,
-    "last24hVisitors": 105,
-    "last24hPageViews": 31,
-    "last24hRequests": 621
+    "todayVisitors": 6,
+    "todayPageViews": 2,
+    "todayRequests": 9,
+    "last24hVisitors": 93,
+    "last24hPageViews": 32,
+    "last24hRequests": 719
   },
   "hourly": [
-    {
-      "time": "2026-10-11T16:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-11T17:00:00Z",
-      "visitors": 2,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-11T18:00:00Z",
-      "visitors": 3,
-      "requests": 139
-    },
-    {
-      "time": "2026-10-11T19:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-11T20:00:00Z",
-      "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-11T21:00:00Z",
-      "visitors": 9,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-11T22:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-11T23:00:00Z",
-      "visitors": 6,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-12T00:00:00Z",
-      "visitors": 7,
-      "requests": 255
-    },
     {
       "time": "2026-10-12T01:00:00Z",
       "visitors": 25,
@@ -128,17 +83,56 @@
     },
     {
       "time": "2026-10-12T15:00:00Z",
-      "visitors": 3,
-      "requests": 3
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-12T16:00:00Z",
+      "visitors": 4,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-12T17:00:00Z",
+      "visitors": 1,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-12T18:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-12T19:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-12T20:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-12T21:00:00Z",
+      "visitors": 2,
+      "requests": 90
+    },
+    {
+      "time": "2026-10-12T22:00:00Z",
+      "visitors": 7,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-12T23:00:00Z",
+      "visitors": 5,
+      "requests": 408
+    },
+    {
+      "time": "2026-10-13T00:00:00Z",
+      "visitors": 5,
+      "requests": 8
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-06",
-      "visitors": 116,
-      "pageViews": 41,
-      "requests": 592
-    },
     {
       "date": "2026-10-07",
       "visitors": 87,
@@ -171,27 +165,29 @@
     },
     {
       "date": "2026-10-12",
-      "visitors": 136,
-      "pageViews": 31,
-      "requests": 617
+      "visitors": 92,
+      "pageViews": 32,
+      "requests": 966
+    },
+    {
+      "date": "2026-10-13",
+      "visitors": 29,
+      "pageViews": 12,
+      "requests": 537
     }
   ],
   "topPages": [
     {
-      "path": "/robots.txt",
-      "views": 47
-    },
-    {
       "path": "/",
-      "views": 44
+      "views": 59
     },
     {
-      "path": "/laravel/.env",
-      "views": 21
+      "path": "/robots.txt",
+      "views": 41
     },
     {
-      "path": "/new/.env",
-      "views": 21
+      "path": "/demo/.env",
+      "views": 28
     },
     {
       "path": "/vi/",
@@ -202,40 +198,44 @@
       "views": 19
     },
     {
-      "path": "/.env.swp",
+      "path": "/config/config.js",
       "views": 18
+    },
+    {
+      "path": "/.env.production",
+      "views": 12
+    },
+    {
+      "path": "/.npmrc",
+      "views": 12
+    },
+    {
+      "path": "/.gitmodules",
+      "views": 12
+    },
+    {
+      "path": "/config/.env",
+      "views": 12
+    },
+    {
+      "path": "/_profiler/phpinfo",
+      "views": 12
     },
     {
       "path": "/.env.dev",
-      "views": 18
-    },
-    {
-      "path": "/v1/.env",
-      "views": 18
-    },
-    {
-      "path": "/.docker/laravel/app/.env",
-      "views": 18
-    },
-    {
-      "path": "/.s3cfg",
-      "views": 18
-    },
-    {
-      "path": "/wp-content/debug.log",
       "views": 12
     },
     {
-      "path": "/.aws/credentials",
-      "views": 12
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 11
     },
     {
-      "path": "/phpinfo.php",
-      "views": 12
+      "path": "/v2/.env",
+      "views": 10
     },
     {
-      "path": "/backup/.env",
-      "views": 12
+      "path": "/credentials.ini",
+      "views": 10
     }
   ]
 }
