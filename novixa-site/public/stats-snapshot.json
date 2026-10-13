@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-13T14:15:46.126Z",
+  "generatedAt": "2026-10-13T22:47:57.390Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 99,
-    "todayPageViews": 139,
-    "todayRequests": 404,
-    "last24hVisitors": 156,
-    "last24hPageViews": 184,
-    "last24hRequests": 611
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 172,
+    "last24hPageViews": 717,
+    "last24hRequests": 1141
   },
   "hourly": [
-    {
-      "time": "2026-10-12T15:00:00Z",
-      "visitors": 6,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-12T16:00:00Z",
-      "visitors": 17,
-      "requests": 22
-    },
-    {
-      "time": "2026-10-12T17:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-12T18:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-12T19:00:00Z",
-      "visitors": 5,
-      "requests": 111
-    },
-    {
-      "time": "2026-10-12T20:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-12T21:00:00Z",
-      "visitors": 11,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-12T22:00:00Z",
-      "visitors": 5,
-      "requests": 20
-    },
     {
       "time": "2026-10-12T23:00:00Z",
       "visitors": 3,
@@ -125,15 +85,54 @@
       "time": "2026-10-13T13:00:00Z",
       "visitors": 14,
       "requests": 15
+    },
+    {
+      "time": "2026-10-13T14:00:00Z",
+      "visitors": 11,
+      "requests": 378
+    },
+    {
+      "time": "2026-10-13T15:00:00Z",
+      "visitors": 5,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-13T16:00:00Z",
+      "visitors": 8,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-13T17:00:00Z",
+      "visitors": 14,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-13T18:00:00Z",
+      "visitors": 13,
+      "requests": 282
+    },
+    {
+      "time": "2026-10-13T19:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-13T20:00:00Z",
+      "visitors": 12,
+      "requests": 18
+    },
+    {
+      "time": "2026-10-13T21:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-13T22:00:00Z",
+      "visitors": 5,
+      "requests": 10
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-07",
-      "visitors": 167,
-      "pageViews": 133,
-      "requests": 1500
-    },
     {
       "date": "2026-10-08",
       "visitors": 206,
@@ -166,71 +165,71 @@
     },
     {
       "date": "2026-10-13",
-      "visitors": 99,
-      "pageViews": 139,
-      "requests": 404
+      "visitors": 169,
+      "pageViews": 717,
+      "requests": 1137
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 68
+      "views": 75
+    },
+    {
+      "path": "/core/.env",
+      "views": 39
+    },
+    {
+      "path": "/integrations",
+      "views": 30
+    },
+    {
+      "path": "/common/.env",
+      "views": 30
     },
     {
       "path": "/robots.txt",
-      "views": 30
+      "views": 26
+    },
+    {
+      "path": "/scripts/.env",
+      "views": 25
+    },
+    {
+      "path": "/api%2F.env",
+      "views": 24
+    },
+    {
+      "path": "/auth/.env",
+      "views": 24
+    },
+    {
+      "path": "//.env",
+      "views": 24
+    },
+    {
+      "path": "/register",
+      "views": 24
+    },
+    {
+      "path": "/Dockerfile",
+      "views": 24
+    },
+    {
+      "path": "/vi/",
+      "views": 24
+    },
+    {
+      "path": "/serverless.yaml",
+      "views": 24
     },
     {
       "path": "/.env.development",
       "views": 20
     },
     {
-      "path": "/config.json",
-      "views": 20
-    },
-    {
       "path": "/.git/logs/refs/heads/main",
       "views": 18
-    },
-    {
-      "path": "/config.js",
-      "views": 18
-    },
-    {
-      "path": "/images/tin-tuc/lo-trinh-l0-l6-cua-novixa-academy.png",
-      "views": 15
-    },
-    {
-      "path": "/.env.prod",
-      "views": 14
-    },
-    {
-      "path": "/vi/",
-      "views": 14
-    },
-    {
-      "path": "/.git-credentials",
-      "views": 11
-    },
-    {
-      "path": "/.env.test",
-      "views": 11
-    },
-    {
-      "path": "/.aws/.env",
-      "views": 10
-    },
-    {
-      "path": "/.env~",
-      "views": 10
-    },
-    {
-      "path": "/.aws/credentials.bak",
-      "views": 10
-    },
-    {
-      "path": "/.env.aws",
-      "views": 9
     }
   ]
 }
