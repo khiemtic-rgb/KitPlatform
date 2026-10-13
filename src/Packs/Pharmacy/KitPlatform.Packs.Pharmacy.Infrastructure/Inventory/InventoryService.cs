@@ -578,13 +578,19 @@ internal sealed class InventoryService : IInventoryService
         return await _repository.ResolveInventoryBarcodeAsync(warehouseId, barcode.Trim(), cancellationToken);
     }
 
-    public async Task<IReadOnlyList<LowStockProductDto>> GetLowStockProductsAsync(
+    public async Task<PagedLowStockProductsResult> GetLowStockProductsAsync(
         Guid? warehouseId,
         decimal defaultThreshold,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken = default)
     {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
         var (scopedId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
-        return await _repository.GetLowStockProductsAsync(scopedId, allowed, defaultThreshold, cancellationToken);
+        var (items, total) = await _repository.GetLowStockProductsAsync(
+            scopedId, allowed, defaultThreshold, page, pageSize, cancellationToken);
+        return new PagedLowStockProductsResult(items, total, page, pageSize);
     }
 
     public async Task<RevalueBatchCostResult> RevalueBatchCostAsync(

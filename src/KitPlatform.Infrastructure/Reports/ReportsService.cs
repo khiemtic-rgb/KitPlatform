@@ -626,9 +626,11 @@ internal sealed class ReportsService : IReportsService
         CancellationToken cancellationToken = default)
     {
         if (expiryDays < 1) expiryDays = 30;
-        var cutoff = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).AddDays(expiryDays);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+        var cutoff = today.AddDays(expiryDays);
         var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
-        var rows = await _repository.GetInventoryNearExpiryAsync(scopedWarehouseId, allowed, cutoff, cancellationToken);
+        var rows = await _repository.GetInventoryNearExpiryAsync(
+            scopedWarehouseId, allowed, today, cutoff, cancellationToken);
         var columns = new List<ReportColumnDto>
         {
             Col("productCode", "Mã SP", ReportColumnFormats.Text, "left"),

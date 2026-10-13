@@ -1657,6 +1657,7 @@ internal sealed class ReportsRepository
     public async Task<IReadOnlyList<Dictionary<string, object?>>> GetInventoryNearExpiryAsync(
         Guid? warehouseId,
         Guid[]? allowedWarehouseIds,
+        DateOnly expiryOnOrAfter,
         DateOnly expiryBefore,
         CancellationToken cancellationToken)
     {
@@ -1677,6 +1678,7 @@ internal sealed class ReportsRepository
             WHERE b.tenant_id = @TenantId
               AND b.quantity_available > 0
               AND b.expiry_date IS NOT NULL
+              AND b.expiry_date >= @ExpiryOnOrAfter
               AND b.expiry_date <= @ExpiryBefore
               AND p.deleted_at IS NULL
               {warehouseFilter}
@@ -1686,7 +1688,14 @@ internal sealed class ReportsRepository
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var rows = await conn.QueryAsync<NearExpiryRow>(
             sql,
-            new { TenantId, WarehouseId = warehouseId, AllowedWarehouseIds = allowedWarehouseIds, ExpiryBefore = expiryBefore });
+            new
+            {
+                TenantId,
+                WarehouseId = warehouseId,
+                AllowedWarehouseIds = allowedWarehouseIds,
+                ExpiryOnOrAfter = expiryOnOrAfter,
+                ExpiryBefore = expiryBefore,
+            });
 
         return rows.Select(r => new Dictionary<string, object?>
         {

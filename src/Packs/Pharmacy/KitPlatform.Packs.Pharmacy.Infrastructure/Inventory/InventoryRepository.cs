@@ -2749,34 +2749,23 @@ internal sealed class InventoryRepository
         return result;
     }
 
-    public async Task<IReadOnlyList<LowStockProductDto>> GetLowStockProductsAsync(
+    public async Task<(IReadOnlyList<LowStockProductDto> Items, int Total)> GetLowStockProductsAsync(
         Guid? warehouseId,
         Guid[]? allowedWarehouseIds,
         decimal defaultThreshold,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken)
     {
         var threshold = defaultThreshold < 0 ? LowStockThresholdSql.SystemFallback : defaultThreshold;
+        var offset = (page - 1) * pageSize;
         var warehouseFilter = warehouseId.HasValue
             ? "AND w.id = @WarehouseId"
             : allowedWarehouseIds is { Length: > 0 }
                 ? "AND w.id = ANY(@AllowedWarehouseIds)"
                 : string.Empty;
         var effective = LowStockThresholdSql.EffectiveMinStockExpr;
-        var sql = $"""
-            SELECT
-                p.id AS ProductId,
-                p.product_code AS ProductCode,
-                p.product_name AS ProductName,
-                (SELECT u.unit_name FROM product_units u
-                 WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
-                 ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
-                w.id AS WarehouseId,
-                w.warehouse_name AS WarehouseName,
-                br.id AS BranchId,
-                br.branch_name AS BranchName,
-                COALESCE(SUM(b.quantity_available), 0) AS TotalQuantity,
-                {effective} AS MinStockQty,
-                COUNT(b.id)::int AS BatchCount
+        var grouped = $"""
             FROM products p
             INNER JOIN warehouses w
               ON w.tenant_id = p.tenant_id AND w.deleted_at IS NULL AND w.status = 1
@@ -2794,17 +2783,45 @@ internal sealed class InventoryRepository
                 br.id, br.branch_name,
                 c.min_stock_qty
             HAVING COALESCE(SUM(b.quantity_available), 0) <= {effective}
-            ORDER BY TotalQuantity ASC, w.warehouse_name, p.product_name
-            LIMIT 500
+            """;
+        var countSql = $"""
+            SELECT COUNT(*)::int FROM (
+                SELECT p.id, w.id
+                {grouped}
+            ) sub
+            """;
+        var sql = $"""
+            SELECT
+                p.id AS ProductId,
+                p.product_code AS ProductCode,
+                p.product_name AS ProductName,
+                (SELECT u.unit_name FROM product_units u
+                 WHERE u.product_id = p.id AND u.is_sale_unit = TRUE AND u.status = 1
+                 ORDER BY u.is_base_unit DESC, u.unit_name LIMIT 1) AS SaleUnitName,
+                w.id AS WarehouseId,
+                w.warehouse_name AS WarehouseName,
+                br.id AS BranchId,
+                br.branch_name AS BranchName,
+                COALESCE(SUM(b.quantity_available), 0) AS TotalQuantity,
+                {effective} AS MinStockQty,
+                COUNT(b.id)::int AS BatchCount
+            {grouped}
+            ORDER BY TotalQuantity ASC, w.warehouse_name, p.product_name, p.id, w.id
+            LIMIT @PageSize OFFSET @Offset
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return (await conn.QueryAsync<LowStockProductDto>(sql, new
+        var args = new
         {
             TenantId,
             WarehouseId = warehouseId,
             AllowedWarehouseIds = allowedWarehouseIds,
             FallbackThreshold = threshold,
-        })).ToList();
+            PageSize = pageSize,
+            Offset = offset,
+        };
+        var total = await conn.QuerySingleAsync<int>(countSql, args);
+        var items = (await conn.QueryAsync<LowStockProductDto>(sql, args)).ToList();
+        return (items, total);
     }
 
     public async Task<bool> UpdateWarehouseMinStockAsync(

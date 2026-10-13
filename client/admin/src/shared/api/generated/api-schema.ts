@@ -8388,6 +8388,8 @@ export interface paths {
                 query?: {
                     warehouseId?: string;
                     defaultThreshold?: number;
+                    page?: number;
+                    pageSize?: number;
                 };
                 header?: never;
                 path?: never;
@@ -8401,9 +8403,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "text/plain": components["schemas"]["LowStockProductDto"][];
-                        "application/json": components["schemas"]["LowStockProductDto"][];
-                        "text/json": components["schemas"]["LowStockProductDto"][];
+                        "text/plain": components["schemas"]["PagedLowStockProductsResult"];
+                        "application/json": components["schemas"]["PagedLowStockProductsResult"];
+                        "text/json": components["schemas"]["PagedLowStockProductsResult"];
                     };
                 };
             };
@@ -12126,6 +12128,15 @@ export interface components {
         };
         PagedCustomersResult: {
             items?: components["schemas"]["CustomerAdminListItemDto"][] | null;
+            /** Format: int32 */
+            total?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            pageSize?: number;
+        };
+        PagedLowStockProductsResult: {
+            items?: components["schemas"]["LowStockProductDto"][] | null;
             /** Format: int32 */
             total?: number;
             /** Format: int32 */

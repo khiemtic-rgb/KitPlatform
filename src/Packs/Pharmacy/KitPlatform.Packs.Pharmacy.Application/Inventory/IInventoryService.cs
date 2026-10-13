@@ -98,9 +98,11 @@ public interface IInventoryService
         string barcode,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<LowStockProductDto>> GetLowStockProductsAsync(
+    Task<PagedLowStockProductsResult> GetLowStockProductsAsync(
         Guid? warehouseId,
         decimal defaultThreshold,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken = default);
 
     Task<RevalueBatchCostResult> RevalueBatchCostAsync(

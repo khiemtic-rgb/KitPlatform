@@ -513,6 +513,8 @@
     "title": "Low stock",
     "description": "Threshold priority: product → warehouse → category → global setting → default 10. Defaults to the main warehouse; choose «All warehouses» to scan everything.",
     "allWarehouses": "All warehouses",
+    "scopeWarehouse": "Filtering one warehouse: {{warehouse}}.",
+    "scopeAll": "Showing every warehouse.",
     "columns": {
       "currentStock": "Current stock",
       "threshold": "Threshold",
@@ -523,7 +525,7 @@
       "veryLow": "Very low",
       "low": "Low"
     },
-    "paginationTotal": "{{count}} rows",
+    "paginationTotal": "{{count}} records",
     "messages": {
       "loadFailed": "Could not load low stock list"
     },
@@ -531,8 +533,10 @@
       "button": "Suggest purchase order",
       "empty": "No low-stock rows to suggest",
       "pickWarehouse": "Select a single warehouse first (or pick rows from one warehouse)",
-      "saved": "Draft created — review the PO form before saving",
-      "autoNote": "Suggested from low stock · {{warehouse}}"
+      "saved": "Draft created from the current page ({{shown}}/{{total}}) — review the PO form before saving",
+      "currentPageOnly": "The purchase suggestion uses only the current page ({{shown}}/{{total}} records in this filter).",
+      "autoNote": "Suggested from low stock · current page · {{warehouse}} · {{shown}}/{{total}}",
+      "autoNoteSelected": "Suggested from rows selected on the current page · {{warehouse}} · {{shown}} selected / {{total}} records"
     }
   },
   "lowStockSettings": {
