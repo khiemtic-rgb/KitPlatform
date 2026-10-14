@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-14T11:57:23.388Z",
+  "generatedAt": "2026-10-14T17:14:30.873Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 102,
-    "todayPageViews": 302,
-    "todayRequests": 417,
-    "last24hVisitors": 187,
-    "last24hPageViews": 889,
-    "last24hRequests": 1180
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 185,
+    "last24hPageViews": 866,
+    "last24hRequests": 1358
   },
   "hourly": [
-    {
-      "time": "2026-10-13T12:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-13T13:00:00Z",
-      "visitors": 14,
-      "requests": 15
-    },
-    {
-      "time": "2026-10-13T14:00:00Z",
-      "visitors": 11,
-      "requests": 378
-    },
-    {
-      "time": "2026-10-13T15:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-13T16:00:00Z",
-      "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-13T17:00:00Z",
-      "visitors": 14,
-      "requests": 16
-    },
     {
       "time": "2026-10-13T18:00:00Z",
       "visitors": 13,
@@ -128,17 +98,41 @@
     },
     {
       "time": "2026-10-14T11:00:00Z",
-      "visitors": 9,
-      "requests": 12
+      "visitors": 11,
+      "requests": 277
+    },
+    {
+      "time": "2026-10-14T12:00:00Z",
+      "visitors": 13,
+      "requests": 15
+    },
+    {
+      "time": "2026-10-14T13:00:00Z",
+      "visitors": 7,
+      "requests": 18
+    },
+    {
+      "time": "2026-10-14T14:00:00Z",
+      "visitors": 15,
+      "requests": 15
+    },
+    {
+      "time": "2026-10-14T15:00:00Z",
+      "visitors": 8,
+      "requests": 279
+    },
+    {
+      "time": "2026-10-14T16:00:00Z",
+      "visitors": 14,
+      "requests": 18
+    },
+    {
+      "time": "2026-10-14T17:00:00Z",
+      "visitors": 5,
+      "requests": 5
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-08",
-      "visitors": 206,
-      "pageViews": 238,
-      "requests": 1254
-    },
     {
       "date": "2026-10-09",
       "visitors": 138,
@@ -171,66 +165,66 @@
     },
     {
       "date": "2026-10-14",
-      "visitors": 102,
-      "pageViews": 302,
-      "requests": 417
+      "visitors": 148,
+      "pageViews": 590,
+      "requests": 1033
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 82
-    },
-    {
-      "path": "/vi/",
-      "views": 35
+      "views": 110
     },
     {
       "path": "/robots.txt",
-      "views": 32
+      "views": 38
     },
     {
-      "path": "/core/.env",
-      "views": 31
+      "path": "/vi/",
+      "views": 36
     },
     {
-      "path": "/integrations",
+      "path": "/public_html/phpinfo.php",
       "views": 30
     },
     {
-      "path": "/common/.env",
-      "views": 30
+      "path": "/ansible/.env",
+      "views": 28
     },
     {
-      "path": "/scripts/.env",
-      "views": 25
+      "path": "/.env.old",
+      "views": 23
     },
     {
-      "path": "/register",
-      "views": 24
+      "path": "/core/app/.env",
+      "views": 22
     },
     {
-      "path": "/auth/.env",
-      "views": 24
+      "path": "/.env.local",
+      "views": 22
     },
     {
-      "path": "/Dockerfile",
-      "views": 24
+      "path": "/microservice/.env",
+      "views": 21
     },
     {
-      "path": "/serverless.yaml",
-      "views": 24
+      "path": "/apps/.env",
+      "views": 19
     },
     {
-      "path": "//.env",
-      "views": 24
+      "path": "/htdocs/phpinfo.php",
+      "views": 19
     },
     {
-      "path": "/api%2F.env",
-      "views": 24
+      "path": "/local/.env",
+      "views": 19
     },
     {
-      "path": "/laravel5/.env",
+      "path": "/var/www/.env",
+      "views": 19
+    },
+    {
+      "path": "/exapi/.env",
       "views": 19
     },
     {
