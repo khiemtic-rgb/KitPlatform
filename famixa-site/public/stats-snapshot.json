@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-14T12:11:10.427Z",
+  "generatedAt": "2026-10-14T17:24:42.299Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 34,
-    "todayPageViews": 4,
-    "todayRequests": 112,
-    "last24hVisitors": 68,
-    "last24hPageViews": 15,
-    "last24hRequests": 178
+    "todayVisitors": 2,
+    "todayPageViews": 0,
+    "todayRequests": 2,
+    "last24hVisitors": 61,
+    "last24hPageViews": 9,
+    "last24hRequests": 177
   },
   "hourly": [
-    {
-      "time": "2026-10-13T13:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-13T14:00:00Z",
-      "visitors": 8,
-      "requests": 19
-    },
-    {
-      "time": "2026-10-13T15:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-13T16:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
     {
       "time": "2026-10-13T18:00:00Z",
       "visitors": 3,
@@ -110,15 +90,39 @@
       "time": "2026-10-14T11:00:00Z",
       "visitors": 1,
       "requests": 2
+    },
+    {
+      "time": "2026-10-14T12:00:00Z",
+      "visitors": 7,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-14T13:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-14T14:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-14T15:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-14T16:00:00Z",
+      "visitors": 7,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-14T17:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-08",
-      "visitors": 110,
-      "pageViews": 35,
-      "requests": 536
-    },
     {
       "date": "2026-10-09",
       "visitors": 75,
@@ -151,42 +155,44 @@
     },
     {
       "date": "2026-10-14",
-      "visitors": 60,
-      "pageViews": 5,
-      "requests": 133
+      "visitors": 49,
+      "pageViews": 8,
+      "requests": 156
+    },
+    {
+      "date": "2026-10-15",
+      "visitors": 2,
+      "pageViews": 0,
+      "requests": 2
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 37
-    },
-    {
-      "path": "/",
-      "views": 26
+      "views": 38
     },
     {
       "path": "/sitemap.xml",
-      "views": 19
+      "views": 20
+    },
+    {
+      "path": "/",
+      "views": 20
     },
     {
       "path": "/vi/",
-      "views": 8
+      "views": 6
     },
     {
       "path": "//wp1/wp-includes/wlwmanifest.xml",
       "views": 6
     },
     {
-      "path": "//website/wp-includes/wlwmanifest.xml",
-      "views": 4
-    },
-    {
-      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh/",
-      "views": 4
-    },
-    {
       "path": "/wp-login.php",
+      "views": 5
+    },
+    {
+      "path": "//website/wp-includes/wlwmanifest.xml",
       "views": 4
     },
     {
@@ -202,19 +208,23 @@
       "views": 3
     },
     {
-      "path": "/apple-touch-icon.png",
-      "views": 3
-    },
-    {
       "path": "//sito/wp-includes/wlwmanifest.xml",
       "views": 3
     },
     {
-      "path": "//news/wp-includes/wlwmanifest.xml",
+      "path": "/images/blog/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat.png",
+      "views": 3
+    },
+    {
+      "path": "//web/wp-includes/wlwmanifest.xml",
       "views": 2
     },
     {
-      "path": "/images/blog/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat.png",
+      "path": "//media/wp-includes/wlwmanifest.xml",
+      "views": 2
+    },
+    {
+      "path": "/images/banner-right.png",
       "views": 2
     }
   ]
