@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-15T11:49:13.390Z",
+  "generatedAt": "2026-10-15T17:13:17.012Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 27,
-    "todayPageViews": 5,
-    "todayRequests": 50,
-    "last24hVisitors": 79,
-    "last24hPageViews": 22,
-    "last24hRequests": 204
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 76,
+    "last24hPageViews": 288,
+    "last24hRequests": 529
   },
   "hourly": [
-    {
-      "time": "2026-10-14T12:00:00Z",
-      "visitors": 7,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-14T13:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-14T14:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-14T15:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-14T16:00:00Z",
-      "visitors": 7,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-14T17:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
     {
       "time": "2026-10-14T18:00:00Z",
       "visitors": 20,
@@ -115,15 +85,34 @@
       "time": "2026-10-15T11:00:00Z",
       "visitors": 2,
       "requests": 3
+    },
+    {
+      "time": "2026-10-15T12:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-15T13:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-15T14:00:00Z",
+      "visitors": 4,
+      "requests": 344
+    },
+    {
+      "time": "2026-10-15T15:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-15T16:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-09",
-      "visitors": 75,
-      "pageViews": 21,
-      "requests": 833
-    },
     {
       "date": "2026-10-10",
       "visitors": 107,
@@ -156,71 +145,71 @@
     },
     {
       "date": "2026-10-15",
-      "visitors": 89,
-      "pageViews": 18,
-      "requests": 162
+      "visitors": 40,
+      "pageViews": 276,
+      "requests": 423
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 46
-    },
-    {
-      "path": "/",
-      "views": 23
+      "views": 45
     },
     {
       "path": "/sitemap.xml",
-      "views": 22
+      "views": 21
+    },
+    {
+      "path": "/",
+      "views": 20
     },
     {
       "path": "/vi/",
+      "views": 18
+    },
+    {
+      "path": "/en/",
       "views": 11
+    },
+    {
+      "path": "/vi/goi-cha-me/",
+      "views": 10
+    },
+    {
+      "path": "/vi/huong-dan/lich-hom-nay/",
+      "views": 7
+    },
+    {
+      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
+      "views": 7
+    },
+    {
+      "path": "/en/about/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/cach-xay-dung-quy-tac-trong-gia-dinh-de-con-tu-giac-chap-hanh-khong-can-cam-doan/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat-khi-binh-yen-nam-o-nhung-tuong-tac-hang-ngay/",
+      "views": 6
+    },
+    {
+      "path": "/en/terms/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/cha-me-ban-ron-van-co-the-dong-hanh-cung-con-bi-quyet-tu-thoi-gian-chat-luong/",
+      "views": 6
+    },
+    {
+      "path": "/vi/ve-famixa/",
+      "views": 6
     },
     {
       "path": "/images/moment-study.png",
       "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 5
-    },
-    {
-      "path": "/images/banner-right.png",
-      "views": 4
-    },
-    {
-      "path": "/_next/static/media/df0a9ae256c0569c-s.woff2",
-      "views": 4
-    },
-    {
-      "path": "/favicon-32.png",
-      "views": 4
-    },
-    {
-      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
-      "views": 4
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 3
-    },
-    {
-      "path": "/images/social/zalo.png",
-      "views": 3
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 3
     }
   ]
 }
