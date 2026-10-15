@@ -175,11 +175,11 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
         var facts = ConsultationSafetyRules.NormalizeFacts(request.ConfirmedFacts);
         var eval = await EvaluateFactsAsync(facts, cancellationToken);
 
-        if (eval.SafetyLevel is "stop_sale")
+        if (ConsultationSafetyRules.BlocksAutomaticOtcSuggestions(eval.SafetyLevel))
         {
             return new SuggestPharmacyConsultationResultDto(
                 true,
-                eval.Flags.FirstOrDefault()?.Message ?? "Dừng bán — gọi cấp cứu / chuyển cấp cứu ngay.",
+                ConsultationSafetyRules.AutomaticOtcBlockMessage(eval),
                 eval.SafetyLevel,
                 eval.Flags,
                 []);

@@ -116,6 +116,28 @@ internal static class ConsultationSafetyRules
         return new Evaluation(level, flags);
     }
 
+    /// <summary>
+    /// Automatic OTC lists stop at emergency and medical-referral levels.
+    /// Pharmacist referral and caution still return suggestions with an advisory.
+    /// </summary>
+    internal static bool BlocksAutomaticOtcSuggestions(string safetyLevel) =>
+        safetyLevel is "stop_sale" or "refer_medical";
+
+    internal static string AutomaticOtcBlockMessage(Evaluation eval)
+    {
+        var matched = eval.Flags.FirstOrDefault(f =>
+            string.Equals(f.Level, eval.SafetyLevel, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(matched?.Message))
+            return matched.Message;
+
+        return eval.SafetyLevel switch
+        {
+            "stop_sale" => "Dừng bán — gọi cấp cứu / chuyển cấp cứu ngay.",
+            "refer_medical" => "Có cảnh báo cần khám — không gợi ý OTC tự động.",
+            _ => "Không gợi ý OTC tự động.",
+        };
+    }
+
     internal static Evaluation MergeSymptomRiskFlags(
         Evaluation baseEval,
         IReadOnlyList<SymptomTaxonomyRepository.SymptomRiskRow> symptomRisks)

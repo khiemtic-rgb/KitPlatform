@@ -79,6 +79,7 @@ import {
   getCustomerProfileGaps,
   type ConsultationCustomerProfileSnapshot,
 } from '@/modules/sales/consultation-customer-profile';
+import { blocksAutomaticOtcSuggestions } from '@/modules/sales/consultation-otc-gate';
 import { QUICK_SYMPTOM_CODES, QUICK_SYMPTOM_ICONS } from '@/modules/sales/consultation-quick-symptoms';
 import {
   suggestRelatedSymptomCodes,
@@ -452,10 +453,10 @@ export function PosConsultationModal({
   const safetyLevel = extractResult?.safetyLevel ?? 'none';
   const safetyFlags = extractResult?.safetyFlags ?? [];
   const preliminaryAssessment = extractResult?.preliminaryAssessment ?? null;
-  const blocksProductSupport =
-    safetyLevel === 'stop_sale'
-    || safetyLevel === 'refer_medical'
-    || preliminaryAssessment?.level === 'needs_evaluation';
+  const blocksProductSupport = blocksAutomaticOtcSuggestions(
+    safetyLevel,
+    preliminaryAssessment?.level,
+  );
 
   const quickSymptomOptions = useMemo(
     () =>
@@ -529,10 +530,7 @@ export function PosConsultationModal({
   const loadSuggest = async (mergedFacts: ConsultationFacts, evalResult?: ConsultationExtractResult) => {
     const assessment = evalResult?.preliminaryAssessment ?? extractResult?.preliminaryAssessment;
     const level = evalResult?.safetyLevel ?? extractResult?.safetyLevel ?? 'none';
-    const blocked =
-      level === 'stop_sale'
-      || level === 'refer_medical'
-      || assessment?.level === 'needs_evaluation';
+    const blocked = blocksAutomaticOtcSuggestions(level, assessment?.level);
     if (blocked) {
       setSuggestResult(null);
       return;
