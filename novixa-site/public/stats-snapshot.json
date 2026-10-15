@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-15T04:44:18.214Z",
+  "generatedAt": "2026-10-15T11:34:06.596Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 28,
-    "todayPageViews": 475,
-    "todayRequests": 963,
-    "last24hVisitors": 163,
-    "last24hPageViews": 1339,
-    "last24hRequests": 2475
+    "todayVisitors": 94,
+    "todayPageViews": 519,
+    "todayRequests": 1359,
+    "last24hVisitors": 173,
+    "last24hPageViews": 834,
+    "last24hRequests": 2241
   },
   "hourly": [
-    {
-      "time": "2026-10-14T05:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-14T06:00:00Z",
-      "visitors": 8,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-14T07:00:00Z",
-      "visitors": 13,
-      "requests": 15
-    },
-    {
-      "time": "2026-10-14T08:00:00Z",
-      "visitors": 16,
-      "requests": 20
-    },
-    {
-      "time": "2026-10-14T09:00:00Z",
-      "visitors": 13,
-      "requests": 21
-    },
-    {
-      "time": "2026-10-14T10:00:00Z",
-      "visitors": 13,
-      "requests": 282
-    },
-    {
-      "time": "2026-10-14T11:00:00Z",
-      "visitors": 11,
-      "requests": 277
-    },
     {
       "time": "2026-10-14T12:00:00Z",
       "visitors": 13,
@@ -128,8 +93,43 @@
     },
     {
       "time": "2026-10-15T04:00:00Z",
-      "visitors": 5,
-      "requests": 5
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-15T05:00:00Z",
+      "visitors": 16,
+      "requests": 35
+    },
+    {
+      "time": "2026-10-15T06:00:00Z",
+      "visitors": 16,
+      "requests": 20
+    },
+    {
+      "time": "2026-10-15T07:00:00Z",
+      "visitors": 12,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-15T08:00:00Z",
+      "visitors": 13,
+      "requests": 291
+    },
+    {
+      "time": "2026-10-15T09:00:00Z",
+      "visitors": 8,
+      "requests": 25
+    },
+    {
+      "time": "2026-10-15T10:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-15T11:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
@@ -171,9 +171,9 @@
     },
     {
       "date": "2026-10-15",
-      "visitors": 28,
-      "pageViews": 475,
-      "requests": 963
+      "visitors": 94,
+      "pageViews": 519,
+      "requests": 1359
     }
   ],
   "topPages": [
@@ -183,59 +183,59 @@
     },
     {
       "path": "/",
-      "views": 119
-    },
-    {
-      "path": "/robots.txt",
-      "views": 36
+      "views": 112
     },
     {
       "path": "/public_html/phpinfo.php",
-      "views": 35
+      "views": 37
     },
     {
       "path": "/ansible/.env",
-      "views": 34
+      "views": 36
     },
     {
-      "path": "/vi/",
+      "path": "/robots.txt",
       "views": 32
+    },
+    {
+      "path": "/.env.local",
+      "views": 29
+    },
+    {
+      "path": "/core/app/.env",
+      "views": 28
     },
     {
       "path": "/local/.env",
       "views": 28
     },
     {
-      "path": "/.env.local",
-      "views": 27
+      "path": "/docker-compose.yml",
+      "views": 24
     },
     {
-      "path": "/.env.old",
-      "views": 27
+      "path": "/mailgun/.env",
+      "views": 24
     },
     {
       "path": "/.ssh/id_rsa",
       "views": 24
     },
     {
-      "path": "/docker-compose.yml",
-      "views": 24
-    },
-    {
-      "path": "/core/app/.env",
-      "views": 24
-    },
-    {
-      "path": "/microservice/.env",
-      "views": 22
-    },
-    {
-      "path": "/apps/.env",
+      "path": "/infrastructure/.env",
       "views": 22
     },
     {
       "path": "/.env.dev",
-      "views": 21
+      "views": 22
+    },
+    {
+      "path": "/exapi/.env",
+      "views": 22
+    },
+    {
+      "path": "/microservice/.env",
+      "views": 22
     }
   ]
 }
