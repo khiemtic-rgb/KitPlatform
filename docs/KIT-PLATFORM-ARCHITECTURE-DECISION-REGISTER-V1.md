@@ -950,3 +950,156 @@ Line 231 remains the limit of the ADR-03 record. PO-15 is the later Level 2 gran
 ## Limits
 
 This section does not add `tenant_id` to `pack_content.series_build`. It does not create migration 385 or 386. It does not authorize a historical backfill, RLS, a WorkspaceId change, publication, or deploy. It does not restore `IPermissionEngine`, `IPricingEngine`, or `IInventoryEngine`. It does not open Phase 2.
+
+---
+
+# PHASE 4 — ARCHITECTURE FREEZE
+
+## Status
+
+**DECIDED** as a freeze of decisions already recorded on the accepted baseline. **NOT IMPLEMENTED** by this section. A frozen sentence is not a status of IMPLEMENTED and is not a status of CLOSED.
+
+This section is the Phase 4 record. It does not edit the ADR sections above, line 231, D-05, PO-15, or PO-16. Those sentences stay as written.
+
+## Decision Owner
+
+Architect authorization for Phase 4 on 2026-10-15. Platform Architecture remains the owner of ADR-03 Option 1 and of the authority hierarchy. Product Owner remains the owner of the PO-15 grants. This section does not reopen those owners.
+
+## Classification
+
+**SAFE** under Governance §5. This section records decisions that the baseline already states. It does not change platform layers, pack boundaries, the authority hierarchy, tenant isolation, or any implementation.
+
+Governance §4 asks for Evidence, Reason, Impact, and Decision before an update. Those four are this section. A new ADR is not required: Governance §4 requires an ADR for a new architecture decision, and this section does not make one. Implementation is not entered. This section grants no implementation permission.
+
+## Baseline
+
+| Item | Value |
+|---|---|
+| Accepted Phase 1.5 / Phase 2 source | `37ffb3f61b53e040b17d3acb0d2a424a0e20a967` |
+| Parent branch left unchanged | `phase15-acceptance` |
+| Recorded on | `phase4-architecture-freeze`, parent of this commit is the accepted source |
+| Candidate list | Phase 2 checkpoint section 5.1, file `KPA-PHASE2-ARCHITECTURE-COMPLETION-GATE.md` on inspection root `E:\KitPlatform-wt-phase15-wp-bc-01`. Level 5. Not promoted. |
+| Open register used | That checkpoint’s section 5.2, checked against this Register |
+| Dirty tree | `E:\KitPlatform` is not the source and is not evidence |
+
+Phase 1.5 and Phase 2 stay PASS on the parent commit. This section does not rescore them.
+
+## 1. Frozen decisions
+
+Each row is frozen only because the cited baseline text states it. Master Architecture §22 stays the original question list and is not edited. A §22 line that still says “not decided” is not used to repeal a current Level 1 sentence that states the same rule.
+
+| Frozen rule | Authoritative support on `37ffb3f6` |
+|---|---|
+| Authority order. Level 1 is `docs/KIT-PLATFORM-MASTER-ARCHITECTURE-V1.md`. Level 2 is this Register. Level 3 is the ADR decision files. `docs/architecture/INDEX.md` is navigation. | Governance §3. PO-16 §4, recording STEP-031 C-01. INDEX §2 prose states the same rank and states that the Index is not an authority level. |
+| STATE B. No new Core primitive for Work, Context, Contract, Execution, Artifact, Verification, Provenance, Human Approval, or Agent Runtime. The §23 prohibitions stay in force, including no Production Engine, no generic `IFileStore`, and no promotion of Famixa types. | Master Architecture header, §23, and §29. Register invariants and the synchronization row “Core”. |
+| ADR-03 Option 1. Tenant is the Production isolation boundary. Workspace is not that boundary. | Master Architecture §11. Register ADR-03 decision. `docs/KIT-PLATFORM-ADR-03-DECISION-V1.md` formal statement. |
+| ADR-04 ownership and secret storage. A credential used by official Production execution is owned by exactly one Tenant. Secret storage is Option A: ciphertext in the application database, data-encryption key outside the database, external secret manager not selected. | Register ADR-04 formal statement. ADR-04 decision file, Decision and Secret storage sections. |
+| ADR-01 authority split. `series_build.graph_json` is the Famixa script and story document. Production OS is the authority for execution, artifacts, bindings, and official preview. The split is Famixa, not a Core Script type. | Master Architecture §9 A, current authority. Register ADR-01 status. |
+| ADR-02, limited. Official Famixa film execution authority is Production OS. | Master Architecture §9 E (“Official film uses OS”). Register ADR-02. The fail-closed sentence is not in this row. See §3. |
+| ADR-05 operating rule. Identity, Tenant, and Authorization stay shared. Event and Audit stay dual-write. Storage is share-later. Execution stays product-specific. | Master Architecture §6.1, §14, and §19. Register ADR-05 status. |
+| PO-15. Four nullable `tenant_id` columns, on `pack_content.video_production`, `pack_content.video_production_shot`, `pack_content.video_image_generation_execution`, and `pack_content.video_generation_execution`. No default. No backfill. No owner inferred from canon. One not-found body: `Production không tồn tại.` | PO-15 items 2 and 5 and the Still forbidden list. Migration 387 states that it does not backfill and does not alter `series_build`. `ProductionNotFoundException.FixedMessage` is that body. |
+| D-05 Option A and line 231. `tenant_id` on `pack_content.series_build` is outside Phase 1.5 and is not granted by the ADR-03 record. A later column needs its own Architect decision, migration, and manifest. | D-05. Register line 231. PO-15 Still forbidden. ADR-03 decision file, “What This Does Not Mean”. |
+| D-06. The six series routes on `ContentController` stay a shared series surface. `EstablishesSeriesResourceOwnership` is false. The filter does not establish ownership of a series build. | PO-16 §6. `ProductionTenantActionFilter.EstablishesSeriesResourceOwnership`. The six routes named in PO-16 §6 carry the filter on this commit. |
+| PO-16 §7 manifest ownership. One owner manifest for 228, 229, 230, 231, 383, 384, 387, and 388, as that table states. | PO-16 §7. On this commit those eight names sit only on the owner manifest named in that table. |
+| Pharmacy RBAC. `reports.*` does not inherit from `sales.*`. | Master Architecture §6.1 and §18. `ReportsAuthorizationExtensions` grants report policies from `reports.read`, `reports.write`, and `reports.export`. |
+| Family OS and Local OS stay on their own manifests and tenants. Local OS is the dedicated single-tenant park. Its manifest is `deploy/ubuntu/migration-files.local-os.txt` and is not merged into the prod, Family OS, or Content manifests. | Master Architecture §19 and §29. Register synchronization row “Tenancy shapes” (`KIT_LOCAL`). The local-os manifest header. PO-16 §7 for the Family and Content pairs. |
+| Second Brain stays deferred. `docs/architecture/second-brain/**` is not canonical architecture. Phase 8 is not opened. | Governance §15. INDEX §8. |
+
+## 2. What a frozen rule does not do
+
+A frozen rule preserves the decision already written. It does not assert that the decision is implemented, and it does not authorize the next build.
+
+These confirmations are part of the freeze:
+
+- ADR-03 remains DECIDED and not IMPLEMENTED. GATE A is not executed. Production OS rows are not claimed tenant-safe. PO-15’s four columns are not GATE A.
+- ADR-04’s ownership and Option A storage are frozen. Gate completion, live rotation, and cross-pack Gemini reuse are not frozen. See §3 and §4.
+- ADR-01 does not delete historical media keys. That cleanup stays with ADR-06.
+- ADR-05 dual-write is the operating rule. Notification source of truth, handler idempotency, and a physical Event/Audit merge stay open.
+- D-05 and line 231 stay in force. This freeze does not add `tenant_id` to `series_build`.
+- The manifest table freezes ownership. It does not authorize another manifest edit.
+- The Pharmacy rule freezes the reports boundary. It does not add `RequirePlatformModule` to ungated Pharmacy controllers.
+- Family OS and Local OS boundaries stay as written in §19 and §29. This freeze does not change the Master Architecture “parked” label and does not decide a deployment state.
+- Second Brain deferral does not promote those notes and does not grant Phase 8.
+
+## 3. Conflicts preserved, not resolved
+
+Higher authority is kept. This section does not rewrite a conflicting sentence and does not pick a winner.
+
+### 3.1 ADR-02 fail-closed execute path — not frozen
+
+The Phase 2 candidate list included “ADR-02 fail-closed execute path.” That sentence is not frozen.
+
+- Level 1, Master Architecture §9 E, current authority: both APIs are live, and `ContentController` video-generation-execution still executes `IVideoGenerationProvider`. The target is still marked DECISION REQUIRED.
+- Level 2, ADR-02 status and the synchronization row: `VideoGenerationExecutionService.ExecuteAsync` throws `LEGACY_EXECUTION_CLOSED` before a provider call, and parallel execute is closed.
+- On `37ffb3f6`, `ExecuteAsync` in `src/Packs/Content/KitPlatform.Packs.Content.Infrastructure/VideoGenerationExecutionService.cs` calls `_provider.GenerateAsync` when confirmation and preflight pass. The identifier `LEGACY_EXECUTION_CLOSED` appears in this Register and does not appear in a `.cs` file on that commit.
+
+Level 1 and the cited source file agree with each other. The Level 2 fail-closed sentence does not. This freeze keeps the Level 1 statement. Official film authority remains Production OS, which §9 E and ADR-02 both state. Legacy-surface retirement stays open. The existing ADR-02 section is not rewritten.
+
+INDEX §9 repeats “execute authority closed.” INDEX is navigation and does not settle this conflict.
+
+### 3.2 ADR-04 implementation sentences — not frozen
+
+Ownership and Option A storage are frozen in §1. The implementation-completeness sentences disagree, so none of them is frozen.
+
+- Register ADR-04 status block: `Implementation: NOT STARTED`.
+- Register ADR-04 decision body: Gates A–D are implemented, and official Production resolution does not fall back to `org_settings`. Business rotation is not implemented. The next checkpoint named there is `PRODUCTION-CREDENTIAL-ROTATION-01`.
+- ADR-04 decision file: the decision records the target and “does not claim the running code already behaves this way.” The current-state table says official transports still use the unscoped row. The same file records Gates A–D and rotation regressions as implemented, and leaves credential business rotation at Gate E.
+- Master Architecture §28.1: tenant-owned credential identity, encrypted storage, and credential rotation are “proven by their regressions.”
+
+This freeze does not decide which of those implementation sentences is current.
+
+### 3.3 Master Architecture §22 — original question list, not edited
+
+§22.1 through §22.5 still say this document has not decided graph authority, legacy video execution, the tenant/workspace model, credential ownership, and shared primitives. This freeze does not edit those lines and does not mark them superseded.
+
+A §1 row is frozen only where a current Level 1 section already states the rule: §9 A for the authority split, §9 E for official film authority, §11 for Workspace not being the Production isolation boundary, §14 for Event/Audit dual-write, and §6.1 with §18 for the reports boundary. §22 is not used to repeal those current sections. The one place a current Level 1 section conflicts with a later Register sentence is §3.1.
+
+## 4. Open decisions
+
+Silence in this section closes nothing. These stay open.
+
+| Open item | Why it stays open | What may reopen or close it |
+|---|---|---|
+| GATE A implementation | ADR-03 required future gate. Register: GATE A is not executed. PO-15 does not claim it. | A separate implementation grant. The tenant-only rule stays frozen. |
+| ADR-06 cleanup | Register status OPEN. | An ADR-06 decision. |
+| Notification source of truth | Register ADR-05: Notification stays OPEN. | An ADR-05 decision. Dual-write stays until that decision. |
+| Event/Audit physical merge and handler idempotency | Register: merge deferred, idempotency not fully proven. Master Architecture §14 records the same gap. | An ADR-05 decision. Dual-write stays until that decision. |
+| Legacy-surface retirement | Master Architecture §9 E target is DECISION REQUIRED. Register: retirement is not implemented. The fail-closed claim is the §3.1 conflict. | An ADR-02 retirement decision. |
+| ADR-08 caller policy | Register: further caller policy OPEN. The action stays Famixa-only. | An ADR-08 decision. |
+| Future `series_build.tenant_id` | D-05 Option A. Line 231. | A new Architect decision with migration and manifest detail, and a separate implementation authorization. |
+| NULL-owner backfill | PO-15 forbids assigning an owner. Migration 387 does not backfill. | A new Architect decision with proof of ownership. None is authorized by this freeze. |
+| Credential rotation | Register names `PRODUCTION-CREDENTIAL-ROTATION-01`. §3.2 leaves the implementation sentences unresolved. | That checkpoint, through a later decision. This freeze does not close it. |
+| Cross-pack Gemini reuse | Register synchronization row for ADR-04. Master Architecture §15 records the shared Content key as current. | A later pack-boundary decision. It is not a Core credential plane. |
+| Ungated Pharmacy controllers | Master Architecture §29 records Pharmacy controllers that lack `RequirePlatformModule` as pack boundary debt. | A named controller and a separate implementation grant. |
+| Level 4 promotion | Governance §8. P2-D2 limited later citation to files on `37ffb3f6` and did not promote gitignored files. | Governance §8: Architect approval, a `.gitignore` exception, a commit, and an Index update. |
+| C-03 Documentation State V1 | PO-16 §4. One claim is marked stale only where Git evidence supports that claim. | That disposition. This freeze does not edit the document. |
+
+Also still outside this freeze, and not started here: Phase 3 routing, Phase 8 Second Brain, and any later product-proof phase.
+
+## 5. Reopening a frozen decision
+
+A frozen row in §1 changes only when Governance §4 is followed again: evidence, reason, impact, and a new decision recorded in this Register before implementation. A checkpoint, a chat, a code edit, or a later document that has not completed that process does not reopen a frozen row and does not close an open row.
+
+Breaking changes still require the Governance §5 approval. This freeze is not that approval.
+
+## 6. Exclusions
+
+This section does not grant, and this Phase 4 record does not perform:
+
+- Routing runtime, routing API, navigation UI, or a new routing primitive. Phase 3 stays closed.
+- A blanket module gate on Pharmacy controllers.
+- A source, migration, manifest, or database change.
+- A new Core abstraction, Production Engine, generic `IFileStore`, or Agent Runtime.
+- A reopen of Phase 1.5 or Phase 2.
+- Promotion of a gitignored Level 4 file.
+- Publication, deploy, push, or merge.
+- Implementation permission for any deferred or open item in §4.
+- An edit of the Master Architecture, an ADR decision file, `GOVERNANCE.md`, or `INDEX.md`.
+
+## Limits
+
+The parent commit `37ffb3f61b53e040b17d3acb0d2a424a0e20a967` stays the Phase 1.5 and Phase 2 source. This section does not amend it.
+
+Line 231 is not deleted. ADR-03 Option 1 stays DECIDED and not IMPLEMENTED. D-05 Option A stays DECIDED. PO-15 and PO-16 stay as written.
+
+This freeze is not evidence that GATE A, ADR-06, Notification, an Event/Audit merge, legacy-surface retirement, ADR-08 caller policy, `series_build.tenant_id`, NULL-owner backfill, credential rotation, cross-pack Gemini reuse, or ungated Pharmacy controllers are implemented or resolved.
