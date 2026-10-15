@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
+using KitPlatform.Application.Content;
 using KitPlatform.Application.Core;
 using KitPlatform.Packs.Content;
 
@@ -4746,7 +4747,7 @@ public sealed class ContentController : ControllerBase
     public async Task<IActionResult> GetVideoGenerationExecutionArtifact(Guid id, Guid executionId, CancellationToken cancellationToken)
     {
         var file = await _videoGeneration.ReadArtifactAsync(id, executionId, cancellationToken);
-        if (file is null) return NotFound();
+        if (file is null) throw new ProductionNotFoundException();
         return File(file.Value.Bytes, file.Value.Mime, enableRangeProcessing: true);
     }
 

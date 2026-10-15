@@ -22,6 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="KitPlatform.Platform.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\KitPlatform.Packs.Content.Application\KitPlatform.Packs.Content.Application.csproj" />
     <ProjectReference Include="..\..\..\KitPlatform.Application\KitPlatform.Application.csproj" />
     <ProjectReference Include="..\..\..\KitPlatform.Infrastructure\KitPlatform.Infrastructure.csproj" />

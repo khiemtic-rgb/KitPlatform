@@ -1,3 +1,4 @@
+using KitPlatform.Application.Content;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -50,7 +51,7 @@ internal sealed class KitVideoJobService : IKitVideoJobService
         }
 
         var production = await _repo.GetVideoProductionAsync(request.ProductionId, cancellationToken)
-            ?? throw new InvalidOperationException("Production không tồn tại.");
+            ?? throw new ProductionNotFoundException();
         var shotCode = (request.ShotCode ?? "").Trim().ToUpperInvariant();
         if (shotCode.Length == 0)
             throw new InvalidOperationException("ShotCode bắt buộc.");

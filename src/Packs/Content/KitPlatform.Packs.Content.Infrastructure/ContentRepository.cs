@@ -1,7 +1,10 @@
 using System.Text.Json;
 using Dapper;
+using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Content;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.Content;
+using Npgsql;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
@@ -9,8 +12,13 @@ internal sealed class ContentRepository
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
     private readonly IDbConnectionFactory _db;
+    private readonly ITenantContext _tenant;
 
-    public ContentRepository(IDbConnectionFactory db) => _db = db;
+    public ContentRepository(IDbConnectionFactory db, ITenantContext tenant)
+    {
+        _db = db;
+        _tenant = tenant;
+    }
 
     public sealed class OrgSettingsRow
     {
@@ -45,6 +53,8 @@ internal sealed class ContentRepository
         public string? OperationalBrief { get; set; }
         public string ToneJson { get; set; } = "{}";
         public string VisualKitJson { get; set; } = "{}";
+        /// <summary>Not selected by brand queries. Stays null until a manifest-applied column read is authorized.</summary>
+        public string? NarrativeJson { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
@@ -2031,6 +2041,7 @@ internal sealed class ContentRepository
 
     public async Task<IReadOnlyList<VideoProductionRow>> ListVideoProductionsAsync(string? projectCode, CancellationToken ct)
     {
+        var owner = ProductionCustomerOwner.Require(_tenant);
         var sql = """
             SELECT p.id AS Id, p.project_id AS ProjectId, pr.project_code AS ProjectCode,
                    p.universe_id AS UniverseId, u.universe_code AS UniverseCode,
@@ -2039,12 +2050,13 @@ internal sealed class ContentRepository
             FROM pack_content.video_production p
             JOIN pack_content.video_project pr ON pr.id = p.project_id
             JOIN pack_content.video_universe u ON u.id = p.universe_id
+            WHERE p.tenant_id = @Owner
             """;
         if (!string.IsNullOrWhiteSpace(projectCode))
-            sql += " WHERE pr.project_code = @Code";
+            sql += " AND pr.project_code = @Code";
         sql += " ORDER BY p.updated_at DESC";
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        return (await conn.QueryAsync<VideoProductionRow>(sql, new { Code = projectCode })).ToList();
+        return (await conn.QueryAsync<VideoProductionRow>(sql, new { Code = projectCode, Owner = owner })).ToList();
     }
 
     public async Task<VideoProductionRow?> GetVideoProductionAsync(Guid id, CancellationToken ct)
@@ -2057,23 +2069,51 @@ internal sealed class ContentRepository
             FROM pack_content.video_production p
             JOIN pack_content.video_project pr ON pr.id = p.project_id
             JOIN pack_content.video_universe u ON u.id = p.universe_id
-            WHERE p.id = @Id;
+            WHERE p.id = @Id AND p.tenant_id = @Owner;
+            """;
+        var owner = ProductionCustomerOwner.Require(_tenant);
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.QuerySingleOrDefaultAsync<VideoProductionRow>(sql, new { Id = id, Owner = owner });
+    }
+
+    public async Task<VideoProductionRow?> FindOwnedVideoProductionAsync(
+        string projectCode, string productionCode, CancellationToken ct)
+    {
+        var owner = ProductionCustomerOwner.Require(_tenant);
+        const string sql = """
+            SELECT p.id AS Id, p.project_id AS ProjectId, pr.project_code AS ProjectCode,
+                   p.universe_id AS UniverseId, u.universe_code AS UniverseCode,
+                   p.production_code AS ProductionCode, p.title AS Title, p.state AS State,
+                   p.run_status AS RunStatus, p.series_build_id AS SeriesBuildId, p.updated_at AS UpdatedAt
+            FROM pack_content.video_production p
+            JOIN pack_content.video_project pr ON pr.id = p.project_id
+            JOIN pack_content.video_universe u ON u.id = p.universe_id
+            WHERE pr.project_code = @ProjectCode
+              AND p.production_code = @ProductionCode
+              AND p.tenant_id = @Owner;
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        return await conn.QuerySingleOrDefaultAsync<VideoProductionRow>(sql, new { Id = id });
+        return await conn.QuerySingleOrDefaultAsync<VideoProductionRow>(sql, new
+        {
+            ProjectCode = projectCode,
+            ProductionCode = productionCode,
+            Owner = owner,
+        });
     }
 
     public async Task<IReadOnlyList<VideoShotStateRow>> ListVideoShotsAsync(Guid productionId, CancellationToken ct)
     {
+        var owner = ProductionCustomerOwner.Require(_tenant);
         const string sql = """
-            SELECT shot_code AS ShotCode, state AS State, failed AS Failed,
-                   extra_json::text AS ExtraJson
-            FROM pack_content.video_shot_state
-            WHERE production_id = @Id
-            ORDER BY shot_code;
+            SELECT s.shot_code AS ShotCode, s.state AS State, s.failed AS Failed,
+                   s.extra_json::text AS ExtraJson
+            FROM pack_content.video_shot_state s
+            JOIN pack_content.video_production p ON p.id = s.production_id
+            WHERE s.production_id = @Id AND p.tenant_id = @Owner
+            ORDER BY s.shot_code;
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        return (await conn.QueryAsync<VideoShotStateRow>(sql, new { Id = productionId })).ToList();
+        return (await conn.QueryAsync<VideoShotStateRow>(sql, new { Id = productionId, Owner = owner })).ToList();
     }
 
     public async Task<VideoProductionRow> InsertVideoProductionAsync(
@@ -2085,25 +2125,44 @@ internal sealed class ContentRepository
         Guid? seriesBuildId,
         CancellationToken ct)
     {
+        var owner = ProductionCustomerOwner.Require(_tenant);
         const string sql = """
             INSERT INTO pack_content.video_production (
-                id, project_id, universe_id, production_code, title, state, series_build_id, created_at, updated_at)
-            VALUES (@Id, @ProjectId, @UniverseId, @Code, @Title, 'DRAFT', @SeriesBuildId, NOW(), NOW());
+                id, project_id, universe_id, production_code, title, state, series_build_id, tenant_id, created_at, updated_at)
+            VALUES (@Id, @ProjectId, @UniverseId, @Code, @Title, 'DRAFT', @SeriesBuildId, @Owner, NOW(), NOW());
             INSERT INTO pack_content.video_production_event (id, production_id, from_state, to_state, reason)
             VALUES (@EventId, @Id, NULL, 'DRAFT', 'create');
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        await conn.ExecuteAsync(sql, new
+        try
         {
-            Id = id,
-            EventId = Guid.NewGuid(),
-            ProjectId = projectId,
-            UniverseId = universeId,
-            Code = code,
-            Title = title,
-            SeriesBuildId = seriesBuildId,
-        });
+            await conn.ExecuteAsync(sql, new
+            {
+                Id = id,
+                EventId = Guid.NewGuid(),
+                ProjectId = projectId,
+                UniverseId = universeId,
+                Code = code,
+                Title = title,
+                SeriesBuildId = seriesBuildId,
+                Owner = owner,
+            });
+        }
+        catch (PostgresException ex) when (ex.SqlState == "23505")
+        {
+            return await FindOwnedVideoProductionAsync(
+                await ProjectCodeAsync(conn, projectId),
+                code,
+                ct) ?? throw new ProductionNotFoundException();
+        }
         return (await GetVideoProductionAsync(id, ct))!;
+    }
+
+    private static async Task<string> ProjectCodeAsync(Npgsql.NpgsqlConnection conn, Guid projectId)
+    {
+        return await conn.ExecuteScalarAsync<string>(
+            "SELECT project_code FROM pack_content.video_project WHERE id = @Id;",
+            new { Id = projectId }) ?? "";
     }
 
     public async Task<VideoProductionRow> UpdateVideoProductionStateAsync(
@@ -2114,13 +2173,21 @@ internal sealed class ContentRepository
         string fromState,
         CancellationToken ct)
     {
-        const string sql = """
-            UPDATE pack_content.video_production SET state = @State, updated_at = NOW() WHERE id = @Id;
+        var owner = ProductionCustomerOwner.Require(_tenant);
+        const string updateSql = """
+            UPDATE pack_content.video_production
+            SET state = @State, updated_at = NOW()
+            WHERE id = @Id AND tenant_id = @Owner;
+            """;
+        const string eventSql = """
             INSERT INTO pack_content.video_production_event (id, production_id, from_state, to_state, actor, reason)
             VALUES (@EventId, @Id, @From, @State, @Actor, @Reason);
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        await conn.ExecuteAsync(sql, new
+        var updated = await conn.ExecuteAsync(updateSql, new { Id = id, State = state, Owner = owner });
+        if (updated != 1)
+            throw new ProductionNotFoundException();
+        await conn.ExecuteAsync(eventSql, new
         {
             Id = id,
             EventId = Guid.NewGuid(),
@@ -2140,9 +2207,12 @@ internal sealed class ContentRepository
         CancellationToken ct,
         string? extraJson = null)
     {
+        var owner = ProductionCustomerOwner.Require(_tenant);
         const string sql = """
             INSERT INTO pack_content.video_shot_state (id, production_id, shot_code, state, failed, extra_json, updated_at)
-            VALUES (@Id, @ProductionId, @ShotCode, @State, @Failed, COALESCE(@Extra::jsonb, '{}'::jsonb), NOW())
+            SELECT @Id, p.id, @ShotCode, @State, @Failed, COALESCE(@Extra::jsonb, '{}'::jsonb), NOW()
+            FROM pack_content.video_production p
+            WHERE p.id = @ProductionId AND p.tenant_id = @Owner
             ON CONFLICT (production_id, shot_code) DO UPDATE
             SET state = EXCLUDED.state,
                 failed = EXCLUDED.failed,
@@ -2153,7 +2223,7 @@ internal sealed class ContentRepository
                 updated_at = NOW();
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        await conn.ExecuteAsync(sql, new
+        var n = await conn.ExecuteAsync(sql, new
         {
             Id = Guid.NewGuid(),
             ProductionId = productionId,
@@ -2161,17 +2231,23 @@ internal sealed class ContentRepository
             State = state,
             Failed = failed,
             Extra = extraJson,
+            Owner = owner,
         });
+        if (n != 1)
+            throw new ProductionNotFoundException();
     }
 
     public async Task UpdateVideoProductionRunStatusAsync(Guid id, string runStatus, CancellationToken ct)
     {
+        var owner = ProductionCustomerOwner.Require(_tenant);
         const string sql = """
             UPDATE pack_content.video_production
             SET run_status = @Run, updated_at = NOW()
-            WHERE id = @Id;
+            WHERE id = @Id AND tenant_id = @Owner;
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        await conn.ExecuteAsync(sql, new { Id = id, Run = runStatus });
+        var n = await conn.ExecuteAsync(sql, new { Id = id, Run = runStatus, Owner = owner });
+        if (n != 1)
+            throw new ProductionNotFoundException();
     }
 }

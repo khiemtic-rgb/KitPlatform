@@ -1,4 +1,6 @@
 using Dapper;
+using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Content;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.Content;
 using Npgsql;
@@ -8,7 +10,23 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 internal sealed class VideoGenerationExecutionRepository
 {
     private readonly IDbConnectionFactory _db;
-    public VideoGenerationExecutionRepository(IDbConnectionFactory db) => _db = db;
+    private readonly ITenantContext _tenant;
+    public VideoGenerationExecutionRepository(IDbConnectionFactory db, ITenantContext tenant)
+    {
+        _db = db;
+        _tenant = tenant;
+    }
+
+    private Guid Owner() => ProductionCustomerOwner.Require(_tenant);
+
+    private static async Task EnsureShotOwnedAsync(NpgsqlConnection conn, Guid shotId, Guid owner)
+    {
+        var n = await conn.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*)::int FROM pack_content.video_production_shot WHERE id = @Id AND tenant_id = @Owner;",
+            new { Id = shotId, Owner = owner });
+        if (n != 1)
+            throw new ProductionNotFoundException();
+    }
 
     public sealed class Row
     {
@@ -84,22 +102,24 @@ internal sealed class VideoGenerationExecutionRepository
     {
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         return await conn.QuerySingleOrDefaultAsync<Row>(
-            SelectSql + " WHERE shot_id = @ShotId ORDER BY created_at DESC LIMIT 1;",
-            new { ShotId = shotId });
+            SelectSql + " WHERE shot_id = @ShotId AND tenant_id = @Owner ORDER BY created_at DESC LIMIT 1;",
+            new { ShotId = shotId, Owner = Owner() });
     }
 
     public async Task<Row?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        return await conn.QuerySingleOrDefaultAsync<Row>(SelectSql + " WHERE id = @Id;", new { Id = id });
+        return await conn.QuerySingleOrDefaultAsync<Row>(
+            SelectSql + " WHERE id = @Id AND tenant_id = @Owner;",
+            new { Id = id, Owner = Owner() });
     }
 
     public async Task<Row?> GetByFingerprintAsync(string fingerprint, CancellationToken ct)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         return await conn.QuerySingleOrDefaultAsync<Row>(
-            SelectSql + " WHERE execution_fingerprint = @Fingerprint LIMIT 1;",
-            new { Fingerprint = fingerprint });
+            SelectSql + " WHERE execution_fingerprint = @Fingerprint AND tenant_id = @Owner LIMIT 1;",
+            new { Fingerprint = fingerprint, Owner = Owner() });
     }
 
     public async Task<Row> InsertAsync(Row row, CancellationToken ct)
@@ -112,7 +132,7 @@ internal sealed class VideoGenerationExecutionRepository
                 master_sha256, dna_sha256, prp_sha256, shot_contract_sha256, prompt_sha256, igc_sha256,
                 video_contract_sha256, still_artifact_sha256, duration_seconds, resolution, fps, aspect_ratio,
                 artifact_path, artifact_sha256, artifact_mime, qa_json, credit_status, credit_value,
-                requested_at, created_by, updated_by
+                requested_at, created_by, updated_by, tenant_id
             ) VALUES (
                 @Id, @ShotId, @VideoContractId, @StillExecutionId, @ShotContractId, @PromptId, @IgcId,
                 @SeriesId, @CharacterId, @EraId, @DocumentId, @ExecutionStatus, @Provider, @ProviderStatus,
@@ -120,23 +140,27 @@ internal sealed class VideoGenerationExecutionRepository
                 @MasterSha256, @DnaSha256, @PrpSha256, @ShotContractSha256, @PromptSha256, @IgcSha256,
                 @VideoContractSha256, @StillArtifactSha256, @DurationSeconds, @Resolution, @Fps, @AspectRatio,
                 @ArtifactPath, @ArtifactSha256, @ArtifactMime, @QaJson::jsonb, @CreditStatus, @CreditValue,
-                @RequestedAt, @CreatedBy, @UpdatedBy
+                @RequestedAt, @CreatedBy, @UpdatedBy, @OwnerTenantId
             );
             """;
+        var owner = Owner();
+        var args = new DynamicParameters(row);
+        args.Add("OwnerTenantId", owner);
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        try { await conn.ExecuteAsync(sql, row); }
+        await EnsureShotOwnedAsync(conn, row.ShotId, owner);
+        try { await conn.ExecuteAsync(sql, args); }
         catch (PostgresException ex) when (ex.SqlState == "23505")
         {
             return await GetByFingerprintAsync(row.ExecutionFingerprint, ct)
-                ?? throw new VideoGenerationExecutionException("VIDEO_GENERATION_EXECUTION_LOCKED", "Duplicate execution fingerprint. Không gọi provider lần 2.");
+                ?? throw new ProductionNotFoundException();
         }
-        return await GetByIdAsync(row.Id, ct) ?? row;
+        return await GetByIdAsync(row.Id, ct) ?? throw new ProductionNotFoundException();
     }
 
     public async Task<Row> UpdateAsync(Row row, CancellationToken ct)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        await conn.ExecuteAsync("""
+        var n = await conn.ExecuteAsync("""
             UPDATE pack_content.video_generation_execution
             SET execution_status = @ExecutionStatus, provider = @Provider, provider_status = @ProviderStatus,
                 provider_request_id = @ProviderRequestId, artifact_path = @ArtifactPath,
@@ -144,14 +168,33 @@ internal sealed class VideoGenerationExecutionRepository
                 credit_status = @CreditStatus, credit_value = @CreditValue, accepted_at = @AcceptedAt,
                 completed_at = @CompletedAt, approved_at = @ApprovedAt, approved_by = @ApprovedBy,
                 rejected_at = @RejectedAt, rejected_by = @RejectedBy, updated_at = NOW(), updated_by = @UpdatedBy
-            WHERE id = @Id;
-            """, row);
-        return await GetByIdAsync(row.Id, ct) ?? row;
+            WHERE id = @Id AND tenant_id = @OwnerTenantId;
+            """, Args(row));
+        if (n != 1)
+            throw new ProductionNotFoundException();
+        return await GetByIdAsync(row.Id, ct) ?? throw new ProductionNotFoundException();
+    }
+
+    private DynamicParameters Args(Row row)
+    {
+        var args = new DynamicParameters(row);
+        args.Add("OwnerTenantId", Owner());
+        return args;
     }
 
     public async Task InsertEventAsync(Guid? executionId, Guid shotId, string eventType, object payload, string actor, CancellationToken ct)
     {
+        var owner = Owner();
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        await EnsureShotOwnedAsync(conn, shotId, owner);
+        if (executionId is Guid execution)
+        {
+            var owned = await conn.ExecuteScalarAsync<int>(
+                "SELECT COUNT(*)::int FROM pack_content.video_generation_execution WHERE id = @Id AND tenant_id = @Owner;",
+                new { Id = execution, Owner = owner });
+            if (owned != 1)
+                throw new ProductionNotFoundException();
+        }
         await conn.ExecuteAsync("""
             INSERT INTO pack_content.video_generation_execution_event
                 (id, execution_id, shot_id, event_type, payload_json, actor)

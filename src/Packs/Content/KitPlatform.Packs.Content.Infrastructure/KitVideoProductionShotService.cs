@@ -1,4 +1,5 @@
 using System.Linq;
+using KitPlatform.Application.Content;
 using System.Text;
 using System.Text.Json;
 using KitPlatform.Packs.Content;
@@ -218,7 +219,7 @@ internal sealed class KitVideoProductionShotService : IKitVideoProductionShotSer
     }
 
     private async Task<KitVideoProductionShotRepository.ShotRow> Require(Guid id, CancellationToken ct) =>
-        await _repo.GetByIdAsync(id, ct) ?? throw new InvalidOperationException("Production Shot không tồn tại.");
+        await _repo.GetByIdAsync(id, ct) ?? throw new ProductionNotFoundException();
 
     private sealed record Context(
         KitVideoMasterLockRepository.MasterRow? Master,

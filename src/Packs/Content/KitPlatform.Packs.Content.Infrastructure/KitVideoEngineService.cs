@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using KitPlatform.Application.Content;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -41,7 +42,7 @@ internal sealed class KitVideoEngineService : IKitVideoEngineService
     public async Task<KitVideoProductionDto> GetProductionAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var row = await _repo.GetVideoProductionAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException("Production không tồn tại.");
+            ?? throw new ProductionNotFoundException();
         return await ToProduction(row, cancellationToken);
     }
 
@@ -57,8 +58,7 @@ internal sealed class KitVideoEngineService : IKitVideoEngineService
         var code = Norm(request.ProductionCode);
         if (!CodeRe.IsMatch(code))
             throw new InvalidOperationException("Production code không hợp lệ.");
-        var existing = (await _repo.ListVideoProductionsAsync(project.ProjectCode, cancellationToken))
-            .FirstOrDefault(p => string.Equals(p.ProductionCode, code, StringComparison.OrdinalIgnoreCase));
+        var existing = await _repo.FindOwnedVideoProductionAsync(project.ProjectCode, code, cancellationToken);
         if (existing is not null)
             return await ToProduction(existing, cancellationToken);
         var row = await _repo.InsertVideoProductionAsync(
@@ -79,7 +79,7 @@ internal sealed class KitVideoEngineService : IKitVideoEngineService
         CancellationToken cancellationToken = default)
     {
         var row = await _repo.GetVideoProductionAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException("Production không tồn tại.");
+            ?? throw new ProductionNotFoundException();
         var to = (request.ToState ?? "").Trim().ToUpperInvariant();
         KitVideoEngineStates.EnsureProduction(row.State, to);
         var updated = await _repo.UpdateVideoProductionStateAsync(
@@ -94,7 +94,7 @@ internal sealed class KitVideoEngineService : IKitVideoEngineService
         CancellationToken cancellationToken = default)
     {
         var row = await _repo.GetVideoProductionAsync(productionId, cancellationToken)
-            ?? throw new InvalidOperationException("Production không tồn tại.");
+            ?? throw new ProductionNotFoundException();
         var shots = await _repo.ListVideoShotsAsync(productionId, cancellationToken);
         var code = (shotCode ?? "").Trim().ToUpperInvariant();
         if (code.Length == 0) throw new InvalidOperationException("Shot code bắt buộc.");

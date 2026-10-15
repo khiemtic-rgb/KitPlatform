@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -8,6 +9,9 @@ public static class ContentPackDependencyInjection
 {
     public static IServiceCollection AddContentPack(this IServiceCollection services, IConfiguration? configuration = null)
     {
+        if (!services.Any(d => d.ServiceType == typeof(ITenantContext)))
+            services.AddScoped<ITenantContext, UnauthenticatedTenantContext>();
+
         if (configuration is not null)
             services.Configure<ContentOptions>(configuration.GetSection(ContentOptions.SectionName));
         else
@@ -48,6 +52,8 @@ public static class ContentPackDependencyInjection
 
         services.AddScoped<ContentRepository>();
         services.AddScoped<ContentWorkRepository>();
+        services.AddScoped<ContentArticleSeriesRepository>();
+        services.AddScoped<IContentArticleSeriesService, ContentArticleSeriesService>();
         services.AddScoped<IContentOrgSettingsService, ContentOrgSettingsService>();
         services.AddScoped<IContentBrandService, ContentBrandService>();
         services.AddScoped<IContentTopicService, ContentTopicService>();

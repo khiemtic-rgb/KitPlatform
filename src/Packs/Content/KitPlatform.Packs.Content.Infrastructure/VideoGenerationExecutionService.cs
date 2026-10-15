@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Linq;
 using System.Text.Json;
+using KitPlatform.Application.Content;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -398,7 +399,7 @@ internal sealed class VideoGenerationExecutionService : IVideoGenerationExecutio
     private async Task<Ctx> LoadAsync(Guid shotId, string actor, CancellationToken ct)
     {
         var shot = await _shots.GetByIdAsync(shotId, ct)
-            ?? throw new VideoGenerationExecutionException(VideoGenerationExecutionRules.Code, "Production Shot không tồn tại.", "SHOT", "shotId");
+            ?? throw new ProductionNotFoundException();
         var contract = await _contracts.GetLatestAsync(shotId, ct);
         var liveContractSha = contract is null ? "" : ProductionShotContractRules.HashCanonical(
             JsonSerializer.Deserialize<JsonElement>(string.IsNullOrWhiteSpace(contract.PayloadJson) ? "{}" : contract.PayloadJson));

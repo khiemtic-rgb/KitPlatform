@@ -29,8 +29,6 @@
 225_payment_plan_trial_days.sql
 226_pack_family_parent_goal.sql
 227_pack_family_challenge.sql
-228_kit_accounts_memberships.sql
-229_kit_accounts_prefer_pharmacy.sql
 230_pack_family_parent_emotion_push.sql
 231_pack_family_memory.sql
 232_pack_family_afe_engine.sql

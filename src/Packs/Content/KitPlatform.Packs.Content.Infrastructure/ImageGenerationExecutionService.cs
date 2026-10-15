@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using KitPlatform.Application.Content;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -60,7 +61,7 @@ internal sealed class ImageGenerationExecutionService : IImageGenerationExecutio
     {
         var ctx = await LoadAsync(shotId, "director", cancellationToken);
         var row = await _repo.GetByIdAsync(executionId, cancellationToken)
-            ?? throw new ImageGenerationExecutionException("IMAGE_GENERATION_PREFLIGHT_FAILED", "Execution không tồn tại.", "EXECUTION", "executionId");
+            ?? throw new ProductionNotFoundException();
         if (row.ShotId != shotId)
             throw new ImageGenerationExecutionException("IMAGE_GENERATION_PREFLIGHT_FAILED", "Execution không thuộc shot.", "OWNERSHIP", "shotId");
         return ToDto(row, ctx, []);
@@ -409,7 +410,7 @@ internal sealed class ImageGenerationExecutionService : IImageGenerationExecutio
     private async Task<Ctx> LoadAsync(Guid shotId, string actor, CancellationToken ct)
     {
         var shot = await _shots.GetByIdAsync(shotId, ct)
-            ?? throw new ImageGenerationExecutionException("SHOT_NOT_FOUND", "Không tìm thấy Shot 01.", "SHOT", "shotId");
+            ?? throw new ProductionNotFoundException();
         var igc = await _igc.GetLatestApprovedAsync(shotId, ct) ?? await _igc.GetLatestAsync(shotId, ct);
         var contract = await _contracts.GetLatestAsync(shotId, ct);
         var liveContractSha = contract is null ? "" : ProductionShotContractRules.HashCanonical(

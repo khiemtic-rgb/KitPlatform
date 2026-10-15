@@ -14,6 +14,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
   </ItemGroup>
 
@@ -27,6 +29,7 @@
     <ProjectReference Include="..\..\src\Packs\Survey\KitPlatform.Packs.Survey.Application\KitPlatform.Packs.Survey.Application.csproj" />
     <ProjectReference Include="..\..\src\Packs\FamilyOS\KitPlatform.Packs.FamilyOs.Application\KitPlatform.Packs.FamilyOs.Application.csproj" />
     <ProjectReference Include="..\..\src\Packs\Content\KitPlatform.Packs.Content.Application\KitPlatform.Packs.Content.Application.csproj" />
+    <ProjectReference Include="..\..\src\Packs\Content\KitPlatform.Packs.Content.Infrastructure\KitPlatform.Packs.Content.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Packs\LocalOS\KitPlatform.Packs.LocalOs.Application\KitPlatform.Packs.LocalOs.Application.csproj" />
     <ProjectReference Include="..\..\src\Packs\Sales\KitPlatform.Packs.Sales.Application\KitPlatform.Packs.Sales.Application.csproj" />
   </ItemGroup>

@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using KitPlatform.Application.Content;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -164,7 +165,7 @@ internal sealed class ProductionPromptCompilerService : IProductionPromptCompile
 
     private async Task<KitVideoProductionShotRepository.ShotRow> RequireShot(Guid shotId, CancellationToken ct) =>
         await _shots.GetByIdAsync(shotId, ct)
-        ?? throw new ProductionPromptCompilerException("PROMPT_COMPILER_NOT_READY", "PROMPT_COMPILER_NOT_READY: Production Shot không tồn tại.", "SHOT", "shotId");
+        ?? throw new ProductionNotFoundException();
 
     private static IReadOnlyList<ProductionPromptCompilerBlockDto> PreviewBlocks(
         ProductionShotContractRepository.ContractRow? contract, CharacterIdentityGovernanceDto gov)

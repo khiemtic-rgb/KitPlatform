@@ -1,4 +1,5 @@
 using System.Text.Json;
+using KitPlatform.Application.Content;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -382,7 +383,7 @@ internal sealed class KitVideoMotionService : IKitVideoMotionService
         var kf = await _keyframes.GetByIdAsync(keyframeAttemptId, ct)
             ?? throw new InvalidOperationException("Keyframe attempt không tồn tại.");
         var production = await _productions.GetVideoProductionAsync(kf.ProductionId, ct)
-            ?? throw new InvalidOperationException("Production không tồn tại.");
+            ?? throw new ProductionNotFoundException();
         try
         {
             KitVideoMotionRules.EnsureGoldenLock(production.ProjectCode, compiled.ShotCode);

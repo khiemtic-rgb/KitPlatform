@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using KitPlatform.Application.Content;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -37,6 +38,7 @@ internal sealed class ProductionShotContractService : IProductionShotContractSer
 
     public async Task<ProductionShotContractDto> ValidateAsync(Guid shotId, JsonElement? payload, string actor, CancellationToken cancellationToken = default)
     {
+        await RequireShot(shotId, cancellationToken);
         if (payload is { ValueKind: JsonValueKind.Object } body)
             return await PersistAsync(shotId, body, actor, validateOnly: true, cancellationToken);
         var existing = await _repo.GetLatestAsync(shotId, cancellationToken)
@@ -48,6 +50,7 @@ internal sealed class ProductionShotContractService : IProductionShotContractSer
     {
         if (string.IsNullOrWhiteSpace(actor) || actor.Equals("anonymous", StringComparison.OrdinalIgnoreCase))
             throw new ProductionShotContractException("SHOT_CONTRACT_INVALID", "SHOT_CONTRACT_INVALID: chỉ Director được duyệt.");
+        await RequireShot(shotId, cancellationToken);
         var validated = await ValidateAsync(shotId, null, actor, cancellationToken);
         if (validated.ContractValidation != "PASS" || validated.GovernanceEngine != "PASS")
             throw new ProductionShotContractException(
@@ -69,6 +72,7 @@ internal sealed class ProductionShotContractService : IProductionShotContractSer
 
     public async Task<ProductionShotContractDto> RejectAsync(Guid shotId, string actor, string? note, CancellationToken cancellationToken = default)
     {
+        await RequireShot(shotId, cancellationToken);
         var row = await _repo.GetLatestAsync(shotId, cancellationToken)
             ?? throw new ProductionShotContractException("SHOT_CONTRACT_INVALID", "SHOT_CONTRACT_INVALID: chưa có contract.");
         if (ProductionShotContractRules.IsApproved(row.ContractStatus))
@@ -194,7 +198,7 @@ internal sealed class ProductionShotContractService : IProductionShotContractSer
 
     private async Task<KitVideoProductionShotRepository.ShotRow> RequireShot(Guid shotId, CancellationToken ct) =>
         await _shots.GetByIdAsync(shotId, ct)
-        ?? throw new ProductionShotContractException("SHOT_CONTRACT_INVALID", "SHOT_CONTRACT_INVALID: Production Shot không tồn tại.");
+        ?? throw new ProductionNotFoundException();
 
     private ProductionShotContractRepository.ContractRow NewRow(
         KitVideoProductionShotRepository.ShotRow shot,

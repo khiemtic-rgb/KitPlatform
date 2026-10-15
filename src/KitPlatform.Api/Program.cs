@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Application.Configuration;
+using KitPlatform.Application.Content;
 using KitPlatform.Application.CustomerApp;
 using KitPlatform.Packs.Pharmacy.Rx;
 using KitPlatform.Packs.Survey;
@@ -140,6 +141,7 @@ catch (Exception ex) when (
         $"[dev] Care pack skipped (Application Control blocked DLL): {ex.GetBaseException().Message}");
 }
 builder.Services.AddContentPack(builder.Configuration);
+builder.Services.AddScoped<KitPlatform.Api.Controllers.Content.ProductionTenantActionFilter>();
 builder.Services.AddLocalOsPack();
 builder.Services.AddKitSalesPack(builder.Configuration);
 builder.Services.AddHostedService<KitPlatform.Api.KitSales.KitSalesJourneyWorker>();
@@ -294,6 +296,7 @@ app.Use(async (context, next) =>
         var statusCode = ex switch
         {
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+            ProductionNotFoundException => StatusCodes.Status404NotFound,
             InvalidOperationException => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status500InternalServerError,
         };
@@ -301,6 +304,7 @@ app.Use(async (context, next) =>
         var message = ex switch
         {
             UnauthorizedAccessException => ex.Message,
+            ProductionNotFoundException => ProductionNotFoundException.FixedMessage,
             InvalidOperationException => ex.Message,
             _ when TryGetPostgresSqlState(ex, out var sqlState) => sqlState switch
             {

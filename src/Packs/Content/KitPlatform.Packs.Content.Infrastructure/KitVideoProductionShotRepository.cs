@@ -1,6 +1,8 @@
 using System.Linq;
 using System.Text.Json;
 using Dapper;
+using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Content;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.Content;
 using Npgsql;
@@ -10,7 +12,14 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 internal sealed class KitVideoProductionShotRepository
 {
     private readonly IDbConnectionFactory _db;
-    public KitVideoProductionShotRepository(IDbConnectionFactory db) => _db = db;
+    private readonly ITenantContext _tenant;
+    public KitVideoProductionShotRepository(IDbConnectionFactory db, ITenantContext tenant)
+    {
+        _db = db;
+        _tenant = tenant;
+    }
+
+    private Guid Owner() => ProductionCustomerOwner.Require(_tenant);
 
     public sealed class ShotRow
     {
@@ -62,7 +71,8 @@ internal sealed class KitVideoProductionShotRepository
     {
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         var rows = await conn.QueryAsync<CharacterCountRow>(
-            "SELECT character_id AS CharacterId, COUNT(*)::int AS Count FROM pack_content.video_production_shot GROUP BY character_id;");
+            "SELECT character_id AS CharacterId, COUNT(*)::int AS Count FROM pack_content.video_production_shot WHERE tenant_id = @Owner GROUP BY character_id;",
+            new { Owner = Owner() });
         return rows.ToDictionary(r => r.CharacterId, r => r.Count, StringComparer.OrdinalIgnoreCase);
     }
 
@@ -76,23 +86,25 @@ internal sealed class KitVideoProductionShotRepository
     {
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         var rows = (await conn.QueryAsync<ShotRow>(
-            SelectSql + " WHERE character_id = @Character AND era_id = @Era ORDER BY shot_seq, shot_version;",
-            new { Character = characterId, Era = eraId })).ToList();
+            SelectSql + " WHERE character_id = @Character AND era_id = @Era AND tenant_id = @Owner ORDER BY shot_seq, shot_version;",
+            new { Character = characterId, Era = eraId, Owner = Owner() })).ToList();
         return rows.Select(r => AttachSha(r)!).ToList();
     }
 
     public async Task<ShotRow?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        return AttachSha(await conn.QuerySingleOrDefaultAsync<ShotRow>(SelectSql + " WHERE id = @Id;", new { Id = id }));
+        return AttachSha(await conn.QuerySingleOrDefaultAsync<ShotRow>(
+            SelectSql + " WHERE id = @Id AND tenant_id = @Owner;",
+            new { Id = id, Owner = Owner() }));
     }
 
     public async Task<int> NextSeqAsync(string characterId, string eraId, CancellationToken ct)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         var max = await conn.ExecuteScalarAsync<int?>(
-            "SELECT MAX(shot_seq) FROM pack_content.video_production_shot WHERE character_id = @Character AND era_id = @Era;",
-            new { Character = characterId, Era = eraId });
+            "SELECT MAX(shot_seq) FROM pack_content.video_production_shot WHERE character_id = @Character AND era_id = @Era AND tenant_id = @Owner;",
+            new { Character = characterId, Era = eraId, Owner = Owner() });
         return (max ?? 0) + 1;
     }
 
@@ -103,52 +115,61 @@ internal sealed class KitVideoProductionShotRepository
                 id, shot_code, document_id, project_code, character_id, character_name, era_id,
                 shot_seq, shot_version, shot_status, master_reference_id, master_code, master_sha256,
                 character_dna_id, dna_code, dna_sha256, production_pack_id, prp_code, prp_sha256,
-                spec_json, note, created_by
+                spec_json, note, created_by, tenant_id
             ) VALUES (
                 @Id, @ShotCode, @DocumentId, 'FAMIXA', @CharacterId, @CharacterName, @EraId,
                 @ShotSeq, @ShotVersion, 'DRAFT', @MasterReferenceId, @MasterCode, @MasterSha256,
                 @CharacterDnaId, @DnaCode, @DnaSha256, @ProductionPackId, @PrpCode, @PrpSha256,
-                @SpecJson::jsonb, @Note, @CreatedBy
+                @SpecJson::jsonb, @Note, @CreatedBy, @OwnerTenantId
             );
             """;
+        var owner = Owner();
+        var args = new DynamicParameters(row);
+        args.Add("OwnerTenantId", owner);
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         try
         {
-            await conn.ExecuteAsync(sql, row);
+            await conn.ExecuteAsync(sql, args);
         }
         catch (PostgresException ex) when (ex.SqlState == "23505")
         {
-            throw new InvalidOperationException("SHOT_GATE_NOT_SATISFIED: duplicate shot code.");
+            throw new ProductionNotFoundException();
         }
         return row;
     }
 
     public async Task<ShotRow> UpdateSpecAsync(Guid id, string specJson, string status, string note, CancellationToken ct)
     {
+        var current = await GetByIdAsync(id, ct) ?? throw new ProductionNotFoundException();
+        if (current.ShotStatus == "LOCKED")
+            throw new InvalidOperationException("SHOT_LOCKED: V1 không overwrite. Dùng SHOT-V2.");
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         var n = await conn.ExecuteAsync("""
             UPDATE pack_content.video_production_shot
             SET spec_json = @Spec::jsonb,
                 shot_status = @Status,
                 note = COALESCE(NULLIF(@Note, ''), note)
-            WHERE id = @Id AND shot_status <> 'LOCKED';
-            """, new { Id = id, Spec = specJson, Status = status, Note = note });
+            WHERE id = @Id AND tenant_id = @Owner AND shot_status <> 'LOCKED';
+            """, new { Id = id, Spec = specJson, Status = status, Note = note, Owner = Owner() });
         if (n == 0)
-            throw new InvalidOperationException("SHOT_LOCKED: V1 không overwrite. Dùng SHOT-V2.");
-        return await GetByIdAsync(id, ct) ?? throw new InvalidOperationException("Production Shot không tồn tại.");
+            throw new ProductionNotFoundException();
+        return await GetByIdAsync(id, ct) ?? throw new ProductionNotFoundException();
     }
 
     public async Task<ShotRow> SetStatusAsync(Guid id, string status, string note, CancellationToken ct)
     {
+        var current = await GetByIdAsync(id, ct) ?? throw new ProductionNotFoundException();
+        if (current.ShotStatus == "LOCKED")
+            throw new InvalidOperationException("SHOT_LOCKED: V1 không overwrite. Dùng SHOT-V2.");
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         var n = await conn.ExecuteAsync("""
             UPDATE pack_content.video_production_shot
             SET shot_status = @Status, note = COALESCE(NULLIF(@Note, ''), note)
-            WHERE id = @Id AND shot_status <> 'LOCKED';
-            """, new { Id = id, Status = status, Note = note });
+            WHERE id = @Id AND tenant_id = @Owner AND shot_status <> 'LOCKED';
+            """, new { Id = id, Status = status, Note = note, Owner = Owner() });
         if (n == 0)
-            throw new InvalidOperationException("SHOT_LOCKED: V1 không overwrite. Dùng SHOT-V2.");
-        return await GetByIdAsync(id, ct) ?? throw new InvalidOperationException("Production Shot không tồn tại.");
+            throw new ProductionNotFoundException();
+        return await GetByIdAsync(id, ct) ?? throw new ProductionNotFoundException();
     }
 
     public async Task<ShotRow> ApproveAndLockAsync(Guid id, string actor, string note, string shotSha256, CancellationToken ct)
@@ -158,10 +179,10 @@ internal sealed class KitVideoProductionShotRepository
         try
         {
             var current = await conn.QuerySingleOrDefaultAsync<ShotRow>(
-                SelectSql + " WHERE id = @Id FOR UPDATE;",
-                new { Id = id }, tx);
+                SelectSql + " WHERE id = @Id AND tenant_id = @Owner FOR UPDATE;",
+                new { Id = id, Owner = Owner() }, tx);
             if (current is null)
-                throw new InvalidOperationException("Production Shot không tồn tại.");
+                throw new ProductionNotFoundException();
             if (current.ShotStatus == "LOCKED")
             {
                 await tx.CommitAsync(ct);
@@ -188,8 +209,8 @@ internal sealed class KitVideoProductionShotRepository
                     locked_at = NOW(),
                     locked_by = @Actor,
                     extra_json = COALESCE(extra_json, '{}'::jsonb) || @Extra::jsonb
-                WHERE id = @Id AND shot_status IN ('DRAFT', 'IDENTITY_CHECK', 'DIRECTOR_REVIEW', 'APPROVED', 'REJECTED');
-                """, new { Id = id, Actor = actor, Note = note, Extra = extra }, tx);
+                WHERE id = @Id AND tenant_id = @Owner AND shot_status IN ('DRAFT', 'IDENTITY_CHECK', 'DIRECTOR_REVIEW', 'APPROVED', 'REJECTED');
+                """, new { Id = id, Actor = actor, Note = note, Extra = extra, Owner = Owner() }, tx);
             var next = await conn.QuerySingleAsync<ShotRow>(SelectSql + " WHERE id = @Id;", new { Id = id }, tx);
             await tx.CommitAsync(ct);
             return AttachSha(next)!;
@@ -203,7 +224,13 @@ internal sealed class KitVideoProductionShotRepository
 
     public async Task InsertEventAsync(Guid shotId, string eventType, object payload, string? actor, CancellationToken ct)
     {
+        var owner = Owner();
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        var owned = await conn.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*)::int FROM pack_content.video_production_shot WHERE id = @Id AND tenant_id = @Owner;",
+            new { Id = shotId, Owner = owner });
+        if (owned != 1)
+            throw new ProductionNotFoundException();
         await conn.ExecuteAsync("""
             INSERT INTO pack_content.video_production_shot_event (id, shot_id, event_type, payload_json, actor)
             VALUES (@Id, @ShotId, @EventType, @Payload::jsonb, @Actor);
