@@ -263,7 +263,10 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
             runwayResolved.RunwayConfigured,
             fal.Ok,
             fal.Message,
-            falResolved.FalConfigured);
+            falResolved.FalConfigured,
+            false,
+            null,
+            false);
     }
 
     public async Task<ContentFacebookTestResultDto> TestFacebookAsync(CancellationToken cancellationToken = default)

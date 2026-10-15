@@ -42,34 +42,31 @@ public class DrugKnowledgeRulesTests
 
 public class PricingEngineTests
 {
-    private readonly IPricingEngine _engine = new PricingEngine();
-
     [Fact]
-    public void PriceSaleOrder_matches_static_sales_pricing()
+    public void PriceOrder_prices_an_undiscounted_line()
     {
         var lines = new List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)>
         {
             (new CreateSaleLineRequest(Guid.NewGuid(), Guid.NewGuid(), 2m, null, null), 10000m, 1m),
         };
 
-        var viaEngine = _engine.PriceSaleOrder(lines, null);
-        var viaStatic = SalesPricing.PriceOrder(lines, null);
+        var priced = SalesPricing.PriceOrder(lines, null);
 
-        Assert.Equal(viaStatic.TotalAmount, viaEngine.TotalAmount);
-        Assert.Equal(viaStatic.SubtotalGross, viaEngine.SubtotalGross);
+        Assert.Equal(20000m, priced.SubtotalGross);
+        Assert.Equal(20000m, priced.TotalAmount);
     }
 
     [Fact]
-    public void ValidateSaleDiscounts_rejects_when_policy_disallows()
+    public void ValidateDiscounts_rejects_when_policy_disallows()
     {
         var lines = new List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)>
         {
             (new CreateSaleLineRequest(Guid.NewGuid(), Guid.NewGuid(), 1m, SalesDiscountTypes.Percent, 10m), 10000m, 1m),
         };
-        var pricing = _engine.PriceSaleOrder(lines, null);
+        var pricing = SalesPricing.PriceOrder(lines, null);
         var policy = new SalesDiscountPolicy(CanApply: false, Unlimited: false, MaxPercent: 0m);
 
-        Assert.Throws<InvalidOperationException>(() => _engine.ValidateSaleDiscounts(pricing, policy));
+        Assert.Throws<InvalidOperationException>(() => SalesPricing.ValidateDiscounts(pricing, policy));
     }
 }
 

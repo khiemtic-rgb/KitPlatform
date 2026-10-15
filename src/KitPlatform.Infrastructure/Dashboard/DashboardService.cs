@@ -1,5 +1,4 @@
 ﻿using KitPlatform.Application.Abstractions;
-using KitPlatform.Application.Core.Engines;
 using KitPlatform.Application.Dashboard;
 
 namespace KitPlatform.Infrastructure.Dashboard;
@@ -8,16 +7,16 @@ internal sealed class DashboardService : IDashboardService
 {
     private readonly DashboardRepository _repository;
     private readonly IBranchAccessService _branchAccess;
-    private readonly IPermissionEngine _permissions;
+    private readonly ICurrentUserAccessor _user;
 
     public DashboardService(
         DashboardRepository repository,
         IBranchAccessService branchAccess,
-        IPermissionEngine permissions)
+        ICurrentUserAccessor user)
     {
         _repository = repository;
         _branchAccess = branchAccess;
-        _permissions = permissions;
+        _user = user;
     }
 
     public async Task<DashboardOverviewDto> GetOverviewAsync(
@@ -46,8 +45,8 @@ internal sealed class DashboardService : IDashboardService
     }
 
     private bool CanViewStoreAnalytics() =>
-        _permissions.IsAdmin()
-        || _permissions.HasPermission("reports.read")
-        || _permissions.HasPermission("reports.write")
-        || _permissions.HasPermission("reports.export");
+        _user.IsInRole("ADMIN")
+        || _user.Permissions.Contains("reports.read")
+        || _user.Permissions.Contains("reports.write")
+        || _user.Permissions.Contains("reports.export");
 }

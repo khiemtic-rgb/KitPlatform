@@ -1,5 +1,4 @@
 ﻿using KitPlatform.Application.Abstractions;
-using KitPlatform.Application.Core.Engines;
 using KitPlatform.Application.CustomerApp;
 using KitPlatform.Packs.Pharmacy.Sales;
 using KitPlatform.Infrastructure.Data;
@@ -31,7 +30,6 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
     private readonly IBranchAccessService _branchAccess;
     private readonly ICustomerChatService _chat;
     private readonly IDbConnectionFactory _db;
-    private readonly IPermissionEngine _permissions;
 
     public CustomerDraftOrderService(
         CustomerDraftOrderRepository repo,
@@ -41,8 +39,7 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
         ICurrentUserAccessor user,
         IBranchAccessService branchAccess,
         ICustomerChatService chat,
-        IDbConnectionFactory db,
-        IPermissionEngine permissions)
+        IDbConnectionFactory db)
     {
         _repo = repo;
         _sales = sales;
@@ -52,7 +49,6 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
         _branchAccess = branchAccess;
         _chat = chat;
         _db = db;
-        _permissions = permissions;
     }
 
     public async Task<CustomerDraftOrderListResult> ListForStaffAsync(
@@ -440,7 +436,8 @@ internal sealed class CustomerDraftOrderService : ICustomerDraftOrderService
             ?? throw new InvalidOperationException("Chưa cấu hình kho mặc định.");
     }
 
-    private SalesDiscountPolicy DiscountPolicy => _permissions.GetSalesDiscountPolicy();
+    private SalesDiscountPolicy DiscountPolicy =>
+        SalesDiscountPolicy.FromPermissions(_user.Permissions, _user.IsInRole("ADMIN"));
 
     private static void ValidateRequest(UpsertCustomerDraftOrderRequest request)
     {

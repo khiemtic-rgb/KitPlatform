@@ -102,7 +102,10 @@ internal static class ContentVideoConfigParser
             FirstNonEmpty(state.RunwayApiKeySecretRef) ?? resolved.RunwayApiKeySecretRef,
             resolved.RunwayConfigured,
             FirstNonEmpty(state.FalApiKeySecretRef) ?? resolved.FalApiKeySecretRef,
-            resolved.FalConfigured);
+            resolved.FalConfigured,
+            null,
+            false,
+            null);
 
     public static ContentVideoResolved Resolve(
         ContentVideoConfigState state,

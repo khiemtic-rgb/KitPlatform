@@ -9,10 +9,26 @@ internal sealed class ContentSeriesTakeProxyService : IContentSeriesTakeProxySer
 {
     private const int MaxBytes = 80_000_000;
     private readonly IHttpClientFactory _http;
+    private readonly KitVideoVideoStore _videos;
 
-    public ContentSeriesTakeProxyService(IHttpClientFactory http)
+    public ContentSeriesTakeProxyService(IHttpClientFactory http, KitVideoVideoStore videos)
     {
         _http = http;
+        _videos = videos;
+    }
+
+    public byte[]? ReadVeoTake(string? taskIdOrUrl)
+    {
+        var fileId = FamixaVeoTakePlaybackV1.FileIdFromUrl(taskIdOrUrl);
+        if (fileId is null) return null;
+        return _videos.TryReadNamed("veo", fileId);
+    }
+
+    public byte[]? ReadFalTake(string? taskIdOrUrl)
+    {
+        var fileId = FamixaFalLipsyncPlaybackV1.FileIdFromUrl(taskIdOrUrl);
+        if (fileId is null) return null;
+        return _videos.TryReadNamed("fal", fileId);
     }
 
     public async Task<(byte[] Bytes, string ContentType, string FileName)> FetchAsync(

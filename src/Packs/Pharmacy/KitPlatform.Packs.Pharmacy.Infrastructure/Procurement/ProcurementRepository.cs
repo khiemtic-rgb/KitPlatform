@@ -1,7 +1,6 @@
 using System.Data;
 using Dapper;
 using KitPlatform.Application.Abstractions;
-using KitPlatform.Application.Core.Engines;
 using KitPlatform.Packs.Pharmacy.Inventory;
 using KitPlatform.Packs.Pharmacy.Procurement;
 using KitPlatform.Infrastructure.Data;
@@ -14,18 +13,15 @@ internal sealed class ProcurementRepository
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
     private readonly InventoryRepository _inventory;
-    private readonly IPricingEngine _pricing;
 
     public ProcurementRepository(
         IDbConnectionFactory db,
         ITenantContext tenant,
-        InventoryRepository inventory,
-        IPricingEngine pricing)
+        InventoryRepository inventory)
     {
         _db = db;
         _tenant = tenant;
         _inventory = inventory;
-        _pricing = pricing;
     }
 
     private Guid TenantId => _tenant.TenantId;
@@ -806,7 +802,7 @@ internal sealed class ProcurementRepository
                 i.UnitCost,
                 new ProcurementDiscountInput(i.DiscountType, i.DiscountValue)))
             .ToList();
-        var pricing = _pricing.PriceGoodsReceipt(
+        var pricing = ProcurementPricing.PriceReceipt(
             pricingLines,
             new ProcurementDiscountInput(request.OrderDiscountType, request.OrderDiscountValue),
             treatment.RatePercent,
@@ -962,7 +958,7 @@ internal sealed class ProcurementRepository
                 i.UnitCost,
                 new ProcurementDiscountInput(i.DiscountType, i.DiscountValue)))
             .ToList();
-        var pricing = _pricing.PriceGoodsReceipt(
+        var pricing = ProcurementPricing.PriceReceipt(
             pricingLines,
             new ProcurementDiscountInput(request.OrderDiscountType, request.OrderDiscountValue),
             treatment.RatePercent,

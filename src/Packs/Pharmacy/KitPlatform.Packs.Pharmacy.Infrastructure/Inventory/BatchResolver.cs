@@ -1,14 +1,13 @@
 ﻿using System.Data;
 using Dapper;
 using KitPlatform.Application.Abstractions;
-using KitPlatform.Application.Core.Engines;
 using KitPlatform.Packs.Pharmacy.Inventory;
 using KitPlatform.Infrastructure.Data;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
-/// <summary>FEFO batch allocation — also registered as <see cref="IInventoryEngine"/> (BR-INV-001/002).</summary>
-internal sealed class BatchResolver : IInventoryEngine
+/// <summary>FEFO batch allocation registered as <see cref="IBatchResolver"/> (BR-INV-001/002).</summary>
+internal sealed class BatchResolver : IBatchResolver
 {
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
