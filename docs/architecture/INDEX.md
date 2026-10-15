@@ -138,6 +138,7 @@ Level 5 — Work / Implementation
 | **Where is authorization?** | Master Architecture V1 | §18 Security / authorization |
 | **Where is Production scope?** | ADR-03 Decision V1 | Full document |
 | **Where is credential ownership?** | ADR-04 Decision V1 | Full document |
+| **Which Phase 1.5 tests are named?** | Phase 1.5 Acceptance TestPack V1 | `docs/architecture/KIT-PLATFORM-PHASE-1.5-ACCEPTANCE-TESTPACK-V1.md` |
 | **Why was this decision made?** | Architecture Decision Register V1 | Find ADR-XX, read brief |
 | **Is this decision open?** | Architecture Decision Register V1 | Decision matrix |
 | **Where is Famixa Production OS?** | Master Architecture V1 | §8 Famixa Production Domain |

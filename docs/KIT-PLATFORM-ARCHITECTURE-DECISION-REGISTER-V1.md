@@ -779,3 +779,174 @@ Architect.
 This section does not add `tenant_id` to `pack_content.series_build`. It does not create or modify a migration. It does not authorize a historical backfill. It does not select a migration prefix, a D-05 filename, or a manifest line.
 
 It does not lift line 231. It does not change ADR-03 Option 1. It does not mark Phase 1.5 PASS.
+
+---
+
+# PO-15 — CUSTOMER OWNER FOR PRODUCTION ROWS
+
+## Status
+
+**DECIDED** — narrow implementation grant. **NOT IMPLEMENTED** by this section alone.
+
+This section is a later record. It does not edit Decision Register line 231. It does not edit the D-05 section above. It does not edit the manifest-disposition section for migrations 383 and 384. Those sentences stay as they were written.
+
+## Decision Owner
+
+Product Owner, for the four business grants below. Platform Architecture remains the owner of ADR-03 Option 1. This section does not reopen that option.
+
+## Conflict this section resolves
+
+Line 231, in the ADR-03 record, still says: “No TenantId/WorkspaceId/RLS/API change is authorized by this record.” That sentence remains the limit of the ADR-03 record. D-05 Option A still says that record grants no implementation permission, and it still forbids `tenant_id` on `pack_content.series_build`.
+
+The Product Owner closure package of 2026-10-15 grants a narrower permission than line 231 withholds. Governance §13 does not let a later note replace a Level 2 sentence by silence. This section is the later Level 2 record. It authorizes only the items in “Allowed” and repeats the items in “Still forbidden.”
+
+## Decision
+
+1. Production data of one customer is not the production data of another customer. The same episode code, shot code, or version may be used by two customers. That reuse does not make them one row.
+2. An episode (`pack_content.video_production`), a production shot (`pack_content.video_production_shot`), and the two generation records (`pack_content.video_image_generation_execution`, `pack_content.video_generation_execution`) may carry an optional customer owner. The column is `tenant_id UUID NULL`, with no default, referencing `public.tenants(id)`. Old rows stay NULL. No statement in the migration assigns an owner.
+3. Inside one customer, the existing business uniqueness rules still apply. Across customers, the same project and episode code are two production identities. The same shot code and version are two shot identities. The same generation fingerprint is two generation identities.
+4. Shared Famixa studio material may be inherited: project, universe, visual system, character bible, master reference, and their canon. A customer may create private production rows. Inheritance of shared canon does not authorize a read or write of another customer’s episode, shot, or generation history. A private edit does not overwrite the shared canon row or another customer’s private row. This phase does not add a further asset hierarchy and does not add `tenant_id` to the shared canon tables.
+5. A missing row, a row owned by another customer, and a row whose owner is NULL use one not-found result. The body is `Production không tồn tại.` The result does not say which of the three occurred. A rejected request does not change status and does not insert an event.
+6. Pharmacy manifest ownership of `228_kit_accounts_memberships.sql` and `229_kit_accounts_prefer_pharmacy.sql`, and Family manifest ownership of `230_pack_family_parent_emotion_push.sql` and `231_pack_family_memory.sql`, is decided. The two pairs do not depend on each other. 228/229 depend on platform identity and pharmacy users. 230 depends on `pack_family.reminder_dispatch`. 231 depends on `pack_family.family`.
+7. The already-decided content manifest lines for `383_pack_content_article_series.sql` and `384_pack_content_brand_narrative_dna.sql` may now be written. The earlier section that withheld the edit is not rewritten. This sentence is the implementation grant for those two lines only.
+8. A one-time database, built from a copy of the content tables and not listening as the application database, may be counted and used for rehearsal. The application database is not migrated by this decision.
+
+## Allowed
+
+| Change | Limit |
+|---|---|
+| `tenant_id UUID NULL` on the four tables named in item 2 | No default. No backfill. No update of a NULL owner. No change of an owner that is already set. |
+| Read, insert, update, validate, reject, and state transition for those four tables | The predicate is the caller’s tenant. A NULL owner matches nobody. |
+| Not-found response for those resources | One body: `Production không tồn tại.` |
+| Content manifest | Add the tracked names `383_pack_content_article_series.sql` and `384_pack_content_brand_narrative_dna.sql`, then the new owner migrations after a fresh prefix listing. |
+| `migration-files.prod.txt` | Keep 228 and 229. Remove 230 and 231. |
+| `migration-files.family-os.txt` | Keep 230 and 231. Remove 228 and 229. |
+
+## Still forbidden
+
+- `tenant_id` on `pack_content.series_build`. D-05 Option A is unchanged.
+- `WorkspaceId` on Production rows. RLS. `CREATE POLICY`. Grant changes.
+- Migrations 376, 385, and 386, and any reconstruction of them.
+- Guessing an owner from project, universe, series build, actor, or canon.
+- A customer column on project, universe, visual system, character DNA, master reference, or canon event tables.
+- Restoring `IPermissionEngine`, `IPricingEngine`, or `IInventoryEngine`.
+- A change to revenue visibility, the sales discount scale, FEFO, or the receipt price formula.
+- Applying these migrations to the application database or to a production server.
+- Marking Phase 1.5 PASS from this section. PASS still requires the Step 028 rows on an accepted commit.
+
+## Limits
+
+Line 231 is not deleted and is not reworded. ADR-03 Option 1 stays DECIDED. GATE A is not claimed complete. This section does not authorize publication, commit, or deploy. A later acceptance read may still find the working tree dirty. That finding is not removed by this decision.
+
+---
+
+# PO-16 — PHASE 1.5 SOURCE AND RECORDED DISPOSITIONS
+
+## Status
+
+**DECIDED** as a record of decisions already written. This section does not mark a Step 028 row PASS. A PASS is a later read of the accepted commit against the named checklist.
+
+This section does not edit line 231, D-05, or PO-15. Those sentences stay as written.
+
+## Decision Owner
+
+Product Owner execution order of 2026-10-15, for placing already written dispositions onto this Register. Platform Architecture remains the owner of ADR-03 Option 1.
+
+## 1. Checklist approval
+
+`STEP-028-PHASE-1.5-ACCEPTANCE-GATE-DEFINITION.md` is the Phase 1.5 acceptance checklist. The Product Owner execution order of 2026-10-15 states that those criteria are the approved criteria. This paragraph cites that filename. Approval of the checklist does not mark its rows PASS.
+
+The inspection triple printed inside Step 028 (`E:/KitPlatform`, branch `main`, HEAD `d54652d4a7734b3116db62bd356a831f9942fc73`) is the triple that file recorded. It is not the inspection identity of this acceptance. The identity in §2 is the named revision of that one row.
+
+## 2. Source identity
+
+| Item | Value |
+|---|---|
+| Inspection root | `E:/KitPlatform-wt-phase15-wp-bc-01` |
+| Branch | `phase15-acceptance` |
+| Accepted source | The tip of `phase15-acceptance` whose tree contains this section, `migrations/387_pack_content_production_customer_owner.sql`, and `migrations/388_pack_content_production_customer_uniqueness.sql`. |
+| Publication | Not part of this acceptance. `origin/main` is not updated. A local commit is the source. |
+
+Ancestor `b64f6772213dd0e095a49ae9a84983b37116f696` remains the parent that records D-05 Option A and the withdrawal of the Migration 376 claim. It is not, by itself, the tree that contains PO-15.
+
+## 3. Required file set
+
+These paths are the set this acceptance cites. Each one is in the accepted source. A gitignored copy is not a substitute.
+
+- `docs/KIT-PLATFORM-MASTER-ARCHITECTURE-V1.md`
+- `docs/KIT-PLATFORM-ARCHITECTURE-DECISION-REGISTER-V1.md`
+- `docs/KIT-PLATFORM-ADR-03-DECISION-V1.md`
+- `docs/KIT-PLATFORM-ADR-04-DECISION-V1.md`
+- `docs/architecture/INDEX.md`
+- `docs/architecture/KIT-PLATFORM-PHASE-1.5-ACCEPTANCE-TESTPACK-V1.md`
+- `STEP-028-PHASE-1.5-ACCEPTANCE-GATE-DEFINITION.md`
+- `STEP-031-ARCHITECT-DISPOSITION-D03-C01-C04.md`
+- `deploy/ubuntu/migration-files.content.txt`
+- `deploy/ubuntu/migration-files.prod.txt`
+- `deploy/ubuntu/migration-files.family-os.txt`
+- `migrations/387_pack_content_production_customer_owner.sql`
+- `migrations/388_pack_content_production_customer_uniqueness.sql`
+- `src/KitPlatform.Api/Controllers/Content/ProductionTenantActionFilter.cs`
+
+`KitPlatform.slnx` plus the project references in the accepted source are the dependency source. `KitPlatform.Api.csproj` does not reference TestPack. Projects that exist on disk and are absent from `KitPlatform.slnx` stay deferred. The NU1903 warning on `Newtonsoft.Json` 10.0.3 is not a separate mandatory failure.
+
+## 4. Authority rank, C-01 through C-04
+
+Recorded from `STEP-031-ARCHITECT-DISPOSITION-D03-C01-C04.md`. The sentences are not rewritten. Rank is unchanged.
+
+- **C-01.** Work lists and reading order are navigation aids. They do not alter the authority hierarchy. Level 1 remains `docs/KIT-PLATFORM-MASTER-ARCHITECTURE-V1.md`. Level 2 remains this Register. Level 3 remains the ADR decision files. `docs/architecture/INDEX.md` is navigation, not an authority rank.
+- **C-02.** The label “Primary SSOT” in `KIT-WORK-INDEX.md` does not create another Level 1 architecture authority. Level 1 remains `docs/KIT-PLATFORM-MASTER-ARCHITECTURE-V1.md`.
+- **C-03.** Do not declare `Documentation State V1` wholly invalid. Mark an individual claim stale only where Git evidence supports that exact claim. That document is not edited here.
+- **C-04.** The 2026-10-08 consolidation report does not override the later 2026-10-11 evidence. It is not Phase 1.5 PASS. Phase 1.5 is PASS only when every mandatory Step 028 row is PASS on the accepted source.
+
+## 5. D-09 — reset execution order
+
+No path for `RESET EXECUTION ORDER V1` is in this source. Searches under `docs/`, `docs/architecture/`, `docs/forensics/`, and `docs/00-control/` did not find it. The disposition, using the sentence already written for this gap, is: reset-order text is out of Phase 1.5 unless a path appears on the source commit. This is a scope note. It does not claim that a missing document passed, and it does not invent the document’s text.
+
+## 6. D-06 — six `ProductionTenantActionFilter` attributes
+
+The six attributes stay on `ContentController`. They are not removed.
+
+| Action | Route |
+|---|---|
+| `ListSeriesBuilds` | `GET series/builds` |
+| `GetSeriesBuild` | `GET series/builds/{id}` |
+| `PutSeriesBuild` | `PUT series/builds` |
+| `DeleteSeriesBuild` | `DELETE series/builds/{id}` |
+| `ListProductionProgress` | `GET video-engine/production-progress` |
+| `GetProductionProgress` | `GET video-engine/series/builds/{id}/production-progress` |
+
+The implementing type is `src/KitPlatform.Api/Controllers/Content/ProductionTenantActionFilter.cs`, registered in `Program.cs` so the attributes resolve. `EstablishesSeriesResourceOwnership` is `false`. `OnActionExecutionAsync` calls `next()`. An active tenant is not ownership of a series build id.
+
+These six routes are a shared series surface. The filter has no ownership duty. It is not the mechanism that hides another customer’s episode, shot, or generation row. That duty is `ProductionCustomerOwner` on the four tables named in PO-15, with the not-found body `Production không tồn tại.`
+
+Resource refusal for a series build is not in this phase. D-05 Option A forbids `tenant_id` on `pack_content.series_build`. Adding that column, or treating this filter as a tenant guard, is outside this decision.
+
+## 7. Manifest ownership
+
+PO-15 items 6 and 7 are the ownership table. This paragraph does not change them.
+
+| Filename | Owner manifest |
+|---|---|
+| `228_kit_accounts_memberships.sql` | `migration-files.prod.txt` only |
+| `229_kit_accounts_prefer_pharmacy.sql` | `migration-files.prod.txt` only |
+| `230_pack_family_parent_emotion_push.sql` | `migration-files.family-os.txt` only |
+| `231_pack_family_memory.sql` | `migration-files.family-os.txt` only |
+| `383_pack_content_article_series.sql` | `migration-files.content.txt` only |
+| `384_pack_content_brand_narrative_dna.sql` | `migration-files.content.txt` only |
+| `387_pack_content_production_customer_owner.sql` | `migration-files.content.txt` only |
+| `388_pack_content_production_customer_uniqueness.sql` | `migration-files.content.txt` only |
+
+`migrations/386_pack_content_famixa_canon_administer.sql` is not edited to satisfy this gate. Prefixes 376, 385, and 386 are not added. No manifest is merged into another.
+
+## 8. Line 231 and the implementation citation
+
+Line 231 remains the limit of the ADR-03 record. PO-15 is the later Level 2 grant for the four nullable `tenant_id` columns, the not-found body, and the manifest pairs. The implementation commit that adds migrations 387 and 388 cites PO-15. That citation is newer than Step 028. It does not cite Migration 376, a forensic file absent from history, or stash.
+
+## 9. Named tests
+
+`docs/architecture/KIT-PLATFORM-PHASE-1.5-ACCEPTANCE-TESTPACK-V1.md` is the tracked Phase 1.5 test list. The commands in that file do not open the application database on port 5432 and do not open a database named `kitplatform`. A dirty-tree result is not a result for this list. The list is run on the accepted source.
+
+## Limits
+
+This section does not add `tenant_id` to `pack_content.series_build`. It does not create migration 385 or 386. It does not authorize a historical backfill, RLS, a WorkspaceId change, publication, or deploy. It does not restore `IPermissionEngine`, `IPricingEngine`, or `IInventoryEngine`. It does not open Phase 2.

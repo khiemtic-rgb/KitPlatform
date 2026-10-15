@@ -18,6 +18,7 @@ docs/*
 docs/architecture/*
 !docs/architecture/INDEX.md
 !docs/architecture/GOVERNANCE.md
+!docs/architecture/KIT-PLATFORM-PHASE-1.5-ACCEPTANCE-TESTPACK-V1.md
 !docs/KIT-PLATFORM-MASTER-ARCHITECTURE-V1.md
 !docs/KIT-PLATFORM-ARCHITECTURE-DECISION-REGISTER-V1.md
 !docs/KIT-PLATFORM-ADR-03-DECISION-V1.md
