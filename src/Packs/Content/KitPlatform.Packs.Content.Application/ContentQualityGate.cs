@@ -17,15 +17,35 @@ public static class ContentQualityGate
     public const string BriefMissing =
         "Thiếu Creative Brief (mục tiêu + format) — điền trước khi duyệt";
 
+    public const string NarrativeBoundary =
+        "Narrative boundary: territory off-brand — không duyệt nội dung ngoài câu chuyện brand";
+
+    /// <summary>
+    /// Flags a package that already carries OFF-BRAND. Missing territory is not a violation here.
+    /// </summary>
+    public static string? NarrativeBoundaryIssue(string? territory, bool? narrativeFit)
+    {
+        if (string.Equals(territory, "off-brand", StringComparison.OrdinalIgnoreCase))
+            return NarrativeBoundary;
+        if (narrativeFit == false)
+            return NarrativeBoundary;
+        return null;
+    }
+
     public static ContentQualityGateDto Evaluate(
         ContentBrandKnowledgeDto brain,
         ContentCoreIdeaDto? core,
         string? angle,
         IReadOnlyList<(string Kind, string Body)> variants,
         string? brandName = null,
-        ContentCreativeBriefDto? brief = null)
+        ContentCreativeBriefDto? brief = null,
+        string? narrativeTerritory = null,
+        bool? narrativeFit = null)
     {
         var issues = new List<string>();
+        var boundary = NarrativeBoundaryIssue(narrativeTerritory, narrativeFit);
+        if (boundary is not null)
+            issues.Add(boundary);
         if (string.IsNullOrWhiteSpace(angle))
             issues.Add("Thiếu góc nhìn (angle) riêng brand");
 
@@ -112,6 +132,7 @@ public static class ContentQualityGate
         if (IsWebStructureIssue(t)) return true;
         if (t.Contains("Thiếu góc nhìn", StringComparison.OrdinalIgnoreCase)) return true;
         if (t.Contains("chưa có nguồn", StringComparison.OrdinalIgnoreCase)) return true;
+        if (t.Contains("Narrative boundary", StringComparison.OrdinalIgnoreCase)) return true;
         return t.Contains("dính claim cấm", StringComparison.OrdinalIgnoreCase);
     }
 
