@@ -289,7 +289,7 @@ internal sealed class ContentVideoService : IContentVideoService
             string.Equals(j.ExternalRenderId, renderId, StringComparison.OrdinalIgnoreCase));
         if (job is null) return null;
 
-        var mapped = MapCreatomateStatus(status);
+        var mapped = ContentVideoRenderStatus.FromProvider(status, url);
         await _repo.UpdateVideoJobAsync(
             job.Id,
             null,
@@ -297,7 +297,7 @@ internal sealed class ContentVideoService : IContentVideoService
             renderId,
             snapshotUrl ?? url ?? job.PreviewUrl,
             mapped == "Ready" ? (url ?? job.OutputUrl) : job.OutputUrl,
-            mapped == "Failed" ? "Creatomate webhook: failed" : null,
+            mapped == "Failed" ? ContentVideoRenderStatus.FailureNote(status, url) : null,
             job.StoryboardJson,
             job.ConfigJson,
             mapped == "Ready" ? DateTimeOffset.UtcNow : job.RenderedAt,
@@ -400,7 +400,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 mods,
                 cancellationToken);
 
-            var status = MapCreatomateStatus(render.Status);
+            var status = ContentVideoRenderStatus.FromProvider(render.Status, render.Url);
             await _repo.UpdateVideoJobAsync(
                 job.Id,
                 null,
@@ -408,7 +408,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 render.Id,
                 render.SnapshotUrl ?? render.Url,
                 status == "Ready" ? render.Url : null,
-                null,
+                status == "Failed" ? ContentVideoRenderStatus.FailureNote(render.Status, render.Url) : null,
                 storyboardJson,
                 configJson,
                 status == "Ready" ? DateTimeOffset.UtcNow : null,
@@ -434,7 +434,7 @@ internal sealed class ContentVideoService : IContentVideoService
         try
         {
             var render = await _creatomate.GetRenderAsync(job.ExternalRenderId, cancellationToken);
-            var status = MapCreatomateStatus(render.Status);
+            var status = ContentVideoRenderStatus.FromProvider(render.Status, render.Url);
             await _repo.UpdateVideoJobAsync(
                 id,
                 null,
@@ -442,7 +442,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 render.Id,
                 render.SnapshotUrl ?? render.Url ?? job.PreviewUrl,
                 status == "Ready" ? render.Url : job.OutputUrl,
-                status == "Failed" ? "Creatomate render failed" : null,
+                status == "Failed" ? ContentVideoRenderStatus.FailureNote(render.Status, render.Url) : null,
                 job.StoryboardJson,
                 job.ConfigJson,
                 status == "Ready" ? DateTimeOffset.UtcNow : job.RenderedAt,
@@ -838,16 +838,6 @@ internal sealed class ContentVideoService : IContentVideoService
         [JsonPropertyName("imageUrl")]
         public string? ImageUrl { get; set; }
     }
-
-    private static string MapCreatomateStatus(string status) =>
-        status.Trim().ToLowerInvariant() switch
-        {
-            "succeeded" or "success" or "completed" => "Ready",
-            "failed" or "error" => "Failed",
-            "planned" or "waiting" or "queued" => "Queued",
-            "rendering" or "transcribing" or "processing" => "Rendering",
-            _ => "Rendering",
-        };
 
     private static ContentVideoTemplateDto MapTemplate(ContentRepository.VideoTemplateRow r) =>
         new(

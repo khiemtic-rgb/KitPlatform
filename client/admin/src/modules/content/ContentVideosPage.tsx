@@ -32,6 +32,13 @@ const ContentVideoLabTab = lazy(() =>
   import('@/modules/content/ContentVideoLabTab').then((m) => ({ default: m.ContentVideoLabTab })),
 );
 
+export function playableMarketingVideoUrl(url?: string | null) {
+  const value = (url || '').trim();
+  if (!/^https?:\/\//i.test(value) && !value.toLowerCase().startsWith('data:video')) return '';
+  if (/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(value)) return '';
+  return value;
+}
+
 function TabFallback({ tip }: { tip: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
@@ -178,8 +185,7 @@ export function ContentVideosPage() {
   const [mainTab, setMainTab] = useState('series');
   const [seriesMount, setSeriesMount] = useState(false);
   useEffect(() => {
-    const t = window.requestAnimationFrame(() => setSeriesMount(true));
-    return () => window.cancelAnimationFrame(t);
+    setSeriesMount(true);
   }, []);
 
   const load = useCallback(async () => {
@@ -268,10 +274,11 @@ export function ContentVideosPage() {
       }
       if (created > 0) {
         message.success(
-          `Đã tạo ${created} video` +
-            (autoStoryboard ? ' + storyboard' : '') +
+          `Đã tạo ${created} job` +
+            (autoStoryboard ? ' và storyboard' : '') +
             (skipped ? ` · bỏ qua ${skipped} đã có` : '') +
-            (failed ? ` · lỗi ${failed}` : ''),
+            (failed ? ` · lỗi ${failed}` : '') +
+            '. Chưa có file video cho đến khi render trả URL.',
         );
       } else if (skipped > 0 && failed === 0) {
         message.info('Các hàng đã chọn đã có video — bỏ tick «Bỏ qua đã có» nếu muốn tạo thêm.');
@@ -299,19 +306,13 @@ export function ContentVideosPage() {
       else if (action === 'render') next = await renderContentVideoJob(job.id);
       else if (action === 'refresh') next = await refreshContentVideoJob(job.id);
       else next = await approveContentVideoJob(job.id);
-      message.success(
-        action === 'mvp'
-          ? next.outputUrl
-            ? 'MVP xong — có MP4'
-            : next.errorMessage || 'MVP xong (storyboard/assets; cần Creatomate để có MP4)'
-          : action === 'render'
-            ? 'Đã queue / chuẩn bị render'
-            : action === 'storyboard'
-              ? 'Đã chuẩn bị storyboard'
-              : action === 'approve'
-                ? 'Đã duyệt'
-                : 'Đã refresh',
-      );
+      const video = playableMarketingVideoUrl(next.outputUrl);
+      if (video) message.success('Có file video để xem.');
+      else if (next.status === 'Failed' || /quota|keyframe|fail|error/i.test(`${next.status} ${next.errorMessage || ''}`)) {
+        message.error(next.errorMessage || 'Provider không trả file video. Job đã Failed.');
+      } else if (action === 'storyboard') message.success('Đã chuẩn bị storyboard. Chưa có file video.');
+      else if (action === 'approve') message.success('Đã duyệt bản ghi hiện có. Chưa có file video mới.');
+      else message.warning(next.errorMessage || 'Chưa có file video. Job không được tính là xong.');
       setPanel((cur) => (cur ? { ...cur, job: next } : { ...rows.find((r) => r.job?.id === next.id)!, job: next }));
       await load();
     } catch (e) {
@@ -445,7 +446,7 @@ export function ContentVideosPage() {
                       <span>
                         {creatomateConfigured ? 'Creatomate đã có key. ' : 'Chưa có Creatomate — chỉ storyboard / CapCut. '}
                         {elevenLabsConfigured ? 'ElevenLabs đã có key.' : 'Chưa có ElevenLabs — pipeline bỏ qua lồng tiếng.'}{' '}
-                        <Link to="/content/ai#video">Cấu hình Creatomate + giọng nói</Link>
+                        <Link to="/content/marketing-ai#video">Cấu hình Creatomate + giọng nói</Link>
                       </span>
                     }
                   />

@@ -65,11 +65,19 @@ export type MotionLifecycle = {
   acceptedTake?: MotionAttemptArtifact;
 };
 
+function terminalMotionFailure(attempt?: Pick<RunwayAttempt, 'failureCode' | 'error'>) {
+  const blob = `${attempt?.failureCode || ''} ${attempt?.error || ''}`.trim();
+  if (!blob) return false;
+  return /INTERNAL|BAD_OUTPUT|quota|RESOURCE_EXHAUSTED|keyframe|429|rate.?limit|daily-quota|hết hạn mức|billing|payment|exhausted|invalid[_\s-]?input/i.test(
+    blob,
+  );
+}
+
 export function motionAttemptStatusOf(attempt?: Pick<RunwayAttempt, 'status' | 'failureCode' | 'error'>): MotionAttemptStatus {
   const st = (attempt?.status || '').toUpperCase();
   if (st === 'SUCCEEDED' || st === 'SUCCESS' || st === 'READY') return 'SUCCESS';
   if (st === 'FAILED' || st === 'CANCELLED') return 'FAILED';
-  if (/INTERNAL|BAD_OUTPUT/i.test(`${attempt?.failureCode || ''} ${attempt?.error || ''}`)) return 'FAILED';
+  if (terminalMotionFailure(attempt)) return 'FAILED';
   if (st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'SUBMITTED' || st === 'QUEUED') return 'PENDING';
   return 'UNKNOWN';
 }
@@ -300,6 +308,11 @@ export function detachAvAfterPictureChange(run?: MotionLifecycleRun & { previewU
   };
 }
 
+/**
+ * In-memory compatibility object only.
+ * acceptedTake ≠ official accept authority.
+ * Does not create Production OS ACCEPTED and does not authorize official preview.
+ */
 export function acceptExistingTake(run?: MotionLifecycleRun): { acceptedTake: AcceptedTake } | undefined {
   const visible = visibleTakeOf(run);
   const url = (visible?.url || '').trim();
