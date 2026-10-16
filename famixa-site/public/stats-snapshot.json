@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-15T21:34:30.503Z",
+  "generatedAt": "2026-10-16T04:46:26.481Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 13,
-    "todayPageViews": 5,
-    "todayRequests": 557,
-    "last24hVisitors": 52,
-    "last24hPageViews": 284,
-    "last24hRequests": 1024
+    "todayVisitors": 17,
+    "todayPageViews": 9,
+    "todayRequests": 69,
+    "last24hVisitors": 61,
+    "last24hPageViews": 287,
+    "last24hRequests": 1046
   },
   "hourly": [
-    {
-      "time": "2026-10-14T22:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-14T23:00:00Z",
-      "visitors": 12,
-      "requests": 43
-    },
-    {
-      "time": "2026-10-15T01:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-15T02:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-15T03:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-15T04:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-10-15T05:00:00Z",
       "visitors": 6,
@@ -113,8 +83,38 @@
     },
     {
       "time": "2026-10-15T21:00:00Z",
-      "visitors": 3,
-      "requests": 3
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-15T22:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-15T23:00:00Z",
+      "visitors": 9,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-16T01:00:00Z",
+      "visitors": 4,
+      "requests": 25
+    },
+    {
+      "time": "2026-10-16T02:00:00Z",
+      "visitors": 4,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-16T03:00:00Z",
+      "visitors": 2,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-16T04:00:00Z",
+      "visitors": 7,
+      "requests": 23
     }
   ],
   "daily": [
@@ -150,33 +150,33 @@
     },
     {
       "date": "2026-10-15",
-      "visitors": 45,
-      "pageViews": 281,
-      "requests": 980
+      "visitors": 53,
+      "pageViews": 282,
+      "requests": 995
     },
     {
       "date": "2026-10-16",
-      "visitors": 13,
-      "pageViews": 5,
-      "requests": 557
+      "visitors": 41,
+      "pageViews": 15,
+      "requests": 641
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 41
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 22
+      "views": 47
     },
     {
       "path": "/",
-      "views": 16
+      "views": 30
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 24
     },
     {
       "path": "/vi/",
-      "views": 16
+      "views": 21
     },
     {
       "path": "/job/backend/lastBuild/consoleText",
@@ -195,31 +195,31 @@
       "views": 7
     },
     {
-      "path": "/vi/huong-dan/lich-hom-nay/",
-      "views": 7
-    },
-    {
-      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
-      "views": 7
-    },
-    {
-      "path": "/vi/goi-cha-me/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat-khi-binh-yen-nam-o-nhung-tuong-tac-hang-ngay/",
-      "views": 6
-    },
-    {
-      "path": "/.gitmodules",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/cach-xay-dung-quy-tac-trong-gia-dinh-de-con-tu-giac-chap-hanh-khong-can-cam-doan/",
-      "views": 6
-    },
-    {
       "path": "/en/terms/",
       "views": 6
     },
     {
-      "path": "/images/moment-study.png",
+      "path": "/en/stories/",
+      "views": 6
+    },
+    {
+      "path": "/vi/huong-dan/lich-hom-nay/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/tao-moi-truong-giup-con-tu-lap-dung-chi-day-hay-thiet-ke-khong-gian-tu-giac/",
+      "views": 6
+    },
+    {
+      "path": "/en/about/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat-khi-binh-yen-nam-o-nhung-tuong-tac-hang-ngay/",
       "views": 6
     }
   ]
