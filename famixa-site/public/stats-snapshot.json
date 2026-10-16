@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-16T04:46:26.481Z",
+  "generatedAt": "2026-10-16T11:42:10.866Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 17,
-    "todayPageViews": 9,
-    "todayRequests": 69,
-    "last24hVisitors": 61,
-    "last24hPageViews": 287,
-    "last24hRequests": 1046
+    "todayVisitors": 38,
+    "todayPageViews": 12,
+    "todayRequests": 131,
+    "last24hVisitors": 62,
+    "last24hPageViews": 289,
+    "last24hRequests": 1076
   },
   "hourly": [
-    {
-      "time": "2026-10-15T05:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-15T07:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-15T09:00:00Z",
-      "visitors": 9,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-15T10:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-15T11:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
     {
       "time": "2026-10-15T12:00:00Z",
       "visitors": 4,
@@ -113,8 +88,43 @@
     },
     {
       "time": "2026-10-16T04:00:00Z",
-      "visitors": 7,
-      "requests": 23
+      "visitors": 11,
+      "requests": 27
+    },
+    {
+      "time": "2026-10-16T05:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-16T06:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-16T07:00:00Z",
+      "visitors": 3,
+      "requests": 32
+    },
+    {
+      "time": "2026-10-16T08:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-16T09:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-16T10:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-16T11:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -156,38 +166,38 @@
     },
     {
       "date": "2026-10-16",
-      "visitors": 41,
-      "pageViews": 15,
-      "requests": 641
+      "visitors": 69,
+      "pageViews": 18,
+      "requests": 703
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 47
+      "views": 54
     },
     {
       "path": "/",
-      "views": 30
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 24
+      "views": 33
     },
     {
       "path": "/vi/",
-      "views": 21
+      "views": 23
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 23
     },
     {
       "path": "/job/backend/lastBuild/consoleText",
       "views": 12
     },
     {
-      "path": "/en/",
+      "path": "/vi/goi-cha-me/",
       "views": 10
     },
     {
-      "path": "/vi/goi-cha-me/",
+      "path": "/en/",
       "views": 10
     },
     {
@@ -195,15 +205,19 @@
       "views": 7
     },
     {
-      "path": "/en/terms/",
-      "views": 6
-    },
-    {
-      "path": "/en/stories/",
-      "views": 6
-    },
-    {
       "path": "/vi/huong-dan/lich-hom-nay/",
+      "views": 6
+    },
+    {
+      "path": "/wp-config.php",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/5-phut-buoi-sang-giup-ca-nha-bot-voi/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat-khi-binh-yen-nam-o-nhung-tuong-tac-hang-ngay/",
       "views": 6
     },
     {
@@ -211,15 +225,11 @@
       "views": 6
     },
     {
-      "path": "/en/about/",
+      "path": "/.gitmodules",
       "views": 6
     },
     {
       "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh-1/",
-      "views": 6
-    },
-    {
-      "path": "/vi/goi-cha-me/hanh-phuc-gia-dinh-bat-dau-tu-dieu-nho-nhat-khi-binh-yen-nam-o-nhung-tuong-tac-hang-ngay/",
       "views": 6
     }
   ]
