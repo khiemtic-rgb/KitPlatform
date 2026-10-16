@@ -1,7 +1,8 @@
 # KPA-PHASE5 — NOVIXA Product Proof
 
 **Date:** 2026-10-15  
-**Pilot data validation:** 2026-10-16 — **PARTIAL** (valid in-date sale recorded; expired-lot exclusion and a live read-only denial are not verified)  
+**Controlled pilot decision:** 2026-10-16 — **CONTROLLED PILOT READY** on this branch. Nhà thuốc Xuân Hòa is not yet verified. Deploy and any production write still need the owner. See §10.  
+**Pilot data validation:** 2026-10-16 morning — **PARTIAL** (kept as the record in §9). §10 closes the expired-lot and read-only gaps that §9 left open.  
 **Branch:** `phase5-novixa-product-proof`  
 **Worktree:** `E:\KitPlatform-wt-phase5-novixa-product-proof`  
 **Parent (Phase 4 freeze):** `0c4adc87eb834d2b79c0207dd48fc08f77b71754`  
@@ -230,3 +231,156 @@ A first auth probe confirmed a session as `quay_smoke` and was deleted before th
 **Technical validation:** one valid counter consultation on local `DEMO_PHARMACY` sold one unit of in-date `PARA500` by FEFO, reduced that lot by 1, and linked the session to completed order `SO-000747`.
 
 **Pilot readiness for Nhà thuốc Xuân Hòa:** not ready. This branch is not deployed. Xuân Hòa data was not used. The suggestion list still offers OTC products whose only on-hand lots are already expired, and FEFO still does not contain an expiry refusal. Those rules were left as they are. A read-only save denial was not exercised on a live user. Deploy, national stock-out sync, and any write on `NT_XUANHOA` still need a separate approval.
+
+§9.7 is the morning record. The decision that replaces it is §10.
+
+## 10. Controlled pilot decision
+
+**Decision: CONTROLLED PILOT READY.**
+
+This is a local decision for the counter consultation sale on branch `phase5-novixa-product-proof`. It means the owner can authorize a controlled pilot. It does not mean Nhà thuốc Xuân Hòa has been exercised, and it does not mean revenue or profit will rise. Deploy, push, merge, and any write on `NT_XUANHOA` were not done.
+
+### 10.1 What changed
+
+Expired lots are no longer a valid counter-sale choice. A lot with no expiry date is still sellable, and FEFO still sorts those lots last. That undated-lot policy was not changed.
+
+| File | Change |
+|---|---|
+| `src/Packs/Pharmacy/KitPlatform.Packs.Pharmacy.Application/Inventory/SellableLotRules.cs` | Sellable when expiry is null or on/after today. Dated lots before today are expired. |
+| `src/Packs/Pharmacy/KitPlatform.Packs.Pharmacy.Infrastructure/Inventory/BatchResolver.cs` | Preview and hints load only sellable lots, earliest expiry first, null last. The sale reload still sees expired rows and `AllocateFromBatches` refuses them. |
+| `src/Packs/Pharmacy/KitPlatform.Packs.Pharmacy.Infrastructure/Sales/SalesRepository.cs` | POS lookup, search, and stock counts use sellable quantity. A scanned lot that is expired is refused before stock is taken. The shift alert no longer treats an expired lot as the lot that should have been sold. |
+| `src/Packs/Pharmacy/KitPlatform.Packs.Pharmacy.Infrastructure/Consultation/ConsultationRepository.cs` | OTC suggestions count only sellable stock, so a product whose only on-hand lots are expired drops out of the list. |
+| `tests/KitPlatform.Application.Tests/CoreEngineTests.cs` | Earliest sellable lot, expired-only refusal, undated lot still sellable, expiry today still sellable. |
+| `tests/KitPlatform.Api.Tests/SalesReadOnlyPrincipalTests.cs` | Test principal with only `sales.read`. No DEMO user was created. |
+| `tests/KitPlatform.Api.Tests/ControlledPilotHostFactory.cs` | Host with background workers removed and national catalog forced to mock. |
+| `tests/KitPlatform.Api.Tests/ControlledPilotSaleTests.cs` | DEMO proof: safety gates, expired-only refusal, in-date FEFO sale and link, label scan of an expired lot. |
+
+No migration. No RBAC policy edit. No Architecture Freeze edit. `phase4-architecture-freeze` was not moved.
+
+### 10.2 Build and tests
+
+`dotnet test` built `KitPlatform.Api` with 0 errors. Existing nullable warnings in `Program.cs` remain. The known `Newtonsoft.Json` 10.0.3 advisory remains.
+
+| Run | Result |
+|---|---|
+| `InventoryEngineFefoTests` and `PharmacyConsultationOtcGateTests` | Passed 11, failed 0 |
+| `SalesReadOnlyPrincipalTests` and the consultation/FEFO sale facts | Passed 3, failed 0 |
+| `Label_optional_scan_of_expired_lot_does_not_fall_through_to_fefo` | Passed 1, failed 0 |
+
+The counter TypeScript gate files were not edited. Their server counterparts were re-run in `PharmacyConsultationOtcGateTests`.
+
+The API proof used a host with every `IHostedService` removed, `NationalDrugCatalog:Mode=mock`, and `EnableStockOutSync=false`. Database: local PostgreSQL on `::1`, `current_date` 2026-10-16, timezone `Asia/Bangkok`. Login tenant was `DEMO_PHARMACY`. The test aborts if the tenant is `NT_XUANHOA`.
+
+### 10.3 Transaction evidence
+
+Synthetic customer seed `aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01`. Warehouse `WH_MAIN`. Existing open shift reused. No real patient text.
+
+| Check | Observed |
+|---|---|
+| Save session with no token | 401 |
+| Adult cough and sore throat | suggestions not blocked; `DECK001` and `DECK006` absent |
+| Seizure | `stop_sale`, blocked, 0 products |
+| Fever at age 1 | `refer_medical`, blocked, 0 products |
+| Pregnant adult cough | `refer_pharmacist`, not blocked, suggestions present |
+| `DECK001` / `DECK006` sellable stock | 0. Only on-hand lots are `DECK-LOT-0001` 2026-07-10 qty 76 and `DECK-LOT-0006` 2026-07-15 qty 343. Preview 400. Sale 400, message contains `hết hạn`. Order count unchanged. Both quantities unchanged. |
+| `PARA500` preview and completed line | batch `5555`, expiry 2026-11-30, `batch_source` 1 |
+| Cash sale | `SO-000748`, status completed (`2`), total 5,000, paid 5,000, outstanding 0 |
+| Link | status `linked` to that order |
+| Other `PARA500` lots | `LOT2026A` 2500, `LOT2027B` 1800, undated `33333` 499. Unchanged. Sold lot 48 → 47. |
+| `csdl_duoc_sync_log` for `SO-000748` | 0 |
+| Local OS watch | last start still `2026-10-15 23:18:26+07` |
+| Local tenant row `NT_XUANHOA` | 0 consultation sessions. 0 sales orders created during this proof. This row is in the local database. The production server was not contacted. |
+
+`DEMO_PHARMACY` batch mode is `suggest` (FEFO unless a label mode is on). The local `NT_XUANHOA` row is `label_optional`. For that path, the test switched DEMO to `label_optional`, posted `VITC1000` with batch `VITC-NEAR` (expired 2026-07-16, qty 120) while in-date batch `4444` (2026-12-31, qty 1000) was on hand, and got 400. Neither quantity changed and no order was created. The in-date lot was not used as a fallback. DEMO was then restored to `suggest` and read back as `suggest`.
+
+A test principal with only `sales.read`, and without the ADMIN role, may call the analyze policy and may not call the POS save policy, the sales write policy, or the reports read/export policies. An anonymous principal may not. No DEMO account was created. DEMO has no user who holds `sales.read` without `sales.pos` or `sales.write`. The DEMO user `pharmacist` also has the ADMIN role, and the existing reports policy allows the ADMIN role through. A counter account for the pilot must not be given that role if reports are supposed to stay closed.
+
+### 10.4 Undated lots
+
+Lots with a null expiry stay in the sellable set and sort after dated lots. That is the current rule. This decision does not refuse them and does not start requiring an expiry on receipt. The shift compliance alert still treats an undated on-hand lot as earlier than a dated lot that was sold, and that alert runs only when batch mode is `label_required`. DEMO is `suggest`. The local Xuân Hòa row is `label_optional`, so that alert is off there. An owner who wants undated lots blocked has to decide that separately.
+
+### 10.5 Git
+
+| Item | Value |
+|---|---|
+| Worktree | `E:\KitPlatform-wt-phase5-novixa-product-proof` |
+| Branch | `phase5-novixa-product-proof` |
+| Architecture freeze | `0c4adc87eb834d2b79c0207dd48fc08f77b71754` (not moved) |
+| Parent of this decision | `9274016d1b4e8009697d63f88a818b15b9f4dd31` |
+| `main` | `0d8568ae6e57003ae0f5e2813f1a35fd000ba6be`, one commit not in this branch: low-stock paging. This branch is not merged into `main`. |
+| Dirty `E:\KitPlatform` | Not used and not modified. |
+| Push / merge / deploy | Not done. |
+
+### 10.6 What has to be true before a Xuân Hòa write
+
+Read the running Xuân Hòa environment. Do not assume it matches DEMO or the local `NT_XUANHOA` row.
+
+1. The deployed build is this branch, not `main`, and the owner has accepted that `main` still has the low-stock paging commit this branch does not.
+2. Migrations `294` through `300` in `deploy/ubuntu/migration-files.prod.txt` are already applied. This decision adds no migration.
+3. `NationalDrugCatalog__Mode` is `mock` and `NationalDrugCatalog__EnableStockOutSync` is false on the running API. Also read the tenant CSDL link: stock-out sync stays off unless the owner explicitly turns it on later. The checked-in production file has mode `mock` and sync false. The VPS environment can override that file. Production `Auth:DefaultTenantCode` in that file is `NT_XUANHOA`, so a login without a tenant code is aimed at Xuân Hòa.
+4. The selling warehouse has an open shift, retail prices, and at least one in-date lot for the products the counter will actually sell.
+5. Batch mode is read and written down. If it is `label_optional` or `label_required`, staff must scan the lot they take. An expired scan is refused. If they leave the lot blank in `label_optional`, FEFO runs.
+6. Counter users have `sales.read` and `sales.pos`. `sales.write` also opens the POS save policy. They do not need `reports.read`. They should not be in the ADMIN role if revenue reports must stay closed. Confirm the Xuân Hòa role rows. Do not copy the DEMO pharmacist, who also holds ADMIN.
+7. Before the first real sale, record a baseline: consultation session count, completed order count for the chosen window, and on-hand quantity of the pilot products. Take a backup under the owner's existing practice.
+8. Training uses the scripted adult case below and a synthetic customer. Do not type a real patient's complaint into a training session.
+
+Dependencies already in this build: consultation tables, POS order create, open shift, FEFO or label allocation, inventory batches, and the consultation link call. National stock-out sync, receiving, and financial reports are outside the pilot path.
+
+### 10.7 Pilot procedure
+
+Ten business days after the owner opens the write window. One store. One workflow: adult counter advice that becomes a paid sale. No revenue target and no profit target.
+
+At the counter:
+
+1. Sign in as the counter user. Confirm the warehouse and that the shift is open.
+2. Select or create the customer. Open **Tư vấn tại quầy**.
+3. Record cough and sore throat for an adult, no fever, no danger signs. Analyze.
+4. Expect a mild respiratory assessment and OTC lines with stock greater than zero. Add one unit whose lot is still in date.
+5. Save the consultation. Take payment for the line. Complete the sale.
+6. Expect a completed order, the consultation `linked` to that order, and the sold lot reduced by the quantity sold.
+7. For a seizure description, or fever in a child under 2, expect no OTC list and no sale from that list.
+8. After the shift, write one line: how many consultations were started, how many reached a linked sale, how many checkouts were refused and why, and what got in the way.
+
+### 10.8 What to measure
+
+Record counts. Do not convert them into a PASS by inventing a percentage.
+
+| Measure | How | What it is not |
+|---|---|---|
+| Flow completion | Linked sessions ÷ confirmed sessions in the 10 days | Not a minimum bar |
+| Integrity | For each linked sale: order completed, outstanding 0, sold lot decreased by the sold quantity, sold lot not expired. Expired completed sales must stay 0. A completed expired sale stops the pilot. | Not a revenue result |
+| Errors | Refused checkouts ÷ checkout attempts, split into expired lot, shift closed, and other. Staff notes plus the refused response. | Not a target rate |
+| Time | Clock from opening the consultation to payment, on the first 10 real sales. Report the median. | Not a staffing grade |
+| Use | Sessions per shift and distinct usernames. One obstacle line per shift. | Not an adoption quota |
+| Business comparison | Baseline is the 10 business days before the write window, from the books Xuân Hòa already keeps: ticket count for this store. During the pilot, record Novixa completed orders per day and how many of those are linked to a consultation. | Not profit, not a claim that Novixa changed revenue. Season, staffing, and mix are uncontrolled. Describe the counts. The owner decides whether to continue. |
+
+### 10.9 Proved, not proved, and owner decisions
+
+Proved on local `DEMO_PHARMACY`:
+
+- A product with only expired lots is not suggested and has sellable stock 0.
+- Expired lots are skipped by FEFO. The earliest in-date lot is sold.
+- The sale API refuses an expired lot, including a scanned expired lot while an in-date lot of the same product exists. No completed order, no stock movement, no consultation link.
+- The adult consultation sale completes, reduces only that lot, and links.
+- Safety gates for `stop_sale`, `refer_medical`, and `refer_pharmacist` still hold.
+- A `sales.read` principal cannot save. Reports are not granted by `sales.read` or `sales.pos`.
+
+Not proved:
+
+- Any screen, role, lot, price, shift, or setting on the production Xuân Hòa server.
+- That the VPS national-catalog environment matches the checked-in production file.
+- That undated lots are refused. They are still sellable.
+- Inventory barcode suggestion outside POS sales lookup. The counter uses POS search and POS lookup.
+- A live DEMO user who has `sales.read` and nothing else. The denial is the test principal.
+
+Owner decisions, not made here:
+
+- Authorize deploy of this branch.
+- Authorize the first write on `NT_XUANHOA`, after §10.6.
+- Keep national stock-out sync off.
+- Accept or replace the undated-lot rule.
+- Continue, narrow, or stop after the 10 days, using the counts in §10.8.
+
+### 10.10 Confirmation
+
+No production write. No migration on `NT_XUANHOA`. No deploy. No push. No merge. The local `NT_XUANHOA` tenant row was counted and not updated. DEMO batch mode was changed to `label_optional` only inside the label-scan test and restored to `suggest`.

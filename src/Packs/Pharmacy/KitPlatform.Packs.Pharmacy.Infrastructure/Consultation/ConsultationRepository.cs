@@ -285,6 +285,7 @@ internal sealed class ConsultationRepository
                 FROM inventory_batches b
                 WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                   AND b.product_id = p.id AND b.quantity_available > 0
+                  AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
             ) st ON TRUE
             LEFT JOIN LATERAL (
                 -- Rank by what this tenant actually sells (90d), then stock.

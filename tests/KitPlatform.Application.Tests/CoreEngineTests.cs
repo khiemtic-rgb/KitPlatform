@@ -84,10 +84,97 @@ public class InventoryEngineFefoTests
         };
 
         var engine = new BatchResolver(null!, null!);
-        var allocations = engine.AllocateFromBatches(batches, 3m);
+        var allocations = engine.AllocateFromBatches(batches, 3m, new DateOnly(2026, 1, 1));
 
         Assert.Single(allocations);
         Assert.Equal(lotA, allocations[0].BatchId);
+    }
+
+    [Fact]
+    public void AllocateFromBatches_skips_expired_and_keeps_earliest_sellable()
+    {
+        var expired = Guid.NewGuid();
+        var earliest = Guid.NewGuid();
+        var later = Guid.NewGuid();
+        var undated = Guid.NewGuid();
+        var asOf = new DateOnly(2026, 10, 16);
+        var batches = new List<BatchAvailabilityDto>
+        {
+            new(expired, "EXPIRED", new DateOnly(2026, 7, 15), 8m, 1m),
+            new(earliest, "EARLY", new DateOnly(2026, 11, 30), 5m, 1m),
+            new(later, "LATER", new DateOnly(2028, 12, 31), 5m, 1m),
+            new(undated, "UNDATED", null, 9m, 1m),
+        };
+
+        var engine = new BatchResolver(null!, null!);
+        var allocations = engine.AllocateFromBatches(batches, 3m, asOf);
+
+        Assert.Single(allocations);
+        Assert.Equal(earliest, allocations[0].BatchId);
+        Assert.Equal(3m, allocations[0].BaseQuantity);
+    }
+
+    [Fact]
+    public void AllocateFromBatches_refuses_when_only_expired_stock_remains()
+    {
+        var batches = new List<BatchAvailabilityDto>
+        {
+            new(Guid.NewGuid(), "EXPIRED", new DateOnly(2026, 7, 10), 4m, 1m),
+        };
+
+        var engine = new BatchResolver(null!, null!);
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            engine.AllocateFromBatches(batches, 1m, new DateOnly(2026, 10, 16)));
+        Assert.Contains("hết hạn", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AllocateFromBatches_keeps_undated_lot_sellable()
+    {
+        var undated = Guid.NewGuid();
+        var batches = new List<BatchAvailabilityDto>
+        {
+            new(undated, "UNDATED", null, 4m, 1m),
+        };
+
+        var engine = new BatchResolver(null!, null!);
+        var allocations = engine.AllocateFromBatches(batches, 1m, new DateOnly(2026, 10, 16));
+
+        Assert.Equal(undated, allocations[0].BatchId);
+    }
+
+    [Fact]
+    public void AllocateFromBatches_treats_expiry_today_as_sellable()
+    {
+        var today = new DateOnly(2026, 10, 16);
+        var lot = Guid.NewGuid();
+        var batches = new List<BatchAvailabilityDto>
+        {
+            new(lot, "TODAY", today, 2m, 1m),
+        };
+
+        var engine = new BatchResolver(null!, null!);
+        var allocations = engine.AllocateFromBatches(batches, 1m, today);
+
+        Assert.Equal(lot, allocations[0].BatchId);
+    }
+
+    [Fact]
+    public void AllocateFromBatches_default_clock_skips_yesterday()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var expired = Guid.NewGuid();
+        var valid = Guid.NewGuid();
+        var batches = new List<BatchAvailabilityDto>
+        {
+            new(expired, "YESTERDAY", today.AddDays(-1), 9m, 1m),
+            new(valid, "TOMORROW", today.AddDays(1), 9m, 1m),
+        };
+
+        var engine = new BatchResolver(null!, null!);
+        var allocations = engine.AllocateFromBatches(batches, 1m);
+
+        Assert.Equal(valid, allocations[0].BatchId);
     }
 
     [Fact]
@@ -99,7 +186,9 @@ public class InventoryEngineFefoTests
         };
 
         var engine = new BatchResolver(null!, null!);
-        Assert.Throws<InvalidOperationException>(() => engine.AllocateFromBatches(batches, 2m));
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            engine.AllocateFromBatches(batches, 2m, new DateOnly(2026, 1, 1)));
+        Assert.DoesNotContain("hết hạn", ex.Message, StringComparison.Ordinal);
     }
 }
 

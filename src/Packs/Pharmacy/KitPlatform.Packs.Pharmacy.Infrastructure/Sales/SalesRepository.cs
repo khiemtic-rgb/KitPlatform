@@ -287,6 +287,7 @@ internal sealed class SalesRepository
                     FROM inventory_batches b
                     WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                       AND b.product_id = p.id AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) AS StockAvailable
             """;
 
@@ -357,6 +358,7 @@ internal sealed class SalesRepository
                     FROM inventory_batches b
                     WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                       AND b.product_id = p.id AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) AS StockAvailable
             FROM product_units u
             INNER JOIN products p ON p.id = u.product_id
@@ -406,6 +408,7 @@ internal sealed class SalesRepository
                     FROM inventory_batches b
                     WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                       AND b.product_id = p.id AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) AS StockAvailable
             FROM product_units u
             INNER JOIN products p ON p.id = u.product_id
@@ -466,6 +469,7 @@ internal sealed class SalesRepository
                     FROM inventory_batches b
                     WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                       AND b.product_id = p.id AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) AS StockAvailable
             FROM products p
             INNER JOIN LATERAL (
@@ -2283,6 +2287,7 @@ internal sealed class SalesRepository
                AND b_earlier.warehouse_id = o.warehouse_id
                AND b_earlier.tenant_id = o.tenant_id
                AND b_earlier.quantity_available > 0
+               AND (b_earlier.expiry_date IS NULL OR b_earlier.expiry_date >= CURRENT_DATE)
                AND b_earlier.id <> b_sold.id
                AND (
                     b_earlier.expiry_date < b_sold.expiry_date
@@ -2505,7 +2510,8 @@ internal sealed class SalesRepository
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT id AS Id, quantity_available AS QuantityAvailable, unit_cost AS UnitCost
+            SELECT id AS Id, quantity_available AS QuantityAvailable, unit_cost AS UnitCost,
+                   expiry_date AS ExpiryDate
             FROM inventory_batches
             WHERE tenant_id = @TenantId AND warehouse_id = @WarehouseId
               AND product_id = @ProductId AND batch_number = @BatchNumber
@@ -2554,6 +2560,10 @@ internal sealed class SalesRepository
                     ?? throw new InvalidOperationException(
                         $"Số lô \"{labelBatch}\" không có tồn khả dụng.");
 
+                if (!SellableLotRules.IsSellable(batch.ExpiryDate, DateOnly.FromDateTime(DateTime.Today)))
+                    throw new InvalidOperationException(
+                        $"Lô \"{labelBatch}\" đã hết hạn, không được xuất bán.");
+
                 if (batch.QuantityAvailable + 0.0001m < baseQtyNeeded)
                 {
                     var productCode = await conn.QuerySingleOrDefaultAsync<string>(
@@ -2573,6 +2583,10 @@ internal sealed class SalesRepository
                 {
                     allocations = await _batchResolver.AllocateFifoAsync(
                         conn, tx, warehouseId, pricedLine.ProductId, baseQtyNeeded, cancellationToken);
+                }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("hết hạn", StringComparison.Ordinal))
+                {
+                    throw;
                 }
                 catch (InvalidOperationException)
                 {
@@ -3186,6 +3200,7 @@ internal sealed class SalesRepository
         public Guid Id { get; init; }
         public decimal QuantityAvailable { get; init; }
         public decimal UnitCost { get; init; }
+        public DateOnly? ExpiryDate { get; init; }
     }
 
     private sealed class DraftHeaderRow

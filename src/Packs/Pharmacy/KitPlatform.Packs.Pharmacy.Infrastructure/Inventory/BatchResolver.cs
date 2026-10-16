@@ -35,7 +35,7 @@ internal sealed class BatchResolver : IBatchResolver
         Guid productId,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        var sql = $"""
             SELECT
                 id AS Id,
                 batch_number AS BatchNumber,
@@ -45,6 +45,7 @@ internal sealed class BatchResolver : IBatchResolver
             FROM inventory_batches
             WHERE tenant_id = @TenantId AND warehouse_id = @WarehouseId
               AND product_id = @ProductId AND quantity_available > 0
+              AND {SellableLotRules.UnaliasedSql}
             ORDER BY expiry_date ASC NULLS LAST, created_at ASC
             """;
         return (await conn.QueryAsync<BatchAvailabilityDto>(
@@ -53,21 +54,48 @@ internal sealed class BatchResolver : IBatchResolver
 
     public IReadOnlyList<FifoAllocationResult> AllocateFromBatches(
         IReadOnlyList<BatchAvailabilityDto> batches,
-        decimal baseQuantityNeeded)
+        decimal baseQuantityNeeded) =>
+        AllocateFromBatches(batches, baseQuantityNeeded, DateOnly.FromDateTime(DateTime.Today));
+
+    /// <summary>
+    /// Consumes <paramref name="batches"/> in the order given. Callers that load from SQL
+    /// already sort expiry ascending, null expiry last. Expired lots are skipped here so a
+    /// sale does not trust a preview list.
+    /// </summary>
+    public IReadOnlyList<FifoAllocationResult> AllocateFromBatches(
+        IReadOnlyList<BatchAvailabilityDto> batches,
+        decimal baseQuantityNeeded,
+        DateOnly asOf)
     {
         var result = new List<FifoAllocationResult>();
         var remaining = baseQuantityNeeded;
+        var sellableQuantity = 0m;
+        var expiredQuantity = 0m;
         foreach (var batch in batches)
         {
-            if (remaining <= 0) break;
+            if (!SellableLotRules.IsSellable(batch.ExpiryDate, asOf))
+            {
+                if (batch.QuantityAvailable > 0)
+                    expiredQuantity += batch.QuantityAvailable;
+                continue;
+            }
+
+            sellableQuantity += batch.QuantityAvailable;
+            if (remaining <= 0)
+                continue;
             var take = Math.Min(batch.QuantityAvailable, remaining);
-            if (take <= 0) continue;
+            if (take <= 0)
+                continue;
             result.Add(new FifoAllocationResult(batch.Id, take, batch.UnitCost));
             remaining -= take;
         }
 
         if (remaining > 0.0001m)
+        {
+            if (sellableQuantity <= 0.0001m && expiredQuantity > 0)
+                throw new InvalidOperationException("Lô đã hết hạn không được xuất bán.");
             throw new InvalidOperationException("Không đủ tồn kho theo FEFO.");
+        }
 
         return result;
     }
