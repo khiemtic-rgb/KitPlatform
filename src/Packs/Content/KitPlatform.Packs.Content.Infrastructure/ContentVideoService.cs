@@ -421,7 +421,32 @@ internal sealed class ContentVideoService : IContentVideoService
                 storyboardJson, configJson, null, cancellationToken);
         }
 
+        await PollRenderUntilFileAsync(job.Id, cancellationToken);
         return await GetJobAsync(job.Id, cancellationToken);
+    }
+
+    /// <summary>
+    /// Creatomate accepts the render before the file exists. Stay on this job until
+    /// the file is stored, the provider fails, or the wait expires with the job still open.
+    /// </summary>
+    private async Task PollRenderUntilFileAsync(Guid jobId, CancellationToken cancellationToken)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddMinutes(3);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            var current = await _repo.GetVideoJobAsync(jobId, cancellationToken);
+            if (current is null
+                || current.Status is "Ready" or "Failed" or "Approved"
+                || string.IsNullOrWhiteSpace(current.ExternalRenderId))
+                return;
+
+            await RefreshRenderAsync(jobId, cancellationToken);
+            current = await _repo.GetVideoJobAsync(jobId, cancellationToken);
+            if (current is null || current.Status is "Ready" or "Failed" or "Approved")
+                return;
+
+            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+        }
     }
 
     public async Task<ContentVideoJobDto?> RefreshRenderAsync(Guid id, CancellationToken cancellationToken = default)
@@ -734,80 +759,13 @@ internal sealed class ContentVideoService : IContentVideoService
         string title,
         string script,
         IReadOnlyList<SceneBeat> storyboard,
-        string? voicePublicUrl)
-    {
-        var mods = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Title"] = title,
-            ["Title.text"] = title,
-            ["Script"] = script,
-            ["Script.text"] = script,
-        };
-
-        Dictionary<string, string>? textKeys = null;
-        Dictionary<string, string>? imageKeys = null;
-        string? voiceKey = null;
-        try
-        {
-            using var cfg = JsonDocument.Parse(
-                string.IsNullOrWhiteSpace(templateConfigJson) ? "{}" : templateConfigJson);
-            if (cfg.RootElement.TryGetProperty("sceneTextKeys", out var tk) && tk.ValueKind == JsonValueKind.Object)
-            {
-                textKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var p in tk.EnumerateObject())
-                    textKeys[p.Name] = p.Value.GetString() ?? p.Name;
-            }
-            if (cfg.RootElement.TryGetProperty("sceneImageKeys", out var ik) && ik.ValueKind == JsonValueKind.Object)
-            {
-                imageKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var p in ik.EnumerateObject())
-                    imageKeys[p.Name] = p.Value.GetString() ?? p.Name;
-            }
-            if (cfg.RootElement.TryGetProperty("voiceKey", out var vk))
-                voiceKey = vk.GetString();
-
-            if (cfg.RootElement.TryGetProperty("modifications", out var map)
-                && map.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var prop in map.EnumerateObject())
-                {
-                    var template = prop.Value.GetString() ?? "";
-                    mods[prop.Name] = template
-                        .Replace("{{script}}", script, StringComparison.OrdinalIgnoreCase)
-                        .Replace("{{title}}", title, StringComparison.OrdinalIgnoreCase);
-                }
-            }
-        }
-        catch
-        {
-            /* ignore bad config */
-        }
-
-        foreach (var scene in storyboard)
-        {
-            var beat = scene.Beat;
-            mods[beat] = scene.Text;
-            mods[$"{beat}.text"] = scene.Text;
-            if (textKeys is not null && textKeys.TryGetValue(beat, out var textMod))
-                mods[textMod] = scene.Text;
-            if (!string.IsNullOrWhiteSpace(scene.ImageUrl))
-            {
-                mods[$"{beat}.image"] = scene.ImageUrl;
-                if (imageKeys is not null && imageKeys.TryGetValue(beat, out var imageMod))
-                    mods[imageMod] = scene.ImageUrl;
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(voicePublicUrl))
-        {
-            mods["Voice.source"] = voicePublicUrl;
-            mods["Voice.audio"] = voicePublicUrl;
-            if (!string.IsNullOrWhiteSpace(voiceKey))
-                mods[voiceKey] = voicePublicUrl;
-        }
-
-        return mods;
-    }
+        string? voicePublicUrl) =>
+        ContentVideoCreatomateModifications.Build(
+            templateConfigJson,
+            title,
+            script,
+            storyboard.Select(s => new ContentVideoCreatomateScene(s.Beat, s.Text, s.ImageUrl)).ToList(),
+            voicePublicUrl);
 
     private sealed class SceneBeat
     {
