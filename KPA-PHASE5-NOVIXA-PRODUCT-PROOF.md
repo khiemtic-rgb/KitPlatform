@@ -307,6 +307,7 @@ Lots with a null expiry stay in the sellable set and sort after dated lots. That
 | Branch | `phase5-novixa-product-proof` |
 | Architecture freeze | `0c4adc87eb834d2b79c0207dd48fc08f77b71754` (not moved) |
 | Parent of this decision | `9274016d1b4e8009697d63f88a818b15b9f4dd31` |
+| Decision commit | `76e8177b134017164db5297ffa4b049be713d9d7` |
 | `main` | `0d8568ae6e57003ae0f5e2813f1a35fd000ba6be`, one commit not in this branch: low-stock paging. This branch is not merged into `main`. |
 | Dirty `E:\KitPlatform` | Not used and not modified. |
 | Push / merge / deploy | Not done. |
