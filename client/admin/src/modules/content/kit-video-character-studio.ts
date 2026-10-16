@@ -96,9 +96,9 @@ export function studioPublicHeadline(row: {
 }
 
 export function studioMayRegenerate(
-  status?: string,
-  officialLocked?: boolean,
-  ageConsistencyStatus?: string,
+  status?: string | null,
+  officialLocked?: boolean | null,
+  ageConsistencyStatus?: string | null,
   crpStale?: boolean,
   slotsNeedVision?: boolean,
 ) {

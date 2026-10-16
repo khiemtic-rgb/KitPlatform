@@ -37,10 +37,6 @@ function lastSuccessAttempt(run?: FinalSourceRun) {
   return undefined;
 }
 
-function lastSuccessAttemptUrl(run?: FinalSourceRun) {
-  return (lastSuccessAttempt(run)?.outputUrl || '').trim() || undefined;
-}
-
 function attemptOwnsUrl(run: FinalSourceRun | undefined, url: string) {
   const list = run?.runwayAttempts ?? [];
   for (let i = list.length - 1; i >= 0; i--) {
@@ -106,19 +102,24 @@ export function resolveFinalSource(run?: FinalSourceRun, silent = false): FinalS
 }
 
 /** Mute I2V take. Fal must not call this. */
-export function stampMuteTake(url: string, silent = false): Partial<FinalSourceRun> {
+export function stampMuteTake(url: string, silent = false) {
   return {
     takeUrl: url,
     previewUrl: url,
-    lipsynced: false,
-    lipsyncUrl: undefined,
-    finalSource: silent ? 'RUNWAY' : 'RUNWAY_TTS',
-    acceptedTake: undefined,
+    lipsynced: false as const,
+    lipsyncUrl: undefined as string | undefined,
+    finalSource: silent ? ('RUNWAY' as const) : ('RUNWAY_TTS' as const),
+    acceptedTake: undefined as undefined,
   };
 }
 
 /** Fal FINAL. Keeps TAKE. Does not overwrite previewUrl/takeUrl. */
-export function stampFalFinal(run: FinalSourceRun, falUrl: string): Partial<FinalSourceRun> {
+export function stampFalFinal(run: FinalSourceRun, falUrl: string): {
+  lipsyncUrl: string;
+  lipsynced: true;
+  finalSource: 'FAL';
+  takeUrl: string | undefined;
+} {
   const take = resolveTakeUrl(run) || (run.previewUrl && run.previewUrl !== falUrl ? run.previewUrl : undefined);
   return {
     lipsyncUrl: falUrl,
@@ -162,7 +163,12 @@ export function finalSourceBlockReason(items: FinalSourceItem[]) {
   return `${block.map((i) => i.code).join(', ')} chưa FINAL_SOURCE=FAL — Preview tạm (TTS overlay), không phải Final.`;
 }
 
-export function mergeKeepFinalSource(rem?: FinalSourceRun, old?: FinalSourceRun): Partial<FinalSourceRun> {
+export function mergeKeepFinalSource(rem?: FinalSourceRun, old?: FinalSourceRun): {
+  finalSource?: FinalSource;
+  lipsynced?: boolean;
+  lipsyncUrl?: string;
+  takeUrl?: string;
+} {
   const takeUrl = rem?.takeUrl || old?.takeUrl || resolveTakeUrl(old) || resolveTakeUrl(rem);
   if (shotKeepsFal(rem)) {
     return { finalSource: 'FAL', lipsynced: rem?.lipsynced ?? true, lipsyncUrl: rem?.lipsyncUrl, takeUrl };

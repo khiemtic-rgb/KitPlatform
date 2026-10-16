@@ -200,12 +200,12 @@ export async function produceShot(
 }
 
 export function staffCommandCta(cmd: ShotProductionCommand) {
-  if (cmd.type === 'READY_FINAL') return { label: 'Xem video', action: 'watch' as const };
-  if (cmd.type === 'WAIT_PICTURE_APPROVAL') return { label: 'Xem & duyệt hình', action: 'approve-picture' as const };
-  if (cmd.type === 'WAIT_VIDEO_REVIEW') return { label: 'Duyệt chuyển động', action: 'approve-video' as const };
+  if (cmd.type === 'READY_FINAL') return { label: 'Xem video', action: 'watch' as const, hint: undefined };
+  if (cmd.type === 'WAIT_PICTURE_APPROVAL') return { label: 'Xem & duyệt hình', action: 'approve-picture' as const, hint: undefined };
+  if (cmd.type === 'WAIT_VIDEO_REVIEW') return { label: 'Duyệt chuyển động', action: 'approve-video' as const, hint: undefined };
   if (cmd.type === 'LIPSYNC_QA_REQUIRED') return { label: 'Kiểm tra Shot', action: 'qa' as const, hint: cmd.code };
-  if (cmd.type === 'ACCEPT_EXISTING') return { label: 'Dùng video này', action: 'accept-existing' as const };
-  if (cmd.type === 'EDIT_INPUT') return { label: 'Chỉnh diễn xuất', action: 'edit-input' as const };
+  if (cmd.type === 'ACCEPT_EXISTING') return { label: 'Dùng video này', action: 'accept-existing' as const, hint: undefined };
+  if (cmd.type === 'EDIT_INPUT') return { label: 'Chỉnh diễn xuất', action: 'edit-input' as const, hint: undefined };
   if (cmd.type === 'CONFIRM_MOTION' || cmd.type === 'WAIT_MOTION') {
     return {
       label: cmd.type === 'WAIT_MOTION' ? 'Đang tạo video...' : 'Tạo chuyển động',
@@ -221,12 +221,12 @@ export function staffCommandCta(cmd: ShotProductionCommand) {
     };
   }
   if (cmd.type === 'ENSURE_MIX' || cmd.type === 'WAIT_MIX') {
-    return { label: cmd.type === 'WAIT_MIX' ? 'Đang hoàn thiện...' : 'Hoàn thiện', action: 'mix' as const };
+    return { label: cmd.type === 'WAIT_MIX' ? 'Đang hoàn thiện...' : 'Hoàn thiện', action: 'mix' as const, hint: undefined };
   }
-  if (cmd.type === 'ENSURE_VOICE') return { label: 'Tạo thoại', action: 'produce' as const };
+  if (cmd.type === 'ENSURE_VOICE') return { label: 'Tạo thoại', action: 'produce' as const, hint: undefined };
   if (cmd.type === 'ENSURE_PICTURE' || cmd.type === 'WAIT_PICTURE') {
-    return { label: cmd.type === 'WAIT_PICTURE' ? 'Đang tạo hình...' : 'Tạo hình', action: 'produce' as const };
+    return { label: cmd.type === 'WAIT_PICTURE' ? 'Đang tạo hình...' : 'Tạo hình', action: 'produce' as const, hint: undefined };
   }
   if (cmd.type === 'BLOCK') return { label: 'Xem chi tiết', action: 'blocked' as const, hint: cmd.code };
-  return { label: 'Tạo Shot', action: 'produce' as const };
+  return { label: 'Tạo Shot', action: 'produce' as const, hint: undefined };
 }

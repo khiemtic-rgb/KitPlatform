@@ -101,7 +101,14 @@ export type ProductionShotSpec = {
   lighting?: Record<string, unknown>;
   wardrobe?: Record<string, unknown>;
   environment?: Record<string, unknown>;
-  interaction?: { peopleCount?: number; minhDistinct?: boolean; noBlend?: boolean; noSwap?: boolean; kind?: string };
+  interaction?: {
+    peopleCount?: number;
+    minhDistinct?: boolean;
+    noBlend?: boolean;
+    noSwap?: boolean;
+    noAverage?: boolean;
+    kind?: string;
+  };
   continuity?: Record<string, unknown>;
   identityRisk?: { level?: string; identityCheckRequired?: boolean; reason?: string };
   forbiddenConditions?: unknown;
@@ -195,9 +202,17 @@ export function inheritsShotIdentity(spec?: ProductionShotSpec, dna?: CharacterD
   return true;
 }
 
+function shotIdentityValue(spec: ProductionShotSpec, key: (typeof SHOT_IDENTITY_KEYS)[number]) {
+  if (key === 'masterSha256') return spec.master_sha256;
+  if (key === 'dnaSha256') return spec.dna_sha256;
+  if (key === 'prpSha256') return spec.prp_sha256;
+  if (key === 'character_id') return spec.character_id;
+  return spec[key];
+}
+
 export function identityMutated(original?: ProductionShotSpec, edited?: ProductionShotSpec) {
   if (!original || !edited) return true;
-  return SHOT_IDENTITY_KEYS.some((key) => JSON.stringify(original[key]) !== JSON.stringify(edited[key]));
+  return SHOT_IDENTITY_KEYS.some((key) => JSON.stringify(shotIdentityValue(original, key)) !== JSON.stringify(shotIdentityValue(edited, key)));
 }
 
 export function assessShotRisk(spec?: ProductionShotSpec): 'LOW' | 'MEDIUM' | 'HIGH' {

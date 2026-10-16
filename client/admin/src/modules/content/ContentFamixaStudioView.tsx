@@ -96,6 +96,7 @@ export function ContentFamixaStudioView({
   onAbDiagnostic,
   onLipsync,
   onLipsyncPrefs,
+  onMixPrefs,
   onAttachLipsync,
   lipsyncBusy,
   sceneBatchLabel,
@@ -193,6 +194,7 @@ export function ContentFamixaStudioView({
   onAbDiagnostic?: (successId: string, failId: string) => void;
   onLipsync?: (ids?: string[], opts?: { remake?: boolean }) => void;
   onLipsyncPrefs?: (prefs: { lipsyncModel?: '1.9' | 'v3' | 'ls'; lipsyncSyncMode?: 'cut_off' | 'silence' | 'loop' | 'bounce' | 'remap' }) => void;
+  onMixPrefs?: (prefs: Partial<import('./content-famixa-mix').FamixaMixPrefs>) => void;
   onAttachLipsync?: (shotId: string) => void;
   lipsyncBusy?: boolean | string;
   sceneBatchLabel: string;
@@ -506,6 +508,7 @@ export function ContentFamixaStudioView({
             onAbDiagnostic={onAbDiagnostic}
             onLipsync={onLipsync}
             onLipsyncPrefs={onLipsyncPrefs}
+            onMixPrefs={onMixPrefs}
             onAttachLipsync={onAttachLipsync}
             lipsyncBusy={lipsyncBusy}
             cutPlan={cutPlan}

@@ -20,7 +20,7 @@ export type MotionAttemptArtifact = {
 
 export type AcceptedTake = {
   n?: number;
-  url: string;
+  url?: string;
   promptHash?: string;
   kfHash?: string;
   acceptedAt?: string;
@@ -280,7 +280,7 @@ export function takeFromOtherPicture(opts: {
 }
 
 /** New still cannot keep Fal / accepted take as the playing clip. History stays in runwayAttempts. */
-export function detachAvAfterPictureChange(run?: MotionLifecycleRun & { previewUrl?: string }) {
+export function detachAvAfterPictureChange(run?: import('../content-famixa-final-source').FinalSourceRun) {
   const hadAv = Boolean(
     resolveTakeUrl(run) || run?.previewUrl || run?.takeUrl || run?.lipsyncUrl || run?.lipsynced,
   );

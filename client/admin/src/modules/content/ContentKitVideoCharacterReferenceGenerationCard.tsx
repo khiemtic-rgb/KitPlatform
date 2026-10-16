@@ -271,9 +271,11 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
               <Button
                 loading={busy}
                 onClick={() => {
+                  const executionId = row.executionId;
+                  if (!executionId) return;
                   setBusy(true);
                   setError(undefined);
-                  void registerCharacterReferenceGeneration(characterId, row.executionId)
+                  void registerCharacterReferenceGeneration(characterId, executionId)
                     .then(apply)
                     .catch((err: unknown) => setError(apiErrorMessage(err)))
                     .finally(() => setBusy(false));
@@ -289,7 +291,7 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
                 onClick={() => {
                   setBusy(true);
                   setError(undefined);
-                  void validateCharacterReferenceGenerationPack(characterId, packId, row?.executionId)
+                  void validateCharacterReferenceGenerationPack(characterId, packId, row?.executionId ?? undefined)
                     .then((next) => {
                       apply(next);
                       onClose();

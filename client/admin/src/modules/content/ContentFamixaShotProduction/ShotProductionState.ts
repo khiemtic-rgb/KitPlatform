@@ -134,7 +134,7 @@ export function lipsyncQaReadyOf(state: SeriesPilotState, shot: FamixaSeriesShot
 }
 
 /** Prompt hash of the last SUCCESS take. A later FAIL must not replace it. */
-export function lastTakePromptHashOf(run?: { runwayAttempts?: { promptHash?: string; status?: string; outputUrl?: string }[] }) {
+export function lastTakePromptHashOf(run?: { runwayAttempts?: import('../content-famixa-runway-pipe').RunwayAttempt[] }) {
   return lastSuccessfulTakePromptHashOf(run);
 }
 

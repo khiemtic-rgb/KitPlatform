@@ -5,7 +5,7 @@ function isGenericHttpAuthTitle(text: string): boolean {
   return /^(Forbidden|Unauthorized|Access Denied)$/i.test(text.trim());
 }
 
-export function apiErrorMessage(error: unknown, fallback: string) {
+export function apiErrorMessage(error: unknown, fallback = 'Không thực hiện được yêu cầu.') {
   if (isAxiosError(error)) {
     if (error.code === 'ECONNABORTED' || /timeout/i.test(error.message)) {
       return 'Yêu cầu quá lâu. Bộ 4 ảnh có thể mất vài phút — bấm lại và đợi tới khi xong.';

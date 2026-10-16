@@ -282,7 +282,7 @@ import {
   sceneKfToGenerate,
 } from './content-famixa-batch-plan';
 import { mapPreviewCut, shotsInInclusiveRange } from './content-famixa-preview-cut';
-import { productionShorts, setShortSeconds, canWorkV2Scene, v2SceneBlockReason, readyV2VideoShots, isLockedTemplateKf, isOperatorSuppliedKf, visualLockShot, canRetryTurboStart, shouldResumeTurboPoll, isTurboRateLimit, isTurboDailyQuota, parseRetryAfterSec, loadRunwayQuietUntil, persistRunwayQuietUntil, clearRunwayQuietUntil, nextRunwayQuietUntil, runwayQuietRemainMin, shouldResumeLipsync, estimateFalLipsyncUsdForShots, lipsyncVideoUrl, parseFalLipsyncRef, takeVideoUrl, lipsyncQaReady, lipsyncSendEligible, normalizeLipsyncModel, normalizeLipsyncSyncMode, lipsyncTierOf, lipsyncTaskPrefix, parseFalJobIdFromError, shotI2vPromptHash, clampShortSeconds } from './content-famixa-prod-v2';
+import { productionShorts, setShortSeconds, canWorkV2Scene, v2SceneBlockReason, readyV2VideoShots, isLockedTemplateKf, isOperatorSuppliedKf, visualLockShot, canRetryTurboStart, shouldResumeTurboPoll, isTurboRateLimit, isTurboDailyQuota, parseRetryAfterSec, loadRunwayQuietUntil, persistRunwayQuietUntil, clearRunwayQuietUntil, nextRunwayQuietUntil, runwayQuietRemainMin, shouldResumeLipsync, estimateFalLipsyncUsdForShots, lipsyncVideoUrl, parseFalLipsyncRef, takeVideoUrl, lipsyncQaReady, lipsyncSendEligible, normalizeLipsyncModel, normalizeLipsyncSyncMode, lipsyncTierOf, lipsyncTaskPrefix, parseFalJobIdFromError, shotI2vPromptHash } from './content-famixa-prod-v2';
 import { assembleVideoUrl, finalSourceBlockReason, resolveTakeUrl, stampFalFinal, stampMuteTake } from './content-famixa-final-source';
 import {
   attemptToDiagRow,
@@ -409,13 +409,10 @@ import { findUnregisteredNames } from './content-famixa-character-create';
 import { clipOf } from './content-famixa-shot-catalog';
 import {
   MIX_STAFF_EPISODE_ROLE,
-  PROJECT_VISUAL_MODE,
   characterVoiceProfile,
   mergeSameSpeakerCues,
   shotProductionInputOf,
   videoProductionPreflight,
-  type DialogueCue,
-  type ShotProductionInput,
 } from './famixa-video-audio-lipsync-pipeline';
 import { editorialDurationOf, performanceDurationOf, providerDurationOf, shotTimingOf } from './famixa-shot-production-timing';
 import { famixaMotionBatchCost, famixaMotionGenerateCost, quoteFamixaProviderCost } from './famixa-ai-provider-cost';
@@ -825,7 +822,7 @@ export function ContentFamixaSeriesTab() {
   const [buildBusy, setBuildBusy] = useState(false);
   const [sessionClips, setSessionClips] = useState<Record<string, string>>({});
   const [turboBusy, setTurboBusy] = useState<string | undefined>();
-  const turboBusyRef = useRef<string | undefined>();
+  const turboBusyRef = useRef<string | undefined>(undefined);
   const [lipsyncBusy, setLipsyncBusy] = useState<string | undefined>();
   const turboLockRef = useRef(Promise.resolve());
   const turboLaunchRef = useRef(new Set<string>());
@@ -3040,7 +3037,7 @@ export function ContentFamixaSeriesTab() {
               takeUrl: keepTake ? current.takeUrl : after.takeUrl,
               videoPipe: keepTake && current.previewUrl ? 'VIDEO_READY' : after.videoPipe,
               videoVerified: keepTake ? current.videoVerified : after.videoVerified,
-              runwayBilled: ready ? (current.runwayBilled ?? current.runwaySpent ?? 0) + estimatedCost : current.runwayBilled,
+              runwayBilled: ready ? (current.runwayBilled ?? current.runwaySpent ?? 0) + (estimatedCost ?? 0) : current.runwayBilled,
               ...failedStamp,
               runwayAttempts: patchRunwayAttempt(after.runwayAttempts, started.taskId, {
                 classification: klass,
@@ -4569,7 +4566,7 @@ export function ContentFamixaSeriesTab() {
         shotId,
         pictureRevisionId: run.pictureRevisionId,
         pictureHash: (run.kfSourceHash || '').slice(0, 24),
-        currentMotion: motionSnap.execution.currentArtifacts.motion?.validity ?? 'NONE',
+        currentMotion: motionSnap.execution?.currentArtifacts.motion?.validity ?? 'NONE',
         nextAction: motionSnap.nextAction,
         remake: run.motionNeedsRemake,
         sameFailedInput: sameFailedInput(run, dataUriHash(run.keyframeDataUrl), shotI2vPromptHash(stateRef.current, shot, run)),
@@ -5835,9 +5832,9 @@ export function ContentFamixaSeriesTab() {
         shotId,
         currentPictureRevision: after.pictureRevisionId,
         currentPictureHash: (after.kfSourceHash || '').slice(0, 24),
-        currentMotion: exec.currentArtifacts.motion?.validity ?? 'NONE',
-        visibleMotion: exec.visibleArtifacts.motion?.validity ?? 'NONE',
-        acceptedMotion: exec.acceptedArtifacts.motion?.validity ?? 'NONE',
+        currentMotion: exec?.currentArtifacts.motion?.validity ?? 'NONE',
+        visibleMotion: exec?.visibleArtifacts.motion?.validity ?? 'NONE',
+        acceptedMotion: exec?.acceptedArtifacts.motion?.validity ?? 'NONE',
         nextAction: snap.nextAction,
         remake: after.motionNeedsRemake,
         take44Class: take44?.resultClass || take44?.status,
@@ -6043,7 +6040,7 @@ export function ContentFamixaSeriesTab() {
   };
 
   return (
-    <div>
+    <div data-episode-ready={episodeDone ? '1' : '0'}>
       {seriesDesk === 'list' ? (
         <ContentFamixaSeriesDesk
           seriesTitle="Famixa – Video giáo dục"
@@ -6365,9 +6362,10 @@ export function ContentFamixaSeriesTab() {
                   ...live,
                   episode: {
                     ...live.episode,
-                    shots: live.episode.shots.map((s) =>
-                      s.id === shotId ? { ...s, timing: { ...(s.timing || {}), ...timing } } : s,
-                    ),
+                    shots: live.episode.shots.map((s) => {
+                      if (s.id !== shotId || !s.timing) return s;
+                      return { ...s, timing: { ...s.timing, ...timing } };
+                    }),
                   },
                 });
               }}

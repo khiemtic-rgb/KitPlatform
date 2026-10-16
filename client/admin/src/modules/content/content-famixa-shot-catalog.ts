@@ -128,7 +128,7 @@ export function filterShots(
   const q = query.trim().toLowerCase();
   return shots
     .map((shot, index) => ({ shot, index, run: runOf(shot.id) }))
-    .filter(({ shot, run }) => {
+    .filter(({ shot, run, index }) => {
       const st = mode === 'images' ? imageStatus(run) : mode === 'video' ? videoStatus(run) : shotStatus(run);
       if (filter !== 'all' && st.tone !== filter) return false;
       if (!q) return true;

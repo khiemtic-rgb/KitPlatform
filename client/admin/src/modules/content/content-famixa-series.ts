@@ -54,6 +54,7 @@ export type FamixaSeriesShot = {
   clock: string;
   seconds: number;
   story: string;
+  shotAction?: string;
   visual: string;
   characters: string[];
   location: string;
@@ -628,6 +629,8 @@ export type SeriesPilotState = {
   i2vProductionMode?: boolean;
   /** Mix polish. Grade default on. Interpolate opt-in. Does not remake I2V. */
   smoothness?: import('./famixa-shot-smoothness-contract').EpisodeSmoothness;
+  /** Operator mix switches. Absent means the mix compiler defaults. */
+  mixPrefs?: import('./content-famixa-mix').FamixaMixPrefs;
   /** Film Editing V1 overlay. Does not mutate take / lipsync / KF / timing. */
   editorialCut?: import('./content-famixa-editorial-cut').EditorialCut;
 };

@@ -61,9 +61,9 @@ export function eraOfAge(age?: number | null) {
   return `A${Math.round(n)}`;
 }
 
-export function plannedEras(initialEra: string) {
+export function plannedEras(initialEra: string): { era: string; status: 'active' | 'planned' }[] {
   const start = initialEra.toUpperCase();
-  const eras = [{ era: start, status: 'active' as const }];
+  const eras: { era: string; status: 'active' | 'planned' }[] = [{ era: start, status: 'active' }];
   for (const era of FUTURE_ERAS) {
     if (era === start) continue;
     const later = Number(era.slice(1)) > Number(start.replace(/\D/g, '') || 0);
@@ -113,10 +113,10 @@ export function detectDuplicateCharacter(
   };
 }
 
-export function resolveCharacterByName(
-  registry: Pick<FamixaCharacterRecord, 'characterCode' | 'name'>[],
+export function resolveCharacterByName<T extends { characterCode: string; name: string }>(
+  registry: T[],
   raw: string,
-) {
+): T | undefined {
   const token = (raw ?? '').trim();
   if (!token) return undefined;
   const id = normCanonId(token);

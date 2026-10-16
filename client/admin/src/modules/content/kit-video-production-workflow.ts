@@ -205,7 +205,7 @@ export function coverageLabel(ready?: number, total?: number) {
   return all ? `${have}/${all}` : '0/4';
 }
 
-export function staffReadinessCopy(row?: Pick<CharacterLibraryViewRow, 'canUse' | 'readinessCode' | 'readinessLabel' | 'requiredReady' | 'requiredTotal'> & { missingTypes?: string[] }) {
+export function staffReadinessCopy(row?: Pick<CharacterLibraryViewRow, 'canUse' | 'readinessCode' | 'readinessLabel' | 'requiredReady' | 'requiredTotal'> & { missingTypes?: string[] | null }) {
   if (!row) return { badge: 'CHƯA BẮT ĐẦU', detail: 'Chưa có dữ liệu nhân vật.', action: 'Xem nhân vật' };
   if (row.canUse) return { badge: 'HOÀN THÀNH', detail: 'Sẵn sàng dùng trong cảnh.', action: 'XEM BỘ ẢNH' };
   const missing = missingReferenceLabels(row.missingTypes);

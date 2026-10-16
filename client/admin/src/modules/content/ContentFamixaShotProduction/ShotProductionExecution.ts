@@ -9,10 +9,9 @@ import { kfPixelsOf } from '../content-famixa-kf-store';
 import { shotRunOf, type FamixaSeriesShot, type SeriesPilotState, type SeriesShotRun } from '../content-famixa-series';
 import { editorialDurationOf, performanceDurationOf, providerDurationOf } from '../famixa-shot-production-timing';
 import { productionHash } from './ShotProductionFingerprint';
-import { computeInputFingerprints, voiceDurationSecOf } from './ShotProductionStamp';
+import { computeInputFingerprints } from './ShotProductionStamp';
 import { shotProductionIntentOf } from './ShotProductionIntent';
 import {
-  acceptedTakeOf,
   lastSuccessTakeOf,
   motionAttemptStatusOf,
   playableMotionTakeOf,
@@ -915,9 +914,11 @@ export function motionCallbackRunPatch(opts: {
     ) {
       const stamped = attempts.map((item) =>
         item === row || (item.taskId || '').trim() === taskId
-          ? applyMotionCallbackRecord(item, { promote: true, resultClass: 'CURRENT', attempt: opts.decision.attempt }, newUrl, {
-              pictureRevisionId: liveRev,
-            })
+          ? opts.decision.attempt
+            ? applyMotionCallbackRecord(item, { promote: true, resultClass: 'CURRENT', attempt: opts.decision.attempt }, newUrl, {
+                pictureRevisionId: liveRev,
+              })
+            : item
           : item,
       );
       return {
@@ -1061,7 +1062,7 @@ export function deriveShotExecutionState(opts: {
         run,
         spoken,
         remake: false,
-        motionStale: motionFromAttempt.validity !== 'CURRENT',
+        motionStale: true,
         accepted: Boolean(accepted?.url),
       }));
 
@@ -1079,7 +1080,7 @@ export function deriveShotExecutionState(opts: {
         url: lipUrl,
         frozenFp: lipStamp,
         currentFp: fps.lipsync,
-        upstreamOk: Boolean(motionAllowedForLip && (!spoken || voiceArt.validity === 'CURRENT')),
+        upstreamOk: Boolean(motionAllowedForLip && (!spoken || voiceArt?.validity === 'CURRENT')),
         provenance: {
           motionArtifactId: lipsyncIn.motionArtifactId,
           voiceFingerprint: voiceIn.fingerprint,
@@ -1208,7 +1209,7 @@ export function deriveShotExecutionState(opts: {
     currentArtifacts: {
       picture: pictureArt?.validity === 'CURRENT' ? pictureArt : undefined,
       motion: motionCurrent,
-      voice: voiceArt.validity === 'CURRENT' ? voiceArt : undefined,
+      voice: voiceArt?.validity === 'CURRENT' ? voiceArt : undefined,
       lipsync: lipArt?.validity === 'CURRENT' ? lipArt : undefined,
       mix: mixArt?.validity === 'CURRENT' ? mixArt : undefined,
       final: finalArt?.validity === 'CURRENT' ? finalArt : undefined,

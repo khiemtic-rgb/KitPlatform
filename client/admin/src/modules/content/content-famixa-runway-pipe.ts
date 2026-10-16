@@ -437,7 +437,8 @@ export function patchRunwayAttempt(attempts: RunwayAttempt[] | undefined, taskId
       }
     }
   }
-  list[idx] = { ...list[idx]!, ...patch, n: list[idx]!.n };
+  const prev = list[idx]!;
+  list[idx] = { ...prev, ...patch, n: prev.n, at: patch.at || prev.at };
   return list;
 }
 

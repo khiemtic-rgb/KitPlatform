@@ -50,27 +50,6 @@ import { mergeMinhBriefIntoCanon } from './content-famixa-character-brief';
 import { mergeMinhVisualDnaDraft } from './content-famixa-minh-visual-dna';
 import { FAMIXA_VISUAL_STYLE_V1 } from './content-famixa-visual-style';
 
-function toRecord(row: FamixaCharacterRow): FamixaCharacterRecord {
-  return {
-    id: row.id,
-    characterCode: row.characterCode,
-    name: row.name,
-    role: row.role,
-    universe: row.universe,
-    visual: row.visual,
-    lifecycle: row.lifecycle,
-    currentVersionId: row.currentVersionId ?? undefined,
-    currentEra: row.currentEra,
-    version: row.version,
-    isCurrentCanon: row.isCurrentCanon,
-    approvedAt: row.approvedAt ?? undefined,
-    approvedBy: row.approvedBy ?? undefined,
-    canon: parseFamixaCanon(row.canon),
-    references: (row.references ?? []).map((r) => ({ kind: r.kind, path: r.path, label: r.label ?? undefined })),
-    updatedAt: row.updatedAt,
-  };
-}
-
 function listField(raw: string) {
   return raw
     .split(/[,;\n]/)

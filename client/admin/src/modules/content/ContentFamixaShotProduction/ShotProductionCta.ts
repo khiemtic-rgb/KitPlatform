@@ -158,10 +158,10 @@ export function directorPictureVideoSurface(opts: {
 export function directorPrimaryCta(snap: ShotProductionSnapshot) {
   const recovery = directorRecoveryOf(snap);
   if (recovery.status === 'PICTURE_REQUIRED') {
-    return { label: 'Tạo hình mới', action: 'picture' as const };
+    return { label: 'Tạo hình mới', action: 'picture' as const, hint: undefined };
   }
   if (recovery.status === 'RETRY_LOCKED') {
-    return { label: 'Tạo video', action: 'motion' as const };
+    return { label: 'Tạo video', action: 'motion' as const, hint: undefined };
   }
   const cmd = nextShotProductionCommand(snap);
   const staff = staffCommandCta(cmd);

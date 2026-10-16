@@ -1,8 +1,8 @@
 ﻿import { useEffect, useState } from "react";
-import { App, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Tag, Typography } from "antd";
+import { App, Button, DatePicker, Form, Input, Modal, Select, Space, Tag, Typography } from "antd";
 import type { Dayjs } from "dayjs";
 import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "@/shared/api/api-error";
 import {
   createContentArticleSeries,

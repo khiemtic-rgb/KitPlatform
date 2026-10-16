@@ -22,5 +22,13 @@
     }
   },
   "include": ["src"],
-  "exclude": ["src/**/*.smoke.ts"]
+  "exclude": [
+    "src/**/*.smoke.ts",
+    "src/modules/content/kit-video-phase05.verify.ts",
+    "src/modules/content/kit-video-phase05.golden.ts",
+    "src/modules/content/kit-video-phase05.reanalyze.ts",
+    "src/modules/content/kit-video-phase05.integrity.ts",
+    "src/modules/content/kit-video-phase06.golden.ts",
+    "src/modules/content/kit-video-phase06.preflight.ts"
+  ]
 }

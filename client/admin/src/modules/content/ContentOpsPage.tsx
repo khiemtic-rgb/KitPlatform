@@ -1,46 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Alert, App, Button, Card, Col, Progress, Row, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Link } from 'react-router-dom';
+import { Alert, Button, Card, Col, Row, Space, Spin, Tag, Typography } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   ExclamationCircleOutlined,
   FileTextOutlined,
-  PlusOutlined,
   ReadOutlined,
   ReloadOutlined,
-  ThunderboltOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   fetchContentOps,
   fetchContentPackages,
   fetchContentTopics,
   fetchContentEpisodesNeedContent,
-  runContentPublishJob,
   type ContentCalendarItem,
-  type ContentOpsFailedPublish,
   type ContentOpsSnapshot,
   type ContentPackage,
   type ContentTopic,
-  type ContentWorkJob,
   type EpisodeNeedContent,
 } from '@/shared/api/content.api';
-import { brandColor, channelLabel, fitMark } from './content-brand';
+import { channelLabel } from './content-brand';
 import {
   episodeSequenceLabel,
-  formatCompactLineage,
   packageForTopic,
   qualityGateLabel,
   useTopicLineageIndex,
   type TopicSeriesLineage,
 } from './content-lineage';
 import { PublishJobStatusTag, StatusTag, connectorLabel } from './ContentTopicsPage';
-
-dayjs.extend(isoWeek);
 
 function LineageLine({
   lineageIndex,
@@ -102,17 +92,7 @@ const CONNECTOR_LABEL: Record<string, string> = {
   wordpress: 'WordPress',
 };
 
-function money(n: number) {
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-}
-
-function weekDays() {
-  const start = dayjs().startOf('isoWeek');
-  return Array.from({ length: 7 }, (_, i) => start.add(i, 'day'));
-}
-
 export function ContentOpsPage() {
-  const navigate = useNavigate();
   const [data, setData] = useState<ContentOpsSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

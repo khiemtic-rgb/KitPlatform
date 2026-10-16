@@ -22,7 +22,7 @@ import { currentApprovedPictureHash } from '../content-famixa-picture-pixel-inva
 import { playableMotionTakeOf } from './ShotProductionArtifacts';
 import { picturePixelHashOf } from './ShotProductionExecution';
 import { directorPictureVideoSurface, shotPipelineBusy, shotQaMissing, type StaffShotAction } from './ShotProductionCta';
-import { snapshotOfShot, type ShotProductionSnapshot } from './ShotProductionState';
+import { snapshotOfShot } from './ShotProductionState';
 import { shotProductionOrchestrationEnabled } from './ShotProductionIntent';
 import { ShotProductionNavigator, resolveLaneAShotId, sceneShotsOf } from './ShotProductionNavigator';
 import { nextShotProductionCommand, produceShot } from './ShotProductionOrchestrator';
@@ -38,6 +38,10 @@ import { DIRECTOR_SHOT_PHASES, directorShotPhase } from '../kit-video-director-n
 import { loadFinalBlob } from './ShotProductionFinalStore';
 
 export type PictureGate = { allowed: boolean; reason?: string; hint?: string; kind?: 'picture' | 'qa' };
+
+function shotActionsDiffer(primary?: string, secondary?: string) {
+  return secondary !== primary;
+}
 
 export function ContentFamixaShotProductionWorkspace({
   shots,
@@ -110,10 +114,10 @@ export function ContentFamixaShotProductionWorkspace({
   const [advancing, setAdvancing] = useState<string>();
   const [hold, setHold] = useState<PictureGate>();
   const [localShotId, setLocalShotId] = useState<string>();
-  const mixOnce = useRef<string>();
+  const mixOnce = useRef<string | undefined>(undefined);
   const videoRef = useRef<HTMLVideoElement>(null);
   const studioRef = useRef<HTMLElement>(null);
-  const actingEditorRef = useRef<ActingBeatEditorHandle>();
+  const actingEditorRef = useRef<ActingBeatEditorHandle | null>(null);
   const currentId = resolveLaneAShotId(shots, selectedShotId || localShotId);
   const sceneShots = useMemo(() => sceneShotsOf(shots, currentId), [shots, currentId]);
   const current = sceneShots.find((s) => s.id === currentId) || shots.find((s) => s.id === currentId) || shots[0];
@@ -407,7 +411,7 @@ export function ContentFamixaShotProductionWorkspace({
   const lines = linesForShot(live.state, current);
   const dialogue = lines.map((l) => l.text).filter(Boolean).join(' ');
   const voiceUrl = lines.map((l) => live.ttsFiles[l.id]?.url).find(Boolean);
-  const currentMotionArt = snap.execution.currentArtifacts.motion;
+  const currentMotionArt = snap.execution?.currentArtifacts.motion;
   const currentTakeUrl =
     currentMotionArt?.validity === 'CURRENT' ? (currentMotionArt.url || '').trim() || undefined : undefined;
   const matchingTake = currentTakeUrl
@@ -558,7 +562,7 @@ export function ContentFamixaShotProductionWorkspace({
               {desk.primary.label}
             </Button>
           ) : null}
-          {desk.secondary && desk.secondary.action !== desk.primary?.action ? (
+          {desk.secondary && shotActionsDiffer(desk.primary?.action, desk.secondary.action) ? (
             <Button onClick={() => handleAction(current.id, desk.secondary!.action)}>{desk.secondary.label}</Button>
           ) : null}
           {hold?.kind === 'picture' && hold.reason ? (

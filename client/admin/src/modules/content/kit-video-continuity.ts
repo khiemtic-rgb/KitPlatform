@@ -455,14 +455,15 @@ export function regenerateShot(graph: KitVideoStoryGraph, displayCode: string): 
   if (!target) return graph;
   const nextShots = graph.shots.map((s) =>
     s.shotId === target.shotId
-      ? { ...s, attempt: s.attempt + 1, status: s.status === 'HOLD' ? s.status : 'DRAFT' }
+      ? { ...s, attempt: s.attempt + 1, status: s.status === 'HOLD' ? 'HOLD' as const : 'DRAFT' as const }
       : s,
   );
   return { ...graph, shots: nextShots, snapshots: { ...graph.snapshots } };
 }
 
 export function insertShot(graph: KitVideoStoryGraph, afterDisplay: number, shot: KitVideoPlannedShot): KitVideoStoryGraph {
-  const shots = [...graph.shots, shot].sort((a, b) => a.displayOrder - b.displayOrder);
+  const order = shot.displayOrder > 0 ? shot.displayOrder : afterDisplay + 0.5;
+  const shots = [...graph.shots, { ...shot, displayOrder: order }].sort((a, b) => a.displayOrder - b.displayOrder);
   const shifted = shots.map((s, i) => ({
     ...s,
     displayOrder: i + 1,

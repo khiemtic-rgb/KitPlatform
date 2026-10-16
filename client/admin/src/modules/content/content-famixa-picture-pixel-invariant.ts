@@ -22,9 +22,9 @@ export type PictureIdentityRun = {
   lipsyncUrl?: string;
   lipsynced?: boolean;
   motionNeedsRemake?: boolean;
-  acceptedTake?: unknown;
+  acceptedTake?: { n?: number; url?: string; promptHash?: string; kfHash?: string; acceptedAt?: string };
   videoApproved?: boolean;
-  finalSource?: unknown;
+  finalSource?: 'FAL' | 'RUNWAY_TTS' | 'RUNWAY' | 'NONE';
   runwayAttempts?: { n?: number }[];
   pictureRevisionAttemptN?: number;
 };

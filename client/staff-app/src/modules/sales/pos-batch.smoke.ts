@@ -5,8 +5,8 @@ function assert(cond: unknown, msg: string): asserts cond {
 }
 
 assert(showsBatchLabelField('suggest'), 'suggest shows lot field');
-assert(showsBatchPicker('suggest', [{ batchId: '1', batchNumber: 'A', quantityAvailable: 1, isSuggested: true }]));
-assert(!showsBatchPicker('suggest', []));
+assert(showsBatchPicker('suggest', [{ batchId: '1', batchNumber: 'A', quantityAvailable: 1, isSuggested: true }]), 'suggest with a lot shows the picker');
+assert(!showsBatchPicker('suggest', []), 'suggest with no lots hides the picker');
 
 const label = formatCartLotButton({
   batchLabel: 'TON-DAU-SAPO',
