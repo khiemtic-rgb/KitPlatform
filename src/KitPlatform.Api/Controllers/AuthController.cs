@@ -21,10 +21,20 @@ public sealed class AuthController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(LoginWorkspaceChoiceResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        var result = await _auth.LoginAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
+        AuthLoginResult? result;
+        try
+        {
+            result = await _auth.LoginAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
+        }
+        catch (AuthTenantRequiredException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+
         if (result is null)
             return Unauthorized(new { message = "Sai tên đăng nhập hoặc mật khẩu." });
 

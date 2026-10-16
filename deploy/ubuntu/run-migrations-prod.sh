@@ -33,6 +33,44 @@ if ! command -v psql >/dev/null 2>&1; then
   exit 1
 fi
 
+# Strip a UTF-8 BOM into a temp file. psql rejects EF BB BF at the start of a script.
+# greenfield-compat/<manifest-filename> is an execution substitute for a historical
+# file that cannot parse on a database which has not recorded that filename yet.
+# The ledger key remains the manifest filename. Do not rewrite migrations/*.sql.
+prepare_migration_sql() {
+  local file="$1"
+  local src="$2"
+  local dst="$3"
+  local compat="$SCRIPT_DIR/greenfield-compat/$file"
+  if [[ -f "$compat" ]]; then
+    echo ">> COMPAT_BODY $file historical_file_not_executed"
+    src="$compat"
+  fi
+  local magic
+  magic=$(od -An -t x1 -N 3 "$src" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+  if [[ "$magic" == "efbbbf" ]]; then
+    tail -c +4 "$src" > "$dst"
+  else
+    cp "$src" "$dst"
+  fi
+}
+
+psql_file() {
+  local path="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    path="$(cygpath -w "$path")"
+  fi
+  psql "$CONN" -v ON_ERROR_STOP=1 -f "$path"
+}
+
+tmp=""
+cleanup_migration_tmp() {
+  if [[ -n "${tmp:-}" && -f "$tmp" ]]; then
+    rm -f "$tmp"
+  fi
+}
+trap cleanup_migration_tmp EXIT
+
 echo "=== KitPlatform PRODUCTION migrations (no demo seed) ==="
 echo "Database: $CONN"
 echo "Manifest: $MANIFEST"
@@ -46,7 +84,11 @@ while IFS= read -r file || [[ -n "$file" ]]; do
     exit 1
   fi
   echo ">> $file"
-  psql "$CONN" -v ON_ERROR_STOP=1 -f "$path"
+  tmp="$(mktemp)"
+  prepare_migration_sql "$file" "$path" "$tmp"
+  psql_file "$tmp"
+  rm -f "$tmp"
+  tmp=""
 done < "$MANIFEST"
 
 table_count=$(psql "$CONN" -t -A -c "SELECT COUNT(*)::text FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")

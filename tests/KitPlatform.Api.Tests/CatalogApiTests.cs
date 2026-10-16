@@ -65,6 +65,7 @@ public sealed class CatalogApiTests : IClassFixture<KitPlatformWebApplicationFac
         {
             username = "admin",
             password = "Admin@123",
+            tenantCode = "DEMO_PHARMACY",
         });
 
         if (response.StatusCode != HttpStatusCode.OK)

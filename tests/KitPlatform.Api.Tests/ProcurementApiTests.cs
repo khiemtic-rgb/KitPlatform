@@ -39,10 +39,12 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
         var warehouseId = (await warehousesResponse.Content.ReadFromJsonAsync<JsonElement>())!
             .EnumerateArray().First().GetProperty("id").GetGuid();
 
+        var vatTreatmentId = await ActiveVatTreatmentIdAsync(authed);
         var poResponse = await authed.PostAsJsonAsync("/api/procurement/purchase-orders", new
         {
             supplierId = SupplierId,
             warehouseId,
+            vatTreatmentId,
             notes = "Integration test PO",
             items = new[]
             {
@@ -72,6 +74,7 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
             purchaseOrderId = poId,
             supplierId = SupplierId,
             warehouseId,
+            vatTreatmentId,
             items = new[]
             {
                 new
@@ -219,10 +222,12 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
         using var authed = CreateAuthedClient(token);
 
         var warehouseId = await GetMainWarehouseIdAsync(authed);
+        var vatTreatmentId = await ActiveVatTreatmentIdAsync(authed);
         var poResponse = await authed.PostAsJsonAsync("/api/procurement/purchase-orders", new
         {
             supplierId = SupplierId,
             warehouseId,
+            vatTreatmentId,
             items = new[] { new { productId = ProductId, productUnitId = ProductUnitId, orderedQty = 1m, unitPrice = 1000m } },
         });
         var poId = (await poResponse.Content.ReadFromJsonAsync<JsonElement>())!.GetProperty("id").GetGuid();
@@ -271,10 +276,12 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
         using var authed = CreateAuthedClient(token);
 
         var warehouseId = await GetMainWarehouseIdAsync(authed);
+        var vatTreatmentId = await ActiveVatTreatmentIdAsync(authed);
         var poResponse = await authed.PostAsJsonAsync("/api/procurement/purchase-orders", new
         {
             supplierId = SupplierId,
             warehouseId,
+            vatTreatmentId,
             items = new[] { new { productId = ProductId, productUnitId = ProductUnitId, orderedQty = 1m, unitPrice = 1000m } },
         });
         var poId = (await poResponse.Content.ReadFromJsonAsync<JsonElement>())!.GetProperty("id").GetGuid();
@@ -289,13 +296,13 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
         Assert.Equal(HttpStatusCode.OK, archivedListResponse.StatusCode);
         var archivedList = await archivedListResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Contains(
-            archivedList!.EnumerateArray(),
+            archivedList!.GetProperty("items").EnumerateArray(),
             row => row.GetProperty("id").GetGuid() == poId && row.TryGetProperty("deletedAt", out _));
 
         Assert.Equal(HttpStatusCode.NoContent, (await authed.DeleteAsync($"/api/procurement/purchase-orders/{poId}/purge")).StatusCode);
         var purgedList = await authed.GetFromJsonAsync<JsonElement>(
             "/api/procurement/purchase-orders?includeArchived=true");
-        Assert.DoesNotContain(purgedList!.EnumerateArray(), row => row.GetProperty("id").GetGuid() == poId);
+        Assert.DoesNotContain(purgedList!.GetProperty("items").EnumerateArray(), row => row.GetProperty("id").GetGuid() == poId);
     }
 
     [Fact]
@@ -310,6 +317,7 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
 
         var updateResponse = await authed.PutAsJsonAsync($"/api/procurement/purchase-orders/{poId}", new
         {
+            vatTreatmentId = po.GetProperty("vatTreatmentId").GetGuid(),
             notes = "Tăng SL giao thừa",
             items = new[]
             {
@@ -340,6 +348,7 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
 
         var updateResponse = await authed.PutAsJsonAsync($"/api/procurement/purchase-orders/{poId}", new
         {
+            vatTreatmentId = po.GetProperty("vatTreatmentId").GetGuid(),
             items = new[]
             {
                 new
@@ -367,6 +376,7 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
 
         var updateResponse = await authed.PutAsJsonAsync($"/api/procurement/purchase-orders/{poId}", new
         {
+            vatTreatmentId = po.GetProperty("vatTreatmentId").GetGuid(),
             items = new[]
             {
                 new
@@ -398,6 +408,7 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
 
         var updateResponse = await authed.PutAsJsonAsync($"/api/procurement/purchase-orders/{poId}", new
         {
+            vatTreatmentId = po.GetProperty("vatTreatmentId").GetGuid(),
             items = new[]
             {
                 new
@@ -419,12 +430,22 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
         return warehouses!.EnumerateArray().First().GetProperty("id").GetGuid();
     }
 
+    private static async Task<Guid> ActiveVatTreatmentIdAsync(HttpClient authed)
+    {
+        var list = await authed.GetFromJsonAsync<JsonElement>("/api/procurement/vat-treatments?activeOnly=true");
+        Assert.Equal(JsonValueKind.Array, list!.ValueKind);
+        Assert.True(list.GetArrayLength() > 0, "DEMO_PHARMACY has no active VAT treatment.");
+        return list.EnumerateArray().First().GetProperty("id").GetGuid();
+    }
+
     private static async Task<Guid> CreateAndApprovePoAsync(HttpClient authed, Guid warehouseId, decimal qty)
     {
+        var vatTreatmentId = await ActiveVatTreatmentIdAsync(authed);
         var poResponse = await authed.PostAsJsonAsync("/api/procurement/purchase-orders", new
         {
             supplierId = SupplierId,
             warehouseId,
+            vatTreatmentId,
             items = new[] { new { productId = ProductId, productUnitId = ProductUnitId, orderedQty = qty, unitPrice = 5000m } },
         });
         Assert.Equal(HttpStatusCode.Created, poResponse.StatusCode);
@@ -435,12 +456,14 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
 
     private static async Task<Guid> CreateGrnAsync(HttpClient authed, Guid poId, Guid warehouseId, Guid poItemId, decimal qty)
     {
+        var vatTreatmentId = await ActiveVatTreatmentIdAsync(authed);
         var batchNumber = $"GRN{Guid.NewGuid():N}"[..14];
         var grnResponse = await authed.PostAsJsonAsync("/api/procurement/goods-receipts", new
         {
             purchaseOrderId = poId,
             supplierId = SupplierId,
             warehouseId,
+            vatTreatmentId,
             items = new[]
             {
                 new
@@ -465,6 +488,7 @@ public sealed class ProcurementApiTests : IClassFixture<KitPlatformWebApplicatio
         {
             username = "admin",
             password = "Admin@123",
+            tenantCode = "DEMO_PHARMACY",
         });
 
         if (response.StatusCode != HttpStatusCode.OK)

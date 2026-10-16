@@ -132,13 +132,15 @@ public sealed class InventoryApiTests : IClassFixture<KitPlatformWebApplicationF
             },
         });
         Assert.Equal(HttpStatusCode.OK, voidOpeningResponse.StatusCode);
+        var created = await voidOpeningResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var createdBatchId = created!.GetProperty("batchIds").EnumerateArray().First().GetGuid();
 
         var listResponse = await authed.GetAsync(
-            $"/api/inventory/opening-balance/batches?warehouseId={mainWarehouseId}");
+            $"/api/inventory/opening-balance/batches?warehouseId={mainWarehouseId}&productId=66666666-6666-6666-6666-666666666604&search={voidBatchNumber}&pageSize=200");
         Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
         var list = await listResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var voidBatch = list.EnumerateArray()
-            .First(b => b.GetProperty("batchNumber").GetString() == voidBatchNumber);
+        var voidBatch = list.GetProperty("items").EnumerateArray()
+            .First(b => b.GetProperty("batchId").GetGuid() == createdBatchId);
         Assert.True(voidBatch.GetProperty("canVoid").GetBoolean());
         var voidBatchId = voidBatch.GetProperty("batchId").GetGuid();
 
@@ -146,10 +148,10 @@ public sealed class InventoryApiTests : IClassFixture<KitPlatformWebApplicationF
         Assert.Equal(HttpStatusCode.NoContent, voidResponse.StatusCode);
 
         var listAfterVoid = await authed.GetAsync(
-            $"/api/inventory/opening-balance/batches?warehouseId={mainWarehouseId}");
+            $"/api/inventory/opening-balance/batches?warehouseId={mainWarehouseId}&search={voidBatchNumber}&pageSize=50");
         var listAfter = await listAfterVoid.Content.ReadFromJsonAsync<JsonElement>();
         Assert.DoesNotContain(
-            listAfter.EnumerateArray(),
+            listAfter.GetProperty("items").EnumerateArray(),
             b => b.GetProperty("batchId").GetGuid() == voidBatchId);
     }
 
@@ -184,6 +186,7 @@ public sealed class InventoryApiTests : IClassFixture<KitPlatformWebApplicationF
         {
             username = "admin",
             password = "Admin@123",
+            tenantCode = "DEMO_PHARMACY",
         });
 
         if (response.StatusCode != HttpStatusCode.OK)

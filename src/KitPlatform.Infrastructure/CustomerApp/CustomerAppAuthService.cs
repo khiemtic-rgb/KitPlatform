@@ -41,7 +41,7 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         _logger = logger;
         _configuredDefaultTenantCode = configuration["Auth:DefaultTenantCode"]?.Trim();
         if (string.IsNullOrWhiteSpace(_configuredDefaultTenantCode))
-            _configuredDefaultTenantCode = configuration["Assessment:EventTenantCode"]?.Trim();
+            _configuredDefaultTenantCode = null;
     }
 
     public async Task<CustomerOtpSentResponse> RequestOtpAsync(
@@ -541,9 +541,8 @@ internal sealed class CustomerAppAuthService : ICustomerAppAuthService
         if (!string.IsNullOrWhiteSpace(tenantCode))
             return tenantCode.Trim();
 
-        if (!string.IsNullOrWhiteSpace(_configuredDefaultTenantCode))
-            return _configuredDefaultTenantCode;
-
-        return _env.IsDevelopment() ? "DEMO_PHARMACY" : null;
+        return string.IsNullOrWhiteSpace(_configuredDefaultTenantCode)
+            ? null
+            : _configuredDefaultTenantCode;
     }
 }

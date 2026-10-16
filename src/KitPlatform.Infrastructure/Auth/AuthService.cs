@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using KitPlatform.Application.Auth;
 
 namespace KitPlatform.Infrastructure.Auth;
@@ -8,30 +7,26 @@ namespace KitPlatform.Infrastructure.Auth;
 internal sealed class AuthService : IAuthService
 {
     private const short ActiveStatus = 1;
-    private const string DevDefaultTenantCode = "DEMO_PHARMACY";
     private static readonly TimeSpan WorkspaceSelectionTtl = TimeSpan.FromMinutes(5);
     private static readonly ConcurrentDictionary<string, WorkspaceSelectionEntry> WorkspaceSelections = new();
 
     private readonly AuthRepository _repository;
     private readonly KitAccountRepository _kitAccounts;
     private readonly JwtTokenService _jwt;
-    private readonly IHostEnvironment _environment;
     private readonly string? _configuredDefaultTenantCode;
 
     public AuthService(
         AuthRepository repository,
         KitAccountRepository kitAccounts,
         JwtTokenService jwt,
-        IHostEnvironment environment,
         IConfiguration configuration)
     {
         _repository = repository;
         _kitAccounts = kitAccounts;
         _jwt = jwt;
-        _environment = environment;
         _configuredDefaultTenantCode = configuration["Auth:DefaultTenantCode"]?.Trim();
         if (string.IsNullOrWhiteSpace(_configuredDefaultTenantCode))
-            _configuredDefaultTenantCode = configuration["Assessment:EventTenantCode"]?.Trim();
+            _configuredDefaultTenantCode = null;
     }
 
     public async Task<AuthLoginResult?> LoginAsync(LoginRequest request, string? ipAddress, CancellationToken cancellationToken = default)
@@ -47,7 +42,7 @@ internal sealed class AuthService : IAuthService
 
         var tenantCode = ResolveTenantCode(request.TenantCode);
         if (string.IsNullOrWhiteSpace(tenantCode))
-            return null;
+            throw new AuthTenantRequiredException();
 
         var user = await _repository.FindByCredentialsAsync(tenantCode, username, cancellationToken);
         if (user is null || user.Status != ActiveStatus)
@@ -202,10 +197,9 @@ internal sealed class AuthService : IAuthService
         if (!string.IsNullOrWhiteSpace(requestTenantCode))
             return requestTenantCode.Trim();
 
-        if (!string.IsNullOrWhiteSpace(_configuredDefaultTenantCode))
-            return _configuredDefaultTenantCode;
-
-        return _environment.IsDevelopment() ? DevDefaultTenantCode : null;
+        return string.IsNullOrWhiteSpace(_configuredDefaultTenantCode)
+            ? null
+            : _configuredDefaultTenantCode;
     }
 
     private sealed record WorkspaceSelectionEntry(

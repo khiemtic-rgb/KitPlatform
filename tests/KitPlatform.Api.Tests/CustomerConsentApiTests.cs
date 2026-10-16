@@ -42,6 +42,7 @@ public sealed class CustomerConsentApiTests : IClassFixture<KitPlatformWebApplic
         {
             username = "admin",
             password = "Admin@123",
+            tenantCode = "DEMO_PHARMACY",
         });
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();

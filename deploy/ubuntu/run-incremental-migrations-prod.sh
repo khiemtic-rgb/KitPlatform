@@ -34,6 +34,44 @@ if ! command -v psql >/dev/null 2>&1; then
   exit 1
 fi
 
+# Same BOM strip and greenfield substitute as run-migrations-prod.sh.
+# Files already present in kit_schema_migrations are skipped before this runs,
+# so a database that recorded 060_family_members_status_align.sql never executes
+# the substitute and never re-reads the historical file.
+prepare_migration_sql() {
+  local file="$1"
+  local src="$2"
+  local dst="$3"
+  local compat="$SCRIPT_DIR/greenfield-compat/$file"
+  if [[ -f "$compat" ]]; then
+    echo ">> COMPAT_BODY $file historical_file_not_executed"
+    src="$compat"
+  fi
+  local magic
+  magic=$(od -An -t x1 -N 3 "$src" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+  if [[ "$magic" == "efbbbf" ]]; then
+    tail -c +4 "$src" > "$dst"
+  else
+    cp "$src" "$dst"
+  fi
+}
+
+psql_file() {
+  local path="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    path="$(cygpath -w "$path")"
+  fi
+  psql "$CONN" -v ON_ERROR_STOP=1 -f "$path"
+}
+
+tmp=""
+cleanup_migration_tmp() {
+  if [[ -n "${tmp:-}" && -f "$tmp" ]]; then
+    rm -f "$tmp"
+  fi
+}
+trap cleanup_migration_tmp EXIT
+
 ledger_ready() {
   psql "$CONN" -tAc "SELECT to_regclass('public.kit_schema_migrations') IS NOT NULL" | tr -d '[:space:]'
 }
@@ -85,7 +123,11 @@ while IFS= read -r file || [[ -n "$file" ]]; do
 
   pending_count=$((pending_count + 1))
   echo ">> APPLY $file"
-  psql "$CONN" -v ON_ERROR_STOP=1 -f "$path"
+  tmp="$(mktemp)"
+  prepare_migration_sql "$file" "$path" "$tmp"
+  psql_file "$tmp"
+  rm -f "$tmp"
+  tmp=""
   record_applied "$file"
   applied_count=$((applied_count + 1))
 done < "$MANIFEST"

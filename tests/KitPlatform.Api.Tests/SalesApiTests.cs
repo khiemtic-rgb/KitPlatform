@@ -141,7 +141,7 @@ public sealed class SalesApiTests : IClassFixture<KitPlatformWebApplicationFacto
         Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
         var list = await listResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Contains(
-            list.EnumerateArray(),
+            list.GetProperty("items").EnumerateArray(),
             row => row.GetProperty("id").GetGuid() == orderId);
 
         var stockAfter = await GetProductStockAsync(authed, warehouseId, productId);
@@ -447,6 +447,7 @@ public sealed class SalesApiTests : IClassFixture<KitPlatformWebApplicationFacto
         {
             username = "admin",
             password = "Admin@123",
+            tenantCode = "DEMO_PHARMACY",
         });
         response.EnsureSuccessStatusCode();
         var payload = await response.Content.ReadFromJsonAsync<JsonElement>();

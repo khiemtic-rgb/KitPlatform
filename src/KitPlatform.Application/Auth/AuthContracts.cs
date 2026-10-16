@@ -2,6 +2,18 @@
 
 public sealed record LoginRequest(string Username, string Password, string? TenantCode = null);
 
+/// <summary>
+/// Login omitted a tenant and <c>Auth:DefaultTenantCode</c> is empty.
+/// Assessment event tenant is not a substitute.
+/// </summary>
+public sealed class AuthTenantRequiredException : InvalidOperationException
+{
+    public AuthTenantRequiredException()
+        : base("Mã nhà thuốc là bắt buộc khi chưa cấu hình tenant mặc định.")
+    {
+    }
+}
+
 public sealed record RefreshTokenRequest(string RefreshToken);
 
 public sealed record LoginResponse(
