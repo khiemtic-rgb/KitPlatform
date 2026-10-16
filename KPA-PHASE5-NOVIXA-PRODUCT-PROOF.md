@@ -3,6 +3,7 @@
 **Date:** 2026-10-15  
 **Release-safety decision (2026-10-16, KPA-RELEASE-SAFETY-001):** **NOT READY**. §12 stays the earlier read. It is not the current release decision. See §13 and `docs/novixa/03-operations/KPA-RELEASE-SAFETY-001-REPORT.md`.  
 **Recovery decision (2026-10-16, KPA-RELEASE-RECOVERY-001):** **NOT READY — REMEDIATION COMPLETE**. See §14 and `docs/novixa/03-operations/KPA-RELEASE-RECOVERY-001-REPORT.md`.  
+**Production-readiness decision (2026-10-16, KPA-PRODUCTION-READY-001):** **NOT READY**. The candidate SHA is `643932c0ba35cac0cad069a789a7197671f4ba24`. Staging deployment and rollback were not executed. See §15 and `docs/novixa/03-operations/KPA-PRODUCTION-READY-001-REPORT.md`.  
 **Go-live decision recorded in §12 (Nhà thuốc Xuân Hòa):** 2026-10-16 — **READY FOR OWNER DEPLOY**. That call is superseded by §13. §11 remains the first preflight, which stopped before host and database access.  
 **Controlled pilot decision:** 2026-10-16 — **CONTROLLED PILOT READY** on this branch only. That local result is not a Xuân Hòa go-live. See §10.  
 **Pilot data validation:** 2026-10-16 morning — **PARTIAL** (kept as the record in §9). §10 closes the expired-lot and read-only gaps that §9 left open.  
@@ -596,4 +597,14 @@ Owner approval waits on those conditions. Do not run the §12.3 commands against
 The admin `npm run build` failure in §13 is closed on this worktree, and the other SPAs named in `scripts/deploy-production.ps1` also build. The API Release publish hash is still `E9A5CC26DB670BFD89E47662210208E2A8E616D4FBAE472D46086D31F7027E0D` because no C# file changed. The recovery edits are uncommitted, so they are not yet a commit-identified candidate. Staging was not used. Production rollback was not executed. Video `ReadVeoTake` / `ReadFalTake` stay blocked and outside this candidate.
 
 Detail, file list, and artifact hashes: `docs/novixa/03-operations/KPA-RELEASE-RECOVERY-001-REPORT.md`. Do not run the §12.3 commands against production from this result.
+
+## 15. KPA-PRODUCTION-READY-001 (2026-10-16)
+
+**Decision: NOT READY.**
+
+The recovery source is now commit `643932c0ba35cac0cad069a789a7197671f4ba24` on `phase5-novixa-product-proof`. Pharmacy C# is unchanged since `76e8177b`. Release publish and the required tests were run from that clean commit. There is still no permitted staging host, so the candidate was not deployed and binary rollback was not executed. A local DEMO sale is not a Xuân Hòa release.
+
+The live host was read again in this session and was not modified. The running DLL is still the 2026-09-27 binary. Catalog mode is still `sandbox`, stock-out sync is still false, and `NT_XUANHOA` still has no tenant-link row. Two shifts were open and completed orders had moved since §12.1. That is not a quiet deploy window.
+
+Detail: `docs/novixa/03-operations/KPA-PRODUCTION-READY-001-REPORT.md`. Do not upload this candidate to production from this result.
 
