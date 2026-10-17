@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-16T21:12:55.067Z",
+  "generatedAt": "2026-10-17T04:31:21.704Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 121,
-    "last24hPageViews": 590,
-    "last24hRequests": 752
+    "todayVisitors": 22,
+    "todayPageViews": 28,
+    "todayRequests": 54,
+    "last24hVisitors": 115,
+    "last24hPageViews": 671,
+    "last24hRequests": 846
   },
   "hourly": [
-    {
-      "time": "2026-10-15T22:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-15T23:00:00Z",
-      "visitors": 8,
-      "requests": 15
-    },
-    {
-      "time": "2026-10-16T00:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-16T01:00:00Z",
-      "visitors": 10,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-16T02:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-16T03:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-16T04:00:00Z",
-      "visitors": 8,
-      "requests": 10
-    },
     {
       "time": "2026-10-16T05:00:00Z",
       "visitors": 7,
@@ -123,8 +88,43 @@
     },
     {
       "time": "2026-10-16T21:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-16T22:00:00Z",
+      "visitors": 3,
+      "requests": 94
+    },
+    {
+      "time": "2026-10-16T23:00:00Z",
+      "visitors": 8,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-17T00:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-17T01:00:00Z",
+      "visitors": 10,
+      "requests": 22
+    },
+    {
+      "time": "2026-10-17T02:00:00Z",
+      "visitors": 3,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-17T03:00:00Z",
       "visitors": 1,
       "requests": 1
+    },
+    {
+      "time": "2026-10-17T04:00:00Z",
+      "visitors": 2,
+      "requests": 10
     }
   ],
   "daily": [
@@ -160,9 +160,15 @@
     },
     {
       "date": "2026-10-16",
-      "visitors": 113,
-      "pageViews": 583,
-      "requests": 731
+      "visitors": 125,
+      "pageViews": 654,
+      "requests": 844
+    },
+    {
+      "date": "2026-10-17",
+      "visitors": 22,
+      "pageViews": 28,
+      "requests": 54
     }
   ],
   "topPages": [
@@ -172,11 +178,11 @@
     },
     {
       "path": "/robots.txt",
-      "views": 36
+      "views": 28
     },
     {
       "path": "/vi/",
-      "views": 17
+      "views": 24
     },
     {
       "path": "/store/.env",
@@ -187,12 +193,20 @@
       "views": 7
     },
     {
-      "path": "/sitemap-index.xml",
+      "path": "/ci/.env",
       "views": 7
     },
     {
-      "path": "/ci/.env",
-      "views": 7
+      "path": "/.env.test",
+      "views": 6
+    },
+    {
+      "path": "/.env.save",
+      "views": 6
+    },
+    {
+      "path": "/.git/config",
+      "views": 6
     },
     {
       "path": "/queue/.env",
@@ -207,23 +221,15 @@
       "views": 6
     },
     {
-      "path": "/backend/.env",
-      "views": 5
+      "path": "/sitemap-index.xml",
+      "views": 6
     },
     {
       "path": "/terraform/.env",
       "views": 5
     },
     {
-      "path": "/html/.env",
-      "views": 5
-    },
-    {
-      "path": "/.env.stage",
-      "views": 5
-    },
-    {
-      "path": "/mysql/.env",
+      "path": "/v1/.env",
       "views": 5
     }
   ]
