@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-17T04:45:03.014Z",
+  "generatedAt": "2026-10-17T11:01:28.951Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 13,
-    "todayPageViews": 3,
-    "todayRequests": 269,
-    "last24hVisitors": 79,
-    "last24hPageViews": 23,
-    "last24hRequests": 678
+    "todayVisitors": 38,
+    "todayPageViews": 18,
+    "todayRequests": 361,
+    "last24hVisitors": 81,
+    "last24hPageViews": 35,
+    "last24hRequests": 707
   },
   "hourly": [
-    {
-      "time": "2026-10-16T05:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-16T06:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-16T07:00:00Z",
-      "visitors": 3,
-      "requests": 32
-    },
-    {
-      "time": "2026-10-16T08:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-16T09:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-16T10:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-16T11:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
     {
       "time": "2026-10-16T12:00:00Z",
       "visitors": 10,
@@ -125,6 +90,36 @@
       "time": "2026-10-17T04:00:00Z",
       "visitors": 1,
       "requests": 1
+    },
+    {
+      "time": "2026-10-17T05:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-17T06:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-17T07:00:00Z",
+      "visitors": 4,
+      "requests": 24
+    },
+    {
+      "time": "2026-10-17T08:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-17T09:00:00Z",
+      "visitors": 14,
+      "requests": 48
+    },
+    {
+      "time": "2026-10-17T10:00:00Z",
+      "visitors": 4,
+      "requests": 7
     }
   ],
   "daily": [
@@ -166,22 +161,30 @@
     },
     {
       "date": "2026-10-17",
-      "visitors": 37,
-      "pageViews": 7,
-      "requests": 566
+      "visitors": 68,
+      "pageViews": 22,
+      "requests": 658
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 51
+      "views": 46
     },
     {
       "path": "/",
-      "views": 27
+      "views": 38
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 21
     },
     {
       "path": "/.env.test",
+      "views": 21
+    },
+    {
+      "path": "/vi/",
       "views": 21
     },
     {
@@ -190,10 +193,6 @@
     },
     {
       "path": "/media/.env",
-      "views": 20
-    },
-    {
-      "path": "/sitemap.xml",
       "views": 20
     },
     {
@@ -221,15 +220,11 @@
       "views": 13
     },
     {
+      "path": "/demo/.env",
+      "views": 12
+    },
+    {
       "path": "/.env.dist",
-      "views": 12
-    },
-    {
-      "path": "/.gitlab-ci.yml",
-      "views": 12
-    },
-    {
-      "path": "/config/.env",
       "views": 12
     }
   ]
