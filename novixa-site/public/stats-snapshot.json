@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-17T10:48:29.333Z",
+  "generatedAt": "2026-10-17T15:38:10.648Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 42,
-    "todayPageViews": 66,
-    "todayRequests": 225,
-    "last24hVisitors": 109,
-    "last24hPageViews": 428,
-    "last24hRequests": 701
+    "todayVisitors": 67,
+    "todayPageViews": 74,
+    "todayRequests": 265,
+    "last24hVisitors": 104,
+    "last24hPageViews": 425,
+    "last24hRequests": 698
   },
   "hourly": [
-    {
-      "time": "2026-10-16T11:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-16T12:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-16T13:00:00Z",
-      "visitors": 7,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-16T14:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-16T15:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
     {
       "time": "2026-10-16T16:00:00Z",
       "visitors": 2,
@@ -123,8 +98,33 @@
     },
     {
       "time": "2026-10-17T10:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-17T11:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-17T12:00:00Z",
+      "visitors": 10,
+      "requests": 13
+    },
+    {
+      "time": "2026-10-17T13:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-17T14:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-17T15:00:00Z",
+      "visitors": 7,
+      "requests": 8
     }
   ],
   "daily": [
@@ -166,70 +166,70 @@
     },
     {
       "date": "2026-10-17",
-      "visitors": 42,
-      "pageViews": 66,
-      "requests": 225
+      "visitors": 67,
+      "pageViews": 74,
+      "requests": 265
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 46
+      "views": 50
     },
     {
       "path": "/robots.txt",
-      "views": 27
+      "views": 20
     },
     {
       "path": "/vi/",
-      "views": 19
-    },
-    {
-      "path": "/.env.sample",
-      "views": 6
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 6
+      "views": 18
     },
     {
       "path": "/.env.prod",
       "views": 6
     },
     {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "path": "/.env.sample",
       "views": 6
     },
     {
-      "path": "/.env.dev",
-      "views": 5
-    },
-    {
-      "path": "/.amplifyrc",
-      "views": 5
-    },
-    {
-      "path": "/_astro/_slug_.OmCW7wJf.css",
-      "views": 5
-    },
-    {
-      "path": "/.git/logs/HEAD",
-      "views": 5
-    },
-    {
-      "path": "/info.php",
-      "views": 5
-    },
-    {
-      "path": "/.docker/laravel/app/.env",
-      "views": 5
-    },
-    {
-      "path": "/.env.old",
-      "views": 5
-    },
-    {
       "path": "/credentials.json",
+      "views": 5
+    },
+    {
+      "path": "/.env.backup",
+      "views": 5
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 5
+    },
+    {
+      "path": "/.aws/credentials",
+      "views": 5
+    },
+    {
+      "path": "/.env.test",
+      "views": 5
+    },
+    {
+      "path": "/.env.example",
+      "views": 5
+    },
+    {
+      "path": "/.git/logs/refs/heads/main",
+      "views": 5
+    },
+    {
+      "path": "/.env.staging",
+      "views": 5
+    },
+    {
+      "path": "/.env.save",
+      "views": 5
+    },
+    {
+      "path": "/.aws/credentials.bak",
       "views": 5
     }
   ]
