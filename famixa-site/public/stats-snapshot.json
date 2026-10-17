@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-16T21:27:00.581Z",
+  "generatedAt": "2026-10-17T04:45:03.014Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 17,
+    "todayVisitors": 13,
     "todayPageViews": 3,
-    "todayRequests": 286,
-    "last24hVisitors": 88,
-    "last24hPageViews": 29,
-    "last24hRequests": 484
+    "todayRequests": 269,
+    "last24hVisitors": 79,
+    "last24hPageViews": 23,
+    "last24hRequests": 678
   },
   "hourly": [
-    {
-      "time": "2026-10-15T22:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-15T23:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-16T01:00:00Z",
-      "visitors": 4,
-      "requests": 25
-    },
-    {
-      "time": "2026-10-16T02:00:00Z",
-      "visitors": 4,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-16T03:00:00Z",
-      "visitors": 2,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-16T04:00:00Z",
-      "visitors": 11,
-      "requests": 27
-    },
     {
       "time": "2026-10-16T05:00:00Z",
       "visitors": 4,
@@ -118,8 +88,43 @@
     },
     {
       "time": "2026-10-16T21:00:00Z",
+      "visitors": 2,
+      "requests": 23
+    },
+    {
+      "time": "2026-10-16T22:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-16T23:00:00Z",
       "visitors": 1,
-      "requests": 21
+      "requests": 2
+    },
+    {
+      "time": "2026-10-17T00:00:00Z",
+      "visitors": 7,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-17T01:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-17T02:00:00Z",
+      "visitors": 1,
+      "requests": 245
+    },
+    {
+      "time": "2026-10-17T03:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-17T04:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -155,77 +160,77 @@
     },
     {
       "date": "2026-10-16",
-      "visitors": 80,
-      "pageViews": 28,
-      "requests": 471
+      "visitors": 84,
+      "pageViews": 29,
+      "requests": 482
     },
     {
       "date": "2026-10-17",
-      "visitors": 17,
-      "pageViews": 3,
-      "requests": 286
+      "visitors": 37,
+      "pageViews": 7,
+      "requests": 566
     }
   ],
   "topPages": [
     {
       "path": "/robots.txt",
-      "views": 55
+      "views": 51
     },
     {
       "path": "/",
-      "views": 42
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 22
-    },
-    {
-      "path": "/back/.env",
-      "views": 19
+      "views": 27
     },
     {
       "path": "/.env.test",
-      "views": 18
+      "views": 21
+    },
+    {
+      "path": "/back/.env",
+      "views": 20
     },
     {
       "path": "/media/.env",
-      "views": 18
+      "views": 20
     },
     {
-      "path": "/vi/",
-      "views": 16
+      "path": "/sitemap.xml",
+      "views": 20
     },
     {
       "path": "/.env.prod",
-      "views": 12
-    },
-    {
-      "path": "/dev/.env",
-      "views": 12
-    },
-    {
-      "path": "/.env~",
-      "views": 12
-    },
-    {
-      "path": "/cms/.env",
-      "views": 11
+      "views": 15
     },
     {
       "path": "/vendor/composer/installed.json",
-      "views": 10
+      "views": 15
     },
     {
-      "path": "/config/.env",
-      "views": 10
+      "path": "/cms/.env",
+      "views": 14
     },
     {
       "path": "/.env.docker",
-      "views": 10
+      "views": 14
+    },
+    {
+      "path": "/.env~",
+      "views": 13
+    },
+    {
+      "path": "/dev/.env",
+      "views": 13
+    },
+    {
+      "path": "/.env.dist",
+      "views": 12
     },
     {
       "path": "/.gitlab-ci.yml",
-      "views": 10
+      "views": 12
+    },
+    {
+      "path": "/config/.env",
+      "views": 12
     }
   ]
 }
