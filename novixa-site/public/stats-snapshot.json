@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-18T15:54:17.596Z",
+  "generatedAt": "2026-10-18T20:47:23.569Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 103,
-    "todayPageViews": 1168,
-    "todayRequests": 1961,
-    "last24hVisitors": 140,
-    "last24hPageViews": 1228,
-    "last24hRequests": 2196
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 159,
+    "last24hPageViews": 1623,
+    "last24hRequests": 3025
   },
   "hourly": [
-    {
-      "time": "2026-10-17T16:00:00Z",
-      "visitors": 6,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-17T17:00:00Z",
-      "visitors": 13,
-      "requests": 90
-    },
-    {
-      "time": "2026-10-17T18:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-17T19:00:00Z",
-      "visitors": 5,
-      "requests": 87
-    },
-    {
-      "time": "2026-10-17T20:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
     {
       "time": "2026-10-17T21:00:00Z",
       "visitors": 4,
@@ -128,17 +103,36 @@
     },
     {
       "time": "2026-10-18T15:00:00Z",
+      "visitors": 8,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-18T16:00:00Z",
+      "visitors": 32,
+      "requests": 252
+    },
+    {
+      "time": "2026-10-18T17:00:00Z",
       "visitors": 7,
-      "requests": 8
+      "requests": 25
+    },
+    {
+      "time": "2026-10-18T18:00:00Z",
+      "visitors": 10,
+      "requests": 170
+    },
+    {
+      "time": "2026-10-18T19:00:00Z",
+      "visitors": 5,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-18T20:00:00Z",
+      "visitors": 10,
+      "requests": 565
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-12",
-      "visitors": 178,
-      "pageViews": 139,
-      "requests": 437
-    },
     {
       "date": "2026-10-13",
       "visitors": 173,
@@ -171,71 +165,71 @@
     },
     {
       "date": "2026-10-18",
-      "visitors": 103,
-      "pageViews": 1168,
-      "requests": 1961
+      "visitors": 147,
+      "pageViews": 1613,
+      "requests": 2987
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 206
+      "views": 235
     },
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 81
+      "views": 107
     },
     {
       "path": "/vi/",
-      "views": 79
+      "views": 97
     },
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 32
     },
     {
       "path": "/.env",
-      "views": 24
+      "views": 30
     },
     {
       "path": "/.env.old",
-      "views": 19
+      "views": 25
     },
     {
       "path": "/vi/lien-he/",
-      "views": 15
+      "views": 20
     },
     {
       "path": "/vi/nguoi-dan/",
-      "views": 15
-    },
-    {
-      "path": "/.env.bak",
-      "views": 11
-    },
-    {
-      "path": "/.git/HEAD",
-      "views": 11
-    },
-    {
-      "path": "/_profiler/info.php",
-      "views": 11
+      "views": 19
     },
     {
       "path": "/.env.local",
-      "views": 10
+      "views": 18
     },
     {
-      "path": "/.env.prod",
-      "views": 10
-    },
-    {
-      "path": "/.env.save",
-      "views": 10
+      "path": "/.well-known/acme-challenge/zqgVTBG0cFNxsB9w4JXuO_7xx2BYay7CMrVL0WhixmMBbdGKTg8fseWlHiWEzqor",
+      "views": 17
     },
     {
       "path": "/.env.staging",
-      "views": 10
+      "views": 17
+    },
+    {
+      "path": "/.env.save",
+      "views": 17
+    },
+    {
+      "path": "/.env.bak",
+      "views": 17
+    },
+    {
+      "path": "/api/.env",
+      "views": 16
+    },
+    {
+      "path": "/.env.live",
+      "views": 16
     }
   ]
 }
