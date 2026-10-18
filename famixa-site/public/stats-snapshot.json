@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-17T20:46:43.950Z",
+  "generatedAt": "2026-10-18T04:51:10.818Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 9,
-    "todayPageViews": 5,
-    "todayRequests": 259,
-    "last24hVisitors": 74,
-    "last24hPageViews": 34,
-    "last24hRequests": 726
+    "todayVisitors": 12,
+    "todayPageViews": 4,
+    "todayRequests": 543,
+    "last24hVisitors": 85,
+    "last24hPageViews": 37,
+    "last24hRequests": 991
   },
   "hourly": [
-    {
-      "time": "2026-10-16T21:00:00Z",
-      "visitors": 2,
-      "requests": 23
-    },
-    {
-      "time": "2026-10-16T22:00:00Z",
-      "visitors": 4,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-16T23:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-17T00:00:00Z",
-      "visitors": 7,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-17T01:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-17T02:00:00Z",
-      "visitors": 1,
-      "requests": 245
-    },
-    {
-      "time": "2026-10-17T03:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-17T04:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-10-17T05:00:00Z",
       "visitors": 3,
@@ -128,8 +88,43 @@
     },
     {
       "time": "2026-10-17T20:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-17T21:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-17T23:00:00Z",
+      "visitors": 7,
+      "requests": 10
+    },
+    {
+      "time": "2026-10-18T00:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-18T01:00:00Z",
+      "visitors": 2,
+      "requests": 247
+    },
+    {
+      "time": "2026-10-18T02:00:00Z",
       "visitors": 1,
       "requests": 2
+    },
+    {
+      "time": "2026-10-18T03:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-18T04:00:00Z",
+      "visitors": 6,
+      "requests": 283
     }
   ],
   "daily": [
@@ -165,52 +160,64 @@
     },
     {
       "date": "2026-10-17",
-      "visitors": 69,
-      "pageViews": 33,
-      "requests": 694
+      "visitors": 83,
+      "pageViews": 35,
+      "requests": 715
     },
     {
       "date": "2026-10-18",
-      "visitors": 9,
-      "pageViews": 5,
-      "requests": 259
+      "visitors": 40,
+      "pageViews": 12,
+      "requests": 825
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 37
+      "views": 39
     },
     {
       "path": "/robots.txt",
-      "views": 36
+      "views": 38
     },
     {
       "path": "/vi/",
-      "views": 23
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 18
+      "views": 32
     },
     {
       "path": "/api/session/properties",
-      "views": 15
+      "views": 17
+    },
+    {
+      "path": "/sitemap.xml",
+      "views": 16
+    },
+    {
+      "path": "/Dockerfile",
+      "views": 8
+    },
+    {
+      "path": "/.env.development",
+      "views": 8
+    },
+    {
+      "path": "/test/.env",
+      "views": 8
     },
     {
       "path": "/.env.live",
-      "views": 9
-    },
-    {
-      "path": "/.aws/config",
-      "views": 9
-    },
-    {
-      "path": "/.env.test",
       "views": 7
     },
     {
-      "path": "/.env-example",
+      "path": "/.aws/config",
+      "views": 7
+    },
+    {
+      "path": "/v1/.env",
+      "views": 7
+    },
+    {
+      "path": "/wp-config.php.bak",
       "views": 7
     },
     {
@@ -218,23 +225,11 @@
       "views": 7
     },
     {
-      "path": "/database.sql",
+      "path": "/.env",
       "views": 7
     },
     {
-      "path": "/.env.docker",
-      "views": 6
-    },
-    {
-      "path": "/vendor/composer/installed.json",
-      "views": 6
-    },
-    {
-      "path": "/v2/.env",
-      "views": 6
-    },
-    {
-      "path": "/wp-config.php.bak",
+      "path": "/credentials.ini",
       "views": 6
     }
   ]
