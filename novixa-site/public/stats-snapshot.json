@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-18T04:38:24.548Z",
+  "generatedAt": "2026-10-18T11:10:55.441Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 17,
-    "todayPageViews": 286,
-    "todayRequests": 328,
-    "last24hVisitors": 99,
-    "last24hPageViews": 363,
-    "last24hRequests": 632
+    "todayVisitors": 46,
+    "todayPageViews": 352,
+    "todayRequests": 638,
+    "last24hVisitors": 106,
+    "last24hPageViews": 420,
+    "last24hRequests": 911
   },
   "hourly": [
-    {
-      "time": "2026-10-17T06:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-17T07:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-17T08:00:00Z",
-      "visitors": 8,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-17T09:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-17T10:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-17T11:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
     {
       "time": "2026-10-17T12:00:00Z",
       "visitors": 10,
@@ -123,8 +93,43 @@
     },
     {
       "time": "2026-10-18T04:00:00Z",
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-18T05:00:00Z",
+      "visitors": 4,
+      "requests": 121
+    },
+    {
+      "time": "2026-10-18T06:00:00Z",
+      "visitors": 5,
+      "requests": 20
+    },
+    {
+      "time": "2026-10-18T07:00:00Z",
+      "visitors": 4,
+      "requests": 17
+    },
+    {
+      "time": "2026-10-18T08:00:00Z",
+      "visitors": 5,
+      "requests": 117
+    },
+    {
+      "time": "2026-10-18T09:00:00Z",
+      "visitors": 7,
+      "requests": 20
+    },
+    {
+      "time": "2026-10-18T10:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-18T11:00:00Z",
       "visitors": 1,
-      "requests": 4
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,34 +171,54 @@
     },
     {
       "date": "2026-10-18",
-      "visitors": 17,
-      "pageViews": 286,
-      "requests": 328
+      "visitors": 46,
+      "pageViews": 352,
+      "requests": 638
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 71
+      "views": 122
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 37
     },
     {
       "path": "/robots.txt",
-      "views": 18
+      "views": 21
     },
     {
-      "path": "/api/session/properties",
+      "path": "/_profiler/info.php",
+      "views": 11
+    },
+    {
+      "path": "/.env",
+      "views": 9
+    },
+    {
+      "path": "/phpinfo.php",
       "views": 7
     },
     {
-      "path": "/info.php",
+      "path": "/.git/config",
       "views": 6
     },
     {
-      "path": "/admin/.env",
+      "path": "/old/.env",
+      "views": 6
+    },
+    {
+      "path": "/backend/.env",
+      "views": 6
+    },
+    {
+      "path": "/api/session/properties",
+      "views": 5
+    },
+    {
+      "path": "/info.php",
       "views": 5
     },
     {
@@ -201,19 +226,7 @@
       "views": 5
     },
     {
-      "path": "/phpinfo.php",
-      "views": 5
-    },
-    {
-      "path": "/credentials.json",
-      "views": 5
-    },
-    {
-      "path": "/kien-thuc/phong-cam-cum",
-      "views": 5
-    },
-    {
-      "path": "/favicon.svg",
+      "path": "/config/aws.yml",
       "views": 5
     },
     {
@@ -221,16 +234,8 @@
       "views": 5
     },
     {
-      "path": "/.env",
+      "path": "/kien-thuc/phong-cam-cum",
       "views": 5
-    },
-    {
-      "path": "/.env.save",
-      "views": 4
-    },
-    {
-      "path": "/src/.env",
-      "views": 4
     }
   ]
 }
