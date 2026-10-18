@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-18T11:10:55.441Z",
+  "generatedAt": "2026-10-18T15:54:17.596Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 46,
-    "todayPageViews": 352,
-    "todayRequests": 638,
-    "last24hVisitors": 106,
-    "last24hPageViews": 420,
-    "last24hRequests": 911
+    "todayVisitors": 103,
+    "todayPageViews": 1168,
+    "todayRequests": 1961,
+    "last24hVisitors": 140,
+    "last24hPageViews": 1228,
+    "last24hRequests": 2196
   },
   "hourly": [
-    {
-      "time": "2026-10-17T12:00:00Z",
-      "visitors": 10,
-      "requests": 13
-    },
-    {
-      "time": "2026-10-17T13:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-17T14:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-17T15:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
     {
       "time": "2026-10-17T16:00:00Z",
       "visitors": 6,
@@ -128,8 +108,28 @@
     },
     {
       "time": "2026-10-18T11:00:00Z",
-      "visitors": 1,
-      "requests": 3
+      "visitors": 8,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-18T12:00:00Z",
+      "visitors": 19,
+      "requests": 1008
+    },
+    {
+      "time": "2026-10-18T13:00:00Z",
+      "visitors": 23,
+      "requests": 255
+    },
+    {
+      "time": "2026-10-18T14:00:00Z",
+      "visitors": 11,
+      "requests": 44
+    },
+    {
+      "time": "2026-10-18T15:00:00Z",
+      "visitors": 7,
+      "requests": 8
     }
   ],
   "daily": [
@@ -171,71 +171,71 @@
     },
     {
       "date": "2026-10-18",
-      "visitors": 46,
-      "pageViews": 352,
-      "requests": 638
+      "visitors": 103,
+      "pageViews": 1168,
+      "requests": 1961
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 122
+      "views": 206
+    },
+    {
+      "path": "/cdn-cgi/l/email-protection",
+      "views": 81
     },
     {
       "path": "/vi/",
-      "views": 37
+      "views": 79
     },
     {
       "path": "/robots.txt",
-      "views": 21
+      "views": 25
+    },
+    {
+      "path": "/.env",
+      "views": 24
+    },
+    {
+      "path": "/.env.old",
+      "views": 19
+    },
+    {
+      "path": "/vi/lien-he/",
+      "views": 15
+    },
+    {
+      "path": "/vi/nguoi-dan/",
+      "views": 15
+    },
+    {
+      "path": "/.env.bak",
+      "views": 11
+    },
+    {
+      "path": "/.git/HEAD",
+      "views": 11
     },
     {
       "path": "/_profiler/info.php",
       "views": 11
     },
     {
-      "path": "/.env",
-      "views": 9
+      "path": "/.env.local",
+      "views": 10
     },
     {
-      "path": "/phpinfo.php",
-      "views": 7
+      "path": "/.env.prod",
+      "views": 10
     },
     {
-      "path": "/.git/config",
-      "views": 6
+      "path": "/.env.save",
+      "views": 10
     },
     {
-      "path": "/old/.env",
-      "views": 6
-    },
-    {
-      "path": "/backend/.env",
-      "views": 6
-    },
-    {
-      "path": "/api/session/properties",
-      "views": 5
-    },
-    {
-      "path": "/info.php",
-      "views": 5
-    },
-    {
-      "path": "/.env.development",
-      "views": 5
-    },
-    {
-      "path": "/config/aws.yml",
-      "views": 5
-    },
-    {
-      "path": "/kien-thuc/kiem-soat-huyet-ap",
-      "views": 5
-    },
-    {
-      "path": "/kien-thuc/phong-cam-cum",
-      "views": 5
+      "path": "/.env.staging",
+      "views": 10
     }
   ]
 }
