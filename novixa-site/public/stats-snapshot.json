@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-19T13:22:43.814Z",
+  "generatedAt": "2026-10-19T22:23:06.732Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 133,
-    "todayPageViews": 510,
-    "todayRequests": 1342,
-    "last24hVisitors": 229,
-    "last24hPageViews": 1502,
-    "last24hRequests": 3107
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 215,
+    "last24hPageViews": 1107,
+    "last24hRequests": 2172
   },
   "hourly": [
-    {
-      "time": "2026-10-18T14:00:00Z",
-      "visitors": 11,
-      "requests": 44
-    },
-    {
-      "time": "2026-10-18T15:00:00Z",
-      "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-18T16:00:00Z",
-      "visitors": 32,
-      "requests": 252
-    },
-    {
-      "time": "2026-10-18T17:00:00Z",
-      "visitors": 7,
-      "requests": 25
-    },
-    {
-      "time": "2026-10-18T18:00:00Z",
-      "visitors": 10,
-      "requests": 170
-    },
-    {
-      "time": "2026-10-18T19:00:00Z",
-      "visitors": 5,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-18T20:00:00Z",
-      "visitors": 11,
-      "requests": 566
-    },
-    {
-      "time": "2026-10-18T21:00:00Z",
-      "visitors": 7,
-      "requests": 285
-    },
-    {
-      "time": "2026-10-18T22:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
     {
       "time": "2026-10-18T23:00:00Z",
       "visitors": 39,
@@ -128,17 +83,56 @@
     },
     {
       "time": "2026-10-19T13:00:00Z",
-      "visitors": 2,
-      "requests": 120
+      "visitors": 6,
+      "requests": 124
+    },
+    {
+      "time": "2026-10-19T14:00:00Z",
+      "visitors": 14,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-19T15:00:00Z",
+      "visitors": 7,
+      "requests": 19
+    },
+    {
+      "time": "2026-10-19T16:00:00Z",
+      "visitors": 16,
+      "requests": 42
+    },
+    {
+      "time": "2026-10-19T17:00:00Z",
+      "visitors": 5,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-19T18:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-19T19:00:00Z",
+      "visitors": 5,
+      "requests": 31
+    },
+    {
+      "time": "2026-10-19T20:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-19T21:00:00Z",
+      "visitors": 4,
+      "requests": 295
+    },
+    {
+      "time": "2026-10-19T22:00:00Z",
+      "visitors": 1,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-13",
-      "visitors": 173,
-      "pageViews": 719,
-      "requests": 1142
-    },
     {
       "date": "2026-10-14",
       "visitors": 181,
@@ -171,71 +165,71 @@
     },
     {
       "date": "2026-10-19",
-      "visitors": 133,
-      "pageViews": 510,
-      "requests": 1342
+      "visitors": 180,
+      "pageViews": 862,
+      "requests": 1782
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 296
+      "views": 222
     },
     {
       "path": "/vi/",
-      "views": 144
+      "views": 98
     },
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 122
+      "views": 94
     },
     {
       "path": "/robots.txt",
-      "views": 38
+      "views": 40
     },
     {
       "path": "/.env",
-      "views": 32
+      "views": 22
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 20
     },
     {
       "path": "/.git/config",
-      "views": 23
+      "views": 18
     },
     {
-      "path": "/app/.env",
-      "views": 21
+      "path": "/.well-known/acme-challenge/oriQaWBxQqPsDmaTV6ru3JY1s6Iv-1JKvyc-ESOrK5TR8EcPirp6ybsF2kzkOVTz",
+      "views": 17
     },
     {
-      "path": "/api/.env",
-      "views": 21
-    },
-    {
-      "path": "/.env.local",
-      "views": 21
-    },
-    {
-      "path": "/.env.bak",
-      "views": 20
+      "path": "/vi/giai-phap-chi-phi/",
+      "views": 16
     },
     {
       "path": "/.env.backup",
-      "views": 20
-    },
-    {
-      "path": "/.env.save",
-      "views": 20
+      "views": 13
     },
     {
       "path": "/.env.dev",
-      "views": 20
+      "views": 13
     },
     {
-      "path": "/.env.production",
-      "views": 20
+      "path": "/.env.save",
+      "views": 13
     },
     {
       "path": "/.env.old",
-      "views": 20
+      "views": 13
+    },
+    {
+      "path": "/vi/nguoi-dan/",
+      "views": 12
+    },
+    {
+      "path": "/app/.env",
+      "views": 12
     }
   ]
 }
