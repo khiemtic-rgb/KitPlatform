@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-19T04:59:26.922Z",
+  "generatedAt": "2026-10-19T13:44:50.392Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 19,
-    "todayPageViews": 5,
-    "todayRequests": 379,
+    "todayVisitors": 48,
+    "todayPageViews": 76,
+    "todayRequests": 865,
     "last24hVisitors": 75,
-    "last24hPageViews": 30,
-    "last24hRequests": 799
+    "last24hPageViews": 81,
+    "last24hRequests": 947
   },
   "hourly": [
-    {
-      "time": "2026-10-18T05:00:00Z",
-      "visitors": 3,
-      "requests": 280
-    },
-    {
-      "time": "2026-10-18T06:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-18T07:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-18T08:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-18T10:00:00Z",
-      "visitors": 8,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-18T12:00:00Z",
-      "visitors": 5,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-18T13:00:00Z",
-      "visitors": 10,
-      "requests": 25
-    },
     {
       "time": "2026-10-18T15:00:00Z",
       "visitors": 1,
@@ -110,6 +75,46 @@
       "time": "2026-10-19T04:00:00Z",
       "visitors": 7,
       "requests": 10
+    },
+    {
+      "time": "2026-10-19T05:00:00Z",
+      "visitors": 5,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-19T06:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-19T07:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-19T08:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-19T09:00:00Z",
+      "visitors": 6,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-19T10:00:00Z",
+      "visitors": 9,
+      "requests": 376
+    },
+    {
+      "time": "2026-10-19T12:00:00Z",
+      "visitors": 12,
+      "requests": 76
+    },
+    {
+      "time": "2026-10-19T13:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -151,71 +156,71 @@
     },
     {
       "date": "2026-10-19",
-      "visitors": 57,
-      "pageViews": 8,
-      "requests": 456
+      "visitors": 96,
+      "pageViews": 79,
+      "requests": 942
     }
   ],
   "topPages": [
     {
+      "path": "/robots.txt",
+      "views": 37
+    },
+    {
       "path": "/",
-      "views": 48
+      "views": 35
     },
     {
       "path": "/vi/",
-      "views": 27
-    },
-    {
-      "path": "/robots.txt",
-      "views": 27
+      "views": 20
     },
     {
       "path": "/sitemap.xml",
-      "views": 10
-    },
-    {
-      "path": "/laravel/.env",
-      "views": 9
-    },
-    {
-      "path": "/.env.backup",
-      "views": 7
-    },
-    {
-      "path": "/.env.example",
-      "views": 6
+      "views": 15
     },
     {
       "path": "/.env",
-      "views": 6
-    },
-    {
-      "path": "/config/.env",
-      "views": 5
+      "views": 11
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 5
+      "views": 10
     },
     {
-      "path": "/v1/.env",
-      "views": 5
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 9
     },
     {
-      "path": "/.env.development",
-      "views": 5
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 9
     },
     {
-      "path": "/.aws/credentials.bak",
-      "views": 5
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 9
     },
     {
-      "path": "/backup/.env",
-      "views": 5
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 9
     },
     {
-      "path": "/.git/logs/HEAD",
-      "views": 5
+      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
+      "views": 9
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 9
+    },
+    {
+      "path": "/.env.anthropic",
+      "views": 8
+    },
+    {
+      "path": "/.env.backup",
+      "views": 8
+    },
+    {
+      "path": "/.env.example",
+      "views": 8
     }
   ]
 }
