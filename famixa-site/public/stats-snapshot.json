@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-20T11:54:39.882Z",
+  "generatedAt": "2026-10-20T17:23:34.108Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 34,
-    "todayPageViews": 12,
-    "todayRequests": 263,
-    "last24hVisitors": 118,
-    "last24hPageViews": 188,
-    "last24hRequests": 1403
+    "todayVisitors": 1,
+    "todayPageViews": 1,
+    "todayRequests": 3,
+    "last24hVisitors": 83,
+    "last24hPageViews": 35,
+    "last24hRequests": 683
   },
   "hourly": [
-    {
-      "time": "2026-10-19T12:00:00Z",
-      "visitors": 12,
-      "requests": 76
-    },
-    {
-      "time": "2026-10-19T13:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-19T14:00:00Z",
-      "visitors": 6,
-      "requests": 65
-    },
-    {
-      "time": "2026-10-19T15:00:00Z",
-      "visitors": 19,
-      "requests": 376
-    },
-    {
-      "time": "2026-10-19T16:00:00Z",
-      "visitors": 29,
-      "requests": 491
-    },
-    {
-      "time": "2026-10-19T17:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
     {
       "time": "2026-10-19T18:00:00Z",
       "visitors": 4,
@@ -115,15 +85,39 @@
       "time": "2026-10-20T11:00:00Z",
       "visitors": 1,
       "requests": 18
+    },
+    {
+      "time": "2026-10-20T12:00:00Z",
+      "visitors": 2,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-20T13:00:00Z",
+      "visitors": 3,
+      "requests": 247
+    },
+    {
+      "time": "2026-10-20T14:00:00Z",
+      "visitors": 6,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-20T15:00:00Z",
+      "visitors": 7,
+      "requests": 10
+    },
+    {
+      "time": "2026-10-20T16:00:00Z",
+      "visitors": 7,
+      "requests": 15
+    },
+    {
+      "time": "2026-10-20T17:00:00Z",
+      "visitors": 1,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-14",
-      "visitors": 88,
-      "pageViews": 21,
-      "requests": 266
-    },
     {
       "date": "2026-10-15",
       "visitors": 53,
@@ -156,71 +150,77 @@
     },
     {
       "date": "2026-10-20",
-      "visitors": 85,
-      "pageViews": 26,
-      "requests": 394
+      "visitors": 53,
+      "pageViews": 22,
+      "requests": 558
+    },
+    {
+      "date": "2026-10-21",
+      "visitors": 1,
+      "pageViews": 1,
+      "requests": 3
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 128
-    },
-    {
-      "path": "/vi/",
-      "views": 72
+      "views": 63
     },
     {
       "path": "/robots.txt",
-      "views": 46
+      "views": 48
+    },
+    {
+      "path": "/vi/",
+      "views": 29
     },
     {
       "path": "/sitemap.xml",
-      "views": 23
+      "views": 21
     },
     {
       "path": "/images/banner-right.png",
-      "views": 19
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 18
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 17
+      "views": 12
     },
     {
       "path": "/.git/config",
-      "views": 16
+      "views": 11
     },
     {
-      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 16
+      "path": "/wp-login.php",
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 9
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 16
+      "views": 9
     },
     {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 16
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 9
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 9
     },
     {
       "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
-      "views": 16
+      "views": 9
     },
     {
-      "path": "/trace.axd",
-      "views": 15
+      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
+      "views": 8
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 8
     },
     {
       "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 15
-    },
-    {
-      "path": "/.env",
-      "views": 15
+      "views": 8
     }
   ]
 }
