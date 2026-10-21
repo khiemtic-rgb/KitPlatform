@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-21T17:27:02.793Z",
+  "generatedAt": "2026-10-21T21:51:58.310Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 4,
-    "todayPageViews": 1,
-    "todayRequests": 7,
-    "last24hVisitors": 338,
-    "last24hPageViews": 135,
-    "last24hRequests": 2990
+    "todayVisitors": 23,
+    "todayPageViews": 4,
+    "todayRequests": 42,
+    "last24hVisitors": 234,
+    "last24hPageViews": 102,
+    "last24hRequests": 2560
   },
   "hourly": [
-    {
-      "time": "2026-10-20T18:00:00Z",
-      "visitors": 6,
-      "requests": 70
-    },
-    {
-      "time": "2026-10-20T19:00:00Z",
-      "visitors": 5,
-      "requests": 174
-    },
-    {
-      "time": "2026-10-20T20:00:00Z",
-      "visitors": 39,
-      "requests": 53
-    },
-    {
-      "time": "2026-10-20T21:00:00Z",
-      "visitors": 123,
-      "requests": 168
-    },
     {
       "time": "2026-10-20T22:00:00Z",
       "visitors": 98,
@@ -128,8 +108,28 @@
     },
     {
       "time": "2026-10-21T17:00:00Z",
-      "visitors": 4,
+      "visitors": 6,
+      "requests": 13
+    },
+    {
+      "time": "2026-10-21T18:00:00Z",
+      "visitors": 5,
       "requests": 7
+    },
+    {
+      "time": "2026-10-21T19:00:00Z",
+      "visitors": 6,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-21T20:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-21T21:00:00Z",
+      "visitors": 3,
+      "requests": 4
     }
   ],
   "daily": [
@@ -165,40 +165,36 @@
     },
     {
       "date": "2026-10-21",
-      "visitors": 128,
-      "pageViews": 51,
-      "requests": 2365
+      "visitors": 136,
+      "pageViews": 54,
+      "requests": 2400
     },
     {
       "date": "2026-10-22",
-      "visitors": 4,
-      "pageViews": 1,
-      "requests": 7
+      "visitors": 23,
+      "pageViews": 4,
+      "requests": 42
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 144
+      "views": 103
     },
     {
       "path": "/robots.txt",
-      "views": 50
+      "views": 42
     },
     {
       "path": "/vi/",
-      "views": 38
-    },
-    {
-      "path": "/webhook/*",
-      "views": 21
+      "views": 24
     },
     {
       "path": "/.github/stale.yml",
       "views": 21
     },
     {
-      "path": "/login",
+      "path": "/webhook/*",
       "views": 21
     },
     {
@@ -206,23 +202,11 @@
       "views": 19
     },
     {
-      "path": "/admin",
-      "views": 17
+      "path": "/login",
+      "views": 14
     },
     {
-      "path": "/api",
-      "views": 16
-    },
-    {
-      "path": "/dashboard",
-      "views": 16
-    },
-    {
-      "path": "/rest/.env",
-      "views": 10
-    },
-    {
-      "path": "/app/.env",
+      "path": "/services/environments.ini",
       "views": 9
     },
     {
@@ -230,11 +214,27 @@
       "views": 9
     },
     {
-      "path": "/services/environments.ini",
-      "views": 9
+      "path": "/api",
+      "views": 8
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 8
+    },
+    {
+      "path": "/app/.env",
+      "views": 8
+    },
+    {
+      "path": "/admin",
+      "views": 8
     },
     {
       "path": "/server/constant.js",
+      "views": 8
+    },
+    {
+      "path": "/demo/.env",
       "views": 8
     }
   ]
