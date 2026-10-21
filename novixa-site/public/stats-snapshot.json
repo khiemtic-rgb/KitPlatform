@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-21T17:15:05.866Z",
+  "generatedAt": "2026-10-21T21:45:05.887Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
     "todayVisitors": 0,
     "todayPageViews": 0,
     "todayRequests": 0,
-    "last24hVisitors": 180,
-    "last24hPageViews": 1021,
-    "last24hRequests": 1533
+    "last24hVisitors": 193,
+    "last24hPageViews": 816,
+    "last24hRequests": 1310
   },
   "hourly": [
-    {
-      "time": "2026-10-20T18:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-20T19:00:00Z",
-      "visitors": 4,
-      "requests": 13
-    },
-    {
-      "time": "2026-10-20T20:00:00Z",
-      "visitors": 7,
-      "requests": 46
-    },
-    {
-      "time": "2026-10-20T21:00:00Z",
-      "visitors": 5,
-      "requests": 205
-    },
     {
       "time": "2026-10-20T22:00:00Z",
       "visitors": 4,
@@ -125,6 +105,31 @@
       "time": "2026-10-21T16:00:00Z",
       "visitors": 6,
       "requests": 385
+    },
+    {
+      "time": "2026-10-21T17:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-21T18:00:00Z",
+      "visitors": 14,
+      "requests": 15
+    },
+    {
+      "time": "2026-10-21T19:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-21T20:00:00Z",
+      "visitors": 11,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-21T21:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -160,50 +165,42 @@
     },
     {
       "date": "2026-10-21",
-      "visitors": 159,
-      "pageViews": 474,
-      "requests": 906
+      "visitors": 186,
+      "pageViews": 484,
+      "requests": 953
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 98
+      "views": 67
     },
     {
       "path": "/robots.txt",
-      "views": 41
+      "views": 47
     },
     {
       "path": "/vi/",
-      "views": 40
+      "views": 29
     },
     {
       "path": "/sitemap-index.xml",
       "views": 18
     },
     {
-      "path": "/vi/nguoi-dan/",
-      "views": 12
+      "path": "/vi/tai-lieu/van-ban-phap-luat/",
+      "views": 9
     },
     {
       "path": "/server/.env",
-      "views": 10
-    },
-    {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/",
-      "views": 10
-    },
-    {
-      "path": "/.git/config",
       "views": 9
     },
     {
-      "path": "/.env.example",
+      "path": "/.env",
       "views": 9
     },
     {
-      "path": "/.env_1",
+      "path": "/.idea/WebServers.xml",
       "views": 8
     },
     {
@@ -211,20 +208,28 @@
       "views": 8
     },
     {
-      "path": "/.env",
+      "path": "/.env.example",
       "views": 8
     },
     {
-      "path": "/node/.env",
+      "path": "/.env_1",
       "views": 8
     },
     {
-      "path": "/vi/lien-he/",
-      "views": 8
+      "path": "/.git/config",
+      "views": 7
     },
     {
-      "path": "/.idea/WebServers.xml",
-      "views": 8
+      "path": "/backend/.env",
+      "views": 6
+    },
+    {
+      "path": "/data/.env",
+      "views": 6
+    },
+    {
+      "path": "/id_rsa",
+      "views": 6
     }
   ]
 }
