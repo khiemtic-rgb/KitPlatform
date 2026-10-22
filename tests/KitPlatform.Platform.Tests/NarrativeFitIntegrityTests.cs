@@ -1,3 +1,4 @@
+using System.Text.Json;
 using KitPlatform.Packs.Content;
 using Xunit;
 
@@ -145,6 +146,37 @@ public sealed class NarrativeFitIntegrityTests
             "Famixa",
             new ContentCreativeBriefDto("Giữ một việc nhỏ.", null, "article"));
         Assert.DoesNotContain(legacy.Issues, issue => issue.Contains("Narrative boundary", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Stored_brand_fit_keeps_territory_and_does_not_treat_a_missing_one_as_core()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+        };
+        var stored = JsonSerializer.Deserialize<ContentBrandFitDto>(
+            """
+            {"brandId":"11111111-1111-1111-1111-111111111111","brandCode":"famixa","brandName":"Famixa","verdict":"fit","score":99,"narrativeFit":false,"territory":"off-brand","territoryId":"famixa.off","brandAngle":"locked"}
+            """,
+            options);
+        Assert.NotNull(stored);
+        Assert.False(stored.NarrativeFit);
+        Assert.Equal("off-brand", stored.Territory);
+        Assert.Equal("famixa.off", stored.TerritoryId);
+        Assert.Equal("locked", stored.BrandAngle);
+        Assert.Equal(BrandNarrativeFit.OffBrandStop, BrandNarrativeFit.SeriesEntryBlock(stored));
+
+        var legacy = JsonSerializer.Deserialize<ContentBrandFitDto>(
+            """
+            {"brandId":"11111111-1111-1111-1111-111111111111","brandCode":"famixa","brandName":"Famixa","verdict":"fit","score":99}
+            """,
+            options);
+        Assert.NotNull(legacy);
+        Assert.Null(legacy.Territory);
+        Assert.Null(legacy.NarrativeFit);
+        Assert.Equal(BrandNarrativeFit.NarrativeFitRequired, BrandNarrativeFit.SeriesEntryBlock(legacy));
     }
 
     private static ContentBrandFitDto Fit(string code, string verdict, int score, string? territory, bool? narrativeFit) =>

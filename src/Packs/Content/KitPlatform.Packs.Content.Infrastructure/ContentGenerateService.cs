@@ -157,7 +157,8 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 var brandContext = ContentBrandKnowledge.FormatForPrompt(knowledge, brand.OperationalBrief);
                 var packageId = await _repo.GetPackageIdByTopicAsync(topicId, cancellationToken);
                 var package = packageId is Guid pid ? await _repo.GetPackageAsync(pid, cancellationToken) : null;
-                var (core, _) = ContentPackageExtra.Parse(package?.ExtraJson);
+                var (core, fits) = ContentPackageExtra.Parse(package?.ExtraJson);
+                var ownFit = fits.FirstOrDefault(f => f.BrandId == brand.Id);
                 var brief = ContentPackageExtra.ParseBrief(package?.ExtraJson);
                 var briefBlock = ContentCreativeBriefDto.FormatForPrompt(brief);
                 var ctaUrl = ContentCtaRouter.Resolve(
@@ -302,7 +303,9 @@ internal sealed class ContentGenerateService : IContentGenerateService
                         package.Angle,
                         written.Select(v => (v.Kind, v.BodyMarkdown)).ToList(),
                         brand.Name,
-                        brief);
+                        brief,
+                        ownFit?.Territory,
+                        ownFit?.NarrativeFit);
                     await _repo.UpdatePackageExtraJsonAsync(
                         package.Id,
                         ContentPackageExtra.MergeGate(package.ExtraJson, gate),

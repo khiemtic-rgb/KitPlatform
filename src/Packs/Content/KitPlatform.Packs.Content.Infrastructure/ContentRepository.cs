@@ -45,6 +45,7 @@ internal sealed class ContentRepository
         public string? OperationalBrief { get; set; }
         public string ToneJson { get; set; } = "{}";
         public string VisualKitJson { get; set; } = "{}";
+        public string NarrativeJson { get; set; } = "{}";
         public DateTimeOffset UpdatedAt { get; set; }
     }
 
@@ -266,6 +267,7 @@ internal sealed class ContentRepository
                 pause_when_exceeded AS PauseWhenExceeded, is_active AS IsActive,
                 sort_order AS SortOrder, operational_brief AS OperationalBrief,
                 tone_json::text AS ToneJson, visual_kit_json::text AS VisualKitJson,
+                narrative_json::text AS NarrativeJson,
                 updated_at AS UpdatedAt
             FROM pack_content.brand
             WHERE (@ActiveOnly IS NULL OR is_active = @ActiveOnly)
@@ -285,6 +287,7 @@ internal sealed class ContentRepository
                 pause_when_exceeded AS PauseWhenExceeded, is_active AS IsActive,
                 sort_order AS SortOrder, operational_brief AS OperationalBrief,
                 tone_json::text AS ToneJson, visual_kit_json::text AS VisualKitJson,
+                narrative_json::text AS NarrativeJson,
                 updated_at AS UpdatedAt
             FROM pack_content.brand WHERE id = @Id
             """;
