@@ -35,7 +35,6 @@ import {
   STAFF_REJECT_CONFIRM,
   STAFF_REJECT_REASON,
   STAFF_REJECT_TITLE,
-  STAFF_REJECTED,
   STAFF_START as STAFF_REGEN_START,
   isPendingReviewStatus,
   isRejectedStatus,

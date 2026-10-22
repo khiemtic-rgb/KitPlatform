@@ -96,10 +96,10 @@ export function studioPublicHeadline(row: {
 }
 
 export function studioMayRegenerate(
-  status?: string,
+  status?: string | null,
   officialLocked?: boolean,
-  ageConsistencyStatus?: string,
-  crpStale?: boolean,
+  ageConsistencyStatus?: string | null,
+  crpStale?: boolean | null,
   slotsNeedVision?: boolean,
 ) {
   if (officialLocked) return false;

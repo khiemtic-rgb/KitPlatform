@@ -81,7 +81,7 @@ export function ShotProductionCard({
       {cmd.kind === 'BLOCK' && tone === 'staff' ? (
         <p className="fx-desk__note">{staffOrchMessage(cmd.code || '')}</p>
       ) : null}
-      {cta.hint && cmd.kind !== 'BLOCK' && tone === 'staff' ? <p className="fx-desk__note">{staffOrchMessage(cta.hint)}</p> : null}
+      {'hint' in cta && cta.hint && cmd.kind !== 'BLOCK' && tone === 'staff' ? <p className="fx-desk__note">{staffOrchMessage(cta.hint)}</p> : null}
       {tone === 'director' && snap.pictureUnusable ? (
         <p className="fx-desk__note">Ảnh này thuộc pipeline cũ. Tạo hình mới — không duyệt ảnh này.</p>
       ) : null}

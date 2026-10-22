@@ -628,6 +628,8 @@ export type SeriesPilotState = {
   i2vProductionMode?: boolean;
   /** Mix polish. Grade default on. Interpolate opt-in. Does not remake I2V. */
   smoothness?: import('./famixa-shot-smoothness-contract').EpisodeSmoothness;
+  /** Assemble mix toggles. Missing means the compiler defaults. */
+  mixPrefs?: import('./content-famixa-mix').FamixaMixPrefs;
   /** Film Editing V1 overlay. Does not mutate take / lipsync / KF / timing. */
   editorialCut?: import('./content-famixa-editorial-cut').EditorialCut;
 };

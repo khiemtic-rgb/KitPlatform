@@ -180,7 +180,7 @@ export function PosConsultationModal({
   const [symptomGuideOpen, setSymptomGuideOpen] = useState(false);
   const [profilePatchOpen, setProfilePatchOpen] = useState(false);
   const customerSearchSeq = useRef(0);
-  const customerSearchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const customerSearchTimer = useRef<number | undefined>(undefined);
   const lastCustomerSearchRef = useRef('');
   const customerIdRef = useRef<string | undefined>(customerId);
 

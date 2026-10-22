@@ -36,9 +36,9 @@ export const SHOT_IDENTITY_KEYS = [
   'ageProportion',
   'expressionBaseline',
   'style',
-  'masterSha256',
-  'dnaSha256',
-  'prpSha256',
+  'master_sha256',
+  'dna_sha256',
+  'prp_sha256',
   'character_id',
 ] as const;
 
@@ -101,7 +101,7 @@ export type ProductionShotSpec = {
   lighting?: Record<string, unknown>;
   wardrobe?: Record<string, unknown>;
   environment?: Record<string, unknown>;
-  interaction?: { peopleCount?: number; minhDistinct?: boolean; noBlend?: boolean; noSwap?: boolean; kind?: string };
+  interaction?: { peopleCount?: number; minhDistinct?: boolean; noBlend?: boolean; noSwap?: boolean; noAverage?: boolean; kind?: string };
   continuity?: Record<string, unknown>;
   identityRisk?: { level?: string; identityCheckRequired?: boolean; reason?: string };
   forbiddenConditions?: unknown;

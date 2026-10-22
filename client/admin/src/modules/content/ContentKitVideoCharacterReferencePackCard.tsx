@@ -398,7 +398,7 @@ export function ContentKitVideoCharacterReferencePackCard({
           <ContentFamixaCharacterAuthorityCard
             characterId={characterId}
             characterName={name}
-            eraId={pack?.eraId || 'ERA-01'}
+            eraId="ERA-01"
             onChanged={reload}
           />
         ) : !pack && !bundle?.canCreate && bundle?.blocked ? (

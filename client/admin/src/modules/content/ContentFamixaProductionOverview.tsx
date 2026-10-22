@@ -59,7 +59,7 @@ export function ContentFamixaProductionOverview({
   onOpenShot: (shotId: string) => void;
   onFocusShot?: (shotId: string) => void;
   onFinish?: () => void;
-  onOpenTab?: (tab: 'script' | 'scenes' | 'characters' | 'images' | 'video' | 'finish' | 'publish') => void;
+  onOpenTab?: (tab: 'script' | 'scenes' | 'characters' | 'voice' | 'images' | 'video' | 'finish' | 'publish') => void;
   embedded?: boolean;
   buildScope?: {
     characterLocked: boolean;

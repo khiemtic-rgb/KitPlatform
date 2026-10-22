@@ -62,7 +62,7 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
     setBusy(true);
     void fetchCharacterReferenceGeneration(characterId, { referenceType, provider: nextProvider || undefined })
       .then(setRow)
-      .catch((err: unknown) => setError(apiErrorMessage(err)))
+      .catch((err: unknown) => setError(apiErrorMessage(err, 'Không tạo được ảnh tham chiếu.')))
       .finally(() => setBusy(false));
   };
 
@@ -201,7 +201,7 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
                 setBusy(true);
                 void acceptCharacterReferenceGeneration(characterId, row.executionId)
                   .then(apply)
-                  .catch((err: unknown) => setError(apiErrorMessage(err)))
+                  .catch((err: unknown) => setError(apiErrorMessage(err, 'Không tạo được ảnh tham chiếu.')))
                   .finally(() => setBusy(false));
               }}
             >
@@ -226,7 +226,7 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
                 setBusy(true);
                 void rejectCharacterReferenceGeneration(characterId, row.executionId, rejectWhy.trim())
                   .then(apply)
-                  .catch((err: unknown) => setError(apiErrorMessage(err)))
+                  .catch((err: unknown) => setError(apiErrorMessage(err, 'Không tạo được ảnh tham chiếu.')))
                   .finally(() => setBusy(false));
               }}
             >
@@ -253,7 +253,7 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
               setBusy(true);
               void registerCharacterReferenceGeneration(characterId, row.executionId)
                 .then(apply)
-                .catch((err: unknown) => setError(apiErrorMessage(err)))
+                .catch((err: unknown) => setError(apiErrorMessage(err, 'Không tạo được ảnh tham chiếu.')))
                 .finally(() => setBusy(false));
             }}
           >
@@ -273,9 +273,11 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
                 onClick={() => {
                   setBusy(true);
                   setError(undefined);
-                  void registerCharacterReferenceGeneration(characterId, row.executionId)
+                  const executionId = row.executionId;
+                  if (!executionId) return;
+                  void registerCharacterReferenceGeneration(characterId, executionId)
                     .then(apply)
-                    .catch((err: unknown) => setError(apiErrorMessage(err)))
+                    .catch((err: unknown) => setError(apiErrorMessage(err, 'Không tạo được ảnh tham chiếu.')))
                     .finally(() => setBusy(false));
                 }}
               >
@@ -289,13 +291,13 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
                 onClick={() => {
                   setBusy(true);
                   setError(undefined);
-                  void validateCharacterReferenceGenerationPack(characterId, packId, row?.executionId)
+                  void validateCharacterReferenceGenerationPack(characterId, packId, row?.executionId ?? undefined)
                     .then((next) => {
                       apply(next);
                       onClose();
                     })
                     .catch((err: unknown) => {
-                      setError(apiErrorMessage(err));
+                      setError(apiErrorMessage(err, 'Không tạo được ảnh tham chiếu.'));
                       onChanged();
                     })
                     .finally(() => setBusy(false));
@@ -361,7 +363,7 @@ export function ContentKitVideoCharacterReferenceGenerationCard({
                     setConfirmOpen(false);
                     apply(next);
                   })
-                  .catch((err: unknown) => setError(apiErrorMessage(err)))
+                  .catch((err: unknown) => setError(apiErrorMessage(err, 'Không tạo được ảnh tham chiếu.')))
                   .finally(() => setBusy(false));
               }}
             >

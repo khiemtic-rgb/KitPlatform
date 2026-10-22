@@ -246,18 +246,19 @@ function applyLotPickToLine(
   current: { manufactureDate?: string; expiryDate?: string },
   pick: GrnExistingBatchPick,
 ): Pick<GrnLineForm, 'manufactureDate' | 'expiryDate' | 'lotLocked' | 'lotConflict'> {
+  const expiryDate = current.expiryDate ?? '';
   if (pick.hasConflict) {
-    return { ...current, lotLocked: false, lotConflict: true };
+    return { manufactureDate: current.manufactureDate, expiryDate, lotLocked: false, lotConflict: true };
   }
   if (pick.exists) {
     return {
       manufactureDate: pick.manufactureDate ?? current.manufactureDate,
-      expiryDate: pick.expiryDate ?? current.expiryDate,
+      expiryDate: pick.expiryDate ?? expiryDate,
       lotLocked: true,
       lotConflict: false,
     };
   }
-  return { ...current, lotLocked: false, lotConflict: false };
+  return { manufactureDate: current.manufactureDate, expiryDate, lotLocked: false, lotConflict: false };
 }
 
 export function GoodsReceiptListPage() {

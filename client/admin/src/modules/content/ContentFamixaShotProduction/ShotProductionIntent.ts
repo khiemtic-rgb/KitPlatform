@@ -39,12 +39,13 @@ export function shotProductionIntentOf(state: SeriesPilotState, shot: FamixaSeri
   const multi = Boolean(multiSpeakerBlock(lines));
   const spoken = ids.length > 0 && lines.length > 0;
   const prev = previousApprovedShot(state, shot);
+  const run = shotRunOf(state, shot);
   const first = lines[0];
   return {
     shotId: shot.id,
     sceneId: shot.sceneId || shot.scene,
     characterIds: shot.characterIds?.length ? shot.characterIds : speakers,
-    action: (shot.shotAction || shot.story || '').trim() || shot.visual || '',
+    action: (run.shotAction || shot.story || '').trim() || shot.visual || '',
     emotion: first?.performance?.emotion,
     acting: first?.performance?.label || (first?.performance?.intensity != null ? String(first.performance.intensity) : undefined),
     blocking: shot.visual,

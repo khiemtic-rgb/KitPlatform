@@ -2,7 +2,7 @@
 
 import type { RunwayAttempt } from '../content-famixa-runway-pipe';
 import { dataUriHash, lastGenerationFail, sameFailedInput } from '../content-famixa-runway-pipe';
-import { resolveTakeUrl } from '../content-famixa-final-source';
+import { resolveTakeUrl, type FinalSourceRun } from '../content-famixa-final-source';
 
 export type MotionAttemptStatus = 'SUCCESS' | 'FAILED' | 'PENDING' | 'UNKNOWN';
 
@@ -20,7 +20,8 @@ export type MotionAttemptArtifact = {
 
 export type AcceptedTake = {
   n?: number;
-  url: string;
+  /** Absent on a partial stamp. Callers already treat a blank url as no take. */
+  url?: string;
   promptHash?: string;
   kfHash?: string;
   acceptedAt?: string;
@@ -243,12 +244,20 @@ export function motionLifecycleOf(run?: MotionLifecycleRun): MotionLifecycle {
 }
 
 /** Prompt hash of the last SUCCESS take — never a FAILED attempt. */
-export function lastSuccessfulTakePromptHashOf(run?: { runwayAttempts?: RunwayAttempt[] }) {
+export function lastSuccessfulTakePromptHashOf(run?: {
+  runwayAttempts?: {
+    status?: string;
+    failureCode?: string;
+    error?: string;
+    promptHash?: string;
+    exactRequest?: { promptHash?: string };
+  }[];
+}) {
   const list = run?.runwayAttempts ?? [];
   for (let i = list.length - 1; i >= 0; i--) {
-    const take = motionArtifactOf(list[i]!);
-    if (take.status !== 'SUCCESS') continue;
-    const hash = (take.promptHash || '').trim();
+    const take = list[i];
+    if (!take || motionAttemptStatusOf(take) !== 'SUCCESS') continue;
+    const hash = (take.promptHash || take.exactRequest?.promptHash || '').trim();
     if (hash) return hash;
   }
   return '';
@@ -280,7 +289,7 @@ export function takeFromOtherPicture(opts: {
 }
 
 /** New still cannot keep Fal / accepted take as the playing clip. History stays in runwayAttempts. */
-export function detachAvAfterPictureChange(run?: MotionLifecycleRun & { previewUrl?: string }) {
+export function detachAvAfterPictureChange(run?: FinalSourceRun) {
   const hadAv = Boolean(
     resolveTakeUrl(run) || run?.previewUrl || run?.takeUrl || run?.lipsyncUrl || run?.lipsynced,
   );

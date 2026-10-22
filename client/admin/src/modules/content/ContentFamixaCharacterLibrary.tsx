@@ -92,7 +92,6 @@ export function ContentFamixaCharacterLibrary({
   onPick?: (characterId: string, canUse: boolean) => void;
 }) {
   const [items, setItems] = useState<CharacterLibraryViewRow[]>([]);
-  const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState('series');
@@ -108,7 +107,6 @@ export function ContentFamixaCharacterLibrary({
     void fetchCharacterLibrary({ q: nextQ || undefined, filter: nextFilter, sort: nextSort })
       .then((row) => {
         setItems(row.items ?? []);
-        setTotal(row.total ?? 0);
         setError(undefined);
       })
       .catch((e) => setError(apiErrorMessage(e, 'Không thể tải danh sách nhân vật.')))

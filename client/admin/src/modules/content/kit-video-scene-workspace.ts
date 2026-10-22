@@ -354,7 +354,6 @@ export function sceneStepMarks(
   const images = scene.shots.filter((s) => s.media.hasStill).length;
   const imageReviews = scene.shots.filter((s) => s.media.hasStill && (s.status === 'review' || s.status === 'approved' || s.status === 'done')).length;
   const videos = scene.shots.filter((s) => s.media.hasStill && s.media.hasClip).length;
-  const videoReviews = scene.shots.filter((s) => s.status === 'done' || s.status === 'approved').length;
   const finished = scene.shots.filter((s) => s.media.hasStill && s.media.hasClip && (s.status === 'done' || s.status === 'approved')).length;
   const total = scene.shots.length;
   return [

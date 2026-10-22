@@ -1,6 +1,7 @@
 /** Picture new-pixel invariant. Revision is a version number, not pixel identity. */
 
 import { dataUriHash } from './content-famixa-runway-pipe';
+import type { FinalSourceRun } from './content-famixa-final-source';
 import { detachAvAfterPictureChange } from './ContentFamixaShotProduction/ShotProductionArtifacts';
 import { nextPictureRevisionId } from './ContentFamixaShotProduction/ShotProductionExecution';
 
@@ -22,9 +23,9 @@ export type PictureIdentityRun = {
   lipsyncUrl?: string;
   lipsynced?: boolean;
   motionNeedsRemake?: boolean;
-  acceptedTake?: unknown;
+  acceptedTake?: FinalSourceRun['acceptedTake'];
   videoApproved?: boolean;
-  finalSource?: unknown;
+  finalSource?: FinalSourceRun['finalSource'];
   runwayAttempts?: { n?: number }[];
   pictureRevisionAttemptN?: number;
 };
