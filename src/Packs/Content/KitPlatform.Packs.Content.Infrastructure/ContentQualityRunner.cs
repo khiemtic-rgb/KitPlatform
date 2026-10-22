@@ -14,6 +14,7 @@ internal static class ContentQualityRunner
         var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
         var (core, _) = ContentPackageExtra.Parse(package.ExtraJson);
         var brief = ContentPackageExtra.ParseBrief(package.ExtraJson);
+        var (territory, narrativeFit) = ContentPackageExtra.OwnNarrative(package.ExtraJson, package.BrandId);
         var variants = await repo.ListVariantsAsync(package.TopicId, cancellationToken);
         return ContentQualityGate.Evaluate(
             knowledge,
@@ -21,7 +22,9 @@ internal static class ContentQualityRunner
             package.Angle,
             variants.Select(v => (v.Kind, v.BodyMarkdown)).ToList(),
             brand.Name,
-            brief);
+            brief,
+            territory,
+            narrativeFit);
     }
 
     public static async Task PersistAsync(

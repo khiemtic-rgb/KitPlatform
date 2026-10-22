@@ -598,7 +598,11 @@ public sealed record ContentBrandFitDto(
     string? Audience,
     string? Cta,
     Guid? PackageId,
-    string? Outline = null);
+    string? Outline = null,
+    bool? NarrativeFit = null,
+    string? Territory = null,
+    string? TerritoryId = null,
+    string? BrandAngle = null);
 
 public sealed record ContentPackageDto(
     Guid Id,

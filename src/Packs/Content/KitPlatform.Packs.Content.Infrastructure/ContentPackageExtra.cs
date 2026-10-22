@@ -29,6 +29,12 @@ internal static class ContentPackageExtra
     public static ContentCreativeBriefDto? ParseBrief(string? extraJson) =>
         SanitizeBrief(ParseRoot(extraJson).CreativeBrief);
 
+    public static (string? Territory, bool? NarrativeFit) OwnNarrative(string? extraJson, Guid brandId)
+    {
+        var own = Parse(extraJson).Fits.FirstOrDefault(f => f.BrandId == brandId);
+        return (own?.Territory, own?.NarrativeFit);
+    }
+
     public static string Merge(
         string? existing,
         ContentCoreIdeaDto? core,
