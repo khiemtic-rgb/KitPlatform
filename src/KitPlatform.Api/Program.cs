@@ -20,6 +20,7 @@ using KitPlatform.Packs.Care.Infrastructure;
 using KitPlatform.Packs.Content.Infrastructure;
 using KitPlatform.Packs.LocalOs.Infrastructure;
 using KitPlatform.Packs.Sales.Infrastructure;
+using KitPlatform.Packs.PersonalIntelligence.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 // Optional local secrets (gitignored under .dev/) — e.g. CSDL dược sandbox password.
@@ -30,6 +31,7 @@ if (File.Exists(repoRootDevSecrets))
 }
 
 builder.Services.AddControllers()
+    .AddApplicationPart(typeof(KitPlatform.Api.Controllers.PersonalIntelligence.TradingLoopController).Assembly)
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
@@ -118,6 +120,7 @@ builder.Services.AddAuthorization(options =>
     options.AddClinicAuthorization();
     options.AddPaymentAuthorization();
     options.AddKitSalesAuthorization();
+    options.AddPersonalIntelligenceAuthorization();
 });
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddPharmacyPack(builder.Configuration);
@@ -140,6 +143,11 @@ catch (Exception ex) when (
         $"[dev] Care pack skipped (Application Control blocked DLL): {ex.GetBaseException().Message}");
 }
 builder.Services.AddContentPack(builder.Configuration);
+builder.Services.AddPersonalIntelligencePack();
+builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions>(
+    builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions.SectionName));
+builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Trading.ExchangeBackfillOptions>(
+    builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Trading.ExchangeBackfillOptions.SectionName));
 builder.Services.AddLocalOsPack();
 builder.Services.AddKitSalesPack(builder.Configuration);
 builder.Services.AddHostedService<KitPlatform.Api.KitSales.KitSalesJourneyWorker>();

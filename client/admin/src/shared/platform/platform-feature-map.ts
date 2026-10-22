@@ -35,6 +35,7 @@ export const ADMIN_MODULE_PLATFORM_CODES: Partial<
     | 'kitSales'
     | 'localOs'
     | 'learning'
+    | 'secondBrain'
     | 'system',
     string
   >
@@ -60,6 +61,7 @@ export const ADMIN_MODULE_PLATFORM_CODES: Partial<
   kitSales: 'kit_sales',
   localOs: 'local_os',
   learning: 'learning',
+  secondBrain: 'personal_intelligence',
 };
 
 export function isPlatformGateOpen(

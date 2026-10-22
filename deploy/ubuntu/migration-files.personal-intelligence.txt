@@ -1,0 +1,11 @@
+# Personal Intelligence Pack migrations
+# The registry row is pack-owned catalog data in the shared platform_module_registry.
+# Do not add this manifest to migration-files.prod.txt.
+385_pack_personal_intelligence_trading_ledger_v1.sql
+387_pack_personal_intelligence_loop_v1.sql
+388_pack_personal_intelligence_loop_integrity_v1.sql
+389_pack_personal_intelligence_operation_v1.sql
+390_platform_module_personal_intelligence.sql
+391_pack_personal_intelligence_exchange_connection_v1.sql
+392_pack_personal_intelligence_exchange_execution_sync_v1.sql
+393_pack_personal_intelligence_exchange_backfill_v1.sql

@@ -40,6 +40,8 @@ public static class PlatformModuleCodes
     /// <summary>KIT Sales — acquisition pipeline (prospect → PHC → paid). Not Pharmacy POS.</summary>
     public const string KitSales = "kit_sales";
     public const string Learning = "learning";
+    /// <summary>Personal Intelligence — Second Brain. Trading is the first domain adapter inside this module.</summary>
+    public const string PersonalIntelligence = "personal_intelligence";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -71,5 +73,6 @@ public static class PlatformModuleCodes
         LocalOs,
         KitSales,
         Learning,
+        PersonalIntelligence,
     ];
 }

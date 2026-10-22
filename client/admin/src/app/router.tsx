@@ -419,6 +419,42 @@ const KapCampaignsPage = lazy(() =>
 const KapPartnersPage = lazy(() =>
   import('@/modules/kap/KapPartnersPage').then((m) => ({ default: m.KapPartnersPage })),
 );
+const TradingLayout = lazy(() =>
+  import('@/modules/second-brain/TradingLayout').then((m) => ({ default: m.TradingLayout })),
+);
+const TradingSessionPage = lazy(() =>
+  import('@/modules/second-brain/SessionPage').then((m) => ({ default: m.TradingSessionPage })),
+);
+const TradingOverviewPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingOverviewPage })),
+);
+const TradingLedgerPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingLedgerPage })),
+);
+const TradingSpotPage = lazy(() =>
+  import('@/modules/second-brain/MarketPages').then((m) => ({ default: m.TradingSpotPage })),
+);
+const TradingFuturesPage = lazy(() =>
+  import('@/modules/second-brain/MarketPages').then((m) => ({ default: m.TradingFuturesPage })),
+);
+const TradingImportPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingImportPage })),
+);
+const TradingJournalPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingJournalPage })),
+);
+const TradingAgentPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingAgentPage })),
+);
+const TradingRiskPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingRiskPage })),
+);
+const TradingExchangePage = lazy(() =>
+  import('@/modules/second-brain/ExchangePages').then((m) => ({ default: m.TradingExchangePage })),
+);
+const TradingExchangeAccountPage = lazy(() =>
+  import('@/modules/second-brain/ExchangePages').then((m) => ({ default: m.TradingExchangeAccountPage })),
+);
 const ContentLayout = lazy(() =>
   import('@/modules/content/ContentLayout').then((m) => ({ default: m.ContentLayout })),
 );
@@ -1035,6 +1071,27 @@ export function AppRouter() {
                     </SuspenseRoute>
                   }
                 />
+              </Route>
+              <Route
+                path="second-brain"
+                element={
+                  <SuspenseRoute>
+                    <TradingLayout />
+                  </SuspenseRoute>
+                }
+              >
+                <Route index element={<Navigate to="/second-brain/session" replace />} />
+                <Route path="session" element={<SuspenseRoute><TradingSessionPage /></SuspenseRoute>} />
+                <Route path="overview" element={<SuspenseRoute><TradingOverviewPage /></SuspenseRoute>} />
+                <Route path="ledger" element={<SuspenseRoute><TradingLedgerPage /></SuspenseRoute>} />
+                <Route path="spot" element={<SuspenseRoute><TradingSpotPage /></SuspenseRoute>} />
+                <Route path="futures" element={<SuspenseRoute><TradingFuturesPage /></SuspenseRoute>} />
+                <Route path="import" element={<SuspenseRoute><TradingImportPage /></SuspenseRoute>} />
+                <Route path="journal" element={<SuspenseRoute><TradingJournalPage /></SuspenseRoute>} />
+                <Route path="agent" element={<SuspenseRoute><TradingAgentPage /></SuspenseRoute>} />
+                <Route path="risk" element={<SuspenseRoute><TradingRiskPage /></SuspenseRoute>} />
+                <Route path="exchange" element={<SuspenseRoute><TradingExchangePage /></SuspenseRoute>} />
+                <Route path="account" element={<SuspenseRoute><TradingExchangeAccountPage /></SuspenseRoute>} />
               </Route>
               <Route
                 path="content"
