@@ -21,6 +21,7 @@ Publisher `publish_research_v1.py` vẫn ở `E:\Kit-Brain\second-brain-trading-
 | Remote | `https://github.com/khiemtic-rgb/KitPlatform.git` |
 | `origin/main` sau fetch | `608bc054c9b6389190c4c214ac478b3397b110dc` |
 | Nhánh gói | `second-brain-research-readiness` |
+| Commit gói | `cffb50f20af27066362163ee41387d530abe8a6b` |
 | Working tree gốc | `E:\KitPlatform`, branch `recovery/production-source-20261021`, HEAD `8c59ceb4` |
 | Lệch với `origin/main` | 198 commit sau, 6 commit trước. Không merge. |
 
