@@ -10,6 +10,8 @@ Publisher tạo được publication `research-publication/v1`. Reader kiểm ma
 
 **GO có điều kiện** cho một nhiệm vụ UI sau. Nhiệm vụ này không sửa UI và không deploy. Deploy vẫn không được phép từ bản ghi này.
 
+Ghi chú `SB-RESEARCH-RC-002`: bản publisher dùng để phát hành sau đó là `tools/research-publication/publish_research_v1.py`. File ngoài repository chỉ còn là nguồn đối chiếu lịch sử. Hợp đồng `research-publication/v1` không đổi. Chi tiết hash và trạng thái nằm ở `SECOND_BRAIN_RESEARCH_DEPLOY_READINESS.md`.
+
 ## Mâu thuẫn đã khóa
 
 Thiết kế mục 4 có câu: lab đọc được khi chưa có manifest có thể là `PRESENT_UNTIMED`. Nhiệm vụ implementation khóa lại: thiếu manifest là `MISSING`. `PRESENT_UNTIMED` chỉ là trạng thái timestamp của object lab bên trong một publication V1 đã hợp lệ. API không tự điền `publishedAt` và không lấy giờ sửa file.

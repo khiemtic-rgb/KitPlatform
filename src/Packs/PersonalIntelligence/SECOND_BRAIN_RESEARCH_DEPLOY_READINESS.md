@@ -1,12 +1,12 @@
 # Second Brain Research — sẵn sàng triển khai
 
-Nhiệm vụ: `SECOND-BRAIN-RESEARCH-RELEASE-CANDIDATE-001`  
-Ngày: 2026-10-22  
-Trạng thái: **NOT READY**
+Nhiệm vụ: `SB-RESEARCH-RC-002`
+Ngày: 2026-10-22
+Trạng thái: **NOT READY FOR PRODUCTION**
 
 Không deploy production. Không chạy migration production. Không bật live trading. Không merge vào `main`.
 
-Ứng viên review là nhánh `admin-build-blocker-001`. API và admin build trên nhánh đó đã PASS. Chưa deploy được: publisher chưa được pin trong Git, migration 390 chưa được duyệt, quyền `personal_intelligence.research.read` chưa được seed, và `WorkerEnabled` vẫn mặc định bật.
+Ứng viên review là nhánh `admin-build-blocker-001`. API, admin build và publisher đã được kiểm lại trên nhánh đó. Publisher phương án B đã nằm trong Git. Chưa deploy được: migration 390 chưa được duyệt, quyền `personal_intelligence.research.read` chưa được seed, `WorkerEnabled` vẫn mặc định bật, và chưa có PostgreSQL integration test trên database cô lập.
 
 ## 1. Blocker build đã xử lý
 
@@ -64,39 +64,33 @@ Làm việc trong worktree `E:\KitPlatform-sb-research`. Không stage `Program.c
 | `npm run build` trong `client/admin` (`tsc --noEmit && vite build`) trên nhánh `admin-build-blocker-001` | PASS. Trước khi sửa, `tsc` dừng với 89 errors, không có error trong `src/modules/second-brain`. Sau commit `c57d8d7e` thì `tsc` 0 errors và `vite build` xong. Strict mode, `noUnusedLocals`, `noUnusedParameters` vẫn bật. |
 | Test PostgreSQL của Personal Intelligence | NOT RUN. Test đòi `KIT_PI_TEST_CONNECTION`, từ chối cổng 5432, và ghi vào database đích. Không có database cô lập đã xác minh. Không dùng production và không dùng Postgres đang nghe 5432. |
 
-## 4. Publisher
+## 4. Publisher — phương án B đã đóng gói
 
-Nguồn vẫn là `E:\Kit-Brain\second-brain-trading-source-inventory\research-lab-v1`. Thư mục không phải git repo. Không di chuyển, không tạo repository, không xóa dữ liệu nguồn.
+Source of truth để phát hành là `tools/research-publication/publish_research_v1.py`.
 
-SHA-256 của `publish_research_v1.py` tại thời điểm kiểm tra: `D1F3EF3D066F70B167848FC9AA5245107B9ED7347E29C6C4F5E9CAE3AE333361`.
+| Mục | Giá trị |
+|---|---|
+| Nguồn đối chiếu | `E:\Kit-Brain\second-brain-trading-source-inventory\research-lab-v1\publish_research_v1.py` |
+| SHA-256 nguồn | `D1F3EF3D066F70B167848FC9AA5245107B9ED7347E29C6C4F5E9CAE3AE333361` |
+| SHA-256 bản đóng gói | cùng hash, tính lại 2026-10-22 |
+| Logic | Không đổi. File được copy byte-for-byte. |
+| Test thêm | `tests/test_publish_research_v1.py`: hash lệch sau khi sửa artifact; rename staging lỗi thì publication cũ được trả lại và CLI không in `PUBLISH_OK`. |
 
-Cách tạo publication từ bốn artifact:
+Bản ngoài repository chỉ là đối chiếu lịch sử. Sửa bản đó không làm đổi bản phát hành. Quy trình cập nhật: sửa file trong Git, chạy unittest tại `tools/research-publication`, tính lại SHA-256, ghi hash và diff vào tài liệu này, review trước khi phát hành. Không đưa dữ liệu lab vào commit.
+
+Lệnh, từ `tools/research-publication`:
 
 ```
 python publish_research_v1.py --destination <thư mục publication> --lab <LAB_RESULT.json> --status <PAPER_OPS_STATUS.json> --report <PAPER_RESEARCH_REPORT.json> --health <PAPER_OPS_HEALTH.json>
 ```
 
-`--published-at` là tùy chọn. Schema `research-publication/v1`. Bốn object: lab, status, report, health. Script đọc và parse JSON trước khi đổi thư mục đích. File thiếu hoặc JSON hỏng in `PUBLISH_FAILED` và trả mã 1, không gọi bước đổi chỗ. Status bỏ mọi key có `api_key`. Report bỏ `frozen_lab_result`. `publicationId` là `pub-` cộng 16 ký tự hex của SHA-256 bốn hash. Manifest ghi bốn hash đó.
+`--published-at` là tùy chọn. Schema `research-publication/v1`. Bốn object: lab, status, report, health. Script đọc và parse JSON trước khi đổi thư mục đích. File thiếu hoặc JSON hỏng in `PUBLISH_FAILED` và trả mã 1, không gọi bước đổi chỗ. Status bỏ mọi key có `api_key`. Report bỏ `frozen_lab_result`. `publicationId` là `pub-` cộng 16 ký tự hex của SHA-256 bốn hash. Manifest ghi `publicationId`, `publishedAt`, `publisher=research-lab-v1` và bốn hash.
 
-Đổi thư mục là staging rồi hai lần rename, không phải một syscall. Script xóa bản `.previous` sau khi publish thành công, nên rollback nội dung phải dựa trên một bản sao operator giữ riêng, hoặc publish lại đúng bốn artifact của lần trước. Không sửa file nguồn để vượt validation.
+Đổi thư mục là staging rồi hai lần rename, không phải một syscall và không có rollback tự động sau khi publish thành công. Script xóa `.previous` khi thành công. Nếu rename thứ hai lỗi, publication trước đó được đổi tên trở lại và lỗi được ném ra. Crash giữa hai lần rename có thể làm thư mục publication biến mất cho đến lần publish thành công kế tiếp. Khôi phục nội dung vẫn là bản sao operator giữ riêng, hoặc publish lại bốn artifact của lần trước.
 
-Quyền: process API chỉ cần đọc thư mục publication. Không đặt thư mục đó làm web root. Không trỏ vào journal, cache, hay snapshot. Không ghi path máy local vào `appsettings` dùng chung.
+Quyền: process API chỉ cần đọc thư mục publication. Không đặt thư mục đó làm web root. Không trỏ vào journal, cache, hay snapshot. Không ghi path máy local vào `appsettings` dùng chung. API không nhận path từ client và không gọi Python trong request.
 
-Hai phương án pin publisher. Chưa thực hiện. Không chuyển thư mục lab, không tạo repository, không đưa script vào KitPlatform khi chưa được duyệt.
-
-Phương án A — repository riêng cho `research-lab-v1`:
-
-- Ghi commit publisher cạnh commit KitPlatform lúc deploy.
-- Ưu: lab, journal, snapshot và ledger không vào KitPlatform. API và script pin độc lập. Rollback publisher là checkout commit cũ rồi publish lại.
-- Nhược: cần một remote mới và một người phụ trách. Hai nơi phải cùng có mặt trong lần deploy. Submodule chưa được duyệt.
-
-Phương án B — chỉ vendor `publish_research_v1.py` vào KitPlatform sau khi được duyệt:
-
-- Pin SHA-256 `D1F3EF3D066F70B167848FC9AA5245107B9ED7347E29C6C4F5E9CAE3AE333361`, xác nhận lại 2026-10-22. Thư mục lab vẫn không phải git repo.
-- Ưu: một commit deploy chứa đúng script mà API đọc. Dữ liệu nghiên cứu ở ngoài Git.
-- Nhược: bản trong KitPlatform có thể lệch bản trong lab nếu lab vẫn là nguồn sửa. Không được commit artifact, journal, hay credential cùng script.
-
-Cho đến khi có lựa chọn đó, pin vận hành là SHA-256 của script ở trên cộng manifest của từng publication. File thiếu hoặc JSON hỏng dừng trước bước đổi thư mục. Rollback là bản sao publication operator giữ ngoài slot `.previous`, hoặc publish lại bốn artifact của lần trước.
+Phương án A, repository riêng cho cả `research-lab-v1`, không được chọn trong nhiệm vụ này. Không tạo repository và không di chuyển thư mục lab.
 
 ## 5. Quyền và cấu hình
 
@@ -113,7 +107,7 @@ Cách cấp quyền đọc tối thiểu, chưa thực hiện: sau khi module đ
 ## 6. Việc còn cần phê duyệt
 
 1. Admin build PASS ở `c57d8d7e` trên `admin-build-blocker-001`. Nhánh đã có trên origin. `origin/main` `608bc054` vẫn còn 89 lỗi TypeScript cho đến khi pull request được duyệt và gộp.
-2. Chủ publisher: chọn repository riêng hoặc vendoring script đã duyệt. Chưa được phép chuyển thư mục lab.
+2. Publisher phương án B đã có trong Git. Chủ dự án vẫn phải chấp nhận dùng file đó làm bản phát hành. Không dùng bản lab ngoài Git nếu hai bên đã lệch. Chưa được phép chuyển thư mục lab.
 3. Chủ migration: cho phép áp `deploy/ubuntu/migration-files.personal-intelligence.txt` lên database đích đã review. Không thêm manifest này vào `migration-files.prod.txt` khi chưa có quyết định đó.
 4. Chủ quyền: bật module `personal_intelligence` cho đúng tenant và gán `personal_intelligence.research.read` cho người chỉ đọc.
 5. Vận hành: đặt `WorkerEnabled=false` và root publication trước khi chạy process API mới. Không bật kết nối sàn.
@@ -125,7 +119,7 @@ Chỉ làm sau khi `npm run build` admin PASS trên commit được deploy, publ
 1. Xác nhận commit deploy build được `src/KitPlatform.Api` và `npm run build` admin.
 2. Gộp `admin-build-blocker-001` bằng pull request. Nhánh này đã chứa Research, bản sửa Content `96657e06` và bản sửa admin `c57d8d7e`. Không force-push. Không gộp `recovery/production-source-20261021`.
 3. Đặt `PersonalIntelligence__ExchangeBackfill__WorkerEnabled=false`. Không đặt `PersonalIntelligence__ExchangeCredentialKey` cho lần đọc này.
-4. Giữ một bản sao publication đang phục vụ. Chạy publisher ra thư mục mới. Kiểm tra `manifest.json` schema `research-publication/v1` và bốn hash.
+4. Giữ một bản sao publication đang phục vụ. Chạy `tools/research-publication/publish_research_v1.py` ra thư mục mới. Kiểm tra `manifest.json` schema `research-publication/v1` và bốn hash.
 5. Đặt `PersonalIntelligence__ResearchPublication__Root` vào thư mục đó.
 6. Áp dụng `deploy/ubuntu/migration-files.personal-intelligence.txt` bằng quy trình đã review. Không trộn Pharmacy, Family OS, Content, hay Local OS.
 7. Bật module cho đúng tenant. Cấp `personal_intelligence.research.read`. Không cấp quyền gửi lệnh.
@@ -150,11 +144,11 @@ Rollback:
 
 ## 8. Kết luận
 
-`NOT READY`.
+`NOT READY FOR PRODUCTION`.
 
-Ứng viên review là `admin-build-blocker-001`. Commit API `cffb50f20af27066362163ee41387d530abe8a6b`. Commit Content `96657e06a6bfe36bfc3ccfe6b55cdee4d2fadd50`. Commit admin `c57d8d7e3b44a263b79fe8215cac88b3d5ad8635`. `origin/main` vẫn `608bc054c9b6389190c4c214ac478b3397b110dc`.
+Ứng viên review là `admin-build-blocker-001`. Commit API `cffb50f20af27066362163ee41387d530abe8a6b`. Commit Content `96657e06a6bfe36bfc3ccfe6b55cdee4d2fadd50`. Commit admin `c57d8d7e3b44a263b79fe8215cac88b3d5ad8635`. Publisher là `tools/research-publication/publish_research_v1.py`, SHA-256 `D1F3EF3D066F70B167848FC9AA5245107B9ED7347E29C6C4F5E9CAE3AE333361`. `origin/main` tại thời điểm RC-001 vẫn `608bc054c9b6389190c4c214ac478b3397b110dc`.
 
-Chưa deploy được vì publisher chưa được pin, migration 390 và quyền `personal_intelligence.research.read` chưa được phép áp dụng, và mặc định worker backfill vẫn bật. Phải tắt bằng cấu hình môi trường. Không gọi trạng thái này là `DEPLOY-READY`.
+Build và test của publisher, API và admin đã PASS trong mục 12. Chưa deploy được vì migration 390, quyền đọc, cấu hình worker và publication root chưa được chủ dự án duyệt. PostgreSQL integration test là `BLOCKED/NOT RUN`. Không gọi trạng thái này là `DEPLOY-READY`.
 
 ## 9. Xác nhận
 
@@ -206,3 +200,46 @@ Blocker còn lại, chưa được nhiệm vụ này quyết:
 - `personal_intelligence.research.read` chưa được seed. Không dùng `trading.run` thay cho quyền đọc.
 - Production phải đặt `PersonalIntelligence__ExchangeBackfill__WorkerEnabled=false`. Mặc định trong mã vẫn `true`.
 - `origin/main` chưa chứa Research, Content fix, hay admin fix.
+
+## 12. Ứng viên release — `SB-RESEARCH-RC-002`
+
+Baseline trước khi sửa: worktree `E:\KitPlatform-sb-research`, branch `admin-build-blocker-001`, HEAD `54401aa65ad20ee73481c047000b5ad57b40a559`, sạch, không upstream. `origin/admin-build-blocker-001` cùng SHA. `origin/main` `608bc054c9b6389190c4c214ac478b3397b110dc`. Remote `https://github.com/khiemtic-rgb/KitPlatform.git`. Không dùng worktree recovery.
+
+API contract được đọc lại và không sửa. Năm GET dưới `api/personal-intelligence/research` vẫn là publication, experiments, experiments/{experimentId}, paper/status, paper/report. Policy `PersonalIntelligenceResearchRead` và `[RequirePersonalIntelligenceModule]` giữ nguyên. Reader chỉ đọc file. `FRESH` chỉ khi health là `OK`. Thiếu manifest vẫn `MISSING`. `PRESENT_UNTIMED` vẫn chỉ là object lab trong publication hợp lệ. Hash lệch vẫn `INCONSISTENT`. Không thêm route hay quyền.
+
+File của nhiệm vụ này:
+
+- `tools/research-publication/publish_research_v1.py`
+- `tools/research-publication/tests/test_publish_research_v1.py`
+- `tools/research-publication/README.md`
+- `src/Packs/PersonalIntelligence/SECOND_BRAIN_RESEARCH_DEPLOY_READINESS.md`
+- `src/Packs/PersonalIntelligence/SECOND_BRAIN_RESEARCH_PUBLICATION_IMPLEMENTATION.md`
+
+| Kiểm tra | Lệnh | Kết quả |
+|---|---|---|
+| Publisher đã vendor | `python -m unittest tests.test_publish_research_v1` tại `tools/research-publication` | PASS, 7 tests, exit 0 |
+| Suite lab lịch sử | `python -m unittest tests.test_research_lab_v1 tests.test_paper_ops_v1 tests.test_publish_research_v1` tại thư mục lab | PASS, 14 tests, exit 0 |
+| API build | `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` | PASS, 0 errors, 62 warnings. NU1903 Newtonsoft.Json 10.0.3 và cảnh báo SKPaint/nullable có sẵn, không phát sinh từ nhiệm vụ này |
+| Research tests | `dotnet test tests/KitPlatform.PersonalIntelligence.Tests/KitPlatform.PersonalIntelligence.Tests.csproj --filter FullyQualifiedName~ResearchPublicationTests\|FullyQualifiedName~SecondBrainV1Tests` | PASS, 20, 0 failed |
+| Admin build | `npm run build` tại `client/admin` | PASS, exit 0. Cảnh báo CSS `font-size: 22px` và chunk lớn hơn 500 kB có sẵn |
+| Research UI smoke | `npx tsx src/modules/second-brain/research-view.smoke.ts` và `trading-routes.smoke.ts` | PASS |
+| PostgreSQL integration | Cần `KIT_PI_TEST_CONNECTION` tới database cô lập, không phải cổng 5432 và không phải production | BLOCKED / NOT RUN. Không có cấu hình đó. Không chạy migration để làm test xanh |
+| Content/Famixa smoke của RC-001 | Không chạy lại trong nhiệm vụ này | NOT RUN. Không có thay đổi Content/Famixa. Kết quả PASS cũ không được tính là bằng chứng của RC-002 |
+
+Strict TypeScript không đổi: `tsc --noEmit` vẫn nằm trong `npm run build`. Không thêm `any` hoặc `@ts-ignore`.
+
+## 13. Approval packet
+
+Chủ dự án quyết. Nhiệm vụ này không chọn thay.
+
+1. Migration `390_platform_module_personal_intelligence.sql` chỉ `INSERT` vào `platform_module_registry` khi chưa có `personal_intelligence`. Không seed `personal_intelligence.research.read`. Bằng chứng: file migration. Quyết định: có cho phép áp migration này lên database đã review hay không. Rủi ro nếu chưa xử lý: module chưa có trong registry nên gate module không mở. Bước đề xuất: review SQL, rồi mới đưa vào quy trình migration đã duyệt.
+
+2. File có trong `deploy/ubuntu/migration-files.personal-intelligence.txt` cùng 385 và 387–393. `migration-files.prod.txt` không chứa tên này. Quyết định: có đưa manifest Personal Intelligence vào đợt production hay không. Rủi ro: thêm vào `migration-files.prod.txt` khi chưa duyệt sẽ làm lần deploy sau chạy migration ngoài ý muốn. Bước đề xuất: giữ nguyên prod manifest cho đến khi có quyết định riêng.
+
+3. Entitlement module cho đúng tenant và quyền `personal_intelligence.research.read` cho người chỉ đọc chưa được cấp. `trading.run` vẫn nằm trong policy đã thiết kế nhưng không được dùng làm lối tắt cho người chỉ đọc. Quyết định: tenant nào được bật module, và role nào nhận quyền đọc. Rủi ro: không có quyền đọc thì API trả 403; cấp `trading.run` sẽ mở thêm đường chạy trading. Bước đề xuất: cấp `research.read` qua quy trình permission hiện có sau khi module được bật.
+
+4. Process API mới cần `PersonalIntelligence__ExchangeBackfill__WorkerEnabled=false` và `PersonalIntelligence__ResearchPublication__Root` trỏ tới publication có manifest hợp lệ. Research Read không cần exchange credential. Root trống trả `MISSING`. Quyết định: giá trị hai biến trên process đích. Rủi ro: để mặc định worker là `true` có thể bật backfill; root sai làm API không đọc được publication hoặc đọc nhầm cây. Bước đề xuất: đặt env trước khi khởi động process, không ghi path vào Git.
+
+5. PostgreSQL integration test chưa chạy. Không có database cô lập đã xác minh. Quyết định: có chuẩn bị database test riêng và connection string hay không. Rủi ro: phần persistence trading chưa được kiểm trên SQL trong vòng này. Research read path không dùng DB. Bước đề xuất: chỉ chạy khi connection được chứng minh không phải production và không phải Postgres cổng 5432.
+
+6. Mission này không deploy, không restart dịch vụ production, không chạy migration, không đổi quyền hay dữ liệu production. Quyết định: khi nào mở vòng deploy. Rủi ro của việc deploy từ candidate hiện tại: các mục 1–4 chưa khóa. Bước đề xuất: pull request review của `admin-build-blocker-001`, chưa merge cho đến khi các mục trên được duyệt.
