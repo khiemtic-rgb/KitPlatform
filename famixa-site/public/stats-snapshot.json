@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-22T12:11:24.297Z",
+  "generatedAt": "2026-10-22T17:25:32.076Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 34,
-    "todayPageViews": 9,
-    "todayRequests": 115,
-    "last24hVisitors": 65,
-    "last24hPageViews": 21,
-    "last24hRequests": 432
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 79,
+    "last24hPageViews": 22,
+    "last24hRequests": 401
   },
   "hourly": [
-    {
-      "time": "2026-10-21T13:00:00Z",
-      "visitors": 4,
-      "requests": 76
-    },
-    {
-      "time": "2026-10-21T14:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-21T15:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-21T16:00:00Z",
-      "visitors": 7,
-      "requests": 69
-    },
-    {
-      "time": "2026-10-21T17:00:00Z",
-      "visitors": 6,
-      "requests": 13
-    },
     {
       "time": "2026-10-21T18:00:00Z",
       "visitors": 5,
@@ -115,15 +90,34 @@
       "time": "2026-10-22T09:00:00Z",
       "visitors": 4,
       "requests": 6
+    },
+    {
+      "time": "2026-10-22T12:00:00Z",
+      "visitors": 2,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-22T13:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-22T14:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-22T15:00:00Z",
+      "visitors": 14,
+      "requests": 107
+    },
+    {
+      "time": "2026-10-22T16:00:00Z",
+      "visitors": 6,
+      "requests": 11
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-16",
-      "visitors": 84,
-      "pageViews": 29,
-      "requests": 482
-    },
     {
       "date": "2026-10-17",
       "visitors": 83,
@@ -156,15 +150,15 @@
     },
     {
       "date": "2026-10-22",
-      "visitors": 68,
-      "pageViews": 15,
-      "requests": 280
+      "visitors": 58,
+      "pageViews": 17,
+      "requests": 249
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 58
+      "views": 69
     },
     {
       "path": "/robots.txt",
@@ -175,52 +169,52 @@
       "views": 25
     },
     {
-      "path": "/.github/stale.yml",
-      "views": 21
-    },
-    {
-      "path": "/webhook/*",
-      "views": 21
-    },
-    {
       "path": "/vi/",
-      "views": 16
-    },
-    {
-      "path": "/phpinfo.php",
-      "views": 11
-    },
-    {
-      "path": "/.env",
-      "views": 10
+      "views": 12
     },
     {
       "path": "/samconfig.toml",
       "views": 10
     },
     {
-      "path": "/services/environments.ini",
+      "path": "/phpinfo.php",
+      "views": 10
+    },
+    {
+      "path": "/login",
       "views": 9
     },
     {
-      "path": "/rest/workflows/run",
-      "views": 9
-    },
-    {
-      "path": "/app/.env",
+      "path": "/admin",
       "views": 8
     },
     {
-      "path": "/.env.bak",
+      "path": "/api",
       "views": 8
     },
     {
-      "path": "/server/constant.js",
+      "path": "/dashboard",
       "views": 8
     },
     {
-      "path": "/demo/.env",
-      "views": 8
+      "path": "/.env",
+      "views": 5
+    },
+    {
+      "path": "/vi/goi-cha-me/vi-sao-con-khong-nghe-loi-giai-ma-tam-ly-va-giai-phap-de-con-tu-giac/",
+      "views": 3
+    },
+    {
+      "path": "/license.txt",
+      "views": 3
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 3
+    },
+    {
+      "path": "/php_info.php",
+      "views": 2
     }
   ]
 }
