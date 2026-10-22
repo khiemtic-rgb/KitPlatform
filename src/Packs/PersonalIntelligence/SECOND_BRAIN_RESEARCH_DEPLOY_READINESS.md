@@ -1,127 +1,147 @@
 # Second Brain Research — sẵn sàng triển khai
 
-Nhiệm vụ: `SECOND-BRAIN-RESEARCH-DEPLOY-READINESS-001`  
+Nhiệm vụ: `SECOND-BRAIN-RESEARCH-BLOCKER-RESOLUTION-001`  
 Ngày: 2026-10-22  
 Trạng thái: **NOT READY**
 
 Không deploy production. Không chạy migration production. Không bật live trading. Không merge vào `main`.
 
-## 1. Việc đã làm
+API host trên nhánh Research đã build được. Chưa deploy được: admin production build vẫn lỗi TypeScript có sẵn ngoài Second Brain, publisher chưa nằm trong Git, và migration cùng quyền đọc chưa được phép áp dụng.
 
-Research Publication API, UI Second Brain, test, migration của pack và tài liệu được đưa lên nhánh riêng xuất phát từ `origin/main` đã fetch, không đụng working tree bẩn của `E:\KitPlatform`.
+## 1. Blocker build đã xử lý
 
-`ExchangeBackfillOptions` nhận cấu hình `PersonalIntelligence:ExchangeBackfill`. Giá trị mặc định `WorkerEnabled=true` không đổi. Máy chủ phải đặt `false` cho đến khi có quyết định vận hành giao dịch riêng.
+Lỗi `BrandNarrativeDna.cs` có trên `origin/main` `608bc054` trước khi thêm Research. Hai commit Research `cffb50f2` và `d2c28a3a` không đụng Content. Trước bản sửa, `git diff origin/main` của các file Content dưới đây là rỗng, và `dotnet build src/KitPlatform.Api` trên nhánh dừng ở `ContentBrandFitDto` không có `Territory` và `NarrativeFit`.
 
-Publisher `publish_research_v1.py` vẫn ở `E:\Kit-Brain\second-brain-trading-source-inventory\research-lab-v1`. Thư mục đó không phải git repo. Không di chuyển, không tạo repo mới, không xóa dữ liệu nghiên cứu.
+Ý nghĩa đã có trong mã đã commit, không phải hợp đồng mới:
+
+- `BrandNarrativeDna.SeriesEntryBlock` trả `NarrativeFitRequired` khi territory trống. Territory `off-brand` hoặc `narrativeFit == false` là `OFF-BRAND`. Territory trống không bị coi là `core`.
+- `ContentArticleSeriesService` đã đọc `Territory`, `TerritoryId`, `BrandAngle`.
+- Migration `384_pack_content_brand_narrative_dna.sql` đã thêm `pack_content.brand.narrative_json`. `BrandRow` và hai câu SELECT chưa map cột này, trong khi series gọi `brand.NarrativeJson`.
+- `NarrativeFitIntegrityTests` đã truyền `narrativeFit` rồi `territory`, và đã gọi `ContentQualityGate.NarrativeBoundary`. Project test platform không biên dịch được trước bản sửa này.
+
+Bản sửa chỉ nối những chỗ đó:
+
+- `ContentBrandFitDto` thêm bốn đối số tùy chọn ở cuối: `NarrativeFit`, `Territory`, `TerritoryId`, `BrandAngle`. Caller cũ vẫn biên dịch. Tên JSON là camelCase `narrativeFit`, không dùng tên `fit` đang nằm ở working tree chưa commit.
+- `BrandRow.NarrativeJson` và hai SELECT `narrative_json`. Không đổi INSERT/UPDATE, nên lần lưu brand không ghi đè `narrative_json` bằng `{}`.
+- `ContentQualityGate` thêm `NarrativeBoundary`. Territory trống không phải vi phạm. `off-brand` hoặc `narrativeFit == false` chặn duyệt và publish. Caller không truyền hai đối số mới giữ hành vi cũ.
+- `ContentQualityRunner` và nhánh gate trong `ContentGenerateService` đọc territory của brand trên package. Không viết lại prompt.
+
+Không xóa chỗ dùng thuộc tính, không bỏ test, không tắt kiểm tra. Không thêm `Confidence` hay `BoundaryWarnings`.
+
+Bằng chứng sau bản sửa, trên `E:\KitPlatform-sb-research`:
+
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` — PASS, 0 errors.
+- `dotnet test tests/KitPlatform.Platform.Tests/KitPlatform.Platform.Tests.csproj --filter NarrativeFitIntegrityTests` — PASS, 13. Test mới `Stored_brand_fit_keeps_territory_and_does_not_treat_a_missing_one_as_core` giữ `off-brand` khi JSON có territory, và `NarrativeFitRequired` khi JSON cũ không có territory.
+
+Commit sửa: `96657e06a6bfe36bfc3ccfe6b55cdee4d2fadd50`.
 
 ## 2. Git
 
 | Mục | Giá trị |
 |---|---|
 | Remote | `https://github.com/khiemtic-rgb/KitPlatform.git` |
-| `origin/main` sau fetch | `608bc054c9b6389190c4c214ac478b3397b110dc` |
-| Nhánh gói | `second-brain-research-readiness` |
-| Commit gói | `cffb50f20af27066362163ee41387d530abe8a6b` |
+| `origin/main` | `608bc054c9b6389190c4c214ac478b3397b110dc` |
+| Nhánh | `second-brain-research-readiness` |
+| Commit gói Research | `cffb50f20af27066362163ee41387d530abe8a6b` |
+| Commit báo cáo gói | `d2c28a3a10073b44bb512299e1487716aa76470a` |
+| Commit sửa Content | `96657e06a6bfe36bfc3ccfe6b55cdee4d2fadd50` |
 | Working tree gốc | `E:\KitPlatform`, branch `recovery/production-source-20261021`, HEAD `8c59ceb4` |
-| Lệch với `origin/main` | 198 commit sau, 6 commit trước. Không merge. |
 
-Working tree gốc vẫn giữ thay đổi ngoài phạm vi: TestPack, JWT query token, Famixa, `package.json`, auth contracts, vertical marketing. `Program.cs` ở cây gốc không được stage nguyên file.
+Làm việc trong worktree `E:\KitPlatform-sb-research`. Không stage `Program.cs`, Famixa, `package.json`, auth, hay working tree bẩn. Không merge, không force-push.
 
-## 3. File theo nhóm
-
-Trong nhánh gói:
-
-- API Research: pack `src/Packs/PersonalIntelligence`, bind trong `Program.cs`, hai `ProjectReference` trong `KitPlatform.Api.csproj`, `PlatformModuleCodes.PersonalIntelligence`, `CoreAuthority.cs`.
-- UI: `client/admin/src/modules/second-brain`, route trong `router.tsx`, `registry.tsx`, `platform-feature-map.ts`, `vite.second-brain.config.ts`.
-- Test: `tests/KitPlatform.PersonalIntelligence.Tests`.
-- Vận hành local: `scripts/second-brain-trading-ui-start.ps1`, `scripts/second-brain-trading-ui-stop.ps1`.
-- Migration nguồn, chưa chạy: `migrations/385`, `387`–`393`, manifest `deploy/ubuntu/migration-files.personal-intelligence.txt`. Manifest này không nằm trong `migration-files.prod.txt`.
-- Publisher: không có trong repo.
-
-## 4. Build và test
+## 3. Build và test trên nhánh công việc
 
 | Kiểm tra | Kết quả |
 |---|---|
-| `dotnet test` filter `ResearchPublicationTests\|SecondBrainV1Tests` trên cây gốc | PASS, 20 |
-| Cùng filter trên nhánh từ `origin/main` | PASS, 20 |
-| `dotnet build` pack test trên `origin/main` | PASS, 0 errors |
-| `dotnet build src/KitPlatform.Api` trên cây gốc local | PASS, 0 errors |
-| `dotnet build src/KitPlatform.Api` trên `origin/main` + Research | FAIL, 2 errors có sẵn trong Content: `BrandNarrativeDna.cs` gọi `Territory` và `NarrativeFit` nhưng `ContentBrandFitDto` không có hai thuộc tính đó. Không sửa Content trong nhiệm vụ này. |
-| `python -m unittest tests.test_research_lab_v1 tests.test_paper_ops_v1 tests.test_publish_research_v1` | PASS, 14 |
-| `npx tsx research-view.smoke.ts` và `trading-routes.smoke.ts` | PASS |
-| `npm run build` admin trên `origin/main` | NOT RUN. Cây `origin/main` không có `node_modules` riêng. Build admin đã PASS trên cây local ở nhiệm vụ nghiệm thu trước. |
-| Test PostgreSQL của pack | NOT RUN. Không chạy migration và không ghi database để phục vụ đóng gói. |
+| `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` | PASS, 0 errors. Cảnh báo NU1903 `Newtonsoft.Json` 10.0.3 (GHSA-5crp-9r3c-p9vr) có sẵn trên host, không phải gói do Research khai báo. |
+| `dotnet test` filter `NarrativeFitIntegrityTests` | PASS, 13 |
+| `dotnet test` filter `ResearchPublicationTests\|SecondBrainV1Tests` | PASS, 20 |
+| `python -m unittest tests.test_research_lab_v1 tests.test_paper_ops_v1 tests.test_publish_research_v1` tại `research-lab-v1` | PASS, 14 |
+| `npx tsx src/modules/second-brain/research-view.smoke.ts` và `trading-routes.smoke.ts` | PASS |
+| `npm run build` trong `client/admin` (`tsc --noEmit && vite build`) | FAIL. `tsc` dừng với 89 errors. Không có error trong `src/modules/second-brain`. Các file lỗi khớp `origin/main` (diff rỗng). Phần lớn nằm ở Famixa và kit-video; còn `GoodsReceiptListPage.tsx`, `AdjustmentListPage.tsx`, `PosConsultationModal.tsx`. Không sửa trong nhiệm vụ này vì đó là mặt Content và Pharmacy ngoài phạm vi Research. |
+| Test PostgreSQL của Personal Intelligence | NOT RUN. Test đòi `KIT_PI_TEST_CONNECTION`, từ chối cổng 5432, và ghi vào database đích. Không có database cô lập đã xác minh. Không dùng production và không dùng Postgres đang nghe 5432. |
 
-`Newtonsoft.Json` 10.0.3 (GHSA-5crp-9r3c-p9vr) là cảnh báo có sẵn của host và các pack khác trên `origin/main`. Pack Research không khai báo trực tiếp gói này.
+## 4. Publisher
 
-## 5. Blocker
+Nguồn vẫn là `E:\Kit-Brain\second-brain-trading-source-inventory\research-lab-v1`. Thư mục không phải git repo. Không di chuyển, không tạo repository, không xóa dữ liệu nguồn.
 
-1. API host trên `origin/main` không build vì lỗi Content ở trên. Chưa đủ điều kiện tạo artifact triển khai từ đúng base.
-2. Publisher không được quản lý bằng Git. Không có remote để đồng bộ mã `research-lab-v1`.
-3. Module `personal_intelligence` chưa có trên production cho đến khi người phụ trách chạy manifest `migration-files.personal-intelligence.txt`. Không chạy trong nhiệm vụ này. Không thêm manifest này vào `migration-files.prod.txt`.
-4. Quyền `personal_intelligence.research.read` không được seed bởi migration 390. ADMIN hoặc `personal_intelligence.trading.run` đọc được Research. Không đổi chính sách phê duyệt.
-5. `ExchangeBackfillWorker` mặc định bật. Production phải đặt `PersonalIntelligence__ExchangeBackfill__WorkerEnabled=false` trước khi chạy process API mới.
-6. Nhánh local `recovery/production-source-20261021` lệch 198/6 so với `origin/main`. Không merge.
+SHA-256 của `publish_research_v1.py` tại thời điểm kiểm tra: `D1F3EF3D066F70B167848FC9AA5245107B9ED7347E29C6C4F5E9CAE3AE333361`.
 
-## 6. Cấu hình máy chủ
-
-Không ghi giá trị bí mật.
-
-| Biến | Việc cần |
-|---|---|
-| `PersonalIntelligence__ResearchPublication__Root` | Thư mục publication đã có `manifest.json` schema `research-publication/v1`. Để trống thì API trả `MISSING`. Không trỏ vào journal, cache, hay snapshot. |
-| `PersonalIntelligence__ExchangeBackfill__WorkerEnabled` | `false` cho lần triển khai Research này. |
-| `PersonalIntelligence__ExchangeCredentialKey` | Chỉ khi bật kết nối sàn. Không đặt cho lần đọc Research. Không commit khóa. |
-| JWT và connection string | Dùng cấu hình API hiện có. Không thêm secret vào repo. |
-
-Publisher, trên máy có mã `research-lab-v1` và bốn file nguồn đã hoàn tất:
+Cách tạo publication từ bốn artifact:
 
 ```
 python publish_research_v1.py --destination <thư mục publication> --lab <LAB_RESULT.json> --status <PAPER_OPS_STATUS.json> --report <PAPER_RESEARCH_REPORT.json> --health <PAPER_OPS_HEALTH.json>
 ```
 
-Lệnh thất bại trước khi đổi thư mục đích nếu nguồn thiếu hoặc JSON hỏng. Không sửa file nguồn để vượt validation.
+`--published-at` là tùy chọn. Schema `research-publication/v1`. Bốn object: lab, status, report, health. Script đọc và parse JSON trước khi đổi thư mục đích. File thiếu hoặc JSON hỏng in `PUBLISH_FAILED` và trả mã 1, không gọi bước đổi chỗ. Status bỏ mọi key có `api_key`. Report bỏ `frozen_lab_result`. `publicationId` là `pub-` cộng 16 ký tự hex của SHA-256 bốn hash. Manifest ghi bốn hash đó.
 
-Paper Ops là lịch nghiên cứu riêng, mô tả trong `PAPER_OPS_SERVER_RUNBOOK.md` của kho lab. Không gửi lệnh sàn. Không đặt `BINANCE_API_KEY` hay `BINANCE_API_SECRET` vào môi trường của lịch đó.
+Đổi thư mục là staging rồi hai lần rename, không phải một syscall. Script xóa bản `.previous` sau khi publish thành công, nên rollback nội dung phải dựa trên một bản sao operator giữ riêng, hoặc publish lại đúng bốn artifact của lần trước. Không sửa file nguồn để vượt validation.
 
-UI admin gọi `/api/personal-intelligence/research` qua proxy sẵn có. Không có nút chạy experiment, phê duyệt, hay gửi lệnh trong khối Research.
+Quyền: process API chỉ cần đọc thư mục publication. Không đặt thư mục đó làm web root. Không trỏ vào journal, cache, hay snapshot. Không ghi path máy local vào `appsettings` dùng chung.
+
+Phương án quản lý phiên bản, chưa thực hiện, cần người phụ trách chọn một:
+
+1. Đưa `research-lab-v1` vào một git repository riêng và ghi commit đó cạnh commit KitPlatform lúc deploy.
+2. Chỉ đưa `publish_research_v1.py` vào KitPlatform sau khi được duyệt, pin bằng SHA-256 ở trên. Dữ liệu lab, journal, snapshot và ledger ở ngoài repo.
+
+Cho đến khi có lựa chọn đó, pin vận hành là SHA-256 của script ở trên cộng manifest của từng publication.
+
+## 5. Quyền và cấu hình
+
+Policy `PersonalIntelligenceResearchRead` không đổi: ADMIN, `personal_intelligence.research.read`, hoặc `personal_intelligence.trading.run`. `trading.approve`, `exchange.read` và `exchange.connect` một mình không đủ.
+
+Migration `390_platform_module_personal_intelligence.sql` chỉ thêm `personal_intelligence` vào `platform_module_registry`. Không seed `personal_intelligence.research.read`. File nằm trong `deploy/ubuntu/migration-files.personal-intelligence.txt` cùng 385 và 387–393. Không nằm trong `migration-files.prod.txt`. Không chạy.
+
+Cách cấp quyền đọc tối thiểu, chưa thực hiện: sau khi module được bật cho đúng tenant, gán `personal_intelligence.research.read` cho role chỉ cần đọc, qua cách gán permission tenant hiện có. Không gán `personal_intelligence.trading.run` cho người chỉ đọc, vì claim đó còn mở đường chạy trading. Không đổi policy. Không mở thêm quyền.
+
+`PersonalIntelligence__ResearchPublication__Root` được bind từ `PersonalIntelligence:ResearchPublication` trong `Program.cs` của nhánh. Root trống làm API trả `MISSING`. Không ghi giá trị vào Git.
+
+`ExchangeBackfillOptions.WorkerEnabled` vẫn mặc định `true`. Section `PersonalIntelligence:ExchangeBackfill` đã được bind. Lần triển khai Research bắt buộc đặt `PersonalIntelligence__ExchangeBackfill__WorkerEnabled=false` trên process API. Không đổi mặc định trong mã và không đặt credential sàn để vượt blocker.
+
+## 6. Việc còn cần phê duyệt
+
+1. Chủ Content và admin: 89 lỗi TypeScript chặn `npm run build` trên chính `origin/main`. Second Brain không có trong danh sách lỗi.
+2. Chủ publisher: chọn repository riêng hoặc vendoring script đã duyệt. Chưa được phép chuyển thư mục lab.
+3. Chủ migration: cho phép áp `deploy/ubuntu/migration-files.personal-intelligence.txt` lên database đích đã review. Không thêm manifest này vào `migration-files.prod.txt` khi chưa có quyết định đó.
+4. Chủ quyền: bật module `personal_intelligence` cho đúng tenant và gán `personal_intelligence.research.read` cho người chỉ đọc.
+5. Vận hành: đặt `WorkerEnabled=false` và root publication trước khi chạy process API mới. Không bật kết nối sàn.
 
 ## 7. Checklist khi được phép triển khai
 
-Chỉ làm sau khi hết blocker ở mục 5 và có người phụ trách cho migration.
+Chỉ làm sau khi `npm run build` admin PASS trên commit được deploy, publisher đã được pin, và người phụ trách đã duyệt migration cùng quyền.
 
-1. Xác nhận `origin/main` build được `src/KitPlatform.Api` trước khi gộp nhánh Research.
+1. Xác nhận commit deploy build được `src/KitPlatform.Api` và `npm run build` admin.
 2. Gộp `second-brain-research-readiness` bằng pull request. Không force-push.
-3. Đặt `PersonalIntelligence__ExchangeBackfill__WorkerEnabled=false`.
-4. Chạy publisher ra một thư mục trên máy chủ. Kiểm tra `manifest.json` có `research-publication/v1` và bốn hash.
+3. Đặt `PersonalIntelligence__ExchangeBackfill__WorkerEnabled=false`. Không đặt `PersonalIntelligence__ExchangeCredentialKey` cho lần đọc này.
+4. Giữ một bản sao publication đang phục vụ. Chạy publisher ra thư mục mới. Kiểm tra `manifest.json` schema `research-publication/v1` và bốn hash.
 5. Đặt `PersonalIntelligence__ResearchPublication__Root` vào thư mục đó.
-6. Áp dụng `deploy/ubuntu/migration-files.personal-intelligence.txt` bằng quy trình migration đã review, không trộn vào manifest Pharmacy, Family OS, Content, hay Local OS.
-7. Bật module `personal_intelligence` cho đúng tenant. Cấp `personal_intelligence.research.read` cho người cần đọc. Không cấp quyền gửi lệnh.
+6. Áp dụng `deploy/ubuntu/migration-files.personal-intelligence.txt` bằng quy trình đã review. Không trộn Pharmacy, Family OS, Content, hay Local OS.
+7. Bật module cho đúng tenant. Cấp `personal_intelligence.research.read`. Không cấp quyền gửi lệnh.
 8. Deploy API và admin từ commit đã gộp. Không restart PostgreSQL ngoài quy trình deploy hiện có.
 
 Smoke sau deploy:
 
 - `GET /api/personal-intelligence/research/publication` không token trả 401.
-- Cùng path với user có quyền trả 200, `schemaVersion` `research-publication/v1`, publication id và hash khớp manifest.
-- Ba experiment id lấy từ publication. Detail giữ `EXPERIMENT_NOT_APPROVED`, `INSUFFICIENT_EVIDENCE`, `NOT_A_PERFORMANCE_CLAIM`.
-- Paper status và report giữ `sampleWarning` nguồn. `FRESH` chỉ khi health nguồn là `OK`.
-- `/second-brain/overview` hiện khối Research tách khỏi sổ giao dịch. Số sổ giao dịch không tăng vì số liệu research.
-- Response không có path, API key, journal, cache, hay field `frozen_lab_result`.
+- Cùng path với user có quyền đọc trả 200, `schemaVersion` `research-publication/v1`, publication id và hash khớp manifest.
+- Detail experiment giữ `EXPERIMENT_NOT_APPROVED`, `INSUFFICIENT_EVIDENCE`, `NOT_A_PERFORMANCE_CLAIM`.
+- `FRESH` chỉ khi health nguồn là `OK`.
+- `/second-brain/overview` hiện khối Research tách khỏi sổ giao dịch. Số sổ giao dịch không đổi vì số liệu research.
+- Response không có path máy, API key, journal, cache, hay field `frozen_lab_result`.
 
 Rollback:
 
 - Trả API và admin về artifact trước lần deploy.
-- Xóa hoặc để trống `PersonalIntelligence__ResearchPublication__Root`. Route biến mất khi artifact cũ không có controller. Root trống trả `MISSING`, không xóa publication trên đĩa.
+- Trỏ `PersonalIntelligence__ResearchPublication__Root` về bản sao publication trước đó, hoặc để trống. Root trống trả `MISSING` và không xóa thư mục trên đĩa.
 - Giữ `WorkerEnabled=false`.
-- Không xóa schema `pack_personal_intelligence`, journal, snapshot, ledger, hay thư mục publication trong rollback của lần đọc này.
-- Dừng lịch Paper Ops bằng `systemctl stop paper-ops.timer` hoặc `schtasks /End /TN SecondBrainPaperOpsServer` nếu lịch đó đã được bật riêng. Không đụng task local `SecondBrainPaperOpsV1`.
+- Không xóa schema `pack_personal_intelligence`, journal, snapshot, ledger, hay artifact nguồn.
+- Nếu lịch Paper Ops đã được bật riêng, dừng bằng `systemctl stop paper-ops.timer` hoặc `schtasks /End /TN SecondBrainPaperOpsServer`. Không đụng task local `SecondBrainPaperOpsV1`.
 
 ## 8. Kết luận
 
 `NOT READY`.
 
-Mã Research đã được đóng trên nhánh từ `origin/main` và test pack PASS. Chưa deploy được vì API `origin/main` đang lỗi build Content, publisher chưa có Git, và migration module chưa được phép chạy.
+Nguyên nhân build API đã xác định và đã sửa có test. Pack Research, publisher, lab, Paper Ops và UI smoke đều PASS. Admin không tạo được artifact vì 89 lỗi TypeScript có sẵn ngoài Second Brain. Publisher chưa có phiên bản trong Git. Migration 390 và quyền `personal_intelligence.research.read` chưa được phép áp dụng. Mặc định worker backfill vẫn bật và phải tắt bằng cấu hình môi trường.
 
 ## 9. Xác nhận
 
-Nhiệm vụ này không deploy production, không restart dịch vụ production, không chạy migration production, không đổi dữ liệu production, không gửi lệnh sàn.
+Nhiệm vụ này không deploy production, không restart dịch vụ production, không chạy migration production, không đổi dữ liệu production, không gửi lệnh sàn, và không sửa snapshot, ledger, journal hay checkpoint.
