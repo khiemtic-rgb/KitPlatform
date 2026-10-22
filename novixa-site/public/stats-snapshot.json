@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-21T21:45:05.887Z",
+  "generatedAt": "2026-10-22T04:52:59.047Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 193,
-    "last24hPageViews": 816,
-    "last24hRequests": 1310
+    "todayVisitors": 30,
+    "todayPageViews": 18,
+    "todayRequests": 344,
+    "last24hVisitors": 200,
+    "last24hPageViews": 493,
+    "last24hRequests": 1243
   },
   "hourly": [
-    {
-      "time": "2026-10-20T22:00:00Z",
-      "visitors": 4,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-20T23:00:00Z",
-      "visitors": 5,
-      "requests": 346
-    },
-    {
-      "time": "2026-10-21T00:00:00Z",
-      "visitors": 5,
-      "requests": 26
-    },
-    {
-      "time": "2026-10-21T01:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-21T02:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-21T03:00:00Z",
-      "visitors": 6,
-      "requests": 15
-    },
-    {
-      "time": "2026-10-21T04:00:00Z",
-      "visitors": 12,
-      "requests": 15
-    },
     {
       "time": "2026-10-21T05:00:00Z",
       "visitors": 85,
@@ -128,8 +93,38 @@
     },
     {
       "time": "2026-10-21T21:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-21T22:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-21T23:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-22T00:00:00Z",
       "visitors": 3,
-      "requests": 3
+      "requests": 27
+    },
+    {
+      "time": "2026-10-22T01:00:00Z",
+      "visitors": 7,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-22T02:00:00Z",
+      "visitors": 16,
+      "requests": 22
+    },
+    {
+      "time": "2026-10-22T04:00:00Z",
+      "visitors": 6,
+      "requests": 283
     }
   ],
   "daily": [
@@ -165,15 +160,21 @@
     },
     {
       "date": "2026-10-21",
-      "visitors": 186,
-      "pageViews": 484,
-      "requests": 953
+      "visitors": 198,
+      "pageViews": 486,
+      "requests": 971
+    },
+    {
+      "date": "2026-10-22",
+      "visitors": 30,
+      "pageViews": 18,
+      "requests": 344
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 67
+      "views": 62
     },
     {
       "path": "/robots.txt",
@@ -181,34 +182,22 @@
     },
     {
       "path": "/vi/",
-      "views": 29
+      "views": 26
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 18
+      "views": 16
     },
     {
       "path": "/vi/tai-lieu/van-ban-phap-luat/",
       "views": 9
     },
     {
-      "path": "/server/.env",
-      "views": 9
-    },
-    {
-      "path": "/.env",
-      "views": 9
-    },
-    {
-      "path": "/.idea/WebServers.xml",
-      "views": 8
-    },
-    {
       "path": "/user/login",
       "views": 8
     },
     {
-      "path": "/.env.example",
+      "path": "/.env",
       "views": 8
     },
     {
@@ -216,19 +205,31 @@
       "views": 8
     },
     {
-      "path": "/.git/config",
-      "views": 7
-    },
-    {
-      "path": "/backend/.env",
-      "views": 6
+      "path": "/.idea/WebServers.xml",
+      "views": 8
     },
     {
       "path": "/data/.env",
       "views": 6
     },
     {
-      "path": "/id_rsa",
+      "path": "/api/system/fileView",
+      "views": 6
+    },
+    {
+      "path": "/server/.env",
+      "views": 6
+    },
+    {
+      "path": "/api/session/properties",
+      "views": 6
+    },
+    {
+      "path": "/members",
+      "views": 6
+    },
+    {
+      "path": "/auth/.env",
       "views": 6
     }
   ]
