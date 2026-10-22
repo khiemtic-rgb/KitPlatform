@@ -58,7 +58,7 @@ Làm việc trong worktree `E:\KitPlatform-sb-research`. Không stage `Program.c
 | `dotnet test` filter `ResearchPublicationTests\|SecondBrainV1Tests` | PASS, 20 |
 | `python -m unittest tests.test_research_lab_v1 tests.test_paper_ops_v1 tests.test_publish_research_v1` tại `research-lab-v1` | PASS, 14 |
 | `npx tsx src/modules/second-brain/research-view.smoke.ts` và `trading-routes.smoke.ts` | PASS |
-| `npm run build` trong `client/admin` (`tsc --noEmit && vite build`) | FAIL. `tsc` dừng với 89 errors. Không có error trong `src/modules/second-brain`. Các file lỗi khớp `origin/main` (diff rỗng). Phần lớn nằm ở Famixa và kit-video; còn `GoodsReceiptListPage.tsx`, `AdjustmentListPage.tsx`, `PosConsultationModal.tsx`. Không sửa trong nhiệm vụ này vì đó là mặt Content và Pharmacy ngoài phạm vi Research. |
+| `npm run build` trong `client/admin` (`tsc --noEmit && vite build`) trên nhánh `admin-build-blocker-001` | PASS. Trước khi sửa, `tsc` dừng với 89 errors, không có error trong `src/modules/second-brain`. Sau commit `c57d8d7e` thì `tsc` 0 errors và `vite build` xong. Strict mode, `noUnusedLocals`, `noUnusedParameters` vẫn bật. |
 | Test PostgreSQL của Personal Intelligence | NOT RUN. Test đòi `KIT_PI_TEST_CONNECTION`, từ chối cổng 5432, và ghi vào database đích. Không có database cô lập đã xác minh. Không dùng production và không dùng Postgres đang nghe 5432. |
 
 ## 4. Publisher
@@ -100,7 +100,7 @@ Cách cấp quyền đọc tối thiểu, chưa thực hiện: sau khi module đ
 
 ## 6. Việc còn cần phê duyệt
 
-1. Chủ Content và admin: 89 lỗi TypeScript chặn `npm run build` trên chính `origin/main`. Second Brain không có trong danh sách lỗi.
+1. Admin build trên nhánh tích hợp Research đã PASS ở `c57d8d7e`. `origin/main` `608bc054` vẫn còn 89 lỗi TypeScript cho đến khi nhánh này được gộp.
 2. Chủ publisher: chọn repository riêng hoặc vendoring script đã duyệt. Chưa được phép chuyển thư mục lab.
 3. Chủ migration: cho phép áp `deploy/ubuntu/migration-files.personal-intelligence.txt` lên database đích đã review. Không thêm manifest này vào `migration-files.prod.txt` khi chưa có quyết định đó.
 4. Chủ quyền: bật module `personal_intelligence` cho đúng tenant và gán `personal_intelligence.research.read` cho người chỉ đọc.
@@ -140,8 +140,27 @@ Rollback:
 
 `NOT READY`.
 
-Nguyên nhân build API đã xác định và đã sửa có test. Pack Research, publisher, lab, Paper Ops và UI smoke đều PASS. Admin không tạo được artifact vì 89 lỗi TypeScript có sẵn ngoài Second Brain. Publisher chưa có phiên bản trong Git. Migration 390 và quyền `personal_intelligence.research.read` chưa được phép áp dụng. Mặc định worker backfill vẫn bật và phải tắt bằng cấu hình môi trường.
+API host và admin production build đều PASS trên nhánh `admin-build-blocker-001`, commit `c57d8d7e3b44a263b79fe8215cac88b3d5ad8635`, xuất phát từ `second-brain-research-readiness`. Nhánh này có Second Brain Research. `npm run build` admin là `tsc --noEmit && vite build`, 0 errors. Smoke Research, character create, production shot, workflow, scene workspace, character library, lot identity và consultation profile đều PASS.
+
+Chưa deploy được vì publisher chưa có phiên bản trong Git, migration 390 và quyền `personal_intelligence.research.read` chưa được phép áp dụng, và mặc định worker backfill vẫn bật. Phải tắt bằng cấu hình môi trường. `origin/main` chưa chứa bản sửa admin.
 
 ## 9. Xác nhận
 
 Nhiệm vụ này không deploy production, không restart dịch vụ production, không chạy migration production, không đổi dữ liệu production, không gửi lệnh sàn, và không sửa snapshot, ledger, journal hay checkpoint.
+
+## 10. Admin build — `KITPLATFORM-ADMIN-BUILD-BLOCKER-001`
+
+Nhánh `admin-build-blocker-001` được cắt từ `second-brain-research-readiness` `a0374a05`. Không sửa `main`. Không đổi `tsconfig`, không thêm `any` hoặc `@ts-ignore`, không loại module khỏi build.
+
+89 lỗi trên base thuộc các nhóm sau. Bản sửa bám hợp đồng đã có trong cùng commit:
+
+- Type thiếu field mà caller đã ghi: `mixPrefs`, tab `voice`, `noAverage`, `acceptedTake.url` có thể trống.
+- `useRef` của React 19 cần giá trị khởi tạo.
+- API trả `null` trong khi helper chỉ nhận `undefined`: ngày lot, tuổi nhân vật, `missingTypes`.
+- `apiErrorMessage` bắt buộc chuỗi fallback. Nút tạo phiếu kiểm kê không được nhận mouse event làm preset kho.
+- `finalSource` trả về đúng union `FAL | RUNWAY | RUNWAY_TTS`, không phải `string`.
+- `shotAction` nằm trên run, không trên shot. Territory era `planned` là trạng thái thật, smoke character create đã yêu cầu.
+- Khóa nhận diện shot dùng `master_sha256`, `dna_sha256`, `prp_sha256`. Tên camelCase không có trên spec nên trước đây không so được hash.
+- Biến và import không đọc bị gỡ vì `noUnusedLocals`. `insertShot` vẫn sắp theo `displayOrder`; tham số `afterDisplay` không đổi hành vi.
+
+Rủi ro còn lại: so sánh hash nhận diện giờ nhìn đúng field snake_case, nên một spec đổi hash sẽ bị coi là đổi nhận diện. Smoke production shot vẫn PASS. `insertShot` chưa dùng `afterDisplay` để chèn vị trí.
