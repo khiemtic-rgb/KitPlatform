@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-23T11:52:55.318Z",
+  "generatedAt": "2026-10-23T17:19:38.709Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 48,
-    "todayPageViews": 29,
-    "todayRequests": 313,
-    "last24hVisitors": 91,
-    "last24hPageViews": 43,
-    "last24hRequests": 671
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 92,
+    "last24hPageViews": 47,
+    "last24hRequests": 585
   },
   "hourly": [
-    {
-      "time": "2026-10-22T12:00:00Z",
-      "visitors": 2,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-22T13:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-22T14:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-22T15:00:00Z",
-      "visitors": 14,
-      "requests": 107
-    },
-    {
-      "time": "2026-10-22T16:00:00Z",
-      "visitors": 6,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-22T17:00:00Z",
-      "visitors": 2,
-      "requests": 22
-    },
     {
       "time": "2026-10-22T18:00:00Z",
       "visitors": 13,
@@ -113,17 +83,36 @@
     },
     {
       "time": "2026-10-23T11:00:00Z",
+      "visitors": 7,
+      "requests": 47
+    },
+    {
+      "time": "2026-10-23T12:00:00Z",
+      "visitors": 4,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-23T13:00:00Z",
       "visitors": 6,
-      "requests": 46
+      "requests": 7
+    },
+    {
+      "time": "2026-10-23T14:00:00Z",
+      "visitors": 10,
+      "requests": 42
+    },
+    {
+      "time": "2026-10-23T15:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-23T16:00:00Z",
+      "visitors": 7,
+      "requests": 10
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-17",
-      "visitors": 83,
-      "pageViews": 35,
-      "requests": 715
-    },
     {
       "date": "2026-10-18",
       "visitors": 73,
@@ -156,54 +145,38 @@
     },
     {
       "date": "2026-10-23",
-      "visitors": 80,
-      "pageViews": 35,
-      "requests": 537
+      "visitors": 74,
+      "pageViews": 41,
+      "requests": 383
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 107
+      "views": 90
     },
     {
       "path": "/robots.txt",
-      "views": 42
+      "views": 43
     },
     {
       "path": "/vi/",
-      "views": 34
+      "views": 39
     },
     {
       "path": "/sitemap.xml",
-      "views": 21
-    },
-    {
-      "path": "/login",
-      "views": 9
-    },
-    {
-      "path": "/api",
-      "views": 8
-    },
-    {
-      "path": "/dashboard",
-      "views": 8
-    },
-    {
-      "path": "/admin",
-      "views": 8
+      "views": 23
     },
     {
       "path": "/_next/image",
-      "views": 8
-    },
-    {
-      "path": "/.gitlab-ci.yml",
-      "views": 6
+      "views": 11
     },
     {
       "path": "/api/session/properties",
+      "views": 6
+    },
+    {
+      "path": "/.gitlab-ci.yml",
       "views": 6
     },
     {
@@ -211,7 +184,15 @@
       "views": 5
     },
     {
-      "path": "//xmlrpc.php",
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 5
+    },
+    {
+      "path": "/.git/config",
+      "views": 5
+    },
+    {
+      "path": "/dev/.env",
       "views": 5
     },
     {
@@ -219,8 +200,16 @@
       "views": 5
     },
     {
-      "path": "/dev/.env",
-      "views": 5
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 4
+    },
+    {
+      "path": "//wp2/wp-includes/wlwmanifest.xml",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/chunks/polyfills-42372ed130431b0a.js",
+      "views": 4
     }
   ]
 }
