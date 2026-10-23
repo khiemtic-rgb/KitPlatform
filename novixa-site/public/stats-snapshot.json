@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-23T11:43:19.239Z",
+  "generatedAt": "2026-10-23T17:11:39.285Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 86,
-    "todayPageViews": 59,
-    "todayRequests": 269,
-    "last24hVisitors": 159,
-    "last24hPageViews": 741,
-    "last24hRequests": 1656
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 156,
+    "last24hPageViews": 1311,
+    "last24hRequests": 1954
   },
   "hourly": [
-    {
-      "time": "2026-10-22T12:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-22T13:00:00Z",
-      "visitors": 14,
-      "requests": 322
-    },
-    {
-      "time": "2026-10-22T14:00:00Z",
-      "visitors": 7,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-22T15:00:00Z",
-      "visitors": 10,
-      "requests": 15
-    },
-    {
-      "time": "2026-10-22T16:00:00Z",
-      "visitors": 13,
-      "requests": 20
-    },
-    {
-      "time": "2026-10-22T17:00:00Z",
-      "visitors": 7,
-      "requests": 10
-    },
     {
       "time": "2026-10-22T18:00:00Z",
       "visitors": 3,
@@ -128,17 +98,41 @@
     },
     {
       "time": "2026-10-23T11:00:00Z",
-      "visitors": 3,
-      "requests": 4
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-23T12:00:00Z",
+      "visitors": 9,
+      "requests": 632
+    },
+    {
+      "time": "2026-10-23T13:00:00Z",
+      "visitors": 10,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-23T14:00:00Z",
+      "visitors": 15,
+      "requests": 20
+    },
+    {
+      "time": "2026-10-23T15:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-23T16:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-23T17:00:00Z",
+      "visitors": 2,
+      "requests": 7
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-17",
-      "visitors": 107,
-      "pageViews": 135,
-      "requests": 504
-    },
     {
       "date": "2026-10-18",
       "visitors": 187,
@@ -171,9 +165,9 @@
     },
     {
       "date": "2026-10-23",
-      "visitors": 86,
-      "pageViews": 59,
-      "requests": 269
+      "visitors": 127,
+      "pageViews": 673,
+      "requests": 954
     }
   ],
   "topPages": [
@@ -182,12 +176,12 @@
       "views": 94
     },
     {
-      "path": "/robots.txt",
-      "views": 36
+      "path": "/vi/",
+      "views": 43
     },
     {
-      "path": "/vi/",
-      "views": 36
+      "path": "/robots.txt",
+      "views": 33
     },
     {
       "path": "/.git/config",
@@ -195,26 +189,26 @@
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 17
-    },
-    {
-      "path": "/magento/.env",
       "views": 14
     },
     {
-      "path": "/postmark/.env",
+      "path": "/magento/.env",
       "views": 13
     },
     {
-      "path": "//cms/wp-includes/wlwmanifest.xml",
-      "views": 10
+      "path": "/.env",
+      "views": 11
     },
     {
-      "path": "/vue/.env",
+      "path": "/.env.dev",
       "views": 9
     },
     {
-      "path": "/ci/.env",
+      "path": "/backup/.env",
+      "views": 9
+    },
+    {
+      "path": "/google-credentials.json",
       "views": 8
     },
     {
@@ -222,19 +216,19 @@
       "views": 8
     },
     {
-      "path": "/app/.env",
+      "path": "/.env.backup",
       "views": 8
     },
     {
-      "path": "/user-panel/.env",
+      "path": "/wp-login.php",
       "views": 8
     },
     {
-      "path": "/.env",
+      "path": "/panel/.env",
       "views": 8
     },
     {
-      "path": "/.env.dev",
+      "path": "/vue/.env",
       "views": 8
     }
   ]
