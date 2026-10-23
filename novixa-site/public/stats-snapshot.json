@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-23T17:11:39.285Z",
+  "generatedAt": "2026-10-23T21:26:41.646Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
     "todayVisitors": 0,
     "todayPageViews": 0,
     "todayRequests": 0,
-    "last24hVisitors": 156,
-    "last24hPageViews": 1311,
-    "last24hRequests": 1954
+    "last24hVisitors": 149,
+    "last24hPageViews": 863,
+    "last24hRequests": 1203
   },
   "hourly": [
-    {
-      "time": "2026-10-22T18:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-22T19:00:00Z",
-      "visitors": 7,
-      "requests": 13
-    },
-    {
-      "time": "2026-10-22T20:00:00Z",
-      "visitors": 9,
-      "requests": 868
-    },
-    {
-      "time": "2026-10-22T21:00:00Z",
-      "visitors": 8,
-      "requests": 10
-    },
     {
       "time": "2026-10-22T22:00:00Z",
       "visitors": 6,
@@ -128,8 +108,28 @@
     },
     {
       "time": "2026-10-23T17:00:00Z",
-      "visitors": 2,
+      "visitors": 5,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-23T18:00:00Z",
+      "visitors": 5,
+      "requests": 126
+    },
+    {
+      "time": "2026-10-23T19:00:00Z",
+      "visitors": 3,
       "requests": 7
+    },
+    {
+      "time": "2026-10-23T20:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-23T21:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -165,71 +165,71 @@
     },
     {
       "date": "2026-10-23",
-      "visitors": 127,
-      "pageViews": 673,
-      "requests": 954
+      "visitors": 142,
+      "pageViews": 778,
+      "requests": 1099
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 94
+      "views": 80
     },
     {
       "path": "/vi/",
-      "views": 43
+      "views": 34
     },
     {
       "path": "/robots.txt",
-      "views": 33
+      "views": 31
     },
     {
       "path": "/.git/config",
-      "views": 19
+      "views": 17
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 14
-    },
-    {
-      "path": "/magento/.env",
       "views": 13
     },
     {
-      "path": "/.env",
+      "path": "/blogs/media/media/cache.php",
       "views": 11
     },
     {
+      "path": "/.env",
+      "views": 8
+    },
+    {
+      "path": "/home/*/.aws/credentials",
+      "views": 7
+    },
+    {
+      "path": "/s3/.env.bak",
+      "views": 6
+    },
+    {
       "path": "/.env.dev",
-      "views": 9
-    },
-    {
-      "path": "/backup/.env",
-      "views": 9
-    },
-    {
-      "path": "/google-credentials.json",
-      "views": 8
-    },
-    {
-      "path": "/mail/phpinfo.php",
-      "views": 8
+      "views": 6
     },
     {
       "path": "/.env.backup",
-      "views": 8
+      "views": 6
     },
     {
       "path": "/wp-login.php",
-      "views": 8
+      "views": 6
     },
     {
-      "path": "/panel/.env",
-      "views": 8
+      "path": "/backup/.env",
+      "views": 5
     },
     {
-      "path": "/vue/.env",
-      "views": 8
+      "path": "/phpinfo.php",
+      "views": 5
+    },
+    {
+      "path": "/.boto",
+      "views": 5
     }
   ]
 }
