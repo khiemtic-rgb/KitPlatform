@@ -1,31 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-23T17:19:38.709Z",
+  "generatedAt": "2026-10-23T21:33:17.258Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 92,
+    "todayVisitors": 18,
+    "todayPageViews": 5,
+    "todayRequests": 28,
+    "last24hVisitors": 90,
     "last24hPageViews": 47,
-    "last24hRequests": 585
+    "last24hRequests": 440
   },
   "hourly": [
-    {
-      "time": "2026-10-22T18:00:00Z",
-      "visitors": 13,
-      "requests": 38
-    },
-    {
-      "time": "2026-10-22T20:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-22T21:00:00Z",
-      "visitors": 2,
-      "requests": 126
-    },
     {
       "time": "2026-10-22T22:00:00Z",
       "visitors": 3,
@@ -110,6 +95,31 @@
       "time": "2026-10-23T16:00:00Z",
       "visitors": 7,
       "requests": 10
+    },
+    {
+      "time": "2026-10-23T17:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-23T18:00:00Z",
+      "visitors": 6,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-23T19:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-23T20:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-23T21:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -145,15 +155,21 @@
     },
     {
       "date": "2026-10-23",
-      "visitors": 74,
-      "pageViews": 41,
-      "requests": 383
+      "visitors": 87,
+      "pageViews": 46,
+      "requests": 411
+    },
+    {
+      "date": "2026-10-24",
+      "visitors": 18,
+      "pageViews": 5,
+      "requests": 28
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 90
+      "views": 87
     },
     {
       "path": "/robots.txt",
@@ -161,7 +177,7 @@
     },
     {
       "path": "/vi/",
-      "views": 39
+      "views": 41
     },
     {
       "path": "/sitemap.xml",
@@ -176,40 +192,40 @@
       "views": 6
     },
     {
-      "path": "/.gitlab-ci.yml",
-      "views": 6
-    },
-    {
-      "path": "/.env.development",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 5
-    },
-    {
-      "path": "/.git/config",
-      "views": 5
-    },
-    {
-      "path": "/dev/.env",
-      "views": 5
-    },
-    {
-      "path": "/laravel/.env",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "path": "/opengraph-image.png",
       "views": 4
     },
     {
-      "path": "//wp2/wp-includes/wlwmanifest.xml",
+      "path": "/opengraph-image",
       "views": 4
     },
     {
-      "path": "/_next/static/chunks/polyfills-42372ed130431b0a.js",
+      "path": "/wp-login.php",
       "views": 4
+    },
+    {
+      "path": "/wp-includes/js/jquery/jquery.js",
+      "views": 4
+    },
+    {
+      "path": "/media/system/js/core.js",
+      "views": 4
+    },
+    {
+      "path": "/twitter-image",
+      "views": 4
+    },
+    {
+      "path": "/twitter-image.png",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 3
+    },
+    {
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 3
     }
   ]
 }
