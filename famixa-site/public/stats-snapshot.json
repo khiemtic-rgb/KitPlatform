@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-24T11:21:06.088Z",
+  "generatedAt": "2026-10-24T16:08:33.171Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 57,
-    "todayPageViews": 24,
-    "todayRequests": 517,
-    "last24hVisitors": 94,
-    "last24hPageViews": 42,
-    "last24hRequests": 619
+    "todayVisitors": 69,
+    "todayPageViews": 28,
+    "todayRequests": 539,
+    "last24hVisitors": 83,
+    "last24hPageViews": 34,
+    "last24hRequests": 572
   },
   "hourly": [
-    {
-      "time": "2026-10-23T12:00:00Z",
-      "visitors": 4,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-23T13:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-23T14:00:00Z",
-      "visitors": 10,
-      "requests": 42
-    },
-    {
-      "time": "2026-10-23T15:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-23T16:00:00Z",
-      "visitors": 7,
-      "requests": 10
-    },
     {
       "time": "2026-10-23T17:00:00Z",
       "visitors": 2,
@@ -125,6 +100,26 @@
       "time": "2026-10-24T11:00:00Z",
       "visitors": 1,
       "requests": 3
+    },
+    {
+      "time": "2026-10-24T12:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-24T13:00:00Z",
+      "visitors": 10,
+      "requests": 13
+    },
+    {
+      "time": "2026-10-24T14:00:00Z",
+      "visitors": 2,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-24T15:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
@@ -166,31 +161,27 @@
     },
     {
       "date": "2026-10-24",
-      "visitors": 83,
-      "pageViews": 30,
-      "requests": 550
+      "visitors": 98,
+      "pageViews": 34,
+      "requests": 572
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 76
-    },
-    {
-      "path": "/vi/",
-      "views": 44
+      "views": 45
     },
     {
       "path": "/robots.txt",
-      "views": 35
+      "views": 34
+    },
+    {
+      "path": "/vi/",
+      "views": 31
     },
     {
       "path": "/sitemap.xml",
       "views": 20
-    },
-    {
-      "path": "/_next/image",
-      "views": 15
     },
     {
       "path": "/database.sql",
@@ -201,7 +192,11 @@
       "views": 13
     },
     {
-      "path": "/media/system/js/core.js",
+      "path": "/images/blog/vi-sao-con-khong-nghe-loi.png",
+      "views": 11
+    },
+    {
+      "path": "/_next/image",
       "views": 6
     },
     {
@@ -209,19 +204,7 @@
       "views": 5
     },
     {
-      "path": "/twitter-image.png",
-      "views": 5
-    },
-    {
-      "path": "/twitter-image",
-      "views": 5
-    },
-    {
       "path": "/sendgrid.env",
-      "views": 5
-    },
-    {
-      "path": "/.env.prod",
       "views": 5
     },
     {
@@ -229,8 +212,20 @@
       "views": 5
     },
     {
-      "path": "/opengraph-image.png",
+      "path": "/.env.prod",
       "views": 5
+    },
+    {
+      "path": "/.env.development",
+      "views": 4
+    },
+    {
+      "path": "/core/.env",
+      "views": 4
+    },
+    {
+      "path": "/.env.dist",
+      "views": 4
     }
   ]
 }
