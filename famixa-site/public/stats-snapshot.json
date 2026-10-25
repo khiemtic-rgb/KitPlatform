@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-25T16:38:21.746Z",
+  "generatedAt": "2026-10-25T21:00:59.902Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 66,
-    "todayPageViews": 22,
-    "todayRequests": 423,
-    "last24hVisitors": 97,
-    "last24hPageViews": 26,
-    "last24hRequests": 477
+    "todayVisitors": 14,
+    "todayPageViews": 2,
+    "todayRequests": 20,
+    "last24hVisitors": 81,
+    "last24hPageViews": 25,
+    "last24hRequests": 454
   },
   "hourly": [
-    {
-      "time": "2026-10-24T17:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-24T18:00:00Z",
-      "visitors": 5,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-24T19:00:00Z",
-      "visitors": 1,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-24T20:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-24T21:00:00Z",
-      "visitors": 27,
-      "requests": 27
-    },
     {
       "time": "2026-10-24T22:00:00Z",
       "visitors": 2,
@@ -128,17 +103,26 @@
     },
     {
       "time": "2026-10-25T16:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-25T18:00:00Z",
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-25T19:00:00Z",
       "visitors": 1,
-      "requests": 1
+      "requests": 2
+    },
+    {
+      "time": "2026-10-25T20:00:00Z",
+      "visitors": 7,
+      "requests": 9
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-19",
-      "visitors": 120,
-      "pageViews": 248,
-      "requests": 1928
-    },
     {
       "date": "2026-10-20",
       "visitors": 286,
@@ -171,34 +155,36 @@
     },
     {
       "date": "2026-10-25",
-      "visitors": 119,
-      "pageViews": 26,
-      "requests": 477
+      "visitors": 80,
+      "pageViews": 25,
+      "requests": 449
+    },
+    {
+      "date": "2026-10-26",
+      "visitors": 14,
+      "pageViews": 2,
+      "requests": 20
     }
   ],
   "topPages": [
+    {
+      "path": "/robots.txt",
+      "views": 39
+    },
     {
       "path": "/",
       "views": 39
     },
     {
-      "path": "/robots.txt",
-      "views": 38
-    },
-    {
       "path": "/vi/",
-      "views": 23
+      "views": 24
     },
     {
       "path": "/sitemap.xml",
-      "views": 19
+      "views": 20
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 5
-    },
-    {
-      "path": "/.env",
       "views": 5
     },
     {
@@ -218,7 +204,7 @@
       "views": 3
     },
     {
-      "path": "/_next/image",
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 3
     },
     {
@@ -226,15 +212,19 @@
       "views": 3
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 3
-    },
-    {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "views": 3
     },
     {
-      "path": "/nuxt/.env",
+      "path": "/_next/image",
+      "views": 3
+    },
+    {
+      "path": "/images/blog/10-sai-lam-pho-bien-khi-nuoi-day-con.png",
+      "views": 2
+    },
+    {
+      "path": "/admin/.env",
       "views": 2
     }
   ]
