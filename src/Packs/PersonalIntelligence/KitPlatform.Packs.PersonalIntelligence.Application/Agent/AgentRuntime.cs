@@ -106,6 +106,14 @@ public sealed class AgentRunConflictException : InvalidOperationException
     }
 }
 
+public sealed class AgentTenantMismatchException : InvalidOperationException
+{
+    public AgentTenantMismatchException()
+        : base("The task key belongs to another tenant.")
+    {
+    }
+}
+
 public interface IAgentRunLog
 {
     AgentTaskReceipt? Find(string taskKey);
@@ -124,6 +132,8 @@ public sealed class MemoryAgentRunLog : IAgentRunLog
     {
         if (_runs.TryGetValue(receipt.TaskKey, out var existing))
         {
+            if (existing.TenantId != receipt.TenantId)
+                throw new AgentTenantMismatchException();
             if (!string.Equals(existing.PayloadHash, receipt.PayloadHash, StringComparison.Ordinal))
                 throw new AgentRunConflictException();
             return;
@@ -240,6 +250,8 @@ public sealed class AgentRuntime
         var existing = log.Find(request.TaskKey);
         if (existing is not null)
         {
+            if (existing.TenantId != request.TenantId)
+                throw new AgentTenantMismatchException();
             if (!string.Equals(existing.PayloadHash, request.PayloadHash, StringComparison.Ordinal))
                 throw new AgentRunConflictException();
             return existing with { Replayed = true };

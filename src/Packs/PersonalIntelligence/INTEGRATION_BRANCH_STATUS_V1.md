@@ -1,6 +1,6 @@
 # Second Brain integration branch — status V1
 
-Date: 2026-10-26. This file describes the branch `integrate/second-brain-20261026` only. It is not a production deployment record and it does not authorize a merge to `main`.
+Date: 2026-10-26. This file describes the branch `integrate/second-brain-20261026`. It is not a production deployment record. Pull request 7 merged Agent Runtime V1 onto `origin/main` at `2b870c4a`. The local ref `main` remains `8c59ceb4`.
 
 ## Base and source
 
@@ -233,3 +233,13 @@ The fixed `workflow-poc` run stores outcome `approval_required`, autonomy `recom
 `AgentRuntime` checks task transitions, dispatches tools only after permission, tenant, effect, and approval checks, and returns the first receipt for the same task key and payload hash. `TradingResearchRuntime` is the trading tool host. The fixed `workflow-poc` task ends `AwaitingApproval`, with recommendation outcome `approval_required`, research fill count 2, and `recommendationExecuted` false. A live proposal is rejected inside the execute tool even when an approval object is present. The task trace is stored on the existing research snapshot.
 
 After these tests were added, `KitPlatform.PersonalIntelligence.Tests` passed 204 of 204 and `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` finished with 0 errors. No worker was started and no migration was run. The local steps are in `AGENT-RUNTIME-V1.md`.
+
+## Runtime merge and task storage
+
+Before the merge, at `c63f57b0`, the runtime filter passed 9 of 9, the Personal Intelligence suite passed 204 of 204, and the API build finished with 0 errors and 48 warnings. `origin/main` had moved to `4399cc80` by two generated stats snapshots, `ce6ff278` and `4399cc80`. Those files do not overlap the runtime. The branch merged them as `e3abaf50`, and the suite passed 204 of 204 on that tree. Pull request 7 merged to `origin/main` `2b870c4a`. That commit has the same tree as `e3abaf50`. Local `main` was not moved.
+
+The merged runtime log is `MemoryAgentRunLog`. It does not survive a process restart. `pi_operation` stays the trading-loop receipt and is deserialized as `TradingLoopResult`, so it is not the task store. `AgentTaskTrace` on the research snapshot does not carry the payload hash, step results, or a tenant, and `AgentRuntime` does not load it. No tenant column was added to `research_trading`. No migration was run.
+
+A file-reload prototype on this branch, after `2b870c4a`, passed 7 tests by reading the receipt into a new log instance. Same payload replays, a different payload conflicts, approval wait and failure details remain, a completed task does not run again, another tenant is refused, and a live tool is still rejected. That file is a test double. It is not SQL, and a database restart test has not passed. The proposed `pi_agent_task` table is described in `AGENT-RUNTIME-V1.md` and was not created.
+
+After the prototype tests, `KitPlatform.PersonalIntelligence.Tests` passed 211 of 211 and the API build again finished with 0 errors and 48 warnings. `Program.cs` still does not register the runtime or start a worker. The prototype commit is on the integration branch and is not the commit merged by pull request 7.
