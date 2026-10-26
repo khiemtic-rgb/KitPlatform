@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-26T13:22:45.484Z",
+  "generatedAt": "2026-10-26T22:47:55.165Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 112,
-    "todayPageViews": 27,
-    "todayRequests": 312,
-    "last24hVisitors": 145,
-    "last24hPageViews": 37,
-    "last24hRequests": 390
+    "todayVisitors": 70,
+    "todayPageViews": 10,
+    "todayRequests": 157,
+    "last24hVisitors": 192,
+    "last24hPageViews": 66,
+    "last24hRequests": 583
   },
   "hourly": [
-    {
-      "time": "2026-10-25T14:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-25T15:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-25T16:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-25T18:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-25T19:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-25T20:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-25T21:00:00Z",
-      "visitors": 13,
-      "requests": 13
-    },
-    {
-      "time": "2026-10-25T22:00:00Z",
-      "visitors": 5,
-      "requests": 26
-    },
     {
       "time": "2026-10-25T23:00:00Z",
       "visitors": 3,
@@ -123,17 +83,56 @@
     },
     {
       "time": "2026-10-26T13:00:00Z",
-      "visitors": 16,
-      "requests": 85
+      "visitors": 17,
+      "requests": 104
+    },
+    {
+      "time": "2026-10-26T14:00:00Z",
+      "visitors": 9,
+      "requests": 19
+    },
+    {
+      "time": "2026-10-26T15:00:00Z",
+      "visitors": 6,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-26T16:00:00Z",
+      "visitors": 12,
+      "requests": 60
+    },
+    {
+      "time": "2026-10-26T17:00:00Z",
+      "visitors": 6,
+      "requests": 47
+    },
+    {
+      "time": "2026-10-26T18:00:00Z",
+      "visitors": 52,
+      "requests": 75
+    },
+    {
+      "time": "2026-10-26T19:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-26T20:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-26T21:00:00Z",
+      "visitors": 6,
+      "requests": 28
+    },
+    {
+      "time": "2026-10-26T22:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-20",
-      "visitors": 286,
-      "pageViews": 111,
-      "requests": 1264
-    },
     {
       "date": "2026-10-21",
       "visitors": 145,
@@ -166,54 +165,68 @@
     },
     {
       "date": "2026-10-26",
-      "visitors": 156,
-      "pageViews": 35,
-      "requests": 376
+      "visitors": 191,
+      "pageViews": 65,
+      "requests": 578
+    },
+    {
+      "date": "2026-10-27",
+      "visitors": 70,
+      "pageViews": 10,
+      "requests": 157
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 71
+      "views": 70
     },
     {
       "path": "/robots.txt",
-      "views": 46
+      "views": 52
     },
     {
       "path": "/vi/",
-      "views": 28
+      "views": 32
     },
     {
       "path": "/sitemap.xml",
-      "views": 19
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 8
+      "views": 21
     },
     {
       "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
-      "views": 7
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 7
-    },
-    {
-      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 7
+      "views": 14
     },
     {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 7
+      "views": 13
+    },
+    {
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 13
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 13
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 7
+      "views": 12
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 12
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 12
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/huong-dan/%5Bslug%5D/page-2d062270f9ff84b4.js",
+      "views": 8
+    },
+    {
+      "path": "/images/logo-famixa-icon.png",
       "views": 7
     },
     {
@@ -221,16 +234,8 @@
       "views": 6
     },
     {
-      "path": "/vi/huong-dan/lich-hom-nay",
-      "views": 5
-    },
-    {
-      "path": "/images/logo-famixa-icon.png",
-      "views": 5
-    },
-    {
       "path": "/wp-login.php",
-      "views": 4
+      "views": 6
     }
   ]
 }
