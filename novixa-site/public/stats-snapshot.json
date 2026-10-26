@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-26T13:08:40.086Z",
+  "generatedAt": "2026-10-26T22:42:03.123Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 95,
-    "todayPageViews": 430,
-    "todayRequests": 654,
-    "last24hVisitors": 151,
-    "last24hPageViews": 1169,
-    "last24hRequests": 1460
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 138,
+    "last24hPageViews": 839,
+    "last24hRequests": 1706
   },
   "hourly": [
-    {
-      "time": "2026-10-25T14:00:00Z",
-      "visitors": 12,
-      "requests": 290
-    },
-    {
-      "time": "2026-10-25T15:00:00Z",
-      "visitors": 7,
-      "requests": 286
-    },
-    {
-      "time": "2026-10-25T16:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-25T17:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-25T18:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-25T19:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-25T20:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-25T21:00:00Z",
-      "visitors": 11,
-      "requests": 17
-    },
-    {
-      "time": "2026-10-25T22:00:00Z",
-      "visitors": 8,
-      "requests": 179
-    },
     {
       "time": "2026-10-25T23:00:00Z",
       "visitors": 3,
@@ -125,15 +80,59 @@
       "time": "2026-10-26T12:00:00Z",
       "visitors": 8,
       "requests": 22
+    },
+    {
+      "time": "2026-10-26T13:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-26T14:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-26T15:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-26T16:00:00Z",
+      "visitors": 10,
+      "requests": 125
+    },
+    {
+      "time": "2026-10-26T17:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-26T18:00:00Z",
+      "visitors": 8,
+      "requests": 285
+    },
+    {
+      "time": "2026-10-26T19:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-26T20:00:00Z",
+      "visitors": 4,
+      "requests": 285
+    },
+    {
+      "time": "2026-10-26T21:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-26T22:00:00Z",
+      "visitors": 14,
+      "requests": 338
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-20",
-      "visitors": 118,
-      "pageViews": 618,
-      "requests": 985
-    },
     {
       "date": "2026-10-21",
       "visitors": 198,
@@ -166,23 +165,23 @@
     },
     {
       "date": "2026-10-26",
-      "visitors": 95,
-      "pageViews": 430,
-      "requests": 654
+      "visitors": 137,
+      "pageViews": 839,
+      "requests": 1703
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 135
+      "views": 123
     },
     {
       "path": "/vi/",
-      "views": 52
+      "views": 47
     },
     {
       "path": "/robots.txt",
-      "views": 35
+      "views": 38
     },
     {
       "path": "/sitemap-index.xml",
@@ -193,44 +192,44 @@
       "views": 10
     },
     {
-      "path": "/.env.old",
-      "views": 8
+      "path": "/.git/config",
+      "views": 10
     },
     {
-      "path": "/api/v2/.env",
-      "views": 6
+      "path": "/phpinfo.php",
+      "views": 10
     },
     {
-      "path": "/mandrill/.env",
-      "views": 6
+      "path": "/gcp/credentials.json",
+      "views": 10
     },
     {
-      "path": "/assets/.env",
-      "views": 6
+      "path": "/.env.dev",
+      "views": 9
     },
     {
       "path": "/.env.save",
-      "views": 6
+      "views": 9
     },
     {
-      "path": "/vi/nha-thuoc/",
-      "views": 6
+      "path": "/.env.old",
+      "views": 9
     },
     {
-      "path": "/var/www/.env",
-      "views": 5
-    },
-    {
-      "path": "/core/app/.env",
-      "views": 5
-    },
-    {
-      "path": "/dashboard/.env",
-      "views": 5
+      "path": "/api/v2/.env",
+      "views": 9
     },
     {
       "path": "/.env.backup",
-      "views": 5
+      "views": 9
+    },
+    {
+      "path": "/service-account.json",
+      "views": 9
+    },
+    {
+      "path": "/backend/.env",
+      "views": 8
     }
   ]
 }
