@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using KitPlatform.Packs.PersonalIntelligence.Agent;
 
 namespace KitPlatform.Packs.PersonalIntelligence.Trading;
 
@@ -56,7 +57,8 @@ public sealed record ResearchSnapshot(
     IReadOnlyList<StoredSignal> SignalsRecorded,
     IReadOnlyList<StoredFill> Fills,
     IReadOnlyList<ResearchRiskDecision> RiskDecisions,
-    ExecutionReceipt? Receipt = null);
+    ExecutionReceipt? Receipt = null,
+    AgentTaskTrace? TaskTrace = null);
 
 public sealed record ResearchReport(
     string Status,
