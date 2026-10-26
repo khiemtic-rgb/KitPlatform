@@ -17,6 +17,7 @@ public sealed class ResearchOnlyControllerConvention : IApplicationModelConventi
         var hidden = application.Controllers
             .Where(controller => controller.ControllerType.Assembly == packAssembly
                 && controller.ControllerType != typeof(ResearchPublicationController)
+                && controller.ControllerType != typeof(AgentTaskController)
                 && !(_exposeExchangeRead && controller.ControllerType == typeof(TradingExchangeController)))
             .ToList();
         foreach (var controller in hidden)

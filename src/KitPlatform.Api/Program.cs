@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using KitPlatform.Api.Authorization;
+using KitPlatform.Api.Controllers.PersonalIntelligence;
 using KitPlatform.Application.Configuration;
 using KitPlatform.Application.CustomerApp;
 using KitPlatform.Packs.Pharmacy.Rx;
@@ -146,6 +147,7 @@ catch (Exception ex) when (
 }
 builder.Services.AddContentPack(builder.Configuration);
 builder.Services.AddPersonalIntelligenceResearch();
+builder.Services.AddAgentTasks(builder.Configuration);
 if (builder.Configuration.GetValue("PersonalIntelligence:ExposeExchangeRead", false))
     builder.Services.AddPersonalIntelligencePack(startBackfillWorker: false);
 builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions>(

@@ -1,6 +1,6 @@
 # Second Brain integration branch — status V1
 
-Date: 2026-10-26. This file describes the branch `integrate/second-brain-20261026` only. It is not a production deployment record and it does not authorize a merge to `main`.
+Date: 2026-10-26. This file describes the branch `integrate/second-brain-20261026`. It is not a production deployment record. Pull request 7 merged Agent Runtime V1 onto `origin/main` at `2b870c4a`. The local ref `main` remains `8c59ceb4`.
 
 ## Base and source
 
@@ -233,3 +233,35 @@ The fixed `workflow-poc` run stores outcome `approval_required`, autonomy `recom
 `AgentRuntime` checks task transitions, dispatches tools only after permission, tenant, effect, and approval checks, and returns the first receipt for the same task key and payload hash. `TradingResearchRuntime` is the trading tool host. The fixed `workflow-poc` task ends `AwaitingApproval`, with recommendation outcome `approval_required`, research fill count 2, and `recommendationExecuted` false. A live proposal is rejected inside the execute tool even when an approval object is present. The task trace is stored on the existing research snapshot.
 
 After these tests were added, `KitPlatform.PersonalIntelligence.Tests` passed 204 of 204 and `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` finished with 0 errors. No worker was started and no migration was run. The local steps are in `AGENT-RUNTIME-V1.md`.
+
+## Runtime merge and task storage
+
+Before the merge, at `c63f57b0`, the runtime filter passed 9 of 9, the Personal Intelligence suite passed 204 of 204, and the API build finished with 0 errors and 48 warnings. `origin/main` had moved to `4399cc80` by two generated stats snapshots, `ce6ff278` and `4399cc80`. Those files do not overlap the runtime. The branch merged them as `e3abaf50`, and the suite passed 204 of 204 on that tree. Pull request 7 merged to `origin/main` `2b870c4a`. That commit has the same tree as `e3abaf50`. Local `main` was not moved.
+
+The merged runtime log is `MemoryAgentRunLog`. It does not survive a process restart. `pi_operation` stays the trading-loop receipt and is deserialized as `TradingLoopResult`, so it is not the task store. `AgentTaskTrace` on the research snapshot does not carry the payload hash, step results, or a tenant, and `AgentRuntime` does not load it. No tenant column was added to `research_trading`. No migration was run.
+
+A file-reload prototype on this branch, after `2b870c4a`, passed 7 tests by reading the receipt into a new log instance. Same payload replays, a different payload conflicts, approval wait and failure details remain, a completed task does not run again, another tenant is refused, and a live tool is still rejected. That file is a test double. It is not SQL, and a database restart test has not passed. The proposed `pi_agent_task` table is described in `AGENT-RUNTIME-V1.md` and was not created.
+
+After the prototype tests, `KitPlatform.PersonalIntelligence.Tests` passed 211 of 211 and the API build again finished with 0 errors and 48 warnings. `Program.cs` still does not register the runtime or start a worker. The prototype commit is on the integration branch and is not the commit merged by pull request 7.
+
+## PostgreSQL task log
+
+Migration `399_pack_personal_intelligence_agent_task_v1.sql` adds `pack_personal_intelligence.pi_agent_task`. It is not on a deploy manifest. It was applied only to the new database `kit_pi_agent_task` on `127.0.0.1:5433`. Checks after that apply: `kit_pi_validation` has no `pi_agent_task`, `trading_agent` has no `pi_agent_task`, and `kit_pi_agent_task` has the table. `research_trading` was not given a tenant column.
+
+`PostgresAgentRunLog` claims a row before tools run, writes the receipt after each step, and refuses a stale revision. A separate probe process exits after the first committed step. The test process reads that row as `Running`, not `Completed`, and does not call the tool. A tool that returned but was not committed is not retried and is not exactly-once. `Program.cs` still has no task endpoint and no worker.
+
+After these tests, `KitPlatform.PersonalIntelligence.Tests` passed 224 of 224 and `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` finished with 0 errors and 48 warnings. This commit is not on `origin/main`.
+
+## Product task API
+
+The authenticated routes are `POST /api/personal-intelligence/tasks` and `GET /api/personal-intelligence/tasks/{taskKey}`. They use the platform JWT, the `tenant_id` claim, database-backed permissions, and the personal-intelligence module filter. The contract, lifecycle, and configuration are in `AGENT-RUNTIME-V1.md`.
+
+Migration `400` only adds `ReconciliationRequired` to the task status check. The fixture applies it on `kit_pi_agent_task`. It is not on a deploy manifest and it refuses `kit_pi_validation`. An uncertain tool result is stored as `ReconciliationRequired` and is not retried or marked `Completed`.
+
+Measured on this tree, with `KIT_PI_TEST_CONNECTION` pointed at `kit_pi_validation` on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 11 passed, 0 failed. The unapproved paper task stays `AwaitingApproval`. The approved paper task reaches `paper_executed`. The approved live mode is `Failed` and `liveAccepted` stays false. Tenant B cannot read tenant A's task. Two concurrent posts leave one row. A second host reads the waiting row. Port `5432` as the task store returns 503 without opening it.
+- `KitPlatform.PersonalIntelligence.Tests`: 226 passed, 0 failed. This includes the PostgreSQL task log, the separate-process probe, and the reconciliation tests.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No worker is registered by `AddAgentTasks`. No live order is sent. `origin/main` is unchanged until the pull request for this commit is merged. Local `main` stays `8c59ceb4`.

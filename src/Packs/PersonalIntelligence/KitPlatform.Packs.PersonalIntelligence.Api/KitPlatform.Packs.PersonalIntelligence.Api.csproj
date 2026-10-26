@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KitPlatform.Packs.PersonalIntelligence.Infrastructure\KitPlatform.Packs.PersonalIntelligence.Infrastructure.csproj" />
+    <ProjectReference Include="..\KitPlatform.Packs.PersonalIntelligence.ResearchHost\KitPlatform.Packs.PersonalIntelligence.ResearchHost.csproj" />
     <ProjectReference Include="..\..\..\KitPlatform.Application\KitPlatform.Application.csproj" />
   </ItemGroup>
 

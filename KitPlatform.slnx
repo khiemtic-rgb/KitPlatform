@@ -21,6 +21,7 @@
   <Project Path="src/Packs/PersonalIntelligence/KitPlatform.Packs.PersonalIntelligence.PaperHost/KitPlatform.Packs.PersonalIntelligence.PaperHost.csproj" />
   <Project Path="tests/KitPlatform.Application.Tests/KitPlatform.Application.Tests.csproj" />
   <Project Path="tests/KitPlatform.PersonalIntelligence.Tests/KitPlatform.PersonalIntelligence.Tests.csproj" />
+  <Project Path="tests/KitPlatform.PersonalIntelligence.ApiTests/KitPlatform.PersonalIntelligence.ApiTests.csproj" />
   <Project Path="tests/KitPlatform.Platform.Tests/KitPlatform.Platform.Tests.csproj" />
   <Project Path="tests/KitPlatform.Api.Tests/KitPlatform.Api.Tests.csproj" />
 </Solution>

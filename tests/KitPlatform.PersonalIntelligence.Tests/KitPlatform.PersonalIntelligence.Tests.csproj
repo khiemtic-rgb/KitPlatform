@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\src\Packs\PersonalIntelligence\KitPlatform.Packs.PersonalIntelligence.ResearchDashboard\KitPlatform.Packs.PersonalIntelligence.ResearchDashboard.csproj" />
     <ProjectReference Include="..\..\src\Packs\PersonalIntelligence\KitPlatform.Packs.PersonalIntelligence.Infrastructure\KitPlatform.Packs.PersonalIntelligence.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Packs\PersonalIntelligence\KitPlatform.Packs.PersonalIntelligence.Api\KitPlatform.Packs.PersonalIntelligence.Api.csproj" />
+    <ProjectReference Include="..\KitPlatform.PersonalIntelligence.AgentTaskProbe\KitPlatform.PersonalIntelligence.AgentTaskProbe.csproj" />
   </ItemGroup>
 
 </Project>

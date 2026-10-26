@@ -1,0 +1,297 @@
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using KitPlatform.Api.Authorization;
+using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Core;
+using KitPlatform.Packs.PersonalIntelligence.Agent;
+using KitPlatform.Packs.PersonalIntelligence.ResearchHost;
+using KitPlatform.Packs.PersonalIntelligence.Trading;
+using Npgsql;
+
+namespace KitPlatform.Api.Controllers.PersonalIntelligence;
+
+public sealed class AgentRuntimeOptions
+{
+    public const string SectionName = "AgentRuntime";
+    public string? TaskConnection { get; set; }
+    public string? ResearchConnection { get; set; }
+}
+
+public sealed class AgentTaskCommand
+{
+    public string TaskKey { get; set; } = "";
+    public string Objective { get; set; } = "";
+    public string DoneWhen { get; set; } = "";
+    public string Kind { get; set; } = "";
+    public string? ExecutionMode { get; set; }
+    public Guid? ApprovalDecisionId { get; set; }
+    public Guid? RequestedTenantId { get; set; }
+}
+
+public sealed record AgentTaskView(
+    string TaskKey,
+    string PayloadHash,
+    Guid TenantId,
+    string Status,
+    string? Outcome,
+    int ResearchFillCount,
+    bool RecommendationExecuted,
+    bool LiveAccepted,
+    bool Replayed,
+    bool ApprovalRecorded,
+    string? Error,
+    IReadOnlyList<string> Evidence,
+    IReadOnlyList<AgentTaskStepView> Steps);
+
+public sealed record AgentTaskStepView(string StepId, string ToolName, string Status, string Summary, string? Error);
+
+public sealed class AgentTaskUnavailableException : InvalidOperationException
+{
+    public AgentTaskUnavailableException(string message) : base(message) { }
+}
+
+public static class AgentTaskServiceCollectionExtensions
+{
+    public static IServiceCollection AddAgentTasks(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<AgentRuntimeOptions>(configuration.GetSection(AgentRuntimeOptions.SectionName));
+        services.AddScoped<AgentTaskService>();
+        return services;
+    }
+}
+
+public sealed class AgentTaskService
+{
+    public const string TradingPaperKind = "trading-paper";
+    private readonly ITenantContext _tenant;
+    private readonly AgentRuntimeOptions _options;
+
+    public AgentTaskService(ITenantContext tenant, IOptions<AgentRuntimeOptions> options)
+    {
+        _tenant = tenant;
+        _options = options.Value;
+    }
+
+    public AgentTaskView RunTrading(ClaimsPrincipal user, AgentTaskCommand command)
+    {
+        var tenantId = CallerTenant(user, command.RequestedTenantId);
+        var taskKey = RequireText(command.TaskKey, "A task key is required.");
+        var objective = RequireText(command.Objective, "An objective is required.");
+        var doneWhen = RequireText(command.DoneWhen, "A completion criterion is required.");
+        if (!string.Equals(command.Kind, TradingPaperKind, StringComparison.Ordinal))
+            throw new InvalidOperationException("This host accepts only the trading-paper task.");
+        var mode = NormalizeMode(command.ExecutionMode);
+        var approval = Approval(user, command.ApprovalDecisionId);
+        var request = new AgentRequest(
+            taskKey,
+            PayloadHash(objective, doneWhen, mode, approval?.DecisionId),
+            tenantId,
+            objective,
+            doneWhen,
+            Grants(user),
+            TradingResearchRuntime.Plan,
+            approval,
+            command.RequestedTenantId);
+        var proposal = new TradeProposal("BTCUSDT", "BUY", 0.001m, 100m, 1m, 0.8m, mode);
+        var limits = new RiskLimits(1_000m, 1m, 0.5m);
+        var intake = ResearchCandles.Classify(
+            TradingResearchRuntime.FixedPaperCandles(),
+            TradingResearchRuntime.FixedPaperCandles().Last().CloseTime,
+            TimeSpan.FromDays(30));
+        var config = new ResearchConfig(
+            0.001m,
+            0.8m,
+            10_000m,
+            new PaperSessionConfig(10m, 0.001m, 0m, 1m, limits, 5_000m, false));
+        using var research = OpenResearch();
+        using var log = OpenTasks(tenantId);
+        var result = new TradingResearchRuntime().Execute(
+            new TradingResearchRequest(
+                request,
+                intake,
+                config,
+                research,
+                research,
+                proposal,
+                limits,
+                ["The next bar is not known."],
+                TradingResearchRuntime.FixedPaperRecordedAt),
+            log);
+        return ToView(result.Task);
+    }
+
+    public AgentTaskView? Find(ClaimsPrincipal user, string taskKey)
+    {
+        var tenantId = CallerTenant(user, null);
+        using var log = OpenTasks(tenantId);
+        var receipt = log.Find(taskKey);
+        return receipt is null ? null : ToView(receipt);
+    }
+
+    private Guid CallerTenant(ClaimsPrincipal user, Guid? requestedTenantId)
+    {
+        var claimTenant = CoreAuthority.RequireTenantId(user);
+        if (_tenant.TenantId != claimTenant)
+            throw new UnauthorizedAccessException("Tenant context does not match the caller.");
+        if (requestedTenantId is Guid requested)
+            CoreAuthority.RejectTenantSwitch(claimTenant, requested);
+        return claimTenant;
+    }
+
+    private PostgresAgentRunLog OpenTasks(Guid tenantId)
+    {
+        var connection = RequireConnection(_options.TaskConnection, "The task store is not configured.");
+        RefuseSharedPort(connection);
+        return new PostgresAgentRunLog(connection, tenantId);
+    }
+
+    private SqlResearchStore OpenResearch()
+    {
+        var connection = RequireConnection(_options.ResearchConnection, "The research ledger is not configured.");
+        var builder = new NpgsqlConnectionStringBuilder(connection);
+        RefuseSharedPort(connection);
+        if (!string.Equals(builder.Database, "trading_agent", StringComparison.Ordinal))
+            throw new AgentTaskUnavailableException("The research ledger is not the isolated trading_agent database.");
+        using var probe = new NpgsqlConnection(builder.ConnectionString);
+        probe.Open();
+        using var command = new NpgsqlCommand("SELECT current_database(), inet_server_port()", probe);
+        using var reader = command.ExecuteReader();
+        reader.Read();
+        if (!string.Equals(reader.GetString(0), "trading_agent", StringComparison.Ordinal) || reader.GetInt32(1) == 5432)
+            throw new AgentTaskUnavailableException("The research ledger connection was refused.");
+        return new SqlResearchStore(builder.ConnectionString);
+    }
+
+    private static string RequireConnection(string? value, string message)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new AgentTaskUnavailableException(message);
+        return value;
+    }
+
+    private static void RefuseSharedPort(string connection)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(connection);
+        if (builder.Port == 5432)
+            throw new AgentTaskUnavailableException("Refusing the shared PostgreSQL port.");
+    }
+
+    private static ExecutionApproval? Approval(ClaimsPrincipal user, Guid? decisionId)
+    {
+        if (decisionId is not Guid id || id == Guid.Empty)
+            return null;
+        var allowed = user.IsInRole("ADMIN") || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.ApprovePermission);
+        if (!allowed)
+            throw new UnauthorizedAccessException("Paper approval requires the personal_intelligence.trading.approve permission.");
+        return new ExecutionApproval(id, CoreAuthority.RequireUserId(user).ToString("D"));
+    }
+
+    private static IReadOnlyList<string> Grants(ClaimsPrincipal user)
+    {
+        var admin = user.IsInRole("ADMIN");
+        var granted = new List<string>();
+        if (admin || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.ResearchReadPermission) || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.Permission))
+            granted.Add(TradingResearchRuntime.ResearchPermission);
+        if (admin || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.Permission))
+            granted.Add(TradingResearchRuntime.RunPermission);
+        if (admin || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.ApprovePermission))
+            granted.Add(TradingResearchRuntime.ApprovePermission);
+        return granted;
+    }
+
+    private static string PayloadHash(string objective, string doneWhen, ExecutionMode mode, Guid? approvalId)
+    {
+        var text = string.Join('\n', TradingPaperKind, objective, doneWhen, mode, approvalId?.ToString("D") ?? "");
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
+    }
+
+    private static ExecutionMode NormalizeMode(string? mode)
+    {
+        if (string.IsNullOrWhiteSpace(mode) || string.Equals(mode, "paper", StringComparison.OrdinalIgnoreCase))
+            return ExecutionMode.Paper;
+        if (string.Equals(mode, "live", StringComparison.OrdinalIgnoreCase))
+            return ExecutionMode.Live;
+        throw new InvalidOperationException("Execution mode must be paper or live.");
+    }
+
+    private static string RequireText(string value, string message)
+    {
+        var text = value.Trim();
+        if (text.Length is 0 or > 200)
+            throw new InvalidOperationException(message);
+        return text;
+    }
+
+    private static AgentTaskView ToView(AgentTaskReceipt receipt)
+        => new(
+            receipt.TaskKey,
+            receipt.PayloadHash,
+            receipt.TenantId,
+            receipt.Status.ToString(),
+            receipt.Outcome,
+            receipt.ResearchFillCount,
+            receipt.RecommendationExecuted,
+            receipt.LiveAccepted,
+            receipt.Replayed,
+            receipt.ApprovalRecorded,
+            receipt.Error,
+            receipt.EvidenceRefs,
+            receipt.Steps.Select(step => new AgentTaskStepView(step.StepId, step.ToolName, step.Status.ToString(), step.Summary, step.Error)).ToArray());
+}
+
+[ApiController]
+[Route("api/personal-intelligence/tasks")]
+public sealed class AgentTaskController : ControllerBase
+{
+    private readonly AgentTaskService _tasks;
+
+    public AgentTaskController(AgentTaskService tasks) => _tasks = tasks;
+
+    [HttpPost]
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
+    [RequirePersonalIntelligenceModule]
+    public ActionResult<AgentTaskView> Create([FromBody] AgentTaskCommand command)
+    {
+        try
+        {
+            return Ok(_tasks.RunTrading(User, command));
+        }
+        catch (Exception ex)
+        {
+            return Map(ex);
+        }
+    }
+
+    [HttpGet("{taskKey}")]
+    [Authorize(Policy = PersonalIntelligencePolicies.ResearchRead)]
+    [RequirePersonalIntelligenceModule]
+    public ActionResult<AgentTaskView> Get(string taskKey)
+    {
+        try
+        {
+            var receipt = _tasks.Find(User, taskKey);
+            return receipt is null ? NotFound(new { message = "The task was not found." }) : Ok(receipt);
+        }
+        catch (Exception ex)
+        {
+            return Map(ex);
+        }
+    }
+
+    private ActionResult Map(Exception exception) => exception switch
+    {
+        AgentTaskUnavailableException => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = exception.Message }),
+        AgentRunConflictException => Conflict(new { message = exception.Message }),
+        AgentTenantMismatchException => StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message }),
+        UnauthorizedAccessException => StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message }),
+        InvalidOperationException => BadRequest(new { message = exception.Message }),
+        _ => throw exception,
+    };
+}

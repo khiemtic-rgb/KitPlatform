@@ -12,6 +12,7 @@ public enum AgentTaskStatus
     Completed,
     Failed,
     Cancelled,
+    ReconciliationRequired,
 }
 
 public enum ToolEffect
@@ -28,6 +29,7 @@ public enum ToolStepStatus
     Denied,
     Rejected,
     Failed,
+    Uncertain,
 }
 
 public sealed record AgentStepSpec(string StepId, string ToolName, string? DependsOn);
@@ -62,6 +64,9 @@ public sealed record ToolResponse(
 
     public static ToolResponse Stop(ToolStepStatus status, string error)
         => new(status, error, new Dictionary<string, string>(), error);
+
+    public static ToolResponse Uncertain(string error)
+        => new(ToolStepStatus.Uncertain, error, new Dictionary<string, string>(), error);
 }
 
 public sealed record AgentStepRecord(
@@ -85,7 +90,11 @@ public sealed record AgentTaskReceipt(
     bool LiveAccepted,
     bool Replayed,
     string? Error,
-    IReadOnlyList<string> EvidenceRefs);
+    IReadOnlyList<string> EvidenceRefs,
+    IReadOnlyList<AgentStepSpec>? Plan = null,
+    bool ApprovalRecorded = false,
+    Guid? ApprovalDecisionId = null,
+    string? ApprovedBy = null);
 
 /// <summary>
 /// Copy of the task outcome stored beside a research snapshot. It is not a second ledger.
@@ -106,30 +115,77 @@ public sealed class AgentRunConflictException : InvalidOperationException
     }
 }
 
+public sealed class AgentTenantMismatchException : InvalidOperationException
+{
+    public AgentTenantMismatchException()
+        : base("The task key belongs to another tenant.")
+    {
+    }
+}
+
 public interface IAgentRunLog
 {
     AgentTaskReceipt? Find(string taskKey);
 
+    /// <summary>
+    /// Inserts the receipt when the key is free and returns null.
+    /// Returns the stored receipt when the key is already present. The caller must not run tools.
+    /// </summary>
+    AgentTaskReceipt? Claim(AgentTaskReceipt receipt);
+
+    /// <summary>
+    /// Replaces the claimed receipt when the tenant and payload hash still match.
+    /// </summary>
     void Remember(AgentTaskReceipt receipt);
 }
 
 public sealed class MemoryAgentRunLog : IAgentRunLog
 {
+    private readonly object _gate = new();
     private readonly Dictionary<string, AgentTaskReceipt> _runs = new(StringComparer.Ordinal);
 
     public AgentTaskReceipt? Find(string taskKey)
-        => _runs.TryGetValue(taskKey, out var receipt) ? receipt : null;
+    {
+        lock (_gate)
+            return _runs.TryGetValue(taskKey, out var receipt) ? receipt : null;
+    }
+
+    public AgentTaskReceipt? Claim(AgentTaskReceipt receipt)
+    {
+        lock (_gate)
+        {
+            if (_runs.TryGetValue(receipt.TaskKey, out var existing))
+            {
+                Reject(existing, receipt);
+                return existing;
+            }
+
+            _runs.Add(receipt.TaskKey, receipt);
+            return null;
+        }
+    }
 
     public void Remember(AgentTaskReceipt receipt)
     {
-        if (_runs.TryGetValue(receipt.TaskKey, out var existing))
+        lock (_gate)
         {
-            if (!string.Equals(existing.PayloadHash, receipt.PayloadHash, StringComparison.Ordinal))
-                throw new AgentRunConflictException();
-            return;
-        }
+            if (_runs.TryGetValue(receipt.TaskKey, out var existing))
+            {
+                Reject(existing, receipt);
+                _runs[receipt.TaskKey] = receipt;
+                return;
+            }
 
-        _runs.Add(receipt.TaskKey, receipt);
+            _runs.Add(receipt.TaskKey, receipt);
+        }
+    }
+
+    private static void Reject(AgentTaskReceipt existing, AgentTaskReceipt incoming)
+    {
+        if (existing.TenantId != incoming.TenantId)
+            throw new AgentTenantMismatchException();
+        if (!string.Equals(existing.PayloadHash, incoming.PayloadHash, StringComparison.Ordinal))
+            throw new AgentRunConflictException();
     }
 }
 
@@ -154,6 +210,7 @@ public static class AgentTaskTransitions
         (AgentTaskStatus.Running, AgentTaskStatus.Verified) => true,
         (AgentTaskStatus.Running, AgentTaskStatus.Failed) => true,
         (AgentTaskStatus.Running, AgentTaskStatus.Cancelled) => true,
+        (AgentTaskStatus.Running, AgentTaskStatus.ReconciliationRequired) => true,
         (AgentTaskStatus.AwaitingApproval, AgentTaskStatus.Running) => true,
         (AgentTaskStatus.AwaitingApproval, AgentTaskStatus.Failed) => true,
         (AgentTaskStatus.AwaitingApproval, AgentTaskStatus.Cancelled) => true,
@@ -239,21 +296,21 @@ public sealed class AgentRuntime
 
         var existing = log.Find(request.TaskKey);
         if (existing is not null)
-        {
-            if (!string.Equals(existing.PayloadHash, request.PayloadHash, StringComparison.Ordinal))
-                throw new AgentRunConflictException();
-            return existing with { Replayed = true };
-        }
+            return Replay(request, existing);
 
         if (request.RequestedTenantId is Guid requested && requested != request.TenantId)
-            return Remember(log, Fail(request, [], "A task cannot switch tenant."));
+            return StoreNew(log, request, Fail(request, [], "A task cannot switch tenant."));
         if (request.Plan.Count is 0 or > MaxSteps)
-            return Remember(log, Fail(request, [], "The plan is empty or longer than the local step budget."));
+            return StoreNew(log, request, Fail(request, [], "The plan is empty or longer than the local step budget."));
         if (request.Plan.Select(step => step.StepId).Distinct(StringComparer.Ordinal).Count() != request.Plan.Count)
-            return Remember(log, Fail(request, [], "Step ids must be unique."));
+            return StoreNew(log, request, Fail(request, [], "Step ids must be unique."));
 
         var status = AgentTaskTransitions.Move(AgentTaskStatus.Received, AgentTaskStatus.Planned);
         status = AgentTaskTransitions.Move(status, AgentTaskStatus.Running);
+        var claimed = StoreNew(log, request, Build(request, status, [], new Dictionary<string, IReadOnlyDictionary<string, string>>(), null, false));
+        if (claimed.Replayed)
+            return claimed;
+
         var records = new List<AgentStepRecord>();
         var outputs = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal);
         var blocked = false;
@@ -270,7 +327,7 @@ public sealed class AgentRuntime
                     records.Add(new AgentStepRecord(step.StepId, step.ToolName, ToolStepStatus.Failed, "The dependency did not succeed.", "dependency"));
                     error = "A later step depended on a step that did not succeed.";
                     status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
-                    break;
+                    return Save(log, Build(request, status, records, outputs, error, false));
                 }
             }
 
@@ -287,11 +344,18 @@ public sealed class AgentRuntime
 
             records.Add(new AgentStepRecord(step.StepId, step.ToolName, response.Status, response.Summary, response.Error));
             outputs[step.StepId] = response.Outputs;
+            if (response.Status == ToolStepStatus.Uncertain)
+            {
+                error = response.Error ?? "The tool effect is unknown and needs reconciliation.";
+                status = AgentTaskTransitions.Move(status, AgentTaskStatus.ReconciliationRequired);
+                return Save(log, Build(request, status, records, outputs, error, false));
+            }
+
             if (response.Status is ToolStepStatus.Denied or ToolStepStatus.Rejected or ToolStepStatus.Failed)
             {
                 error = response.Error;
                 status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
-                break;
+                return Save(log, Build(request, status, records, outputs, error, false));
             }
 
             if (response.Status == ToolStepStatus.Blocked)
@@ -300,8 +364,10 @@ public sealed class AgentRuntime
             {
                 error = "A step finished without verification.";
                 status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
-                break;
+                return Save(log, Build(request, status, records, outputs, error, false));
             }
+
+            Save(log, Build(request, status, records, outputs, error, false));
         }
 
         if (status == AgentTaskStatus.Running && blocked)
@@ -309,16 +375,34 @@ public sealed class AgentRuntime
         else if (status == AgentTaskStatus.Running)
         {
             status = AgentTaskTransitions.Move(status, AgentTaskStatus.Verified);
+            Save(log, Build(request, status, records, outputs, error, false));
             status = AgentTaskTransitions.Move(status, AgentTaskStatus.Completed);
         }
 
         if (status == AgentTaskStatus.Completed && records.Any(row => row.Status != ToolStepStatus.Succeeded))
             throw new InvalidOperationException("A completed task still has an unfinished step.");
 
-        return Remember(log, Build(request, status, records, outputs, error, replayed: false));
+        return Save(log, Build(request, status, records, outputs, error, replayed: false));
     }
 
-    private static AgentTaskReceipt Remember(IAgentRunLog log, AgentTaskReceipt receipt)
+    private static AgentTaskReceipt Replay(AgentRequest request, AgentTaskReceipt existing)
+    {
+        if (existing.TenantId != request.TenantId)
+            throw new AgentTenantMismatchException();
+        if (!string.Equals(existing.PayloadHash, request.PayloadHash, StringComparison.Ordinal))
+            throw new AgentRunConflictException();
+        return existing with { Replayed = true };
+    }
+
+    private static AgentTaskReceipt StoreNew(IAgentRunLog log, AgentRequest request, AgentTaskReceipt receipt)
+    {
+        var existing = log.Claim(receipt);
+        if (existing is null)
+            return receipt;
+        return Replay(request, existing);
+    }
+
+    private static AgentTaskReceipt Save(IAgentRunLog log, AgentTaskReceipt receipt)
     {
         log.Remember(receipt);
         return receipt;
@@ -353,6 +437,10 @@ public sealed class AgentRuntime
             false,
             replayed,
             error,
-            evidence);
+            evidence,
+            request.Plan,
+            request.Approval is not null && request.Approval.DecisionId != Guid.Empty && !string.IsNullOrWhiteSpace(request.Approval.ApprovedBy),
+            request.Approval?.DecisionId is Guid decision && decision != Guid.Empty ? decision : null,
+            request.Approval?.ApprovedBy);
     }
 }

@@ -38,6 +38,32 @@ public sealed class TradingResearchRuntime
         new("record", RecordTool, "recommend"),
     ];
 
+    public static readonly DateTimeOffset FixedPaperRecordedAt = DateTimeOffset.Parse("2031-06-02T06:00:00Z");
+
+    public static List<ResearchCandle> FixedPaperCandles()
+    {
+        var start = DateTimeOffset.Parse("2031-06-01T00:00:00Z");
+        var bars = new List<ResearchCandle>();
+        for (var hour = 0; hour < 30; hour++)
+        {
+            var close = hour == 20 ? 200m : hour > 20 ? 1m : 100m;
+            var openTime = start.AddHours(hour);
+            bars.Add(new ResearchCandle(
+                "workflow-poc",
+                "BTCUSDT",
+                "1h",
+                openTime,
+                openTime.AddHours(1).AddMilliseconds(-1),
+                100m,
+                Math.Max(100m, close),
+                Math.Min(100m, close),
+                close,
+                $"workflow-poc:{hour}:{close}"));
+        }
+
+        return bars;
+    }
+
     public TradingResearchResult Execute(TradingResearchRequest request, IAgentRunLog log)
     {
         var calls = new CallCount();
