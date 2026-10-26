@@ -251,3 +251,17 @@ Migration `399_pack_personal_intelligence_agent_task_v1.sql` adds `pack_personal
 `PostgresAgentRunLog` claims a row before tools run, writes the receipt after each step, and refuses a stale revision. A separate probe process exits after the first committed step. The test process reads that row as `Running`, not `Completed`, and does not call the tool. A tool that returned but was not committed is not retried and is not exactly-once. `Program.cs` still has no task endpoint and no worker.
 
 After these tests, `KitPlatform.PersonalIntelligence.Tests` passed 224 of 224 and `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` finished with 0 errors and 48 warnings. This commit is not on `origin/main`.
+
+## Product task API
+
+The authenticated routes are `POST /api/personal-intelligence/tasks` and `GET /api/personal-intelligence/tasks/{taskKey}`. They use the platform JWT, the `tenant_id` claim, database-backed permissions, and the personal-intelligence module filter. The contract, lifecycle, and configuration are in `AGENT-RUNTIME-V1.md`.
+
+Migration `400` only adds `ReconciliationRequired` to the task status check. The fixture applies it on `kit_pi_agent_task`. It is not on a deploy manifest and it refuses `kit_pi_validation`. An uncertain tool result is stored as `ReconciliationRequired` and is not retried or marked `Completed`.
+
+Measured on this tree, with `KIT_PI_TEST_CONNECTION` pointed at `kit_pi_validation` on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 11 passed, 0 failed. The unapproved paper task stays `AwaitingApproval`. The approved paper task reaches `paper_executed`. The approved live mode is `Failed` and `liveAccepted` stays false. Tenant B cannot read tenant A's task. Two concurrent posts leave one row. A second host reads the waiting row. Port `5432` as the task store returns 503 without opening it.
+- `KitPlatform.PersonalIntelligence.Tests`: 226 passed, 0 failed. This includes the PostgreSQL task log, the separate-process probe, and the reconciliation tests.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No worker is registered by `AddAgentTasks`. No live order is sent. `origin/main` is unchanged until the pull request for this commit is merged. Local `main` stays `8c59ceb4`.

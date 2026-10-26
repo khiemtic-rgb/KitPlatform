@@ -51,6 +51,19 @@ public sealed class AgentTaskDatabaseFixture : IAsyncLifetime
             await new NpgsqlCommand(migration, database).ExecuteNonQueryAsync();
         }
 
+        var constraint = await new NpgsqlCommand(
+            """
+            SELECT pg_get_constraintdef(oid)
+            FROM pg_constraint
+            WHERE conname = 'ck_pi_agent_task_status'
+            """,
+            database).ExecuteScalarAsync() as string;
+        if (constraint is null || !constraint.Contains("ReconciliationRequired", StringComparison.Ordinal))
+        {
+            var reconciliation = await File.ReadAllTextAsync(Path.Combine(FindRepo(), "migrations", "400_pack_personal_intelligence_agent_task_reconciliation_v1.sql"));
+            await new NpgsqlCommand(reconciliation, database).ExecuteNonQueryAsync();
+        }
+
         await InsertTenant(database, TenantA, "AGENT_A");
         await InsertTenant(database, TenantB, "AGENT_B");
     }
@@ -138,6 +151,7 @@ public sealed class PostgresAgentTaskTests : IClassFixture<AgentTaskDatabaseFixt
         {
             var text = File.ReadAllText(Path.Combine(root, "deploy", "ubuntu", name));
             Assert.DoesNotContain("399_pack_personal_intelligence_agent_task_v1.sql", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("400_pack_personal_intelligence_agent_task_reconciliation_v1.sql", text, StringComparison.Ordinal);
         }
     }
 
@@ -490,6 +504,31 @@ public sealed class PostgresAgentTaskTests : IClassFixture<AgentTaskDatabaseFixt
         Assert.False(stored!.LiveAccepted);
         Assert.Equal(ToolStepStatus.Rejected, stored.Steps[0].Status);
         Assert.NotEqual(AgentTaskStatus.Completed, stored.Status);
+    }
+
+    [Fact]
+    public void Uncertain_effect_stays_unresolved_for_a_new_postgres_log()
+    {
+        var calls = 0;
+        var key = Key();
+        var request = Request(key, _database.TenantA, [Step("one"), Step("two", "one")]);
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("read", "personal_intelligence.research.read", ToolEffect.Paper, false), _ =>
+        {
+            calls++;
+            return ToolResponse.Uncertain("The paper effect was not confirmed.");
+        });
+        using (var log = new PostgresAgentRunLog(_database.ConnectionString, _database.TenantA))
+            new AgentRuntime(registry).Execute(request, log);
+
+        var replayCalls = 0;
+        using var restarted = new PostgresAgentRunLog(_database.ConnectionString, _database.TenantA);
+        var stored = new AgentRuntime(ReadRegistry(() => replayCalls++)).Execute(request, restarted);
+        Assert.Equal(AgentTaskStatus.ReconciliationRequired, stored.Status);
+        Assert.True(stored.Replayed);
+        Assert.NotEqual(AgentTaskStatus.Completed, stored.Status);
+        Assert.Equal(1, calls);
+        Assert.Equal(0, replayCalls);
     }
 
     private int Scalar(string sql, Guid tenant, string key)

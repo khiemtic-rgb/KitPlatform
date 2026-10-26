@@ -128,7 +128,8 @@ public sealed class PostgresAgentRunLog : IAgentRunLog, IDisposable
         => status is AgentTaskStatus.Completed
             or AgentTaskStatus.Failed
             or AgentTaskStatus.AwaitingApproval
-            or AgentTaskStatus.Cancelled;
+            or AgentTaskStatus.Cancelled
+            or AgentTaskStatus.ReconciliationRequired;
 
     private NpgsqlConnection Open()
     {

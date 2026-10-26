@@ -104,6 +104,39 @@ public sealed class AgentRuntimeTests
     }
 
     [Fact]
+    public void Unknown_tool_effect_is_not_completed_or_retried()
+    {
+        var calls = 0;
+        var later = 0;
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("effect", "personal_intelligence.trading.run", ToolEffect.Paper, false), _ =>
+        {
+            calls++;
+            return ToolResponse.Uncertain("The paper effect was not confirmed.");
+        });
+        registry.Register(new ToolContract("next", "personal_intelligence.trading.run", ToolEffect.Read, false), _ =>
+        {
+            later++;
+            return ToolResponse.Succeeded("ok", new Dictionary<string, string> { ["verified"] = "true" });
+        });
+        var log = new MemoryAgentRunLog();
+        var request = Request(
+            [new AgentStepSpec("one", "effect", null), new AgentStepSpec("two", "next", "one")],
+            ["personal_intelligence.trading.run"]);
+        var first = new AgentRuntime(registry).Execute(request, log);
+        var second = new AgentRuntime(registry).Execute(request, log);
+
+        Assert.Equal(AgentTaskStatus.ReconciliationRequired, first.Status);
+        Assert.NotEqual(AgentTaskStatus.Completed, first.Status);
+        Assert.Single(first.Steps);
+        Assert.Equal(ToolStepStatus.Uncertain, first.Steps[0].Status);
+        Assert.Contains("not confirmed", first.Error, StringComparison.Ordinal);
+        Assert.True(second.Replayed);
+        Assert.Equal(1, calls);
+        Assert.Equal(0, later);
+    }
+
+    [Fact]
     public void Tool_failure_stops_later_steps_and_keeps_the_error()
     {
         var later = 0;

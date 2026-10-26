@@ -12,6 +12,7 @@ public enum AgentTaskStatus
     Completed,
     Failed,
     Cancelled,
+    ReconciliationRequired,
 }
 
 public enum ToolEffect
@@ -28,6 +29,7 @@ public enum ToolStepStatus
     Denied,
     Rejected,
     Failed,
+    Uncertain,
 }
 
 public sealed record AgentStepSpec(string StepId, string ToolName, string? DependsOn);
@@ -62,6 +64,9 @@ public sealed record ToolResponse(
 
     public static ToolResponse Stop(ToolStepStatus status, string error)
         => new(status, error, new Dictionary<string, string>(), error);
+
+    public static ToolResponse Uncertain(string error)
+        => new(ToolStepStatus.Uncertain, error, new Dictionary<string, string>(), error);
 }
 
 public sealed record AgentStepRecord(
@@ -205,6 +210,7 @@ public static class AgentTaskTransitions
         (AgentTaskStatus.Running, AgentTaskStatus.Verified) => true,
         (AgentTaskStatus.Running, AgentTaskStatus.Failed) => true,
         (AgentTaskStatus.Running, AgentTaskStatus.Cancelled) => true,
+        (AgentTaskStatus.Running, AgentTaskStatus.ReconciliationRequired) => true,
         (AgentTaskStatus.AwaitingApproval, AgentTaskStatus.Running) => true,
         (AgentTaskStatus.AwaitingApproval, AgentTaskStatus.Failed) => true,
         (AgentTaskStatus.AwaitingApproval, AgentTaskStatus.Cancelled) => true,
@@ -338,6 +344,13 @@ public sealed class AgentRuntime
 
             records.Add(new AgentStepRecord(step.StepId, step.ToolName, response.Status, response.Summary, response.Error));
             outputs[step.StepId] = response.Outputs;
+            if (response.Status == ToolStepStatus.Uncertain)
+            {
+                error = response.Error ?? "The tool effect is unknown and needs reconciliation.";
+                status = AgentTaskTransitions.Move(status, AgentTaskStatus.ReconciliationRequired);
+                return Save(log, Build(request, status, records, outputs, error, false));
+            }
+
             if (response.Status is ToolStepStatus.Denied or ToolStepStatus.Rejected or ToolStepStatus.Failed)
             {
                 error = response.Error;

@@ -1,6 +1,6 @@
 # Agent Runtime V1
 
-Status: Agent Runtime V1 is on `origin/main` at `2b870c4a`. The PostgreSQL task log is on the integration branch after that commit. It is not on `main`. This is not a hosted worker and not a live trading path.
+Status: Agent Runtime V1 is on `origin/main` at `2b870c4a`. The PostgreSQL task log and the authenticated task API are on `integrate/second-brain-20261026`. This is not a hosted worker and not a live trading path. `LiveAccepted` stays false.
 
 ## Components
 
@@ -43,7 +43,7 @@ The workflow test uses the fixed `workflow-poc` candles from `2031-06-01T00:00:0
 
 ## Not in V1
 
-No learning loop, no policy rewrite, no hosted API for the task receipt, and no tenant column on `research_trading`. `pi_operation` remains the tenant trading-loop receipt and is not the runtime log. The runtime log in the merged slice is in memory. The research snapshot stores the trading outcome, not a task that can be resumed by `AgentRuntime`.
+No learning loop, no policy rewrite, and no tenant column on `research_trading`. `pi_operation` remains the tenant trading-loop receipt and is not the runtime log. The research snapshot stores the trading outcome. `AgentRuntime` does not resume a `Running` row.
 
 ## Durable task state
 
@@ -51,7 +51,7 @@ No learning loop, no policy rewrite, no hosted API for the task receipt, and no 
 
 `PostgresAgentRunLog` stores the task in `pack_personal_intelligence.pi_agent_task`. Migration `399_pack_personal_intelligence_agent_task_v1.sql` creates that table. The tenant column references `public.tenants(id)`, the same tenant row the platform resolves from the `tenant_id` claim. The unique key is `(tenant_id, task_key)`. `revision` is the optimistic concurrency token: an update matches the revision it read, and a stale save changes zero rows. The receipt JSON stores the plan, step results, approval marker, outcome, error, and evidence. Every read and write includes `tenant_id`. There is no row level security, matching migration 389.
 
-The migration is not listed in `migration-files.prod.txt`, `migration-files.personal-intelligence.txt`, or `migration-files.trading-research.txt`. It was applied only to a new database, `kit_pi_agent_task`, on `127.0.0.1:5433`. `kit_pi_validation` and `trading_agent` do not have the table. `research_trading` was not changed.
+Migration `400_pack_personal_intelligence_agent_task_reconciliation_v1.sql` adds `ReconciliationRequired` to the status check. It refuses `novixa_prod`, `trading_research`, `trading_agent`, `kitplatform`, `postgres`, and `kit_pi_validation`. Neither `399` nor `400` is listed in `migration-files.prod.txt`, `migration-files.personal-intelligence.txt`, `migration-files.trading-research.txt`, or the content, family, kit-sales, and local-os manifests. `399` was applied only to the new database `kit_pi_agent_task` on `127.0.0.1:5433`. `400` is applied by the task-store fixture on that same database when the check does not yet name `ReconciliationRequired`. `kit_pi_validation` and `trading_agent` do not receive these migrations. `research_trading` was not changed.
 
 A new log claims the row before any tool runs and holds a session advisory lock until the receipt is terminal. The other caller with the same tenant and key waits, then reads the stored receipt and does not run tools. A different payload hash throws before tools run. After each step the log writes the current receipt. A new log that finds a row returns it and does not continue the plan.
 
@@ -78,6 +78,48 @@ The file-reload tests still pass. They are not evidence for PostgreSQL.
 
 The saved row is recovered. A tool that has returned, but whose update has not committed, is not in that row. A later log returns the last committed receipt and does not retry the missing step, so the task cannot be marked `Completed` from that gap. This is not exactly-once execution. A `Running` receipt is not resumed. The log must be disposed, or the process must exit, before another caller can take the advisory lock.
 
-## Product entry still missing
+## Unknown tool effect
 
-`Program.cs` does not register `AgentRuntime`. There is no endpoint that accepts a task. The next product step is to point `PostgresAgentRunLog` at an approved Personal Intelligence database behind the existing permissions. It still must not start a worker, must not accept live execution, and must not add a tenant receipt API before the ownership model is decided.
+`ToolResponse.Uncertain` stops the plan. The task becomes `ReconciliationRequired`, later steps do not run, and a replay returns that receipt without calling the tool. This is not `Completed` and it is not a retry. `AwaitingApproval` also stays a waiting status. Neither status is treated as success.
+
+## Product task API
+
+`POST /api/personal-intelligence/tasks` and `GET /api/personal-intelligence/tasks/{taskKey}` use the platform JWT, `tenant_id` claim, and `DbPermissionsClaimsTransformation`. The body cannot choose the tenant or the payload hash. `RequestedTenantId` must match the token tenant. POST requires `personal_intelligence.trading.run` or `ADMIN`, plus the `personal_intelligence` module. GET requires `personal_intelligence.research.read`, the trading-run permission, or `ADMIN`, plus the module. The service grants the research tool when the caller already holds trading-run or `ADMIN`, matching the research-read policy. An approval decision is recorded only when the body sends `approvalDecisionId` and the caller holds `personal_intelligence.trading.approve` or `ADMIN`. `ApprovedBy` is the token subject.
+
+The only accepted kind is `trading-paper`. The server owns the plan and the fixed `workflow-poc` candles. `executionMode` `paper` or empty stays paper. `live` is passed to the existing execute tool, which rejects it, and the receipt keeps `liveAccepted` false. Any other mode is 400.
+
+`AgentRuntime:TaskConnection` is the PostgreSQL task log. `AgentRuntime:ResearchConnection` must be database `trading_agent`. Both refuse port `5432` before a task or research connection opens. If either setting is missing, or the port is refused, the API returns 503. A payload conflict is 409. A tenant or permission refusal is 403. An unknown task is 404. Anonymous calls are 401. The trading-loop route stays unmapped while `PersonalIntelligence:ExposeExchangeRead` is false.
+
+The response is `AgentTaskView`: task key, payload hash, tenant, status, outcome, research fill count, recommendation executed, live accepted, replayed, approval recorded, error, evidence, and steps. It does not include the revision.
+
+## What the product tests showed
+
+`KitPlatform.PersonalIntelligence.ApiTests`, 11 passed and 0 failed, against `kit_pi_validation`, `kit_pi_agent_task`, and `trading_agent` on `127.0.0.1:5433`:
+
+- Anonymous POST is 401. A token whose user has no stored permission is 403. Tenant B with the module off is 403.
+- An unapproved trading task is stored as `AwaitingApproval`, outcome `approval_required`, research fill count 2, `recommendationExecuted` false, and `liveAccepted` false. The execute step is `Blocked`. The same POST replays. GET returns the same hash and tenant.
+- A different objective for the same key is 409.
+- An approved paper task reaches `Completed` and `paper_executed`. An approved live mode is `Failed`, the execute step is `Rejected`, and `liveAccepted` stays false.
+- Tenant B, with the module enabled only for the request and then restored, gets 404 and the body does not contain tenant A's objective.
+- Two concurrent POSTs leave one row. Both receipts show two research fills, and one is a replay.
+- A second host reads the stored `AwaitingApproval` row and does not complete it. That second host is another process in the same test run, not a separate operating-system crash. The process-exit evidence remains `AgentTaskProbe`.
+- A task connection that names port `5432` returns 503 and is refused before the task store opens.
+- `POST /api/personal-intelligence/trading/loops` stays 404.
+
+`KitPlatform.PersonalIntelligence.Tests` after the reconciliation status: 226 passed, 0 failed. That includes the previous PostgreSQL task tests, the process probe, the new uncertain-effect tests, and the manifest check that `400` is absent.
+
+## How to run the product tests
+
+Set `KIT_PI_TEST_CONNECTION` to `Host=127.0.0.1;Port=5433;Database=kit_pi_validation;Username=postgres`. The API fixture rewrites that string to `kit_pi_agent_task` and `trading_agent` and refuses any other port or database. Do not point it at port `5432`.
+
+```text
+dotnet test tests/KitPlatform.PersonalIntelligence.ApiTests
+dotnet test tests/KitPlatform.PersonalIntelligence.Tests
+dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj
+```
+
+`AddAgentTasks` registers the scoped task service only. It does not add a worker. Production leaves `AgentRuntime:TaskConnection` unset, so the route cannot open a task store until that isolated database is configured.
+
+## Recovery limits
+
+A committed step is still there after a new log or a new host. A `Running` row is returned and is not resumed. An uncertain tool effect stays `ReconciliationRequired` and is not run again. A tool that returned but whose update did not commit is absent from the receipt and is not retried. That gap is not exactly-once. The advisory lock is held until a terminal save, dispose, or process exit.
