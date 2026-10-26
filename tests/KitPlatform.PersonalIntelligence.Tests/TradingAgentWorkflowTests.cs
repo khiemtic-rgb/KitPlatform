@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using KitPlatform.Packs.PersonalIntelligence;
 using KitPlatform.Packs.PersonalIntelligence.ResearchHost;
 using KitPlatform.Packs.PersonalIntelligence.Trading;
@@ -92,6 +93,7 @@ public sealed class TradingAgentWorkflowTests : IAsyncLifetime
             new TradeProposal("BTCUSDT", sample.Side, sample.Quantity, sample.ExecutionPrice, 1m, 0.8m, ExecutionMode.Live),
             new RiskLimits(1_000m, 1m, 0.5m),
             ["The next bar is not known."]);
+        var limits = new RiskLimits(1_000m, 1m, 0.5m);
 
         Assert.Equal(TradingAgent.Autonomy, recommendation.Autonomy);
         Assert.Equal(ExecutionMode.Paper, recommendation.Proposal.Mode);
@@ -101,12 +103,108 @@ public sealed class TradingAgentWorkflowTests : IAsyncLifetime
 
         var unapproved = DemoPaperExecution.Execute(recommendation.Proposal, recommendation.Verdict, null);
         Assert.False(unapproved.Executed);
+        var paperVerdict = RiskEngine.Evaluate(recommendation.Proposal, limits);
+        var notApproved = DemoPaperExecution.Execute(recommendation.Proposal, paperVerdict, null);
+        var recordedAt = ReadCreatedAt(second.SessionKey);
+        var receipt = ExecutionReceiptProjector.Project(
+            second.SessionKey,
+            second.SessionKey,
+            intake,
+            second.Snapshot,
+            recommendation,
+            paperVerdict,
+            notApproved,
+            limits,
+            null,
+            recordedAt,
+            "trading_agent");
+        ResearchSession.SaveReceipt(store, second.SessionKey, second.SessionKey, second.Snapshot with { Receipt = receipt });
+
+        var fillsBeforeReplay = CountFills(second.Snapshot.Fills.Select(fill => fill.OperationKey).ToArray());
+        var replay = ResearchSession.Run(intake, config, store, store);
+        var fillsAfterReplay = CountFills(second.Snapshot.Fills.Select(fill => fill.OperationKey).ToArray());
+        var stored = ExecutionReceiptProjector.Read(replay.Snapshot);
+
+        Assert.True(replay.Replayed);
+        Assert.Equal(0, replay.NewPaperFills);
+        Assert.Equal(fillsBeforeReplay, fillsAfterReplay);
+        Assert.Equal(second.SessionKey, replay.SessionKey);
+        Assert.True(stored.Recorded);
+        Assert.NotNull(stored.Receipt);
+        Assert.Equal(second.SessionKey, stored.Receipt.SessionKey);
+        Assert.Equal(second.SessionKey, stored.Receipt.PayloadHash);
+        Assert.Equal(Source, stored.Receipt.Input.Source);
+        Assert.Equal("BTCUSDT", stored.Receipt.Input.Symbol);
+        Assert.Equal("1h", stored.Receipt.Input.Timeframe);
+        Assert.Equal(30, stored.Receipt.Input.CandleCount);
+        Assert.Equal(ResearchSession.Completed, stored.Receipt.Research.Status);
+        Assert.Equal(2, stored.Receipt.Research.FillCount);
+        Assert.Equal(TradingAgent.Autonomy, stored.Receipt.Recommendation.Autonomy);
+        Assert.Equal(nameof(EpistemicKind.Inference), stored.Receipt.Recommendation.Kind);
+        Assert.Contains("does not create a decision or an order", stored.Receipt.Recommendation.Rationale, StringComparison.Ordinal);
+        Assert.Equal(recommendation.EvidenceIds, stored.Receipt.Recommendation.EvidenceIds);
+        Assert.Equal(0.8m, stored.Receipt.Recommendation.Confidence);
+        Assert.Equal(nameof(ExecutionMode.Paper), stored.Receipt.Recommendation.Mode);
+        Assert.True(stored.Receipt.Risk.Allowed);
+        Assert.Empty(stored.Receipt.Risk.Reasons);
+        Assert.Equal(1_000m, stored.Receipt.Risk.Limits.MaxNotional);
+        Assert.Equal(ExecutionReceiptProjector.ApprovalAbsent, stored.Receipt.Approval.State);
+        Assert.Null(stored.Receipt.Approval.ApprovedBy);
+        Assert.Equal(ExecutionReceiptProjector.ApprovalRequired, stored.Receipt.Outcome);
+        Assert.NotEqual(ExecutionReceiptProjector.PaperExecuted, stored.Receipt.Outcome);
+        Assert.Contains("separate approval", stored.Receipt.OutcomeReason, StringComparison.Ordinal);
+        Assert.NotEmpty(stored.Receipt.EvidenceRefs);
+        Assert.Equal(recordedAt, stored.Receipt.RecordedAt);
+        Assert.Equal("trading_agent", stored.Receipt.Provenance.Database);
+        Assert.Null(stored.Receipt.Provenance.TenantId);
+        Assert.DoesNotContain("ApiSecret", ReadResult(second.SessionKey), StringComparison.Ordinal);
+
         var live = DemoPaperExecution.Execute(
             recommendation.Proposal with { Mode = ExecutionMode.Live },
             recommendation.Verdict,
             new ExecutionApproval(Guid.NewGuid(), "workflow-poc"));
         Assert.False(live.Executed);
         Assert.Contains("Live orders are not sent.", live.Reasons);
+        Assert.Equal(ExecutionReceiptProjector.ApprovalRequired, ExecutionReceiptProjector.Read(ResearchSession.Run(intake, config, store, store).Snapshot).Receipt!.Outcome);
+        AssertResearchDatabaseHasNoCanonicalTables();
+    }
+
+    private DateTimeOffset ReadCreatedAt(string sessionKey)
+    {
+        using var conn = new NpgsqlConnection(_connection);
+        conn.Open();
+        using var command = new NpgsqlCommand(
+            "SELECT created_at FROM research_trading.session_result WHERE session_key = @key",
+            conn);
+        command.Parameters.AddWithValue("key", sessionKey);
+        var value = (DateTime)command.ExecuteScalar()!;
+        return new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc));
+    }
+
+    private string ReadResult(string sessionKey)
+    {
+        using var conn = new NpgsqlConnection(_connection);
+        conn.Open();
+        using var command = new NpgsqlCommand(
+            "SELECT result FROM research_trading.session_result WHERE session_key = @key",
+            conn);
+        command.Parameters.AddWithValue("key", sessionKey);
+        return (string)command.ExecuteScalar()!;
+    }
+
+    private void AssertResearchDatabaseHasNoCanonicalTables()
+    {
+        using var conn = new NpgsqlConnection(_connection);
+        conn.Open();
+        using var command = new NpgsqlCommand(
+            """
+            SELECT to_regclass('pack_personal_intelligence.pi_decision') IS NULL
+               AND to_regclass('pack_personal_intelligence.trading_order') IS NULL
+               AND to_regclass('pack_personal_intelligence.pi_knowledge') IS NULL
+               AND to_regclass('public.platform_events') IS NULL
+            """,
+            conn);
+        Assert.True((bool)command.ExecuteScalar()!);
     }
 
     private int CountFills(string[] keys)
@@ -142,5 +240,42 @@ public sealed class TradingAgentWorkflowTests : IAsyncLifetime
         }
 
         return bars;
+    }
+}
+
+public sealed class ExecutionReceiptCompatibilityTests
+{
+    [Fact]
+    public void Snapshot_without_a_receipt_reads_as_not_recorded()
+    {
+        var snapshot = new ResearchSnapshot(
+            ResearchSession.Completed,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0m,
+            0m,
+            null,
+            PaperSession.NoClosedPosition,
+            null,
+            null,
+            ResearchSession.DrawdownUnavailable,
+            [],
+            [],
+            []);
+        var node = JsonNode.Parse(ResearchSession.Serialize(snapshot))!.AsObject();
+        node.Remove("Receipt");
+        var read = ResearchSession.Deserialize(node.ToJsonString());
+        var view = ExecutionReceiptProjector.Read(read);
+
+        Assert.Null(read.Receipt);
+        Assert.False(view.Recorded);
+        Assert.Null(view.Receipt);
     }
 }

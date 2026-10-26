@@ -55,7 +55,8 @@ public sealed record ResearchSnapshot(
     string DrawdownStatus,
     IReadOnlyList<StoredSignal> SignalsRecorded,
     IReadOnlyList<StoredFill> Fills,
-    IReadOnlyList<ResearchRiskDecision> RiskDecisions);
+    IReadOnlyList<ResearchRiskDecision> RiskDecisions,
+    ExecutionReceipt? Receipt = null);
 
 public sealed record ResearchReport(
     string Status,
@@ -75,6 +76,12 @@ public interface IResearchLog
     ResearchStoredSession? Find(string sessionKey);
 
     bool TryAdd(ResearchStoredSession session);
+
+    /// <summary>
+    /// Replaces the stored snapshot JSON when the session key and payload hash still match.
+    /// It does not insert a session, a fill, or a new hash.
+    /// </summary>
+    bool TryUpdateResult(string sessionKey, string payloadHash, string result);
 }
 
 public sealed class MemoryResearchLog : IResearchLog
@@ -107,6 +114,16 @@ public sealed class MemoryResearchLog : IResearchLog
     public bool TryAdd(ResearchStoredSession session)
         => _sessions.TryAdd(session.SessionKey, session);
 
+    public bool TryUpdateResult(string sessionKey, string payloadHash, string result)
+    {
+        if (!_sessions.TryGetValue(sessionKey, out var session))
+            return false;
+        if (!string.Equals(session.PayloadHash, payloadHash, StringComparison.Ordinal))
+            return false;
+        _sessions[sessionKey] = session with { Result = result };
+        return true;
+    }
+
     public static string CandleKey(ResearchCandle candle)
         => string.Join('|', candle.Source, candle.Symbol, candle.Interval, candle.OpenTime.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture));
 }
@@ -127,6 +144,31 @@ public static class ResearchSession
     public const string DrawdownUnavailable = "unavailable";
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
+
+    public static string Serialize(ResearchSnapshot snapshot)
+        => JsonSerializer.Serialize(snapshot, JsonOptions);
+
+    public static ResearchSnapshot Deserialize(string json)
+        => JsonSerializer.Deserialize<ResearchSnapshot>(json, JsonOptions)
+           ?? throw new InvalidOperationException("Stored research session result is empty.");
+
+    public static void SaveReceipt(IResearchLog log, string sessionKey, string payloadHash, ResearchSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(log);
+        ArgumentNullException.ThrowIfNull(snapshot);
+        if (snapshot.Receipt is null)
+            throw new InvalidOperationException("A receipt save requires a receipt.");
+        if (!string.Equals(sessionKey, payloadHash, StringComparison.Ordinal))
+            throw new InvalidOperationException("Session key and payload hash must match.");
+        if (!string.Equals(snapshot.Receipt.SessionKey, sessionKey, StringComparison.Ordinal)
+            || !string.Equals(snapshot.Receipt.PayloadHash, payloadHash, StringComparison.Ordinal))
+            throw new InvalidOperationException("The receipt does not belong to this session.");
+        var stored = log.Find(sessionKey) ?? throw new InvalidOperationException("The research session is not stored.");
+        if (!string.Equals(stored.PayloadHash, payloadHash, StringComparison.Ordinal))
+            throw new InvalidOperationException("Stored research session hash does not match its key.");
+        if (!log.TryUpdateResult(sessionKey, payloadHash, Serialize(snapshot)))
+            throw new InvalidOperationException("The stored research session result was not updated.");
+    }
 
     public static ResearchReport Run(
         CandleIntake intake,
@@ -186,8 +228,7 @@ public static class ResearchSession
         {
             if (!string.Equals(existing.PayloadHash, hash, StringComparison.Ordinal))
                 throw new InvalidOperationException("Stored research session hash does not match its key.");
-            var stored = JsonSerializer.Deserialize<ResearchSnapshot>(existing.Result, JsonOptions)
-                ?? throw new InvalidOperationException("Stored research session result is empty.");
+            var stored = Deserialize(existing.Result);
             return Finish(new ResearchReport(Replayed, true, 0, inserted, duplicates, hash, stored));
         }
 

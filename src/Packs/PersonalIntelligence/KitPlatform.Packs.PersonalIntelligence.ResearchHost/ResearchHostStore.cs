@@ -147,6 +147,16 @@ public sealed class FileResearchState : IResearchLog, IPaperOperationLog
     bool IResearchLog.TryAdd(ResearchStoredSession session)
         => _sessions.TryAdd(session.SessionKey, session);
 
+    bool IResearchLog.TryUpdateResult(string sessionKey, string payloadHash, string result)
+    {
+        if (!_sessions.TryGetValue(sessionKey, out var session))
+            return false;
+        if (!string.Equals(session.PayloadHash, payloadHash, StringComparison.Ordinal))
+            return false;
+        _sessions[sessionKey] = session with { Result = result };
+        return true;
+    }
+
     PaperOperationReceipt? IPaperOperationLog.Find(string operationKey)
         => _operations.TryGetValue(operationKey, out var receipt) ? receipt : null;
 
@@ -252,6 +262,21 @@ public sealed class SqlResearchStore : IResearchLog, IPaperOperationLog, IDispos
         command.Parameters.AddWithValue("hash", session.PayloadHash);
         command.Parameters.AddWithValue("status", session.Status);
         command.Parameters.AddWithValue("result", session.Result);
+        return command.ExecuteNonQuery() == 1;
+    }
+
+    bool IResearchLog.TryUpdateResult(string sessionKey, string payloadHash, string result)
+    {
+        using var command = new NpgsqlCommand(
+            """
+            UPDATE research_trading.session_result
+            SET result = @result
+            WHERE session_key = @key AND payload_hash = @hash
+            """,
+            _connection);
+        command.Parameters.AddWithValue("key", sessionKey);
+        command.Parameters.AddWithValue("hash", payloadHash);
+        command.Parameters.AddWithValue("result", result);
         return command.ExecuteNonQuery() == 1;
     }
 

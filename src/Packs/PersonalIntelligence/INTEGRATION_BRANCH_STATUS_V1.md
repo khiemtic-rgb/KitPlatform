@@ -215,3 +215,13 @@ The first suite run after the fast-forward failed one test: `ExchangeConnectionA
 The commit that adds this section also contains that test assertion. It is fast-forwarded to `origin/main` and to `integrate/second-brain-20261026` after the 194-pass run. It does not add an Agent Runtime, a learning loop, or permission to place an order.
 
 Still outside this merge: 156 admin TypeScript errors that were already on `fed51d14`, 13 production-manifest files that fail on an empty database, and Content migrations numbered `394`–`398` that exist only on the dirty `E:\KitPlatform` tree. Those Content files were not brought in.
+
+## Execution receipt V1
+
+Date: 2026-10-26. Implemented on `integrate/second-brain-20261026` from `ade5ab28`. No migration, no `Program.cs` change, and no change to `TradingOperationalLoop`.
+
+`ResearchSnapshot` now carries an optional `ExecutionReceipt`. `ExecutionReceiptProjector` builds that object from the research intake, the paper proposal the agent returned, the risk verdict on that paper proposal, and `DemoPaperExecution` without an approval. `ResearchSession.SaveReceipt` writes it into the existing `research_trading.session_result.result` row when the session key and payload hash still match. The writer is `IResearchLog.TryUpdateResult`. It does not insert a session or a fill. A snapshot JSON that omits `Receipt` still deserializes, and `ExecutionReceiptProjector.Read` reports `Recorded` false.
+
+The fixed `workflow-poc` run stores outcome `approval_required`, autonomy `recommend_only`, kind `Inference`, mode `Paper`, research fill count 2, and `provenance.database` `trading_agent` with `tenantId` null. Replay keeps that receipt and adds no fill. A separate live call is refused and does not change the stored outcome. `trading_agent` still has no `pi_decision`, `trading_order`, `pi_knowledge`, or `platform_events` table.
+
+`KitPlatform.PersonalIntelligence.Tests` after this change: 195 passed, 0 failed. That includes the workflow test, the old-snapshot test, the three paper-integrity tests, and the migration source tests for `394`, `396`, and `397`. No migration was executed. The receipt is not exposed on the platform API.
