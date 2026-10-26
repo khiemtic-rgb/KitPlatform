@@ -225,3 +225,11 @@ Date: 2026-10-26. Implemented on `integrate/second-brain-20261026` from `ade5ab2
 The fixed `workflow-poc` run stores outcome `approval_required`, autonomy `recommend_only`, kind `Inference`, mode `Paper`, research fill count 2, and `provenance.database` `trading_agent` with `tenantId` null. Replay keeps that receipt and adds no fill. A separate live call is refused and does not change the stored outcome. `trading_agent` still has no `pi_decision`, `trading_order`, `pi_knowledge`, or `platform_events` table.
 
 `KitPlatform.PersonalIntelligence.Tests` after this change: 195 passed, 0 failed. That includes the workflow test, the old-snapshot test, the three paper-integrity tests, and the migration source tests for `394`, `396`, and `397`. No migration was executed. The receipt is not exposed on the platform API.
+
+## Agent Runtime V1
+
+`origin/main` was fast-forwarded from `ade5ab28` to `23b2b69d` after the receipt tests passed again. The local ref `main` was left at `8c59ceb4`. Runtime V1 was then added on the integration branch. It is not a migration and it is not registered in `Program.cs`.
+
+`AgentRuntime` checks task transitions, dispatches tools only after permission, tenant, effect, and approval checks, and returns the first receipt for the same task key and payload hash. `TradingResearchRuntime` is the trading tool host. The fixed `workflow-poc` task ends `AwaitingApproval`, with recommendation outcome `approval_required`, research fill count 2, and `recommendationExecuted` false. A live proposal is rejected inside the execute tool even when an approval object is present. The task trace is stored on the existing research snapshot.
+
+After these tests were added, `KitPlatform.PersonalIntelligence.Tests` passed 204 of 204 and `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` finished with 0 errors. No worker was started and no migration was run. The local steps are in `AGENT-RUNTIME-V1.md`.
