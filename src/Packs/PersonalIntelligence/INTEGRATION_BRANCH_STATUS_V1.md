@@ -161,7 +161,7 @@ This validates the Trading Agent paper path on an isolated database. It does not
 
 ## Merge review
 
-Verdict: **READY FOR MERGE REVIEW**. This is not a merge and not a production release.
+Verdict at `b3bcafcd`: **READY FOR MERGE REVIEW**. The fast-forward that followed is recorded under Finalization. This file is not a production release.
 
 Compared with `origin/main` `fed51d14`, the branch adds Personal Intelligence, the Second Brain admin routes, the research publication tool, and the content narrative fields required for the API to compile (`d481491f`). `Program.cs` always registers research publication and registers the trading pack only when `PersonalIntelligence:ExposeExchangeRead` is true. That default is false, and the backfill worker is passed `false`. `ResearchSafeHost:SuppressBackgroundWriters` stays unset, so the isolation helper does not remove workers.
 
@@ -199,3 +199,19 @@ This reuses research intake, the SMA strategy, the paper session, the research s
 Already present and used by the workflow: a structured candle intake, a deterministic session hash, a database allow-list, paper fill rows, a replay that writes nothing new, `recommend_only`, a risk verdict, and a separate approval check that still cannot send a live order. Authorization policies exist for research read, trading run, and trading approve, and the default API does not expose the exchange controllers.
 
 Not built, and not required to reproduce this workflow: a generic task record, a capability grant separate from the configuration flag, a retrieval index, an orchestrator that chooses tools, a durable approval queue, or a retry worker. Those belong in a later specification. The first useful slice, if the owner wants one, is a read-only receipt that joins the stored session key, the recommendation rationale, and the refusal reason. It should not gain permission to place an order.
+
+## Finalization
+
+Date: 2026-10-26. Workspace `E:\kit-integrate-fed51d14`. No production deploy. No migration was run on port `5432` or on an existing database. Live trading, workers, timers, and Novixa Video were not changed. Source worktrees stayed at `8c59ceb4`, `85db8bdf`, `cbe72f3b`, and `36642381`.
+
+Before the fast-forward, `origin/main` was `fed51d14` and `integrate/second-brain-20261026` was `b3bcafcd`. `fed51d14` is an ancestor of that commit, seven commits ahead, none behind. GitHub branch protection for `main` was not set, and the repository ruleset list was empty. The local ref named `main` points at `8c59ceb4`, which is neither an ancestor nor a descendant of `origin/main`. That ref was not moved and was not reset.
+
+`origin/main` was updated by a fast-forward push of `b3bcafcd`. `git ls-remote` showed both `refs/heads/main` and `refs/heads/integrate/second-brain-20261026` at `b3bcafcd`. There is no merge commit.
+
+Checks on `b3bcafcd` before that push: API build 0 errors and 48 warnings; `KitPlatform.PersonalIntelligence.Tests` 194 passed, 0 failed; `NarrativeFitIntegrityTests` 13 passed, 0 failed. The paper workflow, paper-integrity, and migration source tests `394`, `396`, and `397` were inside that suite and also passed as a focused run of 7. `397` is still on no manifest. `396` still aborts unless the database is `kit_pi_validation`. `388` still drops the dependent foreign keys before replacing the unique constraints. `389` still uses `IF NOT EXISTS`. None of `385`–`398` are in `migration-files.prod.txt` or the content manifest.
+
+The first suite run after the fast-forward failed one test: `ExchangeConnectionApiTests.Lifecycle_encrypts_isolates_snapshots_and_does_not_create_trading_records`, expected `Forbidden`, actual `NotFound`, with 193 passed. The account lookup is tenant-scoped and returns 404 when the other tenant may call it. The module filter returns 403 when `personal_intelligence` is off for tenant B. Parallel tests change that flag. The production lookup was not changed. The test now accepts only those two refusal statuses and rejects a body that contains the account equity or the fixture credential. A later full run passed 194, 0 failed. The API build after that run had 0 errors.
+
+The commit that adds this section also contains that test assertion. It is fast-forwarded to `origin/main` and to `integrate/second-brain-20261026` after the 194-pass run. It does not add an Agent Runtime, a learning loop, or permission to place an order.
+
+Still outside this merge: 156 admin TypeScript errors that were already on `fed51d14`, 13 production-manifest files that fail on an empty database, and Content migrations numbered `394`–`398` that exist only on the dirty `E:\KitPlatform` tree. Those Content files were not brought in.

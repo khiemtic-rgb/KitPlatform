@@ -227,7 +227,7 @@ public sealed class ExchangeConnectionApiTests : IClassFixture<PiValidationDatab
 
         var other = host.Client(_db.TenantB, _db.UserB, PersonalIntelligencePolicies.ExchangeConnectPermission);
         var hidden = await other.GetAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/account");
-        Assert.Equal(HttpStatusCode.Forbidden, hidden.StatusCode);
+        await AssertCrossTenantAccountHidden(hidden);
 
         var registry = new ExchangeAdapterRegistry([new BybitExchangeConnector(handler, log)]);
         var isolated = new ExchangeConnectionService(
@@ -436,7 +436,7 @@ public sealed class ExchangeConnectionApiTests : IClassFixture<PiValidationDatab
 
             var other = host.Client(_db.TenantB, _db.UserB, PersonalIntelligencePolicies.ExchangeConnectPermission);
             var hidden = await other.GetAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/account");
-            Assert.Equal(HttpStatusCode.Forbidden, hidden.StatusCode);
+            await AssertCrossTenantAccountHidden(hidden);
             Assert.Equal(callsAfterSave, handler.Calls);
 
             var removed = await client.DeleteAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}");
@@ -554,6 +554,20 @@ public sealed class ExchangeConnectionApiTests : IClassFixture<PiValidationDatab
             name.Contains("Order", StringComparison.OrdinalIgnoreCase)
             || name.Contains("Withdraw", StringComparison.OrdinalIgnoreCase)
             || name.Contains("Transfer", StringComparison.OrdinalIgnoreCase));
+    }
+
+    static async Task AssertCrossTenantAccountHidden(HttpResponseMessage hidden)
+    {
+        // The module gate returns 403 when personal_intelligence is off for tenant B.
+        // The tenant-scoped lookup returns 404 when that module is on. Parallel tests change that flag.
+        // Either status refuses the account. The response must not contain it.
+        Assert.True(
+            hidden.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound,
+            $"Cross-tenant account read returned {(int)hidden.StatusCode}.");
+        var text = await hidden.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("123.45", text, StringComparison.Ordinal);
+        Assert.DoesNotContain(Secret, text, StringComparison.Ordinal);
+        Assert.DoesNotContain(Key, text, StringComparison.Ordinal);
     }
 
     async Task CleanupAsync()
