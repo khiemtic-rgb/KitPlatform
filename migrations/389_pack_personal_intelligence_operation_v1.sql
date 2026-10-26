@@ -4,7 +4,7 @@
 -- The receipt is not an event. pi_events stays the intelligence event table.
 -- This file does not write platform_events.
 
-CREATE TABLE pack_personal_intelligence.pi_operation (
+CREATE TABLE IF NOT EXISTS pack_personal_intelligence.pi_operation (
     operation_id    UUID PRIMARY KEY DEFAULT kit_uuid_v7(),
     tenant_id       UUID NOT NULL REFERENCES public.tenants(id),
     operation_key   TEXT NOT NULL,

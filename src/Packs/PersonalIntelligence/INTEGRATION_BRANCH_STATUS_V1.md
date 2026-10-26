@@ -64,7 +64,7 @@ The code checks below were run at `d481491f` in `E:\kit-integrate-fed51d14`. `e9
 
 ## Handoff readiness
 
-Verdict for continuing development on this branch: ready, with the limits in this section. The isolated validation below blocks a merge review until the three paper-integrity tests can run. This is not a production release and not permission to merge `main`.
+Verdict for continuing development on this branch: the Trading Agent paper path is verified on the isolated cluster. This is not a production release and not permission to merge `main`.
 
 ### Integrated and checked without a database
 
@@ -79,7 +79,7 @@ These paths compile on this branch and are covered by the non-database tests and
 
 ### PostgreSQL coverage
 
-The classes below were run against the new cluster described in "Isolated validation". `PaperIntegrityPostgresTests` did not store a paper round trip: `SqlResearchStore` refuses `kit_pi_validation`, and those tests require that name.
+The classes below were run against the new cluster described in "Isolated validation". `PaperIntegrityPostgresTests` opens `trading_agent` on that same server. `SqlResearchStore` still refuses every other database name.
 
 - `PostgresIntegrationTests`
 - `PaperIntegrityPostgresTests`
@@ -147,12 +147,14 @@ Date: 2026-10-26. Cluster data directory `E:\kit-pi-validate-20261026`, created 
 
 The Personal Intelligence manifest then applied cleanly on `kit_pi_validation`, including `396`. `397` also applied there and is still on neither manifest. `395` and `398` applied on both `kit_pi_validation` and `trading_agent`. `396` and `397` refused `trading_agent`. `394` does not refuse `trading_agent`; it applied there because its guard names only `novixa_prod` and `trading_research`.
 
-A second apply of the Personal Intelligence manifest failed for `388` and `389`. `388` tries to replace an index that a foreign key already uses. `389` creates `pi_operation` without `IF NOT EXISTS`. `395` and `398` applied again without error. These files are still first-run migrations, not a repeatable runner.
+`388` drops the foreign keys that use `uq_pi_outcome_id_tenant` and `uq_trading_order_id_tenant` before it replaces those unique constraints. `389` creates `pi_operation` with `IF NOT EXISTS`. On a new database `kit_pi_repeat`, both files applied, then applied again, without error. They were not run a second time on `kit_pi_validation`. `395` and `398` already applied again without error. `396` and `397` still refuse every database except `kit_pi_validation`. `394` refuses `novixa_prod` and `trading_research`, and the paper host requires it on `trading_agent` before storing `paper_host_receipt`. It stays off the production and trading-research manifests.
 
 Content manifest numbers `292`, `294`, `295`, `296`, and `297` also appear in the production manifest, with different filenames. Personal Intelligence numbers are in neither of those manifests. Content `394`–`398` remain only on the dirty `E:\KitPlatform` tree and were not applied.
 
-`KitPlatform.PersonalIntelligence.Tests` with the fixture pointed at this `kit_pi_validation`: **190 passed, 3 failed, 0 skipped, 193 total**. The three failures are `PaperIntegrityPostgresTests`. Each stops in `SqlResearchStore` because the tests require database `kit_pi_validation` and the store accepts only `trading_agent`. No paper row was written by those tests. The store was not changed. `platform_events` had zero rows after the journal test; the assertion now counts rows, because migration `067` creates that table on a platform database. The fixture gives tenant B the existing module `inventory` when its module list is empty, so the entitlement call is not rejected for an empty list.
+`KitPlatform.PersonalIntelligence.Tests` with `KIT_PI_TEST_CONNECTION` pointed at `kit_pi_validation` on this server: **193 passed, 0 failed, 0 skipped**. The paper tests switch that connection to database `trading_agent` and then write, replay, and read `research_trading` rows. `platform_events` row count stays the safety check. The fixture gives tenant B the existing module `inventory` when its module list is empty.
 
-`dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` after that run: 0 errors. The API process on port `5290` was not restarted. During exchange tests the backfill worker logged that it is disabled.
+`dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` after that run: 0 errors. The API process on port `5290` was not restarted.
 
-Merge review stays blocked on the paper-test contract. The smallest next decision is which database name those three tests should use. Do not widen the host allowlist and do not point the tests at an existing database as part of that decision.
+To repeat: start only the cluster in `E:\kit-pi-validate-20261026` on `127.0.0.1:5433`, set `KIT_PI_TEST_CONNECTION` to `kit_pi_validation` on that port, and run `dotnet test tests/KitPlatform.PersonalIntelligence.Tests`. Do not point that variable at port `5432`.
+
+This validates the Trading Agent paper path on an isolated database. It does not make the production migration manifest or the Content manifest ready, and it does not add an Agent Runtime or a learning loop.

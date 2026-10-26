@@ -24,6 +24,12 @@ ALTER TABLE pack_personal_intelligence.pi_events
         'ContextObserved', 'EvidenceRecorded', 'DecisionMade', 'ActionTaken', 'OutcomeObserved',
         'ReflectionCreated', 'ExperienceDerived', 'PolicyProposed', 'PolicyApproved'));
 
+-- The reflection foreign key uses uq_pi_outcome_id_tenant. Drop that key before replacing the unique constraint.
+ALTER TABLE pack_personal_intelligence.pi_reflection
+    DROP CONSTRAINT IF EXISTS fk_pi_reflection_outcome;
+ALTER TABLE pack_personal_intelligence.pi_reflection
+    DROP CONSTRAINT IF EXISTS fk_pi_reflection_outcome_tenant;
+
 ALTER TABLE pack_personal_intelligence.pi_outcome
     DROP CONSTRAINT IF EXISTS uq_pi_outcome_id_tenant;
 ALTER TABLE pack_personal_intelligence.pi_outcome
@@ -37,23 +43,21 @@ ALTER TABLE pack_personal_intelligence.pi_outcome
     REFERENCES pack_personal_intelligence.person (person_id, tenant_id);
 
 ALTER TABLE pack_personal_intelligence.pi_reflection
-    DROP CONSTRAINT IF EXISTS fk_pi_reflection_outcome;
-ALTER TABLE pack_personal_intelligence.pi_reflection
-    DROP CONSTRAINT IF EXISTS fk_pi_reflection_outcome_tenant;
-ALTER TABLE pack_personal_intelligence.pi_reflection
     ADD CONSTRAINT fk_pi_reflection_outcome_tenant
     FOREIGN KEY (outcome_id, tenant_id)
     REFERENCES pack_personal_intelligence.pi_outcome (outcome_id, tenant_id);
+
+-- The execution foreign key uses uq_trading_order_id_tenant. Drop that key before replacing the unique constraint.
+ALTER TABLE pack_personal_intelligence.trading_execution
+    DROP CONSTRAINT IF EXISTS fk_trading_execution_order;
+ALTER TABLE pack_personal_intelligence.trading_execution
+    DROP CONSTRAINT IF EXISTS fk_trading_execution_order_tenant;
 
 ALTER TABLE pack_personal_intelligence.trading_order
     DROP CONSTRAINT IF EXISTS uq_trading_order_id_tenant;
 ALTER TABLE pack_personal_intelligence.trading_order
     ADD CONSTRAINT uq_trading_order_id_tenant UNIQUE (order_id, tenant_id);
 
-ALTER TABLE pack_personal_intelligence.trading_execution
-    DROP CONSTRAINT IF EXISTS fk_trading_execution_order;
-ALTER TABLE pack_personal_intelligence.trading_execution
-    DROP CONSTRAINT IF EXISTS fk_trading_execution_order_tenant;
 ALTER TABLE pack_personal_intelligence.trading_execution
     ADD CONSTRAINT fk_trading_execution_order_tenant
     FOREIGN KEY (order_id, tenant_id)

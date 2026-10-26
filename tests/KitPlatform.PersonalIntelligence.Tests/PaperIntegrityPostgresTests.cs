@@ -21,15 +21,15 @@ public sealed class PaperIntegrityPostgresTests : IAsyncLifetime
             throw new InvalidOperationException("Refusing a shared or operating database.");
         if (builder.Port == 5432)
             throw new InvalidOperationException("Refusing the shared PostgreSQL port.");
-        if (!string.Equals(builder.Database, PiValidationDatabase.ExpectedDatabase, StringComparison.Ordinal))
-            throw new InvalidOperationException("Refusing an unexpected database name.");
+        // KIT_PI_TEST_CONNECTION names the Personal Intelligence database. The research store accepts only trading_agent.
+        builder.Database = "trading_agent";
 
         await using var conn = new NpgsqlConnection(builder.ConnectionString);
         await conn.OpenAsync();
         var database = await Scalar<string>(conn, "SELECT current_database()");
         var port = Convert.ToInt32(await Scalar<object>(conn, "SELECT inet_server_port()"));
-        if (!string.Equals(database, PiValidationDatabase.ExpectedDatabase, StringComparison.Ordinal) || port != 5433)
-            throw new InvalidOperationException("Connected database does not match the isolated validation database.");
+        if (!string.Equals(database, "trading_agent", StringComparison.Ordinal) || port != 5433)
+            throw new InvalidOperationException("Connected database does not match the isolated trading_agent database.");
         var forbidden = Convert.ToInt32(await Scalar<object>(conn, "SELECT COUNT(*) FROM pg_database WHERE datname IN ('trading_research', 'novixa_prod')"));
         if (forbidden != 0)
             throw new InvalidOperationException("Refusing a cluster that contains an operating database.");
@@ -106,6 +106,7 @@ public sealed class PaperIntegrityPostgresTests : IAsyncLifetime
     [Fact]
     public void Missing_signal_key_stays_unlinked_and_historical_version_stays_null()
     {
+        SeedHistoricalRow();
         var orphan = "integrity-002-orphan:" + Guid.NewGuid().ToString("N");
         var snapshot = Snapshot(
             PaperSession.NoClosedPosition,
@@ -161,6 +162,34 @@ public sealed class PaperIntegrityPostgresTests : IAsyncLifetime
         }
 
         return rows;
+    }
+
+    private void SeedHistoricalRow()
+    {
+        using var conn = new NpgsqlConnection(_connection);
+        conn.Open();
+        using var command = new NpgsqlCommand(
+            """
+            INSERT INTO research_trading.signal (signal_key, session_key, symbol, side, signal_time, status)
+            VALUES (@key, 'integrity-002-hist', 'BTCUSDT', 'BUY', TIMESTAMPTZ '2026-01-01T00:00:00Z', 'awaiting_next_open')
+            ON CONFLICT (signal_key) DO NOTHING;
+
+            INSERT INTO research_trading.risk_decision (operation_key, session_key, allowed, reasons)
+            VALUES (@key, 'integrity-002-hist', TRUE, '')
+            ON CONFLICT (operation_key) DO NOTHING;
+
+            INSERT INTO research_trading.paper_fill (
+                operation_key, session_key, side, tape_price, execution_price, quantity, fee, slippage_quote, net_cash)
+            VALUES (@key, 'integrity-002-hist', 'BUY', 100, 100, 0.001, 0, 0, -0.1)
+            ON CONFLICT (operation_key) DO NOTHING;
+
+            INSERT INTO research_trading.paper_operation (operation_key, payload_hash, status, result)
+            VALUES (@key, 'hist', 'paper_filled', 'historical')
+            ON CONFLICT (operation_key) DO NOTHING;
+            """,
+            conn);
+        command.Parameters.AddWithValue("key", HistoricalKey);
+        command.ExecuteNonQuery();
     }
 
     private int Count(string sql, IReadOnlyList<string> keys)
