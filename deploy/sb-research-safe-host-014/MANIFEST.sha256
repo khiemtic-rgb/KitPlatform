@@ -1,0 +1,7 @@
+c1b38e9c7a8d32387f29d6423106cfeb70bd051f4173a27def51e71971d586ab  sb-research-preflight.sh
+4e9edfc8c1009ec011c03d18a96ad4a8b5b54a74240d84133999266cac2968cb  sb-research-linux-selftest.sh
+d03932dbb10b4cd76425f53ede4928fda5fce72fa9e95a9d11994bd81887e293  sb-research-preflight-harness.sh
+7aaf188e9c3174c9d02f7069f99df848643ce18649c7b9ec38322f797746d11c  prepare-publication-dir.sh
+a35bd757ed66aa814f34ceb1f8ec4e564a2b1407bfae805a004a9bdbf3a52534  ../../migrations/384_pack_content_brand_narrative_dna.sql
+f394e67433952a70e26f80c22f1d5b96822bfe00ed59c59d8d9a53daf24a0ba9  ../../artifacts/sb-research-safe-host-014/api/KitPlatform.Api.dll
+50253a9471143b5025bb4decb468f134740d9e90801d85d6d8a964b3b44e4ffa  ../../artifacts/sb-research-safe-host-014/api/KitPlatform.Packs.PersonalIntelligence.Api.dll

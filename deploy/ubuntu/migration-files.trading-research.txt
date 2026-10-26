@@ -1,0 +1,6 @@
+# Trading Research V1
+# Separate from Personal Intelligence and from production.
+# Do not add this manifest to migration-files.prod.txt.
+# Do not add this manifest to migration-files.personal-intelligence.txt.
+395_research_trading_v1.sql
+398_research_trading_paper_integrity_v1.sql

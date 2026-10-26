@@ -6,6 +6,7 @@ tests/**/bin/
 tests/**/obj/
 client/**/node_modules/
 client/**/dist/
+deploy/trading-research-v2/dist/
 client/**/test-results/
 client/**/playwright-report/
 .dev/

@@ -41,6 +41,7 @@ export type ModuleKey =
   | 'kitSales'
   | 'localOs'
   | 'learning'
+  | 'secondBrain'
   | 'system';
 
 /** Tenant platform.vertical — lọc sidebar theo loại tổ chức. */
@@ -259,6 +260,15 @@ export const moduleRegistry: ModuleMenuItem[] = [
     enabled: true,
     platformModule: ADMIN_MODULE_PLATFORM_CODES.localOs,
     verticals: LOCAL_AND_MARKETING,
+  },
+  {
+    key: 'secondBrain',
+    label: 'secondBrain',
+    path: '/second-brain/agent',
+    icon: <FundOutlined />,
+    enabled: true,
+    platformModule: ADMIN_MODULE_PLATFORM_CODES.secondBrain,
+    verticals: ALL_VERTICALS,
   },
   {
     key: 'system',

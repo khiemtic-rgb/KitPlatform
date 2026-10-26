@@ -1,0 +1,68 @@
+{
+  "candleCount": 48,
+  "candles": [
+    {
+      "symbol": "BTCUSDT",
+      "interval": "1h",
+      "openTime": "2026-10-23T05:00:00Z",
+      "closeTime": "2026-10-23T05:59:59.999Z",
+      "open": 81889.32,
+      "high": 82100.00,
+      "low": 81750.00,
+      "close": 82010.00,
+      "ingestedAt": "2026-10-23T06:50:00Z"
+    }
+  ],
+  "signals": [
+    {
+      "signalKey": "sma-cross-v1:BTCUSDT:1h:1761195600000:BUY",
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "signalTime": "2026-10-23T05:00:00Z",
+      "fillTime": "2026-10-23T06:00:00Z",
+      "fillPrice": 81889.32,
+      "status": "ready"
+    }
+  ],
+  "decisions": [
+    {
+      "operationKey": "sma-cross-v1:BTCUSDT:1h:1761195600000:BUY",
+      "allowed": true,
+      "reasons": ""
+    }
+  ],
+  "fills": [
+    {
+      "operationKey": "sma-cross-v1:BTCUSDT:1h:1761195600000:BUY",
+      "side": "BUY",
+      "tapePrice": 81889.32,
+      "executionPrice": 81971.20932,
+      "quantity": 0.001,
+      "fee": 0.08197121,
+      "slippageQuote": 0.08188932,
+      "netCash": -82.05318053
+    }
+  ],
+  "runs": [
+    {
+      "id": 2,
+      "recordedAt": "2026-10-23T07:00:32Z",
+      "status": "REPLAYED",
+      "detail": "http=1;weight1m=2;inserted=1;duplicates=46;new_fills=0;replayed=True"
+    },
+    {
+      "id": 1,
+      "recordedAt": "2026-10-23T06:50:29Z",
+      "status": "COMPLETED",
+      "detail": "http=1;weight1m=2;inserted=47;duplicates=0;new_fills=1;replayed=False"
+    }
+  ],
+  "sessions": [
+    {
+      "createdAt": "2026-10-23T07:00:32Z",
+      "status": "COMPLETED",
+      "netRealizedPnl": null,
+      "pnlStatus": "not_recomputed_on_replay"
+    }
+  ]
+}

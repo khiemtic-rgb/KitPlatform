@@ -13,7 +13,14 @@
   <Project Path="src/Packs/FamilyOS/KitPlatform.Packs.FamilyOs.Infrastructure/KitPlatform.Packs.FamilyOs.Infrastructure.csproj" />
   <Project Path="src/Packs/LocalOS/KitPlatform.Packs.LocalOs.Application/KitPlatform.Packs.LocalOs.Application.csproj" />
   <Project Path="src/Packs/LocalOS/KitPlatform.Packs.LocalOs.Infrastructure/KitPlatform.Packs.LocalOs.Infrastructure.csproj" />
+  <Project Path="src/Packs/PersonalIntelligence/KitPlatform.Packs.PersonalIntelligence.Application/KitPlatform.Packs.PersonalIntelligence.Application.csproj" />
+  <Project Path="src/Packs/PersonalIntelligence/KitPlatform.Packs.PersonalIntelligence.Infrastructure/KitPlatform.Packs.PersonalIntelligence.Infrastructure.csproj" />
+  <Project Path="src/Packs/PersonalIntelligence/KitPlatform.Packs.PersonalIntelligence.Api/KitPlatform.Packs.PersonalIntelligence.Api.csproj" />
+  <Project Path="src/Packs/PersonalIntelligence/KitPlatform.Packs.PersonalIntelligence.ResearchHost/KitPlatform.Packs.PersonalIntelligence.ResearchHost.csproj" />
+  <Project Path="src/Packs/PersonalIntelligence/KitPlatform.Packs.PersonalIntelligence.ResearchDashboard/KitPlatform.Packs.PersonalIntelligence.ResearchDashboard.csproj" />
+  <Project Path="src/Packs/PersonalIntelligence/KitPlatform.Packs.PersonalIntelligence.PaperHost/KitPlatform.Packs.PersonalIntelligence.PaperHost.csproj" />
   <Project Path="tests/KitPlatform.Application.Tests/KitPlatform.Application.Tests.csproj" />
+  <Project Path="tests/KitPlatform.PersonalIntelligence.Tests/KitPlatform.PersonalIntelligence.Tests.csproj" />
   <Project Path="tests/KitPlatform.Platform.Tests/KitPlatform.Platform.Tests.csproj" />
   <Project Path="tests/KitPlatform.Api.Tests/KitPlatform.Api.Tests.csproj" />
 </Solution>
