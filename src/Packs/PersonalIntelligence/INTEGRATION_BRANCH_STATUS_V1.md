@@ -243,3 +243,11 @@ The merged runtime log is `MemoryAgentRunLog`. It does not survive a process res
 A file-reload prototype on this branch, after `2b870c4a`, passed 7 tests by reading the receipt into a new log instance. Same payload replays, a different payload conflicts, approval wait and failure details remain, a completed task does not run again, another tenant is refused, and a live tool is still rejected. That file is a test double. It is not SQL, and a database restart test has not passed. The proposed `pi_agent_task` table is described in `AGENT-RUNTIME-V1.md` and was not created.
 
 After the prototype tests, `KitPlatform.PersonalIntelligence.Tests` passed 211 of 211 and the API build again finished with 0 errors and 48 warnings. `Program.cs` still does not register the runtime or start a worker. The prototype commit is on the integration branch and is not the commit merged by pull request 7.
+
+## PostgreSQL task log
+
+Migration `399_pack_personal_intelligence_agent_task_v1.sql` adds `pack_personal_intelligence.pi_agent_task`. It is not on a deploy manifest. It was applied only to the new database `kit_pi_agent_task` on `127.0.0.1:5433`. Checks after that apply: `kit_pi_validation` has no `pi_agent_task`, `trading_agent` has no `pi_agent_task`, and `kit_pi_agent_task` has the table. `research_trading` was not given a tenant column.
+
+`PostgresAgentRunLog` claims a row before tools run, writes the receipt after each step, and refuses a stale revision. A separate probe process exits after the first committed step. The test process reads that row as `Running`, not `Completed`, and does not call the tool. A tool that returned but was not committed is not retried and is not exactly-once. `Program.cs` still has no task endpoint and no worker.
+
+After these tests, `KitPlatform.PersonalIntelligence.Tests` passed 224 of 224 and `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` finished with 0 errors and 48 warnings. This commit is not on `origin/main`.

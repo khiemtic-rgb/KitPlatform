@@ -1,6 +1,6 @@
 # Agent Runtime V1
 
-Status: Agent Runtime V1 is on `origin/main` at `2b870c4a` through pull request 7. That commit does not include durable task storage. The file-reload prototype below is on the integration branch after that merge. This is not a hosted worker and not a live trading path.
+Status: Agent Runtime V1 is on `origin/main` at `2b870c4a`. The PostgreSQL task log is on the integration branch after that commit. It is not on `main`. This is not a hosted worker and not a live trading path.
 
 ## Components
 
@@ -47,39 +47,37 @@ No learning loop, no policy rewrite, no hosted API for the task receipt, and no 
 
 ## Durable task state
 
-What survives today:
+`MemoryAgentRunLog` still ends when the process drops it. `ResearchSnapshot.TaskTrace` remains a trading outcome on `trading_agent` and is not the task log. `pi_operation` remains the trading-loop receipt and is still deserialized as `TradingLoopResult`.
 
-- `MemoryAgentRunLog` keeps the full receipt, including the payload hash, status, steps, and error, until the process drops it.
-- `ResearchSnapshot.TaskTrace` is written into `research_trading.session_result` on database `trading_agent`. It records the task key, a status string, the recommendation outcome, the research fill count, and whether the recommendation executed. It does not record the payload hash, the plan, step errors, or a tenant.
-- `pi_operation` stores one trading-loop result per tenant and operation key. A retry deserializes that JSON as `TradingLoopResult`. It is not a task table.
+`PostgresAgentRunLog` stores the task in `pack_personal_intelligence.pi_agent_task`. Migration `399_pack_personal_intelligence_agent_task_v1.sql` creates that table. The tenant column references `public.tenants(id)`, the same tenant row the platform resolves from the `tenant_id` claim. The unique key is `(tenant_id, task_key)`. `revision` is the optimistic concurrency token: an update matches the revision it read, and a stale save changes zero rows. The receipt JSON stores the plan, step results, approval marker, outcome, error, and evidence. Every read and write includes `tenant_id`. There is no row level security, matching migration 389.
 
-Those stores do not give the runtime a task to resume. A new `MemoryAgentRunLog` runs the plan again. The research session itself stays replay-safe, so the unapproved slice does not add a fill, but that is the research ledger, not the task log.
+The migration is not listed in `migration-files.prod.txt`, `migration-files.personal-intelligence.txt`, or `migration-files.trading-research.txt`. It was applied only to a new database, `kit_pi_agent_task`, on `127.0.0.1:5433`. `kit_pi_validation` and `trading_agent` do not have the table. `research_trading` was not changed.
 
-`pi_operation` cannot be reused. Its result reader expects `TradingLoopResult`, its key space belongs to the trading loop, and a stored row is the loop receipt rather than a task that can remain `AwaitingApproval`. `research_trading` cannot be the task store either: its key is the session hash, it has no tenant, and adding a tenant id there is a separate decision.
+A new log claims the row before any tool runs and holds a session advisory lock until the receipt is terminal. The other caller with the same tenant and key waits, then reads the stored receipt and does not run tools. A different payload hash throws before tools run. After each step the log writes the current receipt. A new log that finds a row returns it and does not continue the plan.
 
-The next store, not created and not migrated in this change:
+## What the PostgreSQL tests showed
 
-```text
-pack_personal_intelligence.pi_agent_task
-  task_id        UUID PRIMARY KEY
-  tenant_id      UUID NOT NULL REFERENCES public.tenants(id)
-  task_key       TEXT NOT NULL
-  payload_hash   TEXT NOT NULL
-  status         TEXT NOT NULL
-  receipt        JSONB NOT NULL
-  created_at     TIMESTAMPTZ NOT NULL
-  updated_at     TIMESTAMPTZ NOT NULL
-  UNIQUE (tenant_id, task_key)
-```
+`PostgresAgentTaskTests` uses `kit_pi_agent_task`. These are not the file-reload tests:
 
-The receipt JSON holds the plan, step results, tool errors, evidence refs, and `LiveAccepted`. A different payload hash for the same tenant and key is a conflict. A different tenant does not read the row. No row level security is proposed here; that matches migration 389, where RLS stays deferred. The table belongs on the Personal Intelligence database that already has `public.tenants` and `pi_operation`. It does not belong on `trading_agent`, and it does not belong in `migration-files.prod.txt` until a later decision. No migration file was added.
+- A new `PostgresAgentRunLog` reads the stored receipt, including the plan and evidence, and does not call the tool.
+- `AwaitingApproval` stays waiting on a new log. The earlier read stays at one call and the approval tool stays at zero.
+- A completed task does not run again.
+- A failed task still has the failed step and the error `boom`.
+- The same tenant, key, and hash does not call the tool a second time.
+- A different hash throws and does not call the tool.
+- Another tenant's log cannot read the row. Writing that receipt through the other tenant's log throws. The owner's summary stays unchanged.
+- Two overlapping callers create one row and call the tool once.
+- A revision bump during the tool makes the save fail. The stored status is not `Completed`, and a new log does not call the tool.
+- An exception after the first committed step leaves `Running` with one step. A new log does not mark it `Completed` and does not call the tool.
+- A separate process, `KitPlatform.PersonalIntelligence.AgentTaskProbe`, exits after that same committed step. The test process then reads `Running`, not `Completed`, and does not call the tool.
+- A live tool is rejected. `LiveAccepted` stays false in the stored receipt.
 
-## File-reload prototype
+The file-reload tests still pass. They are not evidence for PostgreSQL.
 
-`AgentRuntimeRestartTests` writes the receipt to a temporary JSON file and reads it back with a new log instance. Seven tests passed: same payload returns the stored receipt, a different payload throws, `AwaitingApproval` stays waiting and does not repeat the earlier step, a completed task does not run again, a failed task still names step `two` and the error `boom`, another tenant does not receive the stored receipt, and a live tool is still rejected. This is not a database restart and not a new operating-system process. A SQL restart test has not passed because the table above does not exist.
+## Crash window
 
-The same change makes `AgentRuntime` refuse a stored task key when the caller tenant differs. That check is not in `origin/main` `2b870c4a`.
+The saved row is recovered. A tool that has returned, but whose update has not committed, is not in that row. A later log returns the last committed receipt and does not retry the missing step, so the task cannot be marked `Completed` from that gap. This is not exactly-once execution. A `Running` receipt is not resumed. The log must be disposed, or the process must exit, before another caller can take the advisory lock.
 
 ## Product entry still missing
 
-`Program.cs` does not register `AgentRuntime`. There is no endpoint that accepts a task. The next product step, after the table is approved, is a tenant-scoped log behind the existing Personal Intelligence permissions. It still must not start a worker, must not accept live execution, and must not add a tenant receipt API before the ownership model is decided.
+`Program.cs` does not register `AgentRuntime`. There is no endpoint that accepts a task. The next product step is to point `PostgresAgentRunLog` at an approved Personal Intelligence database behind the existing permissions. It still must not start a worker, must not accept live execution, and must not add a tenant receipt API before the ownership model is decided.

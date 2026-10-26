@@ -230,20 +230,43 @@ public sealed class AgentRuntimeRestartTests
         public AgentTaskReceipt? Find(string taskKey)
             => _runs.TryGetValue(taskKey, out var receipt) ? receipt : null;
 
+        public AgentTaskReceipt? Claim(AgentTaskReceipt receipt)
+        {
+            if (_runs.TryGetValue(receipt.TaskKey, out var existing))
+            {
+                Reject(existing, receipt);
+                return existing;
+            }
+
+            _runs.Add(receipt.TaskKey, receipt);
+            Flush();
+            return null;
+        }
+
         public void Remember(AgentTaskReceipt receipt)
         {
             if (_runs.TryGetValue(receipt.TaskKey, out var existing))
             {
-                if (existing.TenantId != receipt.TenantId)
-                    throw new AgentTenantMismatchException();
-                if (!string.Equals(existing.PayloadHash, receipt.PayloadHash, StringComparison.Ordinal))
-                    throw new AgentRunConflictException();
+                Reject(existing, receipt);
+                _runs[receipt.TaskKey] = receipt;
+                Flush();
                 return;
             }
 
             _runs.Add(receipt.TaskKey, receipt);
-            File.WriteAllText(_path, JsonSerializer.Serialize(_runs.Values.ToList(), Json));
+            Flush();
         }
+
+        private static void Reject(AgentTaskReceipt existing, AgentTaskReceipt incoming)
+        {
+            if (existing.TenantId != incoming.TenantId)
+                throw new AgentTenantMismatchException();
+            if (!string.Equals(existing.PayloadHash, incoming.PayloadHash, StringComparison.Ordinal))
+                throw new AgentRunConflictException();
+        }
+
+        private void Flush()
+            => File.WriteAllText(_path, JsonSerializer.Serialize(_runs.Values.ToList(), Json));
     }
 
     private sealed class TempRunFile : IDisposable
