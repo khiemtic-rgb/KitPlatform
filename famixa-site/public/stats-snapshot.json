@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-26T05:04:34.441Z",
+  "generatedAt": "2026-10-26T13:22:45.484Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 38,
-    "todayPageViews": 7,
-    "todayRequests": 54,
-    "last24hVisitors": 101,
-    "last24hPageViews": 33,
-    "last24hRequests": 503
+    "todayVisitors": 112,
+    "todayPageViews": 27,
+    "todayRequests": 312,
+    "last24hVisitors": 145,
+    "last24hPageViews": 37,
+    "last24hRequests": 390
   },
   "hourly": [
-    {
-      "time": "2026-10-25T06:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-25T07:00:00Z",
-      "visitors": 3,
-      "requests": 280
-    },
-    {
-      "time": "2026-10-25T08:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-25T09:00:00Z",
-      "visitors": 3,
-      "requests": 27
-    },
-    {
-      "time": "2026-10-25T10:00:00Z",
-      "visitors": 6,
-      "requests": 30
-    },
-    {
-      "time": "2026-10-25T11:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-25T12:00:00Z",
-      "visitors": 12,
-      "requests": 15
-    },
-    {
-      "time": "2026-10-25T13:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
     {
       "time": "2026-10-25T14:00:00Z",
       "visitors": 3,
@@ -120,6 +80,51 @@
       "time": "2026-10-26T04:00:00Z",
       "visitors": 5,
       "requests": 8
+    },
+    {
+      "time": "2026-10-26T05:00:00Z",
+      "visitors": 16,
+      "requests": 17
+    },
+    {
+      "time": "2026-10-26T06:00:00Z",
+      "visitors": 10,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-26T07:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-26T08:00:00Z",
+      "visitors": 23,
+      "requests": 26
+    },
+    {
+      "time": "2026-10-26T09:00:00Z",
+      "visitors": 4,
+      "requests": 18
+    },
+    {
+      "time": "2026-10-26T10:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-26T11:00:00Z",
+      "visitors": 5,
+      "requests": 50
+    },
+    {
+      "time": "2026-10-26T12:00:00Z",
+      "visitors": 3,
+      "requests": 44
+    },
+    {
+      "time": "2026-10-26T13:00:00Z",
+      "visitors": 16,
+      "requests": 85
     }
   ],
   "daily": [
@@ -161,71 +166,71 @@
     },
     {
       "date": "2026-10-26",
-      "visitors": 75,
-      "pageViews": 15,
-      "requests": 118
+      "visitors": 156,
+      "pageViews": 35,
+      "requests": 376
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 58
+      "views": 71
     },
     {
       "path": "/robots.txt",
-      "views": 44
+      "views": 46
     },
     {
       "path": "/vi/",
-      "views": 30
+      "views": 28
     },
     {
       "path": "/sitemap.xml",
       "views": 19
     },
     {
-      "path": "/images/logo-famixa-icon.png",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 3
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 3
-    },
-    {
       "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 3
-    },
-    {
-      "path": "/.env",
-      "views": 3
-    },
-    {
-      "path": "/_next/image",
-      "views": 3
-    },
-    {
-      "path": "/ansible/.env",
-      "views": 2
+      "views": 8
     },
     {
       "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
-      "views": 2
+      "views": 7
     },
     {
-      "path": "/en/.env",
-      "views": 2
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 7
     },
     {
-      "path": "/_next/static/chunks/app/vi/huong-dan/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 2
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 7
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 7
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 7
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 7
+    },
+    {
+      "path": "/favicon.ico",
+      "views": 6
+    },
+    {
+      "path": "/vi/huong-dan/lich-hom-nay",
+      "views": 5
+    },
+    {
+      "path": "/images/logo-famixa-icon.png",
+      "views": 5
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 4
     }
   ]
 }
