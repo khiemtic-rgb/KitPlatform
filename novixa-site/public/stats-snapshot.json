@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-26T04:51:31.305Z",
+  "generatedAt": "2026-10-26T13:08:40.086Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 43,
-    "todayPageViews": 344,
-    "todayRequests": 435,
-    "last24hVisitors": 138,
-    "last24hPageViews": 1380,
-    "last24hRequests": 1891
+    "todayVisitors": 95,
+    "todayPageViews": 430,
+    "todayRequests": 654,
+    "last24hVisitors": 151,
+    "last24hPageViews": 1169,
+    "last24hRequests": 1460
   },
   "hourly": [
-    {
-      "time": "2026-10-25T05:00:00Z",
-      "visitors": 7,
-      "requests": 15
-    },
-    {
-      "time": "2026-10-25T06:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-25T07:00:00Z",
-      "visitors": 7,
-      "requests": 36
-    },
-    {
-      "time": "2026-10-25T08:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-25T09:00:00Z",
-      "visitors": 10,
-      "requests": 286
-    },
-    {
-      "time": "2026-10-25T10:00:00Z",
-      "visitors": 2,
-      "requests": 280
-    },
-    {
-      "time": "2026-10-25T11:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-25T12:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-25T13:00:00Z",
-      "visitors": 7,
-      "requests": 12
-    },
     {
       "time": "2026-10-25T14:00:00Z",
       "visitors": 12,
@@ -128,8 +83,48 @@
     },
     {
       "time": "2026-10-26T04:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-26T05:00:00Z",
       "visitors": 2,
-      "requests": 3
+      "requests": 2
+    },
+    {
+      "time": "2026-10-26T06:00:00Z",
+      "visitors": 7,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-26T07:00:00Z",
+      "visitors": 4,
+      "requests": 33
+    },
+    {
+      "time": "2026-10-26T08:00:00Z",
+      "visitors": 4,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-26T09:00:00Z",
+      "visitors": 9,
+      "requests": 10
+    },
+    {
+      "time": "2026-10-26T10:00:00Z",
+      "visitors": 15,
+      "requests": 51
+    },
+    {
+      "time": "2026-10-26T11:00:00Z",
+      "visitors": 6,
+      "requests": 75
+    },
+    {
+      "time": "2026-10-26T12:00:00Z",
+      "visitors": 8,
+      "requests": 22
     }
   ],
   "daily": [
@@ -171,71 +166,71 @@
     },
     {
       "date": "2026-10-26",
-      "visitors": 43,
-      "pageViews": 344,
-      "requests": 435
+      "visitors": 95,
+      "pageViews": 430,
+      "requests": 654
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 115
+      "views": 135
     },
     {
       "path": "/vi/",
-      "views": 42
+      "views": 52
     },
     {
       "path": "/robots.txt",
-      "views": 34
+      "views": 35
     },
     {
       "path": "/sitemap-index.xml",
-      "views": 15
-    },
-    {
-      "path": "/.env.old",
-      "views": 14
+      "views": 16
     },
     {
       "path": "/.env",
-      "views": 14
+      "views": 10
     },
     {
-      "path": "/.env.save",
-      "views": 9
+      "path": "/.env.old",
+      "views": 8
     },
     {
       "path": "/api/v2/.env",
-      "views": 9
+      "views": 6
     },
     {
-      "path": "/dashboard/.env",
-      "views": 8
-    },
-    {
-      "path": "/.env.production",
-      "views": 8
-    },
-    {
-      "path": "/scripts/.env",
-      "views": 8
+      "path": "/mandrill/.env",
+      "views": 6
     },
     {
       "path": "/assets/.env",
-      "views": 8
+      "views": 6
     },
     {
-      "path": "/kubernetes/.env",
-      "views": 8
+      "path": "/.env.save",
+      "views": 6
     },
     {
-      "path": "/.env.prod",
-      "views": 8
+      "path": "/vi/nha-thuoc/",
+      "views": 6
     },
     {
-      "path": "/php-info.php",
-      "views": 8
+      "path": "/var/www/.env",
+      "views": 5
+    },
+    {
+      "path": "/core/app/.env",
+      "views": 5
+    },
+    {
+      "path": "/dashboard/.env",
+      "views": 5
+    },
+    {
+      "path": "/.env.backup",
+      "views": 5
     }
   ]
 }
