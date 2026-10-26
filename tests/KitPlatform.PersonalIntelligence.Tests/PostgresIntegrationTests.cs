@@ -45,7 +45,7 @@ public sealed class PostgresIntegrationTests : IClassFixture<PiValidationDatabas
             """,
             new { TenantId = _db.TenantA, decision.DecisionId });
         var platformEvents = await conn.ExecuteScalarAsync<int>(
-            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'platform_events'");
+            "SELECT COUNT(*)::int FROM platform_events");
         Assert.Equal(1, eventTable);
         Assert.Equal(0, platformEvents);
     }
@@ -293,6 +293,15 @@ public sealed class PiValidationDatabase : IAsyncLifetime
             UPDATE public.tenants
             SET settings = settings || '{"platform":{"enabled_modules":["personal_intelligence"]}}'::jsonb
             WHERE id = @TenantA;
+
+            UPDATE public.tenants
+            SET settings = jsonb_set(
+                COALESCE(settings, '{}'::jsonb),
+                '{platform,enabled_modules}',
+                '["inventory"]'::jsonb,
+                true)
+            WHERE id = @TenantB
+              AND COALESCE(jsonb_array_length(settings->'platform'->'enabled_modules'), 0) = 0;
 
             INSERT INTO public.permissions (id, permission_code, permission_name, module_name)
             VALUES

@@ -57,14 +57,14 @@ The code checks below were run at `d481491f` in `E:\kit-integrate-fed51d14`. `e9
 
 - No merge to `main`.
 - No production deploy.
-- No migration execution.
+- No migration on `novixa_prod`, `trading_research`, port `5432`, or any database that already existed.
 - No worker enabled and no new exchange order.
-- PostgreSQL integration tests were not run. They require `KIT_PI_TEST_CONNECTION` and refuse shared databases, port `5432`, `novixa_prod`, and `trading_research`. That variable was not set, because those fixtures insert tenant and user rows.
+- The isolated PostgreSQL run is recorded under "Isolated validation". It did not use port `5432` or an existing data directory.
 - The full admin project does not typecheck. The Second Brain admin module does. Closing the other 156 errors is a separate Famixa and inventory change, not part of this branch.
 
 ## Handoff readiness
 
-Verdict for continuing development on this branch: ready, with the limits in this section. This is not a production release and not permission to merge `main`.
+Verdict for continuing development on this branch: ready, with the limits in this section. The isolated validation below blocks a merge review until the three paper-integrity tests can run. This is not a production release and not permission to merge `main`.
 
 ### Integrated and checked without a database
 
@@ -77,9 +77,9 @@ These paths compile on this branch and are covered by the non-database tests and
 - `ResearchSafeHostWorkerIsolation` removes already-registered hosted services only when `ResearchSafeHost:SuppressBackgroundWriters` is true. That key is unset in committed configuration, so the API call does nothing.
 - Admin routes, registry key `secondBrain`, and feature map `personal_intelligence` match the three smoke scripts.
 
-### Built, with unit coverage, not verified against PostgreSQL
+### PostgreSQL coverage
 
-These fixtures all use `PiValidationDatabase` or read `KIT_PI_TEST_CONNECTION` directly. They were not run. The variable was not set.
+The classes below were run against the new cluster described in "Isolated validation". `PaperIntegrityPostgresTests` did not store a paper round trip: `SqlResearchStore` refuses `kit_pi_validation`, and those tests require that name.
 
 - `PostgresIntegrationTests`
 - `PaperIntegrityPostgresTests`
@@ -88,8 +88,6 @@ These fixtures all use `PiValidationDatabase` or read `KIT_PI_TEST_CONNECTION` d
 - `MultiExchangeBackfillTests`
 - `ExchangeConnectionApiTests`
 - `ExchangeExecutionSyncApiTests`
-
-No isolated database named `kit_pi_validation` was available on a port other than `5432`. The fixture also refuses `kitplatform`, `kitplatform_test`, `pharmacore`, and `postgres`. Creating one on the VPS, or pointing the variable at an existing database, was not done.
 
 ### Default activation and worker
 
@@ -103,7 +101,7 @@ The research host, paper host, and research dashboard each accept a SQL connecti
 
 ### Migrations before any test run
 
-Do not apply these files to `novixa_prod`, to the live `trading_research` database, or through `migration-files.prod.txt` or `migration-files.content.txt`. Number `386` does not exist. Nothing in this handoff was applied.
+Do not apply these files to `novixa_prod`, to the live `trading_research` database, or through `migration-files.prod.txt` or `migration-files.content.txt`. Number `386` does not exist. The only apply was the new local cluster in "Isolated validation".
 
 Personal Intelligence manifest order, after the platform tables it references (`public.tenants`, `public.users`, `platform_module_registry`, and `kit_uuid_v7`):
 
@@ -121,14 +119,7 @@ Trading Research manifest, separate database, after the platform baseline and no
 
 `397` is on neither manifest. Its SQL aborts unless the database is `kit_pi_validation`, and it references tables from `385` and `391`.
 
-The safe database check, which was not executed:
-
-- A new local cluster, not the VPS and not an existing data directory. Listener port must not be `5432`.
-- One database named `kit_pi_validation` for the API fixture and for `396` and `397`.
-- A different database named `trading_agent` if the research host, paper host, or dashboard is exercised. Do not reuse `trading_research`.
-- Apply the platform baseline through the objects listed above, and do not apply the uncommitted Content files that reuse numbers `394`–`398`.
-- Apply the Personal Intelligence manifest only to `kit_pi_validation`, then `395` and `398` only to `trading_agent`.
-- Set `KIT_PI_TEST_CONNECTION` only after those guards match. The fixture then inserts tenants `PI_A` and `PI_B` and two users. That write stays inside `kit_pi_validation`.
+The safe database check was executed on a new local cluster. See "Isolated validation". Do not repeat it against an existing database.
 
 ### Branch and the VPS
 
@@ -141,3 +132,27 @@ This branch is not merged to `main` and was not deployed. The running API and th
 - Famixa, kit-video, procurement, and inventory TypeScript errors from the admin typecheck. They match `fed51d14` and stay with the excluded compile commit `c57d8d7e`.
 - Content migrations numbered `394`–`398` on the dirty `E:\KitPlatform` tree. They must be renumbered before they share a database with this branch.
 - No Agent Runtime, no learning loop, and no `pi_knowledge`, `pi_memory`, or `pi_agent` store. `recommend_only`, the ledger, the SMA formula, and the read connectors are not those systems.
+
+## Isolated validation
+
+Date: 2026-10-26. Cluster data directory `E:\kit-pi-validate-20261026`, created with PostgreSQL 18 `initdb`. It listens only on `127.0.0.1:5433`. Port `5432` and its existing process were not used. The cluster contains `kit_pi_validation` and `trading_agent`, and does not contain `novixa_prod` or `trading_research`. Local trust authentication is limited to localhost. No production credential was used.
+
+`migration-files.prod.txt` was applied to `kit_pi_validation` except these files, which fail on an empty database and were not edited. They are outside Personal Intelligence:
+
+- `060_family_members_status_align.sql` references `family_members.is_active`, which is not on the fresh table.
+- `090_kap_pharmacy_intelligence_seed.sql` and `102_kap_pharmacy_v1_1_telemed.sql` insert assessment rows whose parents are absent.
+- `155_learning_os_schema.sql` and `158_learning_credentials_gates_l3_l5.sql` require a role named `kitplatform`.
+- `163`, `165`, `168`, `178`, `179`, and `180` learning seeds reference quiz modules that were not created after `155` failed.
+- `230_pack_family_parent_emotion_push.sql` and `231_pack_family_memory.sql` require schema `pack_family`.
+
+The Personal Intelligence manifest then applied cleanly on `kit_pi_validation`, including `396`. `397` also applied there and is still on neither manifest. `395` and `398` applied on both `kit_pi_validation` and `trading_agent`. `396` and `397` refused `trading_agent`. `394` does not refuse `trading_agent`; it applied there because its guard names only `novixa_prod` and `trading_research`.
+
+A second apply of the Personal Intelligence manifest failed for `388` and `389`. `388` tries to replace an index that a foreign key already uses. `389` creates `pi_operation` without `IF NOT EXISTS`. `395` and `398` applied again without error. These files are still first-run migrations, not a repeatable runner.
+
+Content manifest numbers `292`, `294`, `295`, `296`, and `297` also appear in the production manifest, with different filenames. Personal Intelligence numbers are in neither of those manifests. Content `394`–`398` remain only on the dirty `E:\KitPlatform` tree and were not applied.
+
+`KitPlatform.PersonalIntelligence.Tests` with the fixture pointed at this `kit_pi_validation`: **190 passed, 3 failed, 0 skipped, 193 total**. The three failures are `PaperIntegrityPostgresTests`. Each stops in `SqlResearchStore` because the tests require database `kit_pi_validation` and the store accepts only `trading_agent`. No paper row was written by those tests. The store was not changed. `platform_events` had zero rows after the journal test; the assertion now counts rows, because migration `067` creates that table on a platform database. The fixture gives tenant B the existing module `inventory` when its module list is empty, so the entitlement call is not rejected for an empty list.
+
+`dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj` after that run: 0 errors. The API process on port `5290` was not restarted. During exchange tests the backfill worker logged that it is disabled.
+
+Merge review stays blocked on the paper-test contract. The smallest next decision is which database name those three tests should use. Do not widen the host allowlist and do not point the tests at an existing database as part of that decision.
