@@ -158,3 +158,44 @@ Content manifest numbers `292`, `294`, `295`, `296`, and `297` also appear in th
 To repeat: start only the cluster in `E:\kit-pi-validate-20261026` on `127.0.0.1:5433`, set `KIT_PI_TEST_CONNECTION` to `kit_pi_validation` on that port, and run `dotnet test tests/KitPlatform.PersonalIntelligence.Tests`. Do not point that variable at port `5432`.
 
 This validates the Trading Agent paper path on an isolated database. It does not make the production migration manifest or the Content manifest ready, and it does not add an Agent Runtime or a learning loop.
+
+## Merge review
+
+Verdict: **READY FOR MERGE REVIEW**. This is not a merge and not a production release.
+
+Compared with `origin/main` `fed51d14`, the branch adds Personal Intelligence, the Second Brain admin routes, the research publication tool, and the content narrative fields required for the API to compile (`d481491f`). `Program.cs` always registers research publication and registers the trading pack only when `PersonalIntelligence:ExposeExchangeRead` is true. That default is false, and the backfill worker is passed `false`. `ResearchSafeHost:SuppressBackgroundWriters` stays unset, so the isolation helper does not remove workers.
+
+Direct merge blocker: none found in the branch diff. The API builds. The Personal Intelligence suite passes on the isolated cluster, including the workflow test below.
+
+Accept before merge:
+
+- Personal Intelligence migrations `385` and `387`–`398` are not in `migration-files.prod.txt`. `396` aborts unless the database is `kit_pi_validation`. `397` is on no manifest and has the same abort. Do not append this manifest to a production apply.
+- `394` is allowed on `trading_agent` by its guard. The paper host requires it there. It still refuses `novixa_prod` and `trading_research`.
+- `docs/novixa-production.env.example` documents `PersonalIntelligence__ResearchPublication__Root`. An empty directory makes the publication API return `MISSING`. It does not open exchange reads.
+- Deploy scripts under `deploy/sb-research-safe-host-014` and `deploy/trading-research-v1` are historical notes. Merging them does not authorize running them.
+
+Outside this diff, and not a reason to block this review: the 156 admin TypeScript errors, the 13 production-manifest files that fail on an empty database, and Content files numbered `394`–`398` that exist only on the dirty `E:\KitPlatform` tree.
+
+Owner checklist before anyone merges:
+
+1. Review the content narrative commit separately from the Personal Intelligence pack.
+2. Keep `PersonalIntelligence:ExposeExchangeRead` unset or false on the KIT Platform API.
+3. Do not apply `migration-files.personal-intelligence.txt` to `novixa_prod`.
+4. Keep research writes on a database named `trading_agent`, never on port `5432` of an existing cluster.
+5. Do not enable `ExchangeBackfillWorker`, a research timer, or `--live`.
+
+## Workflow proof
+
+`TradingAgentWorkflowTests.Fixed_candles_are_stored_replayed_and_recommended_without_an_order` is the acceptance test. Input is thirty fixed one-hour BTCUSDT bars from `2031-06-01T00:00:00Z`, source `workflow-poc`, classified by `ResearchCandles`. `ResearchSession.Run` uses `sma-cross-v1` and writes the paper session through `SqlResearchStore` on `trading_agent`. The first execution stores two paper fills, one BUY and one SELL. The same input inside the test, and a second process run, replay the stored session and add no fills. `TradingAgent.Recommend` receives those fills as observations and a proposal marked live; the returned proposal is paper, the claim kind is inference, and the rationale says it does not create a decision or an order. `DemoPaperExecution` refuses the recommendation without a separate approval and refuses a live proposal even when an approval object is supplied. No exchange client is called.
+
+Repeat with the same cluster and `KIT_PI_TEST_CONNECTION` as the isolated validation section, then:
+
+`dotnet test tests/KitPlatform.PersonalIntelligence.Tests --filter FullyQualifiedName~TradingAgentWorkflowTests`
+
+This reuses research intake, the SMA strategy, the paper session, the research store, the recommendation function, and the paper-execution refusal. It does not add a task queue, a learning loop, or an agent that assigns its own work.
+
+## Agent runtime boundary
+
+Already present and used by the workflow: a structured candle intake, a deterministic session hash, a database allow-list, paper fill rows, a replay that writes nothing new, `recommend_only`, a risk verdict, and a separate approval check that still cannot send a live order. Authorization policies exist for research read, trading run, and trading approve, and the default API does not expose the exchange controllers.
+
+Not built, and not required to reproduce this workflow: a generic task record, a capability grant separate from the configuration flag, a retrieval index, an orchestrator that chooses tools, a durable approval queue, or a retry worker. Those belong in a later specification. The first useful slice, if the owner wants one, is a read-only receipt that joins the stored session key, the recommendation rationale, and the refusal reason. It should not gain permission to place an order.
