@@ -249,3 +249,21 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No migration was added to a deployment manifest. No worker was added. This is not free-form business language, not exactly-once, and not a production-readiness claim. The catalog can compose counts for two stored kinds. It cannot interpret an arbitrary business sentence or read a source that has no registered tool.
+
+## Business request
+
+A goal task with no structured condition can classify one closed business intent: decision-support completeness. The classifier looks for evidence, a decision, and a completeness word such as complete, sufficient, or support. It does not call a model. A sentence that matches is not a registered evidence or trading statement. `Check the evidence.` names evidence but not the subject or the criterion, so it is `missing-data` and does not read. `Make it good.` stays `not-understood`. An explicit business request is not expanded by that lexicon.
+
+The server discovers `decision.support-coverage` and excludes thesis comparison before the read. The coverage read counts the caller tenant's rows in `pi_decision` and `pi_evidence`: decisions, decisions that share a context with evidence, evidence rows, and rows whose payload is not `{}`. It does not return thesis text or `source_ref`. The judge marks the request proven only when every extracted criterion holds. On the isolated tenant A data, decisions exist, some decisions have no evidence on their context, and no payload has content, so the completeness request is `executed-unproven`. A request that asks only whether a decision was recorded can be `proven`. A request for `thesis-consistent` or an unknown criterion such as `live-order` does not read. `personal_intelligence.evidence.read` is still required. Trading paper and the registered evidence sentences are unchanged.
+
+## What the business-request tests showed
+
+No model output was scored. The planner is deterministic.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 31 passed, 0 failed. The completeness sentence was judged from the live decision and evidence counts. The receipt named the decision count, the linked-decision count, and the non-empty payload count, stayed `executed-unproven`, and did not contain a stored thesis. An explicit `decision-recorded` request completed. `Check the evidence.` did not collect. A trading-only caller was forbidden. Tenant B did not receive tenant A's decision count or thesis. One process-recovery assertion failed once while its output buffer was being written, then passed alone and in the next full run. The trading, evidence, approval, replay, and reconciliation tests are inside this 31.
+- `KitPlatform.PersonalIntelligence.Tests`: 249 passed, 0 failed. A client step named `trading.paper_execute` is ignored. Explicit needs are not expanded into the lexicon. Incomplete coverage is read once and is not marked sufficient. Replay does not read again.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No production migration was added. No worker was added. This is not open business language, not exactly-once, and not a production-readiness claim. The lexicon covers one intent. It cannot judge whether a thesis agrees with a payload, and it does not treat an empty payload as content.

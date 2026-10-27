@@ -48,7 +48,8 @@ public sealed record AgentRequest(
     IReadOnlyList<TaskDecisionRecord>? Decisions = null,
     DateTimeOffset? ApprovedAt = null,
     bool VerifyGoal = false,
-    IReadOnlyList<CompletionAsk>? Asks = null);
+    IReadOnlyList<CompletionAsk>? Asks = null,
+    BusinessRequest? Business = null);
 
 public sealed record ToolContract(
     string Name,

@@ -341,3 +341,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No production deploy and no new migration. This is not free-form language, not exactly-once, and not a production-readiness claim.
+
+## Business request
+
+A goal task can classify a decision-support completeness request without a registered sentence. The server reads `pi_decision` and `pi_evidence` for the caller tenant, excludes thesis comparison, and does not mark the request sufficient when payloads are empty or a decision has no evidence. `Check the evidence.` does not read. `Make it good.` stays not understood.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 31 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 249 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim.

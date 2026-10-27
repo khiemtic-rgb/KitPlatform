@@ -686,7 +686,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
         var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
         var vagueKey = "goal-vague-" + Guid.NewGuid().ToString("N");
-        var vague = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", GoalBody(vagueKey, "Make it good.", [])));
+        var vague = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", GoalBody(vagueKey, "Make it good.", [], "Improve the work.")));
         var gapKey = "goal-gap-" + Guid.NewGuid().ToString("N");
         var gap = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", GoalBody(gapKey, "Summarize the evidence payload.", [Ask("payload", "OBSERVATION", "atLeast", "1", "evidence.payload")])));
         var dataKey = "goal-data-" + Guid.NewGuid().ToString("N");
@@ -774,6 +774,131 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
             Assert.DoesNotContain(sample, created.GetRawText(), StringComparison.Ordinal);
             Assert.DoesNotContain(sample, hiddenBody, StringComparison.Ordinal);
             Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        }
+        finally
+        {
+            await new NpgsqlCommand("UPDATE public.tenants SET settings = @Settings::jsonb WHERE id = @Id", connection)
+            {
+                Parameters = { new("Settings", saved), new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+        }
+    }
+
+    [Fact]
+    public async Task A_completeness_request_is_judged_from_decision_coverage()
+    {
+        var coverage = Coverage(AgentTaskApiFixture.TenantA);
+        Assert.True(coverage.Decisions >= 1);
+        Assert.True(coverage.Linked < coverage.Decisions);
+        Assert.Equal(0, coverage.Content);
+        var thesis = EvidenceScalar(
+            "SELECT thesis FROM pack_personal_intelligence.pi_decision WHERE tenant_id = @Tenant AND length(thesis) > 20 LIMIT 1",
+            AgentTaskApiFixture.TenantA);
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var sentence = "Is the stored evidence complete enough to support the tenant's decisions?";
+        var key = "complete-" + Guid.NewGuid().ToString("N");
+        var created = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", GoalBody(key, sentence, [])));
+        var revision = Revision(key);
+        var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", GoalBody(key, sentence, [])));
+        var recordedKey = "complete-recorded-" + Guid.NewGuid().ToString("N");
+        var recorded = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            BusinessBody(recordedKey, "Recorded decisions are the completion criterion.", "decision-recorded")));
+
+        Assert.NotEqual("The tenant has at least one observation evidence row.", sentence);
+        Assert.Equal("Failed", created.GetProperty("status").GetString());
+        Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Equal("executed-unproven", created.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{coverage.Decisions} decisions", StringComparison.Ordinal) && item.GetString()!.Contains("pi_decision", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{coverage.Linked} decisions with evidence", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{coverage.Content} with a non-empty payload", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == "decisions without evidence on the same context");
+        Assert.Contains(created.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == "evidence rows with a non-empty payload");
+        Assert.Contains(created.GetProperty("goal").GetProperty("limits").EnumerateArray(), item => item.GetString()!.Contains("thesis", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "discover" && step.GetProperty("purpose").GetString()!.Contains("before any read", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "decision.support-coverage" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.DoesNotContain(thesis, created.GetRawText(), StringComparison.Ordinal);
+        Assert.False(created.GetProperty("liveAccepted").GetBoolean());
+        Assert.False(created.GetProperty("recommendationExecuted").GetBoolean());
+        Assert.True(replay.GetProperty("replayed").GetBoolean());
+        Assert.Equal(revision, Revision(key));
+        Assert.Equal("Completed", recorded.GetProperty("status").GetString());
+        Assert.True(recorded.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Equal("proven", recorded.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Contains(recorded.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{coverage.Decisions} decisions", StringComparison.Ordinal));
+        Assert.DoesNotContain(recorded.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString()!.Contains("payload", StringComparison.Ordinal));
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
+    public async Task An_incomplete_business_request_does_not_read_and_a_thesis_request_is_not_a_tool()
+    {
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var thesis = EvidenceScalar(
+            "SELECT thesis FROM pack_personal_intelligence.pi_decision WHERE tenant_id = @Tenant AND length(thesis) > 20 LIMIT 1",
+            AgentTaskApiFixture.TenantA);
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var partial = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", GoalBody("partial-" + Guid.NewGuid().ToString("N"), "Check the evidence.", [])));
+        var thesisOnly = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            BusinessBody("thesis-" + Guid.NewGuid().ToString("N"), "Compare the thesis.", "thesis-consistent")));
+        var runner = Guid.Parse("c7777777-7777-7777-7777-777777777777");
+        await EnsureRunOnlyUser(runner, AgentTaskApiFixture.TenantA);
+        var deniedKey = "complete-denied-" + Guid.NewGuid().ToString("N");
+        var denied = await Authorized(_fixture.Client(), runner, AgentTaskApiFixture.TenantA).PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            GoalBody(deniedKey, "Is the stored evidence complete enough to support the tenant's decisions?", []));
+
+        Assert.Equal("Failed", partial.GetProperty("status").GetString());
+        Assert.Equal("missing-data", partial.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Contains(partial.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString()!.Contains("subject", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(partial.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "collect");
+        Assert.Equal("Failed", thesisOnly.GetProperty("status").GetString());
+        Assert.Equal("missing-capability", thesisOnly.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.DoesNotContain(thesisOnly.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "collect");
+        Assert.DoesNotContain(thesis, thesisOnly.GetRawText(), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        Assert.Equal(0, Count(_fixture.TaskConnection, "SELECT COUNT(*) FROM pack_personal_intelligence.pi_agent_task WHERE task_key = '" + deniedKey + "'"));
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
+    public async Task Decision_support_does_not_read_another_tenant()
+    {
+        var thesis = EvidenceScalar(
+            "SELECT thesis FROM pack_personal_intelligence.pi_decision WHERE tenant_id = @Tenant AND length(thesis) > 20 LIMIT 1",
+            AgentTaskApiFixture.TenantA);
+        var owned = Coverage(AgentTaskApiFixture.TenantA);
+        await using var connection = new NpgsqlConnection(_fixture.ValidationConnection);
+        await connection.OpenAsync();
+        var saved = (string)(await new NpgsqlCommand("SELECT settings::text FROM public.tenants WHERE id = @Id", connection)
+        {
+            Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+        }.ExecuteScalarAsync())!;
+        try
+        {
+            await new NpgsqlCommand(
+                """
+                UPDATE public.tenants
+                SET settings = settings || '{"platform":{"enabled_modules":["personal_intelligence"]}}'::jsonb
+                WHERE id = @Id
+                """,
+                connection)
+            {
+                Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+            var outsider = Authorized(_fixture.Client(), AgentTaskApiFixture.UserB, AgentTaskApiFixture.TenantB);
+            var created = await Read(await outsider.PostAsJsonAsync(
+                "/api/personal-intelligence/tasks",
+                GoalBody("complete-b-" + Guid.NewGuid().ToString("N"), "Is the stored evidence complete enough to support the tenant's decisions?", [])));
+            var body = created.GetRawText();
+
+            Assert.Equal("Failed", created.GetProperty("status").GetString());
+            Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
+            Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains("0 decisions", StringComparison.Ordinal));
+            Assert.DoesNotContain(thesis, body, StringComparison.Ordinal);
+            Assert.DoesNotContain($"{owned.Decisions} decisions", body, StringComparison.Ordinal);
         }
         finally
         {
@@ -1010,15 +1135,45 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
             kind = "evidence-review",
         };
 
-    private static object GoalBody(string key, string doneWhen, object[] asks)
+    private static object GoalBody(string key, string doneWhen, object[] asks, string objective = "Compare stored evidence for this tenant.")
         => new
         {
             taskKey = key,
-            objective = "Compare stored evidence for this tenant.",
+            objective,
             doneWhen,
             kind = "goal",
             asks,
         };
+
+    private static object BusinessBody(string key, string doneWhen, params string[] needs)
+        => new
+        {
+            taskKey = key,
+            objective = "Assess whether stored records support a decision.",
+            doneWhen,
+            kind = "goal",
+            business = new { intent = "assess-completeness", subject = "decision-support", needs },
+        };
+
+    private CoverageNumbers Coverage(Guid tenantId)
+    {
+        var decisions = int.Parse(EvidenceScalar("SELECT COUNT(*)::text FROM pack_personal_intelligence.pi_decision WHERE tenant_id = @Tenant", tenantId));
+        var linked = int.Parse(EvidenceScalar(
+            """
+            SELECT COUNT(*)::text FROM pack_personal_intelligence.pi_decision d
+            WHERE d.tenant_id = @Tenant
+              AND EXISTS (
+                SELECT 1 FROM pack_personal_intelligence.pi_evidence e
+                WHERE e.tenant_id = d.tenant_id AND e.context_id = d.context_id)
+            """,
+            tenantId));
+        var content = int.Parse(EvidenceScalar(
+            "SELECT COUNT(*)::text FROM pack_personal_intelligence.pi_evidence WHERE tenant_id = @Tenant AND payload <> '{}'::jsonb",
+            tenantId));
+        return new CoverageNumbers(decisions, linked, content);
+    }
+
+    private readonly record struct CoverageNumbers(int Decisions, int Linked, int Content);
 
     private static object Ask(string id, string subject, string relation, string target, string capability = "evidence.count")
         => new { id, capability, subject, relation, target };
