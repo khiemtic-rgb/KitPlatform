@@ -19,7 +19,7 @@ public sealed class EvidenceReviewRuntime
     public const string Kind = "evidence-review";
     public const string CollectTool = "evidence.collect";
     public const string AssessTool = "evidence.assess";
-    public const string ReadPermission = "personal_intelligence.research.read";
+    public const string ReadPermission = "personal_intelligence.evidence.read";
     public const string Scope = "evidence-review; pack_personal_intelligence.pi_evidence; caller tenant only";
     public const string ObservationStatement = "The tenant has at least one observation evidence row.";
     public const string FactStatement = "The tenant has at least one fact evidence row.";

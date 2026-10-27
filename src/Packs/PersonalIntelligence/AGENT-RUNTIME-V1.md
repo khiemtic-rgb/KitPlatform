@@ -227,3 +227,25 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No migration was added. No worker was added. This is not free-form business language, not exactly-once, and not a production-readiness claim.
+
+## Goal understanding
+
+A `goal` task accepts structured completion conditions. The `doneWhen` sentence is stored and is not parsed. `Make it good.` with no condition is `not-understood`. A condition is `ready-to-plan` only when its capability, subject, relation, and target match the registered catalog. The only registered capability is `evidence.count`, which reads `OBSERVATION` or `FACT` rows from `pack_personal_intelligence.pi_evidence` for the caller tenant. `atLeast` compares that count with a positive integer. `greaterThan` compares two stored kinds. The server builds the plan. A client-supplied step list is not executed, and an unknown capability such as `evidence.payload` is `missing-capability` rather than a new tool.
+
+The same receipt then distinguishes a plan that was executed from a goal that was proved. A read whose count misses the condition finishes `executed-unproven` with `goal.met` false, even when every step succeeded. `proven` requires every condition to hold for a count that was read. `missing-data` covers a subject or target the catalog does not read, and that path does not query the table.
+
+`personal_intelligence.evidence.read` is a separate permission from `personal_intelligence.trading.run`. The tool dispatcher and the service both require it before `pi_evidence` is opened. A trading-only caller is refused and no task row is written. An evidence-only caller can run the goal and cannot start a trading-paper task. The isolated validation fixture inserts the permission and the `PI_EVIDENCE` role. No production migration was added.
+
+The registered `trading-paper` and `evidence-review` paths still use their exact sentences. `workflow-poc` remains a fixture. `LiveAccepted` stays false.
+
+## What the understanding tests showed
+
+These checks are deterministic. No model-generated plan was scored.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 28 passed, 0 failed. The stored tenant A table had more `OBSERVATION` rows than `FACT` rows, and the `FACT` count was 0. A structured comparison that is not a registered sentence completed with `understanding` `proven`, cited both counts and `pi_evidence`, and did not write a paper operation. Asking for both kinds to be at least 1 stayed `executed-unproven` because the fact count was 0. `Make it good.`, `evidence.payload`, and subject `OPINION` did not collect. A trading-only caller received 403 and no task row. An evidence-only caller completed the comparison and was refused for trading paper. Tenant B's comparison did not contain tenant A's `source_ref`. The trading approval path and the earlier process-exit tests remain inside this run.
+- `KitPlatform.PersonalIntelligence.Tests`: 243 passed, 0 failed. A client plan that names `trading.paper_execute` is ignored. A trading permission does not call the evidence ledger. Replay does not read again.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No migration was added to a deployment manifest. No worker was added. This is not free-form business language, not exactly-once, and not a production-readiness claim. The catalog can compose counts for two stored kinds. It cannot interpret an arbitrary business sentence or read a source that has no registered tool.

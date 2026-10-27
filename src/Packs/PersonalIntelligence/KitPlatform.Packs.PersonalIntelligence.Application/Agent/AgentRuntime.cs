@@ -47,7 +47,8 @@ public sealed record AgentRequest(
     string? ExecutionMode = null,
     IReadOnlyList<TaskDecisionRecord>? Decisions = null,
     DateTimeOffset? ApprovedAt = null,
-    bool VerifyGoal = false);
+    bool VerifyGoal = false,
+    IReadOnlyList<CompletionAsk>? Asks = null);
 
 public sealed record ToolContract(
     string Name,
@@ -117,7 +118,8 @@ public sealed record TaskGoalReport(
     IReadOnlyList<string> Inferences,
     IReadOnlyList<string> Assumptions,
     IReadOnlyList<string> Missing,
-    IReadOnlyList<string> Limits);
+    IReadOnlyList<string> Limits,
+    string Understanding = "");
 
 /// <summary>
 /// Copy of the task outcome stored beside a research snapshot. It is not a second ledger.
@@ -957,6 +959,7 @@ public sealed class AgentRuntime
         var assumptions = new List<string>();
         var missing = new List<string>();
         var limits = new List<string>();
+        string? understanding = null;
         foreach (var step in steps)
         {
             if (step.Outputs is null)
@@ -966,6 +969,8 @@ public sealed class AgentRuntime
             Take(step.Outputs, "assumption", assumptions);
             Take(step.Outputs, "missing", missing);
             Take(step.Outputs, "limit", limits);
+            if (step.Outputs.TryGetValue("understanding", out var how) && !string.IsNullOrWhiteSpace(how))
+                understanding = how;
             if (step.Outputs.TryGetValue("scope", out var declared) && !string.IsNullOrWhiteSpace(declared))
                 scope = declared;
             if (step.Outputs.TryGetValue("goalReason", out var why) && !string.IsNullOrWhiteSpace(why))
@@ -986,7 +991,8 @@ public sealed class AgentRuntime
             inferences,
             assumptions,
             missing,
-            limits);
+            limits,
+            understanding ?? "");
     }
 
     private static void Take(IReadOnlyDictionary<string, string> outputs, string key, List<string> target)
