@@ -49,6 +49,7 @@ public sealed class AgentTaskCommand
     public Guid? ApprovalDecisionId { get; set; }
     public Guid? RequestedTenantId { get; set; }
     public List<CompletionAsk>? Asks { get; set; }
+    public BusinessRequest? Business { get; set; }
 }
 
 public sealed record AgentTaskView(
@@ -261,6 +262,16 @@ public sealed class AgentTaskService
         if (command.ApprovalDecisionId is Guid)
             throw new InvalidOperationException("A goal task does not accept an approval decision.");
         var asks = command.Asks ?? [];
+        if (asks.Count > 0 && command.Business is not null)
+            throw new InvalidOperationException("A goal task accepts either structured conditions or a business request.");
+        RequireBusiness(command.Business);
+        if (asks.Count == 0)
+        {
+            var interpreted = BusinessUnderstanding.Interpret(objective, doneWhen, command.Business);
+            if (interpreted.Understanding.State != UnderstandingState.NotUnderstood || command.Business is not null)
+                return RunCompleteness(user, command, tenantId, taskKey, objective, doneWhen, interpreted);
+        }
+
         var understood = GoalTaskRuntime.Understand(objective, doneWhen, asks);
         var request = new AgentRequest(
             taskKey,
@@ -282,6 +293,42 @@ public sealed class AgentTaskService
             ? new SqlEvidenceLedger(OpenEvidence())
             : new RefusingEvidenceLedger();
         var result = new GoalTaskRuntime().Execute(request, ledger, log);
+        return ToView(result.Task, user);
+    }
+
+    private AgentTaskView RunCompleteness(
+        ClaimsPrincipal user,
+        AgentTaskCommand command,
+        Guid tenantId,
+        string taskKey,
+        string objective,
+        string doneWhen,
+        BusinessInterpretation interpreted)
+    {
+        var canonical = BusinessUnderstanding.Canonical(command.Business);
+        if (canonical.Length == 0 && interpreted.FeasibleNeeds.Count > 0)
+            canonical = string.Join("|", BusinessUnderstanding.Intent, BusinessUnderstanding.Subject, string.Join(",", interpreted.FeasibleNeeds.OrderBy(item => item, StringComparer.Ordinal)));
+        var request = new AgentRequest(
+            taskKey,
+            PayloadHash(GoalTaskRuntime.Kind, objective, doneWhen, ExecutionMode.Paper, null, canonical),
+            tenantId,
+            objective,
+            doneWhen,
+            Grants(user),
+            interpreted.Understanding.Plan,
+            null,
+            command.RequestedTenantId,
+            nameof(ExecutionMode.Paper),
+            null,
+            null,
+            true,
+            null,
+            command.Business);
+        using var log = OpenTasks(tenantId);
+        IDecisionSupportLedger ledger = interpreted.Understanding.State == UnderstandingState.ReadyToPlan
+            ? new SqlEvidenceLedger(OpenEvidence())
+            : new RefusingDecisionSupportLedger();
+        var result = new CompletenessRuntime().Execute(request, ledger, log);
         return ToView(result.Task, user);
     }
 
@@ -468,6 +515,18 @@ public sealed class AgentTaskService
                 || (ask.Target?.Length ?? 0) > 80)
                 throw new InvalidOperationException("A completion condition field is too long.");
         }
+    }
+
+    private static void RequireBusiness(BusinessRequest? business)
+    {
+        if (business is null)
+            return;
+        if ((business.Intent?.Length ?? 0) > 80 || (business.Subject?.Length ?? 0) > 80)
+            throw new InvalidOperationException("A business request field is too long.");
+        if (business.Needs is { Count: > 4 })
+            throw new InvalidOperationException("A business request accepts at most four criteria.");
+        if (business.Needs is not null && business.Needs.Any(item => (item?.Length ?? 0) > 80))
+            throw new InvalidOperationException("A business request field is too long.");
     }
 
     private static string PayloadHash(string kind, string objective, string doneWhen, ExecutionMode mode, Guid? approvalId, string asks = "")
