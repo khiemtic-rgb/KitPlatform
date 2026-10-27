@@ -128,8 +128,9 @@ public sealed class AgentRuntimeRestartTests
 
         Assert.Equal(AgentTaskStatus.Failed, restarted.Status);
         Assert.True(restarted.Replayed);
-        Assert.Equal(2, restarted.Steps.Count);
+        Assert.Equal(3, restarted.Steps.Count);
         Assert.Equal(ToolStepStatus.Failed, restarted.Steps[1].Status);
+        Assert.Equal("dependency", restarted.Steps[2].Error);
         Assert.Contains("boom", restarted.Error, StringComparison.Ordinal);
         Assert.Contains("step-one", restarted.EvidenceRefs);
         Assert.Equal(first.Error, restarted.Error);

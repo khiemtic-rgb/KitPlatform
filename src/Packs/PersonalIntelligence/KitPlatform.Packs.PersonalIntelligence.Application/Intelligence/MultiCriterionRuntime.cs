@@ -32,14 +32,24 @@ public sealed class MultiCriterionRuntime
                 if (kind is null)
                     return ToolResponse.Stop(ToolStepStatus.Failed, "The evidence count step is not registered.");
                 evidenceReads++;
-                var row = evidence.Read(request.TenantId, kind);
+                EvidenceObservation row;
+                try
+                {
+                    row = evidence.Read(request.TenantId, kind);
+                }
+                catch (Exception ex)
+                {
+                    return FailedRead(understood, $"{kind} count", ex.Message);
+                }
+
                 if (!string.Equals(row.EpistemicKind, kind, StringComparison.Ordinal) || row.Count < 0)
-                    return ToolResponse.Stop(ToolStepStatus.Failed, "The evidence count was not usable.");
+                    return FailedRead(understood, $"{kind} count", "The evidence count was not usable.");
                 var outputs = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     ["verified"] = "true",
                     ["scope"] = understood.Scope,
                     ["count." + kind] = row.Count.ToString(),
+                    ["fact"] = $"Tenant {request.TenantId:D} has {row.Count} {kind} rows in pack_personal_intelligence.pi_evidence.",
                 };
                 foreach (var pair in call.Inputs)
                 {
@@ -57,9 +67,18 @@ public sealed class MultiCriterionRuntime
                 if (understood.State != UnderstandingState.ReadyToPlan || !understood.Plan.Any(step => step.StepId == call.StepId))
                     return Stop(understood);
                 coverageReads++;
-                var row = coverage.Read(request.TenantId);
+                DecisionSupportCoverage row;
+                try
+                {
+                    row = coverage.Read(request.TenantId);
+                }
+                catch (Exception ex)
+                {
+                    return FailedRead(understood, "decision-support coverage", ex.Message);
+                }
+
                 if (row.Decisions < 0 || row.DecisionsWithEvidence < 0 || row.EvidenceRows < 0 || row.EvidenceWithContent < 0 || row.DecisionsWithEvidence > row.Decisions)
-                    return ToolResponse.Stop(ToolStepStatus.Failed, "The decision-support coverage was not usable.");
+                    return FailedRead(understood, "decision-support coverage", "The decision-support coverage was not usable.");
                 return ToolResponse.Succeeded(
                     "Decision and evidence coverage was read for this tenant.",
                     new Dictionary<string, string>
@@ -70,6 +89,7 @@ public sealed class MultiCriterionRuntime
                         ["linked"] = row.DecisionsWithEvidence.ToString(),
                         ["evidenceRows"] = row.EvidenceRows.ToString(),
                         ["content"] = row.EvidenceWithContent.ToString(),
+                        ["fact"] = $"Tenant {request.TenantId:D} has {row.Decisions} decisions in pack_personal_intelligence.pi_decision.\nTenant {request.TenantId:D} has {row.DecisionsWithEvidence} decisions with evidence on the same context.\nTenant {request.TenantId:D} has {row.EvidenceRows} evidence rows and {row.EvidenceWithContent} with a non-empty payload.",
                     });
             });
         registry.Register(
@@ -177,6 +197,20 @@ public sealed class MultiCriterionRuntime
         lines["goalReason"] = "Every required criterion holds for the rows that were read.";
         return ToolResponse.Succeeded("Every required criterion holds.", lines);
     }
+
+    private static ToolResponse FailedRead(UnderstoodRequest understood, string missing, string reason)
+        => ToolResponse.Stop(
+            ToolStepStatus.Failed,
+            reason,
+            new Dictionary<string, string>
+            {
+                ["goalMet"] = "false",
+                ["understanding"] = GoalTaskRuntime.ExecutedUnproven,
+                ["goalReason"] = reason,
+                ["scope"] = understood.Scope,
+                ["missing"] = missing,
+                ["limit"] = "The overall goal was not judged because a required capability failed.\nA kind count and a coverage count do not show that evidence supports a decision.",
+            });
 
     private static ToolResponse Stop(UnderstoodRequest understood)
         => ToolResponse.Stop(

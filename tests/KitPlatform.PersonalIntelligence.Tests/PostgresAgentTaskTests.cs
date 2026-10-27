@@ -265,7 +265,9 @@ public sealed class PostgresAgentTaskTests : IClassFixture<AgentTaskDatabaseFixt
         var stored = restarted.Find(key);
         Assert.NotNull(stored);
         Assert.Equal(AgentTaskStatus.Failed, stored.Status);
+        Assert.Equal(3, stored.Steps.Count);
         Assert.Equal(ToolStepStatus.Failed, stored.Steps[1].Status);
+        Assert.Equal("dependency", stored.Steps[2].Error);
         Assert.Contains("boom", stored.Error, StringComparison.Ordinal);
         Assert.Contains("step-one", stored.EvidenceRefs);
         Assert.Equal(0, later);

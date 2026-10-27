@@ -86,6 +86,36 @@ public sealed class MultiCriterionPlanningTests
     }
 
     [Fact]
+    public void A_failed_count_still_reads_coverage_and_does_not_prove_the_goal()
+    {
+        var evidence = new FailFactLedger(5);
+        var coverage = new CoverageLedger(new DecisionSupportCoverage(4, 2, 5, 0));
+        var log = new MemoryAgentRunLog();
+        var first = new MultiCriterionRuntime().Execute(Request(Sentence, null, []), evidence, coverage, log);
+        var second = new MultiCriterionRuntime().Execute(Request(Sentence, null, []), evidence, coverage, log);
+
+        Assert.Equal(AgentTaskStatus.Failed, first.Task.Status);
+        Assert.False(first.Task.Goal!.Met);
+        Assert.Equal(GoalTaskRuntime.ExecutedUnproven, first.Task.Goal.Understanding);
+        Assert.Contains(first.Task.Goal.Missing, item => item == "FACT count");
+        Assert.Contains(first.Task.Goal.Facts, fact => fact.Contains("5 OBSERVATION rows", StringComparison.Ordinal));
+        Assert.Contains(first.Task.Goal.Facts, fact => fact.Contains("2 decisions with evidence", StringComparison.Ordinal));
+        Assert.DoesNotContain(first.Task.Goal.Facts, fact => fact.Contains("is proven", StringComparison.Ordinal));
+        Assert.Contains(first.Task.Goal.Limits, item => item.Contains("was not judged", StringComparison.Ordinal));
+        Assert.Contains(first.Task.Goal.Limits, item => item.Contains("do not show that evidence supports a decision", StringComparison.Ordinal));
+        Assert.DoesNotContain("hidden-source-ref", string.Join('\n', first.Task.Goal.Facts), StringComparison.Ordinal);
+        Assert.Equal(ToolStepStatus.Succeeded, first.Task.Steps.Single(step => step.StepId == "coverage").Status);
+        Assert.Equal(ToolStepStatus.Failed, first.Task.Steps.Single(step => step.StepId == "assess").Status);
+        Assert.Equal("dependency", first.Task.Steps.Single(step => step.StepId == "assess").Error);
+        Assert.Equal(2, first.EvidenceReads);
+        Assert.Equal(1, first.CoverageReads);
+        Assert.False(first.Task.LiveAccepted);
+        Assert.True(second.Task.Replayed);
+        Assert.Equal(2, evidence.Calls);
+        Assert.Equal(1, coverage.Calls);
+    }
+
+    [Fact]
     public void The_overall_goal_is_proven_only_when_every_required_criterion_holds()
     {
         var result = new MultiCriterionRuntime().Execute(
@@ -166,6 +196,19 @@ public sealed class MultiCriterionPlanningTests
             null,
             VerifyGoal: true,
             Business: business);
+
+    private sealed class FailFactLedger(int observation) : IEvidenceLedger
+    {
+        public int Calls { get; private set; }
+
+        public EvidenceObservation Read(Guid tenantId, string epistemicKind)
+        {
+            Calls++;
+            if (epistemicKind == "FACT")
+                throw new InvalidOperationException("fact read failed");
+            return new EvidenceObservation(epistemicKind, observation, "hidden-source-ref");
+        }
+    }
 
     private sealed class CountLedger(int observation, int fact, string sample = "hidden-source-ref") : IEvidenceLedger
     {

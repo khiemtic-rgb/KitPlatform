@@ -590,7 +590,8 @@ public sealed class AgentRuntime
         bool gap)
     {
         var status = AgentTaskStatus.Running;
-        string? error = null;
+        string? error = records.Select(row => row.Error).FirstOrDefault(item => !string.IsNullOrWhiteSpace(item));
+        var continueReads = FailedReadAlreadyRecorded(records);
         for (var index = startIndex; index < request.Plan.Count; index++)
         {
             var step = request.Plan[index];
@@ -603,9 +604,21 @@ public sealed class AgentRuntime
             if (!DependenciesSucceeded(step, records))
             {
                 records.Add(new AgentStepRecord(step.StepId, step.ToolName, ToolStepStatus.Failed, "The dependency did not succeed.", "dependency"));
-                error = "A later step depended on a step that did not succeed.";
-                status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
-                return Save(log, Build(request, status, records, outputs, error, false));
+                error ??= "A later step depended on a step that did not succeed.";
+                if (!continueReads)
+                {
+                    status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
+                    return Save(log, Build(request, status, records, outputs, error, false));
+                }
+
+                continue;
+            }
+
+            if (continueReads && !IsRead(step))
+            {
+                records.Add(new AgentStepRecord(step.StepId, step.ToolName, ToolStepStatus.Failed, "A side effect does not run after a failed step.", "not-run"));
+                error ??= "A side effect does not run after a failed step.";
+                continue;
             }
 
             var prior = PriorInputs(step, outputs);
@@ -631,7 +644,16 @@ public sealed class AgentRuntime
 
             if (response.Status is ToolStepStatus.Denied or ToolStepStatus.Rejected or ToolStepStatus.Failed)
             {
-                error = response.Error;
+                error ??= response.Error;
+                if (response.Status != ToolStepStatus.Rejected && IsRead(step))
+                {
+                    continueReads = true;
+                    Save(log, Build(request, status, records, outputs, error, false));
+                    _boundary?.Invoke("after-commit", step.StepId);
+                    gap = false;
+                    continue;
+                }
+
                 status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
                 return Save(log, Build(request, status, records, outputs, error, false));
             }
@@ -650,7 +672,10 @@ public sealed class AgentRuntime
             gap = false;
         }
 
-        if (status == AgentTaskStatus.Running && blocked)
+        var broken = records.Any(row => row.Status is ToolStepStatus.Failed or ToolStepStatus.Denied or ToolStepStatus.Rejected);
+        if (status == AgentTaskStatus.Running && broken)
+            status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
+        else if (status == AgentTaskStatus.Running && blocked)
             status = AgentTaskTransitions.Move(status, AgentTaskStatus.AwaitingApproval);
         else if (status == AgentTaskStatus.Running)
         {
@@ -664,6 +689,22 @@ public sealed class AgentRuntime
 
         return Save(log, Build(request, status, records, outputs, error, replayed: false));
     }
+
+    private bool FailedReadAlreadyRecorded(IReadOnlyList<AgentStepRecord> records)
+    {
+        foreach (var row in records)
+        {
+            if (row.Status is ToolStepStatus.Failed or ToolStepStatus.Denied
+                && _registry.TryGet(row.ToolName, out var contract, out _)
+                && contract.Effect == ToolEffect.Read)
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsRead(AgentStepSpec step)
+        => _registry.TryGet(step.ToolName, out var contract, out _) && contract.Effect == ToolEffect.Read;
 
     private static bool DependenciesSucceeded(AgentStepSpec step, IReadOnlyList<AgentStepRecord> records)
     {
@@ -862,7 +903,7 @@ public sealed class AgentRuntime
         {
             if (!string.Equals(steps[index].StepId, plan[index].StepId, StringComparison.Ordinal)
                 || !string.Equals(steps[index].ToolName, plan[index].ToolName, StringComparison.Ordinal)
-                || steps[index].Status is not (ToolStepStatus.Succeeded or ToolStepStatus.Blocked))
+                || steps[index].Status is not (ToolStepStatus.Succeeded or ToolStepStatus.Blocked or ToolStepStatus.Failed or ToolStepStatus.Denied))
                 return false;
         }
 
