@@ -218,7 +218,7 @@ internal sealed class TradingOperationalLoop : ITradingOperationalLoop
                 TenantId = _tenant.TenantId,
                 request.PersonId,
                 Summary = usingStoredTrades
-                    ? "Các giao dịch đã lưu được chọn làm dữ liệu quan sát. Đây chưa phải một quyết định."
+                    ? StoredTradeObservation.Statement
                     : "Fixture trading context",
                 EpistemicKind = EpistemicKindSql.ToDb(EpistemicKind.Observation),
                 Source = contextSource,

@@ -353,3 +353,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim.
+
+## Evidence validation
+
+A validation sentence reads decision context, empty payloads, the stored-trade observation statement, and payload statements for the caller tenant. A shared context is not treated as support. The isolated payload-statement count stayed 0, so the support request remained unable to assess. An observation-statement request can complete without becoming a support verdict.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 34 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 255 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build.
+
+No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim.
