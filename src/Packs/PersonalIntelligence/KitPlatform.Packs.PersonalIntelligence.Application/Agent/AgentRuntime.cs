@@ -600,19 +600,15 @@ public sealed class AgentRuntime
                 return Save(log, Build(request, AgentTaskStatus.ReconciliationRequired, records, outputs, reason, false));
             }
 
-            if (!string.IsNullOrWhiteSpace(step.DependsOn))
+            if (!DependenciesSucceeded(step, records))
             {
-                var dependency = records.FirstOrDefault(row => row.StepId == step.DependsOn);
-                if (dependency is null || dependency.Status != ToolStepStatus.Succeeded)
-                {
-                    records.Add(new AgentStepRecord(step.StepId, step.ToolName, ToolStepStatus.Failed, "The dependency did not succeed.", "dependency"));
-                    error = "A later step depended on a step that did not succeed.";
-                    status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
-                    return Save(log, Build(request, status, records, outputs, error, false));
-                }
+                records.Add(new AgentStepRecord(step.StepId, step.ToolName, ToolStepStatus.Failed, "The dependency did not succeed.", "dependency"));
+                error = "A later step depended on a step that did not succeed.";
+                status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
+                return Save(log, Build(request, status, records, outputs, error, false));
             }
 
-            var prior = string.IsNullOrWhiteSpace(step.DependsOn) ? new Dictionary<string, string>() : new Dictionary<string, string>(outputs[step.DependsOn]);
+            var prior = PriorInputs(step, outputs);
             ToolResponse response;
             try
             {
@@ -669,6 +665,41 @@ public sealed class AgentRuntime
         return Save(log, Build(request, status, records, outputs, error, replayed: false));
     }
 
+    private static bool DependenciesSucceeded(AgentStepSpec step, IReadOnlyList<AgentStepRecord> records)
+    {
+        foreach (var id in DependencyIds(step))
+        {
+            var dependency = records.FirstOrDefault(row => row.StepId == id);
+            if (dependency is null || dependency.Status != ToolStepStatus.Succeeded)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static Dictionary<string, string> PriorInputs(
+        AgentStepSpec step,
+        Dictionary<string, IReadOnlyDictionary<string, string>> outputs)
+    {
+        var prior = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var id in DependencyIds(step))
+        {
+            if (!outputs.TryGetValue(id, out var part))
+                continue;
+            foreach (var pair in part)
+                prior[pair.Key] = pair.Value;
+        }
+
+        return prior;
+    }
+
+    private static string[] DependencyIds(AgentStepSpec step)
+    {
+        if (string.IsNullOrWhiteSpace(step.DependsOn))
+            return [];
+        return step.DependsOn.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+
     private bool SafeToRepeat(AgentStepSpec step, out string reason)
     {
         if (!_registry.TryGet(step.ToolName, out var contract, out _))
@@ -692,9 +723,7 @@ public sealed class AgentRuntime
         AgentStepSpec step,
         Dictionary<string, IReadOnlyDictionary<string, string>> outputs)
     {
-        var prior = string.IsNullOrWhiteSpace(step.DependsOn)
-            ? new Dictionary<string, string>()
-            : new Dictionary<string, string>(outputs[step.DependsOn]);
+        var prior = PriorInputs(step, outputs);
         ToolResponse response;
         try
         {

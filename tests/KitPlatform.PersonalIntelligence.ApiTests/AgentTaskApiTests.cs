@@ -1069,6 +1069,145 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
     }
 
     [Fact]
+    public async Task A_two_criterion_request_uses_both_capabilities_and_stays_unproven()
+    {
+        var observation = EvidenceCount("OBSERVATION", AgentTaskApiFixture.TenantA);
+        var fact = EvidenceCount("FACT", AgentTaskApiFixture.TenantA);
+        var coverage = Coverage(AgentTaskApiFixture.TenantA);
+        Assert.True(observation > fact);
+        Assert.True(coverage.Decisions >= 1);
+        Assert.True(coverage.Linked < coverage.Decisions);
+        Assert.Equal(0, coverage.Content);
+        var thesis = EvidenceScalar(
+            "SELECT thesis FROM pack_personal_intelligence.pi_decision WHERE tenant_id = @Tenant AND length(thesis) > 20 LIMIT 1",
+            AgentTaskApiFixture.TenantA);
+        var source = EvidenceScalar(
+            "SELECT MIN(source_ref) FROM pack_personal_intelligence.pi_evidence WHERE tenant_id = @Tenant AND epistemic_kind = 'OBSERVATION'",
+            AgentTaskApiFixture.TenantA);
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var sentence = "Confirm both that observation evidence outnumbers fact evidence and that the stored evidence is complete enough to support the tenant's decisions.";
+        var key = "multi-" + Guid.NewGuid().ToString("N");
+        var created = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", GoalBody(key, sentence, [], "Review the tenant evidence.")));
+        var revision = Revision(key);
+        var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", GoalBody(key, sentence, [], "Review the tenant evidence.")));
+
+        Assert.Equal("Failed", created.GetProperty("status").GetString());
+        Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Equal("executed-unproven", created.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString() == "Criterion observation-over-fact is proven.");
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString() == "Criterion coverage-complete is executed-unproven.");
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{observation} OBSERVATION rows", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{fact} FACT rows", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{coverage.Decisions} decisions in pack_personal_intelligence.pi_decision", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{coverage.Linked} decisions with evidence", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{coverage.Content} with a non-empty payload", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == "decisions without evidence on the same context");
+        Assert.Contains(created.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == "evidence rows with a non-empty payload");
+        Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "evidence.collect" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "decision.support-coverage" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "assess" && step.GetProperty("purpose").GetString()!.Contains("collect-FACT,coverage", StringComparison.Ordinal));
+        Assert.DoesNotContain(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "trading.paper_execute");
+        Assert.DoesNotContain(thesis, created.GetRawText(), StringComparison.Ordinal);
+        Assert.DoesNotContain(source, created.GetRawText(), StringComparison.Ordinal);
+        Assert.False(created.GetProperty("liveAccepted").GetBoolean());
+        Assert.True(replay.GetProperty("replayed").GetBoolean());
+        Assert.Equal(revision, Revision(key));
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
+    public async Task A_single_criterion_is_not_expanded_and_an_unknown_criterion_does_not_read()
+    {
+        var observation = EvidenceCount("OBSERVATION", AgentTaskApiFixture.TenantA);
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var comparison = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            MultiBody("multi-compare-" + Guid.NewGuid().ToString("N"), "Observation rows outnumber fact rows.", "observation-over-fact")));
+        var blocked = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            MultiBody("multi-live-" + Guid.NewGuid().ToString("N"), "A live order is the criterion.", "live-order")));
+        var partial = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            GoalBody("multi-partial-" + Guid.NewGuid().ToString("N"), "Confirm both the evidence.", [], "Review the request.")));
+        var runner = Guid.Parse("c7777777-7777-7777-7777-777777777777");
+        await EnsureRunOnlyUser(runner, AgentTaskApiFixture.TenantA);
+        var deniedKey = "multi-denied-" + Guid.NewGuid().ToString("N");
+        var denied = await Authorized(_fixture.Client(), runner, AgentTaskApiFixture.TenantA).PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            GoalBody(deniedKey, "Confirm both that observation evidence outnumbers fact evidence and that the stored evidence is complete enough to support the tenant's decisions.", [], "Review the tenant evidence."));
+
+        Assert.Equal("Completed", comparison.GetProperty("status").GetString());
+        Assert.True(comparison.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Equal("proven", comparison.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Contains(comparison.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{observation} OBSERVATION rows", StringComparison.Ordinal));
+        Assert.DoesNotContain(comparison.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "decision.support-coverage");
+        Assert.DoesNotContain(comparison.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString()!.Contains("payload", StringComparison.Ordinal));
+        Assert.Equal("Failed", blocked.GetProperty("status").GetString());
+        Assert.Equal("missing-capability", blocked.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.DoesNotContain(blocked.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() is "collect-OBSERVATION" or "coverage");
+        Assert.Equal("Failed", partial.GetProperty("status").GetString());
+        Assert.Equal("missing-data", partial.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.DoesNotContain(partial.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "coverage");
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        Assert.Equal(0, Count(_fixture.TaskConnection, "SELECT COUNT(*) FROM pack_personal_intelligence.pi_agent_task WHERE task_key = '" + deniedKey + "'"));
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
+    public async Task A_multi_criterion_plan_does_not_read_another_tenant()
+    {
+        var observation = EvidenceCount("OBSERVATION", AgentTaskApiFixture.TenantA);
+        var thesis = EvidenceScalar(
+            "SELECT thesis FROM pack_personal_intelligence.pi_decision WHERE tenant_id = @Tenant AND length(thesis) > 20 LIMIT 1",
+            AgentTaskApiFixture.TenantA);
+        var source = EvidenceScalar(
+            "SELECT MIN(source_ref) FROM pack_personal_intelligence.pi_evidence WHERE tenant_id = @Tenant AND epistemic_kind = 'OBSERVATION'",
+            AgentTaskApiFixture.TenantA);
+        await using var connection = new NpgsqlConnection(_fixture.ValidationConnection);
+        await connection.OpenAsync();
+        var saved = (string)(await new NpgsqlCommand("SELECT settings::text FROM public.tenants WHERE id = @Id", connection)
+        {
+            Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+        }.ExecuteScalarAsync())!;
+        try
+        {
+            await new NpgsqlCommand(
+                """
+                UPDATE public.tenants
+                SET settings = settings || '{"platform":{"enabled_modules":["personal_intelligence"]}}'::jsonb
+                WHERE id = @Id
+                """,
+                connection)
+            {
+                Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+            var outsider = Authorized(_fixture.Client(), AgentTaskApiFixture.UserB, AgentTaskApiFixture.TenantB);
+            var created = await Read(await outsider.PostAsJsonAsync(
+                "/api/personal-intelligence/tasks",
+                GoalBody("multi-b-" + Guid.NewGuid().ToString("N"), "Confirm both that observation evidence outnumbers fact evidence and that the stored evidence is complete enough to support the tenant's decisions.", [], "Review the tenant evidence.")));
+            var body = created.GetRawText();
+
+            Assert.Equal("Failed", created.GetProperty("status").GetString());
+            Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
+            Assert.Equal("executed-unproven", created.GetProperty("goal").GetProperty("understanding").GetString());
+            Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains("0 OBSERVATION rows", StringComparison.Ordinal));
+            Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains("0 decisions in pack_personal_intelligence.pi_decision", StringComparison.Ordinal));
+            Assert.DoesNotContain(thesis, body, StringComparison.Ordinal);
+            Assert.DoesNotContain(source, body, StringComparison.Ordinal);
+            Assert.DoesNotContain($"{observation} OBSERVATION rows", body, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await new NpgsqlCommand("UPDATE public.tenants SET settings = @Settings::jsonb WHERE id = @Id", connection)
+            {
+                Parameters = { new("Settings", saved), new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+        }
+    }
+
+    [Fact]
     public async Task Approval_rejects_the_wrong_permission_tenant_and_status()
     {
         var key = "guard-" + Guid.NewGuid().ToString("N");
@@ -1312,6 +1451,16 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
             doneWhen,
             kind = "goal",
             business = new { intent = "assess-completeness", subject = "decision-support", needs },
+        };
+
+    private static object MultiBody(string key, string doneWhen, params string[] needs)
+        => new
+        {
+            taskKey = key,
+            objective = "Review the tenant evidence.",
+            doneWhen,
+            kind = "goal",
+            business = new { intent = "plan-criteria", subject = "tenant-evidence", needs },
         };
 
     private static object ValidationBody(string key, string doneWhen, params string[] needs)

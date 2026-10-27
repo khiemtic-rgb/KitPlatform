@@ -365,3 +365,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build.
 
 No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim.
+
+## Multi-criteria plan
+
+A request that asks for both an observation-over-fact comparison and coverage completeness calls `evidence.count` and `decision.support-coverage`. The judge depends on both results. The overall goal stays unmet when coverage is unmet, even if the comparison is proven. A criterion with no capability is not given a tool.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 37 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 261 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build.
+
+No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim.
