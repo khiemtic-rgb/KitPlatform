@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-27T05:19:57.972Z",
+  "generatedAt": "2026-10-27T12:30:29.604Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 32,
-    "todayPageViews": 7,
-    "todayRequests": 58,
-    "last24hVisitors": 174,
-    "last24hPageViews": 65,
-    "last24hRequests": 577
+    "todayVisitors": 67,
+    "todayPageViews": 279,
+    "todayRequests": 1065,
+    "last24hVisitors": 167,
+    "last24hPageViews": 327,
+    "last24hRequests": 1428
   },
   "hourly": [
-    {
-      "time": "2026-10-26T06:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-26T07:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-26T08:00:00Z",
-      "visitors": 23,
-      "requests": 26
-    },
-    {
-      "time": "2026-10-26T09:00:00Z",
-      "visitors": 4,
-      "requests": 18
-    },
-    {
-      "time": "2026-10-26T10:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-26T11:00:00Z",
-      "visitors": 5,
-      "requests": 50
-    },
-    {
-      "time": "2026-10-26T12:00:00Z",
-      "visitors": 3,
-      "requests": 44
-    },
     {
       "time": "2026-10-26T13:00:00Z",
       "visitors": 17,
@@ -128,8 +93,38 @@
     },
     {
       "time": "2026-10-27T05:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 9,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-27T06:00:00Z",
+      "visitors": 1,
+      "requests": 514
+    },
+    {
+      "time": "2026-10-27T07:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-27T08:00:00Z",
+      "visitors": 5,
+      "requests": 10
+    },
+    {
+      "time": "2026-10-27T09:00:00Z",
+      "visitors": 11,
+      "requests": 351
+    },
+    {
+      "time": "2026-10-27T10:00:00Z",
+      "visitors": 3,
+      "requests": 101
+    },
+    {
+      "time": "2026-10-27T11:00:00Z",
+      "visitors": 5,
+      "requests": 16
     }
   ],
   "daily": [
@@ -171,34 +166,54 @@
     },
     {
       "date": "2026-10-27",
-      "visitors": 107,
-      "pageViews": 18,
-      "requests": 227
+      "visitors": 144,
+      "pageViews": 290,
+      "requests": 1234
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 57
-    },
-    {
-      "path": "/robots.txt",
-      "views": 43
+      "views": 68
     },
     {
       "path": "/vi/",
-      "views": 29
+      "views": 39
     },
     {
-      "path": "/sitemap.xml",
-      "views": 18
+      "path": "/robots.txt",
+      "views": 35
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 14
+    },
+    {
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 14
     },
     {
       "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
       "views": 14
     },
     {
-      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "path": "/vi/goi-cha-me/khi-cha-me-bat-dong-cach-day-con-lam-sao-de-khong-bien-ngoi-nha-thanh-toa-an/",
+      "views": 14
+    },
+    {
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 13
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 13
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 13
+    },
+    {
+      "path": "/sitemap.xml",
       "views": 13
     },
     {
@@ -206,19 +221,7 @@
       "views": 13
     },
     {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 12
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 12
-    },
-    {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 12
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "path": "/vi/goi-cha-me/",
       "views": 11
     },
     {
@@ -226,16 +229,8 @@
       "views": 9
     },
     {
-      "path": "/_next/static/chunks/app/vi/huong-dan/%5Bslug%5D/page-2d062270f9ff84b4.js",
-      "views": 7
-    },
-    {
-      "path": "/favicon.ico",
-      "views": 7
-    },
-    {
-      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
-      "views": 5
+      "path": "/en/",
+      "views": 9
     }
   ]
 }
