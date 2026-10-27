@@ -552,7 +552,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.Contains(created.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == criterion);
         Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "assess" && step.GetProperty("status").GetString() == "Failed");
         Assert.DoesNotContain(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() is "research" or "execute");
-        Assert.Equal("none", created.GetProperty("nextAction").GetString());
+        Assert.Equal("review_the_stated_gap", created.GetProperty("nextAction").GetString());
         Assert.True(replay.GetProperty("replayed").GetBoolean());
         Assert.False(replay.GetProperty("goal").GetProperty("met").GetBoolean());
         Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
@@ -662,6 +662,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.Equal("Completed", created.GetProperty("status").GetString());
         Assert.True(created.GetProperty("goal").GetProperty("met").GetBoolean());
         Assert.Equal("proven", created.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("none", created.GetProperty("nextAction").GetString());
         Assert.False(created.GetProperty("recommendationExecuted").GetBoolean());
         Assert.False(created.GetProperty("liveAccepted").GetBoolean());
         Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{observations} OBSERVATION", StringComparison.Ordinal) && item.GetString()!.Contains("pi_evidence", StringComparison.Ordinal));
@@ -674,6 +675,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.Equal("Failed", both.GetProperty("status").GetString());
         Assert.False(both.GetProperty("goal").GetProperty("met").GetBoolean());
         Assert.Equal("executed-unproven", both.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("review_unproven_criteria", both.GetProperty("nextAction").GetString());
         Assert.Contains(both.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == "FACT evidence rows");
         Assert.Contains(both.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "collect-FACT" && step.GetProperty("status").GetString() == "Succeeded");
         Assert.Contains(both.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "assess" && step.GetProperty("status").GetString() == "Succeeded");
@@ -694,15 +696,18 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
 
         Assert.Equal("Failed", vague.GetProperty("status").GetString());
         Assert.Equal("not-understood", vague.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("state_a_completion_condition", vague.GetProperty("nextAction").GetString());
         Assert.False(vague.GetProperty("goal").GetProperty("met").GetBoolean());
         Assert.Contains("Make it good.", vague.GetProperty("goal").GetProperty("missing").EnumerateArray().Select(item => item.GetString()));
         Assert.DoesNotContain(vague.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString()!.StartsWith("collect", StringComparison.Ordinal));
         Assert.Equal("Failed", gap.GetProperty("status").GetString());
         Assert.Equal("missing-capability", gap.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("no_registered_capability", gap.GetProperty("nextAction").GetString());
         Assert.Contains(gap.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString()!.Contains("evidence.payload", StringComparison.Ordinal));
         Assert.DoesNotContain(gap.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "evidence.payload");
         Assert.Equal("Failed", data.GetProperty("status").GetString());
         Assert.Equal("missing-data", data.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("provide_the_missing_condition", data.GetProperty("nextAction").GetString());
         Assert.Contains(data.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString()!.Contains("OPINION", StringComparison.Ordinal));
         Assert.DoesNotContain(data.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString()!.StartsWith("collect", StringComparison.Ordinal));
         Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
@@ -936,6 +941,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.Equal("Failed", created.GetProperty("status").GetString());
         Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
         Assert.Equal("unable-to-assess", created.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("cannot_assess_from_stored_rows", created.GetProperty("nextAction").GetString());
         Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{quality.Evidence} evidence rows", StringComparison.Ordinal) && item.GetString()!.Contains($"{quality.Decisions} decisions", StringComparison.Ordinal));
         Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{quality.Unlinked} decisions with no context", StringComparison.Ordinal));
         Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{quality.Colocated} decisions that share a context", StringComparison.Ordinal));
@@ -1054,6 +1060,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
             Assert.Equal("Failed", created.GetProperty("status").GetString());
             Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
             Assert.Equal("unable-to-assess", created.GetProperty("goal").GetProperty("understanding").GetString());
+            Assert.Equal("cannot_assess_from_stored_rows", created.GetProperty("nextAction").GetString());
             Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains("0 evidence rows", StringComparison.Ordinal));
             Assert.Contains(created.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == "evidence rows");
             Assert.DoesNotContain(thesis, body, StringComparison.Ordinal);
@@ -1095,6 +1102,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.Equal("Failed", created.GetProperty("status").GetString());
         Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
         Assert.Equal("executed-unproven", created.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("review_unproven_criteria", created.GetProperty("nextAction").GetString());
         Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString() == "Criterion observation-over-fact is proven.");
         Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString() == "Criterion coverage-complete is executed-unproven.");
         Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{observation} OBSERVATION rows", StringComparison.Ordinal));
@@ -1317,6 +1325,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.False(continued.GetProperty("recommendationExecuted").GetBoolean());
         Assert.Equal("Live", continued.GetProperty("executionMode").GetString());
         Assert.Contains(continued.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "trading.paper_execute" && step.GetProperty("status").GetString() == "Rejected");
+        Assert.Equal("action_rejected", continued.GetProperty("nextAction").GetString());
     }
 
     [Fact]

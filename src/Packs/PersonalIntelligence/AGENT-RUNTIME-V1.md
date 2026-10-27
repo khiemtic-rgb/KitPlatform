@@ -325,3 +325,29 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
 
 No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. Independent reads can continue after a failed read. The system still cannot conclude that evidence supports a decision.
+
+## Receipt next step
+
+The task status alone does not say what to do after a failure. The receipt now chooses the next action from the goal understanding and the step result:
+
+- `missing-data`: `provide_the_missing_condition`
+- `missing-capability`: `no_registered_capability`
+- `not-understood`: `state_a_completion_condition`
+- `executed-unproven`: `review_unproven_criteria`
+- `unable-to-assess`: `cannot_assess_from_stored_rows`
+- a rejected live step: `action_rejected`
+- a denied step: `permission_denied`
+- a failed goal that names a gap but has no understanding code: `review_the_stated_gap`
+- any other failed step: `review_the_failed_step`
+
+A completed task stays `none`. An unapproved paper task stays `approve` for an approver and `wait_for_approval` otherwise. An uncertain effect stays `manual_reconciliation` for an approver. These actions do not execute a tool and do not turn a gap into a success.
+
+## What the receipt tests showed
+
+Measured again on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 37 passed, 0 failed. A stored observation-over-fact comparison completed with next action `none`. A request for both stored kinds stayed unmet because the fact count was 0, and the next action was `review_unproven_criteria`. `Make it good.` was `not-understood`. An unregistered payload capability was `missing-capability`. An opinion subject was `missing-data`. Each had its own next action and did not collect rows. The validation sentence stayed `unable-to-assess`. The two-capability sentence stayed `executed-unproven`. An unapproved paper task still asked for `approve`. A live approval was `action_rejected` and `LiveAccepted` stayed false. An unprovable profit sentence asked for `review_the_stated_gap` and did not execute.
+- `KitPlatform.PersonalIntelligence.Tests`: 264 passed, 0 failed. The runtime behavior from the previous section was not changed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
+
+No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. A sentence outside the closed lexicon is still not executed. The stored rows still cannot prove that evidence supports a decision.

@@ -389,3 +389,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
 
 No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim. The isolated rows still do not prove that evidence supports a decision.
+
+## Receipt next step
+
+A failed task now names the next step from the receipt. `missing-data` asks for the missing condition. `missing-capability` says no registered capability. `not-understood` asks for a completion condition. `executed-unproven` asks for review of the unproven criteria. `unable-to-assess` says the stored rows cannot support the assessment. A rejected live step says the action was rejected. A failed task with a stated gap but no understanding code asks for review of that gap. A completed goal still has next action `none`. Approval and reconciliation are unchanged.
+
+Measured again on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 37 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 264 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
+
+No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim.
