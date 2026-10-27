@@ -209,3 +209,21 @@ Measured on `127.0.0.1:5433` after the goal check:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No migration was added. No worker was added. This is not exactly-once and not a production-readiness claim. The isolated databases do not make the path production-ready.
+
+## Shared task contract
+
+Both task kinds use the same runtime, the same `goalMet` outputs, and `GoalContract`. A completion condition is verifiable only when it equals a criterion id or statement that the domain registered. Any other text, including `Make it good.` or a profit sentence, is not interpreted and is not marked met. The kernel still does not contain trading or evidence rules.
+
+`trading-paper` registers `no-live-order`: `The receipt names the outcome and does not claim a live order.` Its plan is research, recommend, assess, paper execute, and record. An undeclared condition produces only the assess step, so the research ledger and paper operation are not written. `workflow-poc` remains a fixture. `LiveAccepted` stays false. A research fill is still not a paper operation.
+
+`evidence-review` registers two read-only criteria: `observation-present` and `fact-present`. It reads `pack_personal_intelligence.pi_evidence` for the caller tenant only, from database `kit_pi_validation` on a port other than `5432`. It counts `OBSERVATION` or `FACT` rows. Tenant A has observation rows and no fact rows, so the observation criterion can complete and the fact criterion stays unmet even though both steps succeed. An unknown sentence does not query the table. The review does not accept live mode or an approval decision, and it does not write a paper operation. The caller still needs `personal_intelligence.trading.run` because the isolated permission catalog has no separate evidence permission. The service grants `personal_intelligence.research.read` from that existing permission.
+
+## What the shared-contract tests showed
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 24 passed, 0 failed. The trading approval path still reaches `Completed` with `goal.met` true and one task paper operation. An undeclared profit sentence does not run research or execute. Evidence review of the stored observation rows completes and names `pi_evidence`. A fact criterion stays `Failed` with `FACT evidence rows` missing. `Make it good.` does not collect. Replay does not change the revision. Tenant B reads 0 observation rows and does not receive tenant A's `source_ref`. The earlier process-exit tests remain inside this run.
+- `KitPlatform.PersonalIntelligence.Tests`: 237 passed, 0 failed. A declared trading sentence is not an evidence criterion. An evidence count of 2 can complete, a second call does not read again, and a count of 0 does not.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No migration was added. No worker was added. This is not free-form business language, not exactly-once, and not a production-readiness claim.

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Core;
+using KitPlatform.Packs.PersonalIntelligence;
 using KitPlatform.Packs.PersonalIntelligence.Agent;
 using KitPlatform.Packs.PersonalIntelligence.ResearchHost;
 using KitPlatform.Packs.PersonalIntelligence.Trading;
@@ -134,12 +135,21 @@ public sealed class AgentTaskService
 {
     public const string TradingPaperKind = "trading-paper";
     private readonly ITenantContext _tenant;
+    private readonly IConfiguration _configuration;
     private readonly AgentRuntimeOptions _options;
 
-    public AgentTaskService(ITenantContext tenant, IOptions<AgentRuntimeOptions> options)
+    public AgentTaskService(ITenantContext tenant, IOptions<AgentRuntimeOptions> options, IConfiguration configuration)
     {
         _tenant = tenant;
         _options = options.Value;
+        _configuration = configuration;
+    }
+
+    public AgentTaskView Run(ClaimsPrincipal user, AgentTaskCommand command)
+    {
+        if (string.Equals(command.Kind, EvidenceReviewRuntime.Kind, StringComparison.Ordinal))
+            return RunEvidence(user, command);
+        return RunTrading(user, command);
     }
 
     public AgentTaskView RunTrading(ClaimsPrincipal user, AgentTaskCommand command)
@@ -155,7 +165,7 @@ public sealed class AgentTaskService
         var approvedAt = approval is null ? (DateTimeOffset?)null : DateTimeOffset.UtcNow;
         var request = new AgentRequest(
             taskKey,
-            PayloadHash(objective, doneWhen, mode, approval?.DecisionId),
+            PayloadHash(TradingPaperKind, objective, doneWhen, mode, approval?.DecisionId),
             tenantId,
             objective,
             doneWhen,
@@ -193,6 +203,35 @@ public sealed class AgentTaskService
                 TradingResearchRuntime.FixedPaperRecordedAt),
             log,
             _options.AllowCrashHook ? AgentCrashHook.ExitIfRequested : null);
+        return ToView(result.Task, user);
+    }
+
+    public AgentTaskView RunEvidence(ClaimsPrincipal user, AgentTaskCommand command)
+    {
+        var tenantId = CallerTenant(user, command.RequestedTenantId);
+        var taskKey = RequireText(command.TaskKey, "A task key is required.");
+        var objective = RequireText(command.Objective, "An objective is required.");
+        var doneWhen = RequireText(command.DoneWhen, "A completion criterion is required.");
+        if (string.Equals(command.ExecutionMode, "live", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Evidence review does not accept live mode.");
+        if (command.ApprovalDecisionId is Guid)
+            throw new InvalidOperationException("Evidence review does not accept an approval decision.");
+        var request = new AgentRequest(
+            taskKey,
+            PayloadHash(EvidenceReviewRuntime.Kind, objective, doneWhen, ExecutionMode.Paper, null),
+            tenantId,
+            objective,
+            doneWhen,
+            Grants(user),
+            EvidenceReviewRuntime.PlanFor(objective, doneWhen),
+            null,
+            command.RequestedTenantId,
+            nameof(ExecutionMode.Paper),
+            null,
+            null,
+            true);
+        using var log = OpenTasks(tenantId);
+        var result = new EvidenceReviewRuntime().Execute(request, new SqlEvidenceLedger(OpenEvidence()), log);
         return ToView(result.Task, user);
     }
 
@@ -302,6 +341,23 @@ public sealed class AgentTaskService
         return new SqlResearchStore(builder.ConnectionString);
     }
 
+    private string OpenEvidence()
+    {
+        var connection = RequireConnection(_configuration.GetConnectionString("Default"), "The evidence ledger is not configured.");
+        RefuseSharedPort(connection);
+        var builder = new NpgsqlConnectionStringBuilder(connection);
+        if (builder.Database is not "kit_pi_validation")
+            throw new AgentTaskUnavailableException("The evidence ledger is not the isolated validation database.");
+        using var probe = new NpgsqlConnection(builder.ConnectionString);
+        probe.Open();
+        using var command = new NpgsqlCommand("SELECT current_database(), inet_server_port()", probe);
+        using var reader = command.ExecuteReader();
+        reader.Read();
+        if (!string.Equals(reader.GetString(0), "kit_pi_validation", StringComparison.Ordinal) || reader.GetInt32(1) == 5432)
+            throw new AgentTaskUnavailableException("The evidence ledger connection was refused.");
+        return builder.ConnectionString;
+    }
+
     private static string RequireConnection(string? value, string message)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -339,9 +395,9 @@ public sealed class AgentTaskService
         return granted;
     }
 
-    private static string PayloadHash(string objective, string doneWhen, ExecutionMode mode, Guid? approvalId)
+    private static string PayloadHash(string kind, string objective, string doneWhen, ExecutionMode mode, Guid? approvalId)
     {
-        var text = string.Join('\n', TradingPaperKind, objective, doneWhen, mode, approvalId?.ToString("D") ?? "");
+        var text = string.Join('\n', kind, objective, doneWhen, mode, approvalId?.ToString("D") ?? "");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -481,7 +537,7 @@ public sealed class AgentTaskController : ControllerBase
     {
         try
         {
-            return Ok(_tasks.RunTrading(User, command));
+            return Ok(_tasks.Run(User, command));
         }
         catch (Exception ex)
         {

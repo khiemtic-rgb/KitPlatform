@@ -31,34 +31,35 @@ public sealed class TradingResearchRuntime
     public const string ResearchPermission = "personal_intelligence.research.read";
     public const string RunPermission = "personal_intelligence.trading.run";
     public const string ApprovePermission = "personal_intelligence.trading.approve";
-    public const string Scope = "trading-paper; source workflow-poc; no live orders";
+    public const string Scope = "trading-paper; source workflow-poc fixture; no live orders";
+    public const string VerifiedOutcome = "The receipt names the outcome and does not claim a live order.";
+
+    public static readonly IReadOnlyList<TaskCriterion> Criteria = [new("no-live-order", VerifiedOutcome)];
 
     public static IReadOnlyList<AgentStepSpec> Plan { get; } = PlanFor(
         "Record a paper recommendation.",
-        "The receipt names the outcome and does not claim a live order.");
+        VerifiedOutcome);
 
     public static IReadOnlyList<AgentStepSpec> PlanFor(string objective, string doneWhen)
     {
         var goal = OneLine(objective, "the trading objective");
         var criterion = OneLine(doneWhen, "the completion condition");
+        if (!GoalContract.TryMatch(doneWhen, Criteria, out _))
+        {
+            return
+            [
+                new("assess", AssessTool, null, $"Record that this completion condition is not verifiable: {criterion}"),
+            ];
+        }
+
         return
         [
-            new("research", ResearchTool, null, $"Collect the permitted research session for: {goal}"),
+            new("research", ResearchTool, null, $"Collect the permitted workflow-poc fixture for: {goal}"),
             new("recommend", RecommendTool, "research", "Infer a paper recommendation from that session. A recommendation is not an execution."),
-            new("assess", AssessTool, "recommend", $"Check whether this completion condition can be verified: {criterion}"),
+            new("assess", AssessTool, "recommend", $"Check the declared condition against the fixture: {criterion}"),
             new("execute", ExecuteTool, "assess", "Record one task-scoped paper operation only after approval."),
             new("record", RecordTool, "recommend", "Store the research snapshot as historical evidence."),
         ];
-    }
-
-    public static bool CannotProve(string text)
-    {
-        var value = text.ToLowerInvariant();
-        return value.Contains("profit", StringComparison.Ordinal)
-            || value.Contains("lợi nhuận", StringComparison.Ordinal)
-            || value.Contains("win rate", StringComparison.Ordinal)
-            || value.Contains("percent", StringComparison.Ordinal)
-            || value.Contains('%');
     }
 
     public static readonly DateTimeOffset FixedPaperRecordedAt = DateTimeOffset.Parse("2031-06-02T06:00:00Z");
@@ -173,14 +174,25 @@ public sealed class TradingResearchRuntime
 
     private static ToolResponse Assess(TradingResearchRequest request, RunState state, ToolCall call)
     {
+        if (!GoalContract.TryMatch(request.Task.DoneWhen, Criteria, out _))
+        {
+            return ToolResponse.Stop(
+                ToolStepStatus.Failed,
+                "The completion condition is not one this domain can verify.",
+                new Dictionary<string, string>
+                {
+                    ["goalMet"] = "false",
+                    ["goalReason"] = "The completion condition is not one this domain can verify.",
+                    ["missing"] = request.Task.DoneWhen,
+                    ["scope"] = Scope,
+                    ["limit"] = "Only the declared trading criterion can be verified. Free-form business language is not interpreted. The workflow-poc candles are a fixture.",
+                });
+        }
+
         if (!TryLoadRecommendation(request, state, call, out var failure) || state.Report is null || state.Recommendation is null)
             return failure;
         var outputs = EvidenceOutputs(request, state);
         var missing = new List<string>();
-        if (CannotProve(request.Task.Objective))
-            missing.Add(request.Task.Objective);
-        if (CannotProve(request.Task.DoneWhen) && !missing.Contains(request.Task.DoneWhen, StringComparer.Ordinal))
-            missing.Add(request.Task.DoneWhen);
         if (state.Report.Snapshot.Fills.Count == 0 || string.IsNullOrWhiteSpace(state.Report.SessionKey))
             missing.Add("research fills from the permitted session");
         if (missing.Count > 0)
@@ -329,7 +341,9 @@ public sealed class TradingResearchRuntime
             ["assumption"] = string.Join('\n', assumptions),
             ["limit"] = string.Join('\n',
                 "Live orders are not sent.",
-                "Only a task-scoped paper operation can count as paper execution."),
+                "Only a task-scoped paper operation can count as paper execution.",
+                "The workflow-poc candles are a fixture, not a live market.",
+                "The objective text is recorded and is not an extra verified condition."),
         };
     }
 

@@ -1,3 +1,4 @@
+using KitPlatform.Packs.PersonalIntelligence;
 using KitPlatform.Packs.PersonalIntelligence.Agent;
 using KitPlatform.Packs.PersonalIntelligence.ResearchHost;
 using KitPlatform.Packs.PersonalIntelligence.Trading;
@@ -159,15 +160,95 @@ public sealed class AgentRuntimeTests
             new MemoryAgentRunLog());
 
         Assert.Equal(AgentTaskStatus.Failed, result.Task.Status);
+        Assert.Equal(0, result.ResearchCalls);
         Assert.Equal(0, result.ExecuteCalls);
         Assert.Contains(result.Task.Steps, step => step.StepId == "assess" && step.Status == ToolStepStatus.Failed);
-        Assert.DoesNotContain(result.Task.Steps, step => step.StepId == "execute");
+        Assert.DoesNotContain(result.Task.Steps, step => step.StepId is "research" or "execute");
         Assert.False(result.Task.Goal!.Met);
         Assert.Contains("Profit is at least 10 percent.", result.Task.Goal.Missing);
-        Assert.Contains(result.Task.Goal.Facts, fact => fact.Contains("not an approved paper order", StringComparison.Ordinal));
+        Assert.Contains(result.Task.Goal.Limits, limit => limit.Contains("not interpreted", StringComparison.Ordinal));
         Assert.False(result.Task.RecommendationExecuted);
         Assert.False(result.Task.LiveAccepted);
         Assert.Null(paper.Find(TradingResearchRuntime.TaskPaperOperationKey(Tenant, task.TaskKey, decision)));
+    }
+
+    [Fact]
+    public void A_declared_condition_is_verified_only_by_its_domain()
+    {
+        Assert.True(GoalContract.TryMatch(TradingResearchRuntime.VerifiedOutcome, TradingResearchRuntime.Criteria, out var trading));
+        Assert.Equal("no-live-order", trading!.Id);
+        Assert.False(GoalContract.TryMatch("Make it good.", TradingResearchRuntime.Criteria, out _));
+        Assert.False(GoalContract.TryMatch(TradingResearchRuntime.VerifiedOutcome, EvidenceReviewRuntime.Criteria, out _));
+        Assert.True(GoalContract.TryMatch(EvidenceReviewRuntime.ObservationStatement, EvidenceReviewRuntime.Criteria, out var evidence));
+        Assert.Equal("observation-present", evidence!.Id);
+    }
+
+    [Fact]
+    public void Evidence_review_meets_only_a_count_it_read()
+    {
+        var ledger = new CountingLedger(new EvidenceObservation("OBSERVATION", 2, "source-a"));
+        var log = new MemoryAgentRunLog();
+        var request = EvidenceRequest(EvidenceReviewRuntime.ObservationStatement);
+        var runtime = new EvidenceReviewRuntime();
+        var first = runtime.Execute(request, ledger, log);
+        var second = runtime.Execute(request, ledger, log);
+
+        Assert.Equal(AgentTaskStatus.Completed, first.Task.Status);
+        Assert.True(first.Task.Goal!.Met);
+        Assert.Contains(first.Task.Goal.Facts, fact => fact.Contains("2 OBSERVATION", StringComparison.Ordinal));
+        Assert.Contains("source-a", first.Task.EvidenceRefs);
+        Assert.Equal(1, ledger.Calls);
+        Assert.True(second.Task.Replayed);
+        Assert.Equal(0, second.CollectCalls);
+        Assert.Equal(1, ledger.Calls);
+    }
+
+    [Fact]
+    public void Evidence_review_does_not_meet_a_missing_kind_or_an_unknown_condition()
+    {
+        var empty = new CountingLedger(new EvidenceObservation("FACT", 0, null));
+        var missing = new EvidenceReviewRuntime().Execute(EvidenceRequest(EvidenceReviewRuntime.FactStatement), empty, new MemoryAgentRunLog());
+        var unknownLedger = new CountingLedger(new EvidenceObservation("OBSERVATION", 2, "source-a"));
+        var unknown = new EvidenceReviewRuntime().Execute(EvidenceRequest("Make it good."), unknownLedger, new MemoryAgentRunLog());
+
+        Assert.Equal(AgentTaskStatus.Failed, missing.Task.Status);
+        Assert.NotEqual(AgentTaskStatus.Completed, missing.Task.Status);
+        Assert.False(missing.Task.Goal!.Met);
+        Assert.Contains("FACT evidence rows", missing.Task.Goal.Missing);
+        Assert.Contains(missing.Task.Steps, step => step.StepId == "collect" && step.Status == ToolStepStatus.Succeeded);
+        Assert.Equal(1, empty.Calls);
+        Assert.Equal(AgentTaskStatus.Failed, unknown.Task.Status);
+        Assert.False(unknown.Task.Goal!.Met);
+        Assert.Contains("Make it good.", unknown.Task.Goal.Missing);
+        Assert.Equal(0, unknown.CollectCalls);
+        Assert.Equal(0, unknownLedger.Calls);
+    }
+
+    private static AgentRequest EvidenceRequest(string doneWhen)
+        => new(
+            "evidence-task",
+            "evidence-task",
+            Tenant,
+            "Review this tenant's stored evidence.",
+            doneWhen,
+            [EvidenceReviewRuntime.ReadPermission],
+            EvidenceReviewRuntime.PlanFor("Review this tenant's stored evidence.", doneWhen),
+            null,
+            VerifyGoal: true);
+
+    private sealed class CountingLedger : IEvidenceLedger
+    {
+        private readonly EvidenceObservation _row;
+
+        public CountingLedger(EvidenceObservation row) => _row = row;
+
+        public int Calls { get; private set; }
+
+        public EvidenceObservation Read(Guid tenantId, string epistemicKind)
+        {
+            Calls++;
+            return _row with { EpistemicKind = epistemicKind };
+        }
     }
 
     [Fact]
@@ -529,7 +610,7 @@ public sealed class AgentRuntimeWorkflowTests : IAsyncLifetime
             "runtime-workflow-poc",
             Guid.Parse("a1111111-1111-1111-1111-111111111111"),
             "Recommend from the fixed research session.",
-            "The task receipt shows approval_required and the research fill count stays 2.",
+            TradingResearchRuntime.VerifiedOutcome,
             [TradingResearchRuntime.ResearchPermission, TradingResearchRuntime.RunPermission, TradingResearchRuntime.ApprovePermission],
             TradingResearchRuntime.Plan,
             null);
@@ -596,7 +677,7 @@ public sealed class AgentRuntimeWorkflowTests : IAsyncLifetime
                 "runtime-live-block",
                 Guid.Parse("a1111111-1111-1111-1111-111111111111"),
                 "Do not send the live proposal.",
-                "The execute tool rejects live mode.",
+                TradingResearchRuntime.VerifiedOutcome,
                 [TradingResearchRuntime.ResearchPermission, TradingResearchRuntime.RunPermission, TradingResearchRuntime.ApprovePermission],
                 TradingResearchRuntime.Plan,
                 new ExecutionApproval(Guid.NewGuid(), "operator")),
@@ -641,7 +722,7 @@ public sealed class AgentRuntimeWorkflowTests : IAsyncLifetime
             "runtime-integrity",
             Guid.Parse("a1111111-1111-1111-1111-111111111111"),
             "Approve the stored recommendation.",
-            "The snapshot stays historical and the paper operation is separate.",
+            TradingResearchRuntime.VerifiedOutcome,
             [TradingResearchRuntime.ResearchPermission, TradingResearchRuntime.RunPermission, TradingResearchRuntime.ApprovePermission],
             TradingResearchRuntime.Plan,
             null,
