@@ -747,8 +747,31 @@ public sealed class AgentTaskService
             AgentTaskStatus.AwaitingApproval => canApprove ? "approve" : "wait_for_approval",
             AgentTaskStatus.ReconciliationRequired => canApprove ? "manual_reconciliation" : "wait_for_reconciliation",
             AgentTaskStatus.Running or AgentTaskStatus.Received or AgentTaskStatus.Planned or AgentTaskStatus.Verified => "wait",
+            AgentTaskStatus.Failed => FailedNext(receipt),
             _ => "none",
         };
+    }
+
+    private static string FailedNext(AgentTaskReceipt receipt)
+    {
+        if (receipt.Steps.Any(step => step.Status == ToolStepStatus.Denied))
+            return "permission_denied";
+        if (receipt.Steps.Any(step => step.Status == ToolStepStatus.Rejected))
+            return "action_rejected";
+        var understanding = receipt.Goal?.Understanding ?? "";
+        if (understanding == "missing-data")
+            return "provide_the_missing_condition";
+        if (understanding == "missing-capability")
+            return "no_registered_capability";
+        if (understanding == "not-understood")
+            return "state_a_completion_condition";
+        if (understanding == "unable-to-assess")
+            return "cannot_assess_from_stored_rows";
+        if (understanding == "executed-unproven")
+            return "review_unproven_criteria";
+        if (receipt.Goal?.Missing.Count > 0)
+            return "review_the_stated_gap";
+        return "review_the_failed_step";
     }
 }
 
