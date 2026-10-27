@@ -68,9 +68,12 @@ public sealed record AgentTaskView(
     string? ExecutionMode,
     string NextAction,
     IReadOnlyList<AgentTaskDecisionView> Decisions,
-    AgentTaskResultView? Result);
+    AgentTaskResultView? Result,
+    string Objective = "",
+    string DoneWhen = "",
+    AgentTaskGoalView? Goal = null);
 
-public sealed record AgentTaskStepView(string StepId, string ToolName, string Status, string Summary, string? Error);
+public sealed record AgentTaskStepView(string StepId, string ToolName, string Status, string Summary, string? Error, string? Purpose = null);
 
 public sealed record AgentTaskDecisionView(
     string Kind,
@@ -88,6 +91,16 @@ public sealed record AgentTaskResultView(
     string? PaperOperationKey,
     string? TaskOutcome,
     DateTimeOffset RecordedAt);
+
+public sealed record AgentTaskGoalView(
+    string Scope,
+    bool Met,
+    string Reason,
+    IReadOnlyList<string> Facts,
+    IReadOnlyList<string> Inferences,
+    IReadOnlyList<string> Assumptions,
+    IReadOnlyList<string> Missing,
+    IReadOnlyList<string> Limits);
 
 public sealed class AgentApprovalCommand
 {
@@ -147,12 +160,13 @@ public sealed class AgentTaskService
             objective,
             doneWhen,
             Grants(user),
-            TradingResearchRuntime.Plan,
+            TradingResearchRuntime.PlanFor(objective, doneWhen),
             approval,
             command.RequestedTenantId,
             mode.ToString(),
             approval is null ? null : [Decision("approval", "approved", approval.DecisionId, approval.ApprovedBy, approvedAt!.Value, null)],
-            approvedAt);
+            approvedAt,
+            true);
         var proposal = new TradeProposal("BTCUSDT", "BUY", 0.001m, 100m, 1m, 0.8m, mode);
         var limits = new RiskLimits(1_000m, 1m, 0.5m);
         var intake = ResearchCandles.Classify(
@@ -205,7 +219,8 @@ public sealed class AgentTaskService
             command.RequestedTenantId,
             stored.ExecutionMode ?? mode.ToString(),
             stored.Decisions,
-            stored.ApprovedAt);
+            stored.ApprovedAt,
+            true);
         var result = new TradingResearchRuntime().ContinueAfterApproval(
             TradingRequest(request, research, mode),
             log,
@@ -404,7 +419,13 @@ public sealed class AgentTaskService
             receipt.ApprovalRecorded,
             receipt.Error,
             receipt.EvidenceRefs,
-            receipt.Steps.Select(step => new AgentTaskStepView(step.StepId, step.ToolName, step.Status.ToString(), step.Summary, step.Error)).ToArray(),
+            receipt.Steps.Select(step => new AgentTaskStepView(
+                step.StepId,
+                step.ToolName,
+                step.Status.ToString(),
+                step.Summary,
+                step.Error,
+                receipt.Plan?.FirstOrDefault(item => item.StepId == step.StepId)?.Purpose)).ToArray(),
             receipt.ApprovedBy,
             receipt.ApprovedAt,
             receipt.ExecutionMode,
@@ -417,7 +438,20 @@ public sealed class AgentTaskService
                     receipt.Result.SnapshotOutcome,
                     receipt.Result.PaperOperationKey,
                     receipt.Result.TaskOutcome,
-                    receipt.Result.RecordedAt));
+                    receipt.Result.RecordedAt),
+            receipt.Objective,
+            receipt.DoneWhen,
+            receipt.Goal is null
+                ? null
+                : new AgentTaskGoalView(
+                    receipt.Goal.Scope,
+                    receipt.Goal.Met,
+                    receipt.Goal.Reason,
+                    receipt.Goal.Facts,
+                    receipt.Goal.Inferences,
+                    receipt.Goal.Assumptions,
+                    receipt.Goal.Missing,
+                    receipt.Goal.Limits));
 
     private static string NextAction(AgentTaskReceipt receipt, ClaimsPrincipal user)
     {

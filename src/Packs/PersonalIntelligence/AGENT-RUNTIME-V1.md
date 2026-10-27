@@ -181,3 +181,31 @@ Measured on `127.0.0.1:5433` after the task result link:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No migration was added. No worker was added. This is not a production-readiness claim.
+
+## Product capability
+
+The task API now checks the business goal before it will call a task `Completed`. `AgentRequest.VerifyGoal` is set by that API. The runtime reaches `Verified` when every step succeeded, then moves to `Completed` only if the last succeeded step output `goalMet=true`. Otherwise it moves to `Failed` and keeps the `goalReason`. `AwaitingApproval` stays waiting. `goal.met` on the receipt is true only when the status is `Completed` and that output is true. Running every step is not itself success.
+
+The shared outputs are `goalMet`, `goalReason`, `scope`, `fact`, `inference`, `assumption`, `missing`, and `limit`. The kernel does not know trading rules. `TradingResearchRuntime.PlanFor` builds the trading plan from the objective and the completion text. Each step carries its purpose:
+
+```text
+research.session       collect the permitted workflow-poc session
+trading.recommend      infer a paper recommendation; this is not an execution
+trading.assess         read; compare the completion text with that session
+trading.paper_execute  one task-scoped paper operation, and only after approval
+runtime.record         store the research snapshot as history
+```
+
+`trading.assess` fails closed, and does not call paper execution, when the objective or completion text asks for profit, a percent, a win rate, or `lợi nhuận`, or when the permitted session has no fills. The receipt lists that text under `goal.missing` and still cites the fills that were actually read. It does not invent a profit figure. A recommendation remains an inference. Research fills remain observations. `paper_executed` still requires the task-scoped `paper_operation` row. `LiveAccepted` stays false.
+
+The response adds `objective`, `doneWhen`, each step `purpose`, and `goal`: scope, met, reason, facts, inferences, assumptions, missing, and limits. A recovery that already committed `research.session` may run `trading.assess` again because it is a read, then blocks paper execution until approval. An uncommitted paper gap is still `ReconciliationRequired` and is not retried.
+
+## What the capability tests showed
+
+Measured on `127.0.0.1:5433` after the goal check:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 22 passed, 0 failed. An unapproved paper task stays `AwaitingApproval` with `goal.met` false and a research step whose purpose names the objective. Approval then reaches `Completed`, `goal.met` true, `paper_executed`, and one task paper operation for the task hash. The snapshot outcome stays `approval_required`. Replay does not add another operation. A completion text of `Profit is at least 10 percent.` ends `Failed`, not `Completed`, with that text under `goal.missing`, a `workflow-poc` fact, no succeeded execute step, and no paper operation key. Replay does not add a paper operation. The earlier process-exit tests, exit 86, exit 87, and the held lock, are inside this same 22.
+- `KitPlatform.PersonalIntelligence.Tests`: 234 passed, 0 failed. A succeeded step that reports `goalMet=false` stays `Failed` when verification is on. `goalMet=true` can complete. An approved trading request whose completion text cannot be proved calls execute zero times and stores no task paper operation. The memory approval path still keeps the snapshot at `approval_required`, stores one task paper operation, and reports `goal.met` true only after that operation.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No migration was added. No worker was added. This is not exactly-once and not a production-readiness claim. The isolated databases do not make the path production-ready.
