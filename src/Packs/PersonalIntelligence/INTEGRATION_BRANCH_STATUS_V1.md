@@ -277,3 +277,19 @@ Measured after that policy, on `127.0.0.1:5433` only:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 `AgentRuntime:AllowCrashHook` is unset in committed configuration. The isolated process tests set it. No production deploy and no migration outside `kit_pi_agent_task`. This is not a production-readiness claim.
+
+## Task lifecycle
+
+`POST /api/personal-intelligence/tasks/{taskKey}/approval` continues the stored `AwaitingApproval` task. It does not change the payload hash and does not create another task. The approver, time, and decision id are stored on the receipt. A blocked paper step runs once. Steps that already succeeded do not run. `Completed`, `Failed`, and `ReconciliationRequired` do not continue through that route. A stored live mode stays rejected and `liveAccepted` stays false.
+
+`POST /api/personal-intelligence/tasks/{taskKey}/reconciliation` records `occurred` or `absent` with an evidence note. The task stays `ReconciliationRequired`. The tool is not called. `unknown` or a missing note returns 400 and does not write. GET returns `nextAction` for the caller's permission. `Running` has no timeout and no worker.
+
+The contract and the manual reconciliation procedure are in `AGENT-RUNTIME-V1.md`.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 19 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 230 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No production deploy and no new migration. The research snapshot written before approval is left as history. This is not a production-readiness claim.

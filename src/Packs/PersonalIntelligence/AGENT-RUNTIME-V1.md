@@ -90,7 +90,9 @@ The only accepted kind is `trading-paper`. The server owns the plan and the fixe
 
 `AgentRuntime:TaskConnection` is the PostgreSQL task log. `AgentRuntime:ResearchConnection` must be database `trading_agent`. Both refuse port `5432` before a task or research connection opens. If either setting is missing, or the port is refused, the API returns 503. A payload conflict is 409. A tenant or permission refusal is 403. An unknown task is 404. Anonymous calls are 401. The trading-loop route stays unmapped while `PersonalIntelligence:ExposeExchangeRead` is false.
 
-The response is `AgentTaskView`: task key, payload hash, tenant, status, outcome, research fill count, recommendation executed, live accepted, replayed, approval recorded, error, evidence, and steps. It does not include the revision.
+The response is `AgentTaskView`: task key, payload hash, tenant, status, outcome, research fill count, recommendation executed, live accepted, replayed, approval recorded, error, evidence, steps, approver, approval time, execution mode, next action, and decisions. It does not include the revision.
+
+`nextAction` depends on the caller's permission. `AwaitingApproval` is `approve` when the caller holds `personal_intelligence.trading.approve` or `ADMIN`, and `wait_for_approval` otherwise. `ReconciliationRequired` is `manual_reconciliation` for that same approver and `wait_for_reconciliation` otherwise. `Running`, `Received`, `Planned`, and `Verified` are `wait`. `Completed`, `Failed`, and `Cancelled` are `none`. `Running` does not expire. There is no lease and no worker.
 
 ## What the product tests showed
 
@@ -137,3 +139,27 @@ The next POST of the same tenant, key, and payload handles a `Running` row. It k
 ## Recovery limits
 
 A committed step survives process exit. An uncommitted side effect is not exactly-once and is not retried. A read that was not committed can run once more. `Running` is not completed by GET and is not swept by a worker. Manual reconciliation is required before an uncommitted paper or live step may be attempted again. `LiveAccepted` stays false. The crash hook is a test switch and is off unless `AgentRuntime:AllowCrashHook` is true.
+
+## Task lifecycle
+
+Ordinary `POST /api/personal-intelligence/tasks` still identifies a task by kind, objective, completion criterion, execution mode, and any approval id sent on that first request. Sending a later approval id on that route is a different payload and returns 409. It does not create a second task and does not continue the waiting one.
+
+`POST /api/personal-intelligence/tasks/{taskKey}/approval` continues the stored task. The body carries `approvalDecisionId` only. The stored payload hash and execution mode stay as they were. The approver is the token subject. The tenant is the token tenant. The caller must hold `personal_intelligence.trading.approve` or `ADMIN`, and the module must be on. Another tenant gets 404. A caller with trading-run but not approve gets 403.
+
+The route accepts `AwaitingApproval`, and a `Running` row that still has a blocked approval step. It moves `AwaitingApproval` to `Running`, dispatches only a step whose stored status is `Blocked` and whose contract requires approval, then continues. A `Blocked` step was stopped by the dispatcher before the handler, so that paper effect had not happened. Steps already `Succeeded` are not called. The same decision id replays the stored receipt and does not append another decision. A different decision id conflicts. Two callers take the same advisory lock. `Completed` and `Failed` replay only the same decision id. `ReconciliationRequired` cannot be approved. A stored `Live` mode is still rejected by the execute tool, and `liveAccepted` stays false. The approval body cannot change paper into live.
+
+`POST /api/personal-intelligence/tasks/{taskKey}/reconciliation` is the V1 record for an uncertain effect. It requires the approve permission. `occurred` and `absent` require an evidence note of at most 500 characters. The decision, actor, and time are appended to the receipt. The status stays `ReconciliationRequired`. No tool runs, and a later ordinary POST does not retry the paper or live step. `unknown`, a blank note, or a note that is too long returns 400 and leaves the row unchanged. The same actor, disposition, and evidence replay. A different disposition conflicts and does not replace the first decision.
+
+V1 does not treat that note as proof the effect happened or did not happen. The operator checks the research ledger and paper operations, records what was found, and leaves the task blocked. There is no transition out of `ReconciliationRequired`.
+
+Valid status moves remain: `Received` to `Planned`, `Failed`, or `Cancelled`; `Planned` to `Running`, `Failed`, or `Cancelled`; `Running` to `AwaitingApproval`, `Verified`, `Failed`, `Cancelled`, or `ReconciliationRequired`; `AwaitingApproval` to `Running`, `Failed`, or `Cancelled`; `Verified` to `Completed` or `Failed`. `Completed` does not return to `Running`.
+
+## What the lifecycle tests showed
+
+Measured on `127.0.0.1:5433` after the approval and reconciliation routes:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 19 passed, 0 failed. An unapproved paper task stays `AwaitingApproval` with next action `approve`. A second POST that adds an approval id conflicts and leaves that hash in place. The approval route then reaches `Completed` and `paper_executed`, keeps the research step summary, and does not add a research session or paper operation. Replay of the same decision does not change the revision. A different decision conflicts. A caller without approve permission gets 403 and sees `wait_for_approval`. Another tenant gets 404. `Completed` and `Failed` reject a new decision. A stored live task stays `Live`, ends `Failed`, and keeps `liveAccepted` false. Two concurrent approvals leave one decision. Reconciliation without evidence or with `unknown` does not change the revision. A recorded `absent` decision stays on the row, a different disposition conflicts, and the ordinary POST does not retry it.
+- `KitPlatform.PersonalIntelligence.Tests`: 230 passed, 0 failed. The runtime test calls the blocked paper step once and does not call the committed read again. The reconciliation test leaves the uncertain step in place.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+The research snapshot written before approval is not rewritten, because `runtime.record` had already committed. The task receipt is the approval result. This is not a production-readiness claim. It is not exactly-once, and an uncertain paper or live effect still needs a person.

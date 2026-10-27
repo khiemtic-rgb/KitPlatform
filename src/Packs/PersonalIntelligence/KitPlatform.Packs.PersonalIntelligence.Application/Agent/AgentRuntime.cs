@@ -43,7 +43,10 @@ public sealed record AgentRequest(
     IReadOnlyList<string> GrantedPermissions,
     IReadOnlyList<AgentStepSpec> Plan,
     ExecutionApproval? Approval,
-    Guid? RequestedTenantId = null);
+    Guid? RequestedTenantId = null,
+    string? ExecutionMode = null,
+    IReadOnlyList<TaskDecisionRecord>? Decisions = null,
+    DateTimeOffset? ApprovedAt = null);
 
 public sealed record ToolContract(
     string Name,
@@ -95,7 +98,10 @@ public sealed record AgentTaskReceipt(
     IReadOnlyList<AgentStepSpec>? Plan = null,
     bool ApprovalRecorded = false,
     Guid? ApprovalDecisionId = null,
-    string? ApprovedBy = null);
+    string? ApprovedBy = null,
+    DateTimeOffset? ApprovedAt = null,
+    string? ExecutionMode = null,
+    IReadOnlyList<TaskDecisionRecord>? Decisions = null);
 
 /// <summary>
 /// Copy of the task outcome stored beside a research snapshot. It is not a second ledger.
@@ -110,8 +116,8 @@ public sealed record AgentTaskTrace(
 
 public sealed class AgentRunConflictException : InvalidOperationException
 {
-    public AgentRunConflictException()
-        : base("The task key was already used with a different payload.")
+    public AgentRunConflictException(string? message = null)
+        : base(message ?? "The task key was already used with a different payload.")
     {
     }
 }
@@ -131,6 +137,24 @@ public sealed class AgentTaskBusyException : InvalidOperationException
     {
     }
 }
+
+public sealed class AgentTaskNotFoundException : InvalidOperationException
+{
+    public AgentTaskNotFoundException(string message) : base(message) { }
+}
+
+public sealed class AgentTaskStateException : InvalidOperationException
+{
+    public AgentTaskStateException(string message) : base(message) { }
+}
+
+public sealed record TaskDecisionRecord(
+    string Kind,
+    string Decision,
+    Guid? DecisionId,
+    string ActorId,
+    DateTimeOffset At,
+    string? Evidence);
 
 public interface IAgentRunLog
 {
@@ -353,6 +377,7 @@ public sealed class AgentRuntime
         if (existing.Status is not (AgentTaskStatus.Running or AgentTaskStatus.Verified))
             return existing with { Replayed = true };
 
+        request = PreserveDurable(request, existing);
         var adopted = log.Adopt(existing) ?? throw new InvalidOperationException("The task disappeared before recovery.");
         if (adopted.TenantId != request.TenantId)
             throw new AgentTenantMismatchException();
@@ -370,6 +395,145 @@ public sealed class AgentRuntime
             return Save(log, Build(request, AgentTaskStatus.ReconciliationRequired, adopted.Steps, OutputsOf(adopted.Steps), "The stored steps do not match this plan.", false));
 
         return Run(request, log, adopted.Steps.ToList(), OutputsOf(adopted.Steps), adopted.Steps.Any(step => step.Status == ToolStepStatus.Blocked), adopted.Steps.Count, true);
+    }
+
+    public AgentTaskReceipt ContinueApproved(AgentRequest request, IAgentRunLog log, DateTimeOffset approvedAt)
+    {
+        var approval = RequireApproval(request);
+        var existing = RequireStored(request, log);
+        if (!WaitingForApproval(existing))
+            return ReplayApproval(existing, approval);
+
+        var adopted = log.Adopt(existing) ?? throw new AgentTaskNotFoundException("The task was not found.");
+        if (adopted.TenantId != request.TenantId)
+            throw new AgentTenantMismatchException();
+        if (!string.Equals(adopted.PayloadHash, request.PayloadHash, StringComparison.Ordinal))
+            throw new AgentRunConflictException();
+        if (!WaitingForApproval(adopted))
+            return ReplayApproval(adopted, approval);
+        if (adopted.ApprovalDecisionId is Guid recorded && recorded != approval.DecisionId)
+            throw new AgentRunConflictException("This task already has a different approval decision.");
+        if (!CommittedPrefix(request.Plan, adopted.Steps))
+            throw new AgentTaskStateException("The stored steps do not match this plan.");
+        if (adopted.Steps.Any(step => step.Status == ToolStepStatus.Blocked && !StepRequiresApproval(step)))
+            throw new AgentTaskStateException("The blocked step is not an approval gate.");
+
+        var decisions = adopted.Decisions?.ToList() ?? [];
+        if (!decisions.Any(row => row.Kind == "approval" && row.DecisionId == approval.DecisionId))
+        {
+            decisions.Add(new TaskDecisionRecord(
+                "approval",
+                "approved",
+                approval.DecisionId,
+                approval.ApprovedBy,
+                adopted.ApprovedAt ?? approvedAt,
+                null));
+        }
+
+        var approved = request with
+        {
+            Objective = adopted.Objective,
+            DoneWhen = adopted.DoneWhen,
+            PayloadHash = adopted.PayloadHash,
+            Approval = approval,
+            ExecutionMode = adopted.ExecutionMode ?? request.ExecutionMode,
+            Decisions = decisions,
+            ApprovedAt = adopted.ApprovedAt ?? approvedAt,
+            Plan = adopted.Plan is { Count: > 0 } ? adopted.Plan : request.Plan,
+        };
+        var records = adopted.Steps.ToList();
+        var outputs = OutputsOf(records);
+        var status = adopted.Status == AgentTaskStatus.AwaitingApproval
+            ? AgentTaskTransitions.Move(AgentTaskStatus.AwaitingApproval, AgentTaskStatus.Running)
+            : AgentTaskStatus.Running;
+        Save(log, Build(approved, status, records, outputs, null, false));
+
+        for (var index = 0; index < approved.Plan.Count; index++)
+        {
+            var step = approved.Plan[index];
+            if (index >= records.Count)
+            {
+                if (!SafeToRepeat(step, out var reason))
+                {
+                    records.Add(new AgentStepRecord(step.StepId, step.ToolName, ToolStepStatus.Uncertain, "Not committed.", reason));
+                    return Save(log, Build(approved, AgentTaskStatus.ReconciliationRequired, records, outputs, reason, false));
+                }
+
+                var added = DispatchStep(approved, step, outputs);
+                records.Add(added.Record);
+                outputs[step.StepId] = added.Response.Outputs;
+                var stopped = StopAfter(log, approved, records, outputs, status, added.Response, step.StepId);
+                if (stopped is not null)
+                    return stopped;
+                continue;
+            }
+
+            var current = records[index];
+            if (!string.Equals(current.StepId, step.StepId, StringComparison.Ordinal))
+                throw new AgentTaskStateException("The stored steps do not match this plan.");
+            if (current.Status == ToolStepStatus.Succeeded)
+                continue;
+            if (current.Status != ToolStepStatus.Blocked)
+                throw new AgentTaskStateException("A stored step cannot be approved.");
+
+            var dispatched = DispatchStep(approved, step, outputs);
+            records[index] = dispatched.Record;
+            outputs[step.StepId] = dispatched.Response.Outputs;
+            var terminal = StopAfter(log, approved, records, outputs, status, dispatched.Response, step.StepId);
+            if (terminal is not null)
+                return terminal;
+        }
+
+        if (records.Any(row => row.Status == ToolStepStatus.Blocked))
+            status = AgentTaskTransitions.Move(status, AgentTaskStatus.AwaitingApproval);
+        else if (records.All(row => row.Status == ToolStepStatus.Succeeded))
+        {
+            status = AgentTaskTransitions.Move(status, AgentTaskStatus.Verified);
+            Save(log, Build(approved, status, records, outputs, null, false));
+            status = AgentTaskTransitions.Move(status, AgentTaskStatus.Completed);
+        }
+        else
+            status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
+
+        return Save(log, Build(approved, status, records, outputs, null, false));
+    }
+
+    public AgentTaskReceipt RecordReconciliation(
+        AgentRequest request,
+        IAgentRunLog log,
+        string disposition,
+        string? evidence,
+        string actorId,
+        DateTimeOffset at)
+    {
+        if (string.IsNullOrWhiteSpace(actorId))
+            throw new InvalidOperationException("Reconciliation requires an actor.");
+        var existing = RequireStored(request, log);
+        if (existing.Status != AgentTaskStatus.ReconciliationRequired)
+            throw new AgentTaskStateException($"A {existing.Status} task is not waiting for reconciliation.");
+        var decision = NormalizeDisposition(disposition, evidence);
+
+        var adopted = log.Adopt(existing) ?? throw new AgentTaskNotFoundException("The task was not found.");
+        if (adopted.TenantId != request.TenantId)
+            throw new AgentTenantMismatchException();
+        if (!string.Equals(adopted.PayloadHash, request.PayloadHash, StringComparison.Ordinal))
+            throw new AgentRunConflictException();
+        if (adopted.Status != AgentTaskStatus.ReconciliationRequired)
+            throw new AgentTaskStateException($"A {adopted.Status} task is not waiting for reconciliation.");
+
+        var decisions = adopted.Decisions?.ToList() ?? [];
+        var previous = decisions.LastOrDefault(row => row.Kind == "reconciliation");
+        if (previous is not null)
+        {
+            if (previous.Decision == decision && previous.Evidence == evidence!.Trim() && previous.ActorId == actorId)
+                return adopted with { Replayed = true };
+            throw new AgentRunConflictException("This task already has a different reconciliation decision.");
+        }
+
+        decisions.Add(new TaskDecisionRecord("reconciliation", decision, null, actorId, at, evidence!.Trim()));
+        var updated = adopted with { Decisions = decisions, Replayed = false };
+        log.Remember(updated);
+        return updated;
     }
 
     private AgentTaskReceipt Run(
@@ -479,6 +643,128 @@ public sealed class AgentRuntime
         return false;
     }
 
+    private (AgentStepRecord Record, ToolResponse Response) DispatchStep(
+        AgentRequest request,
+        AgentStepSpec step,
+        Dictionary<string, IReadOnlyDictionary<string, string>> outputs)
+    {
+        var prior = string.IsNullOrWhiteSpace(step.DependsOn)
+            ? new Dictionary<string, string>()
+            : new Dictionary<string, string>(outputs[step.DependsOn]);
+        ToolResponse response;
+        try
+        {
+            response = _dispatcher.Dispatch(_registry, new ToolCall(step.StepId, request.TenantId, prior), request);
+        }
+        catch (Exception ex)
+        {
+            response = ToolResponse.Stop(ToolStepStatus.Failed, ex.Message);
+        }
+
+        return (new AgentStepRecord(step.StepId, step.ToolName, response.Status, response.Summary, response.Error, response.Outputs), response);
+    }
+
+    private AgentTaskReceipt? StopAfter(
+        IAgentRunLog log,
+        AgentRequest request,
+        List<AgentStepRecord> records,
+        Dictionary<string, IReadOnlyDictionary<string, string>> outputs,
+        AgentTaskStatus status,
+        ToolResponse response,
+        string stepId)
+    {
+        _boundary?.Invoke("after-tool", stepId);
+        if (response.Status == ToolStepStatus.Uncertain)
+        {
+            var reason = response.Error ?? "The tool effect is unknown and needs reconciliation.";
+            var next = AgentTaskTransitions.Move(status, AgentTaskStatus.ReconciliationRequired);
+            return Save(log, Build(request, next, records, outputs, reason, false));
+        }
+
+        if (response.Status is ToolStepStatus.Denied or ToolStepStatus.Rejected or ToolStepStatus.Failed)
+        {
+            var next = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
+            return Save(log, Build(request, next, records, outputs, response.Error, false));
+        }
+
+        if (response.Status == ToolStepStatus.Blocked)
+        {
+            var next = AgentTaskTransitions.Move(status, AgentTaskStatus.AwaitingApproval);
+            return Save(log, Build(request, next, records, outputs, response.Error, false));
+        }
+
+        if (response.Outputs.TryGetValue("verified", out var verified) && !string.Equals(verified, "true", StringComparison.Ordinal))
+        {
+            var next = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
+            return Save(log, Build(request, next, records, outputs, "A step finished without verification.", false));
+        }
+
+        Save(log, Build(request, status, records, outputs, null, false));
+        _boundary?.Invoke("after-commit", stepId);
+        return null;
+    }
+
+    private bool StepRequiresApproval(AgentStepRecord step)
+        => _registry.TryGet(step.ToolName, out var contract, out _) && contract.RequiresApproval;
+
+    private static bool WaitingForApproval(AgentTaskReceipt receipt)
+        => receipt.Status == AgentTaskStatus.AwaitingApproval
+            || (receipt.Status == AgentTaskStatus.Running && receipt.Steps.Any(step => step.Status == ToolStepStatus.Blocked));
+
+    private static AgentTaskReceipt ReplayApproval(AgentTaskReceipt receipt, ExecutionApproval approval)
+    {
+        if ((receipt.Status is AgentTaskStatus.Completed or AgentTaskStatus.Failed) && receipt.ApprovalDecisionId == approval.DecisionId)
+            return receipt with { Replayed = true };
+        throw new AgentTaskStateException($"A {receipt.Status} task cannot be approved.");
+    }
+
+    private static ExecutionApproval RequireApproval(AgentRequest request)
+    {
+        if (request.Approval is not { DecisionId: var id } approval || id == Guid.Empty || string.IsNullOrWhiteSpace(approval.ApprovedBy))
+            throw new InvalidOperationException("An approval decision is required.");
+        return approval;
+    }
+
+    private static AgentTaskReceipt RequireStored(AgentRequest request, IAgentRunLog log)
+    {
+        if (request.TenantId == Guid.Empty || string.IsNullOrWhiteSpace(request.TaskKey) || string.IsNullOrWhiteSpace(request.PayloadHash))
+            throw new InvalidOperationException("A task requires a tenant, a key, and a payload hash.");
+        var existing = log.Find(request.TaskKey) ?? throw new AgentTaskNotFoundException("The task was not found.");
+        if (existing.TenantId != request.TenantId)
+            throw new AgentTenantMismatchException();
+        if (!string.Equals(existing.PayloadHash, request.PayloadHash, StringComparison.Ordinal))
+            throw new AgentRunConflictException();
+        return existing;
+    }
+
+    private static AgentRequest PreserveDurable(AgentRequest request, AgentTaskReceipt stored)
+        => request with
+        {
+            ExecutionMode = request.ExecutionMode ?? stored.ExecutionMode,
+            Decisions = stored.Decisions ?? request.Decisions,
+            ApprovedAt = stored.ApprovedAt ?? request.ApprovedAt,
+            Approval = request.Approval ?? StoredApproval(stored),
+        };
+
+    private static ExecutionApproval? StoredApproval(AgentTaskReceipt receipt)
+        => receipt.ApprovalDecisionId is Guid id && id != Guid.Empty && !string.IsNullOrWhiteSpace(receipt.ApprovedBy)
+            ? new ExecutionApproval(id, receipt.ApprovedBy)
+            : null;
+
+    private static string NormalizeDisposition(string disposition, string? evidence)
+    {
+        var decision = disposition.Trim().ToLowerInvariant();
+        if (decision is not ("occurred" or "absent" or "unknown"))
+            throw new InvalidOperationException("Reconciliation disposition must be occurred, absent, or unknown.");
+        if (decision == "unknown")
+            throw new InvalidOperationException("The side effect is still unknown and cannot be continued.");
+        if (string.IsNullOrWhiteSpace(evidence) || evidence.Trim().Length > 500)
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(evidence)
+                ? "Reconciliation requires evidence of whether the side effect happened."
+                : "Reconciliation evidence is too long.");
+        return decision;
+    }
+
     private static bool CommittedPrefix(IReadOnlyList<AgentStepSpec> plan, IReadOnlyList<AgentStepRecord> steps)
     {
         if (steps.Count > plan.Count)
@@ -540,6 +826,10 @@ public sealed class AgentRuntime
         var fills = flat.LastOrDefault(pair => pair.Key == "researchFillCount").Value;
         var executed = flat.Any(pair => pair.Key == "recommendationExecuted" && pair.Value == "true");
         var evidence = flat.Where(pair => pair.Key == "evidence").Select(pair => pair.Value).Distinct(StringComparer.Ordinal).ToArray();
+        var outcome = flat.LastOrDefault(pair => pair.Key == "outcome").Value;
+        if (executed && string.Equals(outcome, "approval_required", StringComparison.Ordinal))
+            outcome = "paper_executed";
+        var approved = request.Approval is not null && request.Approval.DecisionId != Guid.Empty && !string.IsNullOrWhiteSpace(request.Approval.ApprovedBy);
         return new AgentTaskReceipt(
             request.TaskKey,
             request.PayloadHash,
@@ -548,7 +838,7 @@ public sealed class AgentRuntime
             request.Objective,
             request.DoneWhen,
             steps,
-            flat.LastOrDefault(pair => pair.Key == "outcome").Value,
+            outcome,
             int.TryParse(fills, out var count) ? count : 0,
             executed,
             false,
@@ -556,8 +846,11 @@ public sealed class AgentRuntime
             error,
             evidence,
             request.Plan,
-            request.Approval is not null && request.Approval.DecisionId != Guid.Empty && !string.IsNullOrWhiteSpace(request.Approval.ApprovedBy),
-            request.Approval?.DecisionId is Guid decision && decision != Guid.Empty ? decision : null,
-            request.Approval?.ApprovedBy);
+            approved,
+            approved ? request.Approval!.DecisionId : null,
+            approved ? request.Approval!.ApprovedBy : null,
+            approved ? request.ApprovedAt : null,
+            request.ExecutionMode,
+            request.Decisions);
     }
 }
