@@ -101,7 +101,8 @@ public sealed record AgentTaskReceipt(
     string? ApprovedBy = null,
     DateTimeOffset? ApprovedAt = null,
     string? ExecutionMode = null,
-    IReadOnlyList<TaskDecisionRecord>? Decisions = null);
+    IReadOnlyList<TaskDecisionRecord>? Decisions = null,
+    TaskResultLink? Result = null);
 
 /// <summary>
 /// Copy of the task outcome stored beside a research snapshot. It is not a second ledger.
@@ -154,7 +155,16 @@ public sealed record TaskDecisionRecord(
     Guid? DecisionId,
     string ActorId,
     DateTimeOffset At,
-    string? Evidence);
+    string? Evidence,
+    string? CheckSource = null,
+    string? ObservedResult = null);
+
+public sealed record TaskResultLink(
+    string? ResearchSessionKey,
+    string? SnapshotOutcome,
+    string? PaperOperationKey,
+    string? TaskOutcome,
+    DateTimeOffset RecordedAt);
 
 public interface IAgentRunLog
 {
@@ -504,7 +514,9 @@ public sealed class AgentRuntime
         string disposition,
         string? evidence,
         string actorId,
-        DateTimeOffset at)
+        DateTimeOffset at,
+        string? checkSource = null,
+        string? observedResult = null)
     {
         if (string.IsNullOrWhiteSpace(actorId))
             throw new InvalidOperationException("Reconciliation requires an actor.");
@@ -512,6 +524,8 @@ public sealed class AgentRuntime
         if (existing.Status != AgentTaskStatus.ReconciliationRequired)
             throw new AgentTaskStateException($"A {existing.Status} task is not waiting for reconciliation.");
         var decision = NormalizeDisposition(disposition, evidence);
+        var source = NormalizeCheckSource(checkSource);
+        var observed = NormalizeObserved(observedResult);
 
         var adopted = log.Adopt(existing) ?? throw new AgentTaskNotFoundException("The task was not found.");
         if (adopted.TenantId != request.TenantId)
@@ -523,15 +537,20 @@ public sealed class AgentRuntime
 
         var decisions = adopted.Decisions?.ToList() ?? [];
         var previous = decisions.LastOrDefault(row => row.Kind == "reconciliation");
+        var note = evidence!.Trim();
         if (previous is not null)
         {
-            if (previous.Decision == decision && previous.Evidence == evidence!.Trim() && previous.ActorId == actorId)
+            if (previous.Decision == decision
+                && previous.Evidence == note
+                && previous.ActorId == actorId
+                && previous.CheckSource == source
+                && previous.ObservedResult == observed)
                 return adopted with { Replayed = true };
             throw new AgentRunConflictException("This task already has a different reconciliation decision.");
         }
 
-        decisions.Add(new TaskDecisionRecord("reconciliation", decision, null, actorId, at, evidence!.Trim()));
-        var updated = adopted with { Decisions = decisions, Replayed = false };
+        decisions.Add(new TaskDecisionRecord("reconciliation", decision, null, actorId, at, note, source, observed));
+        var updated = adopted with { Decisions = decisions, Replayed = false, Status = AgentTaskStatus.ReconciliationRequired };
         log.Remember(updated);
         return updated;
     }
@@ -765,6 +784,22 @@ public sealed class AgentRuntime
         return decision;
     }
 
+    private static string NormalizeCheckSource(string? checkSource)
+    {
+        var source = string.IsNullOrWhiteSpace(checkSource) ? "not_available" : checkSource.Trim();
+        if (source is not ("paper_operation" or "not_available"))
+            throw new InvalidOperationException("Reconciliation check source is not recognized.");
+        return source;
+    }
+
+    private static string NormalizeObserved(string? observedResult)
+    {
+        var observed = string.IsNullOrWhiteSpace(observedResult) ? "unknown" : observedResult.Trim().ToLowerInvariant();
+        if (observed is not ("occurred" or "absent" or "unknown"))
+            throw new InvalidOperationException("Reconciliation observed result must be occurred, absent, or unknown.");
+        return observed;
+    }
+
     private static bool CommittedPrefix(IReadOnlyList<AgentStepSpec> plan, IReadOnlyList<AgentStepRecord> steps)
     {
         if (steps.Count > plan.Count)
@@ -824,11 +859,9 @@ public sealed class AgentRuntime
     {
         var flat = outputs.Values.SelectMany(row => row).ToArray();
         var fills = flat.LastOrDefault(pair => pair.Key == "researchFillCount").Value;
-        var executed = flat.Any(pair => pair.Key == "recommendationExecuted" && pair.Value == "true");
         var evidence = flat.Where(pair => pair.Key == "evidence").Select(pair => pair.Value).Distinct(StringComparer.Ordinal).ToArray();
-        var outcome = flat.LastOrDefault(pair => pair.Key == "outcome").Value;
-        if (executed && string.Equals(outcome, "approval_required", StringComparison.Ordinal))
-            outcome = "paper_executed";
+        var link = ResultOf(request, steps, evidence);
+        var executed = link?.PaperOperationKey is not null && link.TaskOutcome == "paper_executed";
         var approved = request.Approval is not null && request.Approval.DecisionId != Guid.Empty && !string.IsNullOrWhiteSpace(request.Approval.ApprovedBy);
         return new AgentTaskReceipt(
             request.TaskKey,
@@ -838,7 +871,7 @@ public sealed class AgentRuntime
             request.Objective,
             request.DoneWhen,
             steps,
-            outcome,
+            link?.TaskOutcome,
             int.TryParse(fills, out var count) ? count : 0,
             executed,
             false,
@@ -851,6 +884,40 @@ public sealed class AgentRuntime
             approved ? request.Approval!.ApprovedBy : null,
             approved ? request.ApprovedAt : null,
             request.ExecutionMode,
-            request.Decisions);
+            request.Decisions,
+            link);
+    }
+
+    private static TaskResultLink? ResultOf(AgentRequest request, IReadOnlyList<AgentStepRecord> steps, IReadOnlyList<string> evidence)
+    {
+        string? session = evidence.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        string? snapshotOutcome = null;
+        string? paperKey = null;
+        string? paperOutcome = null;
+        var executed = false;
+        foreach (var step in steps)
+        {
+            if (step.Status != ToolStepStatus.Succeeded || step.Outputs is null)
+                continue;
+            if (step.Outputs.TryGetValue("paperOperationKey", out var key) && !string.IsNullOrWhiteSpace(key))
+            {
+                paperKey = key;
+                if (step.Outputs.TryGetValue("outcome", out var outcome))
+                    paperOutcome = outcome;
+                executed = step.Outputs.TryGetValue("recommendationExecuted", out var flag) && flag == "true" && paperOutcome == "paper_executed";
+            }
+            else if (step.Outputs.TryGetValue("outcome", out var historical))
+                snapshotOutcome = historical;
+        }
+
+        var taskOutcome = executed ? "paper_executed" : snapshotOutcome ?? paperOutcome;
+        if (session is null && snapshotOutcome is null && paperKey is null && taskOutcome is null)
+            return null;
+        return new TaskResultLink(
+            session,
+            snapshotOutcome,
+            executed ? paperKey : null,
+            taskOutcome,
+            request.ApprovedAt ?? DateTimeOffset.UtcNow);
     }
 }

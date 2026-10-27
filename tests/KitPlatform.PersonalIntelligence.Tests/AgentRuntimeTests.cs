@@ -225,6 +225,8 @@ public sealed class AgentRuntimeTests
         Assert.Single(recorded.Decisions!);
         Assert.Equal("occurred", recorded.Decisions![0].Decision);
         Assert.Equal("ledger row absent", recorded.Decisions[0].Evidence);
+        Assert.Equal("unknown", recorded.Decisions[0].ObservedResult);
+        Assert.Equal("not_available", recorded.Decisions[0].CheckSource);
         Assert.Equal(ToolStepStatus.Uncertain, recorded.Steps[0].Status);
         Assert.True(replay.Replayed);
         Assert.Single(log.Find(request.TaskKey)!.Decisions!);
@@ -524,6 +526,76 @@ public sealed class AgentRuntimeWorkflowTests : IAsyncLifetime
         Assert.False(result.Task.RecommendationExecuted);
         Assert.False(result.Task.LiveAccepted);
         Assert.DoesNotContain(result.Task.Steps, step => step.ToolName == TradingResearchRuntime.RecordTool);
+        Assert.Null(result.Task.Result?.PaperOperationKey);
+        Assert.Null(paper.Find(TradingResearchRuntime.TaskPaperOperationKey(
+            result.Task.TenantId,
+            result.Task.TaskKey,
+            result.Task.ApprovalDecisionId!.Value)));
+    }
+
+    [Fact]
+    public void Approval_records_a_paper_operation_without_rewriting_the_snapshot()
+    {
+        var intake = ResearchCandles.Classify(Series(), Series().Last().CloseTime, TimeSpan.FromDays(30));
+        var limits = new RiskLimits(1_000m, 1m, 0.5m);
+        var config = new ResearchConfig(
+            0.001m,
+            0.8m,
+            10_000m,
+            new PaperSessionConfig(10m, 0.001m, 0m, 1m, limits, 5_000m, false));
+        var paper = new MemoryPaperOperationLog();
+        var research = new MemoryResearchLog();
+        var task = new AgentRequest(
+            "runtime-integrity",
+            "runtime-integrity",
+            Guid.Parse("a1111111-1111-1111-1111-111111111111"),
+            "Approve the stored recommendation.",
+            "The snapshot stays historical and the paper operation is separate.",
+            [TradingResearchRuntime.ResearchPermission, TradingResearchRuntime.RunPermission, TradingResearchRuntime.ApprovePermission],
+            TradingResearchRuntime.Plan,
+            null,
+            null,
+            nameof(ExecutionMode.Paper));
+        var request = new TradingResearchRequest(
+            task,
+            intake,
+            config,
+            paper,
+            research,
+            new TradeProposal("BTCUSDT", "BUY", 0.001m, 100m, 1m, 0.8m, ExecutionMode.Paper),
+            limits,
+            ["The next bar is not known."],
+            DateTimeOffset.Parse("2031-06-02T06:00:00Z"));
+        var log = new MemoryAgentRunLog();
+        var waiting = new TradingResearchRuntime().Execute(request, log);
+        var researchOperations = paper.Count;
+        var sessionKey = waiting.Task.EvidenceRefs.Single();
+        var before = ResearchSession.Deserialize(research.Find(sessionKey)!.Result);
+
+        var decision = new ExecutionApproval(Guid.Parse("d5555555-5555-5555-5555-555555555555"), "operator");
+        var when = DateTimeOffset.Parse("2031-06-03T00:00:00Z");
+        var approved = task with { Approval = decision, ApprovedAt = when };
+        var continued = new TradingResearchRuntime().ContinueAfterApproval(request with { Task = approved }, log, when);
+        var replay = new TradingResearchRuntime().ContinueAfterApproval(request with { Task = approved }, log, when);
+        var after = ResearchSession.Deserialize(research.Find(sessionKey)!.Result);
+
+        Assert.Equal(AgentTaskStatus.AwaitingApproval, waiting.Task.Status);
+        Assert.Equal(ExecutionReceiptProjector.ApprovalRequired, before.Receipt!.Outcome);
+        Assert.Equal(ExecutionReceiptProjector.ApprovalRequired, after.Receipt!.Outcome);
+        Assert.Equal(AgentTaskStatus.Completed, continued.Task.Status);
+        Assert.Equal(ExecutionReceiptProjector.PaperExecuted, continued.Task.Outcome);
+        Assert.True(continued.Task.RecommendationExecuted);
+        Assert.False(continued.Task.LiveAccepted);
+        Assert.Equal(sessionKey, continued.Task.Result!.ResearchSessionKey);
+        Assert.Equal(ExecutionReceiptProjector.ApprovalRequired, continued.Task.Result.SnapshotOutcome);
+        Assert.Equal(ExecutionReceiptProjector.PaperExecuted, continued.Task.Result.TaskOutcome);
+        Assert.Equal(when, continued.Task.Result.RecordedAt);
+        Assert.Equal(researchOperations + 1, paper.Count);
+        var stored = paper.Find(continued.Task.Result.PaperOperationKey!);
+        Assert.Equal(task.PayloadHash, stored!.PayloadHash);
+        Assert.Equal("paper_filled", stored.Status);
+        Assert.True(replay.Task.Replayed);
+        Assert.Equal(researchOperations + 1, paper.Count);
     }
 
     private static List<ResearchCandle> Series()

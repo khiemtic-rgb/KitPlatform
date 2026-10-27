@@ -421,7 +421,48 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.Equal(revision, Revision(key));
         Assert.Equal(HttpStatusCode.Conflict, other.StatusCode);
         Assert.Equal(sessions, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.session_result"));
-        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+        Assert.Equal(operations + 1, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+        var result = continued.GetProperty("result");
+        Assert.Equal("approval_required", result.GetProperty("snapshotOutcome").GetString());
+        Assert.Equal("paper_executed", result.GetProperty("taskOutcome").GetString());
+        var paperKey = result.GetProperty("paperOperationKey").GetString();
+        var sessionKey = result.GetProperty("researchSessionKey").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(paperKey));
+        Assert.Equal(hash, PaperHash(paperKey!));
+        Assert.Equal("approval_required", SnapshotOutcome(sessionKey!));
+
+        await using var connection = new NpgsqlConnection(_fixture.ValidationConnection);
+        await connection.OpenAsync();
+        var saved = (string)(await new NpgsqlCommand("SELECT settings::text FROM public.tenants WHERE id = @Id", connection)
+        {
+            Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+        }.ExecuteScalarAsync())!;
+        try
+        {
+            await new NpgsqlCommand(
+                """
+                UPDATE public.tenants
+                SET settings = settings || '{"platform":{"enabled_modules":["personal_intelligence"]}}'::jsonb
+                WHERE id = @Id
+                """,
+                connection)
+            {
+                Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+            var outsider = Authorized(_fixture.Client(), AgentTaskApiFixture.UserB, AgentTaskApiFixture.TenantB);
+            var hidden = await outsider.GetAsync("/api/personal-intelligence/tasks/" + key);
+            var body = await hidden.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+            Assert.DoesNotContain(paperKey, body, StringComparison.Ordinal);
+            Assert.DoesNotContain("Continue this paper task.", body, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await new NpgsqlCommand("UPDATE public.tenants SET settings = @Settings::jsonb WHERE id = @Id", connection)
+            {
+                Parameters = { new("Settings", saved), new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+        }
     }
 
     [Fact]
@@ -567,6 +608,8 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.False(recorded.GetProperty("replayed").GetBoolean());
         Assert.Equal("absent", recorded.GetProperty("decisions")[0].GetProperty("decision").GetString());
         Assert.Equal("no paper operation for this task", recorded.GetProperty("decisions")[0].GetProperty("evidence").GetString());
+        Assert.Equal("unknown", recorded.GetProperty("decisions")[0].GetProperty("observedResult").GetString());
+        Assert.Equal("not_available", recorded.GetProperty("decisions")[0].GetProperty("checkSource").GetString());
         Assert.Equal(AgentTaskApiFixture.UserA.ToString("D"), recorded.GetProperty("decisions")[0].GetProperty("actorId").GetString());
         Assert.Equal("Uncertain", recorded.GetProperty("steps")[0].GetProperty("status").GetString());
         Assert.True(replay.GetProperty("replayed").GetBoolean());
@@ -577,6 +620,60 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.Equal(sessions, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.session_result"));
         Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
         Assert.Equal("absent", (await Read(await client.GetAsync("/api/personal-intelligence/tasks/" + key))).GetProperty("decisions")[0].GetProperty("decision").GetString());
+    }
+
+    [Fact]
+    public async Task Concurrent_reconciliation_records_one_decision_and_does_not_retry()
+    {
+        var key = "recon-race-" + Guid.NewGuid().ToString("N");
+        var hash = "hash-" + Guid.NewGuid().ToString("N");
+        await InsertReconciliation(key, hash, "Two checks of one uncertain step.");
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var first = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var second = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var body = new { disposition = "absent", evidence = "no task operation" };
+        var responses = await Task.WhenAll(
+            first.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", body),
+            second.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", body));
+        var receipts = new List<JsonElement>();
+        foreach (var response in responses)
+            receipts.Add(await Read(response));
+        var different = await first.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "occurred", evidence = "no task operation" });
+
+        Assert.All(receipts, receipt => Assert.Equal("ReconciliationRequired", receipt.GetProperty("status").GetString()));
+        Assert.Contains(receipts, receipt => receipt.GetProperty("replayed").GetBoolean());
+        Assert.All(receipts, receipt => Assert.Equal("unknown", receipt.GetProperty("decisions")[0].GetProperty("observedResult").GetString()));
+        var stored = await Read(await first.GetAsync("/api/personal-intelligence/tasks/" + key));
+        Assert.Single(stored.GetProperty("decisions").EnumerateArray());
+        Assert.Equal(HttpStatusCode.Conflict, different.StatusCode);
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
+    public async Task An_operator_note_does_not_override_the_stored_paper_operation()
+    {
+        var key = "recon-seen-" + Guid.NewGuid().ToString("N");
+        var hash = "hash-" + Guid.NewGuid().ToString("N");
+        var decision = Guid.Parse("d6666666-6666-6666-6666-666666666666");
+        var operationKey = $"task:{AgentTaskApiFixture.TenantA:N}:{key}:{decision:N}";
+        await InsertReconciliation(key, hash, "Check the stored paper operation.", decision);
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        await InsertPaperOperation(operationKey, hash);
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var recorded = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "absent", evidence = "I did not see a fill" }));
+        var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "absent", evidence = "I did not see a fill" }));
+        var opposite = await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "occurred", evidence = "I did not see a fill" });
+
+        Assert.Equal("ReconciliationRequired", recorded.GetProperty("status").GetString());
+        Assert.Equal("absent", recorded.GetProperty("decisions")[0].GetProperty("decision").GetString());
+        Assert.Equal("I did not see a fill", recorded.GetProperty("decisions")[0].GetProperty("evidence").GetString());
+        Assert.Equal("occurred", recorded.GetProperty("decisions")[0].GetProperty("observedResult").GetString());
+        Assert.Equal("paper_operation", recorded.GetProperty("decisions")[0].GetProperty("checkSource").GetString());
+        Assert.True(replay.GetProperty("replayed").GetBoolean());
+        Assert.Single(replay.GetProperty("decisions").EnumerateArray());
+        Assert.Equal(HttpStatusCode.Conflict, opposite.StatusCode);
+        Assert.Equal(operations + 1, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+        Assert.Equal(hash, PaperHash(operationKey));
     }
 
     private static HttpClient Authorized(HttpClient client, Guid userId, Guid tenantId)
@@ -611,6 +708,34 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
+    private string PaperHash(string operationKey)
+    {
+        return ResearchScalar(
+            "SELECT payload_hash FROM research_trading.paper_operation WHERE operation_key = @Key",
+            operationKey);
+    }
+
+    private string SnapshotOutcome(string sessionKey)
+    {
+        var result = ResearchScalar(
+            "SELECT result FROM research_trading.session_result WHERE session_key = @Key",
+            sessionKey);
+        using var document = JsonDocument.Parse(result);
+        return document.RootElement.GetProperty("Receipt").GetProperty("Outcome").GetString()!;
+    }
+
+    private string ResearchScalar(string sql, string key)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(_fixture.ResearchConnection);
+        if (builder.Port != 5433 || builder.Database != "trading_agent")
+            throw new InvalidOperationException("Refusing a research read outside trading_agent.");
+        using var connection = new NpgsqlConnection(_fixture.ResearchConnection);
+        connection.Open();
+        using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("Key", key);
+        return (string)command.ExecuteScalar()!;
+    }
+
     private static int Count(string connectionString, string sql)
     {
         var builder = new NpgsqlConnectionStringBuilder(connectionString);
@@ -621,7 +746,30 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         return Convert.ToInt32(new NpgsqlCommand(sql, connection).ExecuteScalar());
     }
 
-    private async Task InsertReconciliation(string key, string hash, string objective)
+    private async Task InsertPaperOperation(string operationKey, string hash)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(_fixture.ResearchConnection);
+        if (builder.Port != 5433 || builder.Database != "trading_agent")
+            throw new InvalidOperationException("Refusing a paper insert outside trading_agent.");
+        await using var connection = new NpgsqlConnection(_fixture.ResearchConnection);
+        await connection.OpenAsync();
+        var database = (string)(await new NpgsqlCommand("SELECT current_database()", connection).ExecuteScalarAsync())!;
+        var port = Convert.ToInt32(await new NpgsqlCommand("SELECT inet_server_port()", connection).ExecuteScalarAsync());
+        if (database != "trading_agent" || port != 5433)
+            throw new InvalidOperationException("Refusing a paper insert outside trading_agent.");
+        await using var command = new NpgsqlCommand(
+            """
+            INSERT INTO research_trading.paper_operation (operation_key, payload_hash, status, result)
+            VALUES (@Key, @Hash, 'paper_filled', @Result)
+            """,
+            connection);
+        command.Parameters.AddWithValue("Key", operationKey);
+        command.Parameters.AddWithValue("Hash", hash);
+        command.Parameters.AddWithValue("Result", "stored-before-reconciliation");
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task InsertReconciliation(string key, string hash, string objective, Guid? decisionId = null)
     {
         var receipt = $$"""
             {
@@ -647,7 +795,9 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
               "replayed": false,
               "error": "Step execute (trading.paper_execute) has no committed result and its effect is not safe to repeat.",
               "evidenceRefs": [],
-              "approvalRecorded": false
+              "approvalRecorded": {{(decisionId is null ? "false" : "true")}},
+              "approvalDecisionId": {{(decisionId is Guid id ? $"\"{id:D}\"" : "null")}},
+              "approvedBy": {{(decisionId is null ? "null" : "\"operator\"")}}
             }
             """;
         await using var connection = new NpgsqlConnection(_fixture.TaskConnection);
