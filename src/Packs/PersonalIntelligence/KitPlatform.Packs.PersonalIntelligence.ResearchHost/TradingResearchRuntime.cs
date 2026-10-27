@@ -1,3 +1,4 @@
+using System.Globalization;
 using KitPlatform.Packs.PersonalIntelligence;
 using KitPlatform.Packs.PersonalIntelligence.Agent;
 using KitPlatform.Packs.PersonalIntelligence.Trading;
@@ -39,6 +40,13 @@ public sealed class TradingResearchRuntime
     ];
 
     public static readonly DateTimeOffset FixedPaperRecordedAt = DateTimeOffset.Parse("2031-06-02T06:00:00Z");
+
+    public static string TaskPaperOperationKey(Guid tenantId, string taskKey, Guid decisionId)
+    {
+        if (tenantId == Guid.Empty || string.IsNullOrWhiteSpace(taskKey) || decisionId == Guid.Empty)
+            throw new InvalidOperationException("A paper operation requires a task and an approval decision.");
+        return $"task:{tenantId:N}:{taskKey}:{decisionId:N}";
+    }
 
     public static List<ResearchCandle> FixedPaperCandles()
     {
@@ -150,13 +158,43 @@ public sealed class TradingResearchRuntime
         var paper = DemoPaperExecution.Execute(state.Recommendation.Proposal, state.PaperVerdict, request.Task.Approval);
         if (!paper.Executed || paper.Fill is not { Mode: "PAPER" })
             return ToolResponse.Stop(ToolStepStatus.Failed, paper.Reasons.FirstOrDefault() ?? "Paper execution did not complete.");
-        return ToolResponse.Succeeded(
-            "Paper execution recorded.",
-            new Dictionary<string, string>
-            {
-                ["verified"] = "true",
-                ["recommendationExecuted"] = "true",
-            });
+        return StorePaperOperation(request, state, paper.Fill);
+    }
+
+    private static ToolResponse StorePaperOperation(TradingResearchRequest request, RunState state, PaperFill fill)
+    {
+        var approval = request.Task.Approval;
+        if (approval is null || approval.DecisionId == Guid.Empty)
+            return ToolResponse.Stop(ToolStepStatus.Failed, "Paper execution requires a separate approval.");
+        var key = TaskPaperOperationKey(request.Task.TenantId, request.Task.TaskKey, approval.DecisionId);
+        var sessionKey = state.Report?.SessionKey ?? "";
+        var result = string.Join('\n',
+            request.Task.TaskKey,
+            request.Task.TenantId.ToString("D"),
+            approval.DecisionId.ToString("D"),
+            sessionKey,
+            "PAPER",
+            fill.Symbol,
+            fill.Side,
+            fill.Quantity.ToString(CultureInfo.InvariantCulture),
+            fill.Price.ToString(CultureInfo.InvariantCulture));
+        request.Paper.TryAdd(new PaperOperationReceipt(key, request.Task.PayloadHash, "paper_filled", result));
+        var stored = request.Paper.Find(key);
+        if (stored is null
+            || !string.Equals(stored.PayloadHash, request.Task.PayloadHash, StringComparison.Ordinal)
+            || !string.Equals(stored.Status, "paper_filled", StringComparison.Ordinal))
+            return ToolResponse.Stop(ToolStepStatus.Failed, "The paper operation was not stored.");
+
+        var outputs = new Dictionary<string, string>
+        {
+            ["verified"] = "true",
+            ["recommendationExecuted"] = "true",
+            ["outcome"] = "paper_executed",
+            ["paperOperationKey"] = stored.OperationKey,
+        };
+        if (!string.IsNullOrWhiteSpace(sessionKey))
+            outputs["evidence"] = sessionKey;
+        return ToolResponse.Succeeded("Paper execution recorded.", outputs);
     }
 
     private static ToolResponse Record(TradingResearchRequest request, RunState state)

@@ -293,3 +293,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No production deploy and no new migration. The research snapshot written before approval is left as history. This is not a production-readiness claim.
+
+## Task evidence
+
+The task receipt carries `result`: the research session key, the snapshot outcome from `runtime.record`, the task outcome, and a paper operation key only when that row exists for the same task hash. The snapshot is not rewritten. An operator reconciliation note is stored separately from the store's observed result. The task stays `ReconciliationRequired`. Choosing `absent` does not call a tool.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 21 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 231 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No production deploy and no new migration. This is not exactly-once and not a production-readiness claim.

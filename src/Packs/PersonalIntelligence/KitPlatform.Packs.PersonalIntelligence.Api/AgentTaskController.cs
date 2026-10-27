@@ -67,7 +67,8 @@ public sealed record AgentTaskView(
     DateTimeOffset? ApprovedAt,
     string? ExecutionMode,
     string NextAction,
-    IReadOnlyList<AgentTaskDecisionView> Decisions);
+    IReadOnlyList<AgentTaskDecisionView> Decisions,
+    AgentTaskResultView? Result);
 
 public sealed record AgentTaskStepView(string StepId, string ToolName, string Status, string Summary, string? Error);
 
@@ -77,7 +78,16 @@ public sealed record AgentTaskDecisionView(
     Guid? DecisionId,
     string ActorId,
     DateTimeOffset At,
-    string? Evidence);
+    string? Evidence,
+    string? CheckSource,
+    string? ObservedResult);
+
+public sealed record AgentTaskResultView(
+    string? ResearchSessionKey,
+    string? SnapshotOutcome,
+    string? PaperOperationKey,
+    string? TaskOutcome,
+    DateTimeOffset RecordedAt);
 
 public sealed class AgentApprovalCommand
 {
@@ -222,13 +232,16 @@ public sealed class AgentTaskService
             stored.ExecutionMode,
             stored.Decisions,
             stored.ApprovedAt);
+        var (checkSource, observedResult) = ObservePaperOperation(stored);
         var receipt = new AgentRuntime(new ToolRegistry()).RecordReconciliation(
             request,
             log,
             command.Disposition,
             command.Evidence,
             CoreAuthority.RequireUserId(user).ToString("D"),
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            checkSource,
+            observedResult);
         return ToView(receipt, user);
     }
 
@@ -345,6 +358,21 @@ public sealed class AgentTaskService
     private static TaskDecisionRecord Decision(string kind, string decision, Guid? id, string actor, DateTimeOffset at, string? evidence)
         => new(kind, decision, id, actor, at, evidence);
 
+    private (string CheckSource, string ObservedResult) ObservePaperOperation(AgentTaskReceipt stored)
+    {
+        if (stored.ApprovalDecisionId is not Guid decision || decision == Guid.Empty)
+            return ("not_available", "unknown");
+        var key = TradingResearchRuntime.TaskPaperOperationKey(stored.TenantId, stored.TaskKey, decision);
+        using var research = OpenResearch();
+        var row = ((IPaperOperationLog)research).Find(key);
+        if (row is null)
+            return ("paper_operation", "absent");
+        if (!string.Equals(row.PayloadHash, stored.PayloadHash, StringComparison.Ordinal)
+            || !string.Equals(row.Status, "paper_filled", StringComparison.Ordinal))
+            return ("paper_operation", "unknown");
+        return ("paper_operation", "occurred");
+    }
+
     private static ExecutionMode NormalizeMode(string? mode)
     {
         if (string.IsNullOrWhiteSpace(mode) || string.Equals(mode, "paper", StringComparison.OrdinalIgnoreCase))
@@ -381,7 +409,15 @@ public sealed class AgentTaskService
             receipt.ApprovedAt,
             receipt.ExecutionMode,
             NextAction(receipt, user),
-            (receipt.Decisions ?? []).Select(row => new AgentTaskDecisionView(row.Kind, row.Decision, row.DecisionId, row.ActorId, row.At, row.Evidence)).ToArray());
+            (receipt.Decisions ?? []).Select(row => new AgentTaskDecisionView(row.Kind, row.Decision, row.DecisionId, row.ActorId, row.At, row.Evidence, row.CheckSource, row.ObservedResult)).ToArray(),
+            receipt.Result is null
+                ? null
+                : new AgentTaskResultView(
+                    receipt.Result.ResearchSessionKey,
+                    receipt.Result.SnapshotOutcome,
+                    receipt.Result.PaperOperationKey,
+                    receipt.Result.TaskOutcome,
+                    receipt.Result.RecordedAt));
 
     private static string NextAction(AgentTaskReceipt receipt, ClaimsPrincipal user)
     {
