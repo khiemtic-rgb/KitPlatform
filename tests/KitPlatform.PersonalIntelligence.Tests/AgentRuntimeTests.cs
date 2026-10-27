@@ -137,6 +137,107 @@ public sealed class AgentRuntimeTests
     }
 
     [Fact]
+    public void Approval_continues_only_the_blocked_step()
+    {
+        var reads = 0;
+        var papers = 0;
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("read", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+        {
+            reads++;
+            return ToolResponse.Succeeded("stored", new Dictionary<string, string> { ["verified"] = "true", ["evidence"] = "session" });
+        });
+        registry.Register(new ToolContract("paper", "personal_intelligence.trading.approve", ToolEffect.Paper, true), call =>
+        {
+            papers++;
+            Assert.Equal("session", call.Inputs["evidence"]);
+            return ToolResponse.Succeeded("filled", new Dictionary<string, string> { ["verified"] = "true", ["recommendationExecuted"] = "true" });
+        });
+        var log = new MemoryAgentRunLog();
+        var request = Request(
+            [new AgentStepSpec("one", "read", null), new AgentStepSpec("two", "paper", "one")],
+            ["personal_intelligence.research.read", "personal_intelligence.trading.approve"]);
+        var runtime = new AgentRuntime(registry);
+        var waiting = runtime.Execute(request, log);
+        var decision = new ExecutionApproval(Guid.Parse("d5555555-5555-5555-5555-555555555555"), "operator");
+        var when = DateTimeOffset.Parse("2031-06-03T00:00:00Z");
+        var ordinary = runtime.Execute(request with { Approval = decision, ApprovedAt = when }, log);
+
+        Assert.Equal(AgentTaskStatus.AwaitingApproval, waiting.Status);
+        Assert.Equal(ToolStepStatus.Blocked, waiting.Steps[1].Status);
+        Assert.True(ordinary.Replayed);
+        Assert.Equal(AgentTaskStatus.AwaitingApproval, ordinary.Status);
+        Assert.Equal(1, reads);
+        Assert.Equal(0, papers);
+
+        var continued = runtime.ContinueApproved(request with { Approval = decision, ApprovedAt = when }, log, when);
+        var replay = runtime.ContinueApproved(request with { Approval = decision, ApprovedAt = when }, log, when);
+
+        Assert.Equal(AgentTaskStatus.Completed, continued.Status);
+        Assert.False(continued.Replayed);
+        Assert.False(continued.LiveAccepted);
+        Assert.Equal(waiting.PayloadHash, continued.PayloadHash);
+        Assert.Equal("stored", continued.Steps[0].Summary);
+        Assert.Equal(ToolStepStatus.Succeeded, continued.Steps[1].Status);
+        Assert.Equal(decision.DecisionId, continued.ApprovalDecisionId);
+        Assert.Equal("operator", continued.ApprovedBy);
+        Assert.Equal(when, continued.ApprovedAt);
+        Assert.Single(continued.Decisions!);
+        Assert.Equal(1, reads);
+        Assert.Equal(1, papers);
+        Assert.True(replay.Replayed);
+        Assert.Equal(1, papers);
+        Assert.Throws<AgentTaskStateException>(() => runtime.ContinueApproved(
+            request with { Approval = new ExecutionApproval(Guid.NewGuid(), "operator"), ApprovedAt = when },
+            log,
+            when));
+        Assert.Equal(1, reads);
+        Assert.Equal(1, papers);
+    }
+
+    [Fact]
+    public void Reconciliation_keeps_the_uncertain_step_and_does_not_call_it()
+    {
+        var calls = 0;
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("effect", "personal_intelligence.trading.run", ToolEffect.Paper, false), _ =>
+        {
+            calls++;
+            return ToolResponse.Uncertain("The paper effect was not confirmed.");
+        });
+        var log = new MemoryAgentRunLog();
+        var request = Request([new AgentStepSpec("one", "effect", null)], ["personal_intelligence.trading.run"]);
+        var runtime = new AgentRuntime(registry);
+        var waiting = runtime.Execute(request, log);
+        var when = DateTimeOffset.Parse("2031-06-03T00:00:00Z");
+
+        Assert.Equal(AgentTaskStatus.ReconciliationRequired, waiting.Status);
+        Assert.Throws<InvalidOperationException>(() => runtime.RecordReconciliation(request, log, "unknown", "a note", "operator", when));
+        Assert.Throws<InvalidOperationException>(() => runtime.RecordReconciliation(request, log, "occurred", " ", "operator", when));
+        Assert.Null(log.Find(request.TaskKey)!.Decisions);
+        Assert.Equal(1, calls);
+
+        var recorded = runtime.RecordReconciliation(request, log, "occurred", "ledger row absent", "operator", when);
+        var replay = runtime.RecordReconciliation(request, log, " Occurred ", "ledger row absent", "operator", when);
+
+        Assert.Equal(AgentTaskStatus.ReconciliationRequired, recorded.Status);
+        Assert.False(recorded.Replayed);
+        Assert.Single(recorded.Decisions!);
+        Assert.Equal("occurred", recorded.Decisions![0].Decision);
+        Assert.Equal("ledger row absent", recorded.Decisions[0].Evidence);
+        Assert.Equal(ToolStepStatus.Uncertain, recorded.Steps[0].Status);
+        Assert.True(replay.Replayed);
+        Assert.Single(log.Find(request.TaskKey)!.Decisions!);
+        Assert.Throws<AgentRunConflictException>(() => runtime.RecordReconciliation(request, log, "absent", "another note", "operator", when));
+        Assert.Equal("occurred", log.Find(request.TaskKey)!.Decisions![0].Decision);
+        Assert.Throws<AgentTaskStateException>(() => runtime.ContinueApproved(
+            request with { Approval = new ExecutionApproval(Guid.NewGuid(), "operator") },
+            log,
+            when));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
     public void A_committed_read_step_is_kept_and_only_the_next_read_runs()
     {
         var first = 0;

@@ -68,6 +68,20 @@ public sealed class TradingResearchRuntime
     {
         var calls = new CallCount();
         var state = new RunState();
+        var receipt = new AgentRuntime(Registry(request, state, calls), crash).Execute(request.Task, log);
+        return new TradingResearchResult(receipt, calls.Research, calls.Recommend, calls.Execute);
+    }
+
+    public TradingResearchResult ContinueAfterApproval(TradingResearchRequest request, IAgentRunLog log, DateTimeOffset approvedAt)
+    {
+        var calls = new CallCount();
+        var state = new RunState();
+        var receipt = new AgentRuntime(Registry(request, state, calls)).ContinueApproved(request.Task, log, approvedAt);
+        return new TradingResearchResult(receipt, calls.Research, calls.Recommend, calls.Execute);
+    }
+
+    private static ToolRegistry Registry(TradingResearchRequest request, RunState state, CallCount calls)
+    {
         var registry = new ToolRegistry();
         registry.Register(
             new ToolContract(ResearchTool, ResearchPermission, ToolEffect.Paper, false),
@@ -77,12 +91,11 @@ public sealed class TradingResearchRuntime
             call => Recommend(request, state, calls, call));
         registry.Register(
             new ToolContract(ExecuteTool, ApprovePermission, ToolEffect.Paper, true),
-            call => Execute(request, state, calls));
+            call => Execute(request, state, calls, call));
         registry.Register(
             new ToolContract(RecordTool, ResearchPermission, ToolEffect.Paper, false),
             call => Record(request, state));
-        var receipt = new AgentRuntime(registry, crash).Execute(request.Task, log);
-        return new TradingResearchResult(receipt, calls.Research, calls.Recommend, calls.Execute);
+        return registry;
     }
 
     private static ToolResponse Research(TradingResearchRequest request, RunState state, CallCount calls)
@@ -112,44 +125,8 @@ public sealed class TradingResearchRuntime
     private static ToolResponse Recommend(TradingResearchRequest request, RunState state, CallCount calls, ToolCall call)
     {
         calls.Recommend++;
-        if (state.Report is null)
-        {
-            if (!call.Inputs.TryGetValue("evidence", out var sessionKey) || string.IsNullOrWhiteSpace(sessionKey))
-                return ToolResponse.Uncertain("The research step has no committed session to reread.");
-            var stored = request.Research.Find(sessionKey);
-            if (stored is null)
-                return ToolResponse.Uncertain("The committed research session could not be reread.");
-            state.Report = new ResearchReport(
-                stored.Status,
-                true,
-                0,
-                0,
-                0,
-                stored.SessionKey,
-                ResearchSession.Deserialize(stored.Result));
-        }
-        var evidence = state.Report.Snapshot.Fills.Select(fill => new ObservedTrade(
-            Guid.Parse("a8888888-8888-8888-8888-888888888888"),
-            fill.OperationKey,
-            request.RequestedProposal.Symbol,
-            fill.Side,
-            fill.Quantity,
-            fill.ExecutionPrice,
-            request.RecordedAt,
-            fill.Fee,
-            "USDT",
-            EpistemicKind.Observation)).ToArray();
-        state.Recommendation = TradingAgent.Recommend(
-            request.Task.TenantId,
-            evidence,
-            request.RequestedProposal,
-            request.Limits,
-            request.Unknowns);
-        if (state.Recommendation.Proposal.Mode != ExecutionMode.Paper
-            || state.Recommendation.Autonomy != TradingAgent.Autonomy
-            || state.Recommendation.Kind != EpistemicKind.Inference)
-            return ToolResponse.Stop(ToolStepStatus.Failed, "The recommendation did not stay paper and recommend_only.");
-        state.PaperVerdict = RiskEngine.Evaluate(state.Recommendation.Proposal, request.Limits);
+        if (!TryLoadRecommendation(request, state, call, out var failure) || state.Report is null)
+            return failure;
         return ToolResponse.Succeeded(
             "Recommendation recorded.",
             new Dictionary<string, string>
@@ -157,14 +134,17 @@ public sealed class TradingResearchRuntime
                 ["verified"] = "true",
                 ["recommendationExecuted"] = "false",
                 ["researchFillCount"] = state.Report.Snapshot.Fills.Count.ToString(),
+                ["evidence"] = state.Report.SessionKey,
             });
     }
 
-    private static ToolResponse Execute(TradingResearchRequest request, RunState state, CallCount calls)
+    private static ToolResponse Execute(TradingResearchRequest request, RunState state, CallCount calls, ToolCall call)
     {
         calls.Execute++;
         if (request.RequestedProposal.Mode == ExecutionMode.Live)
             return ToolResponse.Stop(ToolStepStatus.Rejected, "Live execution is outside Agent Runtime V1.");
+        if ((state.Recommendation is null || state.PaperVerdict is null) && !TryLoadRecommendation(request, state, call, out _))
+            return ToolResponse.Stop(ToolStepStatus.Failed, "There is no paper recommendation to execute.");
         if (state.Recommendation is null || state.PaperVerdict is null)
             return ToolResponse.Stop(ToolStepStatus.Failed, "There is no paper recommendation to execute.");
         var paper = DemoPaperExecution.Execute(state.Recommendation.Proposal, state.PaperVerdict, request.Task.Approval);
@@ -218,6 +198,65 @@ public sealed class TradingResearchRuntime
                 ["recommendationExecuted"] = paper.Executed ? "true" : "false",
                 ["evidence"] = state.Report.SessionKey,
             });
+    }
+
+    private static bool TryLoadRecommendation(TradingResearchRequest request, RunState state, ToolCall call, out ToolResponse failure)
+    {
+        failure = ToolResponse.Stop(ToolStepStatus.Failed, "There is no paper recommendation to execute.");
+        if (state.Report is null)
+        {
+            if (!call.Inputs.TryGetValue("evidence", out var sessionKey) || string.IsNullOrWhiteSpace(sessionKey))
+            {
+                failure = ToolResponse.Uncertain("The research step has no committed session to reread.");
+                return false;
+            }
+
+            var stored = request.Research.Find(sessionKey);
+            if (stored is null)
+            {
+                failure = ToolResponse.Uncertain("The committed research session could not be reread.");
+                return false;
+            }
+
+            state.Report = new ResearchReport(
+                stored.Status,
+                true,
+                0,
+                0,
+                0,
+                stored.SessionKey,
+                ResearchSession.Deserialize(stored.Result));
+        }
+
+        if (state.Recommendation is not null && state.PaperVerdict is not null)
+            return true;
+        var evidence = state.Report.Snapshot.Fills.Select(fill => new ObservedTrade(
+            Guid.Parse("a8888888-8888-8888-8888-888888888888"),
+            fill.OperationKey,
+            request.RequestedProposal.Symbol,
+            fill.Side,
+            fill.Quantity,
+            fill.ExecutionPrice,
+            request.RecordedAt,
+            fill.Fee,
+            "USDT",
+            EpistemicKind.Observation)).ToArray();
+        state.Recommendation = TradingAgent.Recommend(
+            request.Task.TenantId,
+            evidence,
+            request.RequestedProposal,
+            request.Limits,
+            request.Unknowns);
+        if (state.Recommendation.Proposal.Mode != ExecutionMode.Paper
+            || state.Recommendation.Autonomy != TradingAgent.Autonomy
+            || state.Recommendation.Kind != EpistemicKind.Inference)
+        {
+            failure = ToolResponse.Stop(ToolStepStatus.Failed, "The recommendation did not stay paper and recommend_only.");
+            return false;
+        }
+
+        state.PaperVerdict = RiskEngine.Evaluate(state.Recommendation.Proposal, request.Limits);
+        return true;
     }
 
     private sealed class RunState

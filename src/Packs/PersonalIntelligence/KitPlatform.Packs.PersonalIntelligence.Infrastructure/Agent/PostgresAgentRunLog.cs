@@ -102,7 +102,11 @@ public sealed class PostgresAgentRunLog : IAgentRunLog, IDisposable
             }
 
             Reject(existing, receipt);
-            if (existing.Status is not (AgentTaskStatus.Running or AgentTaskStatus.Verified))
+            if (existing.Status is not (
+                AgentTaskStatus.Running
+                or AgentTaskStatus.Verified
+                or AgentTaskStatus.AwaitingApproval
+                or AgentTaskStatus.ReconciliationRequired))
             {
                 Release();
                 return existing;

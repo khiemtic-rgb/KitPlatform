@@ -180,6 +180,7 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         var second = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Record the paper recommendation.")));
         var fetched = await Read(await client.GetAsync("/api/personal-intelligence/tasks/" + key));
 
+        Assert.Equal("approve", first.GetProperty("nextAction").GetString());
         Assert.Equal("AwaitingApproval", first.GetProperty("status").GetString());
         Assert.Equal(2, first.GetProperty("researchFillCount").GetInt32());
         Assert.False(first.GetProperty("recommendationExecuted").GetBoolean());
@@ -383,6 +384,201 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.Equal(created.GetProperty("evidence")[0].GetString(), fetched.GetProperty("evidence")[0].GetString());
     }
 
+    [Fact]
+    public async Task Approval_continues_the_same_task_without_running_committed_steps()
+    {
+        var key = "approve-" + Guid.NewGuid().ToString("N");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var created = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Continue this paper task.")));
+        var sessions = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.session_result");
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var hash = created.GetProperty("payloadHash").GetString();
+        var research = ResearchSummary(created);
+        var decision = Guid.NewGuid();
+        var conflicting = await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Continue this paper task.", approval: decision));
+        Assert.Equal(HttpStatusCode.Conflict, conflicting.StatusCode);
+
+        var continued = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = decision, executionMode = "live" }));
+        var revision = Revision(key);
+        var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = decision }));
+        var other = await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = Guid.NewGuid() });
+
+        Assert.Equal("Completed", continued.GetProperty("status").GetString());
+        Assert.Equal("paper_executed", continued.GetProperty("outcome").GetString());
+        Assert.Equal("none", continued.GetProperty("nextAction").GetString());
+        Assert.True(continued.GetProperty("recommendationExecuted").GetBoolean());
+        Assert.True(continued.GetProperty("approvalRecorded").GetBoolean());
+        Assert.False(continued.GetProperty("liveAccepted").GetBoolean());
+        Assert.False(continued.GetProperty("replayed").GetBoolean());
+        Assert.Equal(hash, continued.GetProperty("payloadHash").GetString());
+        Assert.Equal(research, ResearchSummary(continued));
+        Assert.Equal(AgentTaskApiFixture.UserA.ToString("D"), continued.GetProperty("approvedBy").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(continued.GetProperty("approvedAt").GetString()));
+        Assert.Equal("Paper", continued.GetProperty("executionMode").GetString());
+        Assert.Single(continued.GetProperty("decisions").EnumerateArray());
+        Assert.Contains(continued.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "trading.paper_execute" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.True(replay.GetProperty("replayed").GetBoolean());
+        Assert.Equal(revision, Revision(key));
+        Assert.Equal(HttpStatusCode.Conflict, other.StatusCode);
+        Assert.Equal(sessions, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.session_result"));
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
+    public async Task Approval_rejects_the_wrong_permission_tenant_and_status()
+    {
+        var key = "guard-" + Guid.NewGuid().ToString("N");
+        var owner = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var created = await Read(await owner.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Visible only to tenant A.")));
+        Assert.Equal("AwaitingApproval", created.GetProperty("status").GetString());
+        await using var connection = new NpgsqlConnection(_fixture.ValidationConnection);
+        await connection.OpenAsync();
+        var saved = (string)(await new NpgsqlCommand("SELECT settings::text FROM public.tenants WHERE id = @Id", connection)
+        {
+            Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+        }.ExecuteScalarAsync())!;
+        try
+        {
+            await new NpgsqlCommand(
+                """
+                UPDATE public.tenants
+                SET settings = settings || '{"platform":{"enabled_modules":["personal_intelligence"]}}'::jsonb
+                WHERE id = @Id
+                """,
+                connection)
+            {
+                Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+            var other = Authorized(_fixture.Client(), AgentTaskApiFixture.UserB, AgentTaskApiFixture.TenantB);
+            var cross = await other.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = Guid.NewGuid() });
+            var body = await cross.Content.ReadAsStringAsync();
+            Assert.Equal(HttpStatusCode.NotFound, cross.StatusCode);
+            Assert.DoesNotContain("Visible only to tenant A.", body, StringComparison.Ordinal);
+        }
+        finally
+        {
+            await new NpgsqlCommand("UPDATE public.tenants SET settings = @Settings::jsonb WHERE id = @Id", connection)
+            {
+                Parameters = { new("Settings", saved), new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+        }
+
+        var runner = Guid.Parse("c7777777-7777-7777-7777-777777777777");
+        await EnsureRunOnlyUser(runner, AgentTaskApiFixture.TenantA);
+        var denied = Authorized(_fixture.Client(), runner, AgentTaskApiFixture.TenantA);
+        var forbidden = await denied.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = Guid.NewGuid() });
+        var waiting = await Read(await denied.GetAsync("/api/personal-intelligence/tasks/" + key));
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal("wait_for_approval", waiting.GetProperty("nextAction").GetString());
+        Assert.Equal("AwaitingApproval", waiting.GetProperty("status").GetString());
+
+        var completedKey = "done-" + Guid.NewGuid().ToString("N");
+        var failedKey = "failed-" + Guid.NewGuid().ToString("N");
+        var doneDecision = Guid.NewGuid();
+        var failedDecision = Guid.NewGuid();
+        var done = await Read(await owner.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(completedKey, "Already finished.", approval: doneDecision)));
+        var failed = await Read(await owner.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(failedKey, "Do not send a live order.", approval: failedDecision, mode: "live")));
+        Assert.Equal("Completed", done.GetProperty("status").GetString());
+        Assert.Equal("Failed", failed.GetProperty("status").GetString());
+        var again = await owner.PostAsJsonAsync("/api/personal-intelligence/tasks/" + completedKey + "/approval", new { approvalDecisionId = Guid.NewGuid() });
+        var failedAgain = await owner.PostAsJsonAsync("/api/personal-intelligence/tasks/" + failedKey + "/approval", new { approvalDecisionId = Guid.NewGuid() });
+        var same = await Read(await owner.PostAsJsonAsync("/api/personal-intelligence/tasks/" + completedKey + "/approval", new { approvalDecisionId = doneDecision }));
+        Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, failedAgain.StatusCode);
+        Assert.True(same.GetProperty("replayed").GetBoolean());
+        Assert.Equal("Completed", same.GetProperty("status").GetString());
+        Assert.False(same.GetProperty("liveAccepted").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Concurrent_approvals_record_one_decision()
+    {
+        var key = "race-" + Guid.NewGuid().ToString("N");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var created = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Approve this once.")));
+        var sessions = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.session_result");
+        var decision = Guid.NewGuid();
+        var first = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var second = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var responses = await Task.WhenAll(
+            first.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = decision }),
+            second.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = decision }));
+        var receipts = new List<JsonElement>();
+        foreach (var response in responses)
+            receipts.Add(await Read(response));
+        var different = await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = Guid.NewGuid() });
+
+        Assert.All(receipts, receipt => Assert.Equal("Completed", receipt.GetProperty("status").GetString()));
+        Assert.All(receipts, receipt => Assert.False(receipt.GetProperty("liveAccepted").GetBoolean()));
+        Assert.Contains(receipts, receipt => receipt.GetProperty("replayed").GetBoolean());
+        Assert.Equal(created.GetProperty("payloadHash").GetString(), receipts[0].GetProperty("payloadHash").GetString());
+        Assert.Equal(sessions, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.session_result"));
+        var stored = await Read(await client.GetAsync("/api/personal-intelligence/tasks/" + key));
+        Assert.Single(stored.GetProperty("decisions").EnumerateArray());
+        Assert.Equal(decision, stored.GetProperty("decisions")[0].GetProperty("decisionId").GetGuid());
+        Assert.Equal(HttpStatusCode.Conflict, different.StatusCode);
+    }
+
+    [Fact]
+    public async Task Live_approval_cannot_send_an_order()
+    {
+        var key = "live-wait-" + Guid.NewGuid().ToString("N");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var created = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Do not send a live order.", mode: "live")));
+        var continued = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = Guid.NewGuid() }));
+
+        Assert.Equal("AwaitingApproval", created.GetProperty("status").GetString());
+        Assert.Equal("Live", created.GetProperty("executionMode").GetString());
+        Assert.Equal("Failed", continued.GetProperty("status").GetString());
+        Assert.False(continued.GetProperty("liveAccepted").GetBoolean());
+        Assert.False(continued.GetProperty("recommendationExecuted").GetBoolean());
+        Assert.Equal("Live", continued.GetProperty("executionMode").GetString());
+        Assert.Contains(continued.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "trading.paper_execute" && step.GetProperty("status").GetString() == "Rejected");
+    }
+
+    [Fact]
+    public async Task Reconciliation_stores_evidence_and_does_not_retry()
+    {
+        var key = "reconcile-" + Guid.NewGuid().ToString("N");
+        var hash = "hash-" + Guid.NewGuid().ToString("N");
+        var sessions = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.session_result");
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        await InsertReconciliation(key, hash, "The paper effect is uncertain.");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var waiting = await Read(await client.GetAsync("/api/personal-intelligence/tasks/" + key));
+        var before = Revision(key);
+        var missing = await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "occurred" });
+        var unknown = await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "unknown", evidence = "still looking" });
+        Assert.Equal(before, Revision(key));
+        var recorded = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "absent", evidence = "no paper operation for this task" }));
+        var after = Revision(key);
+        var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "absent", evidence = "no paper operation for this task" }));
+        var different = await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/reconciliation", new { disposition = "occurred", evidence = "a fill exists" });
+        var approved = await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = Guid.NewGuid() });
+        var retried = await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "The paper effect is uncertain."));
+
+        Assert.Equal("ReconciliationRequired", waiting.GetProperty("status").GetString());
+        Assert.Equal("manual_reconciliation", waiting.GetProperty("nextAction").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, missing.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, unknown.StatusCode);
+        Assert.True(after > before);
+        Assert.Equal(after, Revision(key));
+        Assert.Equal("ReconciliationRequired", recorded.GetProperty("status").GetString());
+        Assert.False(recorded.GetProperty("replayed").GetBoolean());
+        Assert.Equal("absent", recorded.GetProperty("decisions")[0].GetProperty("decision").GetString());
+        Assert.Equal("no paper operation for this task", recorded.GetProperty("decisions")[0].GetProperty("evidence").GetString());
+        Assert.Equal(AgentTaskApiFixture.UserA.ToString("D"), recorded.GetProperty("decisions")[0].GetProperty("actorId").GetString());
+        Assert.Equal("Uncertain", recorded.GetProperty("steps")[0].GetProperty("status").GetString());
+        Assert.True(replay.GetProperty("replayed").GetBoolean());
+        Assert.Single(replay.GetProperty("decisions").EnumerateArray());
+        Assert.Equal(HttpStatusCode.Conflict, different.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, approved.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, retried.StatusCode);
+        Assert.Equal(sessions, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.session_result"));
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+        Assert.Equal("absent", (await Read(await client.GetAsync("/api/personal-intelligence/tasks/" + key))).GetProperty("decisions")[0].GetProperty("decision").GetString());
+    }
+
     private static HttpClient Authorized(HttpClient client, Guid userId, Guid tenantId)
     {
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AgentTaskApiFixture.Token(userId, tenantId));
@@ -399,6 +595,113 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
             executionMode = mode,
             approvalDecisionId = approval,
         };
+
+    private static string ResearchSummary(JsonElement receipt)
+        => receipt.GetProperty("steps").EnumerateArray().Single(step => step.GetProperty("toolName").GetString() == "research.session").GetProperty("summary").GetString()!;
+
+    private int Revision(string key)
+    {
+        using var connection = new NpgsqlConnection(_fixture.TaskConnection);
+        connection.Open();
+        using var command = new NpgsqlCommand(
+            "SELECT revision FROM pack_personal_intelligence.pi_agent_task WHERE tenant_id = @Tenant AND task_key = @Key",
+            connection);
+        command.Parameters.AddWithValue("Tenant", AgentTaskApiFixture.TenantA);
+        command.Parameters.AddWithValue("Key", key);
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    private static int Count(string connectionString, string sql)
+    {
+        var builder = new NpgsqlConnectionStringBuilder(connectionString);
+        if (builder.Port != 5433)
+            throw new InvalidOperationException("Refusing a count outside the isolated database.");
+        using var connection = new NpgsqlConnection(connectionString);
+        connection.Open();
+        return Convert.ToInt32(new NpgsqlCommand(sql, connection).ExecuteScalar());
+    }
+
+    private async Task InsertReconciliation(string key, string hash, string objective)
+    {
+        var receipt = $$"""
+            {
+              "taskKey": "{{key}}",
+              "payloadHash": "{{hash}}",
+              "tenantId": "{{AgentTaskApiFixture.TenantA}}",
+              "status": "ReconciliationRequired",
+              "objective": "{{objective}}",
+              "doneWhen": "The receipt names the outcome and does not claim a live order.",
+              "steps": [
+                {
+                  "stepId": "execute",
+                  "toolName": "trading.paper_execute",
+                  "status": "Uncertain",
+                  "summary": "Not committed.",
+                  "error": "Step execute (trading.paper_execute) has no committed result and its effect is not safe to repeat."
+                }
+              ],
+              "outcome": null,
+              "researchFillCount": 0,
+              "recommendationExecuted": false,
+              "liveAccepted": false,
+              "replayed": false,
+              "error": "Step execute (trading.paper_execute) has no committed result and its effect is not safe to repeat.",
+              "evidenceRefs": [],
+              "approvalRecorded": false
+            }
+            """;
+        await using var connection = new NpgsqlConnection(_fixture.TaskConnection);
+        await connection.OpenAsync();
+        var database = (string)(await new NpgsqlCommand("SELECT current_database()", connection).ExecuteScalarAsync())!;
+        var port = Convert.ToInt32(await new NpgsqlCommand("SELECT inet_server_port()", connection).ExecuteScalarAsync());
+        if (database != "kit_pi_agent_task" || port != 5433)
+            throw new InvalidOperationException("Refusing to insert a task outside the isolated task database.");
+        await using var command = new NpgsqlCommand(
+            """
+            INSERT INTO pack_personal_intelligence.pi_agent_task
+                (tenant_id, task_key, payload_hash, status, receipt, revision)
+            VALUES
+                (@Tenant, @Key, @Hash, 'ReconciliationRequired', @Receipt::jsonb, 1)
+            """,
+            connection);
+        command.Parameters.AddWithValue("Tenant", AgentTaskApiFixture.TenantA);
+        command.Parameters.AddWithValue("Key", key);
+        command.Parameters.AddWithValue("Hash", hash);
+        command.Parameters.AddWithValue("Receipt", receipt);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task EnsureRunOnlyUser(Guid userId, Guid tenantId)
+    {
+        await using var connection = new NpgsqlConnection(_fixture.ValidationConnection);
+        await connection.OpenAsync();
+        var database = (string)(await new NpgsqlCommand("SELECT current_database()", connection).ExecuteScalarAsync())!;
+        var port = Convert.ToInt32(await new NpgsqlCommand("SELECT inet_server_port()", connection).ExecuteScalarAsync());
+        if (database != "kit_pi_validation" || port != 5433)
+            throw new InvalidOperationException("Refusing to add a user outside the isolated validation database.");
+        await using var command = new NpgsqlCommand(
+            """
+            INSERT INTO public.users (id, tenant_id, username, email, password_hash)
+            VALUES (@User, @Tenant, 'pi-run-only', 'pi-run-only@validation.local', 'not-a-secret')
+            ON CONFLICT (id) DO NOTHING;
+
+            DELETE FROM public.user_roles
+            WHERE user_id = @User
+              AND role_id IN (
+                SELECT id FROM public.roles
+                WHERE tenant_id = @Tenant AND role_code = 'PI_APPROVE');
+
+            INSERT INTO public.user_roles (user_id, role_id)
+            SELECT @User, id
+            FROM public.roles
+            WHERE tenant_id = @Tenant AND role_code = 'PI_TRADING'
+            ON CONFLICT DO NOTHING;
+            """,
+            connection);
+        command.Parameters.AddWithValue("User", userId);
+        command.Parameters.AddWithValue("Tenant", tenantId);
+        await command.ExecuteNonQueryAsync();
+    }
 
     private static async Task<JsonElement> Read(HttpResponseMessage response)
     {

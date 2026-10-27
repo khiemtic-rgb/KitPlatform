@@ -62,9 +62,35 @@ public sealed record AgentTaskView(
     bool ApprovalRecorded,
     string? Error,
     IReadOnlyList<string> Evidence,
-    IReadOnlyList<AgentTaskStepView> Steps);
+    IReadOnlyList<AgentTaskStepView> Steps,
+    string? ApprovedBy,
+    DateTimeOffset? ApprovedAt,
+    string? ExecutionMode,
+    string NextAction,
+    IReadOnlyList<AgentTaskDecisionView> Decisions);
 
 public sealed record AgentTaskStepView(string StepId, string ToolName, string Status, string Summary, string? Error);
+
+public sealed record AgentTaskDecisionView(
+    string Kind,
+    string Decision,
+    Guid? DecisionId,
+    string ActorId,
+    DateTimeOffset At,
+    string? Evidence);
+
+public sealed class AgentApprovalCommand
+{
+    public Guid? ApprovalDecisionId { get; set; }
+    public Guid? RequestedTenantId { get; set; }
+}
+
+public sealed class AgentReconciliationCommand
+{
+    public string Disposition { get; set; } = "";
+    public string? Evidence { get; set; }
+    public Guid? RequestedTenantId { get; set; }
+}
 
 public sealed class AgentTaskUnavailableException : InvalidOperationException
 {
@@ -103,6 +129,7 @@ public sealed class AgentTaskService
             throw new InvalidOperationException("This host accepts only the trading-paper task.");
         var mode = NormalizeMode(command.ExecutionMode);
         var approval = Approval(user, command.ApprovalDecisionId);
+        var approvedAt = approval is null ? (DateTimeOffset?)null : DateTimeOffset.UtcNow;
         var request = new AgentRequest(
             taskKey,
             PayloadHash(objective, doneWhen, mode, approval?.DecisionId),
@@ -112,7 +139,10 @@ public sealed class AgentTaskService
             Grants(user),
             TradingResearchRuntime.Plan,
             approval,
-            command.RequestedTenantId);
+            command.RequestedTenantId,
+            mode.ToString(),
+            approval is null ? null : [Decision("approval", "approved", approval.DecisionId, approval.ApprovedBy, approvedAt!.Value, null)],
+            approvedAt);
         var proposal = new TradeProposal("BTCUSDT", "BUY", 0.001m, 100m, 1m, 0.8m, mode);
         var limits = new RiskLimits(1_000m, 1m, 0.5m);
         var intake = ResearchCandles.Classify(
@@ -139,7 +169,67 @@ public sealed class AgentTaskService
                 TradingResearchRuntime.FixedPaperRecordedAt),
             log,
             _options.AllowCrashHook ? AgentCrashHook.ExitIfRequested : null);
-        return ToView(result.Task);
+        return ToView(result.Task, user);
+    }
+
+    public AgentTaskView Approve(ClaimsPrincipal user, string taskKey, AgentApprovalCommand command)
+    {
+        var tenantId = CallerTenant(user, command.RequestedTenantId);
+        var key = RequireText(taskKey, "A task key is required.");
+        var approval = Approval(user, command.ApprovalDecisionId)
+            ?? throw new InvalidOperationException("An approval decision is required.");
+        using var research = OpenResearch();
+        using var log = OpenTasks(tenantId);
+        var stored = log.Find(key) ?? throw new AgentTaskNotFoundException("The task was not found.");
+        var mode = StoredMode(stored.ExecutionMode);
+        var approvedAt = DateTimeOffset.UtcNow;
+        var request = new AgentRequest(
+            stored.TaskKey,
+            stored.PayloadHash,
+            tenantId,
+            stored.Objective,
+            stored.DoneWhen,
+            Grants(user),
+            stored.Plan ?? TradingResearchRuntime.Plan,
+            approval,
+            command.RequestedTenantId,
+            stored.ExecutionMode ?? mode.ToString(),
+            stored.Decisions,
+            stored.ApprovedAt);
+        var result = new TradingResearchRuntime().ContinueAfterApproval(
+            TradingRequest(request, research, mode),
+            log,
+            approvedAt);
+        return ToView(result.Task, user);
+    }
+
+    public AgentTaskView Reconcile(ClaimsPrincipal user, string taskKey, AgentReconciliationCommand command)
+    {
+        var tenantId = CallerTenant(user, command.RequestedTenantId);
+        var key = RequireText(taskKey, "A task key is required.");
+        using var log = OpenTasks(tenantId);
+        var stored = log.Find(key) ?? throw new AgentTaskNotFoundException("The task was not found.");
+        var request = new AgentRequest(
+            stored.TaskKey,
+            stored.PayloadHash,
+            tenantId,
+            stored.Objective,
+            stored.DoneWhen,
+            Grants(user),
+            stored.Plan ?? [],
+            null,
+            command.RequestedTenantId,
+            stored.ExecutionMode,
+            stored.Decisions,
+            stored.ApprovedAt);
+        var receipt = new AgentRuntime(new ToolRegistry()).RecordReconciliation(
+            request,
+            log,
+            command.Disposition,
+            command.Evidence,
+            CoreAuthority.RequireUserId(user).ToString("D"),
+            DateTimeOffset.UtcNow);
+        return ToView(receipt, user);
     }
 
     public AgentTaskView? Find(ClaimsPrincipal user, string taskKey)
@@ -147,7 +237,7 @@ public sealed class AgentTaskService
         var tenantId = CallerTenant(user, null);
         using var log = OpenTasks(tenantId);
         var receipt = log.Find(taskKey);
-        return receipt is null ? null : ToView(receipt);
+        return receipt is null ? null : ToView(receipt, user);
     }
 
     private Guid CallerTenant(ClaimsPrincipal user, Guid? requestedTenantId)
@@ -227,6 +317,34 @@ public sealed class AgentTaskService
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 
+    private static TradingResearchRequest TradingRequest(AgentRequest request, SqlResearchStore research, ExecutionMode mode)
+    {
+        var limits = new RiskLimits(1_000m, 1m, 0.5m);
+        var candles = TradingResearchRuntime.FixedPaperCandles();
+        return new TradingResearchRequest(
+            request,
+            ResearchCandles.Classify(candles, candles.Last().CloseTime, TimeSpan.FromDays(30)),
+            new ResearchConfig(0.001m, 0.8m, 10_000m, new PaperSessionConfig(10m, 0.001m, 0m, 1m, limits, 5_000m, false)),
+            research,
+            research,
+            new TradeProposal("BTCUSDT", "BUY", 0.001m, 100m, 1m, 0.8m, mode),
+            limits,
+            ["The next bar is not known."],
+            TradingResearchRuntime.FixedPaperRecordedAt);
+    }
+
+    private static ExecutionMode StoredMode(string? mode)
+    {
+        if (string.Equals(mode, nameof(ExecutionMode.Live), StringComparison.Ordinal))
+            return ExecutionMode.Live;
+        if (mode is null || string.Equals(mode, nameof(ExecutionMode.Paper), StringComparison.Ordinal))
+            return ExecutionMode.Paper;
+        throw new InvalidOperationException("The stored execution mode cannot be continued.");
+    }
+
+    private static TaskDecisionRecord Decision(string kind, string decision, Guid? id, string actor, DateTimeOffset at, string? evidence)
+        => new(kind, decision, id, actor, at, evidence);
+
     private static ExecutionMode NormalizeMode(string? mode)
     {
         if (string.IsNullOrWhiteSpace(mode) || string.Equals(mode, "paper", StringComparison.OrdinalIgnoreCase))
@@ -244,7 +362,7 @@ public sealed class AgentTaskService
         return text;
     }
 
-    private static AgentTaskView ToView(AgentTaskReceipt receipt)
+    private static AgentTaskView ToView(AgentTaskReceipt receipt, ClaimsPrincipal user)
         => new(
             receipt.TaskKey,
             receipt.PayloadHash,
@@ -258,7 +376,24 @@ public sealed class AgentTaskService
             receipt.ApprovalRecorded,
             receipt.Error,
             receipt.EvidenceRefs,
-            receipt.Steps.Select(step => new AgentTaskStepView(step.StepId, step.ToolName, step.Status.ToString(), step.Summary, step.Error)).ToArray());
+            receipt.Steps.Select(step => new AgentTaskStepView(step.StepId, step.ToolName, step.Status.ToString(), step.Summary, step.Error)).ToArray(),
+            receipt.ApprovedBy,
+            receipt.ApprovedAt,
+            receipt.ExecutionMode,
+            NextAction(receipt, user),
+            (receipt.Decisions ?? []).Select(row => new AgentTaskDecisionView(row.Kind, row.Decision, row.DecisionId, row.ActorId, row.At, row.Evidence)).ToArray());
+
+    private static string NextAction(AgentTaskReceipt receipt, ClaimsPrincipal user)
+    {
+        var canApprove = user.IsInRole("ADMIN") || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.ApprovePermission);
+        return receipt.Status switch
+        {
+            AgentTaskStatus.AwaitingApproval => canApprove ? "approve" : "wait_for_approval",
+            AgentTaskStatus.ReconciliationRequired => canApprove ? "manual_reconciliation" : "wait_for_reconciliation",
+            AgentTaskStatus.Running or AgentTaskStatus.Received or AgentTaskStatus.Planned or AgentTaskStatus.Verified => "wait",
+            _ => "none",
+        };
+    }
 }
 
 [ApiController]
@@ -277,6 +412,36 @@ public sealed class AgentTaskController : ControllerBase
         try
         {
             return Ok(_tasks.RunTrading(User, command));
+        }
+        catch (Exception ex)
+        {
+            return Map(ex);
+        }
+    }
+
+    [HttpPost("{taskKey}/approval")]
+    [Authorize(Policy = PersonalIntelligencePolicies.Approve)]
+    [RequirePersonalIntelligenceModule]
+    public ActionResult<AgentTaskView> Approve(string taskKey, [FromBody] AgentApprovalCommand command)
+    {
+        try
+        {
+            return Ok(_tasks.Approve(User, taskKey, command));
+        }
+        catch (Exception ex)
+        {
+            return Map(ex);
+        }
+    }
+
+    [HttpPost("{taskKey}/reconciliation")]
+    [Authorize(Policy = PersonalIntelligencePolicies.Approve)]
+    [RequirePersonalIntelligenceModule]
+    public ActionResult<AgentTaskView> Reconcile(string taskKey, [FromBody] AgentReconciliationCommand command)
+    {
+        try
+        {
+            return Ok(_tasks.Reconcile(User, taskKey, command));
         }
         catch (Exception ex)
         {
@@ -304,6 +469,8 @@ public sealed class AgentTaskController : ControllerBase
     {
         AgentTaskUnavailableException => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = exception.Message }),
         AgentTaskBusyException => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = exception.Message }),
+        AgentTaskNotFoundException => NotFound(new { message = exception.Message }),
+        AgentTaskStateException => Conflict(new { message = exception.Message }),
         AgentRunConflictException => Conflict(new { message = exception.Message }),
         AgentTenantMismatchException => StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message }),
         UnauthorizedAccessException => StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message }),
