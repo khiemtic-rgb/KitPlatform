@@ -22,6 +22,20 @@ public sealed class AgentRuntimeOptions
     public const string SectionName = "AgentRuntime";
     public string? TaskConnection { get; set; }
     public string? ResearchConnection { get; set; }
+    public bool AllowCrashHook { get; set; }
+}
+
+public static class AgentCrashHook
+{
+    public static void ExitIfRequested(string phase, string stepId)
+    {
+        if (phase == "after-commit" && string.Equals(stepId, Environment.GetEnvironmentVariable("KIT_AGENT_HOLD_AFTER_COMMIT"), StringComparison.Ordinal))
+            Thread.Sleep(Timeout.Infinite);
+        if (phase == "after-tool" && string.Equals(stepId, Environment.GetEnvironmentVariable("KIT_AGENT_CRASH_AFTER_TOOL"), StringComparison.Ordinal))
+            Environment.Exit(86);
+        if (phase == "after-commit" && string.Equals(stepId, Environment.GetEnvironmentVariable("KIT_AGENT_CRASH_AFTER_COMMIT"), StringComparison.Ordinal))
+            Environment.Exit(87);
+    }
 }
 
 public sealed class AgentTaskCommand
@@ -123,7 +137,8 @@ public sealed class AgentTaskService
                 limits,
                 ["The next bar is not known."],
                 TradingResearchRuntime.FixedPaperRecordedAt),
-            log);
+            log,
+            _options.AllowCrashHook ? AgentCrashHook.ExitIfRequested : null);
         return ToView(result.Task);
     }
 
@@ -288,6 +303,7 @@ public sealed class AgentTaskController : ControllerBase
     private ActionResult Map(Exception exception) => exception switch
     {
         AgentTaskUnavailableException => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = exception.Message }),
+        AgentTaskBusyException => StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = exception.Message }),
         AgentRunConflictException => Conflict(new { message = exception.Message }),
         AgentTenantMismatchException => StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message }),
         UnauthorizedAccessException => StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message }),

@@ -76,7 +76,7 @@ The file-reload tests still pass. They are not evidence for PostgreSQL.
 
 ## Crash window
 
-The saved row is recovered. A tool that has returned, but whose update has not committed, is not in that row. A later log returns the last committed receipt and does not retry the missing step, so the task cannot be marked `Completed` from that gap. This is not exactly-once execution. A `Running` receipt is not resumed. The log must be disposed, or the process must exit, before another caller can take the advisory lock.
+The saved row is recovered. A tool that has returned, but whose update has not committed, is not in that row. The next caller can see the last committed steps and the missing step. It does not treat that gap as success. This is not exactly-once execution. The log must be disposed, or the process must exit, before another caller can take the advisory lock.
 
 ## Unknown tool effect
 
@@ -94,7 +94,7 @@ The response is `AgentTaskView`: task key, payload hash, tenant, status, outcome
 
 ## What the product tests showed
 
-`KitPlatform.PersonalIntelligence.ApiTests`, 11 passed and 0 failed, against `kit_pi_validation`, `kit_pi_agent_task`, and `trading_agent` on `127.0.0.1:5433`:
+`KitPlatform.PersonalIntelligence.ApiTests`, 14 passed and 0 failed, against `kit_pi_validation`, `kit_pi_agent_task`, and `trading_agent` on `127.0.0.1:5433`:
 
 - Anonymous POST is 401. A token whose user has no stored permission is 403. Tenant B with the module off is 403.
 - An unapproved trading task is stored as `AwaitingApproval`, outcome `approval_required`, research fill count 2, `recommendationExecuted` false, and `liveAccepted` false. The execute step is `Blocked`. The same POST replays. GET returns the same hash and tenant.
@@ -106,7 +106,15 @@ The response is `AgentTaskView`: task key, payload hash, tenant, status, outcome
 - A task connection that names port `5432` returns 503 and is refused before the task store opens.
 - `POST /api/personal-intelligence/trading/loops` stays 404.
 
-`KitPlatform.PersonalIntelligence.Tests` after the reconciliation status: 226 passed, 0 failed. That includes the previous PostgreSQL task tests, the process probe, the new uncertain-effect tests, and the manifest check that `400` is absent.
+`KitPlatform.PersonalIntelligence.Tests`: 228 passed, 0 failed. That includes the PostgreSQL task tests, the process probe, the uncertain-effect tests, the read-step recovery tests, and the manifest check that `400` is absent.
+
+Three API tests start a separate `KitPlatform.Api` process on `127.0.0.1` ports `5391`–`5398`. They are not another host inside the test process. `ResearchSafeHost:SuppressBackgroundWriters` is true, and the captured log does not contain `Integration outbox worker started`. `AgentRuntime:AllowCrashHook` is false unless that test sets it. The hook is ignored without the flag, so a production process does not exit on those environment names.
+
+- Exit 86 after `research.session` returns and before the step commit leaves `Running` with no succeeded research step. The next process records `ReconciliationRequired`, does not call the tool, and does not add a research session or paper operation. `LiveAccepted` stays false.
+- Exit 87 after the research step commits leaves that step in place. A second process GET shows `Running` and does not continue it. The following POST runs the read recommendation only, blocks paper execution for lack of approval, and ends `AwaitingApproval` with research fill count 2. A repeat POST is a replay. The research session count stays the same.
+- A process that holds the advisory lock after the research commit makes the next process return 503, `The task is still running for another caller.` It does not add a session. After the holder exits, a new process continues the read step to `AwaitingApproval`.
+
+`GET` shows the last committed receipt and does not recover it. `POST` of the same payload is the recovery path. There is no timer or worker. A `Running` task stays observable until that POST. The lock wait is 15 seconds.
 
 ## How to run the product tests
 
@@ -120,6 +128,12 @@ dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj
 
 `AddAgentTasks` registers the scoped task service only. It does not add a worker. Production leaves `AgentRuntime:TaskConnection` unset, so the route cannot open a task store until that isolated database is configured.
 
+## Recovery policy
+
+The next POST of the same tenant, key, and payload handles a `Running` row. It keeps every committed step. A missing step whose contract is `ToolEffect.Read` may run again, because a repeated read does not create a new side effect. After that read commits, later steps in the same locked call are first attempts. A missing step whose contract is `Paper` or `Live`, or whose tool is not registered, becomes `ReconciliationRequired` and is not called. `trading.recommend` is the read step. It rereads the committed research session and does not write one. `research.session`, `trading.paper_execute`, and `runtime.record` are paper steps and are not repeated from an uncommitted gap.
+
+`AwaitingApproval`, `Failed`, `Cancelled`, `Completed`, and `ReconciliationRequired` are returned unchanged. `Completed` does not run again. A `Verified` row with every step already committed is moved to `Completed` without calling tools. Two callers take one advisory lock. The waiter gets 503 instead of starting a second effect.
+
 ## Recovery limits
 
-A committed step is still there after a new log or a new host. A `Running` row is returned and is not resumed. An uncertain tool effect stays `ReconciliationRequired` and is not run again. A tool that returned but whose update did not commit is absent from the receipt and is not retried. That gap is not exactly-once. The advisory lock is held until a terminal save, dispose, or process exit.
+A committed step survives process exit. An uncommitted side effect is not exactly-once and is not retried. A read that was not committed can run once more. `Running` is not completed by GET and is not swept by a worker. Manual reconciliation is required before an uncommitted paper or live step may be attempted again. `LiveAccepted` stays false. The crash hook is a test switch and is off unless `AgentRuntime:AllowCrashHook` is true.

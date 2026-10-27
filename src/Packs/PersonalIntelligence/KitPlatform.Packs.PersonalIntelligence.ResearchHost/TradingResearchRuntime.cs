@@ -64,7 +64,7 @@ public sealed class TradingResearchRuntime
         return bars;
     }
 
-    public TradingResearchResult Execute(TradingResearchRequest request, IAgentRunLog log)
+    public TradingResearchResult Execute(TradingResearchRequest request, IAgentRunLog log, Action<string, string>? crash = null)
     {
         var calls = new CallCount();
         var state = new RunState();
@@ -74,14 +74,14 @@ public sealed class TradingResearchRuntime
             call => Research(request, state, calls));
         registry.Register(
             new ToolContract(RecommendTool, RunPermission, ToolEffect.Read, false),
-            call => Recommend(request, state, calls));
+            call => Recommend(request, state, calls, call));
         registry.Register(
             new ToolContract(ExecuteTool, ApprovePermission, ToolEffect.Paper, true),
             call => Execute(request, state, calls));
         registry.Register(
-            new ToolContract(RecordTool, ResearchPermission, ToolEffect.Read, false),
+            new ToolContract(RecordTool, ResearchPermission, ToolEffect.Paper, false),
             call => Record(request, state));
-        var receipt = new AgentRuntime(registry).Execute(request.Task, log);
+        var receipt = new AgentRuntime(registry, crash).Execute(request.Task, log);
         return new TradingResearchResult(receipt, calls.Research, calls.Recommend, calls.Execute);
     }
 
@@ -109,11 +109,25 @@ public sealed class TradingResearchRuntime
             });
     }
 
-    private static ToolResponse Recommend(TradingResearchRequest request, RunState state, CallCount calls)
+    private static ToolResponse Recommend(TradingResearchRequest request, RunState state, CallCount calls, ToolCall call)
     {
         calls.Recommend++;
         if (state.Report is null)
-            return ToolResponse.Stop(ToolStepStatus.Failed, "Research did not produce a session.");
+        {
+            if (!call.Inputs.TryGetValue("evidence", out var sessionKey) || string.IsNullOrWhiteSpace(sessionKey))
+                return ToolResponse.Uncertain("The research step has no committed session to reread.");
+            var stored = request.Research.Find(sessionKey);
+            if (stored is null)
+                return ToolResponse.Uncertain("The committed research session could not be reread.");
+            state.Report = new ResearchReport(
+                stored.Status,
+                true,
+                0,
+                0,
+                0,
+                stored.SessionKey,
+                ResearchSession.Deserialize(stored.Result));
+        }
         var evidence = state.Report.Snapshot.Fills.Select(fill => new ObservedTrade(
             Guid.Parse("a8888888-8888-8888-8888-888888888888"),
             fill.OperationKey,

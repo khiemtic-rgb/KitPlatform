@@ -74,7 +74,8 @@ public sealed record AgentStepRecord(
     string ToolName,
     ToolStepStatus Status,
     string Summary,
-    string? Error);
+    string? Error,
+    IReadOnlyDictionary<string, string>? Outputs = null);
 
 public sealed record AgentTaskReceipt(
     string TaskKey,
@@ -123,6 +124,14 @@ public sealed class AgentTenantMismatchException : InvalidOperationException
     }
 }
 
+public sealed class AgentTaskBusyException : InvalidOperationException
+{
+    public AgentTaskBusyException()
+        : base("The task is still running for another caller.")
+    {
+    }
+}
+
 public interface IAgentRunLog
 {
     AgentTaskReceipt? Find(string taskKey);
@@ -137,6 +146,22 @@ public interface IAgentRunLog
     /// Replaces the claimed receipt when the tenant and payload hash still match.
     /// </summary>
     void Remember(AgentTaskReceipt receipt);
+
+    /// <summary>
+    /// Locks a stored task so recovery can continue it.
+    /// A Running or Verified row stays locked. Any other stored row is returned and unlocked.
+    /// </summary>
+    AgentTaskReceipt? Adopt(AgentTaskReceipt receipt)
+    {
+        var existing = Find(receipt.TaskKey);
+        if (existing is null)
+            return null;
+        if (existing.TenantId != receipt.TenantId)
+            throw new AgentTenantMismatchException();
+        if (!string.Equals(existing.PayloadHash, receipt.PayloadHash, StringComparison.Ordinal))
+            throw new AgentRunConflictException();
+        return existing;
+    }
 }
 
 public sealed class MemoryAgentRunLog : IAgentRunLog
@@ -280,8 +305,13 @@ public sealed class AgentRuntime
     public const int MaxSteps = 8;
     private readonly ToolRegistry _registry;
     private readonly ToolDispatcher _dispatcher = new();
+    private readonly Action<string, string>? _boundary;
 
-    public AgentRuntime(ToolRegistry registry) => _registry = registry;
+    public AgentRuntime(ToolRegistry registry, Action<string, string>? boundary = null)
+    {
+        _registry = registry;
+        _boundary = boundary;
+    }
 
     public AgentTaskReceipt Execute(AgentRequest request, IAgentRunLog log)
     {
@@ -296,7 +326,7 @@ public sealed class AgentRuntime
 
         var existing = log.Find(request.TaskKey);
         if (existing is not null)
-            return Replay(request, existing);
+            return RecoverOrReplay(request, log, existing);
 
         if (request.RequestedTenantId is Guid requested && requested != request.TenantId)
             return StoreNew(log, request, Fail(request, [], "A task cannot switch tenant."));
@@ -311,14 +341,57 @@ public sealed class AgentRuntime
         if (claimed.Replayed)
             return claimed;
 
-        var records = new List<AgentStepRecord>();
-        var outputs = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal);
-        var blocked = false;
-        string? error = null;
+        return Run(request, log, [], new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal), false, 0, false);
+    }
 
-        for (var index = 0; index < request.Plan.Count; index++)
+    private AgentTaskReceipt RecoverOrReplay(AgentRequest request, IAgentRunLog log, AgentTaskReceipt existing)
+    {
+        if (existing.TenantId != request.TenantId)
+            throw new AgentTenantMismatchException();
+        if (!string.Equals(existing.PayloadHash, request.PayloadHash, StringComparison.Ordinal))
+            throw new AgentRunConflictException();
+        if (existing.Status is not (AgentTaskStatus.Running or AgentTaskStatus.Verified))
+            return existing with { Replayed = true };
+
+        var adopted = log.Adopt(existing) ?? throw new InvalidOperationException("The task disappeared before recovery.");
+        if (adopted.TenantId != request.TenantId)
+            throw new AgentTenantMismatchException();
+        if (!string.Equals(adopted.PayloadHash, request.PayloadHash, StringComparison.Ordinal))
+            throw new AgentRunConflictException();
+        if (adopted.Status == AgentTaskStatus.Verified)
+        {
+            var completed = AgentTaskTransitions.Move(AgentTaskStatus.Verified, AgentTaskStatus.Completed);
+            return Save(log, adopted with { Status = completed, Replayed = false });
+        }
+
+        if (adopted.Status != AgentTaskStatus.Running)
+            return adopted with { Replayed = true };
+        if (!CommittedPrefix(request.Plan, adopted.Steps))
+            return Save(log, Build(request, AgentTaskStatus.ReconciliationRequired, adopted.Steps, OutputsOf(adopted.Steps), "The stored steps do not match this plan.", false));
+
+        return Run(request, log, adopted.Steps.ToList(), OutputsOf(adopted.Steps), adopted.Steps.Any(step => step.Status == ToolStepStatus.Blocked), adopted.Steps.Count, true);
+    }
+
+    private AgentTaskReceipt Run(
+        AgentRequest request,
+        IAgentRunLog log,
+        List<AgentStepRecord> records,
+        Dictionary<string, IReadOnlyDictionary<string, string>> outputs,
+        bool blocked,
+        int startIndex,
+        bool gap)
+    {
+        var status = AgentTaskStatus.Running;
+        string? error = null;
+        for (var index = startIndex; index < request.Plan.Count; index++)
         {
             var step = request.Plan[index];
+            if (gap && !SafeToRepeat(step, out var reason))
+            {
+                records.Add(new AgentStepRecord(step.StepId, step.ToolName, ToolStepStatus.Uncertain, "Not committed.", reason));
+                return Save(log, Build(request, AgentTaskStatus.ReconciliationRequired, records, outputs, reason, false));
+            }
+
             if (!string.IsNullOrWhiteSpace(step.DependsOn))
             {
                 var dependency = records.FirstOrDefault(row => row.StepId == step.DependsOn);
@@ -342,7 +415,8 @@ public sealed class AgentRuntime
                 response = ToolResponse.Stop(ToolStepStatus.Failed, ex.Message);
             }
 
-            records.Add(new AgentStepRecord(step.StepId, step.ToolName, response.Status, response.Summary, response.Error));
+            _boundary?.Invoke("after-tool", step.StepId);
+            records.Add(new AgentStepRecord(step.StepId, step.ToolName, response.Status, response.Summary, response.Error, response.Outputs));
             outputs[step.StepId] = response.Outputs;
             if (response.Status == ToolStepStatus.Uncertain)
             {
@@ -368,6 +442,8 @@ public sealed class AgentRuntime
             }
 
             Save(log, Build(request, status, records, outputs, error, false));
+            _boundary?.Invoke("after-commit", step.StepId);
+            gap = false;
         }
 
         if (status == AgentTaskStatus.Running && blocked)
@@ -383,6 +459,47 @@ public sealed class AgentRuntime
             throw new InvalidOperationException("A completed task still has an unfinished step.");
 
         return Save(log, Build(request, status, records, outputs, error, replayed: false));
+    }
+
+    private bool SafeToRepeat(AgentStepSpec step, out string reason)
+    {
+        if (!_registry.TryGet(step.ToolName, out var contract, out _))
+        {
+            reason = $"Step {step.StepId} is not registered, so its effect cannot be classified.";
+            return false;
+        }
+
+        if (contract.Effect == ToolEffect.Read)
+        {
+            reason = "";
+            return true;
+        }
+
+        reason = $"Step {step.StepId} ({step.ToolName}) has no committed result and its effect is not safe to repeat.";
+        return false;
+    }
+
+    private static bool CommittedPrefix(IReadOnlyList<AgentStepSpec> plan, IReadOnlyList<AgentStepRecord> steps)
+    {
+        if (steps.Count > plan.Count)
+            return false;
+        for (var index = 0; index < steps.Count; index++)
+        {
+            if (!string.Equals(steps[index].StepId, plan[index].StepId, StringComparison.Ordinal)
+                || !string.Equals(steps[index].ToolName, plan[index].ToolName, StringComparison.Ordinal)
+                || steps[index].Status is not (ToolStepStatus.Succeeded or ToolStepStatus.Blocked))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static Dictionary<string, IReadOnlyDictionary<string, string>> OutputsOf(IReadOnlyList<AgentStepRecord> steps)
+    {
+        var outputs = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal);
+        foreach (var step in steps)
+            outputs[step.StepId] = step.Outputs ?? new Dictionary<string, string>();
+        return outputs;
     }
 
     private static AgentTaskReceipt Replay(AgentRequest request, AgentTaskReceipt existing)

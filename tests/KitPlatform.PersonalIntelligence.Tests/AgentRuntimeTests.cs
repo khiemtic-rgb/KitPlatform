@@ -137,6 +137,73 @@ public sealed class AgentRuntimeTests
     }
 
     [Fact]
+    public void A_committed_read_step_is_kept_and_only_the_next_read_runs()
+    {
+        var first = 0;
+        var second = 0;
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("read", "personal_intelligence.research.read", ToolEffect.Read, false), call =>
+        {
+            if (call.StepId == "one")
+                first++;
+            else
+                second++;
+            return ToolResponse.Succeeded(call.StepId, new Dictionary<string, string> { ["verified"] = "true", ["evidence"] = call.StepId });
+        });
+        var request = Request(
+            [new AgentStepSpec("one", "read", null), new AgentStepSpec("two", "read", "one")],
+            ["personal_intelligence.research.read"]);
+        var log = new StopAfterCommit();
+        Assert.Throws<InvalidOperationException>(() => new AgentRuntime(registry).Execute(request, log));
+        var recovered = new AgentRuntime(registry).Execute(request, log);
+
+        Assert.Equal(1, first);
+        Assert.Equal(1, second);
+        Assert.Equal(AgentTaskStatus.Completed, recovered.Status);
+        Assert.Equal(2, recovered.Steps.Count);
+        Assert.Equal("one", recovered.Steps[0].Summary);
+        Assert.False(recovered.Replayed);
+        var again = new AgentRuntime(registry).Execute(request, log);
+        Assert.True(again.Replayed);
+        Assert.Equal(1, first);
+        Assert.Equal(1, second);
+    }
+
+    [Fact]
+    public void An_uncommitted_side_effect_is_reconciled_and_not_called()
+    {
+        var reads = 0;
+        var papers = 0;
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("read", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+        {
+            reads++;
+            return ToolResponse.Succeeded("stored", new Dictionary<string, string> { ["verified"] = "true", ["evidence"] = "session" });
+        });
+        registry.Register(new ToolContract("paper", "personal_intelligence.trading.approve", ToolEffect.Paper, false), _ =>
+        {
+            papers++;
+            return ToolResponse.Succeeded("filled", new Dictionary<string, string> { ["verified"] = "true" });
+        });
+        var request = Request(
+            [new AgentStepSpec("one", "read", null), new AgentStepSpec("two", "paper", "one")],
+            ["personal_intelligence.research.read", "personal_intelligence.trading.approve"]);
+        var log = new StopAfterCommit();
+        Assert.Throws<InvalidOperationException>(() => new AgentRuntime(registry).Execute(request, log));
+        var recovered = new AgentRuntime(registry).Execute(request, log);
+
+        Assert.Equal(1, reads);
+        Assert.Equal(0, papers);
+        Assert.Equal(AgentTaskStatus.ReconciliationRequired, recovered.Status);
+        Assert.Equal(ToolStepStatus.Succeeded, recovered.Steps[0].Status);
+        Assert.Equal(ToolStepStatus.Uncertain, recovered.Steps[1].Status);
+        Assert.Contains("not safe to repeat", recovered.Error, StringComparison.Ordinal);
+        var again = new AgentRuntime(registry).Execute(request, log);
+        Assert.True(again.Replayed);
+        Assert.Equal(0, papers);
+    }
+
+    [Fact]
     public void Tool_failure_stops_later_steps_and_keeps_the_error()
     {
         var later = 0;
@@ -199,6 +266,26 @@ public sealed class AgentRuntimeTests
             permissions,
             plan,
             approval);
+
+    private sealed class StopAfterCommit : IAgentRunLog
+    {
+        private readonly MemoryAgentRunLog _inner = new();
+        private bool _armed = true;
+
+        public AgentTaskReceipt? Find(string taskKey) => _inner.Find(taskKey);
+
+        public AgentTaskReceipt? Claim(AgentTaskReceipt receipt) => _inner.Claim(receipt);
+
+        public void Remember(AgentTaskReceipt receipt)
+        {
+            _inner.Remember(receipt);
+            if (_armed && receipt.Status == AgentTaskStatus.Running && receipt.Steps.Count >= 1)
+            {
+                _armed = false;
+                throw new InvalidOperationException("crash after the persisted step");
+            }
+        }
+    }
 }
 
 public sealed class AgentRuntimeWorkflowTests : IAsyncLifetime

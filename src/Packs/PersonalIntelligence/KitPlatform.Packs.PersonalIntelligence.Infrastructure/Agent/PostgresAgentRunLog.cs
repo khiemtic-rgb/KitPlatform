@@ -50,16 +50,7 @@ public sealed class PostgresAgentRunLog : IAgentRunLog, IDisposable
         _connection = Open();
         try
         {
-            _lockKey = LockKey(receipt.TenantId, receipt.TaskKey);
-            using (var timeout = new NpgsqlCommand("SET lock_timeout = '15s'", _connection))
-                timeout.ExecuteNonQuery();
-            using (var lockCommand = new NpgsqlCommand("SELECT pg_advisory_lock(@Key)", _connection))
-            {
-                lockCommand.Parameters.AddWithValue("Key", _lockKey);
-                lockCommand.ExecuteNonQuery();
-            }
-
-            _locked = true;
+            AcquireLock(LockKey(receipt.TenantId, receipt.TaskKey));
             var existing = Read(_connection, receipt.TaskKey);
             if (existing is not null)
             {
@@ -86,6 +77,39 @@ public sealed class PostgresAgentRunLog : IAgentRunLog, IDisposable
             if (ReleasesLock(receipt.Status))
                 Release();
             return null;
+        }
+        catch
+        {
+            Release();
+            throw;
+        }
+    }
+
+    public AgentTaskReceipt? Adopt(AgentTaskReceipt receipt)
+    {
+        if (_connection is not null)
+            throw new InvalidOperationException("This log is already holding a task.");
+        RequireSameTenant(receipt.TenantId);
+        _connection = Open();
+        try
+        {
+            AcquireLock(LockKey(receipt.TenantId, receipt.TaskKey));
+            var existing = Read(_connection, receipt.TaskKey);
+            if (existing is null)
+            {
+                Release();
+                return null;
+            }
+
+            Reject(existing, receipt);
+            if (existing.Status is not (AgentTaskStatus.Running or AgentTaskStatus.Verified))
+            {
+                Release();
+                return existing;
+            }
+
+            _revision = Revision(_connection, receipt.TaskKey);
+            return existing;
         }
         catch
         {
@@ -227,6 +251,39 @@ public sealed class PostgresAgentRunLog : IAgentRunLog, IDisposable
         };
         command.Parameters.Add(json);
         command.Parameters.AddWithValue("Revision", revision);
+    }
+
+    private void AcquireLock(long key)
+    {
+        _lockKey = key;
+        using (var timeout = new NpgsqlCommand("SET lock_timeout = '15s'", _connection))
+            timeout.ExecuteNonQuery();
+        try
+        {
+            using var lockCommand = new NpgsqlCommand("SELECT pg_advisory_lock(@Key)", _connection);
+            lockCommand.Parameters.AddWithValue("Key", key);
+            lockCommand.ExecuteNonQuery();
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.LockNotAvailable)
+        {
+            throw new AgentTaskBusyException();
+        }
+
+        _locked = true;
+    }
+
+    private int Revision(NpgsqlConnection connection, string taskKey)
+    {
+        using var command = new NpgsqlCommand(
+            """
+            SELECT revision
+            FROM pack_personal_intelligence.pi_agent_task
+            WHERE tenant_id = @TenantId AND task_key = @TaskKey
+            """,
+            connection);
+        command.Parameters.AddWithValue("TenantId", _tenantId);
+        command.Parameters.AddWithValue("TaskKey", taskKey);
+        return Convert.ToInt32(command.ExecuteScalar());
     }
 
     private static long LockKey(Guid tenantId, string taskKey)
