@@ -148,8 +148,7 @@ catch (Exception ex) when (
 builder.Services.AddContentPack(builder.Configuration);
 builder.Services.AddPersonalIntelligenceResearch();
 builder.Services.AddAgentTasks(builder.Configuration);
-if (builder.Configuration.GetValue("PersonalIntelligence:ExposeExchangeRead", false))
-    builder.Services.AddPersonalIntelligencePack(startBackfillWorker: false);
+builder.Services.AddPersonalIntelligencePack(startBackfillWorker: false);
 builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions>(
     builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions.SectionName));
 builder.Services.AddLocalOsPack();
