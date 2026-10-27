@@ -48,6 +48,7 @@ public sealed class AgentTaskCommand
     public string? ExecutionMode { get; set; }
     public Guid? ApprovalDecisionId { get; set; }
     public Guid? RequestedTenantId { get; set; }
+    public List<CompletionAsk>? Asks { get; set; }
 }
 
 public sealed record AgentTaskView(
@@ -101,7 +102,8 @@ public sealed record AgentTaskGoalView(
     IReadOnlyList<string> Inferences,
     IReadOnlyList<string> Assumptions,
     IReadOnlyList<string> Missing,
-    IReadOnlyList<string> Limits);
+    IReadOnlyList<string> Limits,
+    string Understanding = "");
 
 public sealed class AgentApprovalCommand
 {
@@ -149,6 +151,8 @@ public sealed class AgentTaskService
     {
         if (string.Equals(command.Kind, EvidenceReviewRuntime.Kind, StringComparison.Ordinal))
             return RunEvidence(user, command);
+        if (string.Equals(command.Kind, GoalTaskRuntime.Kind, StringComparison.Ordinal))
+            return RunGoal(user, command);
         return RunTrading(user, command);
     }
 
@@ -158,6 +162,10 @@ public sealed class AgentTaskService
         var taskKey = RequireText(command.TaskKey, "A task key is required.");
         var objective = RequireText(command.Objective, "An objective is required.");
         var doneWhen = RequireText(command.DoneWhen, "A completion criterion is required.");
+        if (command.Asks is { Count: > 0 })
+            throw new InvalidOperationException("A trading-paper task does not accept a structured completion condition.");
+        if (!CanTrade(user))
+            throw new UnauthorizedAccessException("Trading paper requires the personal_intelligence.trading.run permission.");
         if (!string.Equals(command.Kind, TradingPaperKind, StringComparison.Ordinal))
             throw new InvalidOperationException("This host accepts only the trading-paper task.");
         var mode = NormalizeMode(command.ExecutionMode);
@@ -212,6 +220,10 @@ public sealed class AgentTaskService
         var taskKey = RequireText(command.TaskKey, "A task key is required.");
         var objective = RequireText(command.Objective, "An objective is required.");
         var doneWhen = RequireText(command.DoneWhen, "A completion criterion is required.");
+        if (command.Asks is { Count: > 0 })
+            throw new InvalidOperationException("Evidence review does not accept a structured completion condition.");
+        if (!CanReadEvidence(user))
+            throw new UnauthorizedAccessException("Evidence review requires the personal_intelligence.evidence.read permission.");
         if (string.Equals(command.ExecutionMode, "live", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Evidence review does not accept live mode.");
         if (command.ApprovalDecisionId is Guid)
@@ -232,6 +244,44 @@ public sealed class AgentTaskService
             true);
         using var log = OpenTasks(tenantId);
         var result = new EvidenceReviewRuntime().Execute(request, new SqlEvidenceLedger(OpenEvidence()), log);
+        return ToView(result.Task, user);
+    }
+
+    public AgentTaskView RunGoal(ClaimsPrincipal user, AgentTaskCommand command)
+    {
+        var tenantId = CallerTenant(user, command.RequestedTenantId);
+        var taskKey = RequireText(command.TaskKey, "A task key is required.");
+        var objective = RequireText(command.Objective, "An objective is required.");
+        var doneWhen = RequireText(command.DoneWhen, "A completion criterion is required.");
+        RequireAsks(command.Asks);
+        if (!CanReadEvidence(user))
+            throw new UnauthorizedAccessException("A goal task requires the personal_intelligence.evidence.read permission.");
+        if (string.Equals(command.ExecutionMode, "live", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("A goal task does not accept live mode.");
+        if (command.ApprovalDecisionId is Guid)
+            throw new InvalidOperationException("A goal task does not accept an approval decision.");
+        var asks = command.Asks ?? [];
+        var understood = GoalTaskRuntime.Understand(objective, doneWhen, asks);
+        var request = new AgentRequest(
+            taskKey,
+            PayloadHash(GoalTaskRuntime.Kind, objective, doneWhen, ExecutionMode.Paper, null, RequestUnderstanding.Canonical(asks)),
+            tenantId,
+            objective,
+            doneWhen,
+            Grants(user),
+            understood.Plan,
+            null,
+            command.RequestedTenantId,
+            nameof(ExecutionMode.Paper),
+            null,
+            null,
+            true,
+            asks);
+        using var log = OpenTasks(tenantId);
+        IEvidenceLedger ledger = understood.State == UnderstandingState.ReadyToPlan
+            ? new SqlEvidenceLedger(OpenEvidence())
+            : new RefusingEvidenceLedger();
+        var result = new GoalTaskRuntime().Execute(request, ledger, log);
         return ToView(result.Task, user);
     }
 
@@ -392,12 +442,39 @@ public sealed class AgentTaskService
             granted.Add(TradingResearchRuntime.RunPermission);
         if (admin || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.ApprovePermission))
             granted.Add(TradingResearchRuntime.ApprovePermission);
+        if (admin || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.EvidenceReadPermission))
+            granted.Add(EvidenceReviewRuntime.ReadPermission);
         return granted;
     }
 
-    private static string PayloadHash(string kind, string objective, string doneWhen, ExecutionMode mode, Guid? approvalId)
+    private static bool CanTrade(ClaimsPrincipal user)
+        => user.IsInRole("ADMIN") || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.Permission);
+
+    private static bool CanReadEvidence(ClaimsPrincipal user)
+        => user.IsInRole("ADMIN") || CoreAuthority.HasPermission(user, PersonalIntelligencePolicies.EvidenceReadPermission);
+
+    private static void RequireAsks(IReadOnlyList<CompletionAsk>? asks)
+    {
+        if (asks is null)
+            return;
+        if (asks.Count > 3)
+            throw new InvalidOperationException("A goal task accepts at most three completion conditions.");
+        foreach (var ask in asks)
+        {
+            if ((ask.Id?.Length ?? 0) > 80
+                || (ask.Capability?.Length ?? 0) > 80
+                || (ask.Subject?.Length ?? 0) > 80
+                || (ask.Relation?.Length ?? 0) > 80
+                || (ask.Target?.Length ?? 0) > 80)
+                throw new InvalidOperationException("A completion condition field is too long.");
+        }
+    }
+
+    private static string PayloadHash(string kind, string objective, string doneWhen, ExecutionMode mode, Guid? approvalId, string asks = "")
     {
         var text = string.Join('\n', kind, objective, doneWhen, mode, approvalId?.ToString("D") ?? "");
+        if (asks.Length > 0)
+            text += "\n" + asks;
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -507,7 +584,8 @@ public sealed class AgentTaskService
                     receipt.Goal.Inferences,
                     receipt.Goal.Assumptions,
                     receipt.Goal.Missing,
-                    receipt.Goal.Limits));
+                    receipt.Goal.Limits,
+                    receipt.Goal.Understanding ?? ""));
 
     private static string NextAction(AgentTaskReceipt receipt, ClaimsPrincipal user)
     {
@@ -531,7 +609,7 @@ public sealed class AgentTaskController : ControllerBase
     public AgentTaskController(AgentTaskService tasks) => _tasks = tasks;
 
     [HttpPost]
-    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
+    [Authorize(Policy = PersonalIntelligencePolicies.TaskCreate)]
     [RequirePersonalIntelligenceModule]
     public ActionResult<AgentTaskView> Create([FromBody] AgentTaskCommand command)
     {
@@ -576,7 +654,7 @@ public sealed class AgentTaskController : ControllerBase
     }
 
     [HttpGet("{taskKey}")]
-    [Authorize(Policy = PersonalIntelligencePolicies.ResearchRead)]
+    [Authorize(Policy = PersonalIntelligencePolicies.TaskRead)]
     [RequirePersonalIntelligenceModule]
     public ActionResult<AgentTaskView> Get(string taskKey)
     {

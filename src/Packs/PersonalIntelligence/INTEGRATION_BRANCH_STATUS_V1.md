@@ -329,3 +329,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No production deploy and no new migration. This is not free-form language, not exactly-once, and not a production-readiness claim.
+
+## Goal understanding
+
+A `goal` task plans from structured conditions and the registered `evidence.count` capability. The `doneWhen` sentence is not parsed. `personal_intelligence.evidence.read` is required before `pi_evidence` is opened and is not granted by `personal_intelligence.trading.run`. An unknown capability, a missing subject, or a sentence with no condition does not read and is not marked met. A count that was read but does not satisfy the condition stays `executed-unproven`.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 28 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 243 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No production deploy and no new migration. This is not free-form language, not exactly-once, and not a production-readiness claim.

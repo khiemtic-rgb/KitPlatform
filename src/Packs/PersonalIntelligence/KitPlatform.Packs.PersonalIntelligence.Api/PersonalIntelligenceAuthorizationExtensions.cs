@@ -14,11 +14,14 @@ public static class PersonalIntelligencePolicies
     public const string ExchangeConnect = "PersonalIntelligenceExchangeConnect";
     public const string ExchangeRead = "PersonalIntelligenceExchangeRead";
     public const string ResearchRead = "PersonalIntelligenceResearchRead";
+    public const string TaskCreate = "PersonalIntelligenceTaskCreate";
+    public const string TaskRead = "PersonalIntelligenceTaskRead";
     public const string Permission = "personal_intelligence.trading.run";
     public const string ApprovePermission = "personal_intelligence.trading.approve";
     public const string ExchangeConnectPermission = "personal_intelligence.exchange.connect";
     public const string ExchangeReadPermission = "personal_intelligence.exchange.read";
     public const string ResearchReadPermission = "personal_intelligence.research.read";
+    public const string EvidenceReadPermission = "personal_intelligence.evidence.read";
     public const string ModuleCode = PlatformModuleCodes.PersonalIntelligence;
 }
 
@@ -62,6 +65,23 @@ public static class PersonalIntelligenceAuthorizationExtensions
                 ctx.User.IsInRole("ADMIN")
                 || CoreAuthority.HasPermission(ctx.User, PersonalIntelligencePolicies.ResearchReadPermission)
                 || CoreAuthority.HasPermission(ctx.User, PersonalIntelligencePolicies.Permission));
+        });
+        options.AddPolicy(PersonalIntelligencePolicies.TaskCreate, policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole("ADMIN")
+                || CoreAuthority.HasPermission(ctx.User, PersonalIntelligencePolicies.Permission)
+                || CoreAuthority.HasPermission(ctx.User, PersonalIntelligencePolicies.EvidenceReadPermission));
+        });
+        options.AddPolicy(PersonalIntelligencePolicies.TaskRead, policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            policy.RequireAssertion(ctx =>
+                ctx.User.IsInRole("ADMIN")
+                || CoreAuthority.HasPermission(ctx.User, PersonalIntelligencePolicies.ResearchReadPermission)
+                || CoreAuthority.HasPermission(ctx.User, PersonalIntelligencePolicies.Permission)
+                || CoreAuthority.HasPermission(ctx.User, PersonalIntelligencePolicies.EvidenceReadPermission));
         });
     }
 }

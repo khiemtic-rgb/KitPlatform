@@ -306,7 +306,8 @@ public sealed class PiValidationDatabase : IAsyncLifetime
             INSERT INTO public.permissions (id, permission_code, permission_name, module_name)
             VALUES
                 ('c1111111-1111-1111-1111-111111111111', 'personal_intelligence.trading.run', 'Run trading loop', 'personal_intelligence'),
-                ('c4444444-4444-4444-4444-444444444444', 'personal_intelligence.trading.approve', 'Approve paper execution', 'personal_intelligence')
+                ('c4444444-4444-4444-4444-444444444444', 'personal_intelligence.trading.approve', 'Approve paper execution', 'personal_intelligence'),
+                ('c8888888-8888-8888-8888-888888888888', 'personal_intelligence.evidence.read', 'Read stored evidence', 'personal_intelligence')
             ON CONFLICT (permission_code) DO NOTHING;
 
             INSERT INTO public.roles (id, tenant_id, role_code, role_name)
@@ -314,7 +315,9 @@ public sealed class PiValidationDatabase : IAsyncLifetime
                 ('c2222222-2222-2222-2222-222222222222', @TenantA, 'PI_TRADING', 'PI trading'),
                 ('c3333333-3333-3333-3333-333333333333', @TenantB, 'PI_TRADING', 'PI trading'),
                 ('c5555555-5555-5555-5555-555555555555', @TenantA, 'PI_APPROVE', 'PI paper approval'),
-                ('c6666666-6666-6666-6666-666666666666', @TenantB, 'PI_APPROVE', 'PI paper approval')
+                ('c6666666-6666-6666-6666-666666666666', @TenantB, 'PI_APPROVE', 'PI paper approval'),
+                ('c9999999-9999-9999-9999-999999999999', @TenantA, 'PI_EVIDENCE', 'PI evidence read'),
+                ('caaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', @TenantB, 'PI_EVIDENCE', 'PI evidence read')
             ON CONFLICT (tenant_id, role_code) DO NOTHING;
 
             INSERT INTO public.role_permissions (role_id, permission_id)
@@ -331,10 +334,24 @@ public sealed class PiValidationDatabase : IAsyncLifetime
             WHERE r.role_code = 'PI_APPROVE'
             ON CONFLICT DO NOTHING;
 
+            INSERT INTO public.role_permissions (role_id, permission_id)
+            SELECT r.id, p.id
+            FROM public.roles r
+            JOIN public.permissions p ON p.permission_code = 'personal_intelligence.evidence.read'
+            WHERE r.role_code = 'PI_EVIDENCE'
+            ON CONFLICT DO NOTHING;
+
             INSERT INTO public.user_roles (user_id, role_id)
             SELECT u.id, r.id
             FROM public.users u
             JOIN public.roles r ON r.tenant_id = u.tenant_id AND r.role_code IN ('PI_TRADING', 'PI_APPROVE')
+            WHERE u.id IN (@UserA, @UserB)
+            ON CONFLICT DO NOTHING;
+
+            INSERT INTO public.user_roles (user_id, role_id)
+            SELECT u.id, r.id
+            FROM public.users u
+            JOIN public.roles r ON r.tenant_id = u.tenant_id AND r.role_code = 'PI_EVIDENCE'
             WHERE u.id IN (@UserA, @UserB)
             ON CONFLICT DO NOTHING;
             """,
