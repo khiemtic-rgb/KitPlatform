@@ -367,7 +367,7 @@ public sealed class PostgresAgentTaskTests : IClassFixture<AgentTaskDatabaseFixt
     }
 
     [Fact]
-    public void A_stale_save_does_not_mark_the_task_completed()
+    public void A_stale_save_does_not_complete_and_the_read_is_retried()
     {
         var calls = 0;
         var key = Key();
@@ -397,16 +397,17 @@ public sealed class PostgresAgentTaskTests : IClassFixture<AgentTaskDatabaseFixt
         using var restarted = new PostgresAgentRunLog(_database.ConnectionString, _database.TenantA);
         var stored = restarted.Find(key);
         Assert.Equal(1, calls);
-        Assert.NotEqual(AgentTaskStatus.Completed, stored!.Status);
+        Assert.Equal(AgentTaskStatus.Running, stored!.Status);
+        Assert.NotEqual(AgentTaskStatus.Completed, stored.Status);
         var replayCalls = 0;
         var replay = new AgentRuntime(ReadRegistry(() => replayCalls++)).Execute(request, restarted);
-        Assert.True(replay.Replayed);
-        Assert.NotEqual(AgentTaskStatus.Completed, replay.Status);
-        Assert.Equal(0, replayCalls);
+        Assert.False(replay.Replayed);
+        Assert.Equal(AgentTaskStatus.Completed, replay.Status);
+        Assert.Equal(1, replayCalls);
     }
 
     [Fact]
-    public void Crash_after_the_first_persisted_step_does_not_complete_the_task()
+    public void Crash_after_a_committed_read_step_keeps_that_step_and_runs_only_the_next_read()
     {
         var calls = 0;
         var key = Key();
@@ -424,13 +425,15 @@ public sealed class PostgresAgentTaskTests : IClassFixture<AgentTaskDatabaseFixt
         Assert.NotEqual(AgentTaskStatus.Completed, stored.Status);
         var replayCalls = 0;
         var replay = new AgentRuntime(ReadRegistry(() => replayCalls++)).Execute(request, restarted);
-        Assert.True(replay.Replayed);
-        Assert.Equal(AgentTaskStatus.Running, replay.Status);
-        Assert.Equal(0, replayCalls);
+        Assert.False(replay.Replayed);
+        Assert.Equal(AgentTaskStatus.Completed, replay.Status);
+        Assert.Equal(2, replay.Steps.Count);
+        Assert.Equal(stored.Steps[0].Summary, replay.Steps[0].Summary);
+        Assert.Equal(1, replayCalls);
     }
 
     [Fact]
-    public async Task A_stopped_process_leaves_a_postgres_receipt_that_a_new_log_does_not_complete()
+    public async Task A_stopped_process_keeps_the_committed_read_step_and_recovery_runs_only_the_next_read()
     {
         var key = "process-" + Guid.NewGuid().ToString("N");
         var repo = AgentTaskDatabaseFixture.FindRepo();
@@ -467,9 +470,10 @@ public sealed class PostgresAgentTaskTests : IClassFixture<AgentTaskDatabaseFixt
         Assert.Equal(AgentTaskStatus.Running, stored!.Status);
         Assert.Single(stored.Steps);
         Assert.NotEqual(AgentTaskStatus.Completed, stored.Status);
-        Assert.True(replay.Replayed);
-        Assert.Equal(AgentTaskStatus.Running, replay.Status);
-        Assert.Equal(0, replayCalls);
+        Assert.False(replay.Replayed);
+        Assert.Equal(AgentTaskStatus.Completed, replay.Status);
+        Assert.Equal(2, replay.Steps.Count);
+        Assert.Equal(1, replayCalls);
     }
 
     [Fact]

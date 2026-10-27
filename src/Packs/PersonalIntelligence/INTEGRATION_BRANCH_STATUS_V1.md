@@ -265,3 +265,15 @@ Measured on this tree, with `KIT_PI_TEST_CONNECTION` pointed at `kit_pi_validati
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No worker is registered by `AddAgentTasks`. No live order is sent. `origin/main` is unchanged until the pull request for this commit is merged. Local `main` stays `8c59ceb4`.
+
+## Task recovery
+
+A later POST, not a worker, applies the recovery policy to a `Running` row. Committed steps stay. A missing read step may run again. A missing paper or live step is marked `ReconciliationRequired` and is not called. `GET` only reads the committed receipt. `AwaitingApproval` and `Completed` do not run again. A second caller that finds the advisory lock busy receives 503.
+
+Measured after that policy, on `127.0.0.1:5433` only:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 14 passed, 0 failed. Three of those start separate API processes. One exits after the research tool returns and before commit. The next process does not call it again. One exits after the research step commits. A new process reads `Running`, then continues only the read step to `AwaitingApproval`, with research fill count 2 and `liveAccepted` false. One holds the lock and the other process receives 503 until the holder exits.
+- `KitPlatform.PersonalIntelligence.Tests`: 228 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+`AgentRuntime:AllowCrashHook` is unset in committed configuration. The isolated process tests set it. No production deploy and no migration outside `kit_pi_agent_task`. This is not a production-readiness claim.
