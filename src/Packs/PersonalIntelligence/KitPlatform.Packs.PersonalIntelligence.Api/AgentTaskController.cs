@@ -261,7 +261,7 @@ public sealed class AgentTaskService
             throw new InvalidOperationException("A goal task does not accept live mode.");
         if (command.ApprovalDecisionId is Guid)
             throw new InvalidOperationException("A goal task does not accept an approval decision.");
-        var asks = command.Asks ?? [];
+        IReadOnlyList<CompletionAsk> asks = command.Asks ?? [];
         if (asks.Count > 0 && command.Business is not null)
             throw new InvalidOperationException("A goal task accepts either structured conditions or a business request.");
         RequireBusiness(command.Business);
@@ -276,6 +276,9 @@ public sealed class AgentTaskService
             var interpreted = BusinessUnderstanding.Interpret(objective, doneWhen, command.Business);
             if (interpreted.Understanding.State != UnderstandingState.NotUnderstood || command.Business is not null)
                 return RunCompleteness(user, command, tenantId, taskKey, objective, doneWhen, interpreted);
+            var grounded = CatalogGrounding.Match(objective, doneWhen, GoalTaskRuntime.Catalog);
+            if (grounded is not null)
+                asks = grounded;
         }
 
         var understood = GoalTaskRuntime.Understand(objective, doneWhen, asks);
@@ -765,6 +768,8 @@ public sealed class AgentTaskService
             return "no_registered_capability";
         if (understanding == "not-understood")
             return "state_a_completion_condition";
+        if (understanding == "needs-decision")
+            return "human_decision";
         if (understanding == "unable-to-assess")
             return "cannot_assess_from_stored_rows";
         if (understanding == "executed-unproven")

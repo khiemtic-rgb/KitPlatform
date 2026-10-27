@@ -351,3 +351,23 @@ Measured again on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
 
 No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. A sentence outside the closed lexicon is still not executed. The stored rows still cannot prove that evidence supports a decision.
+
+## Catalog grounding
+
+The goal route can accept a sentence that is not one of the closed business templates. It does not store that sentence. It looks for relation phrases and for subjects, capability ids, and tool names that are already in the catalog. A complete match becomes the same structured condition the goal planner already executes. The client does not supply the plan.
+
+A phrase without a catalog subject is missing data and does not read. A dotted name that is not a catalog id or tool name is a missing capability and does not create a tool. `trading.paper_execute` is in the catalog as an approval-gated action. Naming it sets understanding `needs-decision` and next action `human_decision`. The goal route does not start the paper operation and does not enter `AwaitingApproval`.
+
+The closed completeness, validation, and multi-criteria sentences are still classified by their own interpreters before this match. `Make it good.` still matches nothing.
+
+## What the catalog-grounding tests showed
+
+No model output was scored.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 38 passed, 0 failed. `Is the OBSERVATION count greater than the FACT count?` used `evidence.collect`, cited the live observation and fact counts, and completed. `Is the count greater than the other one?` was `missing-data` and did not collect. `thesis.read` was `missing-capability`. `trading.paper_execute` was `needs-decision`, the step list did not contain that tool, and the paper operation count stayed the same.
+- `KitPlatform.PersonalIntelligence.Tests`: 268 passed, 0 failed. The sentence `Keep at least 2 NOTE rows.` plans `notes.collect` only when `NOTE` is a subject in the catalog given to the matcher. The production catalog leaves that sentence unplanned.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
+
+No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. Generalization here means a new sentence can use a capability the catalog already has. It does not mean an arbitrary business sentence is understood, and it still cannot prove that evidence supports a decision.

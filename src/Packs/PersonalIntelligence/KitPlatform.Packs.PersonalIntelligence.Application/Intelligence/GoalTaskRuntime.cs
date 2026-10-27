@@ -23,8 +23,21 @@ public sealed class GoalTaskRuntime
         new HashSet<string>(StringComparer.Ordinal) { "OBSERVATION", "FACT" },
         new HashSet<string>(StringComparer.Ordinal) { "atLeast", "greaterThan" });
 
+    public static CapabilityDefinition PaperDecision { get; } = new(
+        "trading.paper_execute",
+        "trading.paper_execute",
+        "personal_intelligence.trading.run",
+        ToolEffect.Paper,
+        true,
+        "research_trading.paper_operation",
+        "Naming the paper action does not execute it. A person has to decide through the trading approval gate.",
+        new HashSet<string>(StringComparer.Ordinal),
+        new HashSet<string>(StringComparer.Ordinal));
+
+    public static IReadOnlyList<CapabilityDefinition> Catalog { get; } = [EvidenceCount, PaperDecision];
+
     public static UnderstoodRequest Understand(string objective, string doneWhen, IReadOnlyList<CompletionAsk>? asks)
-        => RequestUnderstanding.Analyze(objective, doneWhen, asks, [EvidenceCount], EvidenceReviewRuntime.AssessTool);
+        => RequestUnderstanding.Analyze(objective, doneWhen, asks, Catalog, EvidenceReviewRuntime.AssessTool);
 
     public GoalTaskResult Execute(AgentRequest request, IEvidenceLedger ledger, IAgentRunLog log)
     {
