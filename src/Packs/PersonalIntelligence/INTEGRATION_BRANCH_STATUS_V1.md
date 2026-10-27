@@ -401,3 +401,15 @@ Measured again on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
 
 No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim.
+
+## Catalog grounding
+
+A goal sentence is planned from the registered capability catalog, not from a stored copy of the sentence. Relation phrases such as "greater than" and "at least" are grammar. The subject and the tool come from the catalog. A subject that exists only in a supplied catalog is planned with that catalog's tool. The same sentence against the production catalog does not create that tool. An unknown dotted capability is not executed. Naming `trading.paper_execute` records that a person must decide and does not start the paper action.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 38 passed, 0 failed. The new sentence `Is the OBSERVATION count greater than the FACT count?` completed from the live counts. `Is the count greater than the other one?` was missing data and did not collect. `thesis.read` was missing capability. `trading.paper_execute` was `needs-decision` with next action `human_decision`, and the paper operation count did not change.
+- `KitPlatform.PersonalIntelligence.Tests`: 268 passed, 0 failed. A `NOTE` subject is planned only when that subject is in the catalog passed to the matcher.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
+
+No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim. A sentence that does not use the catalog subjects and the relation grammar is still not executed.

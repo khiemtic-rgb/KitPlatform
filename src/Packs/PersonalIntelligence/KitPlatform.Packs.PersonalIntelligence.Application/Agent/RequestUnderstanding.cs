@@ -31,6 +31,7 @@ public enum UnderstandingState
     NotUnderstood,
     MissingData,
     MissingCapability,
+    NeedsDecision,
     ReadyToPlan,
 }
 
@@ -59,6 +60,7 @@ public static class RequestUnderstanding
     {
         UnderstandingState.MissingData => "missing-data",
         UnderstandingState.MissingCapability => "missing-capability",
+        UnderstandingState.NeedsDecision => "needs-decision",
         UnderstandingState.ReadyToPlan => "ready-to-plan",
         _ => "not-understood",
     };
@@ -138,6 +140,13 @@ public static class RequestUnderstanding
                 continue;
             }
 
+            if (definition.RequiresApproval)
+            {
+                state = Worse(state, UnderstandingState.NeedsDecision);
+                missing.Add($"{definition.Id} requires a human decision and is not executed from this request.");
+                continue;
+            }
+
             if (!definition.Subjects.Contains(subject))
             {
                 state = Worse(state, UnderstandingState.MissingData);
@@ -184,10 +193,11 @@ public static class RequestUnderstanding
             var reason = state switch
             {
                 UnderstandingState.MissingCapability => "The request names a capability that is not registered.",
+                UnderstandingState.NeedsDecision => "The request names a capability that requires a human decision. It is not executed.",
                 UnderstandingState.MissingData => "The request is understood only far enough to see that the subject or target is not available.",
                 _ => "The request does not identify a completion condition this catalog can judge.",
             };
-            return Closed(state, goal, reason, assumptions, missing, capabilities, gaps, risks, permissions, assessTool, $"Record the {Code(state)} gap for: {goal}");
+            return Closed(state, goal, reason, assumptions, missing, capabilities, gaps, risks, permissions, assessTool, $"Record the {Code(state)} gap for: {goal}", state == UnderstandingState.NeedsDecision);
         }
 
         var scope = string.Join("; ", definitions.Select(item => item.Scope).Distinct(StringComparer.Ordinal));
@@ -232,7 +242,8 @@ public static class RequestUnderstanding
         IReadOnlyList<string> risks,
         IReadOnlyList<string> permissions,
         string assessTool,
-        string purpose)
+        string purpose,
+        bool approvalRequired = false)
         => new(
             state,
             goal,
@@ -246,7 +257,7 @@ public static class RequestUnderstanding
             gaps,
             risks,
             permissions,
-            false,
+            approvalRequired,
             [new AgentStepSpec("assess", assessTool, null, purpose)]);
 
     private static UnderstandingState Worse(UnderstandingState current, UnderstandingState next)
@@ -255,6 +266,8 @@ public static class RequestUnderstanding
             return UnderstandingState.NotUnderstood;
         if (next == UnderstandingState.MissingCapability || current == UnderstandingState.MissingCapability)
             return UnderstandingState.MissingCapability;
+        if (next == UnderstandingState.NeedsDecision || current == UnderstandingState.NeedsDecision)
+            return UnderstandingState.NeedsDecision;
         if (next == UnderstandingState.MissingData || current == UnderstandingState.MissingData)
             return UnderstandingState.MissingData;
         return UnderstandingState.ReadyToPlan;

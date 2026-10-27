@@ -714,6 +714,60 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
     }
 
     [Fact]
+    public async Task A_new_sentence_is_planned_from_the_catalog_or_left_unexecuted()
+    {
+        var observations = EvidenceCount("OBSERVATION", AgentTaskApiFixture.TenantA);
+        var facts = EvidenceCount("FACT", AgentTaskApiFixture.TenantA);
+        Assert.True(observations > facts);
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        const string objective = "Review the stored rows.";
+        var compared = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            GoalBody("ground-compare-" + Guid.NewGuid().ToString("N"), "Is the OBSERVATION count greater than the FACT count?", [], objective)));
+        var missing = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            GoalBody("ground-missing-" + Guid.NewGuid().ToString("N"), "Is the count greater than the other one?", [], objective)));
+        var capability = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            GoalBody("ground-capability-" + Guid.NewGuid().ToString("N"), "Use the unregistered capability thesis.read.", [], objective)));
+        var decision = await Read(await client.PostAsJsonAsync(
+            "/api/personal-intelligence/tasks",
+            GoalBody("ground-decision-" + Guid.NewGuid().ToString("N"), "A person must decide before trading.paper_execute.", [], objective)));
+
+        Assert.Equal("Completed", compared.GetProperty("status").GetString());
+        Assert.True(compared.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Equal("proven", compared.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("none", compared.GetProperty("nextAction").GetString());
+        Assert.Contains(compared.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{observations} OBSERVATION", StringComparison.Ordinal));
+        Assert.Contains(compared.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains($"{facts} FACT", StringComparison.Ordinal));
+        Assert.Contains(compared.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "evidence.collect" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.DoesNotContain(compared.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "trading.paper_execute");
+        Assert.False(compared.GetProperty("liveAccepted").GetBoolean());
+
+        Assert.Equal("Failed", missing.GetProperty("status").GetString());
+        Assert.False(missing.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Equal("missing-data", missing.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("provide_the_missing_condition", missing.GetProperty("nextAction").GetString());
+        Assert.DoesNotContain(missing.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString()!.StartsWith("collect", StringComparison.Ordinal));
+
+        Assert.Equal("Failed", capability.GetProperty("status").GetString());
+        Assert.Equal("missing-capability", capability.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("no_registered_capability", capability.GetProperty("nextAction").GetString());
+        Assert.Contains(capability.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString()!.Contains("thesis.read", StringComparison.Ordinal));
+        Assert.DoesNotContain(capability.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "thesis.read");
+
+        Assert.Equal("Failed", decision.GetProperty("status").GetString());
+        Assert.NotEqual("AwaitingApproval", decision.GetProperty("status").GetString());
+        Assert.Equal("needs-decision", decision.GetProperty("goal").GetProperty("understanding").GetString());
+        Assert.Equal("human_decision", decision.GetProperty("nextAction").GetString());
+        Assert.False(decision.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.False(decision.GetProperty("liveAccepted").GetBoolean());
+        Assert.DoesNotContain(decision.GetProperty("steps").EnumerateArray(), step => step.GetProperty("toolName").GetString() == "trading.paper_execute");
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
     public async Task Evidence_permission_is_required_and_does_not_grant_trading()
     {
         var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
