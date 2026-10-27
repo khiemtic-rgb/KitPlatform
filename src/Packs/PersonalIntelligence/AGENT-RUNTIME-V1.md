@@ -303,3 +303,25 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build.
 
 No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. The plan can compose two registered reads. It still cannot conclude that evidence supports a decision, because `pi_evidence` has no `decision_id` and the isolated payloads have no statement.
+
+## Business execution
+
+A failed or denied read is a known result. The executor keeps the task running and continues a later read whose dependencies succeeded. A step that depends on the failed read is stored as failed with error `dependency` and its tool is not called. A later paper or live step is stored as not run and is not called. A rejected live response and an uncertain tool effect still end the run immediately. The first tool error is kept. The task becomes `Failed` after the remaining safe reads finish, so a succeeded independent read does not make the goal met.
+
+If the process stops after the failed read has been stored, the stored prefix may contain that failed read. Recovery continues from the next step. It runs an independent read once. It does not call the failed tool again, and it does not start a paper step that was not committed. Replay of the finished failed task does not call tools.
+
+On the two-capability plan, a FACT count that throws still lets `decision.support-coverage` read, because coverage depends only on discover. The judge depends on the FACT count, so it does not run and does not mark either criterion proven. The receipt keeps the observation count and the coverage counts, names `FACT count` as missing, and says the overall goal was not judged. That failure is a ledger exception in the runtime test. The isolated database reads succeed, so the API scenario remains the earlier one: the comparison can be proven while coverage stays unmet, and the goal stays unmet.
+
+Human approval remains the existing trading approval gate. There is no general request that stops and asks a person to decide. The closed lexicon is unchanged. No model was added.
+
+## What the business-execution tests showed
+
+No model output was scored.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 37 passed, 0 failed. The combined sentence still calls both capabilities on the isolated rows. The comparison can be proven while coverage stays unmet, so the goal stays unmet. Missing data, an unknown criterion, a trading-only caller, tenant B, approval, replay, and reconciliation remain inside this 37.
+- `KitPlatform.PersonalIntelligence.Tests`: 264 passed, 0 failed. A failed read runs an independent read and does not call a later paper tool. A dependent step is not called. Recovery after the failed read is stored runs the independent read once, keeps the original error, and does not call the failed tool again. A FACT read that throws still reads coverage, leaves the judge uncalled, and does not prove the goal. Replay does not read again.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
+
+No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. Independent reads can continue after a failed read. The system still cannot conclude that evidence supports a decision.

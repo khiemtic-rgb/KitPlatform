@@ -502,9 +502,107 @@ public sealed class AgentRuntimeTests
             new MemoryAgentRunLog());
 
         Assert.Equal(AgentTaskStatus.Failed, receipt.Status);
-        Assert.Equal(2, receipt.Steps.Count);
+        Assert.Equal(3, receipt.Steps.Count);
+        Assert.Equal(ToolStepStatus.Failed, receipt.Steps[1].Status);
+        Assert.Equal(ToolStepStatus.Failed, receipt.Steps[2].Status);
+        Assert.Equal("dependency", receipt.Steps[2].Error);
         Assert.Contains("boom", receipt.Error, StringComparison.Ordinal);
         Assert.Equal(0, later);
+    }
+
+    [Fact]
+    public void A_failed_read_still_runs_an_independent_read()
+    {
+        var failed = 0;
+        var independent = 0;
+        var paper = 0;
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("first", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+            ToolResponse.Succeeded("ok", new Dictionary<string, string> { ["verified"] = "true", ["fact"] = "The first read finished." }));
+        registry.Register(new ToolContract("second", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+        {
+            failed++;
+            throw new InvalidOperationException("boom");
+        });
+        registry.Register(new ToolContract("third", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+        {
+            independent++;
+            return ToolResponse.Succeeded("independent", new Dictionary<string, string> { ["verified"] = "true", ["fact"] = "The independent read finished." });
+        });
+        registry.Register(new ToolContract("paper", "personal_intelligence.trading.run", ToolEffect.Paper, false), _ =>
+        {
+            paper++;
+            return ToolResponse.Succeeded("filled", new Dictionary<string, string> { ["verified"] = "true", ["recommendationExecuted"] = "true" });
+        });
+        var log = new MemoryAgentRunLog();
+        var request = Request(
+            [
+                new AgentStepSpec("one", "first", null),
+                new AgentStepSpec("two", "second", "one"),
+                new AgentStepSpec("three", "third", "one"),
+                new AgentStepSpec("four", "paper", "one"),
+            ],
+            ["personal_intelligence.research.read", "personal_intelligence.trading.run"]);
+        var receipt = new AgentRuntime(registry).Execute(request, log);
+        var replay = new AgentRuntime(registry).Execute(request, log);
+
+        Assert.Equal(AgentTaskStatus.Failed, receipt.Status);
+        Assert.Equal(1, failed);
+        Assert.Equal(1, independent);
+        Assert.Equal(0, paper);
+        Assert.Contains("boom", receipt.Error, StringComparison.Ordinal);
+        Assert.Equal(ToolStepStatus.Succeeded, receipt.Steps.Single(step => step.StepId == "three").Status);
+        Assert.Equal("not-run", receipt.Steps.Single(step => step.StepId == "four").Error);
+        Assert.Contains("The independent read finished.", receipt.Goal!.Facts);
+        Assert.False(receipt.Goal.Met);
+        Assert.False(receipt.RecommendationExecuted);
+        Assert.False(receipt.LiveAccepted);
+        Assert.True(replay.Replayed);
+        Assert.Equal(1, independent);
+        Assert.Equal(0, paper);
+    }
+
+    [Fact]
+    public void Recovery_after_a_failed_read_runs_the_independent_read_once()
+    {
+        var failed = 0;
+        var independent = 0;
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("first", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+            ToolResponse.Succeeded("ok", new Dictionary<string, string> { ["verified"] = "true" }));
+        registry.Register(new ToolContract("second", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+        {
+            failed++;
+            throw new InvalidOperationException("boom");
+        });
+        registry.Register(new ToolContract("third", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+        {
+            independent++;
+            return ToolResponse.Succeeded("independent", new Dictionary<string, string> { ["verified"] = "true", ["fact"] = "The independent read finished." });
+        });
+        var request = Request(
+            [
+                new AgentStepSpec("one", "first", null),
+                new AgentStepSpec("two", "second", "one"),
+                new AgentStepSpec("three", "third", "one"),
+            ],
+            ["personal_intelligence.research.read"]);
+        var log = new StopAfterFailedRead();
+        Assert.Throws<InvalidOperationException>(() => new AgentRuntime(registry).Execute(request, log));
+        var recovered = new AgentRuntime(registry).Execute(request, log);
+        var replay = new AgentRuntime(registry).Execute(request, log);
+
+        Assert.Equal(1, failed);
+        Assert.Equal(1, independent);
+        Assert.Equal(AgentTaskStatus.Failed, recovered.Status);
+        Assert.False(recovered.Replayed);
+        Assert.Contains("boom", recovered.Error, StringComparison.Ordinal);
+        Assert.Equal(ToolStepStatus.Succeeded, recovered.Steps.Single(step => step.StepId == "three").Status);
+        Assert.Contains("The independent read finished.", recovered.Goal!.Facts);
+        Assert.False(recovered.Goal.Met);
+        Assert.True(replay.Replayed);
+        Assert.Equal(1, failed);
+        Assert.Equal(1, independent);
     }
 
     [Fact]
@@ -541,6 +639,26 @@ public sealed class AgentRuntimeTests
             plan,
             approval,
             VerifyGoal: verifyGoal);
+
+    private sealed class StopAfterFailedRead : IAgentRunLog
+    {
+        private readonly MemoryAgentRunLog _inner = new();
+        private bool _armed = true;
+
+        public AgentTaskReceipt? Find(string taskKey) => _inner.Find(taskKey);
+
+        public AgentTaskReceipt? Claim(AgentTaskReceipt receipt) => _inner.Claim(receipt);
+
+        public void Remember(AgentTaskReceipt receipt)
+        {
+            _inner.Remember(receipt);
+            if (_armed && receipt.Status == AgentTaskStatus.Running && receipt.Steps.Any(step => step.Status == ToolStepStatus.Failed))
+            {
+                _armed = false;
+                throw new InvalidOperationException("crash after the failed read was stored");
+            }
+        }
+    }
 
     private sealed class StopAfterCommit : IAgentRunLog
     {

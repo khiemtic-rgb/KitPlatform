@@ -377,3 +377,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build.
 
 No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim.
+
+## Business execution
+
+A failed or denied read no longer stops an independent read whose own dependency already succeeded. A step that depends on the failed read is recorded and not called. A later paper step is not started. A rejected live step and an uncertain paper effect still stop the plan. After the failed read is stored, recovery runs the independent read once and does not call the failed tool again. The goal stays unmet unless every required criterion is proven.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 37 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 264 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build. Pre-existing `NU1903` and `CS8602` warnings remain.
+
+No production deploy and no new migration. This is not open language, not exactly-once, and not a production-readiness claim. The isolated rows still do not prove that evidence supports a decision.
