@@ -305,3 +305,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No production deploy and no new migration. This is not exactly-once and not a production-readiness claim.
+
+## Product capability
+
+A trading-paper task now carries the objective, the completion text, a plan whose steps name their purpose, and a goal report. `Completed` requires `goalMet=true` from a succeeded step. An unmet or unprovable goal stays `Failed` or `AwaitingApproval` and does not claim `goal.met`. Profit, percent, win rate, and `lợi nhuận` are not invented; paper execution is not called. The paper operation is still the only basis for `paper_executed`. `LiveAccepted` stays false. Trading rules stay in the research host.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 22 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 234 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No production deploy and no new migration. This is not exactly-once and not a production-readiness claim.

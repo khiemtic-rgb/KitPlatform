@@ -403,7 +403,14 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = decision }));
         var other = await client.PostAsJsonAsync("/api/personal-intelligence/tasks/" + key + "/approval", new { approvalDecisionId = Guid.NewGuid() });
 
+        Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "research" && step.GetProperty("purpose").GetString()!.Contains("Continue this paper task.", StringComparison.Ordinal));
+        Assert.Equal("Continue this paper task.", created.GetProperty("objective").GetString());
         Assert.Equal("Completed", continued.GetProperty("status").GetString());
+        Assert.True(continued.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Empty(continued.GetProperty("goal").GetProperty("missing").EnumerateArray());
+        Assert.Contains(continued.GetProperty("goal").GetProperty("facts").EnumerateArray(), fact => fact.GetString()!.Contains("not an approved paper order", StringComparison.Ordinal));
+        Assert.True(replay.GetProperty("goal").GetProperty("met").GetBoolean());
         Assert.Equal("paper_executed", continued.GetProperty("outcome").GetString());
         Assert.Equal("none", continued.GetProperty("nextAction").GetString());
         Assert.True(continued.GetProperty("recommendationExecuted").GetBoolean());
@@ -463,6 +470,34 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
                 Parameters = { new("Settings", saved), new("Id", AgentTaskApiFixture.TenantB) },
             }.ExecuteNonQueryAsync();
         }
+    }
+
+    [Fact]
+    public async Task An_unprovable_goal_is_not_completed_and_does_not_execute()
+    {
+        var key = "unproved-" + Guid.NewGuid().ToString("N");
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var criterion = "Profit is at least 10 percent.";
+        var created = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Research the paper session.", doneWhen: criterion)));
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Research the paper session.", doneWhen: criterion)));
+
+        Assert.Equal("Failed", created.GetProperty("status").GetString());
+        Assert.NotEqual("Completed", created.GetProperty("status").GetString());
+        Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.False(created.GetProperty("recommendationExecuted").GetBoolean());
+        Assert.False(created.GetProperty("liveAccepted").GetBoolean());
+        Assert.Equal(criterion, created.GetProperty("doneWhen").GetString());
+        Assert.Contains(created.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == criterion);
+        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains("workflow-poc", StringComparison.Ordinal));
+        Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "assess" && step.GetProperty("status").GetString() == "Failed");
+        Assert.DoesNotContain(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "execute" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.Equal("none", created.GetProperty("nextAction").GetString());
+        var paperKey = created.GetProperty("result").TryGetProperty("paperOperationKey", out var paper) ? paper : default;
+        Assert.True(paperKey.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
+        Assert.True(replay.GetProperty("replayed").GetBoolean());
+        Assert.False(replay.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
     }
 
     [Fact]
@@ -682,12 +717,12 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         return client;
     }
 
-    private static object Body(string key, string objective, Guid? approval = null, string? mode = null)
+    private static object Body(string key, string objective, Guid? approval = null, string? mode = null, string? doneWhen = null)
         => new
         {
             taskKey = key,
             objective,
-            doneWhen = "The receipt names the outcome and does not claim a live order.",
+            doneWhen = doneWhen ?? "The receipt names the outcome and does not claim a live order.",
             kind = "trading-paper",
             executionMode = mode,
             approvalDecisionId = approval,

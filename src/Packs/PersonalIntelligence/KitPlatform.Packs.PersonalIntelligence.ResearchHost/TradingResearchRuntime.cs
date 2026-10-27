@@ -25,19 +25,41 @@ public sealed class TradingResearchRuntime
 {
     public const string ResearchTool = "research.session";
     public const string RecommendTool = "trading.recommend";
+    public const string AssessTool = "trading.assess";
     public const string ExecuteTool = "trading.paper_execute";
     public const string RecordTool = "runtime.record";
     public const string ResearchPermission = "personal_intelligence.research.read";
     public const string RunPermission = "personal_intelligence.trading.run";
     public const string ApprovePermission = "personal_intelligence.trading.approve";
+    public const string Scope = "trading-paper; source workflow-poc; no live orders";
 
-    public static IReadOnlyList<AgentStepSpec> Plan { get; } =
-    [
-        new("research", ResearchTool, null),
-        new("recommend", RecommendTool, "research"),
-        new("execute", ExecuteTool, "recommend"),
-        new("record", RecordTool, "recommend"),
-    ];
+    public static IReadOnlyList<AgentStepSpec> Plan { get; } = PlanFor(
+        "Record a paper recommendation.",
+        "The receipt names the outcome and does not claim a live order.");
+
+    public static IReadOnlyList<AgentStepSpec> PlanFor(string objective, string doneWhen)
+    {
+        var goal = OneLine(objective, "the trading objective");
+        var criterion = OneLine(doneWhen, "the completion condition");
+        return
+        [
+            new("research", ResearchTool, null, $"Collect the permitted research session for: {goal}"),
+            new("recommend", RecommendTool, "research", "Infer a paper recommendation from that session. A recommendation is not an execution."),
+            new("assess", AssessTool, "recommend", $"Check whether this completion condition can be verified: {criterion}"),
+            new("execute", ExecuteTool, "assess", "Record one task-scoped paper operation only after approval."),
+            new("record", RecordTool, "recommend", "Store the research snapshot as historical evidence."),
+        ];
+    }
+
+    public static bool CannotProve(string text)
+    {
+        var value = text.ToLowerInvariant();
+        return value.Contains("profit", StringComparison.Ordinal)
+            || value.Contains("lợi nhuận", StringComparison.Ordinal)
+            || value.Contains("win rate", StringComparison.Ordinal)
+            || value.Contains("percent", StringComparison.Ordinal)
+            || value.Contains('%');
+    }
 
     public static readonly DateTimeOffset FixedPaperRecordedAt = DateTimeOffset.Parse("2031-06-02T06:00:00Z");
 
@@ -98,6 +120,9 @@ public sealed class TradingResearchRuntime
             new ToolContract(RecommendTool, RunPermission, ToolEffect.Read, false),
             call => Recommend(request, state, calls, call));
         registry.Register(
+            new ToolContract(AssessTool, RunPermission, ToolEffect.Read, false),
+            call => Assess(request, state, call));
+        registry.Register(
             new ToolContract(ExecuteTool, ApprovePermission, ToolEffect.Paper, true),
             call => Execute(request, state, calls, call));
         registry.Register(
@@ -146,11 +171,50 @@ public sealed class TradingResearchRuntime
             });
     }
 
+    private static ToolResponse Assess(TradingResearchRequest request, RunState state, ToolCall call)
+    {
+        if (!TryLoadRecommendation(request, state, call, out var failure) || state.Report is null || state.Recommendation is null)
+            return failure;
+        var outputs = EvidenceOutputs(request, state);
+        var missing = new List<string>();
+        if (CannotProve(request.Task.Objective))
+            missing.Add(request.Task.Objective);
+        if (CannotProve(request.Task.DoneWhen) && !missing.Contains(request.Task.DoneWhen, StringComparer.Ordinal))
+            missing.Add(request.Task.DoneWhen);
+        if (state.Report.Snapshot.Fills.Count == 0 || string.IsNullOrWhiteSpace(state.Report.SessionKey))
+            missing.Add("research fills from the permitted session");
+        if (missing.Count > 0)
+        {
+            outputs["goalMet"] = "false";
+            outputs["goalReason"] = "The completion condition asks for a result the permitted evidence cannot prove.";
+            outputs["missing"] = string.Join('\n', missing);
+            return ToolResponse.Stop(ToolStepStatus.Failed, outputs["goalReason"], outputs);
+        }
+
+        outputs["verified"] = "true";
+        outputs["goalMet"] = "false";
+        outputs["goalReason"] = "Research evidence is present. The goal is met only when an approved paper operation matches this task.";
+        outputs["evidence"] = state.Report.SessionKey;
+        outputs["researchFillCount"] = state.Report.Snapshot.Fills.Count.ToString(CultureInfo.InvariantCulture);
+        return ToolResponse.Succeeded("The completion condition can be checked from the research session.", outputs);
+    }
+
     private static ToolResponse Execute(TradingResearchRequest request, RunState state, CallCount calls, ToolCall call)
     {
         calls.Execute++;
         if (request.RequestedProposal.Mode == ExecutionMode.Live)
-            return ToolResponse.Stop(ToolStepStatus.Rejected, "Live execution is outside Agent Runtime V1.");
+        {
+            return ToolResponse.Stop(
+                ToolStepStatus.Rejected,
+                "Live execution is outside Agent Runtime V1.",
+                new Dictionary<string, string>
+                {
+                    ["goalMet"] = "false",
+                    ["goalReason"] = "Live execution was rejected. No live order was sent.",
+                    ["scope"] = Scope,
+                    ["limit"] = "Live orders are not sent.",
+                });
+        }
         if ((state.Recommendation is null || state.PaperVerdict is null) && !TryLoadRecommendation(request, state, call, out _))
             return ToolResponse.Stop(ToolStepStatus.Failed, "There is no paper recommendation to execute.");
         if (state.Recommendation is null || state.PaperVerdict is null)
@@ -191,6 +255,11 @@ public sealed class TradingResearchRuntime
             ["recommendationExecuted"] = "true",
             ["outcome"] = "paper_executed",
             ["paperOperationKey"] = stored.OperationKey,
+            ["goalMet"] = "true",
+            ["goalReason"] = "An approved paper operation matches this task, and no live order was sent.",
+            ["scope"] = Scope,
+            ["fact"] = $"Paper operation {stored.OperationKey} is paper_filled for this task hash.",
+            ["limit"] = "Live orders are not sent.",
         };
         if (!string.IsNullOrWhiteSpace(sessionKey))
             outputs["evidence"] = sessionKey;
@@ -236,6 +305,38 @@ public sealed class TradingResearchRuntime
                 ["recommendationExecuted"] = paper.Executed ? "true" : "false",
                 ["evidence"] = state.Report.SessionKey,
             });
+    }
+
+    private static Dictionary<string, string> EvidenceOutputs(TradingResearchRequest request, RunState state)
+    {
+        var report = state.Report!;
+        var recommendation = state.Recommendation!;
+        var proposal = recommendation.Proposal;
+        var assumptions = new List<string>(request.Unknowns)
+        {
+            "The workflow-poc candles are the permitted research fixture, not a live market.",
+        };
+        return new Dictionary<string, string>
+        {
+            ["scope"] = Scope,
+            ["fact"] = string.Join('\n',
+                $"Research session {report.SessionKey} contains {report.Snapshot.Fills.Count.ToString(CultureInfo.InvariantCulture)} fills from source workflow-poc.",
+                "Those fills are observations in the research ledger, not an approved paper order."),
+            ["inference"] = string.Join('\n',
+                recommendation.Rationale,
+                $"{proposal.Symbol} {proposal.Side} is the paper option. It is not an execution.",
+                $"The recommendation kind is {recommendation.Kind} and its autonomy is {recommendation.Autonomy}."),
+            ["assumption"] = string.Join('\n', assumptions),
+            ["limit"] = string.Join('\n',
+                "Live orders are not sent.",
+                "Only a task-scoped paper operation can count as paper execution."),
+        };
+    }
+
+    private static string OneLine(string text, string fallback)
+    {
+        var value = string.IsNullOrWhiteSpace(text) ? fallback : text.Replace('\r', ' ').Replace('\n', ' ').Trim();
+        return value.Length <= 180 ? value : value[..180];
     }
 
     private static bool TryLoadRecommendation(TradingResearchRequest request, RunState state, ToolCall call, out ToolResponse failure)

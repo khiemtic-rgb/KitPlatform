@@ -32,7 +32,7 @@ public enum ToolStepStatus
     Uncertain,
 }
 
-public sealed record AgentStepSpec(string StepId, string ToolName, string? DependsOn);
+public sealed record AgentStepSpec(string StepId, string ToolName, string? DependsOn, string? Purpose = null);
 
 public sealed record AgentRequest(
     string TaskKey,
@@ -46,7 +46,8 @@ public sealed record AgentRequest(
     Guid? RequestedTenantId = null,
     string? ExecutionMode = null,
     IReadOnlyList<TaskDecisionRecord>? Decisions = null,
-    DateTimeOffset? ApprovedAt = null);
+    DateTimeOffset? ApprovedAt = null,
+    bool VerifyGoal = false);
 
 public sealed record ToolContract(
     string Name,
@@ -65,8 +66,8 @@ public sealed record ToolResponse(
     public static ToolResponse Succeeded(string summary, IReadOnlyDictionary<string, string> outputs)
         => new(ToolStepStatus.Succeeded, summary, outputs, null);
 
-    public static ToolResponse Stop(ToolStepStatus status, string error)
-        => new(status, error, new Dictionary<string, string>(), error);
+    public static ToolResponse Stop(ToolStepStatus status, string error, IReadOnlyDictionary<string, string>? outputs = null)
+        => new(status, error, outputs ?? new Dictionary<string, string>(), error);
 
     public static ToolResponse Uncertain(string error)
         => new(ToolStepStatus.Uncertain, error, new Dictionary<string, string>(), error);
@@ -102,7 +103,21 @@ public sealed record AgentTaskReceipt(
     DateTimeOffset? ApprovedAt = null,
     string? ExecutionMode = null,
     IReadOnlyList<TaskDecisionRecord>? Decisions = null,
-    TaskResultLink? Result = null);
+    TaskResultLink? Result = null,
+    TaskGoalReport? Goal = null);
+
+/// <summary>
+/// Whether the received goal was met. Step completion does not set <see cref="Met"/>.
+/// </summary>
+public sealed record TaskGoalReport(
+    string Scope,
+    bool Met,
+    string Reason,
+    IReadOnlyList<string> Facts,
+    IReadOnlyList<string> Inferences,
+    IReadOnlyList<string> Assumptions,
+    IReadOnlyList<string> Missing,
+    IReadOnlyList<string> Limits);
 
 /// <summary>
 /// Copy of the task outcome stored beside a research snapshot. It is not a second ledger.
@@ -395,8 +410,14 @@ public sealed class AgentRuntime
             throw new AgentRunConflictException();
         if (adopted.Status == AgentTaskStatus.Verified)
         {
-            var completed = AgentTaskTransitions.Move(AgentTaskStatus.Verified, AgentTaskStatus.Completed);
-            return Save(log, adopted with { Status = completed, Replayed = false });
+            var (next, failure) = DecideVerified(request, adopted.Steps, adopted.Error);
+            return Save(log, adopted with
+            {
+                Status = next,
+                Error = failure,
+                Replayed = false,
+                Goal = GoalOf(adopted.Steps, next) ?? adopted.Goal,
+            });
         }
 
         if (adopted.Status != AgentTaskStatus.Running)
@@ -494,18 +515,19 @@ public sealed class AgentRuntime
                 return terminal;
         }
 
+        string? approvalError = null;
         if (records.Any(row => row.Status == ToolStepStatus.Blocked))
             status = AgentTaskTransitions.Move(status, AgentTaskStatus.AwaitingApproval);
         else if (records.All(row => row.Status == ToolStepStatus.Succeeded))
         {
             status = AgentTaskTransitions.Move(status, AgentTaskStatus.Verified);
             Save(log, Build(approved, status, records, outputs, null, false));
-            status = AgentTaskTransitions.Move(status, AgentTaskStatus.Completed);
+            (status, approvalError) = DecideVerified(approved, records, null);
         }
         else
             status = AgentTaskTransitions.Move(status, AgentTaskStatus.Failed);
 
-        return Save(log, Build(approved, status, records, outputs, null, false));
+        return Save(log, Build(approved, status, records, outputs, approvalError, false));
     }
 
     public AgentTaskReceipt RecordReconciliation(
@@ -635,7 +657,7 @@ public sealed class AgentRuntime
         {
             status = AgentTaskTransitions.Move(status, AgentTaskStatus.Verified);
             Save(log, Build(request, status, records, outputs, error, false));
-            status = AgentTaskTransitions.Move(status, AgentTaskStatus.Completed);
+            (status, error) = DecideVerified(request, records, error);
         }
 
         if (status == AgentTaskStatus.Completed && records.Any(row => row.Status != ToolStepStatus.Succeeded))
@@ -885,7 +907,97 @@ public sealed class AgentRuntime
             approved ? request.ApprovedAt : null,
             request.ExecutionMode,
             request.Decisions,
-            link);
+            link,
+            GoalOf(steps, status));
+    }
+
+    private static (AgentTaskStatus Status, string? Error) DecideVerified(
+        AgentRequest request,
+        IReadOnlyList<AgentStepRecord> steps,
+        string? error)
+    {
+        if (request.VerifyGoal && !GoalMet(steps))
+            return (AgentTaskTransitions.Move(AgentTaskStatus.Verified, AgentTaskStatus.Failed), GoalReason(steps) ?? "The business goal was not verified.");
+        return (AgentTaskTransitions.Move(AgentTaskStatus.Verified, AgentTaskStatus.Completed), error);
+    }
+
+    private static bool GoalMet(IReadOnlyList<AgentStepRecord> steps)
+    {
+        string? met = null;
+        foreach (var step in steps)
+        {
+            if (step.Status != ToolStepStatus.Succeeded || step.Outputs is null)
+                continue;
+            if (step.Outputs.TryGetValue("goalMet", out var value))
+                met = value;
+        }
+
+        return string.Equals(met, "true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? GoalReason(IReadOnlyList<AgentStepRecord> steps)
+    {
+        string? reason = null;
+        foreach (var step in steps)
+        {
+            if (step.Outputs is not null && step.Outputs.TryGetValue("goalReason", out var value) && !string.IsNullOrWhiteSpace(value))
+                reason = value;
+        }
+
+        return reason;
+    }
+
+    private static TaskGoalReport? GoalOf(IReadOnlyList<AgentStepRecord> steps, AgentTaskStatus status)
+    {
+        string? scope = null;
+        string? met = null;
+        string? reason = null;
+        var facts = new List<string>();
+        var inferences = new List<string>();
+        var assumptions = new List<string>();
+        var missing = new List<string>();
+        var limits = new List<string>();
+        foreach (var step in steps)
+        {
+            if (step.Outputs is null)
+                continue;
+            Take(step.Outputs, "fact", facts);
+            Take(step.Outputs, "inference", inferences);
+            Take(step.Outputs, "assumption", assumptions);
+            Take(step.Outputs, "missing", missing);
+            Take(step.Outputs, "limit", limits);
+            if (step.Outputs.TryGetValue("scope", out var declared) && !string.IsNullOrWhiteSpace(declared))
+                scope = declared;
+            if (step.Outputs.TryGetValue("goalReason", out var why) && !string.IsNullOrWhiteSpace(why))
+                reason = why;
+            if (step.Status == ToolStepStatus.Succeeded && step.Outputs.TryGetValue("goalMet", out var flag))
+                met = flag;
+            else if (step.Status == ToolStepStatus.Failed && step.Outputs.TryGetValue("goalMet", out var failed))
+                met = failed;
+        }
+
+        if (scope is null && met is null && reason is null && facts.Count == 0 && inferences.Count == 0 && assumptions.Count == 0 && missing.Count == 0 && limits.Count == 0)
+            return null;
+        return new TaskGoalReport(
+            scope ?? "unspecified",
+            status == AgentTaskStatus.Completed && string.Equals(met, "true", StringComparison.OrdinalIgnoreCase),
+            reason ?? "",
+            facts,
+            inferences,
+            assumptions,
+            missing,
+            limits);
+    }
+
+    private static void Take(IReadOnlyDictionary<string, string> outputs, string key, List<string> target)
+    {
+        if (!outputs.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+            return;
+        foreach (var line in value.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!target.Contains(line, StringComparer.Ordinal))
+                target.Add(line);
+        }
     }
 
     private static TaskResultLink? ResultOf(AgentRequest request, IReadOnlyList<AgentStepRecord> steps, IReadOnlyList<string> evidence)

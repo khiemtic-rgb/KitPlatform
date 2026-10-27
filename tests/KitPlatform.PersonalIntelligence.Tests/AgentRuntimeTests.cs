@@ -81,6 +81,96 @@ public sealed class AgentRuntimeTests
     }
 
     [Fact]
+    public void Finished_steps_do_not_complete_when_the_goal_is_unmet()
+    {
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("read", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+            ToolResponse.Succeeded("ok", new Dictionary<string, string>
+            {
+                ["verified"] = "true",
+                ["goalMet"] = "false",
+                ["goalReason"] = "The evidence does not meet the goal.",
+                ["missing"] = "profit",
+                ["fact"] = "The source row was read.",
+            }));
+        var receipt = new AgentRuntime(registry).Execute(
+            Request([new AgentStepSpec("one", "read", null, "Check the goal.")], ["personal_intelligence.research.read"], verifyGoal: true),
+            new MemoryAgentRunLog());
+
+        Assert.Equal(AgentTaskStatus.Failed, receipt.Status);
+        Assert.NotEqual(AgentTaskStatus.Completed, receipt.Status);
+        Assert.Equal("The evidence does not meet the goal.", receipt.Error);
+        Assert.False(receipt.Goal!.Met);
+        Assert.Contains("profit", receipt.Goal.Missing);
+        Assert.Contains("The source row was read.", receipt.Goal.Facts);
+    }
+
+    [Fact]
+    public void A_verified_goal_can_complete()
+    {
+        var registry = new ToolRegistry();
+        registry.Register(new ToolContract("read", "personal_intelligence.research.read", ToolEffect.Read, false), _ =>
+            ToolResponse.Succeeded("ok", new Dictionary<string, string>
+            {
+                ["verified"] = "true",
+                ["goalMet"] = "true",
+                ["goalReason"] = "The evidence matches the goal.",
+                ["fact"] = "The source row was read.",
+            }));
+        var receipt = new AgentRuntime(registry).Execute(
+            Request([new AgentStepSpec("one", "read", null, "Check the goal.")], ["personal_intelligence.research.read"], verifyGoal: true),
+            new MemoryAgentRunLog());
+
+        Assert.Equal(AgentTaskStatus.Completed, receipt.Status);
+        Assert.True(receipt.Goal!.Met);
+        Assert.Equal("The evidence matches the goal.", receipt.Goal.Reason);
+        Assert.Contains("The source row was read.", receipt.Goal.Facts);
+    }
+
+    [Fact]
+    public void An_unprovable_trading_goal_does_not_execute()
+    {
+        var candles = TradingResearchRuntime.FixedPaperCandles();
+        var intake = ResearchCandles.Classify(candles, candles.Last().CloseTime, TimeSpan.FromDays(30));
+        var limits = new RiskLimits(1_000m, 1m, 0.5m);
+        var paper = new MemoryPaperOperationLog();
+        var decision = Guid.Parse("d7777777-7777-7777-7777-777777777777");
+        var task = new AgentRequest(
+            "runtime-unproved",
+            "runtime-unproved",
+            Tenant,
+            "Research the paper session.",
+            "Profit is at least 10 percent.",
+            [TradingResearchRuntime.ResearchPermission, TradingResearchRuntime.RunPermission, TradingResearchRuntime.ApprovePermission],
+            TradingResearchRuntime.PlanFor("Research the paper session.", "Profit is at least 10 percent."),
+            new ExecutionApproval(decision, "operator"),
+            VerifyGoal: true);
+        var result = new TradingResearchRuntime().Execute(
+            new TradingResearchRequest(
+                task,
+                intake,
+                new ResearchConfig(0.001m, 0.8m, 10_000m, new PaperSessionConfig(10m, 0.001m, 0m, 1m, limits, 5_000m, false)),
+                paper,
+                new MemoryResearchLog(),
+                new TradeProposal("BTCUSDT", "BUY", 0.001m, 100m, 1m, 0.8m, ExecutionMode.Paper),
+                limits,
+                ["The next bar is not known."],
+                TradingResearchRuntime.FixedPaperRecordedAt),
+            new MemoryAgentRunLog());
+
+        Assert.Equal(AgentTaskStatus.Failed, result.Task.Status);
+        Assert.Equal(0, result.ExecuteCalls);
+        Assert.Contains(result.Task.Steps, step => step.StepId == "assess" && step.Status == ToolStepStatus.Failed);
+        Assert.DoesNotContain(result.Task.Steps, step => step.StepId == "execute");
+        Assert.False(result.Task.Goal!.Met);
+        Assert.Contains("Profit is at least 10 percent.", result.Task.Goal.Missing);
+        Assert.Contains(result.Task.Goal.Facts, fact => fact.Contains("not an approved paper order", StringComparison.Ordinal));
+        Assert.False(result.Task.RecommendationExecuted);
+        Assert.False(result.Task.LiveAccepted);
+        Assert.Null(paper.Find(TradingResearchRuntime.TaskPaperOperationKey(Tenant, task.TaskKey, decision)));
+    }
+
+    [Fact]
     public void Repeated_task_does_not_call_the_tool_again()
     {
         var calls = 0;
@@ -359,7 +449,7 @@ public sealed class AgentRuntimeTests
         Assert.Equal(0, calls);
     }
 
-    private static AgentRequest Request(IReadOnlyList<AgentStepSpec> plan, IReadOnlyList<string> permissions, ExecutionApproval? approval = null)
+    private static AgentRequest Request(IReadOnlyList<AgentStepSpec> plan, IReadOnlyList<string> permissions, ExecutionApproval? approval = null, bool verifyGoal = false)
         => new(
             "task-1",
             "payload-1",
@@ -368,7 +458,8 @@ public sealed class AgentRuntimeTests
             "The receipt names the outcome and does not claim a live order.",
             permissions,
             plan,
-            approval);
+            approval,
+            VerifyGoal: verifyGoal);
 
     private sealed class StopAfterCommit : IAgentRunLog
     {
@@ -555,7 +646,10 @@ public sealed class AgentRuntimeWorkflowTests : IAsyncLifetime
             TradingResearchRuntime.Plan,
             null,
             null,
-            nameof(ExecutionMode.Paper));
+            nameof(ExecutionMode.Paper),
+            null,
+            null,
+            true);
         var request = new TradingResearchRequest(
             task,
             intake,
@@ -580,9 +674,13 @@ public sealed class AgentRuntimeWorkflowTests : IAsyncLifetime
         var after = ResearchSession.Deserialize(research.Find(sessionKey)!.Result);
 
         Assert.Equal(AgentTaskStatus.AwaitingApproval, waiting.Task.Status);
+        Assert.False(waiting.Task.Goal!.Met);
         Assert.Equal(ExecutionReceiptProjector.ApprovalRequired, before.Receipt!.Outcome);
         Assert.Equal(ExecutionReceiptProjector.ApprovalRequired, after.Receipt!.Outcome);
         Assert.Equal(AgentTaskStatus.Completed, continued.Task.Status);
+        Assert.True(continued.Task.Goal!.Met);
+        Assert.Empty(continued.Task.Goal.Missing);
+        Assert.Contains(continued.Task.Goal.Facts, fact => fact.Contains("paper_filled", StringComparison.Ordinal));
         Assert.Equal(ExecutionReceiptProjector.PaperExecuted, continued.Task.Outcome);
         Assert.True(continued.Task.RecommendationExecuted);
         Assert.False(continued.Task.LiveAccepted);
