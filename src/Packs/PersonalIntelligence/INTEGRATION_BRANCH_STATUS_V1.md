@@ -317,3 +317,15 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No production deploy and no new migration. This is not exactly-once and not a production-readiness claim.
+
+## Shared task contract
+
+Trading paper and evidence review now share `GoalContract`, the runtime, and the goal receipt. A condition is verified only when the domain registered that exact id or statement. Evidence review reads the caller tenant's rows in `pack_personal_intelligence.pi_evidence` on `kit_pi_validation`. It does not write a paper operation. `workflow-poc` stays a fixture. `LiveAccepted` stays false.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 24 passed, 0 failed.
+- `KitPlatform.PersonalIntelligence.Tests`: 237 passed, 0 failed.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
+
+No production deploy and no new migration. This is not free-form language, not exactly-once, and not a production-readiness claim.

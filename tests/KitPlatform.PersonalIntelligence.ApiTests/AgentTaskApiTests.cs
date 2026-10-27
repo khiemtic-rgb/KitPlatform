@@ -477,9 +477,9 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
     {
         var key = "unproved-" + Guid.NewGuid().ToString("N");
         var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
         var criterion = "Profit is at least 10 percent.";
         var created = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Research the paper session.", doneWhen: criterion)));
-        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
         var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", Body(key, "Research the paper session.", doneWhen: criterion)));
 
         Assert.Equal("Failed", created.GetProperty("status").GetString());
@@ -489,15 +489,94 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
         Assert.False(created.GetProperty("liveAccepted").GetBoolean());
         Assert.Equal(criterion, created.GetProperty("doneWhen").GetString());
         Assert.Contains(created.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == criterion);
-        Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains("workflow-poc", StringComparison.Ordinal));
         Assert.Contains(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "assess" && step.GetProperty("status").GetString() == "Failed");
-        Assert.DoesNotContain(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "execute" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.DoesNotContain(created.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() is "research" or "execute");
         Assert.Equal("none", created.GetProperty("nextAction").GetString());
-        var paperKey = created.GetProperty("result").TryGetProperty("paperOperationKey", out var paper) ? paper : default;
-        Assert.True(paperKey.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
         Assert.True(replay.GetProperty("replayed").GetBoolean());
         Assert.False(replay.GetProperty("goal").GetProperty("met").GetBoolean());
         Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
+    public async Task Evidence_review_uses_the_stored_rows_and_does_not_invent_a_missing_kind()
+    {
+        var client = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var operations = Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation");
+        var presentKey = "evidence-" + Guid.NewGuid().ToString("N");
+        var present = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", EvidenceBody(presentKey, "The tenant has at least one observation evidence row.")));
+        var revision = Revision(presentKey);
+        var replay = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", EvidenceBody(presentKey, "The tenant has at least one observation evidence row.")));
+        var missingKey = "facts-" + Guid.NewGuid().ToString("N");
+        var missing = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", EvidenceBody(missingKey, "The tenant has at least one fact evidence row.")));
+        var unknownKey = "vague-" + Guid.NewGuid().ToString("N");
+        var unknown = await Read(await client.PostAsJsonAsync("/api/personal-intelligence/tasks", EvidenceBody(unknownKey, "Make it good.")));
+
+        Assert.Equal("Completed", present.GetProperty("status").GetString());
+        Assert.True(present.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.False(present.GetProperty("recommendationExecuted").GetBoolean());
+        Assert.False(present.GetProperty("liveAccepted").GetBoolean());
+        Assert.Contains(present.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains("OBSERVATION", StringComparison.Ordinal) && item.GetString()!.Contains("pi_evidence", StringComparison.Ordinal));
+        Assert.Contains(present.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "collect" && step.GetProperty("purpose").GetString()!.Contains("Review stored evidence.", StringComparison.Ordinal));
+        Assert.True(replay.GetProperty("replayed").GetBoolean());
+        Assert.Equal(revision, Revision(presentKey));
+        Assert.Equal("Failed", missing.GetProperty("status").GetString());
+        Assert.False(missing.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.Contains(missing.GetProperty("goal").GetProperty("missing").EnumerateArray(), item => item.GetString() == "FACT evidence rows");
+        Assert.Contains(missing.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "collect" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.Contains(missing.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "assess" && step.GetProperty("status").GetString() == "Succeeded");
+        Assert.Equal("Failed", unknown.GetProperty("status").GetString());
+        Assert.False(unknown.GetProperty("goal").GetProperty("met").GetBoolean());
+        Assert.DoesNotContain(unknown.GetProperty("steps").EnumerateArray(), step => step.GetProperty("stepId").GetString() == "collect");
+        Assert.Equal(operations, Count(_fixture.ResearchConnection, "SELECT COUNT(*) FROM research_trading.paper_operation"));
+    }
+
+    [Fact]
+    public async Task Evidence_review_does_not_read_another_tenant()
+    {
+        var sample = EvidenceScalar("SELECT MIN(source_ref) FROM pack_personal_intelligence.pi_evidence WHERE tenant_id = @Tenant", AgentTaskApiFixture.TenantA);
+        var ownedKey = "evidence-a-" + Guid.NewGuid().ToString("N");
+        var owner = Authorized(_fixture.Client(), AgentTaskApiFixture.UserA, AgentTaskApiFixture.TenantA);
+        var owned = await Read(await owner.PostAsJsonAsync("/api/personal-intelligence/tasks", EvidenceBody(ownedKey, "The tenant has at least one observation evidence row.")));
+        Assert.Contains(sample, owned.GetRawText(), StringComparison.Ordinal);
+        var key = "evidence-b-" + Guid.NewGuid().ToString("N");
+        await using var connection = new NpgsqlConnection(_fixture.ValidationConnection);
+        await connection.OpenAsync();
+        var saved = (string)(await new NpgsqlCommand("SELECT settings::text FROM public.tenants WHERE id = @Id", connection)
+        {
+            Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+        }.ExecuteScalarAsync())!;
+        try
+        {
+            await new NpgsqlCommand(
+                """
+                UPDATE public.tenants
+                SET settings = settings || '{"platform":{"enabled_modules":["personal_intelligence"]}}'::jsonb
+                WHERE id = @Id
+                """,
+                connection)
+            {
+                Parameters = { new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+            var outsider = Authorized(_fixture.Client(), AgentTaskApiFixture.UserB, AgentTaskApiFixture.TenantB);
+            var created = await Read(await outsider.PostAsJsonAsync("/api/personal-intelligence/tasks", EvidenceBody(key, "The tenant has at least one observation evidence row.")));
+            var hidden = await outsider.GetAsync("/api/personal-intelligence/tasks/" + ownedKey);
+            var hiddenBody = await hidden.Content.ReadAsStringAsync();
+            var body = created.GetRawText();
+
+            Assert.Equal("Failed", created.GetProperty("status").GetString());
+            Assert.False(created.GetProperty("goal").GetProperty("met").GetBoolean());
+            Assert.Contains(created.GetProperty("goal").GetProperty("facts").EnumerateArray(), item => item.GetString()!.Contains("0 OBSERVATION", StringComparison.Ordinal));
+            Assert.DoesNotContain(sample, body, StringComparison.Ordinal);
+            Assert.DoesNotContain(sample, hiddenBody, StringComparison.Ordinal);
+            Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
+        }
+        finally
+        {
+            await new NpgsqlCommand("UPDATE public.tenants SET settings = @Settings::jsonb WHERE id = @Id", connection)
+            {
+                Parameters = { new("Settings", saved), new("Id", AgentTaskApiFixture.TenantB) },
+            }.ExecuteNonQueryAsync();
+        }
     }
 
     [Fact]
@@ -715,6 +794,30 @@ public sealed class AgentTaskApiTests : IClassFixture<AgentTaskApiFixture>
     {
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AgentTaskApiFixture.Token(userId, tenantId));
         return client;
+    }
+
+    private static object EvidenceBody(string key, string doneWhen)
+        => new
+        {
+            taskKey = key,
+            objective = "Review stored evidence.",
+            doneWhen,
+            kind = "evidence-review",
+        };
+
+    private string EvidenceScalar(string sql, Guid tenantId)
+    {
+        using var connection = new NpgsqlConnection(_fixture.ValidationConnection);
+        connection.Open();
+        using var command = new NpgsqlCommand("SELECT current_database(), inet_server_port()", connection);
+        using var probe = command.ExecuteReader();
+        probe.Read();
+        if (probe.GetString(0) != "kit_pi_validation" || probe.GetInt32(1) != 5433)
+            throw new InvalidOperationException("Refusing to read evidence outside the isolated validation database.");
+        probe.Close();
+        using var query = new NpgsqlCommand(sql, connection);
+        query.Parameters.AddWithValue("Tenant", tenantId);
+        return (string)query.ExecuteScalar()!;
     }
 
     private static object Body(string key, string objective, Guid? approval = null, string? mode = null, string? doneWhen = null)
