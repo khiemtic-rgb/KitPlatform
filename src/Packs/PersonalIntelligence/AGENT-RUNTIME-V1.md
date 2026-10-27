@@ -285,3 +285,21 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build.
 
 No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. The lexicon covers two intents. It cannot conclude that evidence supports a decision from a shared context, an empty payload, or the stored-trade observation statement.
+
+## Multi-criteria plan
+
+A sentence that asks for both an observation-over-fact comparison and coverage completeness is a third closed intent. It does not call a model. The server plan calls two registered read capabilities, `evidence.count` and `decision.support-coverage`. Coverage does not depend on the kind counts. The final judge depends on both results. A required criterion with no registered capability makes the whole plan infeasible, so that request does not read. An explicit request for only the comparison is not expanded into coverage. The client step list is replaced.
+
+The overall goal is proven only when every required criterion holds. On the isolated rows the observation count is greater than the fact count, while coverage stays unmet because some decisions do not share a context with evidence and no payload is non-empty. The receipt records the comparison as proven and coverage as executed-unproven, and the task stays `executed-unproven`. It does not return thesis text or `source_ref`, and it does not treat either result as a decision-support verdict. `personal_intelligence.evidence.read` is still required. Trading paper, approval, and the earlier intents stay on their own paths.
+
+## What the multi-criteria tests showed
+
+No model output was scored.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 37 passed, 0 failed. The combined sentence called both capabilities. The receipt cited the live observation count, fact count, decision count, shared-context count, and non-empty payload count. The comparison criterion was proven and the coverage criterion was not, so the goal stayed unmet. The receipt did not contain a stored thesis or `source_ref`. An explicit comparison completed without calling coverage. `live-order` and `Confirm both the evidence.` did not read. A trading-only caller was forbidden. Tenant B's receipt cited 0 observation rows and 0 decisions and did not contain tenant A's counts, thesis, or `source_ref`. The trading, evidence, approval, replay, and reconciliation tests are inside this 37.
+- `KitPlatform.PersonalIntelligence.Tests`: 261 passed, 0 failed. The judge waits for both predecessor steps. A client step named `trading.paper_execute` is ignored. A ledger where both criteria hold can complete, and a ledger where only the comparison holds stays unproven. Replay does not read again.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build.
+
+No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. The plan can compose two registered reads. It still cannot conclude that evidence supports a decision, because `pi_evidence` has no `decision_id` and the isolated payloads have no statement.

@@ -267,6 +267,9 @@ public sealed class AgentTaskService
         RequireBusiness(command.Business);
         if (asks.Count == 0)
         {
+            var multi = MultiCriterionPlanning.Interpret(objective, doneWhen, command.Business);
+            if (multi is not null)
+                return RunMulti(user, command, tenantId, taskKey, objective, doneWhen, multi);
             var validation = EvidenceValidation.Interpret(objective, doneWhen, command.Business);
             if (validation is not null)
                 return RunValidation(user, command, tenantId, taskKey, objective, doneWhen, validation);
@@ -372,6 +375,53 @@ public sealed class AgentTaskService
             ? new SqlEvidenceLedger(OpenEvidence())
             : new RefusingEvidenceAssessmentLedger();
         var result = new EvidenceAssessmentRuntime().Execute(request, ledger, log);
+        return ToView(result.Task, user);
+    }
+
+    private AgentTaskView RunMulti(
+        ClaimsPrincipal user,
+        AgentTaskCommand command,
+        Guid tenantId,
+        string taskKey,
+        string objective,
+        string doneWhen,
+        MultiCriterionInterpretation interpreted)
+    {
+        var canonical = MultiCriterionPlanning.Canonical(command.Business);
+        if (canonical.Length == 0 && interpreted.FeasibleNeeds.Count > 0)
+            canonical = string.Join("|", MultiCriterionPlanning.Intent, MultiCriterionPlanning.Subject, string.Join(",", interpreted.FeasibleNeeds.OrderBy(item => item, StringComparer.Ordinal)));
+        var request = new AgentRequest(
+            taskKey,
+            PayloadHash(GoalTaskRuntime.Kind, objective, doneWhen, ExecutionMode.Paper, null, canonical),
+            tenantId,
+            objective,
+            doneWhen,
+            Grants(user),
+            interpreted.Understanding.Plan,
+            null,
+            command.RequestedTenantId,
+            nameof(ExecutionMode.Paper),
+            null,
+            null,
+            true,
+            null,
+            command.Business);
+        using var log = OpenTasks(tenantId);
+        IEvidenceLedger evidence;
+        IDecisionSupportLedger coverage;
+        if (interpreted.Understanding.State == UnderstandingState.ReadyToPlan)
+        {
+            var ledger = new SqlEvidenceLedger(OpenEvidence());
+            evidence = ledger;
+            coverage = ledger;
+        }
+        else
+        {
+            evidence = new RefusingEvidenceLedger();
+            coverage = new RefusingDecisionSupportLedger();
+        }
+
+        var result = new MultiCriterionRuntime().Execute(request, evidence, coverage, log);
         return ToView(result.Task, user);
     }
 
