@@ -18,6 +18,8 @@ public sealed record PaperExecutionResult(bool Executed, string Status, PaperFil
 
 public static class DemoPaperExecution
 {
+    public const string SeparateApprovalRequired = "Paper execution requires a separate approval.";
+
     public static PaperExecutionResult Execute(
         TradeProposal proposal,
         RiskVerdict verdict,
@@ -28,7 +30,7 @@ public static class DemoPaperExecution
         if (!verdict.Allowed)
             return Refuse(verdict.Reasons.Count > 0 ? verdict.Reasons[0] : "Risk engine vetoed the proposal.");
         if (approval is null || approval.DecisionId == Guid.Empty || string.IsNullOrWhiteSpace(approval.ApprovedBy))
-            return Refuse("Paper execution requires a separate approval.");
+            return Refuse(SeparateApprovalRequired);
 
         return new PaperExecutionResult(
             true,

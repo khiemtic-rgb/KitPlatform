@@ -778,5 +778,6 @@ public sealed class ResearchPublicationTests
         public Task<TradeImportPreviewDto> PreviewImportAsync(TradeImportRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<TradeImportCommitDto> CommitImportAsync(TradeImportRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<PaperApprovalDto> ApprovePaperAsync(Guid decisionId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<PaperRejectionDto> RejectPaperAsync(Guid decisionId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

@@ -86,7 +86,8 @@ public sealed record DecisionDetailDto(
     string? ExperienceStatus,
     string? PolicyStatus,
     string? PolicyRule,
-    IReadOnlyList<string> Unknowns);
+    IReadOnlyList<string> Unknowns,
+    int PaperExecutionCount = 0);
 
 public sealed record EvidenceRowDto(string SourceRef, string EpistemicKind);
 
@@ -137,6 +138,8 @@ public sealed record TradeImportCommitDto(int InsertedCount, int DuplicateCount)
 
 public sealed record PaperApprovalDto(Guid DecisionId, Guid ExecutionId, string Mode, bool AlreadyRecorded);
 
+public sealed record PaperRejectionDto(Guid DecisionId, string Status, int ExecutionCount, bool AlreadyRejected);
+
 public interface ITradingDesk
 {
     Task<TradingSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default);
@@ -151,4 +154,5 @@ public interface ITradingDesk
     Task<TradeImportPreviewDto> PreviewImportAsync(TradeImportRequest request, CancellationToken cancellationToken = default);
     Task<TradeImportCommitDto> CommitImportAsync(TradeImportRequest request, CancellationToken cancellationToken = default);
     Task<PaperApprovalDto> ApprovePaperAsync(Guid decisionId, CancellationToken cancellationToken = default);
+    Task<PaperRejectionDto> RejectPaperAsync(Guid decisionId, CancellationToken cancellationToken = default);
 }

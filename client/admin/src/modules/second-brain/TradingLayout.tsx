@@ -13,6 +13,7 @@ import { useAuthStore } from '@/shared/auth/auth.store';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
 
 const tabs = [
+  { key: 'workspace', label: 'Yêu cầu', path: '/second-brain/workspace', icon: <ThunderboltOutlined /> },
   { key: 'agent', label: 'Trading Agent', path: '/second-brain/agent', icon: <ThunderboltOutlined /> },
   { key: 'session', label: 'Phiên làm việc', path: '/second-brain/session', icon: <ThunderboltOutlined /> },
   { key: 'overview', label: 'Tình hình', path: '/second-brain/overview', icon: <TableOutlined /> },

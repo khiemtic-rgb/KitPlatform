@@ -428,6 +428,9 @@ const TradingLayout = lazy(() =>
 const TradingSessionPage = lazy(() =>
   import('@/modules/second-brain/SessionPage').then((m) => ({ default: m.TradingSessionPage })),
 );
+const IntentWorkspacePage = lazy(() =>
+  import('@/modules/second-brain/IntentWorkspacePage').then((m) => ({ default: m.IntentWorkspacePage })),
+);
 const TradingOverviewPage = lazy(() =>
   import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingOverviewPage })),
 );
@@ -1095,6 +1098,7 @@ export function AppRouter() {
                 }
               >
                 <Route index element={<Navigate to="/second-brain/agent" replace />} />
+                <Route path="workspace" element={<SuspenseRoute><IntentWorkspacePage /></SuspenseRoute>} />
                 <Route path="session" element={<SuspenseRoute><TradingSessionPage /></SuspenseRoute>} />
                 <Route path="overview" element={<SuspenseRoute><TradingOverviewPage /></SuspenseRoute>} />
                 <Route path="ledger" element={<SuspenseRoute><TradingLedgerPage /></SuspenseRoute>} />

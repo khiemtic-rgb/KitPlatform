@@ -77,6 +77,20 @@ public sealed class TradingDeskController : ControllerBase
         }
     }
 
+    [HttpPost("decisions/{decisionId:guid}/reject")]
+    [Authorize(Policy = PersonalIntelligencePolicies.Approve)]
+    public async Task<ActionResult<PaperRejectionDto>> RejectPaper(Guid decisionId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _desk.RejectPaperAsync(decisionId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("operations")]
     public async Task<ActionResult<TradingPage<OperationRowDto>>> Operations(
         [FromQuery] int page = 1,

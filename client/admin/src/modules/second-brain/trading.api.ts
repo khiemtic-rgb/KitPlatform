@@ -72,6 +72,7 @@ export type DecisionDetail = {
   reflectionNote: string | null;
   experienceStatement: string | null;
   experienceStatus: string | null;
+  paperExecutionCount?: number;
   policyStatus: string | null;
   policyRule: string | null;
   unknowns: string[];
@@ -162,5 +163,9 @@ export const tradingApi = {
   approvePaper: (decisionId: string) =>
     http.post<{ decisionId: string; executionId: string; mode: string; alreadyRecorded: boolean }>(
       `${base}/decisions/${decisionId}/paper`,
+    ).then((r) => r.data),
+  rejectPaper: (decisionId: string) =>
+    http.post<{ decisionId: string; status: string; executionCount: number; alreadyRejected: boolean }>(
+      `${base}/decisions/${decisionId}/reject`,
     ).then((r) => r.data),
 };
