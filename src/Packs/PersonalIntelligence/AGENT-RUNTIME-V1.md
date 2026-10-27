@@ -267,3 +267,21 @@ Measured on `127.0.0.1:5433`:
 - `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors.
 
 No production migration was added. No worker was added. This is not open business language, not exactly-once, and not a production-readiness claim. The lexicon covers one intent. It cannot judge whether a thesis agrees with a payload, and it does not treat an empty payload as content.
+
+## Evidence validation
+
+A sentence that asks to validate evidence for a decision is a second closed intent. It does not call a model. The completeness sentence stays on the coverage path. The server reads `pi_decision`, `pi_evidence`, and the joined `pi_context` summary for the caller tenant. It does not return thesis text or `source_ref`.
+
+The receipt separates existence, a missing context link, co-location, an empty payload, the stored-trade observation statement, and a payload `statement`. Co-location and the observation statement are facts. They are not a verdict that the evidence supports the decision. `pi_evidence` has no `decision_id`. On the isolated rows the payload statement count was 0, so that content criterion stayed unmet and the support request stayed `unable-to-assess`. An explicit request for only the observation statement can be `proven`, and the receipt still records that the statement is not a support verdict. An explicit payload-statement request stayed `executed-unproven`. An explicit context-relation request stayed `executed-unproven` because some decisions have no context while evidence exists. `supports-decision` alone and `Validate the evidence.` do not read. `personal_intelligence.evidence.read` is still required.
+
+## What the evidence-validation tests showed
+
+No model output was scored.
+
+Measured on `127.0.0.1:5433`:
+
+- `KitPlatform.PersonalIntelligence.ApiTests`: 34 passed, 0 failed. The validation sentence was judged from the live counts. The receipt cited those counts, stayed `unable-to-assess`, and did not contain a stored thesis or `source_ref`. The observation-statement request completed. The payload-statement and context-relation requests did not. A trading-only caller was forbidden. Tenant B's receipt cited 0 evidence rows and did not contain tenant A's counts or thesis. The trading, evidence, approval, replay, and reconciliation tests are inside this 34.
+- `KitPlatform.PersonalIntelligence.Tests`: 255 passed, 0 failed. A client step named `trading.paper_execute` is ignored. A ledger row with a payload statement can prove that one criterion. The isolated database did not contain such a row. Replay does not read again.
+- `dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj`: 0 errors during the API test build.
+
+No production migration was added. No worker was added. This is not open language, not exactly-once, and not a production-readiness claim. The lexicon covers two intents. It cannot conclude that evidence supports a decision from a shared context, an empty payload, or the stored-trade observation statement.
