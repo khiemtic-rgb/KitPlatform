@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-27T12:17:15.125Z",
+  "generatedAt": "2026-10-27T22:16:57.468Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 123,
-    "todayPageViews": 390,
-    "todayRequests": 657,
-    "last24hVisitors": 172,
-    "last24hPageViews": 807,
-    "last24hRequests": 1789
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 221,
+    "last24hPageViews": 415,
+    "last24hRequests": 881
   },
   "hourly": [
-    {
-      "time": "2026-10-26T13:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-26T14:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-26T15:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-26T16:00:00Z",
-      "visitors": 10,
-      "requests": 125
-    },
-    {
-      "time": "2026-10-26T17:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-26T18:00:00Z",
-      "visitors": 8,
-      "requests": 285
-    },
-    {
-      "time": "2026-10-26T19:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-26T20:00:00Z",
-      "visitors": 4,
-      "requests": 285
-    },
-    {
-      "time": "2026-10-26T21:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-26T22:00:00Z",
-      "visitors": 18,
-      "requests": 342
-    },
     {
       "time": "2026-10-26T23:00:00Z",
       "visitors": 7,
@@ -128,17 +78,56 @@
     },
     {
       "time": "2026-10-27T12:00:00Z",
-      "visitors": 1,
-      "requests": 2
+      "visitors": 10,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-27T13:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-27T14:00:00Z",
+      "visitors": 9,
+      "requests": 12
+    },
+    {
+      "time": "2026-10-27T15:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-27T16:00:00Z",
+      "visitors": 10,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-27T17:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-27T18:00:00Z",
+      "visitors": 60,
+      "requests": 73
+    },
+    {
+      "time": "2026-10-27T19:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-27T20:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-27T21:00:00Z",
+      "visitors": 6,
+      "requests": 7
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-21",
-      "visitors": 198,
-      "pageViews": 486,
-      "requests": 971
-    },
     {
       "date": "2026-10-22",
       "visitors": 169,
@@ -171,71 +160,71 @@
     },
     {
       "date": "2026-10-27",
-      "visitors": 123,
-      "pageViews": 390,
-      "requests": 657
+      "visitors": 216,
+      "pageViews": 410,
+      "requests": 802
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 118
-    },
-    {
-      "path": "/robots.txt",
-      "views": 38
+      "views": 107
     },
     {
       "path": "/.git/config",
-      "views": 34
+      "views": 31
     },
     {
-      "path": "/vi/",
+      "path": "/robots.txt",
       "views": 30
     },
     {
-      "path": "/sitemap-index.xml",
-      "views": 13
+      "path": "/vi/",
+      "views": 24
     },
     {
-      "path": "/phpinfo.php",
-      "views": 11
+      "path": "/images/tin-tuc/mot-khach-quay-lai-nhieu-lan-dang-gia-hon-mot-khach-mua-mot-lan.jpg",
+      "views": 10
     },
     {
       "path": "/.env",
-      "views": 11
+      "views": 8
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 8
+    },
+    {
+      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "views": 5
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 4
     },
     {
       "path": "/.env.development",
-      "views": 10
+      "views": 4
     },
     {
-      "path": "/gcp/credentials.json",
-      "views": 10
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 4
     },
     {
-      "path": "/backend/.env",
-      "views": 10
-    },
-    {
-      "path": "/src/.env",
-      "views": 9
-    },
-    {
-      "path": "/v1/.env",
-      "views": 9
+      "path": "/.env-sample",
+      "views": 4
     },
     {
       "path": "/.env.backup",
-      "views": 9
+      "views": 4
     },
     {
-      "path": "/service-account.json",
-      "views": 9
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 4
     },
     {
-      "path": "/rest/.env",
-      "views": 8
+      "path": "/phpinfo.php",
+      "views": 4
     }
   ]
 }
