@@ -7,7 +7,6 @@ using KitPlatform.Packs.PersonalIntelligence.Infrastructure.Research;
 using KitPlatform.Packs.PersonalIntelligence.Infrastructure.Trading;
 using KitPlatform.Packs.PersonalIntelligence;
 using KitPlatform.Packs.PersonalIntelligence.Intent;
-using KitPlatform.Packs.PersonalIntelligence.Infrastructure.Intent;
 using KitPlatform.Packs.PersonalIntelligence.Infrastructure.Intelligence;
 
 namespace KitPlatform.Packs.PersonalIntelligence.Infrastructure;
@@ -43,7 +42,6 @@ public static class PersonalIntelligencePackDependencyInjection
         services.AddScoped<IPaperDecisionRecorder, PaperDecisionRecorder>();
         services.AddScoped<IPaperTaskStore, PaperTaskStore>();
         services.AddScoped<IBusinessIntentSession, BusinessIntentSession>();
-        services.AddScoped<IBusinessIntentInterpreter, CatalogGroundedIntentInterpreter>();
         services.AddScoped<IBusinessCapabilityHandler, ResearchPublicationCapabilityHandler>();
         services.AddScoped<IBusinessCapabilityHandler, TradingDeskSummaryCapabilityHandler>();
         services.AddScoped<IBusinessCapabilityHandler, PaperEvaluationHandler>();
