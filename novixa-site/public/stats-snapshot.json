@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-27T22:16:57.468Z",
+  "generatedAt": "2026-10-28T05:46:32.348Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 221,
-    "last24hPageViews": 415,
-    "last24hRequests": 881
+    "todayVisitors": 31,
+    "todayPageViews": 36,
+    "todayRequests": 69,
+    "last24hVisitors": 190,
+    "last24hPageViews": 396,
+    "last24hRequests": 671
   },
   "hourly": [
-    {
-      "time": "2026-10-26T23:00:00Z",
-      "visitors": 7,
-      "requests": 79
-    },
-    {
-      "time": "2026-10-27T00:00:00Z",
-      "visitors": 56,
-      "requests": 57
-    },
-    {
-      "time": "2026-10-27T01:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-27T02:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-27T03:00:00Z",
-      "visitors": 2,
-      "requests": 22
-    },
-    {
-      "time": "2026-10-27T04:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-27T05:00:00Z",
-      "visitors": 5,
-      "requests": 137
-    },
     {
       "time": "2026-10-27T06:00:00Z",
       "visitors": 6,
@@ -125,6 +90,46 @@
       "time": "2026-10-27T21:00:00Z",
       "visitors": 6,
       "requests": 7
+    },
+    {
+      "time": "2026-10-27T22:00:00Z",
+      "visitors": 11,
+      "requests": 13
+    },
+    {
+      "time": "2026-10-27T23:00:00Z",
+      "visitors": 20,
+      "requests": 25
+    },
+    {
+      "time": "2026-10-28T00:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-28T01:00:00Z",
+      "visitors": 10,
+      "requests": 48
+    },
+    {
+      "time": "2026-10-28T02:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-28T03:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-28T04:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-28T05:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -160,50 +165,52 @@
     },
     {
       "date": "2026-10-27",
-      "visitors": 216,
-      "pageViews": 410,
-      "requests": 802
+      "visitors": 234,
+      "pageViews": 429,
+      "requests": 840
+    },
+    {
+      "date": "2026-10-28",
+      "visitors": 31,
+      "pageViews": 36,
+      "requests": 69
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 107
+      "views": 97
     },
     {
       "path": "/.git/config",
-      "views": 31
+      "views": 29
     },
     {
       "path": "/robots.txt",
-      "views": 30
+      "views": 28
     },
     {
       "path": "/vi/",
-      "views": 24
+      "views": 26
     },
     {
       "path": "/images/tin-tuc/mot-khach-quay-lai-nhieu-lan-dang-gia-hon-mot-khach-mua-mot-lan.jpg",
       "views": 10
     },
     {
-      "path": "/.env",
-      "views": 8
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 8
-    },
-    {
       "path": "/_astro/_slug_.OmCW7wJf.css",
+      "views": 6
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
       "views": 5
     },
     {
-      "path": "/wp-login.php",
-      "views": 4
+      "path": "/.env",
+      "views": 5
     },
     {
-      "path": "/.env.development",
+      "path": "/vi/lien-he/",
       "views": 4
     },
     {
@@ -211,20 +218,24 @@
       "views": 4
     },
     {
-      "path": "/.env-sample",
-      "views": 4
+      "path": "/vi/tin-tuc/cach-giam-hang-can-han-tai-nha-thuoc-giai-phap-triet-tieu-rui-ro-va-bao-ve-loi-nhuan/",
+      "views": 3
     },
     {
-      "path": "/.env.backup",
-      "views": 4
+      "path": "/wp-json/batch/v1",
+      "views": 3
     },
     {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 4
+      "path": "/vi/tin-tuc/khong-phai-nha-thuoc-nao-ban-nhieu-cung-dang-van-hanh-tot/",
+      "views": 3
     },
     {
-      "path": "/phpinfo.php",
-      "views": 4
+      "path": "/vi/tai-lieu/",
+      "views": 3
+    },
+    {
+      "path": "/sitemap-index.xml",
+      "views": 3
     }
   ]
 }
