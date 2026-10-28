@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-28T12:59:42.297Z",
+  "generatedAt": "2026-10-28T22:37:59.621Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 57,
-    "todayPageViews": 57,
-    "todayRequests": 122,
-    "last24hVisitors": 170,
-    "last24hPageViews": 91,
-    "last24hRequests": 296
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 122,
+    "last24hPageViews": 100,
+    "last24hRequests": 235
   },
   "hourly": [
-    {
-      "time": "2026-10-27T13:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-27T14:00:00Z",
-      "visitors": 9,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-27T15:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-27T16:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-27T17:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-27T18:00:00Z",
-      "visitors": 60,
-      "requests": 73
-    },
-    {
-      "time": "2026-10-27T19:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-27T20:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-27T21:00:00Z",
-      "visitors": 6,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-27T22:00:00Z",
-      "visitors": 11,
-      "requests": 13
-    },
     {
       "time": "2026-10-27T23:00:00Z",
       "visitors": 20,
@@ -130,15 +80,54 @@
       "time": "2026-10-28T12:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-10-28T13:00:00Z",
+      "visitors": 11,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-28T14:00:00Z",
+      "visitors": 2,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-28T15:00:00Z",
+      "visitors": 2,
+      "requests": 18
+    },
+    {
+      "time": "2026-10-28T16:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-28T17:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-28T19:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-28T20:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-28T21:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-28T22:00:00Z",
+      "visitors": 4,
+      "requests": 7
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-22",
-      "visitors": 169,
-      "pageViews": 1695,
-      "requests": 3190
-    },
     {
       "date": "2026-10-23",
       "visitors": 155,
@@ -171,42 +160,54 @@
     },
     {
       "date": "2026-10-28",
-      "visitors": 57,
-      "pageViews": 57,
-      "requests": 122
+      "visitors": 104,
+      "pageViews": 86,
+      "requests": 210
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 58
+      "views": 41
     },
     {
       "path": "/robots.txt",
-      "views": 20
+      "views": 23
     },
     {
       "path": "/vi/",
-      "views": 16
+      "views": 17
     },
     {
-      "path": "/images/tin-tuc/mot-khach-quay-lai-nhieu-lan-dang-gia-hon-mot-khach-mua-mot-lan.jpg",
-      "views": 10
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 5
     },
     {
       "path": "/vi/lien-he/",
+      "views": 5
+    },
+    {
+      "path": "/cdn-cgi/rum",
       "views": 4
     },
     {
-      "path": "/.git/config",
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
       "views": 4
     },
     {
-      "path": "/vi/tin-tuc/mot-bao-cao-tot-phai-giup-chu-nha-thuoc-biet-hom-nay-nen-lam-gi/",
+      "path": "/sitemap-index.xml",
       "views": 3
     },
     {
-      "path": "/vi/tin-tuc/khong-phai-nha-thuoc-nao-ban-nhieu-cung-dang-van-hanh-tot/",
+      "path": "/test/wp-includes/js/json2.js",
+      "views": 3
+    },
+    {
+      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "views": 3
+    },
+    {
+      "path": "/vi/giai-phap-chi-phi/",
       "views": 3
     },
     {
@@ -214,27 +215,15 @@
       "views": 3
     },
     {
-      "path": "/images/tin-tuc/co-nhung-khoan-mat-tien-o-nha-thuoc-rat-kho-nhin-thay-ban-co-dang-bi-bao-mon-loi.jpg",
+      "path": "/vi/nha-thuoc/",
+      "views": 3
+    },
+    {
+      "path": "/images/tin-tuc/co-phan-mem-nhung-chu-van-phai-hoi-nhan-vien-moi-biet-chuyen-gi-dang-xay-ra.jpg",
       "views": 2
     },
     {
-      "path": "/images/tin-tuc/mot-bao-cao-tot-phai-giup-chu-nha-thuoc-biet-hom-nay-nen-lam-gi.jpg",
-      "views": 2
-    },
-    {
-      "path": "/sitemap-index.xml",
-      "views": 2
-    },
-    {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/nghi-dinh-155-2018/",
-      "views": 2
-    },
-    {
-      "path": "/images/tin-tuc/chu-nha-thuoc-ban-ron.png",
-      "views": 2
-    },
-    {
-      "path": "/vi/ve-chung-toi/",
+      "path": "/images/logo.png",
       "views": 2
     }
   ]
