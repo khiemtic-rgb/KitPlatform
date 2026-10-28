@@ -148,8 +148,13 @@ catch (Exception ex) when (
 builder.Services.AddContentPack(builder.Configuration);
 builder.Services.AddPersonalIntelligenceResearch();
 builder.Services.AddAgentTasks(builder.Configuration);
-if (builder.Configuration.GetValue("PersonalIntelligence:ExposeExchangeRead", false))
-    builder.Services.AddPersonalIntelligencePack(startBackfillWorker: false);
+builder.Services.AddPersonalIntelligencePack(startBackfillWorker: false);
+builder.Services.AddHttpClient<KitPlatform.Packs.PersonalIntelligence.Intent.IBusinessIntentInterpreter, KitPlatform.Packs.PersonalIntelligence.Infrastructure.Intent.CatalogGroundedIntentInterpreter>(client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(3);
+});
+builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Intent.BusinessIntentModelOptions>(
+    builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Intent.BusinessIntentModelOptions.SectionName));
 builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions>(
     builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions.SectionName));
 builder.Services.AddLocalOsPack();

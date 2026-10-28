@@ -24,6 +24,7 @@ public sealed class ResearchPublicationOptions
     public const string SectionName = "PersonalIntelligence:ResearchPublication";
 
     public string? Root { get; set; }
+    public string SourceLabel { get; set; } = "";
 }
 
 public sealed record ResearchReadError(string Code, string Message);

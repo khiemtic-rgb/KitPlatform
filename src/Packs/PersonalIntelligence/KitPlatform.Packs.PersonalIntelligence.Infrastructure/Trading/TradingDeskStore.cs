@@ -243,6 +243,15 @@ public sealed class TradingDeskStore : ITradingDesk
             """,
             new { TenantId = _tenant.TenantId, DecisionId = decisionId })).ToList();
         var parsed = Parse(row.ResultJson);
+        var paperCount = await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(*)
+            FROM pack_personal_intelligence.trading_execution e
+            JOIN pack_personal_intelligence.trading_order o
+              ON o.order_id = e.order_id AND o.tenant_id = e.tenant_id
+            WHERE o.tenant_id = @TenantId AND o.decision_id = @DecisionId AND e.mode = 'PAPER'
+            """,
+            new { TenantId = _tenant.TenantId, DecisionId = decisionId });
         return new DecisionDetailDto(
             MapDecision(row),
             row.ContextSummary,
@@ -258,7 +267,8 @@ public sealed class TradingDeskStore : ITradingDesk
             row.ExperienceStatus,
             parsed?.PolicyStatus,
             null,
-            parsed?.Unknowns ?? []);
+            parsed?.Unknowns ?? [],
+            paperCount);
     }
 
     public async Task<TradingPage<OperationRowDto>> ListOperationsAsync(
@@ -403,6 +413,13 @@ public sealed class TradingDeskStore : ITradingDesk
         if (existing.ExecutionId != Guid.Empty)
         {
             await MarkPaperRecordedAsync(conn, decisionId, null);
+            await conn.ExecuteAsync(
+                """
+                UPDATE pack_personal_intelligence.pi_decision
+                SET status = 'accepted'
+                WHERE tenant_id = @TenantId AND decision_id = @DecisionId AND status = 'proposed'
+                """,
+                new { TenantId = _tenant.TenantId, DecisionId = decisionId });
             return new PaperApprovalDto(decisionId, existing.ExecutionId, existing.Mode, true);
         }
 
@@ -460,9 +477,92 @@ public sealed class TradingDeskStore : ITradingDesk
             new { TenantId = _tenant.TenantId, DecisionId = decisionId },
             tx);
         await MarkPaperRecordedAsync(conn, decisionId, tx);
+        var accepted = await conn.ExecuteAsync(
+            """
+            UPDATE pack_personal_intelligence.pi_decision
+            SET status = 'accepted'
+            WHERE tenant_id = @TenantId AND decision_id = @DecisionId AND status = 'proposed'
+            """,
+            new { TenantId = _tenant.TenantId, DecisionId = decisionId },
+            tx);
+        if (accepted != 1)
+        {
+            await tx.RollbackAsync(cancellationToken);
+            var again = await PaperExecutionAsync(conn, decisionId);
+            if (again.ExecutionId != Guid.Empty)
+                return new PaperApprovalDto(decisionId, again.ExecutionId, again.Mode, true);
+            var status = await DecisionStatusAsync(conn, decisionId);
+            if (status == "rejected")
+                throw new InvalidOperationException("Quyết định đã bị từ chối. Không tạo paper execution.");
+            throw new InvalidOperationException("Quyết định không còn ở trạng thái chờ phê duyệt.");
+        }
         await tx.CommitAsync(cancellationToken);
         return new PaperApprovalDto(decisionId, executionId, "PAPER", false);
     }
+
+    public async Task<PaperRejectionDto> RejectPaperAsync(Guid decisionId, CancellationToken cancellationToken = default)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        var status = await conn.QuerySingleOrDefaultAsync<string>(
+            """
+            SELECT status FROM pack_personal_intelligence.pi_decision
+            WHERE tenant_id = @TenantId AND decision_id = @DecisionId
+            FOR UPDATE
+            """,
+            new { TenantId = _tenant.TenantId, DecisionId = decisionId },
+            tx);
+        if (status is null)
+            throw new InvalidOperationException("Không tìm thấy quyết định trong tenant hiện tại.");
+        var count = await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(*)
+            FROM pack_personal_intelligence.trading_execution e
+            JOIN pack_personal_intelligence.trading_order o
+              ON o.order_id = e.order_id AND o.tenant_id = e.tenant_id
+            WHERE o.tenant_id = @TenantId AND o.decision_id = @DecisionId AND e.mode = 'PAPER'
+            """,
+            new { TenantId = _tenant.TenantId, DecisionId = decisionId },
+            tx);
+        if (count > 0)
+            throw new InvalidOperationException("Quyết định đã có paper execution. Không thể từ chối.");
+        if (status == "rejected")
+        {
+            await tx.CommitAsync(cancellationToken);
+            return new PaperRejectionDto(decisionId, status, 0, true);
+        }
+        if (status != "proposed")
+            throw new InvalidOperationException("Quyết định không còn ở trạng thái chờ phê duyệt.");
+        await conn.ExecuteAsync(
+            """
+            UPDATE pack_personal_intelligence.pi_decision
+            SET status = 'rejected'
+            WHERE tenant_id = @TenantId AND decision_id = @DecisionId AND status = 'proposed'
+            """,
+            new { TenantId = _tenant.TenantId, DecisionId = decisionId },
+            tx);
+        await tx.CommitAsync(cancellationToken);
+        return new PaperRejectionDto(decisionId, "rejected", 0, false);
+    }
+
+    async Task<(Guid ExecutionId, string Mode)> PaperExecutionAsync(System.Data.IDbConnection conn, Guid decisionId) =>
+        await conn.QuerySingleOrDefaultAsync<(Guid ExecutionId, string Mode)>(
+            """
+            SELECT e.execution_id AS ExecutionId, e.mode AS Mode
+            FROM pack_personal_intelligence.trading_execution e
+            JOIN pack_personal_intelligence.trading_order o ON o.order_id = e.order_id AND o.tenant_id = e.tenant_id
+            WHERE o.tenant_id = @TenantId AND o.decision_id = @DecisionId AND e.mode = 'PAPER'
+            LIMIT 1
+            """,
+            new { TenantId = _tenant.TenantId, DecisionId = decisionId });
+
+    Task<string?> DecisionStatusAsync(System.Data.IDbConnection conn, Guid decisionId) =>
+        conn.QuerySingleOrDefaultAsync<string>(
+            """
+            SELECT status FROM pack_personal_intelligence.pi_decision
+            WHERE tenant_id = @TenantId AND decision_id = @DecisionId
+            """,
+            new { TenantId = _tenant.TenantId, DecisionId = decisionId });
 
     private Task MarkPaperRecordedAsync(System.Data.IDbConnection conn, Guid decisionId, System.Data.IDbTransaction? tx) =>
         conn.ExecuteAsync(
