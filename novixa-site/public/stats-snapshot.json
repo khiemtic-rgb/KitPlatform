@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-28T05:46:32.348Z",
+  "generatedAt": "2026-10-28T12:59:42.297Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 31,
-    "todayPageViews": 36,
-    "todayRequests": 69,
-    "last24hVisitors": 190,
-    "last24hPageViews": 396,
-    "last24hRequests": 671
+    "todayVisitors": 57,
+    "todayPageViews": 57,
+    "todayRequests": 122,
+    "last24hVisitors": 170,
+    "last24hPageViews": 91,
+    "last24hRequests": 296
   },
   "hourly": [
-    {
-      "time": "2026-10-27T06:00:00Z",
-      "visitors": 6,
-      "requests": 19
-    },
-    {
-      "time": "2026-10-27T07:00:00Z",
-      "visitors": 10,
-      "requests": 293
-    },
-    {
-      "time": "2026-10-27T08:00:00Z",
-      "visitors": 9,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-27T09:00:00Z",
-      "visitors": 9,
-      "requests": 59
-    },
-    {
-      "time": "2026-10-27T10:00:00Z",
-      "visitors": 9,
-      "requests": 13
-    },
-    {
-      "time": "2026-10-27T11:00:00Z",
-      "visitors": 12,
-      "requests": 17
-    },
-    {
-      "time": "2026-10-27T12:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
     {
       "time": "2026-10-27T13:00:00Z",
       "visitors": 6,
@@ -128,6 +93,41 @@
     },
     {
       "time": "2026-10-28T05:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-28T06:00:00Z",
+      "visitors": 8,
+      "requests": 21
+    },
+    {
+      "time": "2026-10-28T07:00:00Z",
+      "visitors": 3,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-28T08:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-28T09:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-28T10:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-28T11:00:00Z",
+      "visitors": 12,
+      "requests": 16
+    },
+    {
+      "time": "2026-10-28T12:00:00Z",
       "visitors": 3,
       "requests": 3
     }
@@ -171,58 +171,38 @@
     },
     {
       "date": "2026-10-28",
-      "visitors": 31,
-      "pageViews": 36,
-      "requests": 69
+      "visitors": 57,
+      "pageViews": 57,
+      "requests": 122
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 97
-    },
-    {
-      "path": "/.git/config",
-      "views": 29
+      "views": 58
     },
     {
       "path": "/robots.txt",
-      "views": 28
+      "views": 20
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 16
     },
     {
       "path": "/images/tin-tuc/mot-khach-quay-lai-nhieu-lan-dang-gia-hon-mot-khach-mua-mot-lan.jpg",
       "views": 10
     },
     {
-      "path": "/_astro/_slug_.OmCW7wJf.css",
-      "views": 6
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 5
-    },
-    {
-      "path": "/.env",
-      "views": 5
-    },
-    {
       "path": "/vi/lien-he/",
       "views": 4
     },
     {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "path": "/.git/config",
       "views": 4
     },
     {
-      "path": "/vi/tin-tuc/cach-giam-hang-can-han-tai-nha-thuoc-giai-phap-triet-tieu-rui-ro-va-bao-ve-loi-nhuan/",
-      "views": 3
-    },
-    {
-      "path": "/wp-json/batch/v1",
+      "path": "/vi/tin-tuc/mot-bao-cao-tot-phai-giup-chu-nha-thuoc-biet-hom-nay-nen-lam-gi/",
       "views": 3
     },
     {
@@ -234,8 +214,28 @@
       "views": 3
     },
     {
+      "path": "/images/tin-tuc/co-nhung-khoan-mat-tien-o-nha-thuoc-rat-kho-nhin-thay-ban-co-dang-bi-bao-mon-loi.jpg",
+      "views": 2
+    },
+    {
+      "path": "/images/tin-tuc/mot-bao-cao-tot-phai-giup-chu-nha-thuoc-biet-hom-nay-nen-lam-gi.jpg",
+      "views": 2
+    },
+    {
       "path": "/sitemap-index.xml",
-      "views": 3
+      "views": 2
+    },
+    {
+      "path": "/vi/tai-lieu/van-ban-phap-luat/nghi-dinh-155-2018/",
+      "views": 2
+    },
+    {
+      "path": "/images/tin-tuc/chu-nha-thuoc-ban-ron.png",
+      "views": 2
+    },
+    {
+      "path": "/vi/ve-chung-toi/",
+      "views": 2
     }
   ]
 }
