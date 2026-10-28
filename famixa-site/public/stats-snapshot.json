@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-28T05:59:37.509Z",
+  "generatedAt": "2026-10-28T13:18:03.990Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 71,
-    "todayPageViews": 15,
-    "todayRequests": 380,
-    "last24hVisitors": 149,
-    "last24hPageViews": 344,
-    "last24hRequests": 1915
+    "todayVisitors": 92,
+    "todayPageViews": 23,
+    "todayRequests": 443,
+    "last24hVisitors": 130,
+    "last24hPageViews": 74,
+    "last24hRequests": 890
   },
   "hourly": [
-    {
-      "time": "2026-10-27T06:00:00Z",
-      "visitors": 1,
-      "requests": 514
-    },
-    {
-      "time": "2026-10-27T07:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-27T08:00:00Z",
-      "visitors": 5,
-      "requests": 10
-    },
-    {
-      "time": "2026-10-27T09:00:00Z",
-      "visitors": 11,
-      "requests": 351
-    },
-    {
-      "time": "2026-10-27T10:00:00Z",
-      "visitors": 3,
-      "requests": 101
-    },
-    {
-      "time": "2026-10-27T11:00:00Z",
-      "visitors": 5,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-27T12:00:00Z",
-      "visitors": 12,
-      "requests": 64
-    },
-    {
-      "time": "2026-10-27T13:00:00Z",
-      "visitors": 4,
-      "requests": 26
-    },
     {
       "time": "2026-10-27T14:00:00Z",
       "visitors": 13,
@@ -130,6 +90,41 @@
       "time": "2026-10-28T05:00:00Z",
       "visitors": 2,
       "requests": 2
+    },
+    {
+      "time": "2026-10-28T06:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-28T07:00:00Z",
+      "visitors": 5,
+      "requests": 26
+    },
+    {
+      "time": "2026-10-28T08:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-28T09:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-28T10:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-28T11:00:00Z",
+      "visitors": 14,
+      "requests": 23
+    },
+    {
+      "time": "2026-10-28T12:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -171,71 +166,71 @@
     },
     {
       "date": "2026-10-28",
-      "visitors": 107,
-      "pageViews": 57,
-      "requests": 647
+      "visitors": 139,
+      "pageViews": 65,
+      "requests": 710
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 108
+      "views": 87
     },
     {
       "path": "/vi/",
-      "views": 48
+      "views": 35
     },
     {
       "path": "/robots.txt",
       "views": 31
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 17
-    },
-    {
-      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 16
-    },
-    {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 16
+      "views": 15
     },
     {
-      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 15
     },
     {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 15
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
       "views": 14
     },
     {
-      "path": "/vi/huong-dan/them-thanh-vien/",
+      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
       "views": 14
     },
     {
-      "path": "/vi/goi-cha-me/khi-cha-me-bat-dong-cach-day-con-lam-sao-de-khong-bien-ngoi-nha-thanh-toa-an/",
+      "path": "/sitemap.xml",
       "views": 14
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
       "views": 13
     },
     {
-      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
-      "views": 11
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 12
     },
     {
       "path": "/Email%20c%E1%BB%A7a%20b%E1%BA%A1n",
       "views": 11
     },
     {
-      "path": "/vi/goi-cha-me/",
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
       "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
+      "views": 10
+    },
+    {
+      "path": "/vi/huong-dan/them-thanh-vien/",
+      "views": 9
+    },
+    {
+      "path": "/v1/.env",
+      "views": 7
     }
   ]
 }
