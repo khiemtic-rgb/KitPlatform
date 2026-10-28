@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-27T22:27:40.625Z",
+  "generatedAt": "2026-10-28T05:59:37.509Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 24,
-    "todayPageViews": 26,
-    "todayRequests": 241,
-    "last24hVisitors": 119,
-    "last24hPageViews": 322,
-    "last24hRequests": 1588
+    "todayVisitors": 71,
+    "todayPageViews": 15,
+    "todayRequests": 380,
+    "last24hVisitors": 149,
+    "last24hPageViews": 344,
+    "last24hRequests": 1915
   },
   "hourly": [
-    {
-      "time": "2026-10-26T23:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-27T00:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-27T01:00:00Z",
-      "visitors": 6,
-      "requests": 8
-    },
-    {
-      "time": "2026-10-27T02:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-27T03:00:00Z",
-      "visitors": 10,
-      "requests": 31
-    },
-    {
-      "time": "2026-10-27T04:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-27T05:00:00Z",
-      "visitors": 9,
-      "requests": 11
-    },
     {
       "time": "2026-10-27T06:00:00Z",
       "visitors": 1,
@@ -128,7 +93,42 @@
     },
     {
       "time": "2026-10-27T22:00:00Z",
-      "visitors": 1,
+      "visitors": 7,
+      "requests": 25
+    },
+    {
+      "time": "2026-10-27T23:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-28T00:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-28T01:00:00Z",
+      "visitors": 3,
+      "requests": 24
+    },
+    {
+      "time": "2026-10-28T02:00:00Z",
+      "visitors": 46,
+      "requests": 47
+    },
+    {
+      "time": "2026-10-28T03:00:00Z",
+      "visitors": 15,
+      "requests": 15
+    },
+    {
+      "time": "2026-10-28T04:00:00Z",
+      "visitors": 7,
+      "requests": 290
+    },
+    {
+      "time": "2026-10-28T05:00:00Z",
+      "visitors": 2,
       "requests": 2
     }
   ],
@@ -165,40 +165,56 @@
     },
     {
       "date": "2026-10-27",
-      "visitors": 117,
-      "pageViews": 321,
-      "requests": 1576
+      "visitors": 122,
+      "pageViews": 337,
+      "requests": 1602
     },
     {
       "date": "2026-10-28",
-      "visitors": 24,
-      "pageViews": 26,
-      "requests": 241
+      "visitors": 107,
+      "pageViews": 57,
+      "requests": 647
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 94
+      "views": 108
     },
     {
       "path": "/vi/",
-      "views": 42
+      "views": 48
     },
     {
       "path": "/robots.txt",
-      "views": 28
+      "views": 31
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 14
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 14
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 17
     },
     {
       "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 16
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 16
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
+      "views": 15
+    },
+    {
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 15
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 14
+    },
+    {
+      "path": "/vi/huong-dan/them-thanh-vien/",
       "views": 14
     },
     {
@@ -206,28 +222,12 @@
       "views": 14
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
       "views": 13
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 13
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
-      "views": 13
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 12
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 12
     },
     {
       "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
-      "views": 12
+      "views": 11
     },
     {
       "path": "/Email%20c%E1%BB%A7a%20b%E1%BA%A1n",
@@ -235,7 +235,7 @@
     },
     {
       "path": "/vi/goi-cha-me/",
-      "views": 10
+      "views": 11
     }
   ]
 }
