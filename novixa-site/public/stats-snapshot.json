@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-29T05:51:57.291Z",
+  "generatedAt": "2026-10-29T13:06:47.046Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 46,
-    "todayPageViews": 66,
-    "todayRequests": 138,
-    "last24hVisitors": 128,
-    "last24hPageViews": 127,
-    "last24hRequests": 301
+    "todayVisitors": 90,
+    "todayPageViews": 137,
+    "todayRequests": 266,
+    "last24hVisitors": 135,
+    "last24hPageViews": 170,
+    "last24hRequests": 362
   },
   "hourly": [
-    {
-      "time": "2026-10-28T06:00:00Z",
-      "visitors": 8,
-      "requests": 21
-    },
-    {
-      "time": "2026-10-28T07:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-28T08:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-28T09:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-28T10:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-28T11:00:00Z",
-      "visitors": 12,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-28T12:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-28T13:00:00Z",
-      "visitors": 11,
-      "requests": 14
-    },
     {
       "time": "2026-10-28T14:00:00Z",
       "visitors": 2,
@@ -125,6 +85,46 @@
       "time": "2026-10-29T05:00:00Z",
       "visitors": 21,
       "requests": 110
+    },
+    {
+      "time": "2026-10-29T06:00:00Z",
+      "visitors": 8,
+      "requests": 41
+    },
+    {
+      "time": "2026-10-29T07:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-10-29T08:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-10-29T09:00:00Z",
+      "visitors": 4,
+      "requests": 38
+    },
+    {
+      "time": "2026-10-29T10:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-10-29T11:00:00Z",
+      "visitors": 11,
+      "requests": 18
+    },
+    {
+      "time": "2026-10-29T12:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-10-29T13:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,71 +166,71 @@
     },
     {
       "date": "2026-10-29",
-      "visitors": 46,
-      "pageViews": 66,
-      "requests": 138
+      "visitors": 90,
+      "pageViews": 137,
+      "requests": 266
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 66
-    },
-    {
-      "path": "/vi/",
-      "views": 26
+      "views": 61
     },
     {
       "path": "/robots.txt",
+      "views": 29
+    },
+    {
+      "path": "/vi/",
       "views": 23
     },
     {
       "path": "/vi/lien-he/",
-      "views": 11
-    },
-    {
-      "path": "/images/tin-tuc/quan-ly-lo-va-han-dung-hieu-qua.png",
-      "views": 9
-    },
-    {
-      "path": "/vi/nguoi-dan/",
-      "views": 9
+      "views": 17
     },
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 8
+      "views": 16
     },
     {
-      "path": "/vi/giai-phap-chi-phi/",
-      "views": 5
+      "path": "/vi/nguoi-dan/",
+      "views": 14
     },
     {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 5
+      "path": "/images/tin-tuc/quan-ly-lo-va-han-dung-hieu-qua.png",
+      "views": 10
     },
     {
-      "path": "/vi/nha-thuoc/",
-      "views": 5
+      "path": "/vi/tin-tuc/du-lieu-nhieu-nhung-neu-khong-giup-ra-quyet-dinh-thi-van-chua-du/",
+      "views": 7
     },
     {
       "path": "/vi/kien-thuc/",
-      "views": 5
+      "views": 7
     },
     {
-      "path": "/vi/tin-tuc/quan-ly-lo-va-han-dung-hieu-qua/",
-      "views": 4
+      "path": "/vi/giai-phap-chi-phi/",
+      "views": 7
     },
     {
-      "path": "/vi",
-      "views": 4
-    },
-    {
-      "path": "/vi/tin-tuc/co-phan-mem-nhung-chu-van-phai-hoi-nhan-vien-moi-biet-chuyen-gi-dang-xay-ra/",
-      "views": 4
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 7
     },
     {
       "path": "/vi/tai-lieu/",
-      "views": 4
+      "views": 7
+    },
+    {
+      "path": "/vi/nha-thuoc/",
+      "views": 7
+    },
+    {
+      "path": "/vi/tin-tuc/co-phan-mem-nhung-chu-van-phai-hoi-nhan-vien-moi-biet-chuyen-gi-dang-xay-ra/",
+      "views": 6
+    },
+    {
+      "path": "/vi/tin-tuc/quan-ly-lo-va-han-dung-hieu-qua/",
+      "views": 6
     }
   ]
 }
