@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/vite-env.d.ts",
+    "src/second-brain-host",
+    "src/modules/second-brain"
+  ],
+  "exclude": [
+    "src/modules/second-brain/**/*.smoke.ts"
+  ]
+}

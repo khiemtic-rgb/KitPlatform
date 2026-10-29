@@ -169,6 +169,7 @@ public sealed class PackDefinitionsAsBuiltSyncTests
             "local_os",
             "kit_sales",
             "learning",
+            "personal_intelligence",
         ];
 
         Assert.Equal(expected, PlatformModuleCodes.All.ToArray());

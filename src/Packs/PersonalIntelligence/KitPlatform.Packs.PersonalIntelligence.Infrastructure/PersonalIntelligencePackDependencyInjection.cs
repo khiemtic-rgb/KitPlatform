@@ -24,6 +24,18 @@ public static class PersonalIntelligencePackDependencyInjection
     public static IServiceCollection AddPersonalIntelligencePack(
         this IServiceCollection services)
     {
+        AddPersonalIntelligenceServices(services);
+        services.AddHostedService<ExchangeBackfillWorker>();
+        return services;
+    }
+
+    /// <summary>
+    /// Second Brain services for a host that must not start ExchangeBackfillWorker.
+    /// The shared pack registration still adds that worker.
+    /// </summary>
+    public static IServiceCollection AddPersonalIntelligenceServices(
+        this IServiceCollection services)
+    {
         // Trading Ledger V1 repositories
         services.AddScoped<IPersonRepository, PersonRepository>();
         services.AddScoped<IExchangeRepository, ExchangeRepository>();
@@ -56,7 +68,6 @@ public static class PersonalIntelligencePackDependencyInjection
         services.AddScoped<IExchangeConnectionService, ExchangeConnectionService>();
         services.AddScoped<IExchangeExecutionSync, ExchangeExecutionSyncService>();
         services.AddScoped<IExchangeBackfill, ExchangeBackfillService>();
-        services.AddHostedService<ExchangeBackfillWorker>();
 
         services.AddSingleton<IBusinessIntentInterpreter>(sp =>
             new CatalogGroundedIntentInterpreter(
