@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-29T06:05:56.206Z",
+  "generatedAt": "2026-10-29T13:26:27.348Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 63,
-    "todayPageViews": 66,
-    "todayRequests": 228,
-    "last24hVisitors": 148,
-    "last24hPageViews": 110,
-    "last24hRequests": 481
+    "todayVisitors": 87,
+    "todayPageViews": 124,
+    "todayRequests": 996,
+    "last24hVisitors": 151,
+    "last24hPageViews": 160,
+    "last24hRequests": 1187
   },
   "hourly": [
-    {
-      "time": "2026-10-28T07:00:00Z",
-      "visitors": 5,
-      "requests": 26
-    },
-    {
-      "time": "2026-10-28T08:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-28T09:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-28T10:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-28T11:00:00Z",
-      "visitors": 14,
-      "requests": 23
-    },
-    {
-      "time": "2026-10-28T12:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-28T13:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-10-28T14:00:00Z",
       "visitors": 1,
@@ -128,6 +93,36 @@
     },
     {
       "time": "2026-10-29T06:00:00Z",
+      "visitors": 8,
+      "requests": 53
+    },
+    {
+      "time": "2026-10-29T07:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-10-29T08:00:00Z",
+      "visitors": 12,
+      "requests": 627
+    },
+    {
+      "time": "2026-10-29T09:00:00Z",
+      "visitors": 5,
+      "requests": 61
+    },
+    {
+      "time": "2026-10-29T10:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-29T11:00:00Z",
+      "visitors": 2,
+      "requests": 21
+    },
+    {
+      "time": "2026-10-29T12:00:00Z",
       "visitors": 3,
       "requests": 3
     }
@@ -171,71 +166,71 @@
     },
     {
       "date": "2026-10-29",
-      "visitors": 137,
-      "pageViews": 94,
-      "requests": 324
+      "visitors": 168,
+      "pageViews": 152,
+      "requests": 1092
     }
   ],
   "topPages": [
     {
-      "path": "/",
-      "views": 39
+      "path": "/vi/",
+      "views": 42
     },
     {
       "path": "/robots.txt",
-      "views": 32
+      "views": 37
     },
     {
-      "path": "/vi/",
-      "views": 32
+      "path": "/",
+      "views": 35
     },
     {
       "path": "/sitemap.xml",
-      "views": 14
+      "views": 15
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 11
+    },
+    {
+      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
+      "views": 10
     },
     {
       "path": "/cdn-cgi/rum",
       "views": 10
     },
     {
-      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
-      "views": 9
-    },
-    {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 8
-    },
-    {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 8
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 8
-    },
-    {
       "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 7
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
-      "views": 7
-    },
-    {
-      "path": "/vi/huong-dan/",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
-      "views": 6
+      "views": 10
     },
     {
       "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 6
+      "views": 10
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 6
+      "path": "/images/blog/khi-nao-nen-noi-khong-voi-con.png",
+      "views": 10
+    },
+    {
+      "path": "/_next/static/chunks/977-43b6b69934e9440c.js",
+      "views": 9
+    },
+    {
+      "path": "/vi/%5C%5C%5C",
+      "views": 9
+    },
+    {
+      "path": "/storage/logs/laravel.log",
+      "views": 9
     }
   ]
 }
