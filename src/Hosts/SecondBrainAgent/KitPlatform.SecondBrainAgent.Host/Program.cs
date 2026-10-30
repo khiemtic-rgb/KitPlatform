@@ -25,6 +25,8 @@ var approvedPort = new NpgsqlConnectionStringBuilder(connectionString).Port;
 var expectedSystemIdentifier = SecondBrainDatabaseGuard.RequireSystemIdentifier(
     builder.Configuration["SecondBrain:SystemIdentifier"]);
 var jwtSecret = SecondBrainDatabaseGuard.RequireSecret(builder.Configuration["SecondBrain:JwtSecret"]);
+(builder.Configuration.GetSection(BusinessIntentModelOptions.SectionName).Get<BusinessIntentModelOptions>()
+    ?? new BusinessIntentModelOptions()).EnsureStartupSafe();
 
 await using (var probe = new NpgsqlConnection(connectionString))
 {

@@ -70,13 +70,16 @@ public static class PersonalIntelligencePackDependencyInjection
         services.AddScoped<IExchangeBackfill, ExchangeBackfillService>();
 
         services.AddSingleton<IBusinessIntentInterpreter>(sp =>
-            new CatalogGroundedIntentInterpreter(
+        {
+            var intent = sp.GetService<IOptions<BusinessIntentModelOptions>>()?.Value ?? new BusinessIntentModelOptions();
+            var timeoutSeconds = intent.RequestTimeoutSeconds is >= 5 and <= 45 ? intent.RequestTimeoutSeconds : 20;
+            return new CatalogGroundedIntentInterpreter(
                 new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(5) })
                 {
-                    Timeout = TimeSpan.FromMinutes(3),
+                    Timeout = TimeSpan.FromSeconds(timeoutSeconds),
                 },
-                sp.GetService<IOptions<BusinessIntentModelOptions>>()
-                    ?? Options.Create(new BusinessIntentModelOptions())));
+                Options.Create(intent));
+        });
         services.AddSingleton<IBusinessCapabilityHandler, PaperEvaluationHandler>();
         services.AddScoped<IBusinessCapabilityHandler, ResearchPublicationCapabilityHandler>();
         services.AddScoped<IBusinessCapabilityHandler, TradingDeskSummaryCapabilityHandler>();
