@@ -65,6 +65,26 @@ public sealed class ResearchPublicationController : ControllerBase
         });
     }
 
+    [HttpGet("evaluations")]
+    public async Task<IActionResult> Evaluations(CancellationToken cancellationToken) =>
+        Ok(ResearchEvaluationProjector.Project(await ReadSafe(cancellationToken)));
+
+    [HttpGet("evaluations/{experimentId}")]
+    public async Task<IActionResult> Evaluation(string experimentId, CancellationToken cancellationToken)
+    {
+        if (!ResearchExperimentIds.IsCatalogId(experimentId))
+            return NotFound(new { code = "NOT_IN_PUBLICATION" });
+        var projected = ResearchEvaluationProjector.ProjectOne(await ReadSafe(cancellationToken), experimentId);
+        if (projected.NotInPublication)
+            return NotFound(new { code = "NOT_IN_PUBLICATION" });
+        return Ok(new
+        {
+            availability = projected.Availability,
+            evaluation = projected.Evaluation,
+            readError = projected.ReadError,
+        });
+    }
+
     [HttpGet("paper/report")]
     public async Task<IActionResult> PaperReport(CancellationToken cancellationToken)
     {

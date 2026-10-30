@@ -324,3 +324,109 @@ function safeHash(value: string | null | undefined): string | null {
   if (!text || !/^[a-f0-9]+$/i.test(text)) return null;
   return text;
 }
+
+export type ResearchEvaluationSample = {
+  name?: string;
+  tradeCount?: number | null;
+  winCount?: number | null;
+  lossCount?: number | null;
+  winRate?: string | null;
+  netPnl?: string | null;
+  profitFactor?: string | null;
+  winRateIsPerformanceEvidence?: boolean | null;
+  profitFactorIsPerformanceEvidence?: boolean | null;
+  performanceClaim?: string | null;
+};
+
+export type ResearchEvaluationRow = {
+  evaluationId?: string | null;
+  experimentId?: string | null;
+  strategyVersion?: string | null;
+  symbol?: string | null;
+  timeframe?: string | null;
+  snapshotSha256?: string | null;
+  verdict?: string | null;
+  confidence?: string | null;
+  performanceClaim?: string | null;
+  approvalStatus?: string | null;
+  evidenceStatus?: string | null;
+  development?: ResearchEvaluationSample | null;
+  outOfSample?: ResearchEvaluationSample | null;
+  metrics?: {
+    sharpeRatio?: string | null;
+    cagr?: string | null;
+    maximumDrawdown?: string | null;
+    expectancy?: string | null;
+    equityCurve?: string | null;
+  } | null;
+  warnings?: string[] | null;
+};
+
+export type ResearchEvaluationComparison = {
+  availability?: string;
+  publicationId?: string | null;
+  snapshotSha256?: string | null;
+  sameSnapshot?: boolean;
+  verdict?: string | null;
+  confidence?: string | null;
+  warnings?: string[] | null;
+  limitations?: string[] | null;
+  evaluations?: ResearchEvaluationRow[] | null;
+};
+
+export type EvaluationComparisonModel = {
+  showRows: boolean;
+  title: string;
+  detail: string;
+  snapshot: string | null;
+  rows: {
+    experimentId: string;
+    verdict: string;
+    claim: string;
+    evidence: string;
+    developmentTrades: string;
+    outOfSampleTrades: string;
+    sourceNetPnl: string;
+    warnings: string;
+  }[];
+};
+
+const NOT_COMPUTED = 'Không có trong nguồn. Không được tính.';
+
+export function evaluationComparisonModel(body: ResearchEvaluationComparison | null): EvaluationComparisonModel {
+  const availability = body?.availability ?? '';
+  const showRows = (availability === 'FRESH' || availability === 'STALE') && body?.sameSnapshot === true;
+  if (!showRows) {
+    return {
+      showRows: false,
+      title: availability || 'INSUFFICIENT_DATA',
+      detail: 'Không có bản so sánh hợp lệ. Thiếu publication, checksum không khớp, hoặc các experiment không cùng snapshot.',
+      snapshot: null,
+      rows: [],
+    };
+  }
+  return {
+    showRows: true,
+    title: body?.verdict || 'NOT_SELECTABLE',
+    detail: 'Đây là chiếu publication. NOT_A_PERFORMANCE_CLAIM được giữ nguyên. Không phải xác nhận lợi nhuận, không có equity curve, Sharpe, CAGR, drawdown hay expectancy.',
+    snapshot: safeHash(body?.snapshotSha256),
+    rows: (body?.evaluations ?? []).map((row) => ({
+      experimentId: safeText(row.experimentId) ?? 'Chưa ghi nhận',
+      verdict: safeText(row.verdict) ?? 'INSUFFICIENT_DATA',
+      claim: safeText(row.performanceClaim) ?? 'Chưa ghi nhận',
+      evidence: safeText(row.evidenceStatus) ?? 'Chưa ghi nhận',
+      developmentTrades: countText(row.development?.tradeCount),
+      outOfSampleTrades: countText(row.outOfSample?.tradeCount),
+      sourceNetPnl: safeText(row.development?.netPnl) ?? 'Chưa ghi nhận',
+      warnings: (row.warnings ?? []).map((item) => safeText(item)).filter((item): item is string => Boolean(item)).join(', ') || 'Chưa ghi nhận',
+    })),
+  };
+}
+
+export function evaluationMetricNote(): string {
+  return NOT_COMPUTED;
+}
+
+function countText(value: number | null | undefined): string {
+  return typeof value === 'number' ? String(value) : 'INSUFFICIENT_DATA';
+}

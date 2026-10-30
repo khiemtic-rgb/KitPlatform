@@ -48,13 +48,14 @@ public sealed class ResearchPublicationTests
     }
 
     [Fact]
-    public async Task Trading_run_and_research_read_and_admin_can_read()
+    public async Task Research_read_and_admin_can_read_but_trading_run_cannot()
     {
         await using var host = await ResearchHost.Start();
         WriteValid(host.Root);
+        var trading = await host.Client("personal_intelligence.trading.run").GetAsync("/api/personal-intelligence/research/publication");
+        Assert.Equal(HttpStatusCode.Forbidden, trading.StatusCode);
         foreach (var client in new[]
         {
-            host.Client("personal_intelligence.trading.run"),
             host.Client("personal_intelligence.research.read"),
             host.Client(role: "ADMIN"),
         })
@@ -262,6 +263,8 @@ public sealed class ResearchPublicationTests
             "/api/personal-intelligence/research/experiments/EXP-ONE",
             "/api/personal-intelligence/research/paper/status",
             "/api/personal-intelligence/research/paper/report",
+            "/api/personal-intelligence/research/evaluations",
+            "/api/personal-intelligence/research/evaluations/EXP-ONE",
         })
         {
             var response = await client.GetAsync(path);
@@ -307,12 +310,67 @@ public sealed class ResearchPublicationTests
             Assert.Equal(1, root.GetProperty("importTradeCount").GetInt32());
             Assert.Equal(0, root.GetProperty("exchangeTradeCount").GetInt32());
 
-            var research = await client.GetAsync("/api/personal-intelligence/research/publication");
+            var research = await host.Client("personal_intelligence.research.read").GetAsync("/api/personal-intelligence/research/publication");
             var researchText = await research.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, research.StatusCode);
             Assert.DoesNotContain("secret-root-marker", researchText);
             Assert.DoesNotContain("supersecret", researchText);
         }
+    }
+
+    [Fact]
+    public async Task Evaluation_requires_research_read_and_hides_bodies_when_publication_is_not_readable()
+    {
+        await using var host = await ResearchHost.Start();
+        var denied = await host.Client("personal_intelligence.trading.run").GetAsync("/api/personal-intelligence/research/evaluations");
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+
+        var missing = await host.Client("personal_intelligence.research.read").GetAsync("/api/personal-intelligence/research/evaluations");
+        var missingText = await missing.Content.ReadAsStringAsync();
+        using var missingJson = JsonDocument.Parse(missingText);
+        Assert.Equal(HttpStatusCode.OK, missing.StatusCode);
+        Assert.Equal("MISSING", missingJson.RootElement.GetProperty("availability").GetString());
+        Assert.False(missingJson.RootElement.GetProperty("sameSnapshot").GetBoolean());
+        Assert.Equal("INSUFFICIENT_DATA", missingJson.RootElement.GetProperty("verdict").GetString());
+        Assert.Empty(missingJson.RootElement.GetProperty("evaluations").EnumerateArray());
+        Assert.Contains("NOT_A_PERFORMANCE_CLAIM", missingText);
+        Assert.DoesNotContain("sharpe", missingText, StringComparison.OrdinalIgnoreCase);
+
+        WriteValid(host.Root, "SECRET_PNL_MARKER");
+        RewriteHash(host.Root, "labResultSha256", Utf8.GetBytes("different-bytes"));
+        var inconsistent = await host.Client("personal_intelligence.research.read").GetAsync("/api/personal-intelligence/research/evaluations");
+        var inconsistentText = await inconsistent.Content.ReadAsStringAsync();
+        using var inconsistentJson = JsonDocument.Parse(inconsistentText);
+        Assert.Equal("INCONSISTENT", inconsistentJson.RootElement.GetProperty("availability").GetString());
+        Assert.Empty(inconsistentJson.RootElement.GetProperty("evaluations").EnumerateArray());
+        Assert.DoesNotContain("SECRET_PNL_MARKER", inconsistentText);
+    }
+
+    [Fact]
+    public async Task Evaluation_of_a_readable_fixture_is_not_a_performance_claim()
+    {
+        await using var host = await ResearchHost.Start();
+        WriteValid(host.Root);
+        var client = host.Client("personal_intelligence.research.read");
+        var list = await client.GetAsync("/api/personal-intelligence/research/evaluations");
+        var listText = await list.Content.ReadAsStringAsync();
+        using var listJson = JsonDocument.Parse(listText);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        Assert.True(listJson.RootElement.GetProperty("sameSnapshot").GetBoolean());
+        Assert.Equal("NOT_SELECTABLE", listJson.RootElement.GetProperty("verdict").GetString());
+        var row = listJson.RootElement.GetProperty("evaluations")[0];
+        Assert.Equal("EXP-ONE", row.GetProperty("experimentId").GetString());
+        Assert.Equal("NOT_IN_SOURCE", row.GetProperty("metrics").GetProperty("sharpeRatio").GetString());
+        Assert.Equal("NOT_IN_SOURCE", row.GetProperty("metrics").GetProperty("equityCurve").GetString());
+        Assert.Equal("NOT_IN_SOURCE", row.GetProperty("metrics").GetProperty("maximumDrawdown").GetString());
+        Assert.Contains("NOT_A_PERFORMANCE_CLAIM", listText);
+
+        var one = await client.GetAsync("/api/personal-intelligence/research/evaluations/EXP-OTHER");
+        Assert.Equal(HttpStatusCode.NotFound, one.StatusCode);
+        var known = await client.GetAsync("/api/personal-intelligence/research/evaluations/EXP-ONE");
+        Assert.Equal(HttpStatusCode.OK, known.StatusCode);
+        using var knownJson = JsonDocument.Parse(await known.Content.ReadAsStringAsync());
+        Assert.Equal("NOT_SELECTABLE", knownJson.RootElement.GetProperty("evaluation").GetProperty("verdict").GetString());
     }
 
     static async Task AssertMissingWithoutNumbers(HttpClient client)
