@@ -7,6 +7,7 @@ import {
   FileTextOutlined,
   FundOutlined,
   ReadOutlined,
+  RobotOutlined,
   SettingOutlined,
   TagsOutlined,
   UnorderedListOutlined,
@@ -28,6 +29,7 @@ export const CONTENT_NAV_WORK: ContentNavItem[] = [
   { key: 'content-article-series', label: 'Series', path: '/content/article-series', icon: <ReadOutlined /> },
   { key: 'content-topics', label: 'Nội dung', path: '/content/topics', icon: <UnorderedListOutlined /> },
   { key: 'content-calendar', label: 'Lịch', path: '/content/calendar', icon: <CalendarOutlined /> },
+  { key: 'content-agent', label: 'Agent đăng bài', path: '/content/agent', icon: <RobotOutlined /> },
 ];
 
 /** Videos sits outside the Idea → Episode → Content model, beside Thái Nguyên Life. */

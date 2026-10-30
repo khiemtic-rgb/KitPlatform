@@ -55,6 +55,8 @@ public static class ContentPackDependencyInjection
         services.AddScoped<IContentGenerateService, ContentGenerateService>();
         services.AddScoped<IContentLocalOsPublisher, UnconfiguredContentLocalOsPublisher>();
         services.AddScoped<IContentPublishService, ContentPublishService>();
+        services.AddScoped<IContentScheduleAdvisor, ContentScheduleAdvisor>();
+        services.AddScoped<IContentScheduleProposalService, ContentScheduleProposalService>();
         services.AddScoped<IContentVideoService, ContentVideoService>();
         services.AddScoped<GeminiPictureProvider>();
         services.AddScoped<RunwayMotionProvider>();

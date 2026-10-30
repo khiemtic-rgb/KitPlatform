@@ -60,3 +60,4 @@
 365_pack_content_video_generation_execution.sql
 366_pack_content_character_reference_pack.sql
 367_pack_content_character_reference_pack_contract.sql
+410_pack_content_schedule_proposal.sql

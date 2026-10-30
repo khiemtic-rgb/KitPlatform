@@ -462,6 +462,9 @@ const ContentCalendarPage = lazy(() =>
 const ContentBudgetPage = lazy(() =>
   import('@/modules/content/ContentBudgetPage').then((m) => ({ default: m.ContentBudgetPage })),
 );
+const ContentAgentPage = lazy(() =>
+  import('@/modules/content/ContentAgentPage').then((m) => ({ default: m.ContentAgentPage })),
+);
 const ContentSettingsPage = lazy(() =>
   import('@/modules/content/ContentSettingsPage').then((m) => ({ default: m.ContentSettingsPage })),
 );
@@ -1065,6 +1068,7 @@ export function AppRouter() {
               <Route path="ops" element={<ContentOpsPage />} />
               <Route path="calendar" element={<ContentCalendarPage />} />
               <Route path="budget" element={<ContentBudgetPage />} />
+              <Route path="agent" element={<ContentAgentPage />} />
               <Route path="ai" element={<ContentAiSettingsPage />} />
               <Route path="settings" element={<ContentSettingsPage />} />
               <Route path="brands" element={<ContentBrandsPage />} />
