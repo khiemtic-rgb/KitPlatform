@@ -40,6 +40,8 @@ const STATUS_FILTER = [
   { value: 'all', label: 'Tất cả' },
 ];
 
+const ALL = 'all';
+
 function vnTime(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', {
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -70,7 +72,7 @@ export function ContentAgentPage() {
       try {
         const list = await fetchContentBrands(true);
         setBrands(list);
-        setBrandId((cur) => cur ?? list[0]?.id);
+        setBrandId((cur) => cur ?? ALL);
       } catch (e) {
         message.error(apiErrorMessage(e, 'Không tải được danh sách thương hiệu'));
       }
@@ -82,7 +84,7 @@ export function ContentAgentPage() {
     setLoading(true);
     try {
       const status = filter === 'open' || filter === 'all' ? undefined : filter;
-      const all = await fetchAgentProposals({ brand: brandId, status });
+      const all = await fetchAgentProposals({ brand: brandId === ALL ? undefined : brandId, status });
       setRows(filter === 'open' ? all.filter((r) => r.status === 'Proposed' || r.status === 'Approved') : all);
       setSelected([]);
     } catch (e) {
@@ -97,7 +99,7 @@ export function ContentAgentPage() {
   }, [load]);
 
   const generate = async () => {
-    if (!brandId) return;
+    if (!brandId || brandId === ALL) return;
     setGenerating(true);
     try {
       const res = await generateAgentProposals(brandId, days, maxPerDay);
@@ -167,7 +169,10 @@ export function ContentAgentPage() {
             placeholder="Thương hiệu"
             value={brandId}
             onChange={setBrandId}
-            options={brands.map((b) => ({ value: b.id, label: `${b.name} (${b.code})` }))}
+            options={[
+              { value: ALL, label: 'Tất cả thương hiệu' },
+              ...brands.map((b) => ({ value: b.id, label: `${b.name} (${b.code})` })),
+            ]}
           />
           <span>
             Số ngày <InputNumber min={1} max={14} value={days} onChange={(v) => setDays(v ?? 7)} />
@@ -175,7 +180,7 @@ export function ContentAgentPage() {
           <span>
             Tối đa bài/ngày/kênh <InputNumber min={1} max={4} value={maxPerDay} onChange={(v) => setMaxPerDay(v ?? 1)} />
           </span>
-          <Button type="primary" icon={<RobotOutlined />} loading={generating} disabled={!brandId} onClick={() => void generate()}>
+          <Button type="primary" icon={<RobotOutlined />} loading={generating} disabled={!brandId || brandId === ALL} title={brandId === ALL ? 'Chọn một thương hiệu để tạo đề xuất' : undefined} onClick={() => void generate()}>
             Tạo đề xuất
           </Button>
         </Space>
@@ -233,6 +238,7 @@ export function ContentAgentPage() {
           loading={loading}
           dataSource={rows}
           pagination={{ pageSize: 20, hideOnSinglePage: true }}
+          scroll={{ x: 1000 }}
           rowSelection={{
             selectedRowKeys: selected,
             onChange: (keys) => setSelected(keys as string[]),
@@ -241,8 +247,14 @@ export function ContentAgentPage() {
           locale={{ emptyText: 'Chưa có đề xuất. Bấm "Tạo đề xuất".' }}
           columns={[
             { title: 'Giờ đăng (VN)', dataIndex: 'publishAt', width: 150, render: (v: string) => vnTime(v) },
-            { title: 'Bài', dataIndex: 'title', ellipsis: true },
-            { title: 'Kênh', dataIndex: 'targetLabel', width: 170 },
+            {
+              title: 'Thương hiệu',
+              dataIndex: 'brandId',
+              width: 130,
+              render: (v: string) => brands.find((b) => b.id === v)?.name ?? '',
+            },
+            { title: 'Bài', dataIndex: 'title', ellipsis: true, width: 240 },
+            { title: 'Kênh', dataIndex: 'targetLabel', width: 120 },
             {
               title: 'Trạng thái',
               dataIndex: 'status',
@@ -258,18 +270,19 @@ export function ContentAgentPage() {
                 </Space>
               ),
             },
-            { title: 'Lý do', dataIndex: 'reason', ellipsis: true },
+            { title: 'Lý do', dataIndex: 'reason', ellipsis: true, width: 140 },
             {
               title: '',
               key: 'actions',
-              width: 210,
+              fixed: 'right' as const,
+              width: 200,
               render: (_: unknown, r) => (
                 <Space>
                   {r.status === 'Proposed' && (
                     <>
                       <Popconfirm
                         title="Duyệt đề xuất này?"
-                        description={`Sẽ tạo job đăng lúc ${vnTime(r.publishAt)}.`}
+                        description={`Sẽ đăng lên ${r.targetLabel} lúc ${vnTime(r.publishAt)}.`}
                         okText="Duyệt"
                         cancelText="Không"
                         onConfirm={() => void act(r.id, () => approveAgentProposal(r.id), 'Đã duyệt, job đăng đã được tạo.')}

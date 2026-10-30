@@ -7,8 +7,10 @@ namespace KitPlatform.Packs.Content.Infrastructure;
 internal sealed class ContentScheduleProposalService : IContentScheduleProposalService
 {
     private const string Cols = """
-        id, brand_id, topic_id, title, target_key, target_label, connector_type, site_id, channel_id,
-        publish_at, status, reason, publish_job_id, decided_by, decided_at, last_error, created_at
+        id AS "Id", brand_id AS "BrandId", topic_id AS "TopicId", title AS "Title", target_key AS "TargetKey",
+        target_label AS "TargetLabel", connector_type AS "ConnectorType", site_id AS "SiteId", channel_id AS "ChannelId",
+        publish_at AS "PublishAt", status AS "Status", reason AS "Reason", publish_job_id AS "PublishJobId",
+        decided_by AS "DecidedBy", decided_at AS "DecidedAt", last_error AS "LastError", created_at AS "CreatedAt"
         """;
 
     private readonly IDbConnectionFactory _db;
@@ -96,12 +98,15 @@ internal sealed class ContentScheduleProposalService : IContentScheduleProposalS
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
         var rows = await conn.QueryAsync<Row>(
             $"""
-            SELECT sp.id, sp.brand_id, sp.topic_id, sp.title, sp.target_key, sp.target_label, sp.connector_type,
-                   sp.site_id, sp.channel_id, sp.publish_at, sp.status, sp.reason, sp.publish_job_id,
-                   sp.decided_by, sp.decided_at, sp.last_error, sp.created_at
+            SELECT sp.id AS "Id", sp.brand_id AS "BrandId", sp.topic_id AS "TopicId", sp.title AS "Title",
+                   sp.target_key AS "TargetKey", sp.target_label AS "TargetLabel", sp.connector_type AS "ConnectorType",
+                   sp.site_id AS "SiteId", sp.channel_id AS "ChannelId", sp.publish_at AS "PublishAt",
+                   sp.status AS "Status", sp.reason AS "Reason", sp.publish_job_id AS "PublishJobId",
+                   sp.decided_by AS "DecidedBy", sp.decided_at AS "DecidedAt", sp.last_error AS "LastError",
+                   sp.created_at AS "CreatedAt"
             FROM pack_content.schedule_proposal sp
             JOIN pack_content.brand b ON b.id = sp.brand_id
-            WHERE (@Brand::text IS NULL OR lower(b.code) = lower(@Brand) OR lower(b.name) = lower(@Brand))
+            WHERE (@Brand::text IS NULL OR sp.brand_id::text = @Brand OR lower(b.code) = lower(@Brand) OR lower(b.name) = lower(@Brand))
               AND (@Status::text IS NULL OR sp.status = @Status)
             ORDER BY sp.publish_at, sp.created_at
             LIMIT 200
