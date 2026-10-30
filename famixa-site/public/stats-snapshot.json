@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-30T06:06:58.542Z",
+  "generatedAt": "2026-10-30T13:15:58.106Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 24,
-    "todayPageViews": 7,
-    "todayRequests": 36,
-    "last24hVisitors": 138,
-    "last24hPageViews": 90,
-    "last24hRequests": 1010
+    "todayVisitors": 53,
+    "todayPageViews": 34,
+    "todayRequests": 134,
+    "last24hVisitors": 150,
+    "last24hPageViews": 75,
+    "last24hRequests": 390
   },
   "hourly": [
-    {
-      "time": "2026-10-29T07:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-10-29T08:00:00Z",
-      "visitors": 12,
-      "requests": 627
-    },
-    {
-      "time": "2026-10-29T09:00:00Z",
-      "visitors": 5,
-      "requests": 61
-    },
-    {
-      "time": "2026-10-29T10:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
-    {
-      "time": "2026-10-29T11:00:00Z",
-      "visitors": 2,
-      "requests": 21
-    },
-    {
-      "time": "2026-10-29T12:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
     {
       "time": "2026-10-29T14:00:00Z",
       "visitors": 6,
@@ -115,6 +85,41 @@
       "time": "2026-10-30T05:00:00Z",
       "visitors": 1,
       "requests": 1
+    },
+    {
+      "time": "2026-10-30T06:00:00Z",
+      "visitors": 3,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-30T07:00:00Z",
+      "visitors": 5,
+      "requests": 25
+    },
+    {
+      "time": "2026-10-30T08:00:00Z",
+      "visitors": 6,
+      "requests": 26
+    },
+    {
+      "time": "2026-10-30T09:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-10-30T10:00:00Z",
+      "visitors": 8,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-30T11:00:00Z",
+      "visitors": 6,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-30T12:00:00Z",
+      "visitors": 1,
+      "requests": 5
     }
   ],
   "daily": [
@@ -156,71 +161,71 @@
     },
     {
       "date": "2026-10-30",
-      "visitors": 115,
-      "pageViews": 42,
-      "requests": 239
+      "visitors": 147,
+      "pageViews": 69,
+      "requests": 337
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 38
+      "views": 46
     },
     {
       "path": "/robots.txt",
-      "views": 34
+      "views": 25
     },
     {
       "path": "/vi/",
-      "views": 26
+      "views": 24
     },
     {
       "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
-      "views": 23
-    },
-    {
-      "path": "/sitemap.xml",
-      "views": 18
+      "views": 20
     },
     {
       "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 15
+      "views": 13
     },
     {
-      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
-      "views": 15
+      "path": "/sitemap.xml",
+      "views": 13
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 14
+      "views": 12
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 14
+      "views": 12
     },
     {
-      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 13
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 13
-    },
-    {
-      "path": "/.well-known/security.txt",
-      "views": 10
+      "path": "/_next/static/chunks/267-9811a45b73b679a5.js",
+      "views": 12
     },
     {
       "path": "//web/wp-includes/wlwmanifest.xml",
       "views": 10
     },
     {
-      "path": "/.classpath",
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 10
+    },
+    {
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
+      "views": 10
+    },
+    {
+      "path": "/_next/static/css/289e1ac7e56a2138.css",
       "views": 9
     },
     {
-      "path": "/.idea/workspace.xml",
-      "views": 9
+      "path": "/wp-login.php",
+      "views": 8
+    },
+    {
+      "path": "/vi/huong-dan/moi-thanh-vien/",
+      "views": 5
     }
   ]
 }
