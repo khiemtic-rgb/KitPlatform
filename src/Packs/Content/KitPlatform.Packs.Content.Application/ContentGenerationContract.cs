@@ -113,6 +113,19 @@ public static class ContentGenerationContract
         ListLine(sb, "Avoid terms", knowledge.AvoidTerms);
         Line(sb, "CTA style", knowledge.CtaStyle);
         Line(sb, "Voice notes", knowledge.VoiceNotes);
+        ListLine(sb, "Forbidden topics", knowledge.ForbiddenTopics);
+        var knowledgeFocus = string.Join(
+            " ",
+            new[] { angle, packageAudience, contentFacts, seriesContext, episodeContext }
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+        var units = ContentBrandKnowledge.SelectKnowledge(knowledge, knowledgeFocus, 1800);
+        if (units.Count > 0)
+        {
+            sb.AppendLine("Brand knowledge (locked; follow exactly, do not contradict):");
+            foreach (var unit in units)
+                sb.Append("- ").AppendLine(unit);
+        }
+
         sb.AppendLine();
 
         sb.AppendLine("[NARRATIVE CONTEXT — AUTHORITATIVE]");

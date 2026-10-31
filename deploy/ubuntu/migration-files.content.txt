@@ -1,7 +1,6 @@
-# KIT Content Park — PILOT / INDEPENDENT
+﻿# KIT Content Park â€” PILOT / INDEPENDENT
 # Do NOT merge into migration-files.prod.txt (Pharmacy) until GA is explicitly approved.
 # Apply: list files below in order via your content mig runner (or psql manually).
-
 281_pack_content_wave0.sql
 282_pack_content_generate_publish.sql
 283_pack_content_brand_brief.sql
@@ -60,4 +59,26 @@
 365_pack_content_video_generation_execution.sql
 366_pack_content_character_reference_pack.sql
 367_pack_content_character_reference_pack_contract.sql
+368_pack_content_production_work_execution.sql
+369_pack_content_production_pipeline_graph.sql
+370_pack_content_production_scope_anchor.sql
+371_pack_content_production_test_scope.sql
+372_pack_content_production_assemble_action.sql
+373_pack_content_performance_snapshot.sql
+374_pack_content_production_performance_binding.sql
+375_pack_content_production_readiness_authority.sql
+376_pack_content_production_tenant_boundary.sql
+380_pack_content_production_assemble_episode_action.sql
+382_pack_content_production_tenant_ai_config.sql
+383_pack_content_article_series.sql
+384_pack_content_brand_narrative_dna.sql
+386_pack_content_famixa_canon_administer.sql
+394_pack_content_unscoped_idea.sql
+395_pack_content_film_type.sql
+396_pack_content_video_content_link.sql
+397_pack_content_series_code_scope.sql
+398_pack_content_series_build_pipeline.sql
 410_pack_content_schedule_proposal.sql
+418_pack_content_trading_narrative_dna.sql
+419_pack_content_brand_knowledge_units.sql
+420_pack_content_video_template_16x9.sql

@@ -41,7 +41,10 @@ internal sealed class ContentSeriesScriptDraftService : IContentSeriesScriptDraf
             : ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
         var brain = brand is null
             ? ""
-            : ContentBrandKnowledge.FormatForSeriesDraft(knowledge, brand.OperationalBrief);
+            : ContentBrandKnowledge.FormatForSeriesDraft(
+                knowledge,
+                brand.OperationalBrief,
+                focus: seed + " " + (episode ?? ""));
         var usedBrain = !string.IsNullOrWhiteSpace(brain);
 
         var raw = await _gemini.GenerateJsonAsync(

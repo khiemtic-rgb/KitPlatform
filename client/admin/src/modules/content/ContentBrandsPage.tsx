@@ -107,6 +107,7 @@ const EMPTY_BRAIN: ContentBrandKnowledge = {
   competitors: [],
   goodExamples: [],
   badExamples: [],
+  knowledgeUnits: [],
 };
 
 function knowledgeFromRow(row?: ContentBrand | null): ContentBrandKnowledge {
@@ -132,6 +133,7 @@ function knowledgeFromRow(row?: ContentBrand | null): ContentBrandKnowledge {
     competitors: k?.competitors ?? [],
     goodExamples: k?.goodExamples ?? [],
     badExamples: k?.badExamples ?? [],
+    knowledgeUnits: k?.knowledgeUnits ?? [],
   };
 }
 
@@ -678,6 +680,9 @@ export function ContentBrandsPage() {
           competitors: knowledge.competitors,
           goodExamples: knowledge.goodExamples,
           badExamples: knowledge.badExamples,
+          knowledgeUnits: (knowledge.knowledgeUnits ?? [])
+            .map((unit) => String(unit ?? '').trim())
+            .filter((unit) => unit.length > 0),
         },
       };
       if (editing) {
@@ -831,7 +836,7 @@ export function ContentBrandsPage() {
       const r = await startFacebookOAuth(editing.id);
       window.location.href = r.url;
     } catch (e) {
-      message.error(apiErrorMessage(e, 'Chưa mở được Facebook Login. Cấu hình App ở Model AI → Facebook.'));
+      message.error(apiErrorMessage(e, 'Chưa mở được Facebook Login. Cấu hình App ở Marketing AI → Facebook.'));
       setFbBusy(false);
     }
   };
@@ -1300,6 +1305,19 @@ export function ContentBrandsPage() {
                     </Form.Item>
                     <Form.Item name={['knowledge', 'competitors']} label="Đối thủ / ngữ cảnh">
                       <Select mode="tags" placeholder="Excel, phần mềm kế toán generic…" tokenSeparators={[',']} />
+                    </Form.Item>
+                    <Divider style={{ margin: '8px 0 16px' }}>Kho tri thức thương hiệu</Divider>
+                    <Form.Item
+                      name={['knowledge', 'knowledgeUnits']}
+                      label="Kho tri thức (mỗi dòng một đơn vị)"
+                      extra="Bản đồ chủ đề, công thức đã kiểm tra, lỗi cần tránh, quy trình. Mỗi dòng là một đơn vị độc lập; nên mở đầu bằng mã (vd «B2 Định cỡ vị thế: …»). Khi tạo nội dung, hệ thống tự chọn các dòng liên quan đến chủ đề — không giới hạn số dòng lưu. Dòng đặt trên cùng được ưu tiên khi không có chủ đề."
+                      getValueProps={(value?: string[] | null) => ({ value: (value ?? []).join('\n') })}
+                      normalize={(value: string) => String(value ?? '').split('\n')}
+                    >
+                      <Input.TextArea
+                        autoSize={{ minRows: 6, maxRows: 24 }}
+                        placeholder={'B2 Định cỡ vị thế: Lot = (vốn × % rủi ro) ÷ (SL pip × giá trị pip)\nLỖI CẦN TRÁNH: R:R 1:2 không tự có lãi'}
+                      />
                     </Form.Item>
                     <Divider style={{ margin: '8px 0 16px' }}>Ví dụ nội dung</Divider>
                     <Form.Item
@@ -1895,7 +1913,7 @@ export function ContentBrandsPage() {
                             ) : null}
                             <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: 12 }}>
                               Operator không dán token. Cần App Meta ở{' '}
-                              <Link to="/content/ai#facebook">Model AI → Facebook</Link>.
+                              <Link to="/content/marketing-ai#facebook">Marketing AI → Facebook</Link>.
                             </Typography.Paragraph>
                             <Space wrap>
                               <Button type="primary" loading={fbBusy} onClick={() => void connectFacebook()}>

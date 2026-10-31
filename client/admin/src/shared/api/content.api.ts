@@ -138,6 +138,8 @@ export type ContentBrandKnowledge = {
   competitors: string[];
   goodExamples: string[];
   badExamples: string[];
+  /** Brand knowledge base — one unit per entry, selected by relevance at prompt time. */
+  knowledgeUnits?: string[] | null;
 };
 
 export type ContentBrand = {
@@ -222,6 +224,7 @@ export type ContentTopic = {
   variantCount?: number;
   corePackageId?: string | null;
   coreTitle?: string | null;
+  contentFormat?: string | null;
 };
 
 export type ContentCoreIdea = {
@@ -485,7 +488,7 @@ export async function startContentSeriesTurbo(body: {
   imageDataUrl?: string;
   seconds: number;
   ratio: string;
-  engine?: 'turbo' | 'wan';
+  engine?: 'turbo' | 'wan' | 'veo';
   confirm?: boolean;
   lastFrameFromUrl?: string;
   /** Per-shot Director cap. Not monthly ContentBudget. */
@@ -530,6 +533,7 @@ export async function qaContentSeriesStill(body: { imageDataUrl: string; specJso
   return data;
 }
 
+/** LEGACY / NON-AUTHORITY. Production OS CREATE_IMAGE does not call POST /content/series/still. */
 export async function generateContentSeriesStill(body: {
   prompt: string;
   aspect: string;
@@ -576,6 +580,11 @@ export async function startContentSeriesLipsync(body: {
   productionDurationSec?: number;
   performanceDurationSec?: number;
   takeTaskId?: string;
+  speakerX?: number;
+  speakerY?: number;
+  speakerVideoWidth?: number;
+  speakerVideoHeight?: number;
+  speakerFrameNumber?: number;
 }) {
   const { data } = await http.post<ContentSeriesTurboTask>('/content/series/lipsync', body, { timeout: 360_000 });
   return data;
@@ -638,6 +647,28 @@ export async function probeContentSeriesTake(url: string) {
     bytes?: number | null;
     error?: string | null;
   }>('/content/series/take-probe', { url: src }, { timeout: 30_000 });
+  return data;
+}
+
+export async function fetchContentSeriesVeoVideo(taskId: string) {
+  const id = (taskId ?? '').trim();
+  if (!id) throw new Error('Chưa có task Veo.');
+  const { data } = await http.get<Blob>('/content/series/veo-video', {
+    params: { taskId: id },
+    responseType: 'blob',
+    timeout: 120_000,
+  });
+  return data;
+}
+
+export async function fetchContentSeriesFalVideo(taskId: string) {
+  const id = (taskId ?? '').trim();
+  if (!id) throw new Error('Chưa có task Fal.');
+  const { data } = await http.get<Blob>('/content/series/fal-video', {
+    params: { taskId: id },
+    responseType: 'blob',
+    timeout: 120_000,
+  });
   return data;
 }
 
@@ -745,6 +776,16 @@ export type ContentSeriesBuildSummary = {
   videoCount: number;
   createdAt: string;
   updatedAt: string;
+  /** `tenant` = caller owns the row. `unattributed` = historical null tenant, read-only. */
+  ownership?: 'tenant' | 'unattributed' | string;
+  brandId?: string | null;
+  filmTypeId?: string | null;
+  workflowKey?: string | null;
+  pipelineName?: string | null;
+  seriesLabel?: string | null;
+  purpose?: string | null;
+  aspect?: string | null;
+  steps?: string[] | null;
 };
 
 export type ContentSeriesBuild = ContentSeriesBuildSummary & {
@@ -753,6 +794,16 @@ export type ContentSeriesBuild = ContentSeriesBuildSummary & {
 
 export async function fetchContentSeriesBuilds(code = 'FAMIXA') {
   const { data } = await http.get<ContentSeriesBuildSummary[]>('/content/series/builds', { params: { code } });
+  return data ?? [];
+}
+
+export async function fetchSeriesBuildsForBrand(brandCode: string, brandId?: string) {
+  const { data } = await http.get<ContentSeriesBuildSummary[]>('/content/series/builds', {
+    params: {
+      brandCode,
+      ...(brandId ? { brandId } : {}),
+    },
+  });
   return data ?? [];
 }
 
@@ -765,11 +816,121 @@ export async function putContentSeriesBuild(body: {
   id?: string;
   seriesCode?: string;
   graph: Record<string, unknown>;
+  brandId?: string;
+  filmTypeId?: string;
 }) {
   const { data } = await http.put<ContentSeriesBuild>('/content/series/builds', {
     id: body.id,
-    seriesCode: body.seriesCode ?? 'FAMIXA',
+    seriesCode: body.seriesCode ?? (body.filmTypeId ? undefined : 'FAMIXA'),
     graph: body.graph,
+    brandId: body.brandId,
+    filmTypeId: body.filmTypeId,
+  });
+  return data;
+}
+
+export type NovixaMotionResponse = {
+  status: 'images_missing' | 'script_missing' | 'voice_not_run' | 'ready' | 'failed' | 'job_missing' | 'running';
+  message: string;
+  folder?: string | null;
+  videoPath?: string | null;
+  phase?: string | null;
+  taskId?: string | null;
+  stills?: { index: number; id: string; text: string; path: string; brandId?: string; brandStale?: boolean; signature?: string }[] | null;
+  shorts?: { index: number; title?: string | null; from: number; to: number; seconds: number; path?: string | null }[] | null;
+};
+
+export async function renderNovixaStockMotion(body: {
+  buildId: string;
+  lines: string[];
+  screens?: { path: string; label: string }[];
+  stills?: { index: number; id: string; text: string; path: string }[];
+  keep?: { index: number; path: string }[];
+  allowVoice: boolean;
+  voiceId?: string;
+  phase?: 'stills' | 'preview' | 'video' | 'shorts';
+  cuts?: { from: number; to: number; title?: string }[];
+  orientation?: 'wide' | 'tall';
+  redrawIndex?: number;
+  variant?: number;
+  force?: boolean;
+  reuseFolder?: string | null;
+  brand?: { id: string; name: string; colors?: string; style?: string; imageNotes?: string; products?: string[]; avoid?: string[] } | null;
+}) {
+  const { data } = await http.post<NovixaMotionResponse>(`/content/series/builds/${body.buildId}/novixa-motion`, {
+    lines: body.lines,
+    screens: body.screens ?? [],
+    stills: body.stills ?? [],
+    keep: body.keep ?? [],
+    allowVoice: body.allowVoice,
+    voiceId: body.voiceId,
+    phase: body.phase ?? 'video',
+    redrawIndex: body.redrawIndex,
+    variant: body.variant || undefined,
+    force: body.force === true,
+    reuseFolder: body.reuseFolder,
+    cuts: body.cuts,
+    orientation: body.orientation,
+    brand: body.brand ?? undefined,
+  }, { timeout: 1_200_000 });
+  return data;
+}
+
+export async function fetchNovixaMotion(buildId: string) {
+  const { data } = await http.get<NovixaMotionResponse>(`/content/series/builds/${buildId}/novixa-motion`, { timeout: 30_000 });
+  return data;
+}
+
+export async function fetchNovixaStill(buildId: string, index: number, folder: string, file?: string) {
+  const { data } = await http.get<Blob>(`/content/series/builds/${buildId}/novixa-motion/stills/${index}`, {
+    params: { folder, file: file || undefined },
+    responseType: 'blob',
+    timeout: 30_000,
+  });
+  return data;
+}
+
+export async function renderNovixaGeminiStill(buildId: string, index: number, text: string, brand?: { id: string; name: string; colors?: string; style?: string; imageNotes?: string } | null) {
+  const { data } = await http.post<{ index: number; id: string; text: string; path: string }>(
+    `/content/series/builds/${buildId}/novixa-motion/stills/${index}/gemini`,
+    { text, brandId: brand?.id, brandName: brand?.name, colors: brand?.colors, style: brand?.style, imageNotes: brand?.imageNotes },
+    { timeout: 180_000 },
+  );
+  return data;
+}
+
+export async function fetchNovixaShorts(buildId: string) {
+  try {
+    const { data } = await http.get<NovixaMotionResponse>(`/content/series/builds/${buildId}/novixa-motion/shorts`, { timeout: 30_000 });
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchNovixaShort(buildId: string, folder: string, number: number) {
+  const { data } = await http.get<Blob>(`/content/series/builds/${buildId}/novixa-motion/shorts/${number}`, {
+    params: { folder },
+    responseType: 'blob',
+    timeout: 120_000,
+  });
+  return data;
+}
+
+export async function fetchNovixaVideo(buildId: string, folder?: string | null) {
+  const { data } = await http.get<Blob>(`/content/series/builds/${buildId}/novixa-motion/video`, {
+    params: folder ? { folder } : undefined,
+    responseType: 'blob',
+    timeout: 60_000,
+  });
+  return data;
+}
+
+export async function fetchNovixaPreview(buildId: string, folder: string) {
+  const { data } = await http.get<Blob>(`/content/series/builds/${buildId}/novixa-motion/preview`, {
+    params: { folder },
+    responseType: 'blob',
+    timeout: 30_000,
   });
   return data;
 }
@@ -814,8 +975,27 @@ export type FamixaCharacterGuardResult = {
   compilerVersion: string;
 };
 
-export async function fetchFamixaCharacters() {
-  const { data } = await http.get<FamixaCharacterRow[]>('/content/series/characters');
+export type CharacterScopeQuery = {
+  seriesCode?: string | null;
+  workflowKey?: string | null;
+  filmTypeId?: string | null;
+};
+
+export function characterScopeParams(scope?: CharacterScopeQuery | null) {
+  const params: Record<string, string> = {};
+  const seriesCode = (scope?.seriesCode || '').trim();
+  const workflowKey = (scope?.workflowKey || '').trim();
+  const filmTypeId = (scope?.filmTypeId || '').trim();
+  if (seriesCode) params.seriesCode = seriesCode;
+  if (workflowKey) params.workflowKey = workflowKey;
+  if (filmTypeId) params.filmTypeId = filmTypeId;
+  return params;
+}
+
+export async function fetchFamixaCharacters(scope?: CharacterScopeQuery | null) {
+  const { data } = await http.get<FamixaCharacterRow[]>('/content/series/characters', {
+    params: characterScopeParams(scope),
+  });
   return data ?? [];
 }
 
@@ -921,6 +1101,8 @@ export type KitVideoProjectRow = {
   projectCode: string;
   name: string;
   brandCode: string;
+  brandId?: string | null;
+  filmTypeId?: string | null;
   status: string;
   visual: Record<string, unknown>;
   rules: Record<string, unknown>;
@@ -936,6 +1118,8 @@ export type KitVideoProductionRow = {
   state: string;
   runStatus?: string;
   seriesBuildId?: string | null;
+  contentTopicId?: string | null;
+  selectedForPublish?: boolean;
   shots: {
     shotCode: string;
     state: string;
@@ -980,6 +1164,74 @@ export type KitVideoJobRow = {
 export async function fetchKitVideoProjects() {
   const { data } = await http.get<KitVideoProjectRow[]>('/content/video-engine/projects');
   return data ?? [];
+}
+
+export type FilmTypeRow = {
+  id: string;
+  brandId: string;
+  brandCode: string;
+  code: string;
+  name: string;
+  workflowKey: string;
+  status: string;
+  purpose?: string;
+  seriesLabel?: string;
+  aspect?: string;
+  isDefault?: boolean;
+  steps?: string[] | null;
+  filmCount?: number;
+};
+
+export type FilmTypeWrite = {
+  name: string;
+  workflowKey: string;
+  status: string;
+  purpose?: string;
+  seriesLabel?: string;
+  aspect?: string;
+  isDefault: boolean;
+  steps?: string[];
+};
+
+export async function fetchFilmTypes(brandId: string) {
+  const { data } = await http.get<FilmTypeRow[]>('/content/film-types', { params: { brandId } });
+  return data ?? [];
+}
+
+export async function createFilmType(body: {
+  brandId: string;
+  code: string;
+  name: string;
+  workflowKey: string;
+  purpose?: string;
+  seriesLabel?: string;
+  aspect?: string;
+  isDefault?: boolean;
+  steps?: string[];
+}) {
+  const { data } = await http.post<FilmTypeRow>('/content/film-types', body);
+  return data;
+}
+
+export async function updateFilmType(id: string, body: FilmTypeWrite) {
+  const { data } = await http.put<FilmTypeRow>(`/content/film-types/${id}`, body);
+  return data;
+}
+
+export async function bindProjectFilmType(projectId: string, filmTypeId: string) {
+  await http.post(`/content/video-projects/${projectId}/film-type`, { filmTypeId });
+}
+
+export async function setContentFormat(topicId: string, format: string) {
+  await http.put(`/content/topics/${topicId}/format`, { format });
+}
+
+export async function linkProductionContent(productionId: string, topicId: string | null) {
+  await http.put(`/content/video-engine/productions/${productionId}/content`, { topicId });
+}
+
+export async function selectProductionForPublish(productionId: string) {
+  await http.post(`/content/video-engine/productions/${productionId}/select-for-publish`);
 }
 
 export async function fetchKitVideoProductions(project?: string) {
@@ -2960,10 +3212,17 @@ export type CharacterLibraryDetailRow = {
   generate?: boolean;
 };
 
-export async function fetchCharacterLibrary(params?: { q?: string; filter?: string; sort?: string }) {
+export async function fetchCharacterLibrary(params?: {
+  q?: string;
+  filter?: string;
+  sort?: string;
+  seriesCode?: string | null;
+  workflowKey?: string | null;
+  filmTypeId?: string | null;
+}) {
   const { data } = await http.get<{ items: CharacterLibraryViewRow[]; total: number; generate?: boolean }>(
     '/content/video-engine/character-library',
-    { params },
+    { params: { ...params, ...characterScopeParams(params) } },
   );
   return data;
 }
@@ -3320,9 +3579,10 @@ export async function fetchCharacterStudioStyles() {
   return data.items ?? [];
 }
 
-export async function fetchCharacterStudioList() {
-  const { data } = await http.get<{ items: CharacterStudioRow[]; total: number }>(
+export async function fetchCharacterStudioList(scope?: CharacterScopeQuery | null) {
+  const { data } = await http.get<{ items: CharacterStudioRow[]; total: number; scope?: string }>(
     '/content/character-studio/characters',
+    { params: characterScopeParams(scope) },
   );
   return data;
 }
@@ -6111,6 +6371,29 @@ export async function approveContentVideoJob(id: string) {
   return data;
 }
 
+/** Nhập MP4 thành phẩm (dựng ngoài hệ thống). Máy chủ kiểm giải mã rồi mới đặt Ready. */
+export async function importContentVideo(body: {
+  brandId: string;
+  title: string;
+  scriptBody?: string;
+  /** Template quyết định khung được kiểm (9:16, 1:1, 16:9). Bỏ trống = template dọc mặc định. */
+  templateCode?: string;
+  file: File;
+}) {
+  const form = new FormData();
+  form.append('brandId', body.brandId);
+  form.append('title', body.title);
+  if (body.scriptBody) form.append('scriptBody', body.scriptBody);
+  if (body.templateCode) form.append('templateCode', body.templateCode);
+  form.append('file', body.file);
+  const { data } = await http.post<ContentVideoJob>('/content/video/jobs/import', form, {
+    timeout: 300_000,
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity,
+  });
+  return data;
+}
+
 export async function fetchContentTopicDetail(id: string) {
   const { data } = await http.get<ContentTopicDetail>(`/content/topics/${id}/detail`);
   return data;
@@ -6432,5 +6715,507 @@ export async function generateNextContentArticleEpisodes(
   }>(`/content/article-series/${seriesId}/episodes/generate-next`, body ?? { count: 10, mode: 'plan' }, {
     timeout: 180_000,
   });
+  return data;
+}
+
+export type ProductionShotActionRow = {
+  action: string;
+  uiCta?: string;
+  available?: boolean;
+  blockReason?: string | null;
+  requiredInputs?: string[] | null;
+  missingInputs?: string[] | null;
+};
+
+export type ProductionShotActions = {
+  buildId: string;
+  shotCode: string;
+  currentState: string;
+  currentArtifactId?: string | null;
+  visibleArtifactId?: string | null;
+  acceptedArtifactId?: string | null;
+  actions: ProductionShotActionRow[];
+  videoArtifactId?: string | null;
+  voiceArtifactId?: string | null;
+  lipsyncArtifactId?: string | null;
+};
+
+export type ProductionShotState = {
+  scope?: { buildId?: string; episodeCode?: string; sceneCode?: string; shotCode?: string };
+  storyPresent?: boolean;
+  visibleArtifactId?: string | null;
+  currentArtifactId?: string | null;
+  acceptedArtifactId?: string | null;
+  nodes?: { node: string; status?: string; artifactId?: string | null; byteSha256?: string | null; reason?: string | null }[];
+  actions?: ProductionShotActionRow[];
+  videoArtifactId?: string | null;
+  voiceArtifactId?: string | null;
+  lipsyncArtifactId?: string | null;
+  paidStageLedger?: string | null;
+};
+
+export type AuthoritativeVideoTakeMeta = {
+  empty?: boolean;
+  reason?: string | null;
+  artifactId?: string | null;
+  role?: string | null;
+  acceptanceStatus?: string | null;
+  verificationStatus?: string | null;
+  byteSha256?: string | null;
+  mimeType?: string | null;
+  byteLength?: number | null;
+  providerId?: string | null;
+  modelId?: string | null;
+};
+
+export type ProductionVoiceArtifactMeta = {
+  empty?: boolean;
+  reason?: string | null;
+  artifactId?: string | null;
+  role?: string | null;
+  mimeType?: string | null;
+  durationSec?: number | null;
+  lineId?: string | null;
+};
+
+export type ProductionPreviewMeta = {
+  empty?: boolean;
+  reason?: string | null;
+  artifactId?: string | null;
+  byteSha256?: string | null;
+  storageKey?: string | null;
+  role?: string | null;
+  mimeType?: string | null;
+  durationSec?: number | null;
+};
+
+export type ProductionRequestResult = {
+  requestId: string;
+  taskId: string;
+  snapshotId: string;
+  attemptId: string;
+  action: string;
+  providerId: string;
+  modelId: string;
+  providerJobId?: string | null;
+  artifactId: string;
+  byteSha256: string;
+  storageKey: string;
+  previewKind?: string;
+};
+
+export type ProductionOsClaim = {
+  episodeCode?: string;
+  sceneCode?: string;
+  story?: string;
+  actingBeat?: string;
+  visualContract?: string;
+  timing?: string;
+  pictureStrategy?: string;
+  speechDelivery?: string;
+  strategyConfirmed?: boolean;
+  directSpeakerCount?: number;
+};
+
+function productionShotQuery(claim?: ProductionOsClaim) {
+  const engaged = Boolean((claim?.pictureStrategy || '').trim() || (claim?.speechDelivery || '').trim());
+  return {
+    params: {
+      episodeCode: claim?.episodeCode,
+      sceneCode: claim?.sceneCode,
+      story: claim?.story,
+      actingBeat: claim?.actingBeat,
+      visualContract: claim?.visualContract,
+      timing: claim?.timing,
+      pictureStrategy: engaged ? claim?.pictureStrategy : undefined,
+      speechDelivery: engaged ? claim?.speechDelivery : undefined,
+      strategyConfirmed: engaged ? claim?.strategyConfirmed === true : undefined,
+      directSpeakerCount: engaged ? claim?.directSpeakerCount ?? 0 : undefined,
+    },
+  };
+}
+
+export type NovixaShortStrategyPlan = {
+  picture?: string;
+  speech?: string;
+  confirmed?: boolean;
+  reason?: string;
+  Picture?: string;
+  Speech?: string;
+  Confirmed?: boolean;
+  Reason?: string;
+};
+
+export async function suggestNovixaShortStrategy(facts: {
+  hasDialogue: boolean;
+  speaksOnCamera: boolean;
+  needsPictureMotion: boolean;
+  wordLevelMouth: boolean;
+}) {
+  const { data } = await http.get<NovixaShortStrategyPlan>('/content/production/strategy/suggest', {
+    params: facts,
+  });
+  return {
+    picture: (data.picture || data.Picture || '').trim(),
+    speech: (data.speech || data.Speech || '').trim(),
+    confirmed: false,
+    reason: (data.reason || data.Reason || '').trim(),
+  };
+}
+
+export async function getProductionShotActions(buildId: string, shotCode: string, claim?: ProductionOsClaim) {
+  const { data } = await http.get<ProductionShotActions>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/actions`,
+    productionShotQuery(claim),
+  );
+  return data;
+}
+
+export async function getProductionShotState(buildId: string, shotCode: string, claim?: ProductionOsClaim) {
+  const { data } = await http.get<ProductionShotState>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/state`,
+    productionShotQuery(claim),
+  );
+  return data;
+}
+
+export async function getProductionPreview(buildId: string, shotCode: string) {
+  const { data } = await http.get<ProductionPreviewMeta>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/preview`,
+  );
+  return data;
+}
+
+export async function fetchProductionPreviewMedia(buildId: string, shotCode: string) {
+  const { data } = await http.get<Blob>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/preview/media`,
+    { responseType: 'blob' },
+  );
+  return data;
+}
+
+export async function getProductionKeyframe(buildId: string, shotCode: string) {
+  const { data } = await http.get<ProductionPreviewMeta>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/keyframe`,
+  );
+  return data;
+}
+
+export async function fetchProductionKeyframeMedia(buildId: string, shotCode: string) {
+  const { data } = await http.get<Blob>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/keyframe/media`,
+    { responseType: 'blob' },
+  );
+  return data;
+}
+
+export type VisualShotDemandBody = {
+  shotId: string;
+  filmId: string;
+  brandCode: string;
+  subjectKey: string;
+  action: string;
+  setting: string;
+  narration: string;
+  pose: string;
+  expression: string;
+  camera: string;
+  medium: 'auto' | 'photo';
+  characterId?: string;
+  prop: string;
+  requiredLabels?: string[];
+  tokens?: string[];
+};
+
+export type VisualResolveResult = {
+  decision: string;
+  assetId?: string | null;
+  variantAssetId?: string | null;
+  score?: number;
+  reasonCodes?: string[];
+  reason?: string;
+  paidProviderCalls?: number;
+  localRenders?: number;
+  brandCode?: string;
+  providerId?: string;
+  providerCallAuthorized?: boolean;
+  hasImage?: boolean;
+  undrawable?: string;
+  candidates?: { assetId?: string; eligible?: boolean; reasonCode?: string; score?: number }[];
+};
+
+export type VisualShotLink = {
+  found: boolean;
+  filmId: string;
+  shotId: string;
+  assetId?: string | null;
+  decision?: string | null;
+  approved: boolean;
+  brandCode?: string | null;
+  sha256?: string | null;
+  hasImage: boolean;
+};
+
+export async function resolveVisualShot(body: {
+  demand: VisualShotDemandBody;
+  searchOnly?: boolean;
+  regenerate?: boolean;
+}) {
+  const { data } = await http.post<VisualResolveResult>(
+    '/content/video-engine/visual-intelligence/resolve',
+    {
+      demand: body.demand,
+      searchOnly: body.searchOnly === true,
+      regenerate: body.regenerate === true,
+    },
+  );
+  return data;
+}
+
+export async function readVisualShotBinding(filmId: string, shotId: string) {
+  const { data } = await http.get<VisualShotLink>(
+    `/content/video-engine/visual-intelligence/films/${encodeURIComponent(filmId)}/shots/${encodeURIComponent(shotId)}`,
+  );
+  return data;
+}
+
+export async function fetchVisualAssetImage(assetId: string) {
+  const { data } = await http.get<Blob>(
+    `/content/video-engine/visual-intelligence/assets/${encodeURIComponent(assetId)}/image`,
+    { responseType: 'blob' },
+  );
+  return data;
+}
+
+export async function approveVisualShotBinding(filmId: string, shotId: string) {
+  const { data } = await http.post<VisualShotLink>(
+    `/content/video-engine/visual-intelligence/films/${encodeURIComponent(filmId)}/shots/${encodeURIComponent(shotId)}/approve`,
+  );
+  return data;
+}
+
+export type PerformanceCatalog = {
+  engineId: string;
+  character: string;
+  limits: string;
+  timelines: { brandCode: string; plate: string; label: string }[];
+  clips: { id: string; label: string }[];
+};
+
+export async function fetchPerformanceCatalog() {
+  const { data } = await http.get<PerformanceCatalog>('/content/video-engine/visual-intelligence/performance/catalog');
+  return data;
+}
+
+export async function renderPerformanceFilm(body: { brandCode: string; clipId: string; duration: number }) {
+  const { data } = await http.post<Blob>(
+    '/content/video-engine/visual-intelligence/performance',
+    body,
+    { responseType: 'blob', timeout: 360_000 },
+  );
+  return data;
+}
+
+export async function getAuthoritativeProductionVideo(buildId: string, shotCode: string) {
+  const { data } = await http.get<AuthoritativeVideoTakeMeta>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/authoritative-video`,
+  );
+  return data;
+}
+
+export async function getProductionCurrentVoice(buildId: string, shotCode: string, lineId: string) {
+  const { data } = await http.get<ProductionVoiceArtifactMeta>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/voice`,
+    { params: { lineId } },
+  );
+  return data;
+}
+
+export async function fetchProductionVoiceMedia(buildId: string, shotCode: string, lineId: string) {
+  const { data } = await http.get<Blob>(
+    `/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/voice/media`,
+    { params: { lineId }, responseType: 'blob' },
+  );
+  return data;
+}
+
+export async function getProductionAiSelection(buildId: string, shotCode: string, stage = 'VIDEO') {
+  const { data } = await http.get<{
+    selectionId: string;
+    providerId: string;
+    modelId: string;
+    stage: string;
+  }>('/content/production/ai-selections', { params: { buildId, shotCode, stage } });
+  return data;
+}
+
+export async function upsertProductionAiSelection(body: {
+  buildId: string;
+  shotCode: string;
+  episodeCode: string;
+  sceneCode: string;
+  stage: string;
+  providerId: string;
+  modelId: string;
+  reason?: string;
+}) {
+  const { data } = await http.post<{
+    selectionId: string;
+    providerId: string;
+    modelId: string;
+  }>('/content/production/ai-selections', body);
+  return data;
+}
+
+export async function getCreateVideoInputPreview(
+  buildId: string,
+  shotCode: string,
+  episodeCode?: string,
+  sceneCode?: string,
+) {
+  const { data } = await http.get<{
+    durationSec?: number | null;
+    timingStatus?: string | null;
+    performanceSnapshotId?: string | null;
+    speechStartSec?: number | null;
+    speechEndSec?: number | null;
+    createVideoAvailable?: boolean;
+    blockReason?: string | null;
+  }>(`/content/production/shots/${buildId}/${encodeURIComponent(shotCode)}/create-video-input-preview`, {
+    params: { episodeCode, sceneCode },
+  });
+  return data;
+}
+
+export async function materializeProductionDirectorTiming(body: {
+  buildId: string;
+  shotCode: string;
+  episodeCode: string;
+  sceneCode: string;
+  durationSec: number;
+  speechStartSec?: number | null;
+  speechEndSec?: number | null;
+}) {
+  const { data } = await http.post<{
+    performanceSnapshotId: string;
+    productionDurationSec?: number | null;
+    timingSource?: string | null;
+    decisionType?: string | null;
+    speechStartSec?: number | null;
+    speechEndSec?: number | null;
+  }>('/content/production/director-timing', body);
+  return data;
+}
+
+export async function materializeVoiceProductionIngress(body: {
+  buildId: string;
+  shotCode: string;
+  episodeCode: string;
+  sceneCode: string;
+}) {
+  const { data } = await http.post<{
+    performanceSnapshotId: string;
+    performanceHash: string;
+    lineId: string;
+    lineText: string;
+    speakerCharacterId: string;
+    voiceId: string;
+  }>('/content/production/voice-production-ingress', body);
+  return data;
+}
+
+export async function materializeLipsyncProductionIngress(body: {
+  buildId: string;
+  shotCode: string;
+  episodeCode: string;
+  sceneCode: string;
+}) {
+  const { data } = await http.post<{ permitId: string; status: string }>(
+    '/content/production/lipsync-production-ingress',
+    body,
+  );
+  return data;
+}
+
+export async function createProductionRequest(body: {
+  buildId: string;
+  episodeCode: string;
+  sceneCode: string;
+  shotCode: string;
+  story: string;
+  actingBeat: string;
+  visualContract: string;
+  timing: string;
+  aspectRatio: string;
+  durationSec: number;
+  action: string;
+  idempotencyKey?: string;
+  lineId?: string;
+  speakerCharacterId?: string;
+  voiceId?: string;
+  motionArtifactId?: string;
+  voiceArtifactId?: string;
+  lipsyncArtifactId?: string;
+  acceptArtifactId?: string;
+  assemblyArtifactIds?: string[];
+  assemblyShotCodes?: string[];
+  authorizePaidNetwork?: boolean;
+  imageSize?: string;
+  performanceSnapshotId?: string;
+  performanceHash?: string;
+  pictureStrategy?: string;
+  speechDelivery?: string;
+  strategyConfirmed?: boolean;
+  directSpeakerCount?: number;
+}) {
+  const { data } = await http.post<ProductionRequestResult>('/content/production/requests', body, {
+    timeout: 180_000,
+  });
+  return data;
+}
+
+export type ProductionCredentialCatalogItem = {
+  credentialId: string;
+  credentialVersionId: string;
+  providerId: string;
+  modelId: string;
+  status: string;
+  identityStatus: string;
+  version: number;
+  createdAt: string;
+};
+
+export type ProductionCredentialRegistration = {
+  credentialId: string;
+  credentialVersionId: string;
+  providerId: string;
+  modelId: string;
+  status: string;
+  version: number;
+};
+
+export async function listProductionCredentials() {
+  const { data } = await http.get<ProductionCredentialCatalogItem[]>('/content/production/credentials');
+  return data;
+}
+
+export async function registerProductionCredential(body: {
+  providerId: string;
+  modelId: string;
+  secret: string;
+  displayName?: string;
+}) {
+  const { data } = await http.post<ProductionCredentialRegistration>('/content/production/credentials', body);
+  return data;
+}
+
+export async function addProductionCredentialVersion(
+  credentialId: string,
+  body: { providerId: string; modelId: string; secret: string },
+) {
+  const { data } = await http.post<ProductionCredentialRegistration>(
+    `/content/production/credentials/${credentialId}/versions`,
+    body,
+  );
   return data;
 }

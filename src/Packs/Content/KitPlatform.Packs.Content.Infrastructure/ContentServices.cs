@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using KitPlatform.Packs.Content;
+using KitPlatform.Packs.Content.Production;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
@@ -16,9 +17,12 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
     private readonly ContentElevenLabsClient _elevenLabs;
     private readonly ContentRunwayClient _runway;
     private readonly ContentFalClient _fal;
+    private readonly ContentVeoClient _veo;
     private readonly ContentFacebookClient _facebook;
     private readonly IConfiguration _configuration;
     private readonly ContentOptions _options;
+    private readonly IProductionCredentialStore _credentialStore;
+    private readonly IProductionCallerTenant _callerTenant;
 
     public ContentOrgSettingsService(
         ContentRepository repo,
@@ -27,9 +31,12 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         ContentElevenLabsClient elevenLabs,
         ContentRunwayClient runway,
         ContentFalClient fal,
+        ContentVeoClient veo,
         ContentFacebookClient facebook,
         IConfiguration configuration,
-        IOptions<ContentOptions> options)
+        IOptions<ContentOptions> options,
+        IProductionCredentialStore credentialStore,
+        IProductionCallerTenant callerTenant)
     {
         _repo = repo;
         _gemini = gemini;
@@ -37,9 +44,12 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         _elevenLabs = elevenLabs;
         _runway = runway;
         _fal = fal;
+        _veo = veo;
         _facebook = facebook;
         _configuration = configuration;
         _options = options.Value;
+        _credentialStore = credentialStore;
+        _callerTenant = callerTenant;
     }
 
     public async Task<ContentOrgSettingsDto> GetAsync(CancellationToken cancellationToken = default)
@@ -147,6 +157,32 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
                 state.FalApiKey = string.IsNullOrWhiteSpace(video.FalApiKey)
                     ? null
                     : video.FalApiKey.Trim();
+            if (video.VeoJoinSecretRef is not null)
+                state.VeoJoinSecretRef = string.IsNullOrWhiteSpace(video.VeoJoinSecretRef)
+                    ? null
+                    : video.VeoJoinSecretRef.Trim();
+            if (video.VeoJoinFile is not null)
+            {
+                if (string.IsNullOrWhiteSpace(video.VeoJoinFile))
+                {
+                    state.VeoJoinFile = null;
+                    state.VeoJoinFileName = null;
+                }
+                else
+                {
+                    var join = FamixaVeoJoinCredentialsV1.Accept(video.VeoJoinFile, video.VeoJoinFileName);
+                    if (!join.Ok)
+                        throw new InvalidOperationException(join.Message ?? "File Join Veo không hợp lệ.");
+                    state.VeoJoinFile = join.NormalizedText;
+                    state.VeoJoinFileName = join.FileName;
+                }
+            }
+            else if (video.VeoJoinFileName is not null)
+            {
+                state.VeoJoinFileName = string.IsNullOrWhiteSpace(video.VeoJoinFileName)
+                    ? null
+                    : FamixaVeoJoinCredentialsV1.SanitizeFileName(video.VeoJoinFileName);
+            }
             row.VideoConfigJson = ContentVideoConfigParser.ToJson(state);
         }
 
@@ -250,6 +286,8 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         var runwayResolved = await _runway.ResolveAsync(cancellationToken);
         var fal = await _fal.TestConnectionAsync(cancellationToken);
         var falResolved = await _fal.ResolveAsync(cancellationToken);
+        var veo = await _veo.TestConnectionAsync(cancellationToken);
+        var veoJoinConfigured = falResolved.VeoJoinConfigured;
         return new ContentVideoTestResultDto(
             creatomate.Ok,
             creatomate.Message,
@@ -263,7 +301,10 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
             runwayResolved.RunwayConfigured,
             fal.Ok,
             fal.Message,
-            falResolved.FalConfigured);
+            falResolved.FalConfigured,
+            veo.Ok,
+            veo.Message,
+            veoJoinConfigured);
     }
 
     public async Task<ContentFacebookTestResultDto> TestFacebookAsync(CancellationToken cancellationToken = default)
@@ -293,6 +334,8 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
         var tmpl = await _repo.GetVideoTemplateByCodeAsync(ContentVideoConfigParser.CreatomateTemplateCode, ct);
         if (!string.IsNullOrWhiteSpace(tmpl?.ExternalTemplateId))
             videoState.CreatomateTemplateId = tmpl.ExternalTemplateId.Trim();
+        var videoDto = ContentVideoConfigParser.ToDto(videoState, videoResolved);
+        videoDto = await OverrideProductionAiConfiguredFlags(videoDto, ct);
         return new(
             row.Id,
             row.MonthlyCeilingUsd,
@@ -305,7 +348,7 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
             ContentRepository.ParseStringList(row.ConnectorTypesJson),
             ContentRepository.ParseStringList(row.ChannelTypesJson),
             ContentAiConfigParser.ToDto(aiState, resolved.ApiKeyConfigured),
-            ContentVideoConfigParser.ToDto(videoState, videoResolved),
+            videoDto,
             ContentFacebookConfigParser.ToDto(
                 ContentFacebookConfigParser.Parse(row.FacebookConfigJson),
                 ContentFacebookConfigParser.Resolve(
@@ -313,6 +356,67 @@ internal sealed class ContentOrgSettingsService : IContentOrgSettingsService
             spend,
             Math.Max(0, row.MonthlyCeilingUsd - spend),
             row.UpdatedAt);
+    }
+
+    private async Task<ContentVideoConfigDto> OverrideProductionAiConfiguredFlags(
+        ContentVideoConfigDto legacyDto,
+        CancellationToken ct)
+    {
+        // AI-UNIFICATION-02: Tenant-scoped production credentials are the authoritative source
+        // for production AI configured state, not legacy org_settings.video_config_json.
+        Guid tenantId;
+        try
+        {
+            tenantId = _callerTenant.RequireTenant();
+        }
+        catch
+        {
+            // Anonymous/system calls or missing tenant: return all production AI flags as false
+            return legacyDto with
+            {
+                RunwayConfigured = false,
+                FalConfigured = false,
+                ElevenLabsConfigured = false
+            };
+        }
+
+        if (tenantId == Guid.Empty)
+        {
+            return legacyDto with
+            {
+                RunwayConfigured = false,
+                FalConfigured = false,
+                ElevenLabsConfigured = false
+            };
+        }
+
+        // Query tenant-scoped production credentials
+        // ListCatalogAsync already filters to the authenticated tenant automatically
+        var catalog = await _credentialStore.ListCatalogAsync(ct);
+
+        // Filter to ACTIVE credentials only
+        var activeCreds = catalog.Where(c =>
+            c.IdentityStatus == "ACTIVE" &&
+            c.Status == "ACTIVE").ToList();
+
+        // Check for specific provider/model combinations
+        var runwayConfigured = activeCreds.Any(c =>
+            string.Equals(c.ProviderId, "runway", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(c.ModelId, "gen4_turbo", StringComparison.OrdinalIgnoreCase));
+
+        var falConfigured = activeCreds.Any(c =>
+            string.Equals(c.ProviderId, "fal", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(c.ModelId, "sync-lipsync-v3", StringComparison.OrdinalIgnoreCase));
+
+        var elevenLabsConfigured = activeCreds.Any(c =>
+            string.Equals(c.ProviderId, "elevenlabs", StringComparison.OrdinalIgnoreCase));
+
+        return legacyDto with
+        {
+            RunwayConfigured = runwayConfigured,
+            FalConfigured = falConfigured,
+            ElevenLabsConfigured = elevenLabsConfigured
+        };
     }
 
     private static string NormalizeTier(string tier)
@@ -374,6 +478,10 @@ internal sealed class ContentBrandService : IContentBrandService
         {
             row.ToneJson = existing.ToneJson;
             row.VisualKitJson = existing.VisualKitJson;
+        }
+        else if (request.Knowledge.KnowledgeUnits is null)
+        {
+            row.ToneJson = ContentBrandKnowledge.CarryKnowledgeUnits(row.ToneJson, existing.ToneJson);
         }
         await _repo.UpdateBrandAsync(row, cancellationToken);
         return await GetAsync(id, cancellationToken);
@@ -777,7 +885,7 @@ internal sealed class ContentTopicService : IContentTopicService
     private static ContentTopicDto Map(ContentRepository.TopicRow r) =>
         new(r.Id, r.BrandId, r.BrandCode, r.BrandName, r.Title, r.Pillar, r.Goal,
             r.CtaUrl, r.UtmCampaign, r.Priority, r.Status, r.BodyOutline, r.DisplayAt,
-            r.CreatedAt, r.UpdatedAt, r.VariantCount, r.CorePackageId, r.CoreTitle);
+            r.CreatedAt, r.UpdatedAt, r.VariantCount, r.CorePackageId, r.CoreTitle, r.ContentFormat);
 
     internal static ContentPublishJobDto MapJob(ContentRepository.PublishJobRow r) =>
         new(r.Id, r.TopicId, r.BrandId, r.TargetKind, r.SiteTargetId, r.ChannelTargetId,
@@ -835,8 +943,8 @@ internal sealed class ContentPackageService : IContentPackageService
     public async Task<ContentPackageDetailDto?> GetDetailAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var package = await GetAsync(id, cancellationToken);
-        if (package is null) return null;
-        var detail = await _topics.GetDetailAsync(package.TopicId, cancellationToken);
+        if (package is null || package.TopicId is not Guid topicId) return null;
+        var detail = await _topics.GetDetailAsync(topicId, cancellationToken);
         if (detail is null) return null;
         var children = await _repo.ListPackagesBySourceAsync(id, cancellationToken);
         return new ContentPackageDetailDto(package, detail, children.Select(Map).ToList());
@@ -922,12 +1030,14 @@ internal sealed class ContentPackageService : IContentPackageService
             priority,
             cancellationToken);
 
-        var topic = await _repo.GetTopicAsync(existing.TopicId, cancellationToken);
+        var topic = existing.TopicId is Guid existingTopicId
+            ? await _repo.GetTopicAsync(existingTopicId, cancellationToken)
+            : null;
         if (topic is not null)
         {
             await _repo.UpdateTopicAsync(
-                existing.TopicId,
-                existing.BrandId,
+                topic.Id,
+                topic.BrandId,
                 title,
                 request.Pillar?.Trim() ?? topic.Pillar,
                 goal,
@@ -962,13 +1072,13 @@ internal sealed class ContentPackageService : IContentPackageService
         await _repo.UpdatePackageStatusAsync(id, "Generating", cancellationToken);
         try
         {
-            var result = await _generate.GenerateAsync(package.TopicId, request, cancellationToken);
+            var result = await _generate.GenerateAsync(ContentPackageScope.RequireTopic(package), request, cancellationToken);
             await _repo.UpdatePackageStatusAsync(id, result.Topic.Status, cancellationToken);
             return result;
         }
         catch
         {
-            var topic = await _repo.GetTopicAsync(package.TopicId, cancellationToken);
+            var topic = await _repo.GetTopicAsync(ContentPackageScope.RequireTopic(package), cancellationToken);
             await _repo.UpdatePackageStatusAsync(id, topic?.Status ?? "Draft", cancellationToken);
             throw;
         }
@@ -981,14 +1091,24 @@ internal sealed class ContentPackageService : IContentPackageService
     {
         var source = await _repo.GetPackageAsync(id, cancellationToken)
                      ?? throw new InvalidOperationException("Source package not found");
-        if (request.TargetBrandId == source.BrandId && source.SourcePackageId is not null)
+        if (source.BrandId is Guid sourceBrand
+            && request.TargetBrandId == sourceBrand
+            && source.SourcePackageId is not null)
             throw new InvalidOperationException("Góc brand không nhân bản thêm lần nữa cho cùng brand.");
+        var (_, sourceFits) = ContentPackageExtra.Parse(source.ExtraJson);
+        var marked = sourceFits.FirstOrDefault(f => f.BrandId == request.TargetBrandId);
+        if (BrandNarrativeFit.BlocksAngle(marked?.Territory, marked?.NarrativeFit))
+            throw new InvalidOperationException("OFF-BRAND — không tạo Brand Angle.");
 
         var targetBrand = await _repo.GetBrandAsync(request.TargetBrandId, cancellationToken)
                           ?? throw new InvalidOperationException("Target brand not found");
 
-        var sourceTopic = await _repo.GetTopicAsync(source.TopicId, cancellationToken)
+        ContentRepository.TopicRow? sourceTopic = null;
+        if (source.TopicId is Guid sourceTopicId)
+        {
+            sourceTopic = await _repo.GetTopicAsync(sourceTopicId, cancellationToken)
                           ?? throw new InvalidOperationException("Source topic missing");
+        }
 
         var title = string.IsNullOrWhiteSpace(request.Title)
             ? source.Title
@@ -1000,7 +1120,7 @@ internal sealed class ContentPackageService : IContentPackageService
             angle,
             source.Audience,
             request.BodyOutline
-            ?? $"Biến thể từ package {source.BrandName}: «{source.Title}».\n\n{sourceTopic.BodyOutline ?? ""}".Trim());
+            ?? $"Biến thể từ package {source.BrandName}: «{source.Title}».\n\n{sourceTopic?.BodyOutline ?? ""}".Trim());
 
         var topicId = await _repo.InsertTopicAsync(
             request.TargetBrandId,
@@ -1013,13 +1133,13 @@ internal sealed class ContentPackageService : IContentPackageService
                 source.Pillar,
                 source.Goal,
                 outline,
-                targetBrand.DefaultCtaUrl ?? sourceTopic.CtaUrl,
+                targetBrand.DefaultCtaUrl ?? sourceTopic?.CtaUrl,
                 targetBrand.DefaultCtaUrl),
             utm: null,
             source.Priority,
             "Draft",
             outline,
-            request.DisplayAt ?? sourceTopic.DisplayAt,
+            request.DisplayAt ?? sourceTopic?.DisplayAt,
             cancellationToken);
 
         var packageId = await _repo.InsertPackageAsync(
@@ -1051,8 +1171,12 @@ internal sealed class ContentPackageService : IContentPackageService
     {
         var source = await _repo.GetPackageAsync(id, cancellationToken)
                      ?? throw new InvalidOperationException("Package not found");
-        var sourceTopic = await _repo.GetTopicAsync(source.TopicId, cancellationToken)
+        ContentRepository.TopicRow? sourceTopic = null;
+        if (source.TopicId is Guid sourceTopicId)
+        {
+            sourceTopic = await _repo.GetTopicAsync(sourceTopicId, cancellationToken)
                           ?? throw new InvalidOperationException("Source topic missing");
+        }
         var (core, _) = ContentPackageExtra.Parse(source.ExtraJson);
 
         var brands = (await _repo.ListBrandsAsync(true, cancellationToken))
@@ -1097,6 +1221,7 @@ internal sealed class ContentPackageService : IContentPackageService
         var byCode = brands.ToDictionary(b => b.Code, StringComparer.OrdinalIgnoreCase);
         var results = new List<ContentBrandFitDto>();
 
+        var ideaText = NarrativeIdeaText(source, core);
         foreach (var row in parsed.Fits)
         {
             if (string.IsNullOrWhiteSpace(row.BrandCode)) continue;
@@ -1106,46 +1231,96 @@ internal sealed class ContentPackageService : IContentPackageService
             if (verdict is not ("fit" or "maybe" or "skip"))
                 verdict = "skip";
             var score = Math.Clamp(row.Score, 0, 100);
-
-            Guid? createdId = null;
-            var shouldCreate = request.CreatePackages
-                && (verdict == "fit" || (verdict == "maybe" && request.IncludeMaybe));
-            if (shouldCreate)
+            var dna = BrandNarrativeFit.Parse(brand.NarrativeJson);
+            BrandNarrativeDecision? decision = null;
+            if (dna is not null)
             {
-                createdId = await MaterializeFitAsync(
-                    source,
-                    brand,
-                    string.IsNullOrWhiteSpace(row.Title) ? source.Title : row.Title.Trim(),
-                    string.IsNullOrWhiteSpace(row.Angle)
-                        ? $"Góc {brand.Name}: {source.Title}"
-                        : row.Angle.Trim(),
-                    string.IsNullOrWhiteSpace(row.Audience) ? source.Audience : row.Audience.Trim(),
-                    row.Outline,
-                    request.GenerateFits && verdict == "fit"
-                        ? new GenerateContentRequest()
-                        : null,
-                    cancellationToken);
+                decision = BrandNarrativeFit.Reconcile(
+                    dna,
+                    ideaText,
+                    new NarrativeModelSuggestion(
+                        row.Territory ?? verdict,
+                        row.TerritoryId,
+                        row.NarrativeFit,
+                        score,
+                        row.BrandAngle ?? row.Angle,
+                        row.Reason,
+                        row.BoundaryWarnings));
+                verdict = decision.LegacyVerdict;
+                if (!decision.Fit)
+                    score = 0;
             }
 
-            results.Add(new ContentBrandFitDto(
+            var fitRow = new ContentBrandFitDto(
                 brand.Id,
                 brand.Code,
                 brand.Name,
                 verdict,
                 score,
-                row.Reason,
+                decision?.Reason ?? row.Reason,
                 row.Title,
-                row.Angle,
+                decision?.BrandAngle ?? row.Angle,
                 row.Audience,
                 row.Cta,
-                createdId,
-                row.Outline));
+                null,
+                row.Outline,
+                decision?.Fit,
+                decision?.Territory,
+                decision?.TerritoryId,
+                decision?.BrandAngle,
+                decision?.Confidence,
+                decision?.BoundaryWarnings);
+            Guid? createdId = null;
+            if (BrandNarrativeFit.ShouldMaterializeAngle(decision, request.CreatePackages, request.IncludeMaybe, verdict))
+            {
+                createdId = await MaterializeFitAsync(
+                    source,
+                    brand,
+                    string.IsNullOrWhiteSpace(row.Title) ? source.Title : row.Title.Trim(),
+                    FirstAngle(decision?.BrandAngle, row.Angle, brand.Name, source.Title),
+                    string.IsNullOrWhiteSpace(row.Audience) ? source.Audience : row.Audience.Trim(),
+                    row.Outline,
+                    request.GenerateFits && verdict == "fit"
+                        ? new GenerateContentRequest()
+                        : null,
+                    fitRow,
+                    cancellationToken);
+                fitRow = fitRow with { PackageId = createdId };
+            }
+
+            results.Add(fitRow);
         }
 
         var scored = results.Select(f => f.BrandId).ToHashSet();
         foreach (var brand in brands)
         {
             if (scored.Contains(brand.Id)) continue;
+            var dna = BrandNarrativeFit.Parse(brand.NarrativeJson);
+            if (dna is not null)
+            {
+                var decision = BrandNarrativeFit.Classify(dna, ideaText);
+                results.Add(new ContentBrandFitDto(
+                    brand.Id,
+                    brand.Code,
+                    brand.Name,
+                    decision.LegacyVerdict,
+                    decision.Fit ? (int)Math.Round(decision.Confidence * 100) : 0,
+                    decision.Reason,
+                    null,
+                    decision.BrandAngle,
+                    null,
+                    null,
+                    null,
+                    null,
+                    decision.Fit,
+                    decision.Territory,
+                    decision.TerritoryId,
+                    decision.BrandAngle,
+                    decision.Confidence,
+                    decision.BoundaryWarnings));
+                continue;
+            }
+
             results.Add(new ContentBrandFitDto(
                 brand.Id,
                 brand.Code,
@@ -1166,7 +1341,7 @@ internal sealed class ContentPackageService : IContentPackageService
 
     private async Task<string> AskBrandFitJsonAsync(
         ContentRepository.PackageRow source,
-        ContentRepository.TopicRow sourceTopic,
+        ContentRepository.TopicRow? sourceTopic,
         ContentCoreIdeaDto core,
         IReadOnlyList<ContentRepository.BrandRow> chunk,
         CancellationToken cancellationToken)
@@ -1174,23 +1349,41 @@ internal sealed class ContentPackageService : IContentPackageService
         var brandBlocks = new StringBuilder();
         foreach (var brand in chunk)
         {
-            var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
+            var dna = BrandNarrativeFit.Parse(brand.NarrativeJson);
             brandBlocks.AppendLine("---");
             brandBlocks.AppendLine("BrandCode: " + brand.Code);
             brandBlocks.AppendLine("BrandName: " + brand.Name);
-            brandBlocks.AppendLine(ContentBrandKnowledge.FormatForFitScore(knowledge, brand.OperationalBrief));
+            if (dna is not null)
+            {
+                brandBlocks.AppendLine(BrandNarrativeFit.FormatAuthoritative(dna));
+                if (!string.IsNullOrWhiteSpace(brand.OperationalBrief))
+                {
+                    brandBlocks.AppendLine("SUPPLEMENTAL EXECUTION CONTEXT — NOT NARRATIVE AUTHORITY:");
+                    brandBlocks.AppendLine(Clip(brand.OperationalBrief, 280));
+                    brandBlocks.AppendLine("Do not let the supplemental brief override AUTHORITATIVE NARRATIVE SOURCE when choosing territory.");
+                }
+            }
+            else
+            {
+                var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
+                brandBlocks.AppendLine(ContentBrandKnowledge.FormatForFitScore(knowledge, brand.OperationalBrief));
+            }
+
             brandBlocks.AppendLine();
         }
 
         var system =
             "You are a Vietnamese brand strategist for KIT Marketing Park.\n" +
             "Return compact valid JSON only. No markdown.\n" +
-            "A Core Idea is brand-independent. Each brand gets a DISTINCT angle — never copy the same article.\n" +
-            "verdict=skip when: wrong audience; idea hits claimsForbidden; products/pillars cannot carry the topic; " +
-            "or forcing a fit cheapens the brand (pharmacy SOP on tea/family/city; job listings on pharmacy/tea/family).\n" +
+            "Decide whether the Core Idea belongs to a story this brand has a reason to tell its audience.\n" +
+            "Keyword overlap is not enough. AUTHORITATIVE NARRATIVE SOURCE decides territory. The operational brief is not authority.\n" +
+            "territory must be exactly: core | supporting | adjacent | off-brand.\n" +
+            "core and supporting: fit true. adjacent: fit true only with a clear connection, else fit false.\n" +
+            "off-brand: fit false. Do not invent a rescue angle. Do not use a high score to override off-brand.\n" +
+            "territoryId must be one of the TerritoryId values in that brand's narrative source.\n" +
             "If factOrOpinion=fact and source/evidence is missing, do not invent numbers.\n" +
-            "verdict must be exactly: fit | maybe | skip. score 0-100. Skip <45. Fit 70+.\n" +
-            "Do not invent medical claims, prices, salaries, or guarantees.";
+            "Do not invent medical claims, prices, salaries, or guarantees.\n" +
+            "Famixa: child development is the center. Grandparents are supporting only when the story is about raising a child. Pure elderly content is off-brand.";
 
         var user =
             "CORE IDEA\n" +
@@ -1204,11 +1397,12 @@ internal sealed class ContentPackageService : IContentPackageService
             "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n" +
             "Source: " + (core.Source ?? "") + "\n" +
             "Evidence: " + (core.Evidence ?? "") + "\n" +
-            "Outline: " + Clip(sourceTopic.BodyOutline, 400) + "\n\n" +
+            "Outline: " + Clip(sourceTopic?.BodyOutline, 400) + "\n\n" +
             "BRANDS TO SCORE (only these codes):\n" +
             brandBlocks + "\n" +
-            "Return JSON: { \"fits\": [ { \"brandCode\", \"verdict\", \"score\", \"reason\", \"title\", \"angle\" } ] }\n" +
-            "Exactly one fits[] row per BrandCode. reason ≤ 22 words. title/angle ≤ 16 words. All values are strings except score (number). No arrays.";
+            "Return JSON: { \"fits\": [ { \"brandCode\", \"fit\", \"territory\", \"territoryId\", \"reason\", \"brandAngle\", \"confidence\", \"boundaryWarnings\", \"title\", \"angle\" } ] }\n" +
+            "Exactly one fits[] row per BrandCode. reason ≤ 30 words. brandAngle ≤ 24 words. confidence is 0..1. boundaryWarnings is an array of strings.\n" +
+            "Also include verdict (fit|maybe|skip) and score 0-100 for older clients. off-brand must be verdict skip and fit false.";
 
         return await _gemini.GenerateJsonAsync(system, user, cancellationToken, 8192, disableThinking: true);
     }
@@ -1225,39 +1419,44 @@ internal sealed class ContentPackageService : IContentPackageService
             throw new InvalidOperationException("Nhập ít nhất một ý tưởng (tối đa 20).");
 
         var brands = await _repo.ListBrandsAsync(true, cancellationToken);
-        var home = request.HomeBrandId is Guid hid
-            ? brands.FirstOrDefault(b => b.Id == hid && b.IsActive)
-            : brands.FirstOrDefault(b => b.IsActive && b.Code.Contains("KIT", StringComparison.OrdinalIgnoreCase))
-              ?? brands.FirstOrDefault(b => b.IsActive);
-        if (home is null)
-            throw new InvalidOperationException("Chưa có thương hiệu active để lưu Core Idea.");
-
         var created = new List<ContentPackageDto>();
         foreach (var draft in drafts)
         {
-            var pkg = await CreateAsync(
-                new UpsertContentPackageRequest(
-                    home.Id,
-                    draft.Title.Trim(),
-                    draft.Angle?.Trim(),
-                    draft.Audience?.Trim(),
-                    "educational",
-                    null,
-                    string.IsNullOrWhiteSpace(draft.Goal) ? "traffic" : draft.Goal.Trim(),
-                    "P1",
-                    null,
-                    null,
-                    null,
-                    draft.Insight,
-                    draft.Problem,
-                    draft.CoreMessage,
-                    null,
-                    draft.Source,
-                    draft.SourceUrl,
-                    draft.SourceType,
-                    draft.Evidence,
-                    draft.FactOrOpinion),
+            var title = draft.Title.Trim();
+            var goal = string.IsNullOrWhiteSpace(draft.Goal) ? "traffic" : draft.Goal.Trim();
+            var packageId = await _repo.InsertUnscopedIdeaAsync(
+                title,
+                draft.Angle?.Trim(),
+                draft.Audience?.Trim(),
+                "educational",
+                null,
+                goal,
+                "P1",
                 cancellationToken);
+            var extra = ContentPackageExtra.Merge("{}", ContentPackageExtra.FromRequest(new UpsertContentPackageRequest(
+                Guid.Empty,
+                title,
+                draft.Angle,
+                draft.Audience,
+                "educational",
+                null,
+                goal,
+                "P1",
+                null,
+                null,
+                null,
+                draft.Insight,
+                draft.Problem,
+                draft.CoreMessage,
+                null,
+                draft.Source,
+                draft.SourceUrl,
+                draft.SourceType,
+                draft.Evidence,
+                draft.FactOrOpinion)), []);
+            await _repo.UpdatePackageExtraJsonAsync(packageId, extra, cancellationToken);
+            var pkg = await GetAsync(packageId, cancellationToken)
+                      ?? throw new InvalidOperationException("Không đọc lại được Idea vừa tạo.");
             created.Add(pkg);
         }
 
@@ -1305,12 +1504,19 @@ internal sealed class ContentPackageService : IContentPackageService
                 }
 
                 var fit = nextFits.FirstOrDefault(f => f.BrandId == brand.Id);
-                var title = string.IsNullOrWhiteSpace(fit?.Title) ? source.Title : fit!.Title!.Trim();
-                var angle = string.IsNullOrWhiteSpace(fit?.Angle)
+                if (fit is null || BrandNarrativeFit.SeriesEntryBlock(fit) is not null)
+                {
+                    skipped++;
+                    continue;
+                }
+
+                var title = string.IsNullOrWhiteSpace(fit.Title) ? source.Title : fit.Title.Trim();
+                var angle = string.IsNullOrWhiteSpace(fit.Angle)
                     ? $"Góc {brand.Name}: {source.Title}"
-                    : fit!.Angle!.Trim();
-                var audience = string.IsNullOrWhiteSpace(fit?.Audience) ? source.Audience : fit!.Audience!.Trim();
-                var outline = fit?.Outline;
+                    : fit.Angle.Trim();
+                var audience = string.IsNullOrWhiteSpace(fit.Audience) ? source.Audience : fit.Audience.Trim();
+                var outline = fit.Outline;
+                var stamp = fit with { Title = title, Angle = angle, Audience = audience };
 
                 var packageId = await MaterializeFitAsync(
                     source,
@@ -1319,25 +1525,14 @@ internal sealed class ContentPackageService : IContentPackageService
                     angle,
                     audience,
                     outline,
-                    request.GenerateFits && (fit?.Verdict == "fit")
+                    request.GenerateFits && fit.Verdict == "fit"
                         ? new GenerateContentRequest(VariantKinds: request.VariantKinds)
                         : null,
+                    stamp,
                     cancellationToken);
                 created++;
 
-                var updated = new ContentBrandFitDto(
-                    brand.Id,
-                    brand.Code,
-                    brand.Name,
-                    fit?.Verdict ?? "fit",
-                    fit?.Score ?? 0,
-                    fit?.Reason,
-                    title,
-                    angle,
-                    audience,
-                    fit?.Cta,
-                    packageId,
-                    outline);
+                var updated = stamp with { PackageId = packageId };
                 var idx = nextFits.FindIndex(f => f.BrandId == brand.Id);
                 if (idx >= 0) nextFits[idx] = updated;
                 else nextFits.Add(updated);
@@ -1594,7 +1789,7 @@ internal sealed class ContentPackageService : IContentPackageService
         var package = await _repo.GetPackageAsync(id, cancellationToken);
         if (package is null) return null;
 
-        var variants = await _repo.ListVariantsAsync(package.TopicId, cancellationToken);
+        var variants = await _repo.ListVariantsAsync(ContentPackageScope.RequireTopic(package), cancellationToken);
         if (variants.Count == 0)
             throw new InvalidOperationException("Chưa có bản viết — Generate All trước khi duyệt.");
 
@@ -1602,8 +1797,8 @@ internal sealed class ContentPackageService : IContentPackageService
         await ContentQualityRunner.PersistAsync(_repo, package.Id, package.ExtraJson, gate, cancellationToken);
         ContentQualityRunner.ThrowIfCannotApprove(gate);
 
-        await _repo.UpdateTopicStatusAsync(package.TopicId, "Approved", cancellationToken);
-        await _repo.EnsureTopicDisplayAtAsync(package.TopicId, cancellationToken);
+        await _repo.UpdateTopicStatusAsync(ContentPackageScope.RequireTopic(package), "Approved", cancellationToken);
+        await _repo.EnsureTopicDisplayAtAsync(ContentPackageScope.RequireTopic(package), cancellationToken);
         await _repo.UpdatePackageStatusAsync(id, "Approved", cancellationToken);
         return await GetAsync(id, cancellationToken);
     }
@@ -1690,8 +1885,8 @@ internal sealed class ContentPackageService : IContentPackageService
             : request.MetricDate.Date;
         var id = await _repo.InsertPerformanceAsync(
             package.Id,
-            package.TopicId,
-            package.BrandId,
+            ContentPackageScope.RequireTopic(package),
+            ContentPackageScope.RequireBrand(package),
             channel,
             day,
             request.Impressions,
@@ -1811,6 +2006,21 @@ internal sealed class ContentPackageService : IContentPackageService
         public string? FactOrOpinion { get; set; }
     }
 
+    private static string NarrativeIdeaText(ContentRepository.PackageRow source, ContentCoreIdeaDto core)
+    {
+        return string.Join(
+            "\n",
+            new[] { source.Title, source.Angle, core.Insight, core.Problem, core.CoreMessage }
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+    }
+
+    private static string FirstAngle(string? narrativeAngle, string? modelAngle, string brandName, string sourceTitle)
+    {
+        if (!string.IsNullOrWhiteSpace(narrativeAngle)) return narrativeAngle.Trim();
+        if (!string.IsNullOrWhiteSpace(modelAngle)) return modelAngle.Trim();
+        return "Góc " + brandName + ": " + sourceTitle;
+    }
+
     private async Task<Guid> MaterializeFitAsync(
         ContentRepository.PackageRow source,
         ContentRepository.BrandRow brand,
@@ -1819,6 +2029,7 @@ internal sealed class ContentPackageService : IContentPackageService
         string? audience,
         string? outline,
         GenerateContentRequest? generate,
+        ContentBrandFitDto? narrativeStamp,
         CancellationToken cancellationToken)
     {
         Guid packageId;
@@ -1860,6 +2071,18 @@ internal sealed class ContentPackageService : IContentPackageService
                     created.Pillar,
                     created.Goal,
                     created.Priority,
+                    cancellationToken);
+            }
+        }
+
+        if (narrativeStamp is not null)
+        {
+            var stampedRow = await _repo.GetPackageAsync(packageId, cancellationToken);
+            if (stampedRow is not null)
+            {
+                await _repo.UpdatePackageExtraJsonAsync(
+                    packageId,
+                    ContentPackageExtra.StampNarrative(stampedRow.ExtraJson, narrativeStamp with { PackageId = packageId }),
                     cancellationToken);
             }
         }

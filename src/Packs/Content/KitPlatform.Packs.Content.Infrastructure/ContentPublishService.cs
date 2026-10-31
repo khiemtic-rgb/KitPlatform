@@ -176,7 +176,7 @@ internal sealed class ContentPublishService : IContentPublishService
                     BrandId = topic.BrandId,
                     TargetKind = "channel",
                     ChannelTargetId = ch.Id,
-                    ConnectorType = "facebook_page",
+                    ConnectorType = ch.ChannelType,
                     Status = "Queued",
                     PublishAt = publishAt,
                 }, cancellationToken);
@@ -331,17 +331,20 @@ internal sealed class ContentPublishService : IContentPublishService
                 await EnforceQualityGateAsync(job.TopicId, topic, cancellationToken, job.ConnectorType);
             var variants = await _repo.ListVariantsAsync(job.TopicId, cancellationToken);
             var assets = await _repo.ListAssetsAsync(job.TopicId, cancellationToken);
-            var selected = assets.FirstOrDefault(a => a.IsSelected) ?? assets.FirstOrDefault();
+            var imageAssets = assets.Where(a => a.Kind != "video").ToList();
+            var selected = imageAssets.FirstOrDefault(a => a.IsSelected) ?? imageAssets.FirstOrDefault();
 
             var result = job.ConnectorType switch
             {
                 "manual" => await RunManualAsync(topic, variants, selected, cancellationToken),
                 "wordpress_rest" => await RunWordPressAsync(job, topic, variants, selected, cancellationToken),
                 "facebook_page" => await RunFacebookAsync(job, topic, variants, selected, cancellationToken),
+                "youtube_channel" => await RunYoutubeAsync(job, topic, variants, assets, cancellationToken),
+                "tiktok_channel" => await RunTiktokAsync(job, assets, cancellationToken),
                 "astro_git" => await RunAstroGitAsync(job, topic, variants, selected, cancellationToken),
                 "local_os" => await RunLocalOsAsync(job, topic, variants, selected, cancellationToken),
                 _ => throw new InvalidOperationException(
-                    $"Kênh «{job.ConnectorType}» không đăng tự động — copy tay ở Đăng tay. Chỉ auto: Fanpage, Astro, WordPress, Thái Nguyên Life."),
+                    $"Kênh «{job.ConnectorType}» không đăng tự động — copy tay ở Đăng tay. Chỉ auto: Fanpage, YouTube, TikTok (hộp nháp), Astro, WordPress, Thái Nguyên Life."),
             };
 
             job.Status = "Succeeded";
@@ -896,6 +899,132 @@ internal sealed class ContentPublishService : IContentPublishService
         return new ConnectorResult(
             feedId,
             ContentRepository.ToJson(new { facebook = "feed", scheduled = isFuture, publishAt, feedId }));
+    }
+
+    private async Task<ConnectorResult> RunYoutubeAsync(
+        ContentRepository.PublishJobRow job,
+        ContentRepository.TopicRow topic,
+        IReadOnlyList<ContentRepository.VariantRow> variants,
+        IReadOnlyList<ContentRepository.AssetRow> assets,
+        CancellationToken ct)
+    {
+        var channel = job.ChannelTargetId is { } cid ? await _repo.GetChannelAsync(cid, ct) : null;
+        if (channel is null)
+            throw new InvalidOperationException("Channel target missing for YouTube job");
+        var refresh = ContentTargetSecrets.ExtractStored(channel.ConfigJson)
+                      ?? throw new InvalidOperationException("Chưa kết nối YouTube — vào Thương hiệu → Nơi đăng → Kết nối YouTube.");
+
+        var video = assets.Where(a => a.Kind == "video").OrderByDescending(a => a.IsSelected).ThenByDescending(a => a.CreatedAt)
+                        .FirstOrDefault()
+                    ?? throw new InvalidOperationException("Bài chưa có video — đính video vào bài trước khi đăng YouTube.");
+        var path = Path.Combine(ResolveAssetRoot(), video.StoragePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(path))
+            throw new InvalidOperationException("Không tìm thấy file video trên máy chủ.");
+
+        var cfg = ParseConfig(channel.ConfigJson);
+        string? yt(string key) =>
+            cfg.TryGetValue("youtube", out var node) && node.ValueKind == JsonValueKind.Object
+            && node.TryGetProperty(key, out var v) ? v.ToString() : null;
+        var privacy = (yt("privacy") ?? "public").ToLowerInvariant();
+        if (privacy is not ("public" or "unlisted" or "private")) privacy = "public";
+        var shorts = !string.Equals(yt("shorts"), "false", StringComparison.OrdinalIgnoreCase);
+        // A landscape or long file is a normal video, never a Short, whatever the channel default says.
+        if (shorts && await NovixaLocalRenderGate.FitsYoutubeShortsAsync(path, ct) == false) shorts = false;
+
+        var body = variants.FirstOrDefault(v => v.Kind is "youtube" or "video_caption" or "social_caption" or "fb_short");
+        var ctaUrl = TopicCta(topic);
+        var description = MarkdownToPlainText(body?.BodyMarkdown ?? topic.Title);
+        if (!string.IsNullOrWhiteSpace(ctaUrl) && !description.Contains(ctaUrl, StringComparison.OrdinalIgnoreCase))
+            description = $"{description.Trim()}\n\n{ctaUrl}";
+        if (shorts && !description.Contains("#Shorts", StringComparison.OrdinalIgnoreCase))
+            description = $"{description.Trim()}\n\n#Shorts";
+        if (description.Length > 4900) description = description[..4900];
+        var title = MarkdownToPlainText(topic.Title, singleLine: true);
+        if (title.Length > 100) title = title[..100].TrimEnd();
+
+        var yc = new ContentYoutubeClient(_httpFactory, _configuration);
+        string access;
+        try
+        {
+            access = await yc.AccessTokenAsync(refresh, ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException("Kết nối YouTube hết hiệu lực — Kết nối lại. " + ex.Message);
+        }
+
+        var (videoId, actual) = await yc.UploadVideoAsync(access, path, video.ContentType, title, description, privacy, ct);
+        return new ConnectorResult(
+            videoId,
+            ContentRepository.ToJson(new
+            {
+                youtube = "video",
+                videoId,
+                url = shorts ? $"https://youtube.com/shorts/{videoId}" : $"https://youtu.be/{videoId}",
+                requestedPrivacy = privacy,
+                privacyStatus = actual,
+            }));
+    }
+
+    private async Task<ConnectorResult> RunTiktokAsync(
+        ContentRepository.PublishJobRow job,
+        IReadOnlyList<ContentRepository.AssetRow> assets,
+        CancellationToken ct)
+    {
+        var channel = job.ChannelTargetId is { } cid ? await _repo.GetChannelAsync(cid, ct) : null;
+        if (channel is null)
+            throw new InvalidOperationException("Channel target missing for TikTok job");
+        var refresh = ContentTargetSecrets.ExtractStored(channel.ConfigJson)
+                      ?? throw new InvalidOperationException("Chưa kết nối TikTok — vào Kênh TikTok → Kết nối TikTok.");
+
+        var video = assets.Where(a => a.Kind == "video").OrderByDescending(a => a.IsSelected).ThenByDescending(a => a.CreatedAt)
+                        .FirstOrDefault()
+                    ?? throw new InvalidOperationException("Bài chưa có video — đính video vào bài trước khi gửi TikTok.");
+        var path = Path.Combine(ResolveAssetRoot(), video.StoragePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(path))
+            throw new InvalidOperationException("Không tìm thấy file video trên máy chủ.");
+
+        var tc = new ContentTiktokClient(_httpFactory, _configuration);
+        ContentTiktokTokens tokens;
+        try
+        {
+            tokens = await tc.RefreshAsync(refresh, ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException("Kết nối TikTok hết hiệu lực — Kết nối lại. " + ex.Message);
+        }
+
+        if (!string.IsNullOrWhiteSpace(tokens.RefreshToken) && tokens.RefreshToken != refresh)
+        {
+            channel.ConfigJson = ContentTargetSecrets.MergeConfig(channel.ConfigJson, channel.ConfigJson, tokens.RefreshToken);
+            await _repo.UpsertChannelAsync(channel.BrandId, channel, ct);
+        }
+
+        var publishId = await tc.UploadInboxAsync(tokens.AccessToken, path, ct);
+        string status;
+        string? failReason = null;
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(4), ct);
+            (status, failReason) = await tc.FetchStatusAsync(tokens.AccessToken, publishId, ct);
+        }
+        catch (InvalidOperationException)
+        {
+            status = "UNKNOWN";
+        }
+
+        if (string.Equals(status, "FAILED", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("TikTok báo lỗi khi nhận video: " + (failReason ?? "không rõ lý do"));
+        return new ConnectorResult(
+            publishId,
+            ContentRepository.ToJson(new
+            {
+                tiktok = "inbox_draft",
+                publishId,
+                status,
+                note = "Video đã gửi vào hộp nháp TikTok — mở TikTok để chỉnh caption và đăng.",
+            }));
     }
 
     private async Task<(byte[] Bytes, string FileName, string ContentType)?> ResolvePublishImageBytesAsync(
@@ -1606,7 +1735,7 @@ internal sealed class ContentPublishService : IContentPublishService
         type is "astro_git" or "wordpress_rest" or "local_os";
 
     private static bool IsAutoChannelConnector(string? type) =>
-        type == "facebook_page";
+        type is "facebook_page" or "youtube_channel" or "tiktok_channel";
 
     private static string? TopicCta(ContentRepository.TopicRow topic) =>
         ContentCtaRouter.Resolve(
