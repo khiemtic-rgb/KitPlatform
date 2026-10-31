@@ -479,7 +479,7 @@ internal sealed class ContentBrandService : IContentBrandService
             row.ToneJson = existing.ToneJson;
             row.VisualKitJson = existing.VisualKitJson;
         }
-        else if (request.Knowledge.KnowledgeUnits is null)
+        else if (request.Knowledge.KnowledgeUnits is null || request.Knowledge.Voice is null)
         {
             row.ToneJson = ContentBrandKnowledge.CarryKnowledgeUnits(row.ToneJson, existing.ToneJson);
         }

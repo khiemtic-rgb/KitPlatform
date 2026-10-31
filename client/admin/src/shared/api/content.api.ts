@@ -140,6 +140,17 @@ export type ContentBrandKnowledge = {
   badExamples: string[];
   /** Brand knowledge base — one unit per entry, selected by relevance at prompt time. */
   knowledgeUnits?: string[] | null;
+  /** Locked narration voice for every video of the brand (ElevenLabs). */
+  voice?: ContentBrandVoice | null;
+};
+
+export type ContentBrandVoice = {
+  voiceId?: string | null;
+  voiceName?: string | null;
+  stability?: number | null;
+  similarityBoost?: number | null;
+  style?: number | null;
+  speed?: number | null;
 };
 
 export type ContentBrand = {
@@ -848,6 +859,7 @@ export async function renderNovixaStockMotion(body: {
   keep?: { index: number; path: string }[];
   allowVoice: boolean;
   voiceId?: string;
+  voiceSettings?: { stability?: number | null; similarityBoost?: number | null; style?: number | null; speed?: number | null } | null;
   phase?: 'stills' | 'preview' | 'video' | 'shorts';
   cuts?: { from: number; to: number; title?: string }[];
   orientation?: 'wide' | 'tall';
@@ -864,6 +876,7 @@ export async function renderNovixaStockMotion(body: {
     keep: body.keep ?? [],
     allowVoice: body.allowVoice,
     voiceId: body.voiceId,
+    voiceSettings: body.voiceSettings ?? undefined,
     phase: body.phase ?? 'video',
     redrawIndex: body.redrawIndex,
     variant: body.variant || undefined,

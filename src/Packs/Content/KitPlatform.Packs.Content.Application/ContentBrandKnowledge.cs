@@ -36,7 +36,18 @@ public sealed record ContentBrandKnowledgeDto(
     /// mistakes to avoid, process rules). Selected by relevance and budget at prompt time, so a brand
     /// can carry far more knowledge than a single prompt fits. Null on input means "not sent".
     /// </summary>
-    IReadOnlyList<string>? KnowledgeUnits = null);
+    IReadOnlyList<string>? KnowledgeUnits = null,
+    /// <summary>Locked narration voice for every video of the brand. Null on input means "not sent".</summary>
+    ContentBrandVoiceDto? Voice = null);
+
+/// <summary>Brand narration voice (ElevenLabs). Video tools read it as the default voice and settings.</summary>
+public sealed record ContentBrandVoiceDto(
+    string? VoiceId,
+    string? VoiceName = null,
+    double? Stability = null,
+    double? SimilarityBoost = null,
+    double? Style = null,
+    double? Speed = null);
 
 public static class ContentBrandKnowledge
 {
@@ -81,7 +92,8 @@ public static class ContentBrandKnowledge
             GetStrings(tone, "competitors"),
             GetStrings(tone, "goodExamples"),
             GetStrings(tone, "badExamples"),
-            GetUnits(tone, "knowledgeUnits"));
+            GetUnits(tone, "knowledgeUnits"),
+            GetVoice(tone, "voice"));
     }
 
     public static (string ToneJson, string VisualKitJson) Serialize(ContentBrandKnowledgeDto? knowledge)
@@ -112,6 +124,7 @@ public static class ContentBrandKnowledge
             ["goodExamples"] = NonEmpty(k.GoodExamples),
             ["badExamples"] = NonEmpty(k.BadExamples),
             ["knowledgeUnits"] = NonEmpty(Units(k)),
+            ["voice"] = string.IsNullOrWhiteSpace(k.Voice?.VoiceId) ? null : k.Voice with { VoiceId = k.Voice.VoiceId!.Trim() },
         };
         var visual = new Dictionary<string, object?>
         {
@@ -371,16 +384,20 @@ public static class ContentBrandKnowledge
     /// Keeps the saved knowledge units when an update did not send them (older admin UI, API clients),
     /// so editing other Brand fields never wipes the brand knowledge base.
     /// </summary>
+    /// <summary>Keeps stored knowledge units and voice when an older client saves without them.</summary>
     public static string CarryKnowledgeUnits(string newToneJson, string? existingToneJson)
     {
         var existing = ParseObj(existingToneJson);
-        if (!existing.TryGetValue("knowledgeUnits", out var units) || units.ValueKind != JsonValueKind.Array)
-            return newToneJson;
         var next = ParseObj(newToneJson);
-        if (next.TryGetValue("knowledgeUnits", out var sent) && sent.ValueKind == JsonValueKind.Array)
-            return newToneJson;
-        next["knowledgeUnits"] = units;
-        return JsonSerializer.Serialize(next, JsonOpts);
+        var changed = false;
+        foreach (var (key, kind) in new[] { ("knowledgeUnits", JsonValueKind.Array), ("voice", JsonValueKind.Object) })
+        {
+            if (!existing.TryGetValue(key, out var kept) || kept.ValueKind != kind) continue;
+            if (next.TryGetValue(key, out var sent) && sent.ValueKind == kind) continue;
+            next[key] = kept;
+            changed = true;
+        }
+        return changed ? JsonSerializer.Serialize(next, JsonOpts) : newToneJson;
     }
 
     private static void AppendKnowledge(StringBuilder sb, IReadOnlyList<string> units)
@@ -488,6 +505,20 @@ public static class ContentBrandKnowledge
         catch
         {
             return new(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static ContentBrandVoiceDto? GetVoice(Dictionary<string, JsonElement> map, string key)
+    {
+        if (!map.TryGetValue(key, out var el) || el.ValueKind != JsonValueKind.Object) return null;
+        try
+        {
+            var voice = el.Deserialize<ContentBrandVoiceDto>(JsonOpts);
+            return string.IsNullOrWhiteSpace(voice?.VoiceId) ? null : voice;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 

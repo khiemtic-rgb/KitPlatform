@@ -108,6 +108,7 @@ const EMPTY_BRAIN: ContentBrandKnowledge = {
   goodExamples: [],
   badExamples: [],
   knowledgeUnits: [],
+  voice: null,
 };
 
 function knowledgeFromRow(row?: ContentBrand | null): ContentBrandKnowledge {
@@ -134,6 +135,7 @@ function knowledgeFromRow(row?: ContentBrand | null): ContentBrandKnowledge {
     goodExamples: k?.goodExamples ?? [],
     badExamples: k?.badExamples ?? [],
     knowledgeUnits: k?.knowledgeUnits ?? [],
+    voice: k?.voice ?? null,
   };
 }
 
@@ -683,6 +685,9 @@ export function ContentBrandsPage() {
           knowledgeUnits: (knowledge.knowledgeUnits ?? [])
             .map((unit) => String(unit ?? '').trim())
             .filter((unit) => unit.length > 0),
+          voice: (knowledge.voice?.voiceId || '').trim()
+            ? { ...knowledge.voice, voiceId: String(knowledge.voice?.voiceId).trim() }
+            : null,
         },
       };
       if (editing) {
@@ -1319,6 +1324,31 @@ export function ContentBrandsPage() {
                         placeholder={'B2 Định cỡ vị thế: Lot = (vốn × % rủi ro) ÷ (SL pip × giá trị pip)\nLỖI CẦN TRÁNH: R:R 1:2 không tự có lãi'}
                       />
                     </Form.Item>
+                    <Divider style={{ margin: '8px 0 16px' }}>Giọng đọc video</Divider>
+                    <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
+                      Giọng ElevenLabs cố định cho mọi video của thương hiệu. Video Studio dùng giọng và thông số này làm mặc định.
+                      Độ ổn định cao giữ giọng không trượt vùng miền; tốc độ dưới 1 là đọc chậm.
+                    </Typography.Paragraph>
+                    <Space wrap align="start">
+                      <Form.Item name={['knowledge', 'voice', 'voiceId']} label="Voice ID">
+                        <Input style={{ width: 240 }} placeholder="vd 3VnrjnYrskPMDsapTr8X" allowClear />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'voiceName']} label="Tên giọng">
+                        <Input style={{ width: 240 }} placeholder="vd Tung Dang" allowClear />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'stability']} label="Độ ổn định (0–1)">
+                        <InputNumber min={0} max={1} step={0.05} style={{ width: 120 }} placeholder="0.5" />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'similarityBoost']} label="Độ giống (0–1)">
+                        <InputNumber min={0} max={1} step={0.05} style={{ width: 120 }} placeholder="0.85" />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'style']} label="Diễn cảm (0–1)">
+                        <InputNumber min={0} max={1} step={0.05} style={{ width: 120 }} placeholder="0" />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'speed']} label="Tốc độ (0.7–1.2)">
+                        <InputNumber min={0.7} max={1.2} step={0.05} style={{ width: 120 }} placeholder="1" />
+                      </Form.Item>
+                    </Space>
                     <Divider style={{ margin: '8px 0 16px' }}>Ví dụ nội dung</Divider>
                     <Form.Item
                       name={['knowledge', 'goodExamples']}
