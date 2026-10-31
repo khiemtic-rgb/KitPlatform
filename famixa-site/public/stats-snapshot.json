@@ -1,46 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-31T06:01:38.616Z",
+  "generatedAt": "2026-10-31T12:53:25.120Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 12,
-    "todayPageViews": 12,
-    "todayRequests": 343,
-    "last24hVisitors": 94,
-    "last24hPageViews": 90,
-    "last24hRequests": 951
+    "todayVisitors": 25,
+    "todayPageViews": 15,
+    "todayRequests": 366,
+    "last24hVisitors": 77,
+    "last24hPageViews": 70,
+    "last24hRequests": 890
   },
   "hourly": [
-    {
-      "time": "2026-10-30T07:00:00Z",
-      "visitors": 5,
-      "requests": 25
-    },
-    {
-      "time": "2026-10-30T08:00:00Z",
-      "visitors": 6,
-      "requests": 26
-    },
-    {
-      "time": "2026-10-30T09:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-10-30T10:00:00Z",
-      "visitors": 8,
-      "requests": 11
-    },
-    {
-      "time": "2026-10-30T11:00:00Z",
-      "visitors": 6,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-30T12:00:00Z",
-      "visitors": 1,
-      "requests": 5
-    },
     {
       "time": "2026-10-30T13:00:00Z",
       "visitors": 3,
@@ -123,8 +93,33 @@
     },
     {
       "time": "2026-10-31T05:00:00Z",
-      "visitors": 3,
-      "requests": 124
+      "visitors": 4,
+      "requests": 127
+    },
+    {
+      "time": "2026-10-31T06:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-31T07:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-31T08:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-10-31T10:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-10-31T11:00:00Z",
+      "visitors": 5,
+      "requests": 9
     }
   ],
   "daily": [
@@ -166,15 +161,15 @@
     },
     {
       "date": "2026-10-31",
-      "visitors": 47,
-      "pageViews": 21,
-      "requests": 683
+      "visitors": 61,
+      "pageViews": 24,
+      "requests": 706
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 110
+      "views": 97
     },
     {
       "path": "/login",
@@ -194,7 +189,7 @@
     },
     {
       "path": "/vi/",
-      "views": 36
+      "views": 25
     },
     {
       "path": "/vi/goi-cha-me/",
@@ -209,16 +204,12 @@
       "views": 20
     },
     {
-      "path": "/vi/goi-cha-me/loi-tu-doi-om-het-viec-nha-va-bai-hoc-chia-se-lich-chung/",
+      "path": "/robots.txt",
       "views": 19
     },
     {
-      "path": "/robots.txt",
-      "views": 18
-    },
-    {
-      "path": "/press/",
-      "views": 6
+      "path": "/vi/goi-cha-me/loi-tu-doi-om-het-viec-nha-va-bai-hoc-chia-se-lich-chung/",
+      "views": 19
     },
     {
       "path": "/wp/",
@@ -229,7 +220,11 @@
       "views": 6
     },
     {
-      "path": "/wp-login.php",
+      "path": "/press/",
+      "views": 6
+    },
+    {
+      "path": "/site/",
       "views": 6
     }
   ]
