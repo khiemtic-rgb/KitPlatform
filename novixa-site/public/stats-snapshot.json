@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-10-30T22:24:23.702Z",
+  "generatedAt": "2026-10-31T05:47:47.516Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 219,
-    "last24hPageViews": 670,
-    "last24hRequests": 1499
+    "todayVisitors": 99,
+    "todayPageViews": 132,
+    "todayRequests": 864,
+    "last24hVisitors": 222,
+    "last24hPageViews": 744,
+    "last24hRequests": 1934
   },
   "hourly": [
-    {
-      "time": "2026-10-29T23:00:00Z",
-      "visitors": 17,
-      "requests": 319
-    },
-    {
-      "time": "2026-10-30T00:00:00Z",
-      "visitors": 15,
-      "requests": 16
-    },
-    {
-      "time": "2026-10-30T01:00:00Z",
-      "visitors": 4,
-      "requests": 18
-    },
-    {
-      "time": "2026-10-30T02:00:00Z",
-      "visitors": 5,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-30T03:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-10-30T04:00:00Z",
-      "visitors": 7,
-      "requests": 14
-    },
-    {
-      "time": "2026-10-30T05:00:00Z",
-      "visitors": 37,
-      "requests": 44
-    },
     {
       "time": "2026-10-30T06:00:00Z",
       "visitors": 4,
@@ -130,6 +95,41 @@
       "time": "2026-10-30T22:00:00Z",
       "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-10-30T23:00:00Z",
+      "visitors": 1,
+      "requests": 2
+    },
+    {
+      "time": "2026-10-31T00:00:00Z",
+      "visitors": 12,
+      "requests": 14
+    },
+    {
+      "time": "2026-10-31T01:00:00Z",
+      "visitors": 11,
+      "requests": 11
+    },
+    {
+      "time": "2026-10-31T02:00:00Z",
+      "visitors": 6,
+      "requests": 13
+    },
+    {
+      "time": "2026-10-31T03:00:00Z",
+      "visitors": 7,
+      "requests": 701
+    },
+    {
+      "time": "2026-10-31T04:00:00Z",
+      "visitors": 62,
+      "requests": 119
+    },
+    {
+      "time": "2026-10-31T05:00:00Z",
+      "visitors": 4,
+      "requests": 6
     }
   ],
   "daily": [
@@ -166,30 +166,36 @@
     {
       "date": "2026-10-30",
       "visitors": 201,
-      "pageViews": 655,
-      "requests": 1180
+      "pageViews": 657,
+      "requests": 1182
+    },
+    {
+      "date": "2026-10-31",
+      "visitors": 99,
+      "pageViews": 132,
+      "requests": 864
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 152
-    },
-    {
-      "path": "/vi/",
-      "views": 40
+      "views": 159
     },
     {
       "path": "/login",
-      "views": 37
-    },
-    {
-      "path": "/robots.txt",
-      "views": 37
+      "views": 58
     },
     {
       "path": "/signin",
-      "views": 36
+      "views": 54
+    },
+    {
+      "path": "/vi/",
+      "views": 41
+    },
+    {
+      "path": "/robots.txt",
+      "views": 31
     },
     {
       "path": "/signup",
@@ -197,7 +203,7 @@
     },
     {
       "path": "/register",
-      "views": 25
+      "views": 27
     },
     {
       "path": "/api/auth/signin",
@@ -208,28 +214,28 @@
       "views": 19
     },
     {
-      "path": "/mysql/.env",
+      "path": "/.env.dev",
+      "views": 14
+    },
+    {
+      "path": "/sa.json",
       "views": 13
+    },
+    {
+      "path": "/forgot-password",
+      "views": 11
     },
     {
       "path": "/images/tin-tuc/cach-giam-hang-can-han.png",
       "views": 11
     },
     {
-      "path": "/og-novixa.svg",
-      "views": 10
+      "path": "/.git/config",
+      "views": 9
     },
     {
       "path": "/vi/tin-tuc/cach-giam-hang-can-han-tai-nha-thuoc-giai-phap-triet-tieu-rui-ro-va-bao-ve-loi-nhuan/",
-      "views": 10
-    },
-    {
-      "path": "/.git/config",
-      "views": 8
-    },
-    {
-      "path": "/staging/.env",
-      "views": 7
+      "views": 9
     }
   ]
 }
