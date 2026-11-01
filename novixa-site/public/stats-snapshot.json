@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-01T13:30:21.080Z",
+  "generatedAt": "2026-11-01T22:04:57.404Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 82,
-    "todayPageViews": 777,
-    "todayRequests": 1676,
-    "last24hVisitors": 185,
-    "last24hPageViews": 1230,
-    "last24hRequests": 2445
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 202,
+    "last24hPageViews": 1070,
+    "last24hRequests": 6472
   },
   "hourly": [
-    {
-      "time": "2026-10-31T14:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-10-31T15:00:00Z",
-      "visitors": 16,
-      "requests": 29
-    },
-    {
-      "time": "2026-10-31T16:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-10-31T17:00:00Z",
-      "visitors": 7,
-      "requests": 12
-    },
-    {
-      "time": "2026-10-31T18:00:00Z",
-      "visitors": 3,
-      "requests": 134
-    },
-    {
-      "time": "2026-10-31T19:00:00Z",
-      "visitors": 7,
-      "requests": 9
-    },
-    {
-      "time": "2026-10-31T20:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-10-31T21:00:00Z",
-      "visitors": 10,
-      "requests": 448
-    },
-    {
-      "time": "2026-10-31T22:00:00Z",
-      "visitors": 1,
-      "requests": 4
-    },
     {
       "time": "2026-10-31T23:00:00Z",
       "visitors": 60,
@@ -128,17 +83,51 @@
     },
     {
       "time": "2026-11-01T13:00:00Z",
-      "visitors": 3,
-      "requests": 4
+      "visitors": 5,
+      "requests": 722
+    },
+    {
+      "time": "2026-11-01T14:00:00Z",
+      "visitors": 7,
+      "requests": 1082
+    },
+    {
+      "time": "2026-11-01T15:00:00Z",
+      "visitors": 9,
+      "requests": 737
+    },
+    {
+      "time": "2026-11-01T16:00:00Z",
+      "visitors": 7,
+      "requests": 613
+    },
+    {
+      "time": "2026-11-01T17:00:00Z",
+      "visitors": 8,
+      "requests": 644
+    },
+    {
+      "time": "2026-11-01T18:00:00Z",
+      "visitors": 17,
+      "requests": 21
+    },
+    {
+      "time": "2026-11-01T19:00:00Z",
+      "visitors": 10,
+      "requests": 43
+    },
+    {
+      "time": "2026-11-01T20:00:00Z",
+      "visitors": 9,
+      "requests": 243
+    },
+    {
+      "time": "2026-11-01T21:00:00Z",
+      "visitors": 11,
+      "requests": 575
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-26",
-      "visitors": 146,
-      "pageViews": 847,
-      "requests": 1786
-    },
     {
       "date": "2026-10-27",
       "visitors": 234,
@@ -171,9 +160,9 @@
     },
     {
       "date": "2026-11-01",
-      "visitors": 82,
-      "pageViews": 777,
-      "requests": 1676
+      "visitors": 141,
+      "pageViews": 1070,
+      "requests": 6352
     }
   ],
   "topPages": [
@@ -183,59 +172,59 @@
     },
     {
       "path": "/",
-      "views": 171
+      "views": 211
     },
     {
       "path": "/login",
-      "views": 61
+      "views": 57
+    },
+    {
+      "path": "/robots.txt",
+      "views": 47
     },
     {
       "path": "/register",
-      "views": 43
+      "views": 47
+    },
+    {
+      "path": "/secrets.env",
+      "views": 41
     },
     {
       "path": "/vi/",
       "views": 38
     },
     {
-      "path": "/api/auth/signin",
-      "views": 38
-    },
-    {
       "path": "/signin",
-      "views": 37
+      "views": 36
     },
     {
       "path": "/signup",
-      "views": 37
+      "views": 36
     },
     {
-      "path": "/robots.txt",
-      "views": 28
+      "path": "/api/auth/signin",
+      "views": 32
     },
     {
-      "path": "/admin/settings",
-      "views": 14
+      "path": "/.terraform/terraform.tfstate",
+      "views": 31
     },
     {
-      "path": "/vi/nguoi-dan/",
-      "views": 12
+      "path": "/config/default.json",
+      "views": 30
     },
     {
-      "path": "/wp/",
-      "views": 10
+      "path": "/userfiles",
+      "views": 27
     },
     {
-      "path": "/news/",
-      "views": 10
+      "path": "/api/.env/public/.env",
+      "views": 26
     },
     {
-      "path": "/site/",
-      "views": 10
-    },
-    {
-      "path": "/press/",
-      "views": 10
+      "path": "/.env",
+      "views": 25
     }
   ]
 }
