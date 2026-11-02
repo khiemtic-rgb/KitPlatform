@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "kit-voice-direction/1",
+  "standardId": "voice-direction-standard-v1",
+  "approval": "PROPOSED",
+  "pipeline": [
+    "script",
+    "voice_direction",
+    "tts_generation",
+    "audio_measurement",
+    "listening_review",
+    "timing_approval"
+  ],
+  "adapters": [
+    {
+      "adapterId": "edge-tts",
+      "package": "edge-tts 7.3.1",
+      "billing": "no API key, no invoice on this machine",
+      "costRecorded": 0,
+      "controls": ["voiceId", "rate", "volume", "pitch", "boundary"],
+      "unsupported": ["emotion", "emphasis", "phoneme", "break", "style"],
+      "textHandling": "The text is escaped inside prosody. A note such as [nghỉ] or [nhấn mạnh] would be spoken if it were left in the text. Direction stays outside the TTS string."
+    }
+  ],
+  "profiles": [
+    {
+      "profileId": "vi-narrator-namminh-v1",
+      "version": 1,
+      "gender": "male",
+      "language": "vi",
+      "region": "vi-VN",
+      "provider": "edge-tts",
+      "voiceId": "vi-VN-NamMinhNeural",
+      "rate": "+0%",
+      "volume": "+0%",
+      "pitch": "+0Hz",
+      "approval": "PROPOSED",
+      "note": "Giọng thử. Giới tính nam là danh tính giọng, không phải phong cách diễn."
+    },
+    {
+      "profileId": "vi-narrator-hoaimy-v1",
+      "version": 1,
+      "gender": "female",
+      "language": "vi",
+      "region": "vi-VN",
+      "provider": "edge-tts",
+      "voiceId": "vi-VN-HoaiMyNeural",
+      "rate": "+0%",
+      "volume": "+0%",
+      "pitch": "+0Hz",
+      "approval": "UNVERIFIED",
+      "callsAttempted": 0,
+      "note": "Có trong catalog để tách giọng nữ khỏi phong cách. Chưa gọi trong chuẩn này."
+    }
+  ],
+  "presets": [
+    {
+      "presetId": "narration-clear-v1",
+      "rate": "+0%",
+      "volume": "+0%",
+      "pitch": "+0Hz",
+      "fits": ["advertising", "product-explanation", "education", "story"],
+      "approval": "PROPOSED",
+      "controlsUsed": ["rate", "volume", "pitch"],
+      "notClaimed": ["emotion", "emphasis"]
+    },
+    {
+      "presetId": "narration-slower-v1",
+      "rate": "-10%",
+      "volume": "+0%",
+      "pitch": "+0Hz",
+      "fits": ["story", "product-explanation"],
+      "approval": "PROPOSED",
+      "controlsUsed": ["rate", "volume", "pitch"],
+      "notClaimed": ["emotion", "emphasis"]
+    },
+    {
+      "presetId": "narration-faster-v1",
+      "rate": "+10%",
+      "volume": "+0%",
+      "pitch": "+0Hz",
+      "fits": ["advertising"],
+      "approval": "PROPOSED",
+      "controlsUsed": ["rate", "volume", "pitch"],
+      "notClaimed": ["emotion", "emphasis"]
+    }
+  ],
+  "roles": [
+    {"roleId": "narrator", "label": "Người dẫn chuyện"},
+    {"roleId": "expert", "label": "Chuyên gia"},
+    {"roleId": "customer", "label": "Khách hàng"},
+    {"roleId": "child", "label": "Trẻ em", "profileId": null, "note": "Chưa có voice ID đã thử."},
+    {"roleId": "character", "label": "Nhân vật"}
+  ],
+  "dictionary": [
+    {
+      "entryId": "brand-novixa",
+      "display": "NOVIXA",
+      "spoken": "Nô-vi-xa",
+      "tts": "Nôvixa",
+      "scope": "shared",
+      "verification": "VERIFIED",
+      "listeningApproved": true,
+      "approvedReference": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T083501Z-pronunciation-probe-v2/novixa-closed.wav",
+      "approvedTtsText": "Và đó cũng là lý do Nôvixa ra đời.",
+      "approvalScope": "Chỉ chuỗi TTS của chữ NOVIXA. Logo, chữ trên hình và phụ đề giữ NOVIXA. Không duyệt cả bản đọc.",
+      "appliesTo": "TTS string only. Logo, phụ đề và UI giữ NOVIXA.",
+      "supersededTts": "Nô vi xa",
+      "supersededReference": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T070505Z-voice-probes/s05-spaces.wav",
+      "evidence": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T083501Z-pronunciation-probe-v2/novixa-closed.txt"
+    },
+    {
+      "entryId": "url-novixa",
+      "display": "novixa.vn",
+      "spoken": "novixa chấm vn",
+      "tts": "novixa chấm vn",
+      "scope": "shared",
+      "verification": "VERIFIED",
+      "listeningApproved": true,
+      "approvedReference": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s12-cta.wav",
+      "appliesTo": "Cách đọc địa chỉ. Chữ trên hình vẫn là novixa.vn.",
+      "evidence": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s12-cta.txt"
+    },
+    {
+      "entryId": "term-pos",
+      "display": "POS",
+      "spoken": null,
+      "tts": null,
+      "scope": "shared",
+      "verification": "UNVERIFIED",
+      "appliesTo": "Thuật ngữ quầy. Chưa có câu thử.",
+      "evidence": null
+    }
+  ]
+}
