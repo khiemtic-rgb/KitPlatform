@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-02T06:11:27.484Z",
+  "generatedAt": "2026-11-02T16:05:21.202Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 44,
-    "todayPageViews": 19,
-    "todayRequests": 7637,
-    "last24hVisitors": 145,
-    "last24hPageViews": 593,
-    "last24hRequests": 14508
+    "todayVisitors": 85,
+    "todayPageViews": 642,
+    "todayRequests": 24666,
+    "last24hVisitors": 135,
+    "last24hPageViews": 922,
+    "last24hRequests": 27637
   },
   "hourly": [
-    {
-      "time": "2026-11-01T07:00:00Z",
-      "visitors": 11,
-      "requests": 16
-    },
-    {
-      "time": "2026-11-01T08:00:00Z",
-      "visitors": 5,
-      "requests": 207
-    },
-    {
-      "time": "2026-11-01T09:00:00Z",
-      "visitors": 6,
-      "requests": 405
-    },
-    {
-      "time": "2026-11-01T10:00:00Z",
-      "visitors": 7,
-      "requests": 85
-    },
-    {
-      "time": "2026-11-01T11:00:00Z",
-      "visitors": 6,
-      "requests": 20
-    },
-    {
-      "time": "2026-11-01T12:00:00Z",
-      "visitors": 11,
-      "requests": 13
-    },
-    {
-      "time": "2026-11-01T13:00:00Z",
-      "visitors": 5,
-      "requests": 722
-    },
-    {
-      "time": "2026-11-01T14:00:00Z",
-      "visitors": 7,
-      "requests": 1082
-    },
-    {
-      "time": "2026-11-01T15:00:00Z",
-      "visitors": 9,
-      "requests": 737
-    },
-    {
-      "time": "2026-11-01T16:00:00Z",
-      "visitors": 7,
-      "requests": 613
-    },
     {
       "time": "2026-11-01T17:00:00Z",
       "visitors": 8,
@@ -128,8 +78,53 @@
     },
     {
       "time": "2026-11-02T06:00:00Z",
+      "visitors": 7,
+      "requests": 2835
+    },
+    {
+      "time": "2026-11-02T07:00:00Z",
+      "visitors": 11,
+      "requests": 1482
+    },
+    {
+      "time": "2026-11-02T08:00:00Z",
+      "visitors": 6,
+      "requests": 1965
+    },
+    {
+      "time": "2026-11-02T09:00:00Z",
+      "visitors": 7,
+      "requests": 2285
+    },
+    {
+      "time": "2026-11-02T10:00:00Z",
       "visitors": 4,
-      "requests": 719
+      "requests": 2692
+    },
+    {
+      "time": "2026-11-02T11:00:00Z",
+      "visitors": 8,
+      "requests": 2158
+    },
+    {
+      "time": "2026-11-02T12:00:00Z",
+      "visitors": 8,
+      "requests": 1083
+    },
+    {
+      "time": "2026-11-02T13:00:00Z",
+      "visitors": 9,
+      "requests": 1084
+    },
+    {
+      "time": "2026-11-02T14:00:00Z",
+      "visitors": 5,
+      "requests": 1077
+    },
+    {
+      "time": "2026-11-02T15:00:00Z",
+      "visitors": 8,
+      "requests": 1087
     }
   ],
   "daily": [
@@ -171,71 +166,71 @@
     },
     {
       "date": "2026-11-02",
-      "visitors": 44,
-      "pageViews": 19,
-      "requests": 7637
+      "visitors": 85,
+      "pageViews": 642,
+      "requests": 24666
     }
   ],
   "topPages": [
     {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 373
+      "path": "/userfiles",
+      "views": 294
     },
     {
       "path": "/",
-      "views": 190
+      "views": 244
     },
     {
-      "path": "/userfiles",
-      "views": 121
+      "path": "/api/console/api_server",
+      "views": 170
     },
     {
       "path": "/userfiles/x",
-      "views": 77
-    },
-    {
-      "path": "/cms/.env",
-      "views": 70
+      "views": 154
     },
     {
       "path": "/api/system/fileView",
-      "views": 70
+      "views": 138
     },
     {
       "path": "/api/fs/read",
-      "views": 67
+      "views": 131
     },
     {
-      "path": "/shop/.env",
-      "views": 66
+      "path": "/cms/.env",
+      "views": 115
     },
     {
-      "path": "/robots.txt",
-      "views": 65
+      "path": "/.github/.env",
+      "views": 113
     },
     {
-      "path": "/deploy/.env",
-      "views": 63
+      "path": "/static//.env",
+      "views": 111
     },
     {
-      "path": "/local_settings.py",
-      "views": 62
+      "path": "/dashboard%2F.env",
+      "views": 108
     },
     {
-      "path": "/.env.production.local",
-      "views": 61
+      "path": "/site/.env",
+      "views": 106
     },
     {
-      "path": "/config/default.json",
-      "views": 60
+      "path": "/lerna.json",
+      "views": 104
+    },
+    {
+      "path": "/assets/.env",
+      "views": 104
     },
     {
       "path": "/.env",
-      "views": 60
+      "views": 102
     },
     {
-      "path": "/proc/self/cgroup",
-      "views": 59
+      "path": "/settings/_payload.json",
+      "views": 101
     }
   ]
 }
