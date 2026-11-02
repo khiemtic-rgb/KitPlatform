@@ -36,16 +36,10 @@ export function ContentBudgetPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Giới hạn chi phí AI
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            Theo dõi tiền ước tính khi nhờ AI viết / tạo ảnh trong tháng. Vượt mức → không cho tạo ảnh mới
-            (tránh cháy ngân sách).
-          </Typography.Text>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+        <Typography.Text type="secondary">
+          Tiền ước tính khi nhờ AI viết và tạo ảnh trong tháng. Vượt trần thì không tạo ảnh mới.
+        </Typography.Text>
         <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
           Tải lại
         </Button>

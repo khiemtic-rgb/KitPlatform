@@ -453,15 +453,16 @@ export function snapshotFromShot(shot: KitVideoPlannedShot): KitVideoContinuityS
 export function regenerateShot(graph: KitVideoStoryGraph, displayCode: string): KitVideoStoryGraph {
   const target = graph.shots.find((s) => s.displayCode === displayCode);
   if (!target) return graph;
-  const nextShots = graph.shots.map((s) =>
+  const nextShots = graph.shots.map((s): KitVideoPlannedShot =>
     s.shotId === target.shotId
-      ? { ...s, attempt: s.attempt + 1, status: s.status === 'HOLD' ? s.status : 'DRAFT' }
+      ? { ...s, attempt: s.attempt + 1, status: s.status === 'HOLD' ? 'HOLD' : 'DRAFT' }
       : s,
   );
   return { ...graph, shots: nextShots, snapshots: { ...graph.snapshots } };
 }
 
 export function insertShot(graph: KitVideoStoryGraph, afterDisplay: number, shot: KitVideoPlannedShot): KitVideoStoryGraph {
+  void afterDisplay;
   const shots = [...graph.shots, shot].sort((a, b) => a.displayOrder - b.displayOrder);
   const shifted = shots.map((s, i) => ({
     ...s,

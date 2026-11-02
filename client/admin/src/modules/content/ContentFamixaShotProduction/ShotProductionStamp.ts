@@ -10,6 +10,7 @@ import {
 } from './ShotProductionFingerprint';
 import { shotProductionIntentOf } from './ShotProductionIntent';
 import { editorialDurationOf, performanceDurationOf } from '../famixa-shot-production-timing';
+import { lipsyncBoundMotionFingerprint, lipsyncBoundMotionStillAuthority, takeUrlBelongsToLateResult } from '../famixa-lipsync-motion-authority';
 
 export type ShotProductionStamp = {
   voiceFp?: string;
@@ -71,13 +72,36 @@ export function computeInputFingerprints(state: SeriesPilotState, shot: FamixaSe
     voiceDurationSec: voiceDurationSecOf(state, shot),
     productionDurationSec: editorialDurationSec,
   });
-  const lipsync = lipsyncInputFingerprint({ voiceFp: voice, motionFp: motion, performanceDurationSec });
+  const run = shotRunOf(state, shot);
+  const motionForDownstream = lipsyncBoundMotionFingerprint(run, shot.id) || motion;
+  let lipsync = lipsyncInputFingerprint({ voiceFp: voice, motionFp: motionForDownstream, performanceDurationSec });
+  let mix = mixInputFingerprint({
+    lipsyncFp: lipsync,
+    voiceFp: voice,
+    motionFp: motionForDownstream,
+    productionDurationSec: editorialDurationSec,
+  });
+  const boundOk = lipsyncBoundMotionStillAuthority(run, shot.id);
+  const frozenLip = run.lipsyncFrozenInput;
+  const voiceUnchanged = Boolean(frozenLip?.voiceFingerprint && frozenLip.voiceFingerprint === voice);
+  if (boundOk && voiceUnchanged && (frozenLip?.fingerprint || '').trim()) {
+    lipsync = frozenLip!.fingerprint;
+  }
+  const frozenMix = run.mixFrozenInput;
+  if (
+    boundOk &&
+    voiceUnchanged &&
+    (frozenMix?.fingerprint || '').trim() &&
+    frozenMix?.voiceFingerprint === voice
+  ) {
+    mix = frozenMix!.fingerprint;
+  }
   return {
     voice,
     keyframe,
     motion,
     lipsync,
-    mix: mixInputFingerprint({ lipsyncFp: lipsync, voiceFp: voice, motionFp: motion, productionDurationSec: editorialDurationSec }),
+    mix,
     character: intent.characterIds.join(','),
   };
 }
@@ -103,7 +127,7 @@ export function applyProductionStamps(prev: SeriesPilotState, next: SeriesPilotS
       stamp.characterIds = shotProductionIntentOf(next, shot).characterIds;
       dirty = true;
     }
-    if (motionIdentityOf(after) !== motionIdentityOf(before) && motionIdentityOf(after)) {
+    if (motionIdentityOf(after) !== motionIdentityOf(before) && motionIdentityOf(after) && !takeUrlBelongsToLateResult(after)) {
       stamp.motionFp = fps.motion;
       dirty = true;
     }

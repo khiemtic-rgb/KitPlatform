@@ -880,15 +880,10 @@ export function ContentBrandsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Thương hiệu & nơi đăng
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            Bước 1 — thương hiệu + Brief, rồi danh sách nơi đăng (web, fanpage, nhóm FB, LinkedIn, Zalo…).
-          </Typography.Text>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+        <Typography.Text type="secondary">
+          Thông tin, brief và giọng của từng thương hiệu, kèm danh sách nơi đăng (website, Fanpage, nhóm Facebook…).
+        </Typography.Text>
         <Space wrap>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             Tải lại

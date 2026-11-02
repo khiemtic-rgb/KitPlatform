@@ -304,7 +304,7 @@ ok(Boolean(snapBefore.fps.motion) && snapBefore.fps.motion === snapAfter.fps.mot
 const src = `${helper}\n${card}\n${ws}`;
 ok(!src.includes('startContentSeriesTurbo') && !src.includes('fal-ai/') && !src.includes('eleven') && !src.includes('runwayml'), '08 no provider calls');
 ok(!card.includes('startSceneTurbo') && !card.includes('generateSceneKf') && !helper.includes('fetch('), '08b no media generation');
-ok(!orch.includes('actingBeat') && compiler.includes('Blink and breathe.'), '08c orch / Runway compiler untouched');
+ok(orch.includes('actingBeatPendingMotion') && compiler.includes('Blink and breathe.'), '08c beat-save remake gate / compiler untouched');
 
 if (fail.length) {
   console.error(`FAMIXA_ACTING_BEAT_SHOT_CONTEXT_FIX_V1 FAIL=${fail.length}`);

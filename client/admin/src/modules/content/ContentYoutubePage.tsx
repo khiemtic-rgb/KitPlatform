@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, App, Button, Card, Result, Select, Space, Spin, Table, Tag, Typography, Upload } from 'antd';
 import { CheckCircleOutlined, UploadOutlined, YoutubeOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -196,8 +196,13 @@ export function ContentYoutubeCallbackPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  // Mã OAuth chỉ dùng được một lần: chặn lần chạy thứ hai của effect (React StrictMode khi dev),
+  // nếu không lần hai báo "phiên hết hạn" dù lần một đã kết nối xong.
+  const started = useRef(false);
 
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     const denied = params.get('error_description') || params.get('error');
     if (denied) {
       setError(denied);
@@ -209,18 +214,14 @@ export function ContentYoutubeCallbackPage() {
       setError('Google không trả mã OAuth.');
       return;
     }
-    let cancelled = false;
     void (async () => {
       try {
         await completeYoutubeOAuth(code, state);
-        if (!cancelled) navigate('/content/youtube', { replace: true });
+        navigate('/content/channels', { replace: true });
       } catch (e) {
-        if (!cancelled) setError(apiErrorMessage(e, 'Không hoàn tất kết nối YouTube.'));
+        setError(apiErrorMessage(e, 'Không hoàn tất kết nối YouTube.'));
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [navigate, params]);
 
   if (error) {
@@ -229,7 +230,7 @@ export function ContentYoutubeCallbackPage() {
         status="warning"
         title="Chưa kết nối được YouTube"
         subTitle={error}
-        extra={<Typography.Link onClick={() => navigate('/content/youtube')}>Quay lại</Typography.Link>}
+        extra={<Typography.Link onClick={() => navigate('/content/channels')}>Quay lại</Typography.Link>}
       />
     );
   }

@@ -13,6 +13,7 @@ import {
 } from './ContentFamixaShotProduction/ShotProductionOrchestrator';
 import { directorPrimaryCta, shotQaMissing } from './ContentFamixaShotProduction/ShotProductionCta';
 import { DIRECTOR_COPY, directorRecoveryOf } from './ContentFamixaShotProduction/ShotProductionDirector';
+import { shotQualityBlockers } from './famixa-short-quality-pipeline';
 import { buildShotProductionSnapshot } from './ContentFamixaShotProduction/ShotProductionState';
 import { applyProductionStamps, computeInputFingerprints } from './ContentFamixaShotProduction/ShotProductionStamp';
 import { ensureShotVoiceAssets } from './ContentFamixaShotProduction/ShotProductionVoice';
@@ -120,7 +121,16 @@ const spokenReadyRun = (): SeriesShotRun => ({
   lipsynced: true,
   lipsyncUrl: 'https://fal/out.mp4',
   finalSource: 'FAL',
-  shotQa: { action: true, continuity: true, voiceFace: true, lipsyncQuality: true, finalAv: true },
+  shotQa: {
+    action: true,
+    continuity: true,
+    motion: true,
+    voiceFace: true,
+    lipsyncQuality: true,
+    finalAv: true,
+    decision: 'ACCEPT',
+    reviewedPlaybackId: 'lipsync:https://fal/out.mp4',
+  },
 });
 
 ok(SHOT_PRODUCTION_ORCHESTRATION_ID === 'FAMIXA_SHOT_PRODUCTION_ORCHESTRATION_V1', '01 id');
@@ -218,12 +228,16 @@ const mixBusy = snap(lipReadyState, { mixBusy: true, state: lipReadyState, shot:
 ok(nextShotProductionCommand(mixBusy).type === 'WAIT_MIX', '17 mix processing');
 
 const finalState = stampReady(baseState({ duration: 2.8, run: spokenReadyRun() }), ['voice', 'kf', 'motion', 'lipsync', 'mix']);
-const finalSnap = snap(finalState);
+const finalSnap = snap(finalState, { artifactPresent: true });
 ok(finalSnap.mixReady && finalSnap.finalReady && nextShotProductionCommand(finalSnap).type === 'READY_FINAL', '18 final ready');
 const missingBlob = snap(finalState, { artifactPresent: false });
 ok(missingBlob.mixReady && missingBlob.finalArtifactReady === false, '18i stamp without local file');
 ok(nextShotProductionCommand(missingBlob).type === 'ENSURE_MIX', '18j Hoàn thiện remux when file gone');
 ok(directorPrimaryCta(missingBlob).label === 'Hoàn thiện Shot', '18k director sees Hoàn thiện');
+const unknownBlob = snap(finalState);
+ok(unknownBlob.mixReady && unknownBlob.finalArtifactReady === false, '18m UNKNOWN artifact is not ready');
+ok(nextShotProductionCommand(unknownBlob).type === 'ENSURE_MIX', '18n UNKNOWN is ENSURE_MIX not READY_FINAL');
+ok(directorPrimaryCta(unknownBlob).label === 'Hoàn thiện Shot', '18o UNKNOWN primary is Hoàn thiện Shot');
 ok(directorRecoveryOf(missingBlob).message.includes('không còn trên máy'), '18l missing-file copy');
 
 const mixReadyNoQualityState = stampReady(
@@ -238,11 +252,19 @@ ok(mixReadyNoQuality.lipSyncReady && mixReadyNoQuality.mixReady && !mixReadyNoQu
 ok(nextShotProductionCommand(mixReadyNoQuality).type === 'LIPSYNC_QA_REQUIRED', '18c Kiểm tra stays until quality ticks');
 ok(
   shotQaMissing(mixReadyNoQualityState.runs['SH-03']?.shotQa, true, { afterLipsync: true, afterMix: true }).join() ===
-    'Lip-sync đạt,Final A/V đạt',
+    'Chuyển động thực hiện nhịp,Lip-sync đạt,Final A/V đạt',
   '18d hidden ticks were the dead Kiểm tra',
 );
 ok(directorRecoveryOf(mixReadyNoQuality).status === 'QUALITY_QA', '18e director stays on quality QA');
 ok(DIRECTOR_COPY.QUALITY_QA.includes('lồng tiếng'), '18f quality QA copy');
+const ep01Quality = directorRecoveryOf({
+  ...mixReadyNoQuality,
+  shotId: 'EP01-SC01-SH02',
+  qualityBlockers: shotQualityBlockers('EP01-SC01-SH02', false),
+});
+ok(ep01Quality.status === 'QUALITY_QA', '18p EP01 quality status stays on review');
+ok(ep01Quality.message.includes('Thoại ngắn hơn hình đang phát.'), '18q director names the speech-clock failure');
+ok(ep01Quality.message.includes('lồng tiếng'), '18r generic quality line stays');
 const lipNoSession = snap(lipReadyState, { ttsFiles: {} });
 ok(lipNoSession.voiceReady && lipNoSession.lipSyncReady, '18g lipsync file counts as voice after session miss');
 ok(nextShotProductionCommand(lipNoSession).type !== 'ENSURE_VOICE', '18h do not ask Tạo thoại after lipsync');
@@ -288,7 +310,7 @@ ok(lipReady.preflight.finalReady && !lipReady.finalReady, '30 final cannot be re
 const overlay = snap(lipReadyState);
 ok(videoProductionPreflight({ ...overlay.input, overlayPreview: true }).finalReady === false, '31 TTS overlay not final');
 
-const reloaded = snap(finalState);
+const reloaded = snap(finalState, { artifactPresent: true });
 ok(reloaded.mixReady && nextShotProductionCommand(reloaded).type === 'READY_FINAL', '32 reload keeps mix from assembleFp not useState');
 
 const calls: string[] = [];

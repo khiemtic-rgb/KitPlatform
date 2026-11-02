@@ -2,6 +2,7 @@
 
 import { linesForShot } from './content-famixa-dialogue-map';
 import { resolveTakeUrl } from './content-famixa-final-source';
+import { lipsyncFalHasNoOutput } from './content-famixa-prod-v2';
 import { shotRunOf, type FamixaSeriesShot, type SeriesPilotState } from './content-famixa-series';
 import { VISUAL_MODE_3D } from './kit-video-visual-mode';
 
@@ -130,6 +131,11 @@ export type ShotProductionInput = {
   directorApproved?: boolean;
   clientMixOnly?: boolean;
   overlayPreview?: boolean;
+  /** Confirmed STATIC + VOICE_OVER. Default omitted keeps the Famixa lip-sync contract. */
+  voiceOverStill?: boolean;
+  pictureStrategy?: string;
+  speechDelivery?: string;
+  strategyConfirmed?: boolean;
 };
 
 export type PreflightResult = {
@@ -138,7 +144,7 @@ export type PreflightResult = {
   warnings: string[];
   stage: ProductionStage;
   kind: ShotKind;
-  finalSource: 'LIPSYNC_VIDEO' | 'I2V_ALLOWED' | 'RAW_I2V' | 'TTS_OVERLAY' | 'NONE';
+  finalSource: 'LIPSYNC_VIDEO' | 'I2V_ALLOWED' | 'RAW_I2V' | 'TTS_OVERLAY' | 'VOICE_OVER_STILL' | 'NONE';
   voiceReady: boolean;
   videoReady: boolean;
   lipSyncReady: boolean;
@@ -263,7 +269,69 @@ export function retryTouches(stage: 'lipsync' | 'mix' | 'i2v' | 'voice') {
   };
 }
 
+function preflightVoiceOverStill(input: ShotProductionInput): PreflightResult {
+  const blockers: string[] = [];
+  const kind = classifyShot(input.cues);
+  const spoken = kind === 'SINGLE_SPEAKER_SHOT' || kind === 'MULTI_SPEAKER_SHOT';
+  const lastEnd = input.cues.reduce((n, c) => Math.max(n, c.endSec, c.startSec + (c.audioDurationSec || 0)), 0);
+  const projectMode = input.projectVisualMode || PROJECT_VISUAL_MODE;
+  if (input.legacyPhotorealAttached) blockers.push(GATE.LEGACY_PHOTOREAL);
+  if (input.kfVisualMode && input.kfVisualMode !== projectMode) blockers.push(GATE.VISUAL_MODE_CONFLICT);
+  if (input.cues.some((c) => !cueHasSpeaker(c))) blockers.push(GATE.MISSING_SPEAKER);
+  if (!input.hasCanonicalKf) blockers.push(GATE.MISSING_KF);
+  const voiceReady = spoken && voiceReadyOf(input.cues) && lastEnd > 0;
+  if (!voiceReady) blockers.push(GATE.VOICE_REQUIRED);
+  if (input.overlayPreview) {
+    blockers.push(GATE.PREVIEW_ONLY);
+    blockers.push(GATE.NOT_ELIGIBLE_FOR_FINAL);
+  }
+  const mixReady = voiceReady && Boolean(input.mixReady) && input.hasCanonicalKf;
+  const finalReady =
+    voiceReady &&
+    input.hasCanonicalKf &&
+    mixReady &&
+    !input.overlayPreview &&
+    !blockers.includes(GATE.LEGACY_PHOTOREAL) &&
+    !blockers.includes(GATE.VISUAL_MODE_CONFLICT) &&
+    !blockers.includes(GATE.MISSING_SPEAKER);
+  const finalSource: PreflightResult['finalSource'] = finalReady ? 'VOICE_OVER_STILL' : 'NONE';
+  let stage: ProductionStage = 'DRAFT';
+  if (input.hasCanonicalKf) stage = 'VISUAL_READY';
+  if (input.hasCanonicalKf && voiceReady) stage = 'VOICE_READY';
+  if (mixReady && !finalReady) stage = 'MIX_READY';
+  if (finalReady) stage = input.directorApproved ? 'APPROVED' : 'DIRECTOR_REVIEW';
+  if (!finalReady && blockers.length > 0 && input.hasCanonicalKf) stage = 'BLOCKED';
+  const hold = voiceReady ? lastEnd : 0;
+  return {
+    allowed: finalReady,
+    blockers: [...new Set(blockers)],
+    warnings: [],
+    stage,
+    kind,
+    finalSource,
+    voiceReady,
+    videoReady: false,
+    lipSyncReady: false,
+    mixReady,
+    finalReady,
+    avSync: avSyncStatus(hold, hold),
+    videoDurationSec: hold,
+    audioDurationSec: hold,
+    finalDurationSec: hold,
+  };
+}
+
+function confirmedStaticVoiceOver(input: ShotProductionInput) {
+  return (
+    input.strategyConfirmed === true &&
+    (input.pictureStrategy || '').trim().toUpperCase() === 'STATIC' &&
+    (input.speechDelivery || '').trim().toUpperCase() === 'VOICE_OVER'
+  );
+}
+
 export function videoProductionPreflight(input: ShotProductionInput): PreflightResult {
+  if (input.voiceOverStill || confirmedStaticVoiceOver(input))
+    return preflightVoiceOverStill({ ...input, voiceOverStill: true });
   const blockers: string[] = [];
   const warnings: string[] = [];
   const projectMode = input.projectVisualMode || PROJECT_VISUAL_MODE;
@@ -386,7 +454,8 @@ export function shotProductionInputOf(
     return cue;
   });
   const spoken = cues.length > 0;
-  const hasLip = Boolean(run.lipsynced || run.lipsyncUrl?.trim() || run.finalSource === 'FAL');
+  const hasLip = Boolean(run.lipsynced || run.lipsyncUrl?.trim() || run.finalSource === 'FAL')
+    && !lipsyncFalHasNoOutput(run.lipsyncError);
   return {
     shotId: shot.id,
     hasCanonicalKf: Boolean(
@@ -403,6 +472,9 @@ export function shotProductionInputOf(
     hasLipSync: hasLip,
     mixReady: spoken ? hasLip : true,
     overlayPreview: false,
+    pictureStrategy: shot.pictureStrategy,
+    speechDelivery: shot.speechDelivery,
+    strategyConfirmed: shot.strategyConfirmed === true,
   };
 }
 

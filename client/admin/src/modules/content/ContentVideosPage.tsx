@@ -23,7 +23,9 @@ import {
 import { Link } from 'react-router-dom';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { CONTENT_NAV_SETUP } from '@/modules/content/content-nav';
+import { factoryVideoTag, playableMarketingVideoUrl, videoSourceForJob } from '@/modules/content/content-video-factory-label';
 import { ContentKitVideoEngineCard } from '@/modules/content/ContentKitVideoEngineCard';
+import { ContentImportedVideosCard } from '@/modules/content/ContentImportedVideosCard';
 
 const ContentFamixaSeriesTab = lazy(() =>
   import('@/modules/content/ContentFamixaSeriesTab').then((m) => ({ default: m.ContentFamixaSeriesTab })),
@@ -32,12 +34,7 @@ const ContentVideoLabTab = lazy(() =>
   import('@/modules/content/ContentVideoLabTab').then((m) => ({ default: m.ContentVideoLabTab })),
 );
 
-export function playableMarketingVideoUrl(url?: string | null) {
-  const value = (url || '').trim();
-  if (!/^https?:\/\//i.test(value) && !value.toLowerCase().startsWith('data:video')) return '';
-  if (/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(value)) return '';
-  return value;
-}
+export { playableMarketingVideoUrl };
 
 function TabFallback({ tip }: { tip: string }) {
   return (
@@ -74,6 +71,7 @@ import {
   type ContentVideoJob,
   type ContentVideoTemplate,
 } from '@/shared/api/content.api';
+import { useContentBrand } from './content-brand-context';
 
 const PKG_STATUS: Record<string, { text: string; color: string }> = {
   Draft: { text: 'Nháp', color: 'default' },
@@ -82,19 +80,6 @@ const PKG_STATUS: Record<string, { text: string; color: string }> = {
   Approved: { text: 'Đã duyệt', color: 'cyan' },
   Scheduled: { text: 'Đã lên lịch', color: 'geekblue' },
   Published: { text: 'Đã đăng', color: 'green' },
-};
-
-const STATUS_LABEL: Record<string, { text: string; color: string }> = {
-  Draft: { text: 'Nháp', color: 'default' },
-  GeneratingScript: { text: 'Đang viết script…', color: 'processing' },
-  GeneratingAssets: { text: 'Đang tạo ảnh…', color: 'processing' },
-  GeneratingVoice: { text: 'Đang tạo voice…', color: 'processing' },
-  PreparingRender: { text: 'Chuẩn bị render…', color: 'processing' },
-  Queued: { text: 'Hàng đợi', color: 'processing' },
-  Rendering: { text: 'Đang render…', color: 'blue' },
-  Ready: { text: 'Sẵn sàng', color: 'cyan' },
-  Failed: { text: 'Lỗi', color: 'red' },
-  Approved: { text: 'Đã duyệt', color: 'green' },
 };
 
 type StoryBeat = {
@@ -165,14 +150,27 @@ function latestJobByPackage(jobs: ContentVideoJob[]): Map<string, ContentVideoJo
   return map;
 }
 
-export function ContentVideosPage() {
+export function ContentVideosPage({
+  surface = 'studio',
+  lockedBrandId,
+}: {
+  /** novixa-local keeps the proven factory renderer and does not open the Famixa series desk. */
+  surface?: 'studio' | 'novixa-local';
+  lockedBrandId?: string | null;
+} = {}) {
+  const novixaLocal = surface === 'novixa-local';
   const { message } = App.useApp();
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<ContentVideoJob[]>([]);
   const [templates, setTemplates] = useState<ContentVideoTemplate[]>([]);
   const [packages, setPackages] = useState<ContentPackage[]>([]);
   const [brands, setBrands] = useState<ContentBrand[]>([]);
-  const [brandFilter, setBrandFilter] = useState<string | undefined>();
+  const workspace = useContentBrand();
+  const brandFilter = novixaLocal ? lockedBrandId || undefined : workspace.brandId;
+  const setBrandFilter = (value?: string) => {
+    if (novixaLocal) return;
+    workspace.setBrand(value ?? 'all');
+  };
   const [coreFilter, setCoreFilter] = useState<string | undefined>();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [templateId, setTemplateId] = useState<string | undefined>();
@@ -182,7 +180,7 @@ export function ContentVideosPage() {
   const [busy, setBusy] = useState(false);
   const [creatomateConfigured, setCreatomateConfigured] = useState(false);
   const [elevenLabsConfigured, setElevenLabsConfigured] = useState(false);
-  const [mainTab, setMainTab] = useState('series');
+  const [mainTab, setMainTab] = useState(novixaLocal ? 'factory' : 'series');
   const [seriesMount, setSeriesMount] = useState(false);
   useEffect(() => {
     setSeriesMount(true);
@@ -398,12 +396,12 @@ export function ContentVideosPage() {
       </div>
       )}
 
-      {mainTab !== 'series' ? (
+      {mainTab !== 'series' && !novixaLocal ? (
         <div style={{ padding: '8px 16px' }}>
           <Button onClick={() => setMainTab('series')}>← Video Studio</Button>
         </div>
       ) : null}
-      {mainTab !== 'series' ? <ContentKitVideoEngineCard /> : null}
+      {mainTab !== 'series' && !novixaLocal ? <ContentKitVideoEngineCard /> : null}
       <Tabs
         activeKey={mainTab}
         onChange={setMainTab}
@@ -436,6 +434,15 @@ export function ContentVideosPage() {
             label: 'Factory (góc brand)',
             children: mainTab === 'factory' ? (
               <div>
+                {novixaLocal ? (
+                  <Alert
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 12 }}
+                    message="Factory không phải bản ElevenLabs"
+                    description="Video Novixa đã lồng tiếng ElevenLabs là proof stock-motion, không phải template tiktok_45s_hooks. Nút Render và MVP trên màn này không tạo lại bản đó."
+                  />
+                ) : null}
                 {(!creatomateConfigured || !elevenLabsConfigured) && (
                   <Alert
                     type="info"
@@ -451,6 +458,7 @@ export function ContentVideosPage() {
                     }
                   />
                 )}
+                <ContentImportedVideosCard brands={brands} brandId={brandFilter} />
                 <Space wrap style={{ marginBottom: 12 }}>
                   <Select
                     allowClear
@@ -463,7 +471,8 @@ export function ContentVideosPage() {
                     options={coreOptions}
                   />
                   <Select
-                    allowClear
+                    allowClear={!novixaLocal}
+                    disabled={novixaLocal}
                     placeholder="Lọc thương hiệu"
                     style={{ width: 200 }}
                     value={brandFilter}
@@ -475,7 +484,8 @@ export function ContentVideosPage() {
                     style={{ minWidth: 280 }}
                     value={templateId}
                     onChange={setTemplateId}
-                    options={templates.map((t) => ({
+                    disabled={novixaLocal}
+                    options={(novixaLocal ? templates.filter((t) => t.code === 'tiktok_45s_hooks') : templates).map((t) => ({
                       value: t.id,
                       label: `${t.name} (${t.aspectRatio} · ${t.durationSec}s)`,
                     }))}
@@ -566,7 +576,7 @@ export function ContentVideosPage() {
             width: 130,
             render: (_: unknown, row: VideoRow) => {
               if (!row.job) return <Typography.Text type="secondary">Chưa có</Typography.Text>;
-              const m = STATUS_LABEL[row.job.status] ?? { text: row.job.status, color: 'default' };
+              const m = factoryVideoTag(row.job);
               return <Tag color={m.color}>{m.text}</Tag>;
             },
           },
@@ -585,7 +595,7 @@ export function ContentVideosPage() {
               </div>
             ) : null,
           },
-        ]}
+        ].filter((item) => !novixaLocal || item.key === 'factory')}
       />
       {mainTab === 'series' ? (
         <details className="fx-videos__more">
@@ -664,7 +674,8 @@ export function ContentVideosPage() {
                 style={{ width: '100%', marginTop: 8 }}
                 value={templateId}
                 onChange={setTemplateId}
-                options={templates.map((t) => ({
+                disabled={novixaLocal}
+                options={(novixaLocal ? templates.filter((t) => t.code === 'tiktok_45s_hooks') : templates).map((t) => ({
                   value: t.id,
                   label: `${t.name} (${t.aspectRatio} · ${t.durationSec}s)`,
                 }))}
@@ -680,8 +691,8 @@ export function ContentVideosPage() {
         ) : detail ? (
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <div>
-              <Tag color={(STATUS_LABEL[detail.status] ?? { color: 'default' }).color}>
-                {(STATUS_LABEL[detail.status] ?? { text: detail.status }).text}
+              <Tag color={factoryVideoTag(detail).color}>
+                {factoryVideoTag(detail).text}
               </Tag>
               <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
                 {detail.provider} · {detail.templateName}
@@ -690,10 +701,10 @@ export function ContentVideosPage() {
             {detail.errorMessage ? <Alert type="warning" showIcon message={detail.errorMessage} /> : null}
             <Card
               size="small"
-              title={detail.outputUrl ? 'Xem video' : 'Xem preview'}
+              title={videoSourceForJob(detail) ? 'Xem video' : 'Xem preview'}
               extra={
-                detail.outputUrl ? (
-                  <a href={detail.outputUrl} target="_blank" rel="noreferrer">
+                videoSourceForJob(detail) ? (
+                  <a href={videoSourceForJob(detail)} target="_blank" rel="noreferrer">
                     Mở link MP4
                   </a>
                 ) : (
@@ -707,9 +718,9 @@ export function ContentVideosPage() {
                 )
               }
             >
-              {detail.outputUrl ? (
+              {videoSourceForJob(detail) ? (
                 <video
-                  src={detail.outputUrl}
+                  src={videoSourceForJob(detail)}
                   controls
                   playsInline
                   style={{ width: '100%', maxHeight: 420, background: '#0f172a', borderRadius: 8 }}

@@ -5,7 +5,7 @@ import type { FamixaSeriesShot, SeriesPilotState, SeriesShotRun } from './conten
 import { directorPictureVideoSurface, directorPrimaryCta, shotPipelineBusy, shotQaMissing, shotStaleNotes, staffPrimaryCta } from './ContentFamixaShotProduction/ShotProductionCta';
 import { resolveLaneAShotId, sceneShotsOf } from './ContentFamixaShotProduction/ShotProductionNavigator';
 import { nextShotProductionCommand } from './ContentFamixaShotProduction/ShotProductionOrchestrator';
-import { resolveShotPreviewKind, SHOT_PREVIEW_LABEL } from './ContentFamixaShotProduction/ShotProductionPreview';
+import { muteTakeVoiceOverlay, resolveShotPreviewKind, SHOT_PREVIEW_LABEL } from './ContentFamixaShotProduction/ShotProductionPreview';
 import { shotProgressRows } from './ContentFamixaShotProduction/ShotProductionProgress';
 import { shotI2vPromptHash } from './content-famixa-prod-v2';
 import { dataUriHash } from './content-famixa-runway-pipe';
@@ -154,6 +154,23 @@ const pendingDesk = directorPictureVideoSurface({
   kfApproved: false,
 });
 ok(pendingDesk.primary?.action === 'approve-picture' && pendingDesk.primary?.label === 'Duyệt hình', '02e live still + not approved shows Duyệt hình');
+const pendingNoDataUri = directorPictureVideoSurface({
+  snap: {
+    ...snap({ status: 'keyframe_ready', kfApproved: false }),
+    picturePendingApproval: true,
+    keyframeReady: true,
+    keyframeApproved: false,
+    pictureUnusable: false,
+  },
+  cmd: { type: 'ENSURE_VOICE', kind: 'ENSURE' },
+  hasLiveStill: false,
+  kfApproved: false,
+});
+ok(
+  pendingNoDataUri.primary?.action === 'approve-picture' && pendingNoDataUri.primary?.label === 'Duyệt hình',
+  '02e2 pending still shows Duyệt hình even if desk hasLiveStill is false',
+);
+ok(ws.includes('displayableStillUrl') && ws.includes('data-approve-picture'), '02e3 desk treats visible still as approvable');
 const approvedDesk = directorPictureVideoSurface({
   snap: snap({
     status: 'keyframe_ready',
@@ -201,6 +218,7 @@ ok(cta.action === staffPrimaryCta(voiceSnap).action && cta.label === DIRECTOR_SH
 
 const kfWait = snap({ status: 'keyframe_ready', keyframeDataUrl: 'data:image/png;base64,aa', kfApproved: false });
 ok(nextShotProductionCommand(kfWait).type === 'WAIT_PICTURE_APPROVAL' && directorPrimaryCta(kfWait).action === 'approve-picture', '13 KF approval');
+ok(directorPrimaryCta({ ...kfWait, voiceReady: false }).action === 'approve-picture', '13c Duyệt hình stays primary while thoại chưa nạp');
 const kfLegacy = { ...kfWait, pictureUnusable: true };
 ok(nextShotProductionCommand(kfLegacy).type === 'ENSURE_PICTURE' && directorPrimaryCta(kfLegacy).label === 'Tạo hình', '13b legacy pipeline asks Tạo hình');
 const kfStub = snap({ status: 'keyframe_ready', keyframeFileName: 'kf.jpg', kfApproved: false });
@@ -267,18 +285,18 @@ const qaSnap = snap({
 });
 ok(nextShotProductionCommand(qaSnap).type === 'LIPSYNC_QA_REQUIRED' && card.includes('ShotProductionQa'), '15 QA gate');
 ok(
-  shotQaMissing({ action: true, continuity: true }, true).join() === 'Giọng / khuôn mặt phù hợp'
+  shotQaMissing({ action: true, continuity: true }, true).join() === 'Chuyển động thực hiện nhịp,Giọng / khuôn mặt phù hợp'
     && ws.includes('Chưa đủ kiểm tra Shot'),
   '15b Kiểm tra Shot reports missing ticks',
 );
 ok(
   shotQaMissing({ action: true, continuity: true, voiceFace: true }, true, { afterLipsync: true }).join() ===
-    'Lip-sync đạt,Final A/V đạt',
+    'Chuyển động thực hiện nhịp,Lip-sync đạt,Final A/V đạt',
   '15e after lipsync requires quality ticks',
 );
 ok(card.includes('afterLipsync') && qaSrc.includes('Môi khớp thoại chưa?'), '15f director sees quality ticks');
 ok(series.includes('startSceneTurbo([shotId])') && orch.includes('CONFIRM_MOTION'), '16 Runway confirmation remains');
-ok(series.includes('startShotMotion') && series.includes('forceNew: true'), '16b stale motion Studio remake');
+ok(series.includes('startShotMotion') && series.includes('createProductionRequest'), '16b stale motion Studio remake is Production OS');
 ok(series.includes('startLipsync([shotId])') && orch.includes('CONFIRM_LIPSYNC'), '17 Fal confirmation remains');
 ok(series.includes('studioLipsyncSendOpts') && series.includes('startLipsync([shotId], opts)'), '17b stale lipsync Studio remake');
 const lipReady = snap({
@@ -349,6 +367,15 @@ ok(overview.includes('onFocusShot') && series.includes('firstShotId') && series.
 ok(series.includes('directorPictureHold') && series.includes('confirmCreateShotImage') && series.includes('onEnsurePicture={(shotId) =>'), '23 picture preflight does not navigate away');
 ok(series.includes('Thoại của Episode chưa được khóa') && series.includes('shotVoiceReadyForPicture') && series.includes('directorShotHasSpokenCopy') && ws.includes('holdReason'), '24 Director picture uses shot voice; staff keeps episode lock');
 ok(ws.includes('Nghe trên video đã lồng tiếng') && ws.includes('Nạp thoại'), '24b session TTS miss does not invent new TTS');
+ok(
+  muteTakeVoiceOverlay('motion', 'blob:tts') &&
+    !muteTakeVoiceOverlay('lipsync', 'blob:tts') &&
+    !muteTakeVoiceOverlay('final', 'blob:tts') &&
+    !muteTakeVoiceOverlay('keyframe', 'blob:tts'),
+  '24c overlay only on mute Veo take — not lipsync / mix',
+);
+ok(ws.includes('falNoOutput || falFileMissing || !lipsyncUrl') && ws.includes('data-mute-take-voice'), '24d desk plays ElevenLabs on mute Veo');
+ok(preview.includes('audioRef') && preview.includes('addEventListener(\'play\''), '24e overlay plays the visible audio with the video');
 ok(ws.includes('ShotProductionTechnical') && ws.includes('!directorDesk'), '25 technical fields hidden Director');
 ok(tech.includes('assembleFp') && tech.includes('voiceId') && ws.includes('ShotProductionTechnical'), '26 technical fields available Staff');
 ok(series.includes('ContentFamixaBuildVoiceBoard') && series.includes('ContentFamixaBuildImageBoard') && series.includes('ContentFamixaStudioView'), '27 old tabs still mount');
@@ -369,6 +396,22 @@ ok(orch.includes('export async function produceShot') && stateFile.includes('bui
 ok(!card.includes('MUTE_TAKE') && !card.includes('Fal $') && !card.includes('PVS'), 'P director card clean');
 ok(directorPictureHoldCopy({ code: 'VOICE_NOT_LOCKED', type: 'voice' }).reason.includes('chưa được khóa'), '26b voice hold copy');
 ok(directorPictureHoldCopy({ code: 'SCENE_MASTER_NOT_LOCKED', type: 'scene_master' }).hint.includes('Scene Master'), '26c scene master hold');
+ok(directorPictureHoldCopy({ code: 'GEMINI_KEY_MISSING', type: 'provider', title: 'Chưa có Gemini API key' }).reason.includes('Gemini'), '26d gemini hold is explicit');
+ok(directorPictureHoldCopy({ code: 'CHARACTER_NOT_LOCKED', title: 'Minh chưa LOCK' }).reason.includes('Minh chưa LOCK'), '26d2 lock hold is explicit');
+ok(series.includes('onlyIds?.length === 1') && series.includes('Đang nạp cấu hình vẽ hình'), '26e one-shot waits for Gemini/canon');
+ok(
+  series.includes('confirmCreateShotImage(shotId)') &&
+    !/onEnsurePicture=\{\(shotId\) => \{\s*const hold = directorPictureHold/.test(series),
+  '26f Tạo hình always opens confirm/blocker modal',
+);
+ok(!/visualReferences:[\s\S]{0,500}legacyPhotorealCanonClaim/.test(series), '26g preflight does not invent photoreal refs');
+ok(!series.includes('legacyPhotorealCanonClaim'), '26h generate does not send photoreal Canon');
+ok(
+  series.includes('pictureIdentityIds') &&
+    series.includes("code: 'CHARACTER_NOT_LOCKED'") &&
+    !series.includes('Dừng KF tại'),
+  '26i KF fail keeps the real lock/API error',
+);
 
 const sceneA = [
   shotOf({ id: 'A', sceneId: 'SC01' }),
@@ -384,7 +427,21 @@ const sending = shotPipelineBusy({ shotId: 'SH04', busyShotId: 'SH04', motionBus
 ok(drawing.pictureBusy && !drawing.motionBusy, '27 picture busy is not motion');
 ok(sending.motionBusy && !sending.pictureBusy, '27b motion busy is not picture');
 ok(ws.includes('data-picture-busy') && ws.includes('Đợi xong rồi mới Tạo video'), '27c desk blocks video while drawing');
-ok(series.includes('Đang vẽ/chấm hình. Đợi xong rồi mới Tạo video.') && series.includes('Đang tạo video. Không vẽ hình mới.'), '27d SeriesTab mutex');
+ok(
+  ws.includes('Đang vẽ/chấm hình. Đợi xong rồi mới Tạo video.') &&
+    series.includes('Đang tạo video. Không vẽ hình mới.'),
+  '27d SeriesTab mutex',
+);
+ok(series.includes('openWatchClip') && series.includes('<video') && !series.includes('window.open(URL.createObjectURL'), '28 review plays in page');
+ok(!series.slice(series.indexOf('const assembleOneShot'), series.indexOf('const approveShotPicture')).includes('triggerDownload'), '28b Hoàn thiện does not download');
+ok(
+  series.slice(series.indexOf('const assembleOneShot'), series.indexOf('const approveShotPicture')).includes('playableFalLipsyncSrc')
+    && series.slice(series.indexOf('const assembleOneShot'), series.indexOf('const approveShotPicture')).includes('!isFalPlaybackSrc'),
+  '28c Hoàn thiện does not fetch a bare fal-video pointer',
+);
+ok(ws.includes("action === 'mix'") && ws.includes('loadFinalArtifact') && ws.includes("action === 'watch'"), '28c mix is explicit; hydrate only proves');
+ok(ws.includes('FamixaMotionEnginePicker'), '29 Model video on shot desk');
+ok(read('famixa-motion-engine.ts').includes("value: 'veo'") && read('famixa-motion-engine.ts').includes("label: 'Google Veo 3'"), '29b Veo 3 in engine picker');
 
 if (fail.length) {
   console.error(`FAMIXA_VIDEO_STUDIO_UX_V1 FAIL=${fail.length}`);

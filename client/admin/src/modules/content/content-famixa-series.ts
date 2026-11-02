@@ -1,5 +1,6 @@
 /** Famixa Series pilot — nhận khối dán. KIT không điền sẵn chuyện. */
 
+import type { FilmOrchestration } from './film-production-orchestrator';
 import { parseEpisodeStory } from './content-famixa-story-parse';
 import { ensureStoryMemory, inheritStoryMemory, needsInheritanceReview, type FamixaStoryMemory } from './content-famixa-story-memory';
 import { deriveVoiceScript, mergeVoiceGenerated, voiceProductionReady, type FamixaVoicePreview } from './content-famixa-voice-script';
@@ -7,6 +8,8 @@ import { canonPixelsOf, loadCanonPixels, rememberCanonFromChars, rememberCanonPi
 import { kfPixelsOf, loadKfPixels, rememberKfFromRuns, rememberKfPixels, saveKfPixels } from './content-famixa-kf-store';
 import { famixaCanonSeedFor, fetchFamixaCanonSeedDataUrl } from './content-famixa-canon-seed';
 import { displayUrlForData, stripJsonDataUrls } from './content-famixa-blob-url';
+import { isVeoMotionTaskId, rewriteVeoTakePointers } from './famixa-veo-take-playback';
+import { rewriteFalLipsyncPointers } from './famixa-fal-lipsync-playback';
 import { I2V_VI_RE, runwayEnglishBit } from './content-famixa-i2v-en';
 import { ACTING_LAW_LOCK, actingI2vBrief, inferActingDirection } from './content-famixa-acting-law';
 import { mergeKeepDialoguePerformance } from './content-famixa-performance';
@@ -82,6 +85,13 @@ export type FamixaSeriesShot = {
   /** Why this Shot exists. NONE / missing → not production. */
   splitReason?: ShotSplitReason;
   actionUnitIds?: string[];
+  /**
+   * NOVIXA short plan. Missing or blank keeps the Famixa contract.
+   * A value here is not confirmation; strategyConfirmed is the operator request.
+   */
+  pictureStrategy?: string;
+  speechDelivery?: string;
+  strategyConfirmed?: boolean;
 };
 
 export type ShotSplitReason =
@@ -461,6 +471,8 @@ export type SeriesShotRun = {
   kfRetryOk?: boolean;
   /** Camera variant after INTERNAL.BAD_OUTPUT — changes prompt hash without a new still. */
   i2vRetry?: number;
+  /** Normalized face click for Fal v3 active speaker. 0 Fal until Director Confirm. */
+  lipsyncSpeaker?: { x: number; y: number; width: number; height: number; characterId?: string; frameNumber?: number };
   /** Fal sync-lipsync take — mouth follows TTS. Assemble keeps this audio. */
   lipsynced?: boolean;
   /** Fal output URL. Kept even if previewUrl is later replaced. */
@@ -482,10 +494,18 @@ export type SeriesShotRun = {
     finalAv?: boolean;
     /** Voice vs Face — same Performance Plan. Fail → fix KF, not Fal. */
     voiceFace?: boolean;
+    /** Playback id from playbackReviewTarget. Ticks without this id are not acceptance. */
+    reviewedPlaybackId?: string;
+    /** SHA-256 of the OS artifact named by reviewedPlaybackId. A new hash does not inherit ACCEPT. */
+    reviewedContentHash?: string;
+    /** Human decision for reviewedPlaybackId. Not a Production OS binding. */
+    decision?: 'ACCEPT' | 'REJECT';
   };
   lipsyncTaskId?: string;
   lipsyncStatus?: string;
   lipsyncError?: string;
+  /** Two-face CGI: no Fal lock. Mute take + voice overlay. Not a Fal SUCCESS. */
+  lipsyncMixOnly?: boolean;
   /** Immutable SelectionDecision snapshot from LipSync Start. Not Router re-query. */
   lipsyncSelectionSnapshot?: {
     decisionId: string;
@@ -508,6 +528,8 @@ export type SeriesShotRun = {
   kfApproved?: boolean;
   /** New approved still — old take must not stay the primary CTA. */
   motionNeedsRemake?: boolean;
+  /** Director saved a new acting beat — old take must offer Tạo video. */
+  actingBeatPendingMotion?: boolean;
   /** Survives slim (pixels are stripped). Binds I2V / hide-stale-AV to this still. */
   kfSourceHash?: string;
   /** Immutable SelectionDecision snapshot from Picture Start. Not Router re-query. */
@@ -566,9 +588,41 @@ export type SeriesShotRun = {
   lipsyncFrozenInput?: {
     motionArtifactId?: string;
     motionFingerprint?: string;
+    motionDurationSec?: number;
+    voiceArtifactId?: string;
     voiceFingerprint: string;
+    voiceDurationSec?: number;
     fingerprint: string;
     usedValidity?: string;
+    voiceId?: string;
+    buildId?: string;
+    lineId?: string;
+    motionTaskId?: string;
+    motionUrl?: string;
+    voiceLineIds?: string[];
+    speakerCharacterId?: string;
+    speakerFaceRegion?: { x: number; y: number; width: number; height: number };
+    speakerFrameNumber?: number;
+  };
+  /** LipSync attempt provenance. Input identity must exist before provider call. */
+  lipsyncExecutionAttempt?: {
+    providerId?: string;
+    modelId?: string;
+    motionArtifactId?: string;
+    motionFingerprint?: string;
+    motionDurationSec?: number;
+    voiceArtifactId?: string;
+    voiceFingerprint?: string;
+    voiceDurationSec?: number;
+    providerRequestId?: string;
+    status?: string;
+    motionTaskId?: string;
+    motionUrl?: string;
+    voiceId?: string;
+    buildId?: string;
+    lineId?: string;
+    motionPhysicalFingerprint?: string;
+    voicePhysicalFingerprint?: string;
   };
   mixFrozenInput?: {
     videoArtifactId?: string;
@@ -591,6 +645,10 @@ export type SeriesPilotState = {
   outputAspect?: '16:9' | '9:16';
   sceneNotes?: string;
   packDraft?: string;
+  /** Script text kept on the film when the server copy drops packDraft. */
+  scriptDraft?: string;
+  /** Film-level script confirm and step plan. Shot executors stay on the shot. */
+  filmOrchestration?: FilmOrchestration;
   continuity?: SceneContinuityLock;
   /** Duyệt kịch bản xong mới chia short / dựng cảnh. */
   scriptLocked?: boolean;
@@ -630,6 +688,8 @@ export type SeriesPilotState = {
   smoothness?: import('./famixa-shot-smoothness-contract').EpisodeSmoothness;
   /** Film Editing V1 overlay. Does not mutate take / lipsync / KF / timing. */
   editorialCut?: import('./content-famixa-editorial-cut').EditorialCut;
+  /** Assemble mix toggles. Absent means the compiler defaults. */
+  mixPrefs?: import('./content-famixa-mix').FamixaMixPrefs;
 };
 
 export type FamixaVoiceAsset = {
@@ -638,6 +698,11 @@ export type FamixaVoiceAsset = {
   characterId?: string;
   duration: number;
   status: 'ready';
+  /** Graph ready is a duration receipt. Not physical-byte proof. */
+  artifactId?: string;
+  storageKey?: string;
+  voiceId?: string;
+  physicalArtifactResolvable?: boolean;
   /** Immutable SelectionDecision snapshot from Voice Start. Not Router re-query. */
   selectionSnapshot?: {
     decisionId: string;
@@ -877,7 +942,7 @@ export function loadSeriesPilot(): SeriesPilotState {
   try {
     let raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyPilot();
-    if (raw.includes('data:image')) {
+    if (raw.includes('data:image') || raw.includes('data:video')) {
       raw = stripJsonDataUrls(raw);
       try {
         localStorage.setItem(STORAGE_KEY, raw);
@@ -897,6 +962,7 @@ export function loadSeriesPilot(): SeriesPilotState {
       outputAspect: v.outputAspect === '9:16' || v.outputAspect === '16:9' ? v.outputAspect : undefined,
       sceneNotes: v.sceneNotes,
       packDraft: typeof v.packDraft === 'string' ? v.packDraft : undefined,
+      scriptDraft: typeof v.scriptDraft === 'string' ? v.scriptDraft : undefined,
       continuity: v.continuity && typeof v.continuity === 'object' ? v.continuity : undefined,
       scriptLocked: Boolean(v.scriptLocked),
       castLocked: Boolean(v.castLocked),
@@ -929,6 +995,11 @@ export function loadSeriesPilot(): SeriesPilotState {
       i2vProductionMode: v.i2vProductionMode === true,
       editorialCut: v.editorialCut && typeof v.editorialCut === 'object' ? v.editorialCut : undefined,
     };
+    const recovered: SeriesPilotState['runs'] = {};
+    for (const [id, run] of Object.entries(loaded.runs ?? {})) {
+      recovered[id] = rewriteFalLipsyncPointers(rewriteVeoTakePointers(run));
+    }
+    loaded.runs = recovered;
     const migrated = slimPilotForStorage(ensurePilotGraph(loaded));
     const hadDeadLipsync = Object.values(loaded.runs ?? {}).some((r) =>
       /404|405|504|403|exhausted|request failed/i.test(r.lipsyncError || ''),
@@ -946,7 +1017,7 @@ export function loadSeriesPilot(): SeriesPilotState {
 export function slimPilotForStorage(state: SeriesPilotState): SeriesPilotState {
   const runs: SeriesPilotState['runs'] = {};
   for (const [id, run] of Object.entries(state.runs)) {
-    runs[id] = { ...dropDeadLipsync(run), keyframeDataUrl: undefined };
+    runs[id] = rewriteFalLipsyncPointers(rewriteVeoTakePointers({ ...dropDeadLipsync(run), keyframeDataUrl: undefined }));
   }
   return {
     ...state,
@@ -956,10 +1027,67 @@ export function slimPilotForStorage(state: SeriesPilotState): SeriesPilotState {
   };
 }
 
-/** Server graph — parsed story only. packDraft stays on the machine. */
+/** AUTHORITY-STABILIZATION-01A — media keys that must not become new graph_json authority. */
+export const GRAPH_MEDIA_AUTHORITY_KEYS = [
+  'takeUrl',
+  'previewUrl',
+  'lipsyncUrl',
+  'acceptedTake',
+  'localVideoPath',
+  'turboTaskId',
+  'turboStatus',
+  'turboError',
+  'lipsyncTaskId',
+  'lipsyncStatus',
+  'lipsyncError',
+  'takeHistory',
+  'runwayAttempts',
+  'videoPipe',
+  'videoVerified',
+  'videoBytes',
+  'videoMime',
+] as const;
+
+/** PUT projection. Does not delete fields from SeriesPilotState / localStorage / in-memory runs. */
+export function omitGraphMediaAuthorityFromRun(run: SeriesShotRun): SeriesShotRun {
+  const next: SeriesShotRun = { ...run };
+  delete next.takeUrl;
+  delete next.previewUrl;
+  delete next.lipsyncUrl;
+  delete next.acceptedTake;
+  delete next.localVideoPath;
+  delete next.turboTaskId;
+  delete next.turboStatus;
+  delete next.turboError;
+  delete next.lipsyncTaskId;
+  delete next.lipsyncStatus;
+  delete next.lipsyncError;
+  delete next.takeHistory;
+  delete next.runwayAttempts;
+  delete next.videoPipe;
+  delete next.videoVerified;
+  delete next.videoBytes;
+  delete next.videoMime;
+  if (next.lipsyncFrozenInput && 'motionUrl' in next.lipsyncFrozenInput) {
+    const { motionUrl: _motionUrl, ...frozen } = next.lipsyncFrozenInput;
+    next.lipsyncFrozenInput = frozen;
+  }
+  if (next.lipsyncExecutionAttempt && 'motionUrl' in next.lipsyncExecutionAttempt) {
+    const { motionUrl: _attemptUrl, ...attempt } = next.lipsyncExecutionAttempt;
+    next.lipsyncExecutionAttempt = attempt;
+  }
+  return next;
+}
+
+/** Server graph — Script SoT. Media authority fields are omitted from PUT only. */
 export function slimPilotForServer(state: SeriesPilotState): SeriesPilotState {
   const slim = slimPilotForStorage(state);
-  return { ...slim, packDraft: undefined };
+  const runs: SeriesPilotState['runs'] = {};
+  for (const [id, run] of Object.entries(slim.runs)) {
+    runs[id] = omitGraphMediaAuthorityFromRun(run);
+  }
+  const scriptDraft = state.scriptDraft?.trim() ? state.scriptDraft : state.packDraft;
+  return { ...slim, packDraft: undefined, scriptDraft, runs };
 }
 
 let lastPilotJson = '';
@@ -991,10 +1119,12 @@ export function saveSeriesPilot(state: SeriesPilotState, preJson?: string) {
   }
 }
 
-export function normCharId(raw: string) {
-  const m = raw.toUpperCase().match(/CHAR\s*-?\s*(\d+)/);
+export function normCharId(raw?: string | null) {
+  const text = (raw ?? '').trim();
+  if (!text) return '';
+  const m = text.toUpperCase().match(/CHAR\s*-?\s*(\d+)/);
   if (m) return `CHAR-${String(m[1]).padStart(3, '0')}`;
-  return raw.replace(/\s+/g, ' ').trim();
+  return text.replace(/\s+/g, ' ').trim();
 }
 
 export function shotCharacterIds(shot: { characters?: string[]; characterIds?: string[] }) {
@@ -1626,7 +1756,7 @@ export async function hydratePilotKeyframes(state: SeriesPilotState): Promise<Se
   rememberKfFromRuns(state.runs ?? {});
   for (const id of Object.keys(state.runs ?? {})) {
     if (!id) continue;
-    const run = state.runs[id];
+    const run = state.runs?.[id];
     if (run?.keyframeDataUrl?.startsWith('data:image')) continue;
     if (kfPixelsOf(id)) continue;
     await loadKfPixels(id);
@@ -1949,11 +2079,12 @@ export function syncVoiceOnlyRoles(state: SeriesPilotState): SeriesPilotState {
     chars.find((c) => c.id === 'CHAR-VO') ||
     chars.find((c) => /loi binh|voice.?over|\bnarrator\b/.test(foldVoiceText(`${c.id} ${c.name} ${c.role}`)));
   if (!voChar || !spokenIds.has(normCharId(voChar.id))) return state;
-  const hasRole = state.roles.some((r) => isVoiceOnlyRole(r, characterOfRole(state, r)) || r.characterId === voChar.id);
+  const roster = state.roles ?? [];
+  const hasRole = roster.some((r) => isVoiceOnlyRole(r, characterOfRole(state, r)) || r.characterId === voChar.id);
   const roles = hasRole
-    ? state.roles
+    ? roster
     : [
-        ...state.roles,
+        ...roster,
         {
           id: `role-${voChar.id}`,
           title: voChar.role || 'Lời bình',
@@ -2054,6 +2185,67 @@ function mergeShotQaFlags(a?: SeriesShotRun['shotQa'], b?: SeriesShotRun['shotQa
   };
 }
 
+/** Graph Voice physical id only. Never invent artifactId from lineId. */
+export function voiceAssetPhysicalArtifactId(lineId: string, asset?: FamixaVoiceAsset): string | undefined {
+  const id = (lineId || '').trim();
+  const artifactId = (asset?.artifactId || '').trim();
+  if (!id || !artifactId || artifactId === id) return undefined;
+  return artifactId;
+}
+
+/** Keep existing duration/status/characterId. Restore physical identity when the other side dropped it. */
+export function mergeVoiceAssets(
+  remote?: Record<string, FamixaVoiceAsset>,
+  local?: Record<string, FamixaVoiceAsset>,
+): Record<string, FamixaVoiceAsset> | undefined {
+  if (!remote && !local) return undefined;
+  const out: Record<string, FamixaVoiceAsset> = {};
+  for (const id of new Set([...Object.keys(remote ?? {}), ...Object.keys(local ?? {})])) {
+    const rem = remote?.[id];
+    const loc = local?.[id];
+    const base = rem ?? loc;
+    if (!base) continue;
+    const keep = voiceAssetPhysicalArtifactId(id, rem) ? rem : voiceAssetPhysicalArtifactId(id, loc) ? loc : undefined;
+    out[id] = {
+      ...base,
+      ...(keep?.artifactId ? { artifactId: keep.artifactId } : {}),
+      ...(keep?.storageKey ? { storageKey: keep.storageKey } : {}),
+      ...(keep?.voiceId ? { voiceId: keep.voiceId } : {}),
+      ...(keep?.physicalArtifactResolvable != null
+        ? { physicalArtifactResolvable: keep.physicalArtifactResolvable }
+        : {}),
+    };
+  }
+  return out;
+}
+
+/** Restore an already-verified physical Voice ref. Does not generate or invent artifactId. */
+export function rebindVoicePhysicalGraphRef(
+  state: SeriesPilotState,
+  lineId: string,
+  identity: { artifactId: string; storageKey: string; voiceId: string },
+): SeriesPilotState {
+  const id = (lineId || '').trim();
+  const prev = state.voiceAssets?.[id];
+  const artifactId = (identity.artifactId || '').trim();
+  const storageKey = (identity.storageKey || '').trim();
+  const voiceId = (identity.voiceId || '').trim();
+  if (!prev || !artifactId || artifactId === id || !storageKey || !voiceId) return state;
+  return {
+    ...state,
+    voiceAssets: {
+      ...state.voiceAssets,
+      [id]: {
+        ...prev,
+        artifactId,
+        storageKey,
+        voiceId,
+        physicalArtifactResolvable: true,
+      },
+    },
+  };
+}
+
 export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotState): SeriesPilotState {
   rememberCanonFromChars(local.characters ?? [], local.stills);
   rememberCanonFromChars(remote.characters ?? [], remote.stills);
@@ -2097,7 +2289,13 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
         : '';
     const liveHash = pixelHash || stamp;
     const playable = playableMotionTakeOf(
-      { ...base, ...keep, runwayAttempts: attempts, kfSourceHash: liveHash || base.kfSourceHash },
+      {
+        ...base,
+        ...keep,
+        acceptedTake: base.acceptedTake || old?.acceptedTake,
+        runwayAttempts: attempts,
+        kfSourceHash: liveHash || base.kfSourceHash,
+      },
       liveHash,
     );
     const playableOnLive = Boolean(playable?.url && liveHash && (playable.kfHash || '').trim() === liveHash);
@@ -2110,6 +2308,7 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
           (liveHash && playable?.kfHash && playable.kfHash !== liveHash) ||
           (!playableOnLive && base.motionNeedsRemake),
       ),
+      actingBeatPendingMotion: Boolean(old?.actingBeatPendingMotion || base.actingBeatPendingMotion),
       runwayAttempts: attempts,
       turboTaskId: base.turboTaskId || old?.turboTaskId,
       turboStatus: base.turboStatus || old?.turboStatus,
@@ -2121,6 +2320,8 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
       lipsyncTaskId: base.lipsyncTaskId || (keep.lipsynced ? old?.lipsyncTaskId : undefined),
       lipsyncStatus: base.lipsyncStatus || (keep.lipsynced ? old?.lipsyncStatus || 'SUCCEEDED' : undefined),
       lipsyncSelectionSnapshot: base.lipsyncSelectionSnapshot || old?.lipsyncSelectionSnapshot,
+      lipsyncFrozenInput: base.lipsyncFrozenInput || old?.lipsyncFrozenInput,
+      lipsyncExecutionAttempt: base.lipsyncExecutionAttempt || old?.lipsyncExecutionAttempt,
       pictureSelectionSnapshot: base.pictureSelectionSnapshot || old?.pictureSelectionSnapshot,
       stateLocked: Boolean(base.stateLocked || old?.stateLocked),
       startState: base.stateLocked ? base.startState : base.startState ?? old?.startState,
@@ -2157,6 +2358,7 @@ export function mergeRemotePilot(remote: SeriesPilotState, local: SeriesPilotSta
         })
       : graph.scenes,
     sceneMasters: sameEp ? { ...local.sceneMasters, ...graph.sceneMasters } : graph.sceneMasters,
+    voiceAssets: sameEp ? mergeVoiceAssets(graph.voiceAssets, local.voiceAssets) : graph.voiceAssets,
   };
 }
 
@@ -2519,7 +2721,10 @@ export function withKfPixels(id: string, run?: SeriesShotRun): SeriesShotRun {
   }
   const pixels = kfPixelsOf(id);
   if (!pixels?.startsWith('data:image')) return base;
-  if (stamp && dataUriHash(pixels) !== stamp) return base;
+  if (stamp && dataUriHash(pixels) !== stamp) {
+    if (approved) return base;
+    return { ...base, keyframeDataUrl: pixels };
+  }
   return { ...base, keyframeDataUrl: pixels };
 }
 
@@ -2574,8 +2779,13 @@ export function bindPictureHashOnRuns(state: SeriesPilotState): SeriesPilotState
       : memHash && (!stamp || memHash === stamp)
         ? memHash
         : '';
-    const hash = pixelHash || stamp;
-    let next = hash && hash !== run.kfSourceHash ? { ...run, kfSourceHash: hash } : run;
+    const keepApprovedStamp = Boolean(
+      !run.kfApproved && (run.pictureRevisionId || '').trim() && stamp,
+    );
+    const hash = keepApprovedStamp ? stamp : pixelHash || stamp;
+    let next = rewriteFalLipsyncPointers(
+      rewriteVeoTakePointers(hash && hash !== run.kfSourceHash ? { ...run, kfSourceHash: hash } : run),
+    );
     const now = (next.kfSourceHash || '').trim();
     const liveRevEarly = (next.pictureRevisionId || '').trim();
     const attempts = [...(next.runwayAttempts ?? [])] as Array<{
@@ -2642,8 +2852,12 @@ export function bindPictureHashOnRuns(state: SeriesPilotState): SeriesPilotState
     const liveRev = (next.pictureRevisionId || '').trim();
     const takeRev = takePictureRevisionOf(next);
     const pointer = (next.takeUrl || '').trim();
+    const veoTask = (next.turboTaskId || '').trim();
     const pointerRow = pointer
-      ? attempts.find((row) => (row.outputUrl || '').trim() === pointer)
+      ? attempts.find((row) => (row.outputUrl || '').trim() === pointer) ||
+        (isVeoMotionTaskId(veoTask)
+          ? attempts.find((row) => (row.taskId || '').trim() === veoTask)
+          : undefined)
       : undefined;
     const pointerRev = (pointerRow?.frozenInput?.pictureRevisionId || '').trim();
     const pointerN = pointerRow?.n || 0;
@@ -2678,7 +2892,7 @@ export function dropDeadLipsync(run: SeriesShotRun): SeriesShotRun {
 }
 
 export function shotRunOf(state: SeriesPilotState, shot: FamixaSeriesShot): SeriesShotRun {
-  const stored = state.runs[shot.id];
+  const stored = state.runs?.[shot.id];
   if (!stored) return dropDeadLipsync({ status: shot.status });
   return dropDeadLipsync(withKfPixels(shot.id, stored));
 }
@@ -3056,7 +3270,7 @@ export function runwaySpentSum(state: SeriesPilotState) {
 }
 
 export function shortRunOf(state: SeriesPilotState, id: string): SeriesShotRun {
-  const stored = state.runs[id];
+  const stored = state.runs?.[id];
   if (!stored) return dropDeadLipsync({ status: 'story_locked' });
   return dropDeadLipsync(withKfPixels(id, stored));
 }
@@ -3931,7 +4145,7 @@ export function studioI2vPrecheck(opts: {
   sceneLocked?: boolean;
   scriptLocked?: boolean;
   shortsReady?: boolean;
-  engine: 'turbo' | 'wan';
+  engine: 'turbo' | 'wan' | 'veo';
   hasEngineKey: boolean;
   state?: SeriesPilotState;
   shot?: FamixaSeriesShot;
@@ -3973,7 +4187,8 @@ export function studioI2vPrecheck(opts: {
     {
       id: 'key',
       ok: opts.hasEngineKey,
-      label: opts.engine === 'wan' ? 'Đã có key Fal' : 'Đã có key Runway',
+      label:
+        opts.engine === 'wan' ? 'Đã có key Fal' : opts.engine === 'veo' ? 'Đã có file Join Veo' : 'Đã có key Runway',
     },
   ];
   if (opts.state && opts.shot) {

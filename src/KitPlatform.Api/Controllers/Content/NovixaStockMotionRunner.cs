@@ -11,9 +11,15 @@ public sealed class NovixaMotionRequest
     public List<NovixaStillFile> Stills { get; set; } = new();
     public List<NovixaStillFile> Keep { get; set; } = new();
     public bool AllowVoice { get; set; }
+    /// <summary>Video ngắn có cảnh mở đầu in câu hook (dùng lại giọng, chỉ vẽ thêm vài giây hình).</summary>
+    public bool HookCard { get; set; }
+    /// <summary>Video ngắn có cảnh kết 2 giây dẫn sang video dài, in EndCardTitle.</summary>
+    public bool EndCard { get; set; }
+    public string? EndCardTitle { get; set; }
     public string? VoiceId { get; set; }
     public NovixaVoiceSettings? VoiceSettings { get; set; }
     public string? Phase { get; set; }
+    public List<int>? ShortOnly { get; set; }
     public int? RedrawIndex { get; set; }
     public int Variant { get; set; }
     public string? Orientation { get; set; }
@@ -36,6 +42,16 @@ public sealed class NovixaCut
     public int From { get; set; }
     public int To { get; set; }
     public string? Title { get; set; }
+    /// <summary>Câu hook in chữ lớn ở cảnh mở đầu video ngắn (khi bật hookCard).</summary>
+    public string? Hook { get; set; }
+    /// <summary>Các khoảng câu ghép theo thứ tự (ví dụ một cảnh + câu miễn trừ). Trống: cắt liền From..To.</summary>
+    public List<NovixaCutPart>? Parts { get; set; }
+}
+
+public sealed class NovixaCutPart
+{
+    [JsonPropertyName("from")] public int From { get; set; }
+    [JsonPropertyName("to")] public int To { get; set; }
 }
 
 public sealed record NovixaShortFile(
@@ -44,7 +60,8 @@ public sealed record NovixaShortFile(
     [property: JsonPropertyName("from")] int From,
     [property: JsonPropertyName("to")] int To,
     [property: JsonPropertyName("seconds")] double Seconds,
-    [property: JsonPropertyName("path")] string? Path);
+    [property: JsonPropertyName("path")] string? Path,
+    [property: JsonPropertyName("parts")] List<NovixaCutPart>? Parts = null);
 
 public sealed class NovixaBrandProfile
 {
@@ -89,7 +106,17 @@ public sealed record NovixaMotionResult(
     [property: JsonPropertyName("stills")] List<NovixaStillFile>? Stills = null,
     [property: JsonPropertyName("phase")] string? Phase = null,
     [property: JsonPropertyName("taskId")] string? TaskId = null,
-    [property: JsonPropertyName("shorts")] List<NovixaShortFile>? Shorts = null);
+    [property: JsonPropertyName("shorts")] List<NovixaShortFile>? Shorts = null,
+    [property: JsonPropertyName("format")] string? Format = null);
+
+public sealed record NovixaStorageFile(
+    [property: JsonPropertyName("path")] string Path,
+    [property: JsonPropertyName("bytes")] long Bytes);
+
+public sealed record NovixaStorageReport(
+    [property: JsonPropertyName("totalBytes")] long TotalBytes,
+    [property: JsonPropertyName("cleanableBytes")] long CleanableBytes,
+    [property: JsonPropertyName("files")] List<NovixaStorageFile> Files);
 
 public static class NovixaStockMotionRunner
 {
@@ -125,8 +152,12 @@ public static class NovixaStockMotionRunner
             orientation = request.Orientation == "wide" ? "wide" : "tall",
             force = request.Force,
             reuseFolder = request.ReuseFolder,
-            cuts = (request.Cuts ?? new List<NovixaCut>()).Select(cut => new { from = cut.From, to = cut.To, title = cut.Title }),
+            shortOnly = (request.ShortOnly ?? new List<int>()).Where(item => item >= 0 && item < 500).Distinct().Take(500),
+            cuts = (request.Cuts ?? new List<NovixaCut>()).Select(cut => new { from = cut.From, to = cut.To, title = cut.Title, hook = cut.Hook, parts = (cut.Parts ?? new List<NovixaCutPart>()).Take(12).Select(part => new { from = part.From, to = part.To }) }),
             allowVoice = request.AllowVoice,
+            hookCard = request.HookCard,
+            endCard = request.EndCard,
+            endCardTitle = request.EndCardTitle,
             voiceId = request.VoiceId,
             voiceSettings = request.VoiceSettings == null ? null : new
             {
@@ -377,7 +408,7 @@ public static class NovixaStockMotionRunner
         {
             var folder = Path.GetDirectoryName(task);
             if (folder != null && File.Exists(Path.Combine(folder, "episode.json"))) continue;
-            if (File.GetLastWriteTimeUtc(task) < DateTime.UtcNow.AddMinutes(-20)) continue;
+            if (File.GetLastWriteTimeUtc(task) < DateTime.UtcNow.AddMinutes(-90)) continue;
             try
             {
                 var parsed = JsonSerializer.Deserialize<NovixaMotionResult>(File.ReadAllText(task), Json);
@@ -412,6 +443,61 @@ public static class NovixaStockMotionRunner
             }
         }
         return found;
+    }
+
+    static readonly System.Text.RegularExpressions.Regex HeavyFolder = new(@"^\d{8}T\d{6,12}Z-(motion|shorts)$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Chỉ xóa video đã dựng (*.mp4 trong thư mục -motion và -shorts) và voice.wav.
+    /// Giữ voice.mp3, alignment.json, episode.json và ảnh để dựng lại không tốn tiền giọng.
+    /// </summary>
+    static bool IsCleanable(string relative)
+    {
+        var parts = relative.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2 || !HeavyFolder.IsMatch(parts[0])) return false;
+        return parts[1].EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(parts[1], "voice.wav", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static NovixaStorageReport StorageScan(Guid buildId)
+    {
+        var files = new List<NovixaStorageFile>();
+        long total = 0;
+        long cleanable = 0;
+        var root = BuildDir(buildId);
+        if (root != null && Directory.Exists(root))
+        {
+            foreach (var file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+            {
+                long size;
+                try { size = new FileInfo(file).Length; }
+                catch (IOException) { continue; }
+                total += size;
+                var relative = Path.GetRelativePath(root, file);
+                if (!IsCleanable(relative)) continue;
+                cleanable += size;
+                files.Add(new NovixaStorageFile(relative, size));
+            }
+        }
+        return new NovixaStorageReport(total, cleanable, files);
+    }
+
+    /// <summary>Xóa các file dọn được. File đang bị khóa thì bỏ qua. Trả về dung lượng còn lại sau khi dọn.</summary>
+    public static NovixaStorageReport StorageClean(Guid buildId)
+    {
+        var root = BuildDir(buildId);
+        if (root != null && Directory.Exists(root))
+        {
+            foreach (var item in StorageScan(buildId).Files)
+            {
+                var full = Path.GetFullPath(Path.Combine(root, item.Path));
+                if (!full.StartsWith(Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase)) continue;
+                try { File.Delete(full); }
+                catch (IOException) { /* đang được dùng: để lần sau */ }
+                catch (UnauthorizedAccessException) { /* không đủ quyền: để lần sau */ }
+            }
+        }
+        return StorageScan(buildId);
     }
 
     static string? BuildDir(Guid buildId)

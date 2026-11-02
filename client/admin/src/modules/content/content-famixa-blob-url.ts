@@ -25,6 +25,12 @@ export function displayUrlForData(key: string, dataUrl?: string) {
 }
 
 export function stripJsonDataUrls(raw: string) {
-  if (!raw.includes('data:image')) return raw;
-  return raw.replace(/"data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+"/g, '""');
+  let out = raw;
+  if (out.includes('data:image')) {
+    out = out.replace(/"data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+"/g, '""');
+  }
+  if (out.includes('data:video')) {
+    out = out.replace(/"data:video\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+"/g, '""');
+  }
+  return out;
 }

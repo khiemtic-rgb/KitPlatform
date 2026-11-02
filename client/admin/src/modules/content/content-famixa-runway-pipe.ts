@@ -94,7 +94,7 @@ export type RunwayAttempt = {
     promptHash: string;
     visualContractHash?: string;
     timingHash: string;
-    provider: 'runway' | 'wan';
+    provider: 'runway' | 'wan' | 'google';
     providerDuration: 5 | 10;
     executionFingerprint: string;
   };

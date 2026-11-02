@@ -2,7 +2,7 @@
 
 import type { RunwayAttempt } from '../content-famixa-runway-pipe';
 import { dataUriHash, lastGenerationFail, sameFailedInput } from '../content-famixa-runway-pipe';
-import { resolveTakeUrl } from '../content-famixa-final-source';
+import { resolveTakeUrl, type FinalSourceRun } from '../content-famixa-final-source';
 
 export type MotionAttemptStatus = 'SUCCESS' | 'FAILED' | 'PENDING' | 'UNKNOWN';
 
@@ -251,12 +251,20 @@ export function motionLifecycleOf(run?: MotionLifecycleRun): MotionLifecycle {
 }
 
 /** Prompt hash of the last SUCCESS take — never a FAILED attempt. */
-export function lastSuccessfulTakePromptHashOf(run?: { runwayAttempts?: RunwayAttempt[] }) {
+export function lastSuccessfulTakePromptHashOf(run?: {
+  runwayAttempts?: {
+    promptHash?: string;
+    status?: string;
+    failureCode?: string;
+    error?: string;
+    exactRequest?: { promptHash?: string };
+  }[];
+}) {
   const list = run?.runwayAttempts ?? [];
   for (let i = list.length - 1; i >= 0; i--) {
-    const take = motionArtifactOf(list[i]!);
-    if (take.status !== 'SUCCESS') continue;
-    const hash = (take.promptHash || '').trim();
+    const row = list[i];
+    if (!row || motionAttemptStatusOf(row) !== 'SUCCESS') continue;
+    const hash = (row.promptHash || row.exactRequest?.promptHash || '').trim();
     if (hash) return hash;
   }
   return '';
@@ -288,7 +296,7 @@ export function takeFromOtherPicture(opts: {
 }
 
 /** New still cannot keep Fal / accepted take as the playing clip. History stays in runwayAttempts. */
-export function detachAvAfterPictureChange(run?: MotionLifecycleRun & { previewUrl?: string }) {
+export function detachAvAfterPictureChange(run?: FinalSourceRun) {
   const hadAv = Boolean(
     resolveTakeUrl(run) || run?.previewUrl || run?.takeUrl || run?.lipsyncUrl || run?.lipsynced,
   );

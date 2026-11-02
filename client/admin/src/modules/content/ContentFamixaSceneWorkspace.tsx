@@ -41,6 +41,8 @@ export function ContentFamixaSceneWorkspace({
   onSaveCharacters,
   onCreateImage,
   creating,
+  useFamixaSet = false,
+  characterScope,
 }: {
   shots: FamixaSeriesShot[];
   runOf: (id: string) => SeriesShotRun;
@@ -52,6 +54,8 @@ export function ContentFamixaSceneWorkspace({
   onSaveCharacters?: (sceneId: string, characterIds: string[]) => void;
   onCreateImage?: (shotId: string) => void;
   creating?: boolean;
+  useFamixaSet?: boolean;
+  characterScope?: { seriesCode?: string | null; workflowKey?: string | null; filmTypeId?: string | null } | null;
 }) {
   const [library, setLibrary] = useState<CharacterLibraryViewRow[]>([]);
   const [openSceneId, setOpenSceneId] = useState<string>();
@@ -63,8 +67,14 @@ export function ContentFamixaSceneWorkspace({
   const [openShotId, setOpenShotId] = useState<string>();
 
   useEffect(() => {
-    void fetchCharacterLibrary().then((row) => setLibrary(row.items ?? [])).catch(() => setLibrary([]));
-  }, []);
+    if (!useFamixaSet) {
+      setLibrary([]);
+      return;
+    }
+    void fetchCharacterLibrary(characterScope ?? undefined)
+      .then((row) => setLibrary(row.items ?? []))
+      .catch(() => setLibrary([]));
+  }, [useFamixaSet, characterScope?.seriesCode, characterScope?.workflowKey]);
 
   const views = useMemo(() => buildSceneViews(shots, runOf, scenes), [shots, runOf, scenes]);
   const current = views.find((s) => s.id === openSceneId);
@@ -209,6 +219,8 @@ export function ContentFamixaSceneWorkspace({
               scene={current}
               people={characters}
               library={library}
+              useFamixaSet={useFamixaSet}
+              characterScope={characterScope}
               onSaveCharacters={onSaveCharacters}
             />
           ) : null}

@@ -21,6 +21,7 @@ import { linesForShot, multiSpeakerBlock } from './content-famixa-dialogue-map';
 import { lipsyncMotionInputOf, resolveTakeUrl } from './content-famixa-final-source';
 import { performanceDurationOf } from './famixa-shot-production-timing';
 import { FAL_LIPSYNC_USD_PER_MIN_SOT, quoteFamixaProviderCost } from './famixa-ai-provider-cost';
+import { lipsyncRunFileMissing } from './famixa-fal-lipsync-playback';
 
 export type ProdV2Step = 'script' | 'voice' | 'shorts' | 'image' | 'video' | 'preview' | 'final';
 
@@ -218,9 +219,10 @@ export function lipsyncSendEligible(opts: {
 }) {
   if (!opts.spoken || opts.run.prodSkip) return false;
   const accepted = opts.accepted ?? Boolean(opts.run.acceptedTake?.url?.trim());
-  if (opts.motionStale && !accepted) return false;
+  const resume = shouldResumeLipsync(opts.run);
+  if (opts.motionStale && !accepted && !opts.remake && !resume) return false;
   if (!resolveTakeUrl(opts.run)) return false;
-  if ((opts.run.lipsynced || opts.run.lipsyncUrl?.trim()) && !opts.remake) return false;
+  if ((opts.run.lipsynced || opts.run.lipsyncUrl?.trim()) && !opts.remake && !resume) return false;
   return true;
 }
 
@@ -353,8 +355,29 @@ export function lipsyncTaskPrefix(model?: string) {
 }
 
 export function parseFalJobIdFromError(raw?: string) {
+  const prefixed = (raw || '').match(
+    /lipsync_(?:v3_|v1_|ls_)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i,
+  );
+  if (prefixed?.[1]) return prefixed[1];
   const m = (raw || '').match(/Fal job ([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
   return m?.[1];
+}
+
+export function lipsyncResumeTaskId(
+  run: { lipsyncTaskId?: string; lipsyncError?: string },
+  model?: string,
+) {
+  const saved = (run.lipsyncTaskId || '').trim();
+  if (saved) return saved;
+  const id = parseFalJobIdFromError(run.lipsyncError);
+  return id ? `${lipsyncTaskPrefix(model)}${id}` : '';
+}
+
+/** Usage found the job but json_output is not a video — Hỏi lại will never produce a file. */
+export function lipsyncFalHasNoOutput(err?: string | null) {
+  return /Usage không có file|không có mp4|không tạo được file môi|Hỏi lại sẽ không ra file|json_output=\{detail/i.test(
+    err || '',
+  );
 }
 
 /** Dead poll (404/405) ≠ free retry. Timeout / still-running = Hỏi lại · 0$. New Confirm = new Fal charge. */
@@ -363,15 +386,22 @@ export function shouldResumeLipsync(run: {
   lipsynced?: boolean;
   lipsyncStatus?: string;
   lipsyncError?: string;
+  lipsyncFileMissing?: boolean;
 }) {
   const err = run.lipsyncError || '';
+  if (lipsyncFalHasNoOutput(err)) return false;
   const recovered = parseFalJobIdFromError(err);
+  const hasTask = Boolean(run.lipsyncTaskId?.trim() || recovered);
+  const fileMissing = Boolean(run.lipsyncFileMissing || lipsyncRunFileMissing(run));
+  if (hasTask && (fileMissing || /chưa có file môi|chưa lấy được file|chưa lấy file|chưa thấy URL|Gắn Fal|keys:\s*status/i.test(err))) {
+    return true;
+  }
   if (run.lipsynced) return false;
-  if (/404|405|504|downstream|quá tải|chưa có khớp môi/i.test(err)) return false;
-  if (!run.lipsyncTaskId?.trim() && !recovered) return false;
+  if (/404|405|504|downstream|quá tải|chưa có khớp môi/i.test(err) && !/chưa trả take|chưa có file môi/i.test(err)) return false;
+  if (!hasTask) return false;
   const st = (run.lipsyncStatus || '').toUpperCase();
   if (st === 'CANCELLED' || st === 'SUCCEEDED') return false;
-  if (st === 'FAILED' && /quá \d+ phút|vẫn chạy|Hỏi lại|chưa lấy được file/i.test(err)) return true;
+  if (/quá \d+ phút|vẫn chạy|Hỏi lại|chưa lấy được file|chưa lấy file|chưa thấy URL|chưa trả take|Gắn Fal/i.test(err)) return true;
   if (st === 'FAILED') return false;
   return st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'IN_PROGRESS' || st === 'RETRY' || Boolean(recovered);
 }

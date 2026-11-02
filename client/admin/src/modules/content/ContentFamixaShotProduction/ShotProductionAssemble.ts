@@ -1,4 +1,4 @@
-/** One-shot body for existing POST /content/series/assemble. Not a new mix pipeline. */
+/** LEGACY / NON-AUTHORITY / READ-ONLY COMPATIBILITY. Body helper for POST /content/series/assemble. OS MIX/ASSEMBLE must not call this. */
 
 export type OneShotAssembleClip = {
   shotCode: string;

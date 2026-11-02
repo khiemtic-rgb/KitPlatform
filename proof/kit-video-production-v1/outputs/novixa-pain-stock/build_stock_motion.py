@@ -7,12 +7,14 @@ import importlib.util
 import json
 import os
 import re
+import unicodedata
 import shutil
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 import wave
+import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -93,8 +95,22 @@ def ease(t: float) -> float:
     return 1 - (1 - t) ** 3
 
 
+# Chữ giọng đọc sai: viết lại cách đọc, chỉ đổi chữ gửi cho giọng (phụ đề vẫn là chữ gốc, số từ không đổi).
+# "ngăn" bị eleven_v3 đọc thành "năm"; "ngan" có "ng" đầu rõ nên đọc đúng hơn. Nghe lại rồi chỉnh ở đây.
+_RESPELL = ((re.compile(r"\b([Nn])găn\b"), r"\1gan"),)
+
+
 def tts_text(line: str) -> str:
-    return line.replace("Novixa", "Nôvixa")
+    # Dấu chấm than làm eleven_v3 đổi cảm xúc giữa chừng; đọc như câu trần thuật để giữ một tone.
+    text = re.sub(r"!+", ".", unicodedata.normalize("NFC", line).replace("Novixa", "Nôvixa"))
+    for pattern, repl in _RESPELL:
+        text = pattern.sub(repl, text)
+    return text
+
+
+def voice_seed(voice: str) -> int:
+    """Cùng giọng thì cùng seed: mọi video của thương hiệu đọc cùng một chất giọng."""
+    return zlib.crc32(voice.encode("utf-8")) & 0xFFFFFFFF
 
 
 def run(command: list[str]) -> None:
@@ -149,6 +165,7 @@ def speak_eleven(mp3: Path, alignment_path: Path, lines: list[str], voice_id: st
         "text": spoken,
         "model_id": MODEL,
         "apply_text_normalization": "off",
+        "seed": voice_seed(voice),
         "voice_settings": {
             "stability": VOICE_SETTINGS["stability"],
             "similarity_boost": VOICE_SETTINGS["similarity_boost"],
@@ -582,7 +599,17 @@ def _build_dir(job: dict) -> Path:
     return ROOT / "proof/kit-video-production-v1/outputs/novixa-studio" / build_id
 
 
-def _ready_video(job: dict, lines: list[str]) -> dict | None:
+def _frame_orientation(data: dict) -> str | None:
+    """'tall' / 'wide' theo "format" WxH của episode.json; None nếu không rõ."""
+    match = re.fullmatch(r"\s*(\d+)\s*x\s*(\d+)\s*", str(data.get("format") or ""))
+    if not match:
+        return None
+    width, height = int(match.group(1)), int(match.group(2))
+    return "tall" if height >= width else "wide"
+
+
+def _ready_video(job: dict, lines: list[str], orientation: str | None = None) -> dict | None:
+    """Video dài mới nhất khớp lời (và ảnh nếu job gửi). Có `orientation` thì chỉ nhận đúng hướng khung."""
     root = _build_dir(job)
     if not root.is_dir():
         return None
@@ -593,6 +620,8 @@ def _ready_video(job: dict, lines: list[str]) -> dict | None:
         except (OSError, json.JSONDecodeError):
             continue
         video = str(data.get("videoPath") or "")
+        if orientation and _frame_orientation(data) != orientation:
+            continue
         if data.get("status") == "ready" and _same_take(data, job, lines) and video and Path(video).is_file():
             found = data
     return found
@@ -616,9 +645,26 @@ def _same_take(data: dict, job: dict, lines: list[str]) -> bool:
 
 def _voice_source(job: dict, lines: list[str]) -> Path | None:
     raw = str(job.get("reuseFolder") or "").strip()
-    if not raw:
+    if raw:
+        return _voice_folder(job, lines, Path(raw), strict=False)
+    # Không được chỉ định: tìm lần dựng gần nhất của phim này đã thu đúng lời, đúng giọng, đúng thông số,
+    # kể cả lần dựng bị ngắt giữa chừng (chưa có episode.json). Tránh trả tiền giọng lần nữa.
+    root = _build_dir(job)
+    if not root.is_dir():
         return None
-    folder = Path(raw)
+    for folder in sorted(root.glob("*-motion"), reverse=True):
+        found = _voice_folder(job, lines, folder, strict=True)
+        if found is not None:
+            return found
+    return None
+
+
+def _voice_folder(job: dict, lines: list[str], folder: Path, strict: bool) -> Path | None:
+    try:
+        # Chỉ dùng lại giọng của chính phim này.
+        folder.resolve().relative_to(_build_dir(job).resolve())
+    except (OSError, ValueError):
+        return None
     note = folder / "lines.json"
     if not (folder / "voice.mp3").is_file() or not (folder / "alignment.json").is_file() or not note.is_file():
         return None
@@ -626,7 +672,35 @@ def _voice_source(job: dict, lines: list[str]) -> Path | None:
         saved = json.loads(note.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    return folder if saved == lines else None
+    if saved != lines:
+        return None
+    # Giọng cũ thu khi chữ đọc khác (ví dụ trước khi viết lại cách đọc "ngăn") thì không dùng lại.
+    spoken_note = folder / "spoken.json"
+    try:
+        if not spoken_note.is_file() or json.loads(spoken_note.read_text(encoding="utf-8")) != [tts_text(line) for line in lines]:
+            return None
+    except (OSError, json.JSONDecodeError):
+        return None
+    episode = folder / "episode.json"
+    marker = folder / "voice.json"
+    data = None
+    if episode.is_file():
+        try:
+            data = json.loads(episode.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+    elif marker.is_file():
+        try:
+            data = json.loads(marker.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+    elif strict:
+        return None  # không biết đã thu bằng giọng nào: không tự dùng lại
+    if data is not None:
+        # Giọng cũ phải cùng giọng và cùng thông số với lần dựng này.
+        if str(data.get("voiceId") or "") != chosen_voice(job) or str(data.get("voiceKey") or "") != voice_key():
+            return None
+    return folder
 
 
 def _stamp_dir(job: dict, kind: str) -> Path:
@@ -666,6 +740,8 @@ def _still_meta(path: Path) -> dict:
 def _kept_source(row: dict, path: Path) -> str:
     if str(row.get("source") or "") == "gemini":
         return "gemini"
+    if str(row.get("source") or "") == "edu" or str(_still_meta(path).get("source") or "") == "edu":
+        return "edu"
     if "-g" in path.stem:
         return "gemini"
     if str(_still_meta(path).get("source") or "") == "gemini":
@@ -695,6 +771,10 @@ def _still_record(index: int, line: str, dest: Path, plan: dict, kept: dict | No
     source = _kept_source(row, Path(str(row.get("path") or dest)))
     if source:
         record["source"] = source
+    if source == "edu":
+        edu = row.get("edu") or _still_meta(Path(str(row.get("path") or dest))).get("edu")
+        if isinstance(edu, dict):
+            record["edu"] = edu
     return record
 
 
@@ -777,6 +857,41 @@ def _library_still(plan: dict, line: str, dest: Path, job: dict) -> bool:
         return False
 
 
+def _edu():
+    """Bộ cảnh giáo dục (tools/kit-video-library/ngv-edu): cảnh chữ, thẻ, biểu đồ vẽ theo kịch bản. Không có thì trả None."""
+    name = "ngv_edu_studio"
+    if name in sys.modules:
+        return sys.modules[name]
+    path = Path(__file__).resolve().parents[4] / "tools" / "kit-video-library" / "ngv-edu" / "edu_studio.py"
+    if not path.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+        return module
+    except Exception as error:  # noqa: BLE001
+        sys.modules.pop(name, None)
+        print(f"[edu_studio] bỏ qua: {error}", file=sys.stderr)
+        return None
+
+
+def _edu_bindings(job: dict, lines: list[str]) -> list:
+    if job.get("useEdu") is False or os.environ.get("NOVIXA_STUDIO_EDU", "1") == "0":
+        return [None] * len(lines)
+    module = _edu()
+    if module is None:
+        return [None] * len(lines)
+    orient = "wide" if str(job.get("orientation") or os.environ.get("NOVIXA_STUDIO_ORIENT") or "").lower() in ("wide", "16:9", "landscape") else "tall"
+    try:
+        return module.bind(lines, orient)
+    except Exception as error:  # noqa: BLE001
+        print(f"[edu_studio] bind lỗi: {error}", file=sys.stderr)
+        return [None] * len(lines)
+
+
 def _stills_job(job: dict, lines: list[str]) -> dict:
     out = _stamp_dir(job, "stills")
     redraw = job.get("redrawIndex")
@@ -792,6 +907,7 @@ def _stills_job(job: dict, lines: list[str]) -> dict:
             keep[int(item.get("index") or 0)] = item
     existing = _existing_stills(job)
     fresh = variant > 0 and redraw_index is None
+    edu_rows = _edu_bindings(job, lines)
     images = []
     kept_count = 0
     for index, line in enumerate(lines):
@@ -805,6 +921,9 @@ def _stills_job(job: dict, lines: list[str]) -> dict:
             kept_row = keep.get(index)
         elif redraw_index is None and not fresh:
             kept_row = existing.get(line)
+        binding = edu_rows[index] if index < len(edu_rows) else None
+        if binding and not (isinstance(kept_row, dict) and _kept_source(kept_row, Path(str(kept_row.get("path") or ""))) == "gemini"):
+            kept_row = None  # cảnh giáo dục vẽ lại theo kịch bản mỗi lần, nhanh và cho cùng kết quả
         if isinstance(kept_row, dict) and kept_row.get("path"):
             kept_path = Path(str(kept_row.get("path")))
         if kept_path is not None and kept_path.is_file() and isinstance(kept_row, dict):
@@ -816,6 +935,26 @@ def _stills_job(job: dict, lines: list[str]) -> dict:
             kept_count += 1
         else:
             dest = out / f"u{index:02d}.png"
+            if binding:
+                problems = _edu().still(binding, str(dest))
+                try:  # dải tối của phụ đề (không in chữ, để các câu cùng cảnh vẫn ra cùng một ảnh và được gộp một thẻ)
+                    shot = Image.open(dest).convert("RGB")
+                    sample = lines[int(binding.get("first", index))].split()  # câu đầu của cảnh: mọi câu cùng cảnh ra cùng một ảnh nên vẫn gộp một thẻ
+                    if binding.get("orient") == "wide":
+                        shot = _graphics()._karaoke_wide(_graphics()._caption_fade_wide(shot), sample, -1)
+                    else:
+                        shot = _graphics()._karaoke(_graphics()._caption_fade(shot), sample, -1)
+                    shot = _edu().overlay(shot, binding)
+                    shot.save(dest)
+                except Exception as error:  # noqa: BLE001
+                    print(f"[edu_studio] không phủ dải phụ đề: {error}", file=sys.stderr)
+                record = _still_record(index, line, dest, plan, None)
+                record["source"] = "edu"
+                record["edu"] = binding
+                if problems:
+                    record["eduProblems"] = sorted({str(item.get("reason") or "") for item in problems})
+                images.append(record)
+                continue
             library_ok = _library_still(plan, line, dest, job)
             if not library_ok:
                 _graphics().still_frame(plan).convert("RGB").save(dest)
@@ -862,10 +1001,18 @@ _DIRECTION_LABEL = re.compile(
     re.IGNORECASE,
 )
 _SCENE_HEADING = re.compile(r"^(cảnh|canh|sc)\s*\d+", re.IGNORECASE)
+# Nhãn đánh số hay nhấn ý ("Một:", "Thứ hai:", "Bước 3:", "Lưu ý:") là lời đọc, không phải tên người nói. Giữ khớp SPOKEN_LABEL bên admin.
+_SPOKEN_LABEL = re.compile(
+    r"^(một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|thứ\s+\S+|bước\s*\d+|\d+|lưu ý|ví dụ|nhớ|quy tắc(\s*\d+)?|điều\s+\S+|nguồn|kết luận|tóm lại|chú ý|cảnh báo|câu hỏi|hỏi|đáp)$",
+    re.IGNORECASE,
+)
+
+
+_SHORT_ONLY_MARK = re.compile(r"^(?:[-*]\s*)?\[\s*(?:chỉ\s*)?ngắn\s*\]\s*", re.IGNORECASE)
 
 
 def spoken_line(raw: str) -> str:
-    line = str(raw or "").strip()
+    line = _SHORT_ONLY_MARK.sub("", str(raw or "").strip()).strip()
     if not line or re.match(r"^#{1,6}\s", line) or re.fullmatch(r"([-*_])\1{2,}", line.replace(" ", "")) or _SCENE_HEADING.match(line) or re.fullmatch(r"\[[^\]]*\]", line):
         return ""
     plain = line.replace("**", "").strip()
@@ -875,7 +1022,7 @@ def spoken_line(raw: str) -> str:
     label = plain[:colon].strip() if colon > 0 else ""
     if label and _DIRECTION_LABEL.match(label):
         return ""
-    speaker = colon > 0 and colon <= 40 and bool(label) and len(label.split()) <= 3 and not re.search(r"[,.!?…]", label)
+    speaker = colon > 0 and colon <= 40 and bool(label) and len(label.split()) <= 3 and not re.search(r"[,.!?…]", label) and not _SPOKEN_LABEL.match(label)
     return plain[colon + 1:].strip() if speaker else plain
 
 
@@ -903,6 +1050,8 @@ def run_job(job: dict) -> dict:
         return _stills_job(job, lines)
     if phase == "shorts":
         return _shorts_job(job, lines, raw)
+    if phase == "longcut":
+        return _longcut_job(job, lines)
     if phase == "preview":
         if not job.get("allowVoice"):
             return _result("voice_not_run", "Nghe thử chưa chạy. Không gọi ElevenLabs.")
@@ -940,30 +1089,94 @@ def _spoken_index(raw: list[str]) -> list[int]:
     return out
 
 
+HOOK_SECONDS = 2.6
+END_SECONDS = 2.0
+_NUMBER = re.compile(r"\d[\d.,]*\s*(?:%|phần trăm|nghìn tỷ|tỷ|triệu|nghìn|phút|giây|tháng|ngày|tuần|năm|ngăn|quy tắc|bước|lỗi|cách)?", re.IGNORECASE)
+
+
+def _card_frames(lines: list[str], template: str, params: dict, folder: Path, seconds: float) -> Path | None:
+    """Vẽ chuỗi khung của một thẻ chữ bằng bộ cảnh NGV (edu_studio). Không có bộ vẽ hoặc kịch bản hình của kênh thì trả None."""
+    module = _edu()
+    if module is None:
+        return None
+    try:
+        base = next((row for row in module.bind(lines, "tall") if row), None)
+        if not base:
+            return None
+        binding = {**base, "template": template, "params": params, "scene": 900 + abs(hash(folder.name)) % 90}
+        folder.mkdir(parents=True, exist_ok=True)
+        for k in range(int(seconds * FPS)):
+            module.frame(binding, k / FPS, seconds).save(folder / f"f{k:03d}.png")
+        return folder
+    except Exception as error:  # noqa: BLE001
+        print(f"[card] bỏ qua: {error}", file=sys.stderr)
+        return None
+
+
+def _hook_card(lines: list[str], hook: str, out: Path, number: int) -> Path | None:
+    """Cảnh mở đầu video ngắn. Hook có con số (viết bằng chữ số) thì dùng mẫu số lớn; còn lại dùng mẫu tiêu đề. Tên kênh đã có ở góc khung."""
+    if not hook:
+        return None
+    found = _NUMBER.search(hook)
+    folder = out / f"hook_{number:02d}"
+    if found and len(found.group(0).strip()) >= 2 and found.group(0).strip()[0].isdigit():
+        big = found.group(0).strip()
+        card = _card_frames(lines, "edu_bignumber", {"number": big, "label": hook, "chain": []}, folder, HOOK_SECONDS)
+        if card is not None:
+            return card
+    return _card_frames(lines, "edu_title", {"title": hook}, folder, HOOK_SECONDS)
+
+
+def _end_card(lines: list[str], title: str, out: Path, number: int) -> Path | None:
+    """Cảnh kết 2 giây: dẫn người xem sang video dài."""
+    title = " ".join(str(title or "").split())[:100]
+    if not title:
+        return None
+    return _card_frames(lines, "edu_title", {"tag": "XEM BẢN ĐẦY ĐỦ", "title": title}, out / f"end_{number:02d}", END_SECONDS)
+
+
 def _shorts_job(job: dict, lines: list[str], raw: list[str] | None = None) -> dict:
-    """Cắt video dài đã dựng thành nhiều video ngắn theo ranh giới câu. Không gọi giọng, không dựng lại hình."""
-    ready = _ready_video(job, lines)
+    """Cắt video dài đã dựng thành nhiều video ngắn theo ranh giới câu. Không gọi giọng, không dựng lại hình.
+
+    Mỗi đoạn cắt có thể gồm nhiều khoảng câu (`parts`, ví dụ một cảnh + câu miễn trừ); các khoảng được ghép theo thứ tự.
+    Mặc định chỉ cắt từ bản dọc 9:16 (orientation "tall"); "wide" để cắt bản ngang khi cần.
+    """
+    orientation = "wide" if str(job.get("orientation") or "").lower() in ("wide", "16:9", "landscape") else "tall"
+    ready = _ready_video(job, lines, orientation)
     if not ready:
+        if orientation == "tall" and _ready_video(job, lines, "wide"):
+            return _result("video_missing", "Mới có video ngang 16:9 khớp kịch bản này. Đổi sang khung dọc, tạo video dọc rồi mới cắt video ngắn.")
         return _result("video_missing", "Chưa có video dài khớp kịch bản này. Hãy tạo video trước rồi mới cắt.")
     src = Path(str(ready.get("videoPath") or ""))
     folder = src.parent
     mp3, alignment_path = folder / "voice.mp3", folder / "alignment.json"
     if not (mp3.is_file() and alignment_path.is_file()):
         return _result("failed", "Thiếu giọng hoặc mốc thời gian của video dài, không cắt được.")
-    cuts = []
-    for row in job.get("cuts") or []:
-        try:
-            a, b = int(row.get("from")), int(row.get("to"))
-        except (TypeError, ValueError, AttributeError):
-            continue
-        if raw is not None and len(raw) != len(lines):  # đổi chỉ số câu gốc sang chỉ số câu đọc
-            index = _spoken_index(raw)
+    index = _spoken_index(raw) if raw is not None and len(raw) != len(lines) else None
+
+    def spoken_range(a: int, b: int) -> tuple[int, int] | None:
+        if index is not None:  # đổi chỉ số câu gốc sang chỉ số câu đọc
             inside = [index[i] for i in range(max(0, a), min(b, len(raw) - 1) + 1) if index[i] >= 0]
             if not inside:
-                continue
+                return None
             a, b = inside[0], inside[-1]
-        if 0 <= a <= b < len(lines):
-            cuts.append({"from": a, "to": b, "title": str(row.get("title") or "")[:120]})
+        return (a, b) if 0 <= a <= b < len(lines) else None
+
+    cuts = []
+    for row in job.get("cuts") or []:
+        if not isinstance(row, dict):
+            continue
+        given = row.get("parts") if isinstance(row.get("parts"), list) and row.get("parts") else [row]
+        parts = []
+        for part in given[:12]:
+            try:
+                found = spoken_range(int(part.get("from")), int(part.get("to")))
+            except (TypeError, ValueError, AttributeError):
+                found = None
+            if found:
+                parts.append({"from": found[0], "to": found[1]})
+        if parts:
+            cuts.append({"from": parts[0]["from"], "to": parts[-1]["to"], "title": str(row.get("title") or "")[:120], "parts": parts, "hook": " ".join(str(row.get("hook") or "").split())[:140]})
     if not cuts:
         return _result("cuts_missing", "Chưa có đoạn nào để cắt.")
     ffmpeg = shutil.which("ffmpeg")
@@ -973,17 +1186,129 @@ def _shorts_job(job: dict, lines: list[str], raw: list[str] | None = None) -> di
     shutil.copy(mp3, out / "voice.mp3")
     shutil.copy(alignment_path, out / "alignment.json")
     _wav, timeline, total = _voice_timeline(out / "voice.mp3", out / "alignment.json", lines, out, ffmpeg)
+    encode = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart"]
     rows = []
     for number, cut in enumerate(cuts, 1):
-        start, end = timeline[cut["from"]]["start"], timeline[cut["to"]]["end"]
+        spans = [(timeline[part["from"]]["start"], timeline[part["to"]]["end"]) for part in cut["parts"]]
         target = out / f"short_{number:02d}.mp4"
-        run([ffmpeg, "-y", "-loglevel", "error", "-ss", f"{start:.3f}", "-i", str(src), "-t", f"{max(0.5, end - start):.3f}",
-             "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart", str(target)])
-        rows.append({"index": number, "title": cut["title"], "from": cut["from"], "to": cut["to"], "seconds": round(end - start, 1), "path": str(target)})
+        card = _hook_card(lines, cut.get("hook") or "", out, number) if job.get("hookCard") else None
+        ender = _end_card(lines, str(job.get("endCardTitle") or ""), out, number) if job.get("endCard") else None
+        if card is not None or ender is not None:
+            tone = "aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo"
+            inputs = ["-i", str(src)]
+            graph, labels, extra = [], [], 0
+
+            def add_card(folder: Path, seconds: float) -> int:
+                nonlocal extra
+                inputs.extend(["-framerate", str(FPS), "-i", str(folder / "f%03d.png"), "-f", "lavfi", "-t", f"{seconds:.3f}", "-i", "anullsrc=r=44100:cl=stereo"])
+                v, a = 1 + extra * 2, 2 + extra * 2
+                extra += 1
+                graph.append(f"[{v}:v]format=yuv420p,setsar=1,fps={FPS}[cv{extra}]")
+                graph.append(f"[{a}:a]{tone}[ca{extra}]")
+                labels.append(f"[cv{extra}][ca{extra}]")
+                return extra
+
+            head = [(0.0, HOOK_SECONDS)] if card is not None else []
+            tail = [(0.0, END_SECONDS)] if ender is not None else []
+            if card is not None:
+                add_card(card, HOOK_SECONDS)
+            for k, (start, end) in enumerate(spans, 1):
+                graph.append(f"[0:v]trim=start={start:.3f}:end={end:.3f},setpts=PTS-STARTPTS,setsar=1,fps={FPS}[v{k}]")
+                graph.append(f"[0:a]atrim=start={start:.3f}:end={end:.3f},asetpts=PTS-STARTPTS,{tone}[a{k}]")
+                labels.append(f"[v{k}][a{k}]")
+            if ender is not None:
+                add_card(ender, END_SECONDS)
+            graph.append(f"{''.join(labels)}concat=n={len(labels)}:v=1:a=1[v][a]")
+            run([ffmpeg, "-y", "-loglevel", "error", *inputs, "-filter_complex", ";".join(graph), "-map", "[v]", "-map", "[a]", *encode, str(target)])
+            spans = [*head, *spans, *tail]
+        elif len(spans) == 1:
+            start, end = spans[0]
+            run([ffmpeg, "-y", "-loglevel", "error", "-ss", f"{start:.3f}", "-i", str(src), "-t", f"{max(0.5, end - start):.3f}", *encode, str(target)])
+        else:
+            graph, labels = [], []
+            for k, (start, end) in enumerate(spans):
+                graph.append(f"[0:v]trim=start={start:.3f}:end={end:.3f},setpts=PTS-STARTPTS[v{k}]")
+                graph.append(f"[0:a]atrim=start={start:.3f}:end={end:.3f},asetpts=PTS-STARTPTS[a{k}]")
+                labels.append(f"[v{k}][a{k}]")
+            graph.append(f"{''.join(labels)}concat=n={len(spans)}:v=1:a=1[v][a]")
+            run([ffmpeg, "-y", "-loglevel", "error", "-i", str(src), "-filter_complex", ";".join(graph), "-map", "[v]", "-map", "[a]", *encode, str(target)])
+        seconds = sum(end - start for start, end in spans)
+        rows.append({
+            "index": number,
+            "title": cut["title"],
+            "from": cut["from"],
+            "to": cut["to"],
+            "parts": cut["parts"],
+            "seconds": round(seconds, 1),
+            "path": str(target),
+        })
     payload = _result("ready", f"Đã cắt {len(rows)} video ngắn từ video dài.", out)
     payload["phase"] = "shorts"
+    payload["orientation"] = orientation
+    payload["source"] = str(src)
     payload["shorts"] = rows
     (out / "shorts.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return payload
+
+
+def _longcut_job(job: dict, lines: list[str]) -> dict:
+    """Video dài = bản dựng đầy đủ trừ các câu chỉ dành cho video ngắn (`shortOnly`, chỉ số câu đọc).
+
+    Chỉ cắt và ghép từ bản dựng sẵn: không gọi giọng, không dựng lại hình, nên không tốn thêm tiền giọng.
+    Kết quả nằm trong thư mục `*-motion` riêng (không có episode.json nên không bị nhận nhầm là bản dựng gốc).
+    """
+    orientation = "wide" if str(job.get("orientation") or "").lower() in ("wide", "16:9", "landscape") else "tall"
+    ready = _ready_video(job, lines, orientation)
+    if not ready:
+        return _result("video_missing", "Chưa có video dựng đầy đủ khớp kịch bản này. Tạo video trước rồi mới cắt bản dài.")
+    skip = set()
+    for item in job.get("shortOnly") or []:
+        try:
+            skip.add(int(item))
+        except (TypeError, ValueError):
+            continue
+    skip = {i for i in skip if 0 <= i < len(lines)}
+    if not skip:
+        return _result("cuts_missing", "Kịch bản không có câu nào đánh dấu [ngắn]. Dùng thẳng video đã dựng.")
+    kept = [i for i in range(len(lines)) if i not in skip]
+    if not kept:
+        return _result("cuts_missing", "Mọi câu đều đánh dấu [ngắn], không còn gì cho video dài.")
+    runs: list[tuple[int, int]] = []
+    for i in kept:
+        if runs and runs[-1][1] == i - 1:
+            runs[-1] = (runs[-1][0], i)
+        else:
+            runs.append((i, i))
+    src = Path(str(ready.get("videoPath") or ""))
+    folder = src.parent
+    mp3, alignment_path = folder / "voice.mp3", folder / "alignment.json"
+    if not (mp3.is_file() and alignment_path.is_file()):
+        return _result("failed", "Thiếu giọng hoặc mốc thời gian của video dựng, không cắt được.")
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        return _result("failed", "Không thấy ffmpeg.")
+    out = _stamp_dir(job, "motion")
+    shutil.copy(mp3, out / "voice.mp3")
+    shutil.copy(alignment_path, out / "alignment.json")
+    _wav, timeline, total = _voice_timeline(out / "voice.mp3", out / "alignment.json", lines, out, ffmpeg)
+    spans = [(timeline[a]["start"], timeline[b]["end"]) for a, b in runs]
+    target = out / "video.mp4"
+    encode = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart"]
+    graph, labels = [], []
+    for k, (start, end) in enumerate(spans):
+        graph.append(f"[0:v]trim=start={start:.3f}:end={end:.3f},setpts=PTS-STARTPTS[v{k}]")
+        graph.append(f"[0:a]atrim=start={start:.3f}:end={end:.3f},asetpts=PTS-STARTPTS[a{k}]")
+        labels.append(f"[v{k}][a{k}]")
+    graph.append(f"{''.join(labels)}concat=n={len(spans)}:v=1:a=1[v][a]")
+    run([ffmpeg, "-y", "-loglevel", "error", "-i", str(src), "-filter_complex", ";".join(graph), "-map", "[v]", "-map", "[a]", *encode, str(target)])
+    payload = _result("ready", f"Đã ghép video dài từ bản dựng, bỏ {len(skip)} câu chỉ dành cho video ngắn.", out, target)
+    payload["phase"] = "longcut"
+    payload["orientation"] = orientation
+    payload["source"] = str(src)
+    payload["seconds"] = round(sum(end - start for start, end in spans), 1)
+    payload["droppedLines"] = sorted(skip)
+    payload["parts"] = [{"from": a, "to": b} for a, b in runs]
+    (out / "longcut.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return payload
 
 
@@ -1110,6 +1435,13 @@ def _render_job(
     else:
         speak_eleven(mp3, alignment_path, lines, voice_id)
     (out / "lines.json").write_text(json.dumps(lines, ensure_ascii=False), encoding="utf-8")
+    (out / "spoken.json").write_text(json.dumps([tts_text(line) for line in lines], ensure_ascii=False), encoding="utf-8")
+    # Ghi giọng nào, thông số nào đã thu, để lần dựng sau dùng lại được kể cả khi lần này bị ngắt giữa chừng.
+    marker = reuse / "voice.json" if reuse else None
+    if marker is not None and marker.is_file():
+        shutil.copy(marker, out / "voice.json")
+    else:
+        (out / "voice.json").write_text(json.dumps({"voiceId": voice_id or "", "voiceKey": voice_key()}, ensure_ascii=False), encoding="utf-8")
     wav_path, timeline, seconds = _voice_timeline(mp3, alignment_path, lines, out, ffmpeg)
 
     rows = []

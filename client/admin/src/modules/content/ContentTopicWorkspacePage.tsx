@@ -48,10 +48,11 @@ import {
   type ContentPublishJob,
   type ContentSiteTarget,
   type ContentTopicDetail,
-  type ContentVariant,
 } from '@/shared/api/content.api';
 import { FB_RETURN_KEY } from '@/modules/content/ContentFacebookCallbackPage';
 import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
+import { VariantCopyPanel } from '@/modules/content/VariantCopyPanel';
+import { TopicVideoCard } from '@/modules/content/TopicVideoCard';
 import { writeClipboardImage } from '@/modules/content/content-manual-dest';
 import { buildStaffImagePrompt } from '@/modules/content/content-staff-image-prompt';
 import {
@@ -98,43 +99,6 @@ function formatDisplayAt(value?: string | null) {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? value : d.toLocaleString('vi-VN');
-}
-
-function VariantCard({ variant }: { variant: ContentVariant }) {
-  return (
-    <Card
-      size="small"
-      title={
-        <Space size={8} wrap>
-          <Tag color="blue">{variantKindLabel(variant.kind)}</Tag>
-          {variant.title ? <Typography.Text strong>{variant.title}</Typography.Text> : null}
-        </Space>
-      }
-    >
-      <Typography.Paragraph
-        type="secondary"
-        ellipsis={{ rows: 2 }}
-        style={{ marginBottom: 4, whiteSpace: 'pre-wrap' }}
-      >
-        {variant.bodyMarkdown}
-      </Typography.Paragraph>
-      <Collapse
-        ghost
-        size="small"
-        items={[
-          {
-            key: 'full',
-            label: 'Xem toàn bộ',
-            children: (
-              <Typography.Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
-                {variant.bodyMarkdown}
-              </Typography.Paragraph>
-            ),
-          },
-        ]}
-      />
-    </Card>
-  );
 }
 
 function AssetThumb({
@@ -824,7 +788,7 @@ export function ContentTopicWorkspacePage() {
         if (detail?.topic.id) {
           sessionStorage.setItem(FB_RETURN_KEY, `/content/topics/${detail.topic.id}`);
         }
-        navigate('/content/ai#facebook');
+        navigate('/content/ai-text#facebook');
       }
       setBusy(false);
     }
@@ -1026,11 +990,7 @@ export function ContentTopicWorkspacePage() {
               {detail.variants.length === 0 ? (
                 <Typography.Text type="secondary">Chưa có bản viết</Typography.Text>
               ) : (
-                <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                  {detail.variants.map((v) => (
-                    <VariantCard key={v.id} variant={v} />
-                  ))}
-                </Space>
+                <VariantCopyPanel variants={detail.variants} />
               )}
             </Card>
 
@@ -1345,6 +1305,8 @@ export function ContentTopicWorkspacePage() {
                 />
               </Space>
             </Card>
+
+            <TopicVideoCard topicId={detail.topic.id} assets={detail.assets} onUploaded={reload} />
 
             <Card size="small" title="Xuất bản">
               {jobs.length === 0 ? (

@@ -14,7 +14,7 @@ import {
   ACTING_STANCE_DOORWAY,
 } from './ContentFamixaShotProduction/ShotProductionActingBeat';
 import { nextShotProductionCommand } from './ContentFamixaShotProduction/ShotProductionOrchestrator';
-import { shotProgressRows } from './ContentFamixaShotProduction/ShotProductionProgress';
+import { SHOT_PROGRESS_ROWS_AUTHORITY, shotProgressRows } from './ContentFamixaShotProduction/ShotProductionProgress';
 import {
   buildShotProductionSnapshot,
   episodeFinishReady,
@@ -214,6 +214,15 @@ ok(
   lipsyncSendEligible({ run: { takeUrl: 'https://take/stale.mp4' }, spoken: true, motionStale: true }) === false,
   'B4 stale motion blocked',
 );
+ok(
+  lipsyncSendEligible({
+    run: { takeUrl: 'https://take/stale.mp4' },
+    spoken: true,
+    motionStale: true,
+    remake: true,
+  }) === true,
+  'B4b remake may use visible stale take',
+);
 
 const sh02CurrentHash = shotI2vPromptHash(stateOf([sh02()], { 'EP99-SC01-SH02': run02Ready }), sh02(), run02Ready);
 const run02Current: SeriesShotRun = {
@@ -223,9 +232,10 @@ const run02Current: SeriesShotRun = {
 const s02 = stateOf([sh02()], { 'EP99-SC01-SH02': run02Current });
 const snap02 = buildShotProductionSnapshot({ state: s02, shot: s02.episode!.shots[0]!, ttsFiles: tts02 });
 const marks02 = Object.fromEntries(shotProgressRows(snap02).map((r) => [r.id, r.mark]));
-ok(snap02.voiceReady && marks02.voice === '✓', 'D Voice READY');
-ok(snap02.keyframeApproved && marks02.picture === '✓', 'D KF READY');
-ok(snap02.motionReady && !snap02.motionStale && marks02.video === '✓', 'D Motion READY');
+ok(SHOT_PROGRESS_ROWS_AUTHORITY === 'EDITORIAL', 'D checklist is editorial, not official production progress');
+ok(snap02.voiceReady && marks02.voice === '✓', 'D editorial voice mark follows the snapshot');
+ok(snap02.keyframeApproved && marks02.picture === '✓', 'D editorial picture mark follows the snapshot');
+ok(snap02.motionReady && !snap02.motionStale && marks02.video === '✓', 'D editorial motion mark follows the current take');
 ok(!snap02.lipSyncReady && !snap02.qaReady, 'D Lip-sync blocked until QA');
 ok(nextShotProductionCommand(snap02).type === 'LIPSYNC_QA_REQUIRED', 'D command QA');
 ok(!snap02.mixReady && !snap02.finalReady && marks02.final === '○', 'D Final NOT READY');
@@ -276,12 +286,22 @@ ok(!snapNoAv.finalReady, 'C3 Fal URL + missing finalAv → false');
 
 const readyRun: SeriesShotRun = {
   ...falOnlyQa,
-  shotQa: { action: true, continuity: true, voiceFace: true, lipsyncQuality: true, finalAv: true },
+  shotQa: { action: true, continuity: true, motion: true, voiceFace: true, lipsyncQuality: true, finalAv: true },
 };
 const sOk = stateOf([sh02()], { 'EP99-SC01-SH02': readyRun });
 const fpsOk = computeInputFingerprints(sOk, sOk.episode!.shots[0]!);
 sOk.runs['EP99-SC01-SH02'] = {
   ...readyRun,
+  shotQa: {
+    action: true,
+    continuity: true,
+    motion: true,
+    voiceFace: true,
+    lipsyncQuality: true,
+    finalAv: true,
+    decision: 'ACCEPT',
+    reviewedPlaybackId: 'assembly:famixa-SH02-01.mp4',
+  },
   shotProduction: {
     voiceFp: fpsOk.voice,
     kfFp: fpsOk.keyframe,

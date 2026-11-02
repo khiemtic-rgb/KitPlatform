@@ -30,6 +30,7 @@ import {
   DownloadOutlined,
   FacebookOutlined,
   FileExcelOutlined,
+  FileTextOutlined,
   FolderOpenOutlined,
   PictureOutlined,
   PlusOutlined,
@@ -64,10 +65,10 @@ import {
   type ContentSiteTarget,
   type ContentTopic,
   type ContentTopicDetail,
-  type ContentVariant,
 } from '@/shared/api/content.api';
 import { FB_RETURN_KEY } from '@/modules/content/ContentFacebookCallbackPage';
 import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
+import { VariantCopyPanel } from '@/modules/content/VariantCopyPanel';
 import { writeClipboardImage } from '@/modules/content/content-manual-dest';
 import { buildStaffImagePrompt } from '@/modules/content/content-staff-image-prompt';
 import {
@@ -96,6 +97,7 @@ import {
   variantKindLabel,
   type TopicSeriesLineage,
 } from '@/modules/content/content-lineage';
+import { useContentBrand } from './content-brand-context';
 import {
   downloadCsvTemplate,
   parseOptionalDate,
@@ -436,7 +438,8 @@ export function ContentTopicsPage() {
   const [loading, setLoading] = useState(true);
   const [topics, setTopics] = useState<ContentTopic[]>([]);
   const [brands, setBrands] = useState<ContentBrand[]>([]);
-  const [brandFilter, setBrandFilter] = useState<string | undefined>();
+  const workspace = useContentBrand();
+  const brandFilter = workspace.brandId;
   const [coreFilter, setCoreFilter] = useState<string | undefined>();
   const [open, setOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -714,10 +717,14 @@ export function ContentTopicsPage() {
   }, [searchParams.get('topic')]);
 
   const openCreate = () => {
+    if (!workspace.canWrite || !workspace.brandId) {
+      message.warning('Chọn một thương hiệu trước khi tạo nội dung.');
+      return;
+    }
     setEditing(null);
     form.resetFields();
     form.setFieldsValue({
-      brandId: brandFilter ?? brands[0]?.id,
+      brandId: workspace.brandId,
       priority: 'P1',
       status: 'Draft',
       goal: 'traffic',
@@ -726,7 +733,7 @@ export function ContentTopicsPage() {
   };
 
   const openBulk = () => {
-    setBulkBrandId(brandFilter ?? brands[0]?.id);
+    setBulkBrandId(workspace.brandId);
     setBulkTitles('');
     setBulkOpen(true);
   };
@@ -823,7 +830,7 @@ export function ContentTopicsPage() {
   };
 
   const saveBulk = async () => {
-    const brandId = bulkBrandId;
+    const brandId = workspace.canWrite ? bulkBrandId : undefined;
     if (!brandId) {
       message.warning('Chọn thương hiệu');
       return;
@@ -858,8 +865,8 @@ export function ContentTopicsPage() {
   };
 
   const importExcel = async (file: File) => {
-    const brandId = brandFilter ?? brands[0]?.id;
-    if (!brandId) {
+    const brandId = workspace.brandId;
+    if (!workspace.canWrite || !brandId) {
       message.warning('Chọn thương hiệu (bộ lọc hoặc tạo brand trước)');
       return false;
     }
@@ -1503,7 +1510,7 @@ export function ContentTopicsPage() {
         if (detail?.topic.id) {
           sessionStorage.setItem(FB_RETURN_KEY, `/content/topics?topic=${detail.topic.id}`);
         }
-        navigate('/content/ai#facebook');
+        navigate('/content/ai-text#facebook');
       }
       setBusy(false);
     }
@@ -1539,13 +1546,9 @@ export function ContentTopicsPage() {
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ maxWidth: 560 }}>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Bài viết
-          </Typography.Title>
+        <div style={{ flex: '1 1 320px', maxWidth: 560 }}>
           <Typography.Text type="secondary">
-            Ảnh + duyệt + xuất bản cho góc brand đã viết. Ý tưởng gốc chỉ nằm ở Góc brand / Idea Pool,
-            không đưa vào đây.
+            Bài viết theo từng nơi đăng: chọn ảnh, duyệt, xuất bản. Ý tưởng và góc nhìn brand nằm ở hai tab trước.
             {brands.length === 0 ? ' Hãy thêm thương hiệu trước.' : null}
           </Typography.Text>
         </div>
@@ -1559,14 +1562,6 @@ export function ContentTopicsPage() {
             value={coreFilter}
             onChange={setCoreFilter}
             options={coreOptions}
-          />
-          <Select
-            allowClear
-            placeholder="Lọc / chọn thương hiệu"
-            style={{ width: 200 }}
-            value={brandFilter}
-            onChange={(v) => setBrandFilter(v)}
-            options={brands.map((b) => ({ value: b.id, label: b.name }))}
           />
           <Button
             icon={<CheckOutlined />}
@@ -1612,6 +1607,9 @@ export function ContentTopicsPage() {
           </Button>
           <Button icon={<UnorderedListOutlined />} onClick={openBulk} disabled={brands.length === 0}>
             Dán nhiều tiêu đề
+          </Button>
+          <Button icon={<FileTextOutlined />} onClick={() => navigate(`/content/import${window.location.search}`)}>
+            Nhập bài có sẵn
           </Button>
         </Space>
       </div>
@@ -1907,7 +1905,7 @@ export function ContentTopicsPage() {
       </Drawer>
 
       <Drawer
-        title={detail ? detail.topic.title : 'Chi tiết bài'}
+        title="Chi tiết bài"
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         width={1040}
@@ -1975,6 +1973,9 @@ export function ContentTopicsPage() {
       >
         {detail ? (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            <Typography.Title level={4} style={{ margin: 0, lineHeight: 1.45 }}>
+              {detail.topic.title}
+            </Typography.Title>
             <Card size="small" title="Nguồn bài">
               {lineageIndex && topicLineage ? (
                 <Space direction="vertical" size={4}>
@@ -2054,20 +2055,7 @@ export function ContentTopicsPage() {
                         description="Đây thường là ý tưởng gốc (Xuân Hòa / sổ tay), không phải góc Famixa/KIT Tech đã Generate. Xóa lọc thương hiệu trên bảng, tìm hàng Bản viết > 0, hoặc mở từ Góc brand."
                       />
                     ) : (
-                      detail.variants.map((v: ContentVariant) => (
-                        <div key={v.id} style={{ marginBottom: 16 }}>
-                          <Typography.Text strong>
-                            {v.kind}
-                            {v.title ? ` — ${v.title}` : ''}
-                          </Typography.Text>
-                          <Typography.Paragraph
-                            ellipsis={{ rows: 4, expandable: true, symbol: 'xem thêm' }}
-                            style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}
-                          >
-                            {v.bodyMarkdown}
-                          </Typography.Paragraph>
-                        </div>
-                      ))
+                      <VariantCopyPanel variants={detail.variants} />
                     ),
                 },
                 {

@@ -1,4 +1,5 @@
 import { Button } from 'antd';
+import { looksLikeProductionShotCode } from '../production-os-action-authority';
 
 export type ShotNavItem = {
   id: string;
@@ -18,11 +19,12 @@ export function resolveLaneAShotId<T extends { id: string; scene?: string; scene
   if (!want) return shots[0]?.id;
   const exact = shots.find((s) => s.id === want);
   if (exact) return exact.id;
+  if (looksLikeProductionShotCode(want)) return undefined;
   const inScene = shots.filter((s) => {
     const key = sceneKeyOf(s);
     return key === want || key.startsWith(`${want} `) || key.startsWith(`${want}—`) || key.startsWith(`${want}–`);
   });
-  return inScene[0]?.id || shots[0]?.id;
+  return inScene[0]?.id;
 }
 
 export function sceneShotsOf<T extends { id: string; scene?: string; sceneId?: string }>(shots: T[], currentId?: string) {

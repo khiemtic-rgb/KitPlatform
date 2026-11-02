@@ -20,6 +20,7 @@ import {
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { ContentBrandOpportunityList } from '@/modules/content/content-lineage';
 import {
   analyzeContentPool,
   applyContentPoolFits,
@@ -179,6 +180,8 @@ function IdeaDetailDrawer({
       <IdeaField label="Thông điệp cốt lõi" value={idea.coreIdea?.coreMessage} />
       <IdeaField label="Ghi chú / nguồn" value={note} />
       {hasDetail ? null : <Typography.Paragraph type="secondary">Chưa có ghi chú thêm.</Typography.Paragraph>}
+
+      <ContentBrandOpportunityList corePackageId={idea.id} fits={fits} />
 
       <Divider />
 
@@ -469,16 +472,11 @@ export function ContentIdeaPoolPage() {
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           gap: 16,
-          marginBottom: 24,
+          marginBottom: 16,
           flexWrap: 'wrap',
         }}
       >
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Ý tưởng
-          </Typography.Title>
-          <Typography.Text type="secondary">Những điều đáng để kể.</Typography.Text>
-        </div>
+        <Typography.Text type="secondary">Kho ý tưởng thô. AI chấm độ hợp với từng thương hiệu trước khi viết.</Typography.Text>
         <Space wrap>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
             Thêm ý tưởng
@@ -616,6 +614,9 @@ export function ContentIdeaPoolPage() {
                     <Typography.Paragraph type="secondary" ellipsis={{ rows: 2 }} style={{ margin: '6px 0 0' }}>
                       {note}
                     </Typography.Paragraph>
+                  ) : null}
+                  {(idea.brandFits ?? []).length > 0 ? (
+                    <ContentBrandOpportunityList corePackageId={idea.id} fits={idea.brandFits ?? []} />
                   ) : null}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
                     <Tag color={STAGE_COLOR[stage]} bordered={false} style={{ marginInlineEnd: 0 }}>

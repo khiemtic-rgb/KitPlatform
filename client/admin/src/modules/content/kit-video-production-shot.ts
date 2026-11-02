@@ -101,20 +101,23 @@ export type ProductionShotSpec = {
   lighting?: Record<string, unknown>;
   wardrobe?: Record<string, unknown>;
   environment?: Record<string, unknown>;
-  interaction?: { peopleCount?: number; minhDistinct?: boolean; noBlend?: boolean; noSwap?: boolean; kind?: string };
+  interaction?: { peopleCount?: number; minhDistinct?: boolean; noBlend?: boolean; noSwap?: boolean; noAverage?: boolean; kind?: string };
   continuity?: Record<string, unknown>;
   identityRisk?: { level?: string; identityCheckRequired?: boolean; reason?: string };
   forbiddenConditions?: unknown;
   identity?: Record<string, unknown>;
-  identityCheck?: { pass?: boolean; run?: boolean; required?: boolean };
-  directorDecision?: Record<string, unknown>;
-  allowedVariation?: unknown;
   faceReference?: unknown;
   eyesReference?: unknown;
   hairReference?: unknown;
   ageProportion?: unknown;
   expressionBaseline?: unknown;
   style?: unknown;
+  masterSha256?: string;
+  dnaSha256?: string;
+  prpSha256?: string;
+  identityCheck?: { pass?: boolean; run?: boolean; required?: boolean };
+  directorDecision?: Record<string, unknown>;
+  allowedVariation?: unknown;
   engineAction?: string;
 };
 

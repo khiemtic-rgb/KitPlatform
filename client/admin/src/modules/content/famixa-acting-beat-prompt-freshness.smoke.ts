@@ -11,7 +11,7 @@ import {
   ACTING_ROOM_STILL,
   ACTING_STANCE_DOORWAY,
 } from './ContentFamixaShotProduction/ShotProductionActingBeat';
-import { directorPrimaryCta, studioMotionSendOpts } from './ContentFamixaShotProduction/ShotProductionCta';
+import { directorPictureVideoSurface, directorPrimaryCta, studioMotionSendOpts } from './ContentFamixaShotProduction/ShotProductionCta';
 import { nextShotProductionCommand } from './ContentFamixaShotProduction/ShotProductionOrchestrator';
 import {
   buildShotProductionSnapshot,
@@ -36,7 +36,7 @@ const series = read('ContentFamixaSeriesTab.tsx');
 ok(stateSrc.includes('shotI2vPromptHash') && stateSrc.includes('motionPromptFreshnessStale'), 'uses existing I2V hash');
 ok(!fpSrc.includes('shotI2vPromptHash') && !fpSrc.includes('actingBeat'), 'motionInputFingerprint untouched');
 ok(!orch.includes('shotI2vPromptHash') && !orch.includes('motionPromptFreshnessStale'), 'orchestrator untouched');
-ok(series.includes('startShotMotion') && series.includes('forceNew: true'), 'remake path kept');
+ok(series.includes('startShotMotion') && series.includes('createProductionVideo'), 'remake path is Production OS CREATE_VIDEO');
 
 const timing = computeShotTiming({ voiceDurations: [1.52], leadInSec: 0.2, tailSec: 0.22 });
 const v1Beat = {
@@ -170,8 +170,25 @@ ok(snap2.motionStale === true && snap2.motionReady === false, '01 V2 actingBeat 
 ok(snap2.keyframeApproved === true && snap2.stamp?.kfFp === fps1.keyframe, '03 KF remains approved');
 ok(snap2.input.hasMuteTake === true && matching.takeUrl === takeUrl, '04 take remains stored');
 ok(nextShotProductionCommand(snap2).type === 'ACCEPT_EXISTING', 'ACCEPT_EXISTING after V2 stale take');
-ok(directorPrimaryCta(snap2).label === 'Dùng video này' && directorPrimaryCta(snap2).action === 'accept-existing', '02 CTA Dùng video này');
-ok(!studioMotionSendOpts(snap2).remake, '06 remake is not the primary stale CTA');
+ok(directorPrimaryCta(snap2).label === 'Dùng video này' && directorPrimaryCta(snap2).action === 'accept-existing', '02 staff CTA Dùng video này');
+ok(!studioMotionSendOpts(snap2).remake, '06 remake opts stay off ACCEPT path');
+ok(
+  directorPictureVideoSurface({
+    snap: snap2,
+    cmd: nextShotProductionCommand(snap2),
+    hasLiveStill: true,
+    kfApproved: true,
+  }).primary?.action === 'motion',
+  '06b desk still offers Tạo video after beat stale',
+);
+const snapSaved = buildShotProductionSnapshot({
+  state: stateOf(v2, { ...matching, actingBeatPendingMotion: true }),
+  shot: v2,
+  ttsFiles: tts,
+});
+ok(nextShotProductionCommand(snapSaved).type === 'CONFIRM_MOTION', '06c Lưu diễn xuất → CONFIRM_MOTION');
+ok(directorPrimaryCta(snapSaved).label === 'Tạo video' && directorPrimaryCta(snapSaved).action === 'motion', '06d saved beat CTA Tạo video');
+ok(series.includes('persistActingBeat') && series.includes('actingBeatPendingMotion: true'), '06e save writes remake flag');
 ok(studioMotionSendOpts(snap1).remake !== true, 'matching prompt does not remake');
 
 const noHashRun = takeRun({ runwayAttempts: [{ n: 3, at: '', status: 'SUCCEEDED', taskId: '9ef1c551' }], shotProduction: matching.shotProduction });

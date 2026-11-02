@@ -13,6 +13,7 @@ import {
   type SeriesShotRun,
   type ShotSplitReason,
 } from './content-famixa-series';
+import type { NovixaShortEdits, NovixaShortPlan } from './novixa-shorts';
 
 export const FILM_SERIES_DESK_STEPS = ['script', 'scene', 'shot', 'voice', 'image', 'video', 'review', 'export'] as const;
 
@@ -107,6 +108,17 @@ export type FilmProductionTask = {
   detail?: string;
 };
 
+export type FilmExportSlot = { publishAt: string; target: string; status: string };
+
+export type FilmExportRecord = {
+  title: string;
+  at: string;
+  jobId?: string;
+  topicId?: string;
+  uploaded?: boolean;
+  schedule?: FilmExportSlot[];
+};
+
 export type FilmOrchestration = {
   analysis: 'confirmed';
   scriptHash: string;
@@ -120,22 +132,44 @@ export type FilmOrchestration = {
   shelf?: { orientation: 'wide' | 'tall'; stills: NovixaStill[]; motion?: NovixaMotionRun };
   voiceChoice?: { model: string; voiceId: string; approved?: boolean; previewPath?: string | null };
   motion?: NovixaMotionRun;
+  /** Video ngắn cắt theo cảnh, do người dựng chọn. */
+  shortPlans?: NovixaShortPlan[];
+  /** Chỉnh sửa của người dựng cho các video ngắn tự gợi ý (theo khóa bản cắt). */
+  shortEdits?: NovixaShortEdits;
+  /** Số video ngắn đã cắt ở lần xuất gần nhất. */
+  shortsDone?: number;
+  /** Video dài ghép từ bản dựng, bỏ các câu [ngắn]. `key` = kịch bản + bản dựng gốc; khác key là đã cũ. */
+  longCut?: Partial<Record<'wide' | 'tall', { folder: string; seconds: number; key: string }>>;
+  /** Thành phẩm đã đưa sang Video thành phẩm, theo khóa (wide, tall, short-1…). */
+  /** Bước 5: mỗi thành phẩm thành một bài (topic) có video, rồi Agent xếp lịch. jobId = bản cũ (Video thành phẩm). */
+  exports?: Record<string, FilmExportRecord>;
+  /** File kịch bản trong thư viện mà phim được nạp từ đó. */
+  scriptSource?: { id: string; code: string; title: string; approved: boolean };
   tasks: FilmProductionTask[];
 };
 
 const SCENE_HEADING = /^(cảnh|canh|sc)\s*\d+/i;
 const DIRECTION_LABEL = /^(chủ đề|định dạng|phong cách|thời lượng|hình ảnh|lời dẫn|ghi chú|nhạc|âm thanh|chú thích|camera|bối cảnh|mục tiêu|tone|style)\b/i;
+/** Nhãn đánh số hay nhấn ý ("Một:", "Thứ hai:", "Bước 3:", "Lưu ý:") là lời đọc, không phải tên người nói. */
+export const SPOKEN_LABEL = /^(một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|thứ\s+\S+|bước\s*\d+|\d+|lưu ý|ví dụ|nhớ|quy tắc(\s*\d+)?|điều\s+\S+|nguồn|kết luận|tóm lại|chú ý|cảnh báo|câu hỏi|hỏi|đáp)$/i;
 
 /** A production note is not a sentence. Style, shot description, and scene titles stay off the voice. */
+/** Dòng chỉ dùng cho video ngắn (hook, lời mời xem bản đầy đủ…): "[ngắn] Câu hook". Vẫn được đọc giọng, nhưng video dài bỏ đi. */
+const SHORT_ONLY_MARK = /^(?:[-*]\s*)?\[\s*(?:chỉ\s*)?ngắn\s*\]\s*/iu;
+
+export function isShortOnlyLine(raw: string) {
+  return SHORT_ONLY_MARK.test(raw.trim());
+}
+
 export function spokenLine(raw: string) {
-  const line = raw.trim();
+  const line = raw.trim().replace(SHORT_ONLY_MARK, '').trim();
   if (!line || /^#{1,6}\s/.test(line) || /^([-*_])\1{2,}$/.test(line.replace(/\s/g, '')) || SCENE_HEADING.test(line) || /^\[[^\]]*\]$/.test(line)) return '';
   const plain = line.replace(/\*\*/g, '').trim();
   if (!plain || SCENE_HEADING.test(plain) || /^([-*_])\1{2,}$/.test(plain)) return '';
   const colon = plain.indexOf(':');
   const label = colon > 0 ? plain.slice(0, colon).trim() : '';
   if (label && DIRECTION_LABEL.test(label)) return '';
-  const speaker = colon > 0 && colon <= 40 && label.length > 0 && label.split(/\s+/).length <= 3 && !/[,.!?…]/.test(label);
+  const speaker = colon > 0 && colon <= 40 && label.length > 0 && label.split(/\s+/).length <= 3 && !/[,.!?…]/.test(label) && !SPOKEN_LABEL.test(label);
   return speaker ? plain.slice(colon + 1).trim() : plain;
 }
 
@@ -182,14 +216,28 @@ export function novixaVideoGate(state: SeriesPilotState) {
 }
 
 /** A browser timeout is not a failed render. A finished video is kept over that timeout. */
-export function novixaClientOutcome(code?: string) {
+/** Lý do lỗi để hiện cho người dùng: mã HTTP, lời nhắn của máy chủ, hoặc lỗi của trang. Không có thì để trống. */
+export function describeClientError(error: unknown): string {
+  const e = error as { isAxiosError?: boolean; code?: string; message?: string; response?: { status?: number; data?: unknown } } | null | undefined;
+  if (e?.isAxiosError) {
+    const data = e.response?.data as { message?: unknown; title?: unknown; detail?: unknown } | string | undefined;
+    const server = typeof data === 'string'
+      ? data.slice(0, 200)
+      : [data?.message, data?.title, data?.detail].find((x): x is string => typeof x === 'string' && x.trim() !== '') ?? '';
+    const parts = [e.response?.status ? `HTTP ${e.response.status}` : (e.code || 'không nhận được phản hồi'), server].filter(Boolean);
+    return parts.join(' · ');
+  }
+  return error instanceof Error ? error.message : '';
+}
+
+export function novixaClientOutcome(code?: string, detail?: string) {
   if (code === 'ECONNABORTED' || code === 'ERR_CANCELED') {
     return {
       status: 'running' as const,
       message: 'Trang hết thời gian chờ. Tác vụ trên máy vẫn có thể đang chạy. Bấm Tiếp tục để kiểm tra, không tạo lượt mới.',
     };
   }
-  return { status: 'failed' as const, message: 'Không chạy được build_stock_motion. Chưa có video mới.' };
+  return { status: 'failed' as const, message: `Không chạy được build_stock_motion. Chưa có video mới.${detail ? ` (${detail})` : ''}` };
 }
 
 export function adoptNovixaStatus(current: NovixaMotionRun | undefined, incoming: NovixaMotionRun): NovixaMotionRun {

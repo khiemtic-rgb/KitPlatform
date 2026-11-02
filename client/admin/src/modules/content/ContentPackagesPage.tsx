@@ -50,6 +50,7 @@ import {
   type ContentVariant,
   type ContentWritePlan,
 } from '@/shared/api/content.api';
+import { useContentBrand } from './content-brand-context';
 import { Link, useNavigate } from 'react-router-dom';
 import { kindsFromWriteSlots, writeSlotLabel } from '@/modules/content/content-channels';
 import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
@@ -96,7 +97,8 @@ export function ContentPackagesPage() {
   const [packages, setPackages] = useState<ContentPackage[]>([]);
   const [brands, setBrands] = useState<ContentBrand[]>([]);
   const [writePlans, setWritePlans] = useState<ContentWritePlan[]>([]);
-  const [brandFilter, setBrandFilter] = useState<string | undefined>();
+  const workspace = useContentBrand();
+  const brandFilter = workspace.brandId;
   const [sourceFilter, setSourceFilter] = useState<string | undefined>();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
@@ -514,13 +516,10 @@ export function ContentPackagesPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Ý tưởng (đa bản viết)
-          </Typography.Title>
+        <div style={{ flex: '1 1 320px' }}>
           <Typography.Text type="secondary">
-            Core idea → góc brand → Generate theo nơi đăng. Nhập cả tuần ở{' '}
-            <Link to="/content/pool">Idea Pool</Link> — AI chấm Fit, bạn tick ô nào dùng.
+            Từ một ý tưởng gốc, viết góc nhìn riêng của thương hiệu rồi tạo bản viết cho từng nơi đăng. Ý tưởng mới nhập ở
+            tab <Link to="/content/pool">Ý tưởng</Link>.
           </Typography.Text>
         </div>
         <Space wrap>
@@ -533,14 +532,6 @@ export function ContentPackagesPage() {
             value={sourceFilter}
             onChange={setSourceFilter}
             options={coreOptions}
-          />
-          <Select
-            allowClear
-            placeholder="Lọc thương hiệu"
-            style={{ width: 180 }}
-            value={brandFilter}
-            onChange={setBrandFilter}
-            options={brands.map((b) => ({ value: b.id, label: b.name }))}
           />
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             Tải lại
@@ -573,8 +564,11 @@ export function ContentPackagesPage() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
-              const home = brands.find((b) => /kit/i.test(b.code)) ?? brands[0];
-              form.setFieldsValue({ brandId: home?.id });
+              if (!workspace.canWrite || !workspace.brandId) {
+                message.warning('Chọn một thương hiệu trước khi tạo góc brand.');
+                return;
+              }
+              form.setFieldsValue({ brandId: workspace.brandId });
               setCreateOpen(true);
             }}
           >

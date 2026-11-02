@@ -211,7 +211,7 @@ export function ContentTiktokCallbackPage() {
     void (async () => {
       try {
         await completeTiktokOAuth(code, state);
-        navigate('/content/tiktok', { replace: true });
+        navigate('/content/channels', { replace: true });
       } catch (e) {
         setError(apiErrorMessage(e, 'Không hoàn tất kết nối TikTok.'));
       }
@@ -224,7 +224,7 @@ export function ContentTiktokCallbackPage() {
         status="warning"
         title="Chưa kết nối được TikTok"
         subTitle={error}
-        extra={<Typography.Link onClick={() => navigate('/content/tiktok')}>Quay lại</Typography.Link>}
+        extra={<Typography.Link onClick={() => navigate('/content/channels')}>Quay lại</Typography.Link>}
       />
     );
   }

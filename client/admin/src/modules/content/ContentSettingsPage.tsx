@@ -102,12 +102,10 @@ export function ContentSettingsPage() {
   };
 
   return (
-    <Card loading={loading}>
-      <Typography.Title level={4} style={{ marginTop: 0 }}>
-        Tuỳ chọn nâng cao
-      </Typography.Title>
+    <Card loading={loading} title="Trần chi phí và chất lượng ảnh">
       <Typography.Paragraph type="secondary">
-        Trần chi phí AI. Generate viết theo nơi đăng của từng brand — không tick kênh ở đây.
+        Trần chi phí AI cả hệ thống, chất lượng ảnh mặc định và đơn giá ước tính. Bài viết được tạo theo nơi đăng của từng
+        thương hiệu.
       </Typography.Paragraph>
       <Form form={form} layout="vertical" style={{ maxWidth: 720 }}>
         <Form.Item

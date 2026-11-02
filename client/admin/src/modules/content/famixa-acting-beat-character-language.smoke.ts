@@ -244,7 +244,7 @@ ok(motionPromptFreshnessStale({
 ok(snap.motionStale === true && snap.input.hasMuteTake === true, 'E4 snapshot STALE + take stored');
 
 ok(!language.includes('fetch(') && !language.includes('startContentSeriesTurbo') && !language.includes('fal-ai/') && !language.includes('eleven'), 'F no provider in language helper');
-ok(!card.includes('startSceneTurbo') && !helper.includes('fetch(') && !orch.includes('actingBeat'), 'F2 no media / orch untouched');
+ok(!card.includes('startSceneTurbo') && !helper.includes('fetch(') && orch.includes('actingBeatPendingMotion'), 'F2 no media / beat-save remake gate');
 
 if (fail.length) {
   console.error(`FAMIXA_ACTING_BEAT_CHARACTER_LANGUAGE_FIX_V1 FAIL=${fail.length}`);

@@ -37,14 +37,14 @@ export type FamixaVoiceScript = {
 
 function voiceOf(state: SeriesPilotState, characterId: string) {
   const ch = (state.characters ?? []).find((c) => c.id === characterId);
-  const role = state.roles.find((r) => r.characterId === characterId);
+  const role = (state.roles ?? []).find((r) => r.characterId === characterId);
   return (ch?.voiceId || role?.voiceId || '').trim() || undefined;
 }
 
 function nameOf(state: SeriesPilotState, characterId: string) {
   const ch = (state.characters ?? []).find((c) => c.id === characterId);
-  const role = state.roles.find((r) => r.characterId === characterId);
-  return (ch?.name || role?.name || characterId).trim();
+  const role = (state.roles ?? []).find((r) => r.characterId === characterId);
+  return (ch?.name || role?.name || characterId || '').trim();
 }
 
 /** True when the string is heading/action/meta/SMS/memory — not spoken dialogue. */
@@ -75,7 +75,7 @@ export function looksLikeScreenplayDump(text: string) {
 }
 
 function spokenText(raw: string) {
-  return raw
+  return (raw ?? '')
     .replace(/^["“”']+|["“”']+$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -155,7 +155,7 @@ export function deriveVoiceScript(state: SeriesPilotState): FamixaVoiceScript {
 }
 
 export function formatVoiceScriptPreview(script: FamixaVoiceScript) {
-  return script.lines.map((l) => `[${(l.name || l.characterId).toUpperCase()}]\n${l.text}`).join('\n\n');
+  return script.lines.map((l) => `[${(l.name || l.characterId || l.id || 'LINE').toUpperCase()}]\n${l.text || ''}`).join('\n\n');
 }
 
 export function mergeVoiceGenerated(

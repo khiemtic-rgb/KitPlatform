@@ -4,12 +4,13 @@ export const FAMIXA_COST_SOT_ID = 'FAMIXA_AI_PROVIDER_COST_SINGLE_SOURCE_OF_TRUT
 
 export type FamixaCostKindV1 = 'ESTIMATE' | 'UNKNOWN';
 export type FamixaCostCurrency = 'credit' | 'usd' | 'fal';
-export type FamixaCostBillingUnit = 'second' | 'clip' | 'unknown';
+export type FamixaCostBillingUnit = 'second' | 'clip' | 'image' | 'unknown';
 export type FamixaCostBillingBasis =
   | 'RUNWAY_CREDIT_PER_SEC'
   | 'FAL_BILLED_ESTIMATE'
   | 'FAL_USD_PER_MIN'
   | 'FAL_LATENTSYNC_CLIP'
+  | 'PUBLISHED_LIST_0_5K'
   | 'UNKNOWN';
 
 export type FamixaCostQuoteInput = {
@@ -90,11 +91,13 @@ export const FAMIXA_COST_CATALOG = {
   },
   gemini: {
     providerId: 'gemini',
-    modelId: 'gemini-2.5-flash-image',
-    costKind: 'UNKNOWN' as const,
-    billingBasis: 'UNKNOWN' as const,
-    billingUnit: 'unknown' as const,
-    minimumBillableQuantity: 0,
+    modelId: 'gemini-3.1-flash-image',
+    usdPerImage: 0.045,
+    currency: 'usd' as const,
+    costKind: 'ESTIMATE' as const,
+    billingBasis: 'PUBLISHED_LIST_0_5K' as const,
+    billingUnit: 'image' as const,
+    minimumBillableQuantity: 1,
   },
   elevenlabs: {
     providerId: 'elevenlabs',
@@ -237,15 +240,18 @@ export function quoteFamixaProviderCost(input: FamixaCostQuoteInput): FamixaCost
 
   if (providerId === 'gemini') {
     const row = FAMIXA_COST_CATALOG.gemini;
+    const approved = !modelId || modelId === row.modelId;
     return {
       providerId: row.providerId,
-      modelId: modelId || row.modelId,
-      costKind: row.costKind,
-      billingBasis: row.billingBasis,
-      billingUnit: row.billingUnit,
-      billedQuantity: 0,
-      minimumBillableQuantity: row.minimumBillableQuantity,
-      kind: 'UNKNOWN',
+      modelId: approved ? row.modelId : modelId,
+      estimatedAmount: approved ? row.usdPerImage : undefined,
+      currency: approved ? row.currency : undefined,
+      costKind: approved ? row.costKind : 'UNKNOWN',
+      billingBasis: approved ? row.billingBasis : 'UNKNOWN',
+      billingUnit: approved ? row.billingUnit : 'unknown',
+      billedQuantity: approved ? 1 : 0,
+      minimumBillableQuantity: approved ? row.minimumBillableQuantity : 0,
+      kind: approved ? 'ESTIMATE' : 'UNKNOWN',
     };
   }
 
@@ -291,7 +297,7 @@ export function famixaMotionGenerateCost(engine: 'turbo' | 'wan', seconds: numbe
   };
 }
 
-export function famixaMotionBatchCost(engine: 'turbo' | 'wan', secondsList: number[]) {
+export function famixaMotionBatchCost(engine: 'turbo' | 'wan' | 'veo', secondsList: number[]) {
   if (engine === 'wan') {
     return {
       credits: null as number | null,

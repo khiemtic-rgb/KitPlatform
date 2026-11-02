@@ -13,12 +13,14 @@ import {
   seriesProgressLabel,
   seriesTerritory,
 } from "@/modules/content/content-lineage";
+import { useContentBrand } from "./content-brand-context";
 
 export function ContentBrandViewPage() {
   const { message } = App.useApp();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const brandParam = searchParams.get("brand");
+  const workspace = useContentBrand();
+  const brandParam = workspace.brandId ?? searchParams.get("brand");
   const [brands, setBrands] = useState<ContentBrand[]>([]);
   const [selectedBrandId, setSelectedBrandId] = useState<string>();
   const [series, setSeries] = useState<ContentArticleSeries[]>([]);
@@ -31,9 +33,8 @@ export function ContentBrandViewPage() {
       try {
         const brandRows = await fetchContentBrands(true);
         setBrands(brandRows);
-        if (brandRows.length > 0 && !selectedBrandId) {
-          const fromParam = brandParam ? brandRows.find((b) => b.id === brandParam) : undefined;
-          setSelectedBrandId(fromParam?.id ?? brandRows[0].id);
+        if (brandParam && brandRows.some((b) => b.id === brandParam) && brandParam !== selectedBrandId) {
+          setSelectedBrandId(brandParam);
         }
       } catch (e) {
         message.error(apiErrorMessage(e, "Lỗi tải thương hiệu"));
@@ -90,7 +91,10 @@ export function ContentBrandViewPage() {
         placeholder="Chọn thương hiệu"
         style={{ width: 280 }}
         value={selectedBrandId}
-        onChange={setSelectedBrandId}
+        onChange={(id: string) => {
+          setSelectedBrandId(id);
+          workspace.setBrand(id);
+        }}
         options={brands.map((b) => ({ value: b.id, label: b.name }))}
       />
 

@@ -13,6 +13,7 @@ import {
   type ContentBrand,
   type ContentCalendarItem,
 } from '@/shared/api/content.api';
+import { useContentBrand } from './content-brand-context';
 import { brandColor, channelLabel } from './content-brand';
 import { episodeSequenceLabel, useTopicLineageIndex } from './content-lineage';
 
@@ -70,7 +71,7 @@ function rangeFor(view: 'month' | 'week', cursor: Dayjs) {
   return { from: from.toISOString(), to: from.add(1, 'month').toISOString(), cursor: from };
 }
 
-export function ContentCalendarPage() {
+export function ContentCalendarPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [params] = useSearchParams();
   const lineageIndex = useTopicLineageIndex();
   const [view, setView] = useState<'month' | 'week'>(() =>
@@ -80,7 +81,8 @@ export function ContentCalendarPage() {
     const day = params.get('day');
     return day && dayjs(day).isValid() ? dayjs(day) : dayjs();
   });
-  const [brandId, setBrandId] = useState<string | undefined>();
+  const workspace = useContentBrand();
+  const brandId = workspace.brandId;
   const [channel, setChannel] = useState<string | undefined>();
   const [brands, setBrands] = useState<ContentBrand[]>([]);
   const [items, setItems] = useState<ContentCalendarItem[]>([]);
@@ -282,12 +284,12 @@ export function ContentCalendarPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
         <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Lịch nội dung
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            Mặc định xem tuần — tháng chỉ khi cần nhìn cả kỳ. Màu = brand, không phải trạng thái.
-          </Typography.Text>
+          {embedded ? null : (
+            <Typography.Title level={4} style={{ margin: 0 }}>
+              Lịch đăng
+            </Typography.Title>
+          )}
+          <Typography.Text type="secondary">Màu theo thương hiệu, không theo trạng thái.</Typography.Text>
         </div>
         <Space wrap>
           <Segmented
@@ -300,14 +302,6 @@ export function ContentCalendarPage() {
           />
           <Select
             allowClear
-            placeholder="Mọi brand"
-            style={{ minWidth: 180 }}
-            value={brandId}
-            onChange={(v) => setBrandId(v)}
-            options={brands.map((b) => ({ value: b.id, label: b.name }))}
-          />
-          <Select
-            allowClear
             placeholder="Mọi kênh"
             style={{ minWidth: 140 }}
             value={channel}
@@ -315,9 +309,6 @@ export function ContentCalendarPage() {
             options={channels.map((c) => ({ value: c, label: channelLabel(c) }))}
           />
           <Button onClick={() => setCursor(dayjs())}>Hôm nay</Button>
-          <Link to="/content/ops">
-            <Button>Hôm nay (hàng đợi)</Button>
-          </Link>
         </Space>
       </div>
 

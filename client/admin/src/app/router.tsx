@@ -38,6 +38,30 @@ const ShiftChecklistPage = lazy(() =>
 const LossCashVariancePage = lazy(() =>
   import('@/modules/success/LossCashVariancePage').then((m) => ({ default: m.LossCashVariancePage })),
 );
+const KnowledgePublishPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgePublishPage').then((m) => ({ default: m.KnowledgePublishPage })),
+);
+const KnowledgePublishPreviewPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgePublishPage').then((m) => ({ default: m.KnowledgePublishPreviewPage })),
+);
+const KnowledgeApprovalPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgeApprovalPage').then((m) => ({ default: m.KnowledgeApprovalPage })),
+);
+const KnowledgeApprovalPreviewPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgeApprovalPage').then((m) => ({ default: m.KnowledgeApprovalPreviewPage })),
+);
+const PharmacyOwnedKnowledgePage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyOwnedKnowledgePage').then((m) => ({ default: m.PharmacyOwnedKnowledgePage })),
+);
+const PharmacyKnowledgeInUsePage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyKnowledgeInUsePage').then((m) => ({ default: m.PharmacyKnowledgeInUsePage })),
+);
+const PharmacyLocalRegimenPage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyLocalRegimenPage').then((m) => ({ default: m.PharmacyLocalRegimenPage })),
+);
+const PharmacyOwnedKnowledgePreviewPage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyOwnedKnowledgePage').then((m) => ({ default: m.PharmacyOwnedKnowledgePreviewPage })),
+);
 const LearningLayout = lazy(() =>
   import('@/modules/learning/LearningLayout').then((m) => ({ default: m.LearningLayout })),
 );
@@ -47,6 +71,11 @@ const LearningWriteGuard = lazy(() =>
 const LearningProgramsPage = lazy(() =>
   import('@/modules/learning/LearningProgramsPage').then((m) => ({
     default: m.default ?? m.LearningProgramsPage,
+  })),
+);
+const LearningTasksPage = lazy(() =>
+  import('@/modules/learning/LearningTasksPage').then((m) => ({
+    default: m.LearningTasksPage,
   })),
 );
 const LearningProgramDetailPage = lazy(() =>
@@ -422,6 +451,45 @@ const KapPartnersPage = lazy(() =>
 const ContentLayout = lazy(() =>
   import('@/modules/content/ContentLayout').then((m) => ({ default: m.ContentLayout })),
 );
+const TradingLayout = lazy(() =>
+  import('@/modules/second-brain/TradingLayout').then((m) => ({ default: m.TradingLayout })),
+);
+const IntentWorkspacePage = lazy(() =>
+  import('@/modules/second-brain/IntentWorkspacePage').then((m) => ({ default: m.IntentWorkspacePage })),
+);
+const TradingSessionPage = lazy(() =>
+  import('@/modules/second-brain/SessionPage').then((m) => ({ default: m.TradingSessionPage })),
+);
+const TradingOverviewPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingOverviewPage })),
+);
+const TradingLedgerPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingLedgerPage })),
+);
+const TradingSpotPage = lazy(() =>
+  import('@/modules/second-brain/MarketPages').then((m) => ({ default: m.TradingSpotPage })),
+);
+const TradingFuturesPage = lazy(() =>
+  import('@/modules/second-brain/MarketPages').then((m) => ({ default: m.TradingFuturesPage })),
+);
+const TradingImportPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingImportPage })),
+);
+const TradingJournalPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingJournalPage })),
+);
+const TradingAgentPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingAgentPage })),
+);
+const TradingRiskPage = lazy(() =>
+  import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingRiskPage })),
+);
+const TradingExchangePage = lazy(() =>
+  import('@/modules/second-brain/ExchangePages').then((m) => ({ default: m.TradingExchangePage })),
+);
+const TradingExchangeAccountPage = lazy(() =>
+  import('@/modules/second-brain/ExchangePages').then((m) => ({ default: m.TradingExchangeAccountPage })),
+);
 const KitSalesLayout = lazy(() =>
   import('@/modules/kit-sales/KitSalesLayout').then((m) => ({ default: m.KitSalesLayout })),
 );
@@ -456,26 +524,35 @@ const KitSalesSettingsPage = lazy(() =>
 const ContentOpsPage = lazy(() =>
   import('@/modules/content/ContentOpsPage').then((m) => ({ default: m.ContentOpsPage })),
 );
-const ContentCalendarPage = lazy(() =>
-  import('@/modules/content/ContentCalendarPage').then((m) => ({ default: m.ContentCalendarPage })),
+const ContentPublishingPage = lazy(() =>
+  import('@/modules/content/ContentPublishingPage').then((m) => ({ default: m.ContentPublishingPage })),
 );
-const ContentBudgetPage = lazy(() =>
-  import('@/modules/content/ContentBudgetPage').then((m) => ({ default: m.ContentBudgetPage })),
+const ContentChannelsPage = lazy(() =>
+  import('@/modules/content/ContentChannelsPage').then((m) => ({ default: m.ContentChannelsPage })),
 );
-const ContentAgentPage = lazy(() =>
-  import('@/modules/content/ContentAgentPage').then((m) => ({ default: m.ContentAgentPage })),
+const ContentCostPage = lazy(() =>
+  import('@/modules/content/ContentCostPage').then((m) => ({ default: m.ContentCostPage })),
 );
-const ContentSettingsPage = lazy(() =>
-  import('@/modules/content/ContentSettingsPage').then((m) => ({ default: m.ContentSettingsPage })),
+const ContentMarketingAiSettingsPage = lazy(() =>
+  import('@/modules/content/ContentMarketingAiSettingsPage').then((m) => ({ default: m.ContentMarketingAiSettingsPage })),
+);
+const ContentAgentRedirect = lazy(() =>
+  import('@/modules/content/ContentPublishingPage').then((m) => ({ default: m.ContentAgentRedirect })),
+);
+const ContentImportPage = lazy(() =>
+  import('@/modules/content/ContentImportPage').then((m) => ({ default: m.ContentImportPage })),
+);
+const ContentYoutubeCallbackPage = lazy(() =>
+  import('@/modules/content/ContentYoutubePage').then((m) => ({ default: m.ContentYoutubeCallbackPage })),
+);
+const ContentTiktokCallbackPage = lazy(() =>
+  import('@/modules/content/ContentTiktokPage').then((m) => ({ default: m.ContentTiktokCallbackPage })),
 );
 const ContentAiSettingsPage = lazy(() =>
   import('@/modules/content/ContentAiSettingsPage').then((m) => ({ default: m.ContentAiSettingsPage })),
 );
 const ContentBrandsPage = lazy(() =>
   import('@/modules/content/ContentBrandsPage').then((m) => ({ default: m.ContentBrandsPage })),
-);
-const ContentBrandViewPage = lazy(() =>
-  import('@/modules/content/ContentBrandViewPage').then((m) => ({ default: m.ContentBrandViewPage })),
 );
 const ContentFacebookCallbackPage = lazy(() =>
   import('@/modules/content/ContentFacebookCallbackPage').then((m) => ({
@@ -506,7 +583,16 @@ const ContentArticleEpisodePage = lazy(() =>
   import('@/modules/content/ContentArticleEpisodePage').then((m) => ({ default: m.ContentArticleEpisodePage })),
 );
 const ContentVideosPage = lazy(() =>
-  import('@/modules/content/ContentVideosPage').then((m) => ({ default: m.ContentVideosPage })),
+  import('@/modules/content/ContentVideosRoute').then((m) => ({ default: m.ContentVideosRoute })),
+);
+const ContentWorkEntry = lazy(() =>
+  import('@/modules/content/ContentWorkEntry').then((m) => ({ default: m.ContentWorkEntry })),
+);
+const ContentStudioPage = lazy(() =>
+  import('@/modules/content/ContentStudioPage').then((m) => ({ default: m.ContentStudioPage })),
+);
+const ContentFilmTypesPage = lazy(() =>
+  import('@/modules/content/ContentFilmTypesPage').then((m) => ({ default: m.ContentFilmTypesPage })),
 );
 const ContentFamixaDirectorReviewPage = lazy(() =>
   import('@/modules/content/ContentFamixaDirectorReviewPage').then((m) => ({
@@ -616,6 +702,37 @@ export function AppRouter() {
             }
           />
 
+          {import.meta.env.DEV ? (
+            <Route
+              path="/k1-ui-preview"
+              element={
+                <SuspenseRoute>
+                  <KnowledgePublishPreviewPage />
+                </SuspenseRoute>
+              }
+            />
+          ) : null}
+          {import.meta.env.DEV ? (
+            <Route
+              path="/k2a-ui-preview"
+              element={
+                <SuspenseRoute>
+                  <KnowledgeApprovalPreviewPage />
+                </SuspenseRoute>
+              }
+            />
+          ) : null}
+          {import.meta.env.DEV ? (
+            <Route
+              path="/m1-ui-preview"
+              element={
+                <SuspenseRoute>
+                  <PharmacyOwnedKnowledgePreviewPage />
+                </SuspenseRoute>
+              }
+            />
+          ) : null}
+
           <Route element={<GuestGuard />}>
             <Route
               path="/login"
@@ -676,6 +793,54 @@ export function AppRouter() {
                 }
               />
               <Route
+                path="platform/pharmacy-knowledge"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgePublishPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="platform/pharmacy-knowledge/xu-ly"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgePublishPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/knowledge"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgeApprovalPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/owned-knowledge"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyOwnedKnowledgePage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/local-regimens"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyLocalRegimenPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/knowledge-in-use"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyKnowledgeInUsePage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
                 path="people"
                 element={
                   <SuspenseRoute>
@@ -685,6 +850,7 @@ export function AppRouter() {
               >
                 <Route index element={<LearningProgramsPage />} />
                 <Route path="learn" element={<LearningTakePage />} />
+                <Route path="tasks" element={<LearningTasksPage />} />
                 <Route path="learn/modules/:id" element={<LearningTakeModulePage />} />
                 <Route path="dashboard" element={<Navigate to="/people" replace />} />
                 <Route path="programs/:id" element={<LearningProgramDetailPage />} />
@@ -1057,6 +1223,28 @@ export function AppRouter() {
                 />
               </Route>
               <Route
+                path="second-brain"
+                element={
+                  <SuspenseRoute>
+                    <TradingLayout />
+                  </SuspenseRoute>
+                }
+              >
+                <Route index element={<Navigate to="/second-brain/session" replace />} />
+                <Route path="workspace" element={<SuspenseRoute><IntentWorkspacePage /></SuspenseRoute>} />
+                <Route path="session" element={<SuspenseRoute><TradingSessionPage /></SuspenseRoute>} />
+                <Route path="overview" element={<SuspenseRoute><TradingOverviewPage /></SuspenseRoute>} />
+                <Route path="ledger" element={<SuspenseRoute><TradingLedgerPage /></SuspenseRoute>} />
+                <Route path="spot" element={<SuspenseRoute><TradingSpotPage /></SuspenseRoute>} />
+                <Route path="futures" element={<SuspenseRoute><TradingFuturesPage /></SuspenseRoute>} />
+                <Route path="import" element={<SuspenseRoute><TradingImportPage /></SuspenseRoute>} />
+                <Route path="journal" element={<SuspenseRoute><TradingJournalPage /></SuspenseRoute>} />
+                <Route path="agent" element={<SuspenseRoute><TradingAgentPage /></SuspenseRoute>} />
+                <Route path="risk" element={<SuspenseRoute><TradingRiskPage /></SuspenseRoute>} />
+                <Route path="exchange" element={<SuspenseRoute><TradingExchangePage /></SuspenseRoute>} />
+                <Route path="account" element={<SuspenseRoute><TradingExchangeAccountPage /></SuspenseRoute>} />
+              </Route>
+              <Route
                 path="content"
                 element={
                   <Suspense fallback={<ContentRouteFallback />}>
@@ -1064,15 +1252,28 @@ export function AppRouter() {
                   </Suspense>
                 }
               >
-              <Route index element={<Navigate to="/content/ops" replace />} />
-              <Route path="ops" element={<ContentOpsPage />} />
-              <Route path="calendar" element={<ContentCalendarPage />} />
-              <Route path="budget" element={<ContentBudgetPage />} />
-              <Route path="agent" element={<ContentAgentPage />} />
-              <Route path="ai" element={<ContentAiSettingsPage />} />
-              <Route path="settings" element={<ContentSettingsPage />} />
+              <Route index element={<Navigate to="/content/overview" replace />} />
+              <Route path="overview" element={<ContentOpsPage />} />
+              <Route path="ops" element={<RedirectPreserveSearch to="/content/overview" />} />
+              <Route path="work" element={<ContentWorkEntry />} />
+              <Route path="studio" element={<ContentStudioPage />} />
+              <Route path="calendar" element={<ContentPublishingPage />} />
+              <Route path="channels" element={<ContentChannelsPage />} />
+              <Route path="budget" element={<ContentCostPage />} />
+              <Route path="ai-text" element={<ContentMarketingAiSettingsPage />} />
+              <Route path="agent" element={<ContentAgentRedirect />} />
+              <Route path="import" element={<ContentImportPage />} />
+              <Route path="youtube" element={<RedirectPreserveSearch to="/content/channels" />} />
+              <Route path="youtube/callback" element={<ContentYoutubeCallbackPage />} />
+              <Route path="tiktok" element={<RedirectPreserveSearch to="/content/channels" />} />
+              <Route path="tiktok/callback" element={<ContentTiktokCallbackPage />} />
+              <Route path="ai" element={<ContentAiSettingsPage />}>
+                <Route path="credential-security" element={<></>} />
+              </Route>
+              <Route path="settings" element={<RedirectPreserveSearch to="/content/brands" />} />
+              <Route path="settings/film-types" element={<ContentFilmTypesPage />} />
               <Route path="brands" element={<ContentBrandsPage />} />
-              <Route path="brand-view" element={<ContentBrandViewPage />} />
+              <Route path="brand-view" element={<RedirectPreserveSearch to="/content/article-series" />} />
                 <Route
                   path="facebook/callback"
                   element={<ContentFacebookCallbackPage />}

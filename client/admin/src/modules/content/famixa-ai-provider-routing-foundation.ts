@@ -135,6 +135,7 @@ export type FamixaProviderConfiguredSnapshot = {
   falConfigured: boolean;
   elevenLabsConfigured: boolean;
   geminiConfigured: boolean;
+  veoJoinConfigured?: boolean;
 };
 
 export type FamixaProviderPolicyPreference = {
@@ -173,7 +174,9 @@ export function classifyFamixaProviderAvailability(
           ? snapshot.elevenLabsConfigured
           : id === 'gemini'
             ? snapshot.geminiConfigured
-            : false;
+            : id === 'google'
+              ? Boolean(snapshot.veoJoinConfigured)
+              : false;
   if (!configured) {
     return {
       providerId: id,
@@ -215,6 +218,7 @@ export function resolveFamixaProviderLegacyMap(
   if (capability === 'MOTION') {
     const engine = (selection?.engine || '').trim();
     if (engine.toLowerCase() === 'wan') return { providerId: 'wan', modelId: 'wan-2.1' };
+    if (engine.toLowerCase() === 'veo') return { providerId: 'google', modelId: 'veo-3.1' };
     if (engine) return { providerId: 'runway', modelId: 'gen4_turbo' };
   }
   if (capability === 'LIPSYNC' && (selection?.lipsyncModel || '').trim()) {
@@ -278,10 +282,11 @@ export function requirementsFromSelection(
 export function defaultRouterModel(capability: FamixaProviderCapability, providerId: string) {
   const id = (providerId || '').trim().toLowerCase();
   if (capability === 'MOTION' && id === 'wan') return 'wan-2.1';
+  if (capability === 'MOTION' && id === 'google') return 'veo-3.1';
   if (capability === 'MOTION') return 'gen4_turbo';
   if (capability === 'VOICE') return 'eleven_v3';
   if (capability === 'LIPSYNC') return '1.9';
-  if (capability === 'PICTURE') return 'gemini-2.5-flash-image';
+  if (capability === 'PICTURE') return 'gemini-3.1-flash-image';
   return undefined;
 }
 
@@ -402,8 +407,9 @@ function outcomeWhenEmpty(rejected: FamixaProviderCandidateEvaluation[]) {
 
 function engineRank(req: FamixaProviderSelectionRequirements, providerId: string) {
   if (req.capability !== 'MOTION' || !(req.engine || '').trim()) return 0;
-  const wan = (req.engine || '').trim().toLowerCase() === 'wan';
-  if (wan) return providerId === 'wan' ? 0 : 1;
+  const engine = (req.engine || '').trim().toLowerCase();
+  if (engine === 'wan') return providerId === 'wan' ? 0 : 1;
+  if (engine === 'veo') return providerId === 'google' ? 0 : 1;
   return providerId === 'runway' ? 0 : 1;
 }
 
@@ -454,6 +460,37 @@ export function routeFamixaProvider(
       FAMIXA_ROUTER_OUTCOME.EXPLICIT,
     );
     return { outcome: FAMIXA_ROUTER_OUTCOME.EXPLICIT, decision, diagnostic: { candidateCount: 0, rejectedCount: 0, evaluations: [] } };
+  }
+
+  if (req.capability === 'MOTION' && (req.engine || '').trim().toLowerCase() === 'veo') {
+    if (ctx.configured) {
+      const avail = classifyFamixaProviderAvailability('google', ctx.configured, 'veo-3.1');
+      if (avail.state === 'NOT_CONFIGURED' || avail.configuration === 'NOT_CONFIGURED') {
+        return {
+          outcome: FAMIXA_ROUTER_OUTCOME.NO_PROVIDER,
+          diagnostic: {
+            candidateCount: 1,
+            rejectedCount: 1,
+            primaryRejectionReason: FAMIXA_REJECT_CODE.NOT_CONFIGURED,
+            evaluations: [],
+          },
+        };
+      }
+    }
+    const decision = decide(
+      req,
+      'google',
+      'veo-3.1',
+      policy,
+      'ROUTED',
+      'engine veo pin — Google Veo 3. 0 fallback.',
+      FAMIXA_ROUTER_OUTCOME.ROUTED,
+    );
+    return {
+      outcome: FAMIXA_ROUTER_OUTCOME.ROUTED,
+      decision,
+      diagnostic: { candidateCount: 1, rejectedCount: 0, evaluations: [] },
+    };
   }
 
   const evaluations = [...FAMIXA_PROVIDER_CATALOG]

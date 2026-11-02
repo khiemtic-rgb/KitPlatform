@@ -314,6 +314,40 @@ export function uniqueSpeakersOf(lines: Pick<FamixaVoiceLine, 'characterId' | 'n
 }
 
 /** Two speakers on one take — split shots. Do not send two wavs into one Fal job. */
+export function shotNamedFaceIds(shot: FamixaSeriesShot, chars?: { id?: string; name?: string }[]) {
+  return namedCharIdsOnShot(shot, chars);
+}
+
+export function lipsyncSpeakerLabel(
+  lines: Pick<FamixaVoiceLine, 'characterId' | 'name'>[],
+  chars?: { id?: string; name?: string }[],
+) {
+  const talk = uniqueSpeakersOf(lines)[0] || '';
+  const named = (chars ?? []).find((c) => (c.id != null && normCharId(c.id) === normCharId(talk)) || (c.name || '') === talk);
+  return named?.name || lines[0]?.name || 'người nói';
+}
+
+export function lipsyncSpeakerSidePreset(side: 'left' | 'right', size?: { width: number; height: number }) {
+  return {
+    x: side === 'right' ? 0.63 : 0.3,
+    y: side === 'right' ? 0.25 : 0.48,
+    width: size?.width && size.width > 0 ? size.width : 1280,
+    height: size?.height && size.height > 0 ? size.height : 720,
+  };
+}
+
+/** Two faces + one speaker: Fal 1.9 moves every mouth. Need v3 + a face click. */
+export function lipsyncNeedsSpeakerPick(
+  shot: FamixaSeriesShot,
+  lines: Pick<FamixaVoiceLine, 'characterId' | 'name'>[],
+  chars?: { id?: string; name?: string }[],
+) {
+  const named = namedCharIdsOnShot(shot, chars);
+  const ids = shotCharacterIds(shot);
+  const faces = named.length >= 2 ? named : ids;
+  return faces.length >= 2 && uniqueSpeakersOf(lines).length === 1;
+}
+
 /** Face on the take vs line speaker. Fal one wav — mismatch = mother on Minh. */
 export function lipsyncSpeakerMismatch(
   shot: FamixaSeriesShot,

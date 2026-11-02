@@ -92,6 +92,13 @@ ok(t3.run.kfApproved === true, 'T3 approved');
 ok(t3.run.takeUrl === undefined && t3.run.motionNeedsRemake === true, 'T3 old motion stale');
 const t3fromGen = applyPictureApproveGuard(t2.run, SHOT_ID, PIX_B);
 ok(t3fromGen.kind === 'APPROVE_NEW' && t3fromGen.run.pictureRevisionId === REV_002 && t3fromGen.run.kfSourceHash === HASH_B, 'T3 approve after generate still mints');
+const pendingSameStamp = runOf({
+  kfApproved: false,
+  keyframeDataUrl: PIX_B,
+  kfSourceHash: HASH_B,
+});
+const t3same = applyPictureApproveGuard(pendingSameStamp, SHOT_ID, PIX_B);
+ok(t3same.kind === 'APPROVE_NEW' && t3same.run.kfApproved === true && t3same.run.kfSourceHash === HASH_B, 'T3b pending still with live stamp still Duyệt hình');
 
 /** T4: approve current A again → revision/motion unchanged */
 const t4 = applyPictureApproveGuard(approvedA, SHOT_ID, PIX_A);

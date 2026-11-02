@@ -2,6 +2,8 @@ import { promptUsedOnCurrentKf } from '../content-runway-adapter';
 import { dataUriHash, lastGenerationFail, sameFailedInput } from '../content-famixa-runway-pipe';
 import { CAMERA_RETRY_POOL } from '../content-runway-prompt-v1';
 import { lipsyncQaReady, shotI2vPromptHash } from '../content-famixa-prod-v2';
+import { qualityReviewAccepted } from '../famixa-short-acceptance';
+import { shotQualityBlockers } from '../famixa-short-quality-pipeline';
 import { resolveTakeUrl } from '../content-famixa-final-source';
 import { shotRunOf, type FamixaSeriesShot, type SeriesPilotState } from '../content-famixa-series';
 import { kfPixelsOf } from '../content-famixa-kf-store';
@@ -36,6 +38,7 @@ import { providerDurationOf, timingDurationBlockReason } from '../famixa-shot-pr
 import { nextShotProductionCommand } from './ShotProductionOrchestrator';
 import {
   deriveShotExecutionState,
+  actingBeatWantsMotionRemake,
   executionMotionProjection,
   picturePixelHashOf,
   type ShotExecutionState,
@@ -90,6 +93,7 @@ export type ShotProductionSnapshot = {
   motionUsable: boolean;
   motionFingerprint: string;
   motionStale: boolean;
+  actingBeatPendingMotion: boolean;
   takeFromOtherPicture: boolean;
   motionBusy: boolean;
   motionFailed: boolean;
@@ -121,6 +125,7 @@ export type ShotProductionSnapshot = {
   durationMismatch: boolean;
   i2vSeconds: 5 | 10;
   blockingReason?: string;
+  qualityBlockers?: readonly string[];
   nextAction: string;
   fps: ProductionInputFps;
   stamp?: ShotProductionStamp;
@@ -201,6 +206,7 @@ export function buildShotProductionSnapshot(opts: {
   lipsyncBusy?: boolean;
   mixBusy?: boolean;
   mixFailed?: boolean;
+  /** true = proven/readable blob; false = missing; undefined = UNKNOWN (not ready). */
   artifactPresent?: boolean;
 }): ShotProductionSnapshot {
   const intent = shotProductionIntentOf(opts.state, opts.shot);
@@ -254,6 +260,15 @@ export function buildShotProductionSnapshot(opts: {
     motionStaleCompat: stampMotionStale,
   });
   const motionStale = Boolean(stampMotionStale || motionProj.motionStale);
+  const actingBeatPendingMotion = actingBeatWantsMotionRemake({
+    liveFingerprint: exec.currentInputs.motion.actingBeatFingerprint,
+    usedFingerprint:
+      exec.lastSuccessArtifacts.motion?.provenance.actingBeatFingerprint ||
+      exec.visibleArtifacts.motion?.provenance.actingBeatFingerprint ||
+      exec.acceptedArtifacts.motion?.provenance.actingBeatFingerprint,
+    motionStale,
+    pendingFlag: run.actingBeatPendingMotion,
+  });
   const motionReady = motionProj.motionReady;
   const motionAccepted = Boolean(acceptedTake?.url);
   const motionUsable = motionReady || (motionAccepted && Boolean(visibleTake?.url || resolveTakeUrl(run)));
@@ -299,10 +314,10 @@ export function buildShotProductionSnapshot(opts: {
     ? Boolean(input.hasLipSync) && !lipSyncStale && voiceReady && motionUsable && hasCurrentTake
     : true;
   const qaReady = silent || lipsyncQaReady(run, true);
-  const qualityPassed = silent || Boolean(run.shotQa?.lipsyncQuality && run.shotQa?.finalAv);
+  const qualityPassed = silent || qualityReviewAccepted(run);
   const assembleOk = Boolean(stamp?.assembleFp) && stamp?.assembleFp === fps.mix && !mixStale;
   const mixReady = assembleOk;
-  const finalArtifactReady = mixReady && (opts.artifactPresent !== false ? Boolean(stamp?.assembleFp) : false);
+  const finalArtifactReady = mixReady && opts.artifactPresent === true && Boolean(stamp?.assembleFp);
   const timingBlock = timingDurationBlockReason(opts.state, opts.shot);
   const durationMismatch =
     Boolean(timingBlock) ||
@@ -380,6 +395,7 @@ export function buildShotProductionSnapshot(opts: {
     motionUsable,
     motionFingerprint: fps.motion,
     motionStale,
+    actingBeatPendingMotion,
     takeFromOtherPicture: pictureChanged,
     motionBusy: Boolean(opts.motionBusy),
     motionFailed,
@@ -411,6 +427,7 @@ export function buildShotProductionSnapshot(opts: {
     durationMismatch,
     i2vSeconds: providerDurationOf(opts.state, opts.shot),
     blockingReason,
+    qualityBlockers: shotQualityBlockers(opts.shot.id, qualityPassed),
     nextAction: stage,
     fps,
     stamp,
@@ -495,6 +512,7 @@ export function snapshotOfShot(
     mixFailed?: boolean;
     pictureRejected?: boolean;
     pictureUnusable?: boolean;
+    /** true = proven/readable blob; false = missing; undefined = UNKNOWN (not ready). */
     artifactPresent?: boolean;
     hasVoiceFile?: (lineId: string) => boolean;
   },

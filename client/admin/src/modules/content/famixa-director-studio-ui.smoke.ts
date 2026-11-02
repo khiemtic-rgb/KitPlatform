@@ -45,7 +45,7 @@ ok(ui.includes('selected.mayGenerate') && ui.includes('selected.mayApprove') && 
 ok(ui.includes('!selected.officialLocked') && ui.includes('selected.mayGenerate && !selected.officialLocked')
   && !ui.includes("characterId === 'CHAR-001'"), '13 LOCKED Minh has no hardcoded destructive path');
 ok(ui.includes('loadList();')
-  && ui.includes('fetchCharacterStudioList()')
+  && ui.includes('fetchCharacterStudioList')
   && ui.includes('generate: false')
   && ui.includes('generateCharacterStudioReferenceSet(')
   && ui.includes('confirm: true'), '14 open page uses GET + confirm for generate');

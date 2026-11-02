@@ -1,8 +1,8 @@
 ﻿import { useEffect, useState } from "react";
-import { App, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Tag, Typography } from "antd";
+import { App, Button, DatePicker, Form, Input, Modal, Select, Space, Tag, Typography } from "antd";
 import type { Dayjs } from "dayjs";
 import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "@/shared/api/api-error";
 import {
   createContentArticleSeries,
@@ -14,11 +14,11 @@ import {
   type ContentPackage,
 } from "@/shared/api/content.api";
 import {
-  ContentLineageTrail,
   seriesBrandAngle,
   seriesProgressLabel,
   seriesTerritory,
 } from "@/modules/content/content-lineage";
+import { useContentBrand } from "./content-brand-context";
 
 const STATUSES = ["DRAFT", "PLANNED", "ACTIVE", "PAUSED", "COMPLETED", "CANCELLED"];
 
@@ -32,7 +32,9 @@ export function ContentArticleSeriesPage() {
   const [packages, setPackages] = useState<ContentPackage[]>([]);
   const [cores, setCores] = useState<ContentPackage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [brandId, setBrandId] = useState<string>();
+  const workspace = useContentBrand();
+  const brandId = workspace.brandId;
+  const setBrandId = (value?: string) => workspace.setBrand(value ?? "all");
   const [status, setStatus] = useState<string>();
   const [corePackageId, setCorePackageId] = useState<string>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
@@ -80,21 +82,9 @@ export function ContentArticleSeriesPage() {
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
       <Space wrap style={{ justifyContent: "space-between", width: "100%" }}>
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Series — Story Control Center
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            Mỗi Series là một câu chuyện đang tiến triển. Episode là từng bước. Content là sản phẩm.
-          </Typography.Paragraph>
-          <ContentLineageTrail
-            items={[
-              { label: "Ý tưởng", to: "/content/pool" },
-              { label: "Góc brand", to: "/content/packages" },
-              { label: "Series" },
-            ]}
-          />
-        </div>
+        <Typography.Text type="secondary">
+          Mỗi series là một câu chuyện kể qua nhiều tập; mỗi tập sinh ra các bài viết.
+        </Typography.Text>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             Tải lại
@@ -103,8 +93,12 @@ export function ContentArticleSeriesPage() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={async () => {
-              const packs = await fetchContentPackages({ coresOnly: false });
-              setPackages(packs);
+              if (!workspace.canWrite || !workspace.brandId) {
+                message.warning("Chọn một thương hiệu trước khi tạo series.");
+                return;
+              }
+              const packs = await fetchContentPackages({ brandId: workspace.brandId, coresOnly: false });
+              setPackages((packs ?? []).filter((p) => p.sourcePackageId));
               setOpen(true);
             }}
           >

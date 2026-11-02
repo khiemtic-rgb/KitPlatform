@@ -7,11 +7,14 @@ import { ShotProductionQa } from './ShotProductionQa';
 import type { ShotProductionSnapshot } from './ShotProductionState';
 import type { SeriesShotRun } from '../content-famixa-series';
 import {
+  DIRECTOR_LIPSYNC_NEW_LABEL,
   directorPrimaryCta,
   shotQaMissing,
   shotStaleNotes,
   type StaffShotAction,
 } from './ShotProductionCta';
+import type { ProductionShotActions } from '../../../shared/api/content.api';
+import { authorizeOsDeskCta, isCreateVideoRecoveryType, isOsActionAvailable } from '../production-os-action-authority';
 
 export type { StaffShotAction } from './ShotProductionCta';
 
@@ -28,6 +31,10 @@ export function ShotProductionCard({
   onAction,
   onRetry,
   onQa,
+  onReviewDecision,
+  reviewTarget,
+  forceNewLipsync,
+  osActions,
 }: {
   label: string;
   title: string;
@@ -38,9 +45,13 @@ export function ShotProductionCard({
   showIdentity?: boolean;
   holdReason?: string;
   holdHint?: string;
+  forceNewLipsync?: boolean;
   onAction: (action: StaffShotAction) => void;
   onRetry?: (stage: 'voice' | 'picture' | 'motion' | 'lipsync' | 'mix') => void;
   onQa?: (next: NonNullable<SeriesShotRun['shotQa']>) => void;
+  onReviewDecision?: (decision: 'ACCEPT' | 'REJECT') => void;
+  reviewTarget?: string;
+  osActions?: ProductionShotActions;
 }) {
   const cmd = nextShotProductionCommand(snap);
   const cta = tone === 'director' ? directorPrimaryCta(snap) : staffCommandCta(cmd);
@@ -56,7 +67,19 @@ export function ShotProductionCard({
   const qaMissing = shotQaMissing(shotQa, !snap.isSilent, { afterLipsync, afterMix });
   const directorMessage = recovery?.message || undefined;
   const primaryCommand = tone === 'director' ? recovery?.nextCommand ?? cmd.type : cmd.type;
-  const extraActions = (recovery?.actions ?? []).filter((row) => row.command !== primaryCommand);
+  const extraActions = (recovery?.actions ?? [])
+    .filter((row) => row.command !== primaryCommand)
+    .map((row) =>
+      forceNewLipsync && row.type === 'LIPSYNC' ? { ...row, label: DIRECTOR_LIPSYNC_NEW_LABEL } : row,
+    );
+  const ctaSafe = authorizeOsDeskCta(
+    forceNewLipsync && cta.action === 'lipsync'
+      ? { ...cta, label: DIRECTOR_LIPSYNC_NEW_LABEL }
+      : cta,
+    osActions,
+  );
+  const osVideoOk = isOsActionAvailable(osActions, 'CREATE_VIDEO');
+  const visibleExtra = extraActions.filter((row) => !isCreateVideoRecoveryType(row.type) || osVideoOk);
   return (
     <article className="fx-media-card">
       {showIdentity ? (
@@ -81,11 +104,15 @@ export function ShotProductionCard({
       {cmd.kind === 'BLOCK' && tone === 'staff' ? (
         <p className="fx-desk__note">{staffOrchMessage(cmd.code || '')}</p>
       ) : null}
-      {cta.hint && cmd.kind !== 'BLOCK' && tone === 'staff' ? <p className="fx-desk__note">{staffOrchMessage(cta.hint)}</p> : null}
+      {'hint' in cta && cta.hint && cmd.kind !== 'BLOCK' && tone === 'staff' ? <p className="fx-desk__note">{staffOrchMessage(cta.hint)}</p> : null}
       {tone === 'director' && snap.pictureUnusable ? (
         <p className="fx-desk__note">Ảnh này thuộc pipeline cũ. Tạo hình mới — không duyệt ảnh này.</p>
       ) : null}
-      {tone === 'director' && directorMessage ? (
+      {tone === 'director' && forceNewLipsync && recovery?.status === 'LIPSYNC_READY' ? (
+        <p className="fx-desk__note">
+          Video Veo đã chọn nhưng chưa khớp môi — job Fal cũ không có file. Khớp môi mới sẽ cảnh báo trừ tiền trước khi gửi.
+        </p>
+      ) : tone === 'director' && directorMessage ? (
         directorMessage.split('\n').map((line) => (
           <p key={line} className="fx-desk__note">{line}</p>
         ))
@@ -102,6 +129,8 @@ export function ShotProductionCard({
             afterLipsync={afterLipsync}
             afterMix={afterMix}
             onChange={onQa}
+            onDecision={onReviewDecision}
+            reviewTarget={reviewTarget}
           />
           {cmd.type === 'LIPSYNC_QA_REQUIRED' && qaMissing.length ? (
             <p className="fx-desk__note">Còn chưa đánh dấu: {qaMissing.join(', ')}.</p>
@@ -109,39 +138,47 @@ export function ShotProductionCard({
         </>
       ) : null}
       <div className="fx-desk__btns">
-        <Button
-          type="primary"
-          loading={waiting}
-          disabled={cta.action === 'blocked' || waiting}
-          onClick={() => onAction(cta.action)}
-        >
-          {waiting && cmd.kind === 'WAIT' ? cta.label : cta.label}
-        </Button>
-        {extraActions.map((row) => (
+        {ctaSafe ? (
+          <Button
+            type="primary"
+            data-os-create-video={ctaSafe.action === 'os-create-video' ? '1' : undefined}
+            data-os-create-image={ctaSafe.action === 'os-create-image' ? '1' : undefined}
+            loading={waiting}
+            disabled={ctaSafe.action === 'blocked' || waiting}
+            onClick={() => onAction(ctaSafe.action)}
+          >
+            {ctaSafe.label}
+          </Button>
+        ) : null}
+        {visibleExtra.map((row) => (
           <Button
             key={row.type}
+            data-os-create-video={isCreateVideoRecoveryType(row.type) ? '1' : undefined}
             onClick={() => {
               if (row.type === 'ACCEPT_EXISTING') onAction('accept-existing');
               else if (row.type === 'EDIT_INPUT') onAction('edit-input');
-              else if (row.type === 'ENSURE_PICTURE') onAction('picture');
-              else if (row.type === 'RETRY_MOTION' && snap.retryLocked) onAction('motion');
-              else if (row.type === 'RETRY_MOTION' || row.type === 'CONFIRM_MOTION') onAction('motion');
+              else if (row.type === 'ENSURE_PICTURE') onAction('os-create-image');
+              else if (isCreateVideoRecoveryType(row.type)) onAction('os-create-video');
               else if (row.type === 'ENSURE_VOICE') onAction('produce');
               else if (row.type === 'QA') onAction('qa');
               else if (row.type === 'LIPSYNC') onAction('lipsync');
             }}
           >
-            {row.label}
+            {isCreateVideoRecoveryType(row.type) ? 'Tạo video' : row.label}
           </Button>
         ))}
         {onRetry && snap.stage === 'VOICE_REQUIRED' ? <Button onClick={() => onRetry('voice')}>Thử lại thoại</Button> : null}
         {onRetry && (snap.stage === 'NEEDS_VISUAL_REVIEW' || snap.keyframeStale) ? (
           <Button onClick={() => onRetry('picture')}>Thử lại hình</Button>
         ) : null}
-        {onRetry && tone === 'staff' && (snap.stage === 'VIDEO_ERROR' || (snap.stage === 'VIDEO_CONFIRM' && snap.motionFailed)) && !snap.retryLocked ? (
-          <Button onClick={() => onRetry('motion')}>Thử lại chuyển động</Button>
+        {onRetry && tone === 'staff' && osVideoOk && (snap.stage === 'VIDEO_ERROR' || (snap.stage === 'VIDEO_CONFIRM' && snap.motionFailed)) && !snap.retryLocked ? (
+          <Button onClick={() => onAction('os-create-video')}>Thử lại chuyển động</Button>
         ) : null}
-        {onRetry && snap.stage === 'LIPSYNC_ERROR' ? <Button onClick={() => onRetry('lipsync')}>Thử lại Lip-sync</Button> : null}
+        {onRetry && snap.stage === 'LIPSYNC_ERROR' ? (
+          <Button onClick={() => onRetry('lipsync')}>
+            {forceNewLipsync ? DIRECTOR_LIPSYNC_NEW_LABEL : 'Thử lại Lip-sync'}
+          </Button>
+        ) : null}
         {onRetry && snap.stage === 'MIX_ERROR' ? <Button onClick={() => onRetry('mix')}>Thử lại hoàn thiện</Button> : null}
       </div>
     </article>

@@ -1,7 +1,7 @@
 /** Production orchestration intent only. Not a visual or character authority. */
 
 import { linesForShot, multiSpeakerBlock } from '../content-famixa-dialogue-map';
-import { shotRunOf, type FamixaSeriesShot, type SeriesPilotState } from '../content-famixa-series';
+import { shotActionFromPack, shotRunOf, type FamixaSeriesShot, type SeriesPilotState } from '../content-famixa-series';
 import { characterVoiceProfile } from '../famixa-video-audio-lipsync-pipeline';
 
 export const SHOT_PRODUCTION_ORCHESTRATION_ID = 'FAMIXA_SHOT_PRODUCTION_ORCHESTRATION_V1';
@@ -44,7 +44,7 @@ export function shotProductionIntentOf(state: SeriesPilotState, shot: FamixaSeri
     shotId: shot.id,
     sceneId: shot.sceneId || shot.scene,
     characterIds: shot.characterIds?.length ? shot.characterIds : speakers,
-    action: (shot.shotAction || shot.story || '').trim() || shot.visual || '',
+    action: shotActionFromPack(shot) || shot.visual || '',
     emotion: first?.performance?.emotion,
     acting: first?.performance?.label || (first?.performance?.intensity != null ? String(first.performance.intensity) : undefined),
     blocking: shot.visual,

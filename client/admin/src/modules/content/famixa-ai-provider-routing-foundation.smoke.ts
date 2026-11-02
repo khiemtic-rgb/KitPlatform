@@ -97,6 +97,29 @@ ok(kitRules.includes('gen4_turbo') && !kitRules.includes('FamixaProviderSelectio
 
 ok(resolveFamixaProvider('MOTION', { engine: 'turbo' }).providerId === 'runway', 'compat Resolve wraps Foundation turbo');
 ok(resolveFamixaProvider('MOTION', { engine: 'wan' }).providerId === 'wan', 'compat Resolve wraps Foundation wan');
+ok(resolveFamixaProvider('MOTION', { engine: 'veo' }).providerId === 'google', 'compat Resolve wraps Foundation veo');
+
+const veoMissing = (() => {
+  try {
+    return selectFamixaProvider(
+      { capability: 'MOTION', engine: 'veo' },
+      { configured: { runwayConfigured: true, falConfigured: true, elevenLabsConfigured: true, geminiConfigured: true, veoJoinConfigured: false } },
+    );
+  } catch (e) {
+    return e as { outcome?: string };
+  }
+})();
+ok(
+  (veoMissing as { outcome?: string }).outcome === 'NO_PROVIDER' ||
+    String((veoMissing as Error).message || '').includes('NO_PROVIDER'),
+  'T21 engine veo + no Join → NO_PROVIDER',
+);
+
+const veoOk = selectFamixaProvider(
+  { capability: 'MOTION', engine: 'veo' },
+  { configured: { runwayConfigured: true, falConfigured: true, elevenLabsConfigured: true, geminiConfigured: true, veoJoinConfigured: true } },
+);
+ok(veoOk.providerId === 'google' && veoOk.modelId === 'veo-3.1', 'T22 engine veo + Join → google');
 
 const over = selectFamixaProvider({
   capability: 'MOTION',

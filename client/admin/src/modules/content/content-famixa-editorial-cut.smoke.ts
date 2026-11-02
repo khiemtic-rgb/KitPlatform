@@ -119,6 +119,15 @@ ok(
   'E9 expired URL does not retry provider',
 );
 ok(editorialSourceOf({ lipsynced: true, lipsyncUrl: 'https://fal.example/a.mp4', takeUrl: 'https://t.example/b.mp4' }) === 'https://fal.example/a.mp4', 'E9 fal lipsync first');
+ok(
+  editorialSourceOf({
+    lipsynced: true,
+    lipsyncTaskId: 'lipsync_v3_01a0a327-ec7b-79b2-9f02-192781f6946f',
+    lipsyncUrl: '/api/content/series/fal-video?taskId=lipsync_v3_01a0a327-ec7b-79b2-9f02-192781f6946f',
+    takeUrl: 'https://t.example/b.mp4',
+  }) === '/api/content/series/fal-video?taskId=lipsync_v3_01a0a327-ec7b-79b2-9f02-192781f6946f',
+  'E9 local fal-video current LipSync beats take',
+);
 ok(editorialSourceOf({ takeUrl: 'https://t.example/b.mp4' }) === 'https://t.example/b.mp4', 'E9 take resolver');
 ok(editorialSourceOf({ lipsyncUrl: 'https://fal.example/old.mp4', motionNeedsRemake: true }) === '', 'E9 remake does not export old lipsync');
 ok(editorialSourceReady({ lipsyncUrl: 'https://fal.example/a.mp4' }) && !editorialSourceReady({}), 'E9 sourceReady ≠ finalReady');

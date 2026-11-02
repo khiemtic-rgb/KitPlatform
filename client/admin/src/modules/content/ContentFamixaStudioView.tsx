@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, Fragment, type ReactNode } from 'react';
 import { Alert, Button, Checkbox, Collapse, Select, Space, Tag, Typography } from 'antd';
+import { FamixaMotionEnginePicker } from './FamixaMotionEnginePicker';
+import { FamixaDirectorTimingPicker } from './FamixaDirectorTimingPicker';
+import { famixaMotionEngineReady, type FamixaMotionEngine } from './famixa-motion-engine';
+import type { DirectorProductionDurationSec, DirectorProductionTiming } from './famixa-director-timing';
+import type { DirectorVideoModelDisplay } from './famixa-director-video-model-display';
 import { CheckOutlined, DownloadOutlined, FolderOpenOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import {
   SERIES_STATUS_LABEL,
@@ -79,6 +84,11 @@ export function ContentFamixaStudioView({
   costLabel,
   engine,
   onEngine,
+  osVideoModel,
+  osDirectorTiming,
+  onDirectorTiming,
+  directorTimingBusy,
+  directorSelectionBusy,
   keys,
   voiceProvider,
   onVoiceProvider,
@@ -96,6 +106,7 @@ export function ContentFamixaStudioView({
   onAbDiagnostic,
   onLipsync,
   onLipsyncPrefs,
+  onMixPrefs,
   onAttachLipsync,
   lipsyncBusy,
   sceneBatchLabel,
@@ -173,9 +184,14 @@ export function ContentFamixaStudioView({
   runwaySpent: number;
   expectedCost?: number | null;
   costLabel: string;
-  engine: 'turbo' | 'wan';
-  onEngine: (engine: 'turbo' | 'wan') => void;
-  keys: { runway: boolean; fal: boolean; elevenLabs: boolean };
+  engine: FamixaMotionEngine;
+  onEngine: (engine: FamixaMotionEngine) => void;
+  osVideoModel?: DirectorVideoModelDisplay;
+  osDirectorTiming?: DirectorProductionTiming;
+  onDirectorTiming?: (durationSec: DirectorProductionDurationSec) => void;
+  directorTimingBusy?: boolean;
+  directorSelectionBusy?: boolean;
+  keys: { runway: boolean; fal: boolean; elevenLabs: boolean; veo?: boolean };
   voiceProvider: 'elevenlabs' | 'f5';
   onVoiceProvider: (value: 'elevenlabs' | 'f5') => void;
   onSelectShot: (shot: FamixaSeriesShot) => void;
@@ -193,6 +209,7 @@ export function ContentFamixaStudioView({
   onAbDiagnostic?: (successId: string, failId: string) => void;
   onLipsync?: (ids?: string[], opts?: { remake?: boolean }) => void;
   onLipsyncPrefs?: (prefs: { lipsyncModel?: '1.9' | 'v3' | 'ls'; lipsyncSyncMode?: 'cut_off' | 'silence' | 'loop' | 'bounce' | 'remap' }) => void;
+  onMixPrefs?: (prefs: Partial<import('./content-famixa-mix').FamixaMixPrefs>) => void;
   onAttachLipsync?: (shotId: string) => void;
   lipsyncBusy?: boolean | string;
   sceneBatchLabel: string;
@@ -321,7 +338,7 @@ export function ContentFamixaStudioView({
     scriptLocked,
     shortsReady: Boolean(shortsReady),
     engine,
-    hasEngineKey: engine === 'wan' ? keys.fal : keys.runway,
+    hasEngineKey: famixaMotionEngineReady(engine, keys),
     state: pilot,
     shot: active,
     videoContext,
@@ -506,6 +523,7 @@ export function ContentFamixaStudioView({
             onAbDiagnostic={onAbDiagnostic}
             onLipsync={onLipsync}
             onLipsyncPrefs={onLipsyncPrefs}
+            onMixPrefs={onMixPrefs}
             onAttachLipsync={onAttachLipsync}
             lipsyncBusy={lipsyncBusy}
             cutPlan={cutPlan}
@@ -756,6 +774,26 @@ export function ContentFamixaStudioView({
                 <Tag>{active?.seconds ?? 5} giây · {outputAspectOf(pilot ?? {})}</Tag>
                 <Tag>{kfLabel}</Tag>
               </Space>
+              <div style={{ marginTop: 10 }}>
+                <FamixaMotionEnginePicker
+                  engine={engine}
+                  onEngine={onEngine}
+                  keys={keys}
+                  selectionProviderId={osVideoModel?.selection?.providerId}
+                  selectionModelId={osVideoModel?.selection?.modelId}
+                  takeProvenance={osVideoModel?.take}
+                  busy={directorSelectionBusy}
+                />
+                {onDirectorTiming ? (
+                  <div style={{ marginTop: 10 }}>
+                    <FamixaDirectorTimingPicker
+                      timing={osDirectorTiming}
+                      busy={directorTimingBusy}
+                      onConfirm={onDirectorTiming}
+                    />
+                  </div>
+                ) : null}
+              </div>
               <Collapse
                 size="small"
                 style={{ marginTop: 10 }}
@@ -775,22 +813,7 @@ export function ContentFamixaStudioView({
                           </Typography.Paragraph>
                         )}
                         <div style={{ marginTop: 10 }}>
-                          <Space style={{ marginBottom: 4 }}>
-                            <Typography.Text type="secondary">Máy dựng</Typography.Text>
-                            <Tag color={(engine === 'turbo' ? keys.runway : keys.fal) ? 'success' : 'warning'}>
-                              {(engine === 'turbo' ? keys.runway : keys.fal) ? 'Đã có key' : 'Chưa có key'}
-                            </Tag>
-                          </Space>
-                          <Select
-                            value={engine}
-                            onChange={onEngine}
-                            style={{ width: '100%' }}
-                            options={[
-                              { value: 'turbo', label: 'Runway Turbo' },
-                              { value: 'wan', label: 'Wan 2.1 (Fal)' },
-                            ]}
-                          />
-                          <Typography.Paragraph type="secondary" style={{ margin: '6px 0 0' }}>
+                          <Typography.Paragraph type="secondary" style={{ margin: '0 0 8px' }}>
                             {costLabel}
                             {engine === 'turbo' ? ` · −${expectedCost} cr` : null}
                           </Typography.Paragraph>
@@ -917,7 +940,9 @@ export function ContentFamixaStudioView({
                   loading={Boolean(turboBusy)}
                   onClick={onCreateVideo}
                 >
-                  {engine === 'wan'
+                  {engine === 'veo'
+                    ? 'KF đã đổi · Google Veo 3'
+                    : engine === 'wan'
                     ? 'KF đã đổi · Tạo Video · xác nhận Wan'
                     : `KF đã đổi · Tạo Video · Confirm ${expectedCost} cr`}
                 </Button>
@@ -930,7 +955,9 @@ export function ContentFamixaStudioView({
                   onClick={onCreateVideo}
                 >
                   {precheck.ok
-                    ? engine === 'wan'
+                    ? engine === 'veo'
+                      ? 'Tạo video · Google Veo 3'
+                      : engine === 'wan'
                       ? 'Tạo video · xác nhận Wan'
                       : `Tạo video · Confirm ước ${expectedCost ?? ''} cr`
                     : 'Pre-check chưa đạt (0 cr)'}

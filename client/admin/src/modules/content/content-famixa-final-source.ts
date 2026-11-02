@@ -1,3 +1,5 @@
+import { canStampFalLipsyncFinal } from './famixa-fal-lipsync-playback';
+
 /** Timeline reads FINAL_SOURCE only. Does not guess Fal vs TTS overlay. */
 
 export type FinalSource = 'FAL' | 'RUNWAY_TTS' | 'RUNWAY' | 'NONE';
@@ -37,10 +39,6 @@ function lastSuccessAttempt(run?: FinalSourceRun) {
   return undefined;
 }
 
-function lastSuccessAttemptUrl(run?: FinalSourceRun) {
-  return (lastSuccessAttempt(run)?.outputUrl || '').trim() || undefined;
-}
-
 function attemptOwnsUrl(run: FinalSourceRun | undefined, url: string) {
   const list = run?.runwayAttempts ?? [];
   for (let i = list.length - 1; i >= 0; i--) {
@@ -71,6 +69,7 @@ export function resolveTakeUrl(run?: FinalSourceRun) {
   const latestN = latest?.n || 0;
   if (latestUrl && latestN > epoch && latestUrl !== take) return latestUrl;
   if (latestUrl && !take && latestN > epoch) return latestUrl;
+  // Editorial/desk motion pointer only. Not Official Preview, ProductionArtifact, or ProductionBinding.
   const accepted = run?.acceptedTake?.url?.trim();
   if (accepted) return accepted;
   if (liveRev && take) {
@@ -106,7 +105,14 @@ export function resolveFinalSource(run?: FinalSourceRun, silent = false): FinalS
 }
 
 /** Mute I2V take. Fal must not call this. */
-export function stampMuteTake(url: string, silent = false): Partial<FinalSourceRun> {
+export function stampMuteTake(url: string, silent = false): {
+  takeUrl: string;
+  previewUrl: string;
+  lipsynced: false;
+  lipsyncUrl: undefined;
+  finalSource: 'RUNWAY' | 'RUNWAY_TTS';
+  acceptedTake: undefined;
+} {
   return {
     takeUrl: url,
     previewUrl: url,
@@ -118,8 +124,13 @@ export function stampMuteTake(url: string, silent = false): Partial<FinalSourceR
 }
 
 /** Fal FINAL. Keeps TAKE. Does not overwrite previewUrl/takeUrl. */
-export function stampFalFinal(run: FinalSourceRun, falUrl: string): Partial<FinalSourceRun> {
+export function stampFalFinal(run: FinalSourceRun, falUrl: string, localFileReady?: boolean):
+  | { lipsynced: false }
+  | { lipsyncUrl: string; lipsynced: true; finalSource: 'FAL'; takeUrl?: string } {
   const take = resolveTakeUrl(run) || (run.previewUrl && run.previewUrl !== falUrl ? run.previewUrl : undefined);
+  if (!canStampFalLipsyncFinal(falUrl, localFileReady)) {
+    return { lipsynced: false };
+  }
   return {
     lipsyncUrl: falUrl,
     lipsynced: true,

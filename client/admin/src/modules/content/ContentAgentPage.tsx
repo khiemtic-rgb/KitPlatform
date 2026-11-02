@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Card, InputNumber, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
+import { Alert, App, Button, Card, Input, InputNumber, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd';
 import { CheckOutlined, CloseOutlined, ReloadOutlined, RobotOutlined, StopOutlined } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { fetchContentBrands, type ContentBrand } from '@/shared/api/content.api';
 import {
   approveAgentProposal,
   cancelAgentProposal,
+  fetchAgentScheduleSettings,
+  isManualProposal,
   fetchAgentProposals,
   generateAgentProposals,
   rejectAgentProposal,
@@ -13,12 +15,14 @@ import {
   type AgentProposal,
   type AgentProposalStatus,
 } from '@/shared/api/content-agent.api';
+import { useContentBrand } from './content-brand-context';
 
 const STATUS_TEXT: Record<AgentProposalStatus, string> = {
   Proposed: 'Chờ duyệt',
   Approved: 'Đã duyệt',
   Rejected: 'Đã từ chối',
   Cancelled: 'Đã huỷ',
+  Posted: 'Đã đăng tay',
   Failed: 'Lỗi',
 };
 
@@ -27,6 +31,7 @@ const STATUS_COLOR: Record<AgentProposalStatus, string> = {
   Approved: 'green',
   Rejected: 'default',
   Cancelled: 'default',
+  Posted: 'cyan',
   Failed: 'red',
 };
 
@@ -42,6 +47,60 @@ const STATUS_FILTER = [
 
 const ALL = 'all';
 
+const PLATFORM: Record<string, { label: string; color: string; manual?: boolean }> = {
+  youtube_channel: { label: 'YouTube', color: 'red' },
+  tiktok_channel: { label: 'TikTok', color: 'magenta' },
+  facebook_page: { label: 'Fanpage', color: 'blue', manual: true },
+  local_os: { label: 'Website', color: 'green' },
+  wordpress_rest: { label: 'Website', color: 'green' },
+  astro_git: { label: 'Website', color: 'green' },
+};
+
+function platformOf(r: AgentProposal) {
+  return PLATFORM[r.connectorType] ?? { label: r.siteId ? 'Website' : 'Khác', color: 'default', manual: true };
+}
+
+function isManualRow(r: AgentProposal) {
+  return platformOf(r).manual === true || isManualProposal(r);
+}
+
+const PLATFORM_FILTER = [
+  { value: ALL, label: 'Mọi nơi đăng' },
+  { value: 'YouTube', label: 'YouTube' },
+  { value: 'TikTok', label: 'TikTok' },
+  { value: 'Fanpage', label: 'Fanpage' },
+  { value: 'Website', label: 'Website' },
+];
+
+const TIME_FILTER = [
+  { value: ALL, label: 'Mọi thời gian' },
+  { value: 'overdue', label: 'Quá giờ' },
+  { value: 'today', label: 'Hôm nay' },
+  { value: 'tomorrow', label: 'Ngày mai' },
+  { value: '7d', label: '7 ngày tới' },
+];
+
+const MODE_FILTER = [
+  { value: ALL, label: 'Mọi cách đăng' },
+  { value: 'manual', label: 'Đăng tay' },
+  { value: 'auto', label: 'Tự động' },
+];
+
+function vnDayKey(d: Date) {
+  return new Date(d.getTime() + 7 * 3600_000).toISOString().slice(0, 10);
+}
+
+/** Nhãn thời gian so với bây giờ: dòng quá giờ chưa xử lý, hôm nay, ngày mai. */
+function dayTag(r: AgentProposal, now: Date): { text: string; color: string } | null {
+  if (r.status !== 'Proposed' && r.status !== 'Approved') return null;
+  const at = new Date(r.publishAt);
+  if (at.getTime() < now.getTime()) return { text: 'Quá giờ', color: 'red' };
+  const k = vnDayKey(at);
+  if (k === vnDayKey(now)) return { text: 'Hôm nay', color: 'blue' };
+  if (k === vnDayKey(new Date(now.getTime() + 86_400_000))) return { text: 'Ngày mai', color: 'cyan' };
+  return null;
+}
+
 function vnTime(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', {
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -53,10 +112,12 @@ function vnTime(iso: string) {
   });
 }
 
-export function ContentAgentPage() {
+/** Tab "Agent đăng bài" của Lịch đăng: đề xuất của Agent cho bài chữ, và các lượt đăng đã duyệt. */
+export function ContentAgentPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { message } = App.useApp();
+  const workspace = useContentBrand();
   const [brands, setBrands] = useState<ContentBrand[]>([]);
-  const [brandId, setBrandId] = useState<string | undefined>();
+  const brandId = workspace.brandId ?? ALL;
   const [days, setDays] = useState(7);
   const [maxPerDay, setMaxPerDay] = useState(1);
   const [filter, setFilter] = useState('open');
@@ -66,18 +127,38 @@ export function ContentAgentPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [last, setLast] = useState<AgentGenerateResult | null>(null);
+  const [fBrand, setFBrand] = useState(ALL);
+  const [fPlatform, setFPlatform] = useState(ALL);
+  const [fTime, setFTime] = useState(ALL);
+  const [fMode, setFMode] = useState(ALL);
+  const [fText, setFText] = useState('');
 
   useEffect(() => {
     void (async () => {
       try {
         const list = await fetchContentBrands(true);
         setBrands(list);
-        setBrandId((cur) => cur ?? ALL);
       } catch (e) {
         message.error(apiErrorMessage(e, 'Không tải được danh sách thương hiệu'));
       }
     })();
   }, [message]);
+
+  // Số ngày và số bài/ngày lấy từ "Cài đặt lịch Agent" của thương hiệu.
+  useEffect(() => {
+    if (brandId === ALL) return;
+    let cancelled = false;
+    void fetchAgentScheduleSettings(brandId)
+      .then((settings) => {
+        if (cancelled) return;
+        setDays(settings.days);
+        setMaxPerDay(settings.maxPerDayPerChannel);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [brandId]);
 
   const load = useCallback(async () => {
     if (!brandId) return;
@@ -131,7 +212,7 @@ export function ContentAgentPage() {
   };
 
   const approveSelected = async () => {
-    const ids = rows.filter((r) => selected.includes(r.id) && r.status === 'Proposed').map((r) => r.id);
+    const ids = viewRows.filter((r) => selected.includes(r.id) && r.status === 'Proposed').map((r) => r.id);
     let okCount = 0;
     for (const id of ids) {
       try {
@@ -145,42 +226,61 @@ export function ContentAgentPage() {
     await load();
   };
 
+  const now = new Date();
+  const viewRows = useMemo(() => {
+    const t = new Date();
+    const todayKey = vnDayKey(t);
+    const tomorrowKey = vnDayKey(new Date(t.getTime() + 86_400_000));
+    const weekEnd = t.getTime() + 7 * 86_400_000;
+    const q = fText.trim().toLowerCase();
+    return rows
+      .filter((r) => {
+        if (brandId === ALL && fBrand !== ALL && r.brandId !== fBrand) return false;
+        if (fPlatform !== ALL && platformOf(r).label !== fPlatform) return false;
+        if (fMode === 'manual' && !isManualRow(r)) return false;
+        if (fMode === 'auto' && isManualRow(r)) return false;
+        const at = new Date(r.publishAt);
+        const open = r.status === 'Proposed' || r.status === 'Approved';
+        if (fTime === 'overdue' && !(open && at.getTime() < t.getTime())) return false;
+        if (fTime === 'today' && vnDayKey(at) !== todayKey) return false;
+        if (fTime === 'tomorrow' && vnDayKey(at) !== tomorrowKey) return false;
+        if (fTime === '7d' && !(at.getTime() >= t.getTime() && at.getTime() <= weekEnd)) return false;
+        if (q && !r.title.toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .sort((a, b) => a.publishAt.localeCompare(b.publishAt));
+  }, [rows, brandId, fBrand, fPlatform, fTime, fMode, fText]);
+
+  const filtering = fBrand !== ALL || fPlatform !== ALL || fTime !== ALL || fMode !== ALL || fText.trim() !== '';
+
   const pendingSelected = useMemo(
-    () => rows.filter((r) => selected.includes(r.id) && r.status === 'Proposed').length,
-    [rows, selected],
+    () => viewRows.filter((r) => selected.includes(r.id) && r.status === 'Proposed').length,
+    [viewRows, selected],
   );
 
   return (
     <div>
-      <Space direction="vertical" size={4} style={{ marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          <RobotOutlined /> Agent đăng bài
-        </Typography.Title>
-        <Typography.Text type="secondary">
-          Agent chỉ đề xuất lịch đăng. Bài chỉ được đăng sau khi bạn bấm Duyệt. Hiện chỉ bài chữ cho website và
-          Fanpage; video chưa đăng tự động.
-        </Typography.Text>
-      </Space>
+      {embedded ? null : (
+        <Space direction="vertical" size={4} style={{ marginBottom: 16 }}>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            <RobotOutlined /> Agent đăng bài
+          </Typography.Title>
+        </Space>
+      )}
+      <Typography.Paragraph type="secondary">
+        Agent xếp bài chữ (website, Fanpage) vào khung trống theo "Cài đặt lịch Agent"; bài chỉ đăng sau khi anh bấm Duyệt ở đây.
+        Video duyệt ở bước 5 của Video Studio đã được xếp và duyệt sẵn, hiện trong danh sách dưới.
+      </Typography.Paragraph>
 
-      <Card style={{ marginBottom: 16 }}>
+      <Card size="small" title="Agent đề xuất lịch cho bài chữ" style={{ marginBottom: 16 }}>
         <Space wrap>
-          <Select
-            style={{ minWidth: 220 }}
-            placeholder="Thương hiệu"
-            value={brandId}
-            onChange={setBrandId}
-            options={[
-              { value: ALL, label: 'Tất cả thương hiệu' },
-              ...brands.map((b) => ({ value: b.id, label: `${b.name} (${b.code})` })),
-            ]}
-          />
           <span>
             Số ngày <InputNumber min={1} max={14} value={days} onChange={(v) => setDays(v ?? 7)} />
           </span>
           <span>
             Tối đa bài/ngày/kênh <InputNumber min={1} max={4} value={maxPerDay} onChange={(v) => setMaxPerDay(v ?? 1)} />
           </span>
-          <Button type="primary" icon={<RobotOutlined />} loading={generating} disabled={!brandId || brandId === ALL} title={brandId === ALL ? 'Chọn một thương hiệu để tạo đề xuất' : undefined} onClick={() => void generate()}>
+          <Button type="primary" icon={<RobotOutlined />} loading={generating} disabled={!brandId || brandId === ALL} title={brandId === ALL ? 'Chọn một thương hiệu ở đầu trang để tạo đề xuất' : undefined} onClick={() => void generate()}>
             Tạo đề xuất
           </Button>
         </Space>
@@ -211,7 +311,7 @@ export function ContentAgentPage() {
       )}
 
       <Card
-        title="Đề xuất lịch đăng"
+        title="Đề xuất và lượt đăng đã duyệt"
         extra={
           <Space>
             <Select style={{ width: 210 }} value={filter} onChange={setFilter} options={STATUS_FILTER} />
@@ -233,12 +333,50 @@ export function ContentAgentPage() {
           </Space>
         }
       >
+        <Space wrap style={{ marginBottom: 12 }}>
+          {brandId === ALL ? (
+            <Select
+              style={{ width: 170 }}
+              value={fBrand}
+              onChange={setFBrand}
+              options={[{ value: ALL, label: 'Mọi thương hiệu' }, ...brands.map((b) => ({ value: b.id, label: b.name }))]}
+            />
+          ) : null}
+          <Select style={{ width: 150 }} value={fPlatform} onChange={setFPlatform} options={PLATFORM_FILTER} />
+          <Select style={{ width: 150 }} value={fTime} onChange={setFTime} options={TIME_FILTER} />
+          <Select style={{ width: 150 }} value={fMode} onChange={setFMode} options={MODE_FILTER} />
+          <Input.Search
+            allowClear
+            style={{ width: 220 }}
+            placeholder="Tìm theo tiêu đề"
+            value={fText}
+            onChange={(e) => setFText(e.target.value)}
+          />
+          <Typography.Text type="secondary">
+            Hiện {viewRows.length}/{rows.length} lượt
+          </Typography.Text>
+          {filtering ? (
+            <Button
+              size="small"
+              onClick={() => {
+                setFBrand(ALL);
+                setFPlatform(ALL);
+                setFTime(ALL);
+                setFMode(ALL);
+                setFText('');
+              }}
+            >
+              Xoá lọc
+            </Button>
+          ) : null}
+        </Space>
         <Table<AgentProposal>
           rowKey="id"
           loading={loading}
-          dataSource={rows}
+          dataSource={viewRows}
           pagination={{ pageSize: 20, hideOnSinglePage: true }}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1300 }}
+          onRow={(r) => (dayTag(r, now)?.text === 'Quá giờ' ? { style: { background: '#fff1f0' } } : {})}
           rowSelection={{
             selectedRowKeys: selected,
             onChange: (keys) => setSelected(keys as string[]),
@@ -246,22 +384,55 @@ export function ContentAgentPage() {
           }}
           locale={{ emptyText: 'Chưa có đề xuất. Bấm "Tạo đề xuất".' }}
           columns={[
-            { title: 'Giờ đăng (VN)', dataIndex: 'publishAt', width: 150, render: (v: string) => vnTime(v) },
+            {
+              title: 'Giờ đăng (VN)',
+              dataIndex: 'publishAt',
+              width: 160,
+              render: (v: string, r) => {
+                const tag = dayTag(r, now);
+                return (
+                  <Space direction="vertical" size={2}>
+                    <span>{vnTime(v)}</span>
+                    {tag ? <Tag color={tag.color} style={{ marginInlineEnd: 0 }}>{tag.text}</Tag> : null}
+                  </Space>
+                );
+              },
+            },
             {
               title: 'Thương hiệu',
               dataIndex: 'brandId',
               width: 130,
               render: (v: string) => brands.find((b) => b.id === v)?.name ?? '',
             },
-            { title: 'Bài', dataIndex: 'title', ellipsis: true, width: 240 },
-            { title: 'Kênh', dataIndex: 'targetLabel', width: 120 },
+            { title: 'Bài', dataIndex: 'title', width: 280, render: (v: string) => <Tooltip title={v} placement="topLeft"><span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{v}</span></Tooltip> },
+            {
+              title: 'Nơi đăng',
+              dataIndex: 'targetLabel',
+              width: 170,
+              render: (v: string, r) => {
+                const pf = platformOf(r);
+                return (
+                  <Space direction="vertical" size={2}>
+                    <Tag color={pf.color} style={{ marginInlineEnd: 0 }}>
+                      {pf.label}
+                    </Tag>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {v}
+                    </Typography.Text>
+                  </Space>
+                );
+              },
+            },
             {
               title: 'Trạng thái',
               dataIndex: 'status',
               width: 120,
               render: (v: AgentProposalStatus, r) => (
                 <Space direction="vertical" size={0}>
-                  <Tag color={STATUS_COLOR[v]}>{STATUS_TEXT[v] ?? v}</Tag>
+                  <Space size={4} wrap>
+                    <Tag color={STATUS_COLOR[v]}>{STATUS_TEXT[v] ?? v}</Tag>
+                    {isManualProposal(r) ? <Tag color="orange">Đăng tay</Tag> : null}
+                  </Space>
                   {r.lastError && v !== 'Approved' && (
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {r.lastError}
@@ -270,7 +441,21 @@ export function ContentAgentPage() {
                 </Space>
               ),
             },
-            { title: 'Lý do', dataIndex: 'reason', ellipsis: true, width: 140 },
+            {
+              title: 'Lý do',
+              dataIndex: 'reason',
+              width: 280,
+              render: (v: string) => (
+                <Tooltip title={v} placement="topLeft">
+                  <Typography.Text
+                    type="secondary"
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: 12 }}
+                  >
+                    {v}
+                  </Typography.Text>
+                </Tooltip>
+              ),
+            },
             {
               title: '',
               key: 'actions',
@@ -285,7 +470,15 @@ export function ContentAgentPage() {
                         description={`Sẽ đăng lên ${r.targetLabel} lúc ${vnTime(r.publishAt)}.`}
                         okText="Duyệt"
                         cancelText="Không"
-                        onConfirm={() => void act(r.id, () => approveAgentProposal(r.id), 'Đã duyệt, job đăng đã được tạo.')}
+                        onConfirm={() =>
+                          void act(
+                            r.id,
+                            () => approveAgentProposal(r.id),
+                            r.connectorType === 'facebook_page'
+                              ? 'Đã duyệt. Fanpage chưa có API thì lượt này nằm ở tab Đăng tay.'
+                              : 'Đã duyệt, job đăng đã được tạo.',
+                          )
+                        }
                       >
                         <Button size="small" type="primary" icon={<CheckOutlined />} loading={busyId === r.id}>
                           Duyệt

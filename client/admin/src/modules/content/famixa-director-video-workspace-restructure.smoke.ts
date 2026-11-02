@@ -168,7 +168,12 @@ ok(ws.includes('data-director-picture-cta') && ws.includes('Tạo hình mới'),
 ok(ctaSrc.includes("cmd.type === 'CONFIRM_MOTION'") && ws.includes('Tạo video'), 'T5f motion phase keeps Tạo video under preview');
 ok(series.includes('remakeStill') && series.includes('shotVoiceReadyForPicture') && series.includes('directorShotHasSpokenCopy'), 'T5f remake still is not blocked by missing session TTS');
 ok(series.includes('detachAvAfterPictureChange') && series.includes('kfSourceHash') && ws.includes('takeFromOtherPicture'), 'T6e new still detaches old Fal/take');
-ok(series.includes('loadKfPixels(shot.id)') && series.includes('startShotMotion'), 'T6e2 Tạo video hydrates new KF before send');
+ok(
+  series.includes('executeProductionOsAction') &&
+    series.includes('mayExecuteProductionAction') &&
+    ws.includes('applyProductionOsActionAuthority'),
+  'T6e2 Tạo video executes Production OS CREATE_VIDEO only when GET /actions available',
+);
 ok(series.includes('Video cũ không khớp ảnh mới') && series.includes('bindPictureHashOnRuns'), 'T6e3 Xem video does not open old final after remake');
 ok(
   takeFromOtherPicture({
@@ -261,7 +266,12 @@ ok(directorRecoveryOf(newPicLocked).status === 'RETRY_LOCKED', 'T6k locked after
 ok(directorPrimaryCta(newPicLocked).action === 'motion' && directorPrimaryCta(newPicLocked).label === 'Tạo video', 'T6k locked primary is Tạo video');
 ok(ws.includes('desk.primary.action') && ws.includes('Tạo video'), 'T6k preview Tạo video always sends motion');
 ok(ws.includes('data-motion-busy') && ctaSrc.includes('Video hiện tại không còn khớp hình') && ws.includes('data-picture-pending'), 'T6k3 preview explains missing / hidden take');
-ok(series.includes('startShotMotion') && series.includes('forceNew: true') && series.includes('CONFIRM & GENERATE') && series.includes('Job mới FAIL'), 'T6k2 Tạo video Confirms a new job, does not resume/recover');
+ok(
+  series.includes('createProductionVideo') &&
+    series.includes('CREATE_VIDEO trên Production OS') &&
+    series.includes('startShotMotion'),
+  'T6k2 Tạo video is Production OS CREATE_VIDEO, not turbo resume',
+);
 ok(stateSrc.includes('promptUsedOnCurrentKf') && series.includes('promptUsedOnCurrentKf'), 'T6l used prompt hashes skip SAME REQUEST on current KF only');
 ok(series.includes('Hết lệch camera trên ảnh này') && series.includes('startShotMotion'), 'T6l exhausted cameras ask for new still');
 const camerasOut = { ...newPicLocked, camerasExhausted: true };
@@ -295,7 +305,7 @@ const qaReady = snap({
   shotQa: { action: true, continuity: true, voiceFace: true },
 });
 ok(nextShotProductionCommand(qaReady).type === 'CONFIRM_LIPSYNC', 'T7 lipsync command');
-ok(directorPrimaryCta(qaReady).label === 'Lồng tiếng', 'T7 Lồng tiếng');
+ok(directorPrimaryCta(qaReady).label === 'Khớp môi', 'T7 Khớp môi');
 
 const lipReady = snap({
   status: 'reviewed',
@@ -327,7 +337,7 @@ ok(nextShotProductionCommand(remadePic).type === 'CONFIRM_MOTION', 'T8b new pict
 ok(directorPrimaryCta(remadePic).action === 'motion' && directorPrimaryCta(remadePic).label === 'Tạo video', 'T8b CTA Tạo video');
 ok(directorRecoveryOf(remadePic).message.includes('Hình mới đã duyệt'), 'T8b picture-changed copy');
 ok(directorPrimaryCta(lipReady).label === 'Hoàn thiện Shot', 'T8 Hoàn thiện is not a desk');
-ok(ws.includes("cmd.type !== 'ENSURE_MIX'") && ws.includes('onEnsureMix'), 'T8 mix is internal on Bàn Shot');
+ok(ws.includes("action === 'mix'") && ws.includes('void onEnsureMix(shotId)'), 'T8 mix is internal on Bàn Shot');
 ok(!SERIES_DIRECTOR_TABS.some((t) => t.label === 'Hoàn thiện'), 'T8 no Hoàn thiện tab');
 
 const mixReadyNoQuality = {
@@ -417,7 +427,7 @@ ok(storyDesk.includes('Khóa chuyện') || storyDesk.includes('storyAction.cta')
 ok(orch.includes('export function nextShotProductionCommand'), 'no new orchestrator');
 ok(!ws.includes('generateSceneKf') && !preview.includes('startSceneTurbo'), 'no provider calls in shot UI');
 ok(DIRECTOR_SHOT_COMMAND_LABEL.CONFIRM_MOTION === 'Tạo video', 'CTA map motion');
-ok(DIRECTOR_SHOT_COMMAND_LABEL.CONFIRM_LIPSYNC === 'Lồng tiếng', 'CTA map lipsync');
+ok(DIRECTOR_SHOT_COMMAND_LABEL.CONFIRM_LIPSYNC === 'Khớp môi', 'CTA map lipsync');
 ok(DIRECTOR_SHOT_COMMAND_LABEL.ENSURE_MIX === 'Hoàn thiện Shot', 'CTA map mix');
 
 if (fail.length) {

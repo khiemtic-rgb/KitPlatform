@@ -1,46 +1,38 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Alert, App, Button, Card, Col, Progress, Row, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Link } from 'react-router-dom';
+import { Alert, Button, Card, Col, Row, Space, Spin, Tag, Typography } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   ExclamationCircleOutlined,
   FileTextOutlined,
-  PlusOutlined,
-  ReadOutlined,
   ReloadOutlined,
-  ThunderboltOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   fetchContentOps,
   fetchContentPackages,
   fetchContentTopics,
   fetchContentEpisodesNeedContent,
-  runContentPublishJob,
   type ContentCalendarItem,
-  type ContentOpsFailedPublish,
   type ContentOpsSnapshot,
   type ContentPackage,
   type ContentTopic,
-  type ContentWorkJob,
   type EpisodeNeedContent,
 } from '@/shared/api/content.api';
-import { brandColor, channelLabel, fitMark } from './content-brand';
+import { channelLabel } from './content-brand';
 import {
   episodeSequenceLabel,
-  formatCompactLineage,
   packageForTopic,
   qualityGateLabel,
   useTopicLineageIndex,
   type TopicSeriesLineage,
 } from './content-lineage';
 import { PublishJobStatusTag, StatusTag, connectorLabel } from './ContentTopicsPage';
-
-dayjs.extend(isoWeek);
+import { fetchAgentProposals, type AgentProposal } from '@/shared/api/content-agent.api';
+import { useContentBrand } from './content-brand-context';
+import { ContentPageHeader } from './ContentPageHeader';
 
 function LineageLine({
   lineageIndex,
@@ -102,17 +94,7 @@ const CONNECTOR_LABEL: Record<string, string> = {
   wordpress: 'WordPress',
 };
 
-function money(n: number) {
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-}
-
-function weekDays() {
-  const start = dayjs().startOf('isoWeek');
-  return Array.from({ length: 7 }, (_, i) => start.add(i, 'day'));
-}
-
 export function ContentOpsPage() {
-  const navigate = useNavigate();
   const [data, setData] = useState<ContentOpsSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,10 +102,16 @@ export function ContentOpsPage() {
   const [topics, setTopics] = useState<ContentTopic[]>([]);
   const [episodesNeedContent, setEpisodesNeedContent] = useState<EpisodeNeedContent[]>([]);
   const [packages, setPackages] = useState<ContentPackage[]>([]);
+  const [proposals, setProposals] = useState<AgentProposal[]>([]);
+  const workspace = useContentBrand();
+  const brandId = workspace.brandId;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      void fetchAgentProposals({ brand: brandId })
+        .then(setProposals)
+        .catch(() => setProposals([]));
       const [opsData, reviewData, approvedData, episodesData, packageRows] = await Promise.all([
         fetchContentOps(),
         fetchContentTopics({ status: 'Review' }),
@@ -141,7 +129,7 @@ export function ContentOpsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [brandId]);
 
   useEffect(() => {
     void load();
@@ -185,11 +173,32 @@ export function ContentOpsPage() {
   const spendPct =
     s && s.monthCeilingUsd > 0 ? Math.min(100, Math.round((s.monthSpendUsd / s.monthCeilingUsd) * 100)) : 0;
 
+  // Chọn một thương hiệu ở đầu trang thì chỉ hiện bài của thương hiệu đó.
+  const scopedTopics = brandId ? topics.filter((t) => t.brandId === brandId) : topics;
   // Queue: Chờ duyệt (Review)
-  const reviewTopics = topics.filter((t) => t.status === 'Review');
+  const reviewTopics = scopedTopics.filter((t) => t.status === 'Review');
   
   // Queue: Đã duyệt (Approved)
-  const approvedTopics = topics.filter((t) => t.status === 'Approved');
+  const approvedTopics = scopedTopics.filter((t) => t.status === 'Approved');
+
+  // Lịch đăng của Agent: đề xuất chờ duyệt và lượt đã duyệt trong 7 ngày tới (gồm video từ Video Studio).
+  // Hôm nay đã có ở thẻ "Lịch hôm nay", nên thẻ này bắt đầu từ ngày mai.
+  const fromMs = dayjs().add(1, 'day').startOf('day').valueOf();
+  const pendingProposals = proposals.filter((p) => p.status === 'Proposed');
+  const todayEndMs = dayjs().endOf('day').valueOf();
+  const manualToday = proposals.filter(
+    (p) => p.status === 'Approved' && !p.publishJobId && new Date(p.publishAt).getTime() <= todayEndMs,
+  );
+  const upcoming = proposals
+    .filter((p) => p.status === 'Approved' && new Date(p.publishAt).getTime() >= fromMs && new Date(p.publishAt).getTime() < fromMs + 7 * 86_400_000)
+    .sort((a, b) => a.publishAt.localeCompare(b.publishAt));
+  const calendarLink = (tab?: string) => {
+    const q = new URLSearchParams();
+    if (tab) q.set('tab', tab);
+    if (brandId) q.set('brand', brandId);
+    const qs = q.toString();
+    return qs ? `/content/calendar?${qs}` : '/content/calendar';
+  };
   
   // Queue: Lịch hôm nay (Today's schedule)
   const today = dayjs().format('YYYY-MM-DD');
@@ -202,29 +211,20 @@ export function ContentOpsPage() {
 
   return (
     <div className="content-desk">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Hôm nay
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ margin: '6px 0 0' }}>
-            Bàn điều hành sản xuất nội dung. Episode → Content → Publish.
-          </Typography.Paragraph>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
-          <Link to="/content/article-series">
-            <Button type="primary" icon={<ReadOutlined />}>
-              Series
+      <ContentPageHeader
+        title="Tổng quan"
+        description="Việc cần làm hôm nay: viết, duyệt, lên lịch, xử lý lỗi."
+        extra={
+          <>
+            <Link to={calendarLink()}>
+              <Button icon={<CalendarOutlined />}>Lịch đăng</Button>
+            </Link>
+            <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
+              Tải lại
             </Button>
-          </Link>
-          <Link to="/content/calendar">
-            <Button icon={<CalendarOutlined />}>Lịch</Button>
-          </Link>
-          <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
-            Tải lại
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
 
@@ -502,6 +502,44 @@ export function ContentOpsPage() {
         </Col>
       </Row>
 
+      {/* Lịch đăng của Agent */}
+      <Card
+        size="small"
+        title={<><CalendarOutlined style={{ marginRight: 8, color: '#13c2c2' }} />Sắp đăng 7 ngày tới, từ ngày mai ({upcoming.length})</>}
+        extra={
+          <Space size={12}>
+            {manualToday.length ? (
+              <Link to={calendarLink('dangtay')}>
+                <Tag color="orange" style={{ marginInlineEnd: 0 }}>{manualToday.length} lượt đăng tay hôm nay</Tag>
+              </Link>
+            ) : null}
+            {pendingProposals.length ? (
+              <Link to={calendarLink('duyet')}>{pendingProposals.length} đề xuất chờ duyệt</Link>
+            ) : null}
+            <Link to={calendarLink()}>Xem lịch</Link>
+          </Space>
+        }
+        style={{ marginBottom: 16 }}
+      >
+        {upcoming.length === 0 ? (
+          <Typography.Text type="secondary">Chưa có lượt đăng nào đã duyệt trong 7 ngày tới.</Typography.Text>
+        ) : (
+          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+            {upcoming.slice(0, 8).map((p) => (
+              <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <Typography.Text type="secondary" style={{ minWidth: 120 }}>
+                  {dayjs(p.publishAt).format('ddd DD/MM HH:mm')}
+                </Typography.Text>
+                <Tag>{p.targetLabel}</Tag>
+                {!p.publishJobId ? <Tag color="orange">Đăng tay</Tag> : null}
+                <Link to={`/content/topics/${p.topicId}`}>{p.title}</Link>
+              </div>
+            ))}
+            {upcoming.length > 8 ? <Link to={calendarLink('duyet')}>Xem thêm {upcoming.length - 8} lượt</Link> : null}
+          </Space>
+        )}
+      </Card>
+
       {/* System Alerts */}
       {s && !s.facebookAppConfigured ? (
         <Alert
@@ -511,7 +549,7 @@ export function ContentOpsPage() {
           message="Chưa gắn Facebook App — không Kết nối lại được Fanpage"
           description="Model AI → Facebook: dán App ID + App Secret (app Novixa Healthcare Platform), Redirect URI trùng Meta, rồi Lưu + Test."
           action={
-            <Link to="/content/ai#facebook">
+            <Link to="/content/ai-text#facebook">
               <Button size="small" type="primary">
                 Mở Facebook App
               </Button>

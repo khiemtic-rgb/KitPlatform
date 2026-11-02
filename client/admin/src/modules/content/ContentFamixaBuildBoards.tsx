@@ -502,6 +502,8 @@ export function ContentFamixaBuildSceneList({
   onSaveCharacters,
   onCreateImage,
   creating,
+  useFamixaSet,
+  characterScope,
 }: {
   shots: FamixaSeriesShot[];
   runOf: (id: string) => SeriesShotRun;
@@ -513,9 +515,13 @@ export function ContentFamixaBuildSceneList({
   onSaveCharacters?: (sceneId: string, characterIds: string[]) => void;
   onCreateImage?: (shotId: string) => void;
   creating?: boolean;
+  useFamixaSet?: boolean;
+  characterScope?: { seriesCode?: string | null; workflowKey?: string | null; filmTypeId?: string | null } | null;
 }) {
   return (
     <ContentFamixaSceneWorkspace
+      useFamixaSet={useFamixaSet}
+      characterScope={characterScope}
       shots={shots}
       runOf={runOf}
       scenes={scenes}

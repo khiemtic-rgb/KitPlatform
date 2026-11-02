@@ -29,7 +29,8 @@ import { formatAssetLine } from './kit-video-asset';
 import { compileStoryGraph, formatContinuityBoard, KIT_VIDEO_CONTINUITY } from './kit-video-continuity';
 import { formatShotBoard, KIT_VIDEO_ENGINE } from './kit-video-engine';
 import { formatVisionBoard, KIT_VIDEO_VISION } from './kit-video-vision';
-import { FAMIXA_PROJECT, FAMIXA_UNIVERSE } from './kit-video-famixa-adapter';
+import { resolveStudioProject } from './kit-video-famixa-adapter';
+import { useContentBrand } from './content-brand-context';
 import { FAMIXA_VISUAL_STYLE, famixaGoldenContract, formatPixelBoard, KIT_VIDEO_PIXEL } from './kit-video-pixel';
 import { famixaGoldenMotion, formatMotionBoard, KIT_VIDEO_MOTION } from './kit-video-motion';
 
@@ -37,6 +38,7 @@ const DEMO_SCRIPT =
   'Minh chạy vào phòng khách, trên tay cầm bài kiểm tra. Cậu bé vui vẻ đưa bài cho mẹ và nói: “Mẹ ơi, con được 9 điểm!”';
 
 export function ContentKitVideoEngineCard() {
+  const workspace = useContentBrand();
   const [projects, setProjects] = useState<KitVideoProjectRow[]>([]);
   const [productions, setProductions] = useState<KitVideoProductionRow[]>([]);
   const [assets, setAssets] = useState<KitVideoAssetRow[]>([]);
@@ -68,12 +70,16 @@ export function ContentKitVideoEngineCard() {
     Promise.all([
       fetchKitVideoProjects(),
       fetchKitVideoProductions(),
-      fetchKitVideoAssets(FAMIXA_PROJECT),
       fetchKitVideoVisualProvider().catch(() => undefined),
     ])
-      .then(([p, prod, a, prov]) => {
+      .then(([p, prod, prov]) => {
         setProjects(p);
         setProductions(prod);
+        const bound = p.find(
+          (row) => row.brandId && row.filmTypeId && row.brandId === workspace.brandId && row.filmTypeId === workspace.filmId,
+        );
+        const target = resolveStudioProject(bound ?? null);
+        return fetchKitVideoAssets(target.projectCode).then((a) => {
         setAssets(a);
         if (prov) setProvider(prov);
         setError(undefined);
@@ -84,13 +90,14 @@ export function ContentKitVideoEngineCard() {
             .catch(() => setStory(undefined));
         }
         setStory(undefined);
+        });
       })
       .catch((e) => setError(apiErrorMessage(e, 'Video Engine chưa sẵn (mig 339).')));
   };
 
   useEffect(() => {
     load();
-  }, []);
+  }, [workspace.brandId, workspace.filmId]);
 
   useEffect(() => {
     if (!pixel?.attemptId || !pixel.imagePath) {
@@ -111,9 +118,13 @@ export function ContentKitVideoEngineCard() {
 
   const attachEp01 = () => {
     setBusy(true);
+    const bound = projects.find(
+      (row) => row.brandId && row.filmTypeId && row.brandId === workspace.brandId && row.filmTypeId === workspace.filmId,
+    );
+    const target = resolveStudioProject(bound ?? null);
     void ensureKitVideoProduction({
-      projectCode: FAMIXA_PROJECT,
-      universeCode: FAMIXA_UNIVERSE,
+      projectCode: target.projectCode,
+      universeCode: target.universeCode,
       productionCode: 'EP01',
       title: 'Famixa EP01',
     })

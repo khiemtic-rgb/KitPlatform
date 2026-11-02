@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Alert, Button, Card, Checkbox, Input, Select, Space, Typography } from 'antd';
+import { Alert, Button, Checkbox, Segmented, Select, Space, Tag, Typography } from 'antd';
 import {
   fetchContentSeriesVoicePreview,
   fetchContentSeriesVoices,
@@ -17,6 +17,7 @@ import {
   adoptNovixaStatus,
   applyNovixaMotion,
   mergeNovixaStills,
+  describeClientError,
   novixaClientOutcome,
   novixaInputKey,
   novixaStillBrandStale,
@@ -27,6 +28,7 @@ import {
   type NovixaMotionRun,
   type NovixaStill,
 } from './film-production-orchestrator';
+import type { ScriptScene } from './novixa-shorts';
 
 function folderOf(path?: string | null) {
   const parts = (path || '').split(/[/\\]/).filter(Boolean);
@@ -59,17 +61,21 @@ export function ContentNovixaStages({
   steps,
   onCommit,
   brand,
+  section = 'pictures',
+  scenes = [],
 }: {
   buildId: string;
   state: SeriesPilotState;
   steps: string[];
   onCommit: (next: SeriesPilotState) => void;
   brand?: NovixaBrandProfile | null;
+  /** Bước 2 (Hình) hay bước 3 (Giọng & video). Cùng một component để giữ ảnh và tác vụ khi đổi bước. */
+  section?: 'pictures' | 'video';
+  scenes?: ScriptScene[];
 }) {
   const stills = state.filmOrchestration?.stills ?? [];
   const voice = state.filmOrchestration?.voiceChoice;
   const motion = state.filmOrchestration?.motion;
-  const gate = novixaVideoGate(state);
   const [busy, setBusy] = useState('');
   const [pictures, setPictures] = useState<Record<number, string>>({});
   const [pictureKey, setPictureKey] = useState<Record<number, string>>({});
@@ -83,11 +89,20 @@ export function ContentNovixaStages({
   const voiceSettings = brandVoice && selectedVoiceId === brandVoice.voiceId
     ? { stability: brandVoice.stability, similarityBoost: brandVoice.similarityBoost, style: brandVoice.style, speed: brandVoice.speed }
     : null;
+  const [changingVoice, setChangingVoice] = useState(false);
+  // Giọng thương hiệu đã cố định: dùng luôn, không bắt xác nhận lại cho từng phim.
+  const withBrandVoice = (next: SeriesPilotState): SeriesPilotState => {
+    const film = next.filmOrchestration;
+    if (!brandVoice?.voiceId || !film || film.voiceChoice?.voiceId) return next;
+    return { ...next, filmOrchestration: { ...film, voiceChoice: { model: NOVIXA_VOICE.model, voiceId: brandVoice.voiceId, approved: true, previewPath: null } } };
+  };
+  const gate = novixaVideoGate(withBrandVoice(state));
   const loaded = useRef(false);
   const playerRef = useRef<HTMLDivElement>(null);
   const stillKey = stills.map((item) => `${item.index}:${item.path}`).join('|');
 
-  const save = (next: SeriesPilotState) => {
+  const save = (raw: SeriesPilotState) => {
+    const next = withBrandVoice(raw);
     const currentMotion = next.filmOrchestration?.motion;
     onCommit(currentMotion ? applyNovixaMotion(next, steps, currentMotion) : next);
   };
@@ -129,8 +144,18 @@ export function ContentNovixaStages({
         videoPath: remote.videoPath,
         phase: remote.phase,
       };
+      // Máy chủ trả bản dựng mới nhất của phim, không phân biệt khung ngang/dọc.
+      // Chỉ nhận khi bản này đang chờ một tác vụ, hoặc phim cũ chưa từng tách hai khung.
+      const film = state.filmOrchestration;
+      const legacy = !film?.stillOrientation && !film?.shelf;
+      const waiting = motion?.status === 'running';
+      // Video đã dựng xong trên máy nhưng trang này chưa ghi nhận (hết thời gian chờ, tải lại trang): nhận lại nếu đúng khung hiện tại.
+      const shape = /^(\d+)x(\d+)$/.exec(remote.format ?? '');
+      const sameShape = Boolean(shape) && (Number(shape![1]) > Number(shape![2]) ? 'wide' : 'tall') === orientation;
+      const finished = remote.status === 'ready' && Boolean(remote.videoPath) && motion?.status !== 'ready' && sameShape;
+      if (!waiting && !legacy && !finished) return;
       const remoteStills = (remote.stills ?? []).map((item) => ({ ...item, approved: false }));
-      adopt(incoming, remoteStills.length ? mergeNovixaStills(stills, remoteStills) : undefined);
+      adopt(incoming, legacy && !finished && remoteStills.length ? mergeNovixaStills(stills, remoteStills) : undefined);
     }).catch(() => undefined);
     return () => {
       cancelled = true;
@@ -192,6 +217,31 @@ export function ContentNovixaStages({
   const lines = fromScript.length ? fromScript : stills.map((item) => item.text);
   // Bộ ảnh đang hiển thị có hướng riêng. Chưa có ảnh: video dài (từ 12 câu) mặc định ngang 16:9, còn lại dọc 9:16.
   const orientation: 'wide' | 'tall' = state.filmOrchestration?.stillOrientation ?? (stills.length ? 'tall' : lines.length >= 12 ? 'wide' : 'tall');
+
+  // Video đã dựng xong trên máy nhưng trang chưa ghi nhận (hết thời gian chờ, tải lại trang): nhận lại.
+  // Chạy lại khi dữ liệu phim đã nạp xong hoặc đổi khung; không huỷ giữa chừng (StrictMode mount hai lần).
+  const recoveredKey = useRef('');
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const hydrated = Boolean(state.filmOrchestration);
+  useEffect(() => {
+    if (!hydrated || motion?.status === 'ready' || motion?.status === 'running') return;
+    const key = `${buildId}:${orientation}`;
+    if (recoveredKey.current === key) return;
+    recoveredKey.current = key;
+    void fetchNovixaMotion(buildId).then((remote) => {
+      if (!mounted.current || !remote || remote.status !== 'ready' || !remote.videoPath) return;
+      const shape = /^(\d+)x(\d+)$/.exec(remote.format ?? '');
+      if (!shape || (Number(shape[1]) > Number(shape[2]) ? 'wide' : 'tall') !== orientation) return;
+      adopt({ status: 'ready', message: remote.message, folder: remote.folder, videoPath: remote.videoPath, phase: remote.phase });
+    }).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildId, orientation, hydrated, motion?.status]);
   const shelf = state.filmOrchestration?.shelf;
   const nameOf = (value: 'wide' | 'tall') => (value === 'wide' ? 'ngang' : 'dọc');
 
@@ -233,11 +283,11 @@ export function ContentNovixaStages({
         return;
       }
       if (phase === 'video' && extra?.resumeOnly) {
-        setNote(novixaVideoCurrent(state) ? 'Video đã có. Không tạo lượt giọng mới.' : 'Ảnh hoặc giọng đã đổi. Bấm Tạo video để dựng lại.');
+        setNote(novixaVideoCurrent(withBrandVoice(state)) ? 'Video đã có. Không tạo lượt giọng mới.' : 'Ảnh hoặc giọng đã đổi. Bấm Tạo video để dựng lại.');
         return;
       }
       const readyVideo = Boolean(motion?.status === 'ready' && motion.videoPath);
-      const sameTake = novixaVideoCurrent(state) || (readyVideo && !motion?.inputKey);
+      const sameTake = novixaVideoCurrent(withBrandVoice(state)) || (readyVideo && !motion?.inputKey);
       if (phase === 'video' && readyVideo && !extra?.force && (sameTake || gate)) {
         setNote('Video đã có. Không cần tạo lại ảnh, không tạo lượt giọng mới.');
         playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -250,6 +300,12 @@ export function ContentNovixaStages({
     }
     const redrawOne = extra?.redrawIndex != null;
     setBusy(redrawOne ? `still-${extra.redrawIndex}` : phase);
+    // Bản đã dựng (hướng kia, hoặc lần trước của hướng này) cùng giọng và cùng lời: dùng lại giọng, không gọi ElevenLabs lần nữa.
+    // Máy chủ kiểm tra lại lời, giọng và thông số giọng trước khi dùng.
+    const voicePrefix = `${selectedVoiceId}\n${jobLines.join('\n')}\n`;
+    const reuseFolder = phase === 'video'
+      ? [shelf?.motion, motion].find((run) => run?.status === 'ready' && run.folder && run.inputKey?.startsWith(voicePrefix))?.folder ?? null
+      : null;
     try {
       const result = await renderNovixaStockMotion({
         buildId,
@@ -264,6 +320,7 @@ export function ContentNovixaStages({
         variant: extra?.variant,
         orientation,
         force: extra?.force,
+        reuseFolder,
         brand,
       });
       if (phase === 'stills' && result.stills) {
@@ -285,7 +342,7 @@ export function ContentNovixaStages({
         inputKey: result.status === 'ready' ? novixaInputKey(jobLines, selectedVoiceId, stills.map((item) => item.path)) : undefined,
       });
     } catch (error) {
-      const outcome = novixaClientOutcome(axios.isAxiosError(error) ? error.code : undefined);
+      const outcome = novixaClientOutcome(axios.isAxiosError(error) ? error.code : undefined, describeClientError(error));
       adopt(outcome);
     } finally {
       setBusy('');
@@ -314,136 +371,235 @@ export function ContentNovixaStages({
     }
   };
 
-  return (
-    <Card size="small" title="Ảnh, giọng, video" style={{ marginTop: 12 }}>
-      <Space direction="vertical" size={12} style={{ width: '100%' }}>
-        {note ? <Alert type={motion?.status === 'ready' && motion.videoPath ? 'success' : motion?.status === 'running' ? 'info' : 'warning'} showIcon message={note} /> : null}
-        {motion?.status === 'ready' && motion.videoPath ? (
-          <div ref={playerRef}>
-            {videoUrl ? <video controls src={videoUrl} style={{ width: orientation === 'wide' ? 'min(640px, 100%)' : 'min(360px, 100%)' }} /> : <Typography.Text>Đang mở video đã dựng.</Typography.Text>}
+  const total = lines.length;
+  const approvedCount = stills.filter((item) => item.approved).length;
+  const needsWide = total >= 12;
+  const sideCount = (side: 'wide' | 'tall') => {
+    const rows = side === orientation ? stills : shelf?.orientation === side ? shelf.stills : [];
+    return rows.filter((item) => item.approved).length;
+  };
+  const sideRun = (side: 'wide' | 'tall') => (side === orientation ? motion : shelf?.orientation === side ? shelf.motion : undefined);
+  const groups = (scenes.length ? scenes : [{ n: 0, title: '', from: 0, to: Math.max(0, total - 1) }]).map((scene) => ({
+    scene,
+    cards: pictureCards(stills.filter((item) => item.index >= scene.from && item.index <= scene.to), pictureKey),
+  })).filter((group) => group.cards.length > 0);
+  const busyAny = Boolean(busy);
+  const noteBox = note ? <Alert type={motion?.status === 'ready' && motion.videoPath ? 'success' : motion?.status === 'running' ? 'info' : 'warning'} showIcon message={note} /> : null;
+
+  if (section === 'pictures') {
+    return (
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+          <div>
+            <Typography.Title level={4} style={{ margin: 0 }}>2. Hình</Typography.Title>
+            <Typography.Text type="secondary">Mỗi câu một ảnh, vẽ trên máy, không tốn tiền. Chữ lấy từ kịch bản; sửa chữ thì quay lại bước 1.</Typography.Text>
           </div>
-        ) : null}
-        <Space wrap>
-          <Select
-            size="middle"
-            style={{ width: 170 }}
-            value={orientation}
-            disabled={Boolean(busy)}
-            onChange={(value) => switchOrientation(value)}
-            options={[{ value: 'tall', label: 'Dọc 9:16 (video ngắn)' }, { value: 'wide', label: 'Ngang 16:9 (video dài)' }]}
-          />
-          {shelf && shelf.stills.length ? <Typography.Text type="secondary">Đã cất {shelf.stills.length} ảnh {nameOf(shelf.orientation)}</Typography.Text> : null}
-          <Button
-            type="primary"
-            loading={busy === 'stills'}
-            disabled={!lines.length || busy.startsWith('still-') || busy.startsWith('gemini-')}
-            onClick={() => void run('stills', stills.length ? { variant: (Date.now() % 997) + 1 } : undefined)}
-          >{stills.length ? 'Tạo lại tất cả' : 'Tạo ảnh'}</Button>
-          <Button disabled={!stills.length} onClick={() => {
-            save({
-              ...state,
-              filmOrchestration: state.filmOrchestration
-                ? { ...state.filmOrchestration, stills: stills.map((item) => ({ ...item, approved: true })) }
-                : state.filmOrchestration,
-            });
-            setNote(`Đã duyệt ${stills.length} ảnh.`);
-          }}>Duyệt tất cả ảnh</Button>
-        </Space>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-          {pictureCards(stills, pictureKey).map((group) => {
-            const still = group[0];
-            return (
-            <article key={still.id} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 8, minWidth: 0 }}>
-              {busy === 'stills' || busy === `still-${still.index}` ? <Typography.Text type="secondary">{busy === 'stills' ? 'Đang vẽ lại tất cả' : 'Đang vẽ lại ảnh này'}</Typography.Text> : pictures[still.index] ? <img src={pictures[still.index]} alt={still.text} style={{ width: '100%', borderRadius: 6 }} /> : <Typography.Text type="secondary">Đang tải ảnh</Typography.Text>}
-              {novixaStillBrandStale(still, brand?.id || '') ? <Typography.Text type="warning">Ảnh chưa theo thương hiệu hiện tại. Bấm Tạo lại ảnh. Ảnh đã duyệt không bị thay.</Typography.Text> : null}
-              {group.map((item) => (
-                <Input.TextArea
-                  key={item.id}
-                  style={{ marginTop: 8 }}
-                  value={item.text}
-                  autoSize
-                  onChange={(event) => {
-                    const text = event.target.value;
+          {needsWide || orientation === 'wide' ? (
+            <Segmented
+              value={orientation}
+              disabled={busyAny}
+              onChange={(value) => switchOrientation(value as 'wide' | 'tall')}
+              options={[
+                { value: 'wide', label: `Ngang · YouTube · ${sideCount('wide')}/${total}` },
+                { value: 'tall', label: `Dọc · TikTok, Short · ${sideCount('tall')}/${total}` },
+              ]}
+            />
+          ) : null}
+        </div>
+        {noteBox}
+        {!stills.length ? (
+          <div style={{ border: '1px dashed #b9c3d0', borderRadius: 12, padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+            <Typography.Title level={5} style={{ margin: 0 }}>Chưa có ảnh {nameOf(orientation)} {orientation === 'wide' ? '16:9' : '9:16'}</Typography.Title>
+            <Typography.Text type="secondary">
+              {orientation === 'wide' ? 'Bản ngang dùng cho YouTube.' : 'Bản dọc dùng cho TikTok và video ngắn.'}
+              {shelf?.stills.length ? ` Bộ ảnh ${nameOf(shelf.orientation)} được giữ nguyên.` : ''}
+            </Typography.Text>
+            <Button type="primary" loading={busy === 'stills'} disabled={!total || busyAny} onClick={() => void run('stills')}>
+              Tạo {total} ảnh {nameOf(orientation)}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
+              <Typography.Text type={approvedCount === stills.length ? 'success' : undefined}>
+                Đã duyệt {approvedCount}/{stills.length} ảnh {nameOf(orientation)}
+                {stills.length < total ? ` · còn ${total - stills.length} câu chưa có ảnh` : ''}
+              </Typography.Text>
+              <Space wrap>
+                {stills.length < total ? (
+                  <Button loading={busy === 'stills'} disabled={busyAny} onClick={() => void run('stills')}>Vẽ câu còn thiếu</Button>
+                ) : null}
+                <Button
+                  loading={busy === 'stills'}
+                  disabled={busyAny}
+                  onClick={() => void run('stills', { variant: (Date.now() % 997) + 1 })}
+                >Vẽ lại tất cả</Button>
+                <Button
+                  type={approvedCount < stills.length ? 'primary' : 'default'}
+                  disabled={approvedCount === stills.length}
+                  onClick={() => {
                     save({
                       ...state,
                       filmOrchestration: state.filmOrchestration
-                        ? { ...state.filmOrchestration, stills: stills.map((row) => row.index === item.index ? { ...row, text, approved: false } : row) }
+                        ? { ...state.filmOrchestration, stills: stills.map((item) => ({ ...item, approved: true })) }
                         : state.filmOrchestration,
                     });
+                    setNote(`Đã duyệt ${stills.length} ảnh.`);
                   }}
-                />
-              ))}
-              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-                <Checkbox
-                  checked={group.every((item) => item.approved)}
-                  onChange={(event) => save({
-                    ...state,
-                    filmOrchestration: state.filmOrchestration
-                      ? { ...state.filmOrchestration, stills: stills.map((item) => group.some((row) => row.index === item.index) ? { ...item, approved: event.target.checked } : item) }
-                      : state.filmOrchestration,
+                >Duyệt tất cả</Button>
+              </Space>
+            </Space>
+            {groups.map(({ scene, cards }) => (
+              <div key={`${scene.n}-${scene.from}`} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {scene.n > 0 ? (
+                  <Typography.Text strong style={{ color: '#4a5565' }}>
+                    Cảnh {scene.n}{scene.title ? ` · ${scene.title}` : ''} · câu {scene.from + 1}–{scene.to + 1}
+                  </Typography.Text>
+                ) : null}
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${orientation === 'wide' ? 240 : 160}px, 1fr))`, gap: 12 }}>
+                  {cards.map((group) => {
+                    const still = group[0];
+                    const approved = group.every((item) => item.approved);
+                    return (
+                      <article key={still.id} style={{ border: `1px solid ${approved ? '#b8e3a6' : '#e5e7eb'}`, borderRadius: 8, padding: 8, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {busy === 'stills' || busy === `still-${still.index}`
+                          ? <Typography.Text type="secondary">{busy === 'stills' ? 'Đang vẽ' : 'Đang vẽ lại ảnh này'}</Typography.Text>
+                          : pictures[still.index]
+                            ? <img src={pictures[still.index]} alt={still.text} style={{ width: '100%', borderRadius: 6 }} />
+                            : <Typography.Text type="secondary">Đang tải ảnh</Typography.Text>}
+                        <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: 12 }} ellipsis={{ rows: 2, tooltip: group.map((item) => item.text).join(' ') }}>
+                          <strong>Câu {group.map((item) => item.index + 1).join(', ')}.</strong> {group.map((item) => item.text).join(' ')}
+                        </Typography.Paragraph>
+                        {novixaStillBrandStale(still, brand?.id || '') ? <Typography.Text type="warning" style={{ fontSize: 12 }}>Ảnh chưa theo thương hiệu hiện tại.</Typography.Text> : null}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                          <Checkbox
+                            checked={approved}
+                            onChange={(event) => save({
+                              ...state,
+                              filmOrchestration: state.filmOrchestration
+                                ? { ...state.filmOrchestration, stills: stills.map((item) => group.some((row) => row.index === item.index) ? { ...item, approved: event.target.checked } : item) }
+                                : state.filmOrchestration,
+                            })}
+                          >Duyệt</Checkbox>
+                          <Button size="small" loading={busy === `still-${still.index}`} disabled={busyAny && busy !== `still-${still.index}`} onClick={() => void run('stills', { redrawIndex: still.index, variant: (Date.now() % 997) + 1 })}>Vẽ lại</Button>
+                          <Button size="small" type="text" loading={busy === `gemini-${still.index}`} disabled={busyAny && busy !== `gemini-${still.index}`} onClick={() => void drawGemini(still)}>Gemini</Button>
+                        </div>
+                      </article>
+                    );
                   })}
-                >Duyệt</Checkbox>
-                <Button block size="small" loading={busy === `still-${still.index}`} disabled={Boolean(busy) && busy !== `still-${still.index}`} onClick={() => void run('stills', { redrawIndex: still.index, variant: (Date.now() % 997) + 1 })}>Tạo lại ảnh</Button>
-                <Button block size="small" loading={busy === `gemini-${still.index}`} disabled={Boolean(busy) && busy !== `gemini-${still.index}`} onClick={() => void drawGemini(still)}>Tạo ảnh Gemini</Button>
+                </div>
               </div>
-            </article>
-            );
-          })}
+            ))}
+          </>
+        )}
+      </Space>
+    );
+  }
+
+  const brandVoiceInUse = Boolean(brandVoice?.voiceId && selectedVoiceId === brandVoice.voiceId);
+  const voiceName = brandVoiceInUse
+    ? brandVoice?.voiceName || brandVoice?.voiceId
+    : voices.find((item) => item.voiceId === selectedVoiceId)?.name || (selectedVoiceId === NOVIXA_VOICE.voiceId ? NOVIXA_VOICE.label : selectedVoiceId);
+  const sides: Array<'wide' | 'tall'> = needsWide ? ['wide', 'tall'] : ['tall'];
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <div>
+        <Typography.Title level={4} style={{ margin: 0 }}>3. Giọng &amp; video</Typography.Title>
+        <Typography.Text type="secondary">Thu giọng một lần cho bản đầu tiên. Bản còn lại dùng lại đúng giọng đó, không gọi ElevenLabs lần nữa.</Typography.Text>
+      </div>
+      {noteBox}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, background: '#f8f9fb', borderRadius: 10, padding: '14px 16px' }}>
+        <div style={{ flex: '999 1 320px', minWidth: 0 }}>
+          <Typography.Text strong>{brandVoiceInUse ? 'Giọng thương hiệu' : 'Giọng riêng cho phim này'}: {voiceName}</Typography.Text>
+          <div>
+            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+              ElevenLabs {NOVIXA_VOICE.model}
+              {voiceSettings ? ` · ổn định ${voiceSettings.stability ?? 0.5} · tương đồng ${voiceSettings.similarityBoost ?? 0.85} · phong cách ${voiceSettings.style ?? 0} · tốc độ ${voiceSettings.speed ?? 1}` : ' · thông số mặc định'}
+            </Typography.Text>
+          </div>
         </div>
-        <Typography.Text>
-          Giọng ElevenLabs · {NOVIXA_VOICE.model}.{' '}
-          {brandVoice
-            ? `Mặc định là giọng của thương hiệu: ${brandVoice.voiceName || brandVoice.voiceId}${voiceSettings ? ` · độ ổn định ${voiceSettings.stability ?? 0.5} · tốc độ ${voiceSettings.speed ?? 1}` : ''}.`
-            : 'Mặc định là giọng đã kiểm thử. Đặt giọng cố định trong Thương hiệu → Giọng đọc.'}
-        </Typography.Text>
-        <Select
-          showSearch
-          style={{ minWidth: 320, maxWidth: '100%' }}
-          value={selectedVoiceId}
-          optionFilterProp="label"
-          options={[
-            ...(brandVoice?.voiceId && brandVoice.voiceId !== NOVIXA_VOICE.voiceId
-              ? [{ value: brandVoice.voiceId, label: `Giọng thương hiệu · ${brandVoice.voiceName || brandVoice.voiceId}` }]
-              : []),
-            { value: NOVIXA_VOICE.voiceId, label: `${NOVIXA_VOICE.label} · ${NOVIXA_VOICE.voiceId}` },
-            ...voices
-              .filter((item) => item.voiceId && item.voiceId !== NOVIXA_VOICE.voiceId && item.voiceId !== brandVoice?.voiceId)
-              .map((item) => ({ value: item.voiceId, label: item.name || item.voiceId })),
-          ]}
-          onChange={(voiceId: string) => save({
-            ...state,
-            filmOrchestration: state.filmOrchestration
-              ? { ...state.filmOrchestration, voiceChoice: { model: NOVIXA_VOICE.model, voiceId, approved: false, previewPath: null } }
-              : state.filmOrchestration,
-          })}
-        />
+        <Button
+          loading={busy === 'preview'}
+          onClick={() => {
+            setBusy('preview');
+            void fetchContentSeriesVoicePreview(selectedVoiceId)
+              .then((blob) => setPreviewUrl(URL.createObjectURL(blob)))
+              .catch(() => setNote('Giọng này chưa có file mẫu. Không tạo lượt đọc kịch bản.'))
+              .finally(() => setBusy(''));
+          }}
+        >Nghe thử</Button>
+        <Button type="link" onClick={() => setChangingVoice((value) => !value)}>{changingVoice ? 'Đóng' : 'Đổi giọng cho phim này'}</Button>
+      </div>
+      {previewUrl ? <audio controls src={previewUrl} /> : null}
+      {changingVoice ? (
         <Space wrap>
-          <Button
-            onClick={() => save({
+          <Select
+            showSearch
+            style={{ minWidth: 320, maxWidth: '100%' }}
+            value={selectedVoiceId}
+            optionFilterProp="label"
+            options={[
+              ...(brandVoice?.voiceId ? [{ value: brandVoice.voiceId, label: `Giọng thương hiệu · ${brandVoice.voiceName || brandVoice.voiceId}` }] : []),
+              ...(brandVoice?.voiceId === NOVIXA_VOICE.voiceId ? [] : [{ value: NOVIXA_VOICE.voiceId, label: `${NOVIXA_VOICE.label} · ${NOVIXA_VOICE.voiceId}` }]),
+              ...voices
+                .filter((item) => item.voiceId && item.voiceId !== NOVIXA_VOICE.voiceId && item.voiceId !== brandVoice?.voiceId)
+                .map((item) => ({ value: item.voiceId, label: item.name || item.voiceId })),
+            ]}
+            onChange={(voiceId: string) => save({
               ...state,
               filmOrchestration: state.filmOrchestration
-                ? { ...state.filmOrchestration, voiceChoice: { model: NOVIXA_VOICE.model, voiceId: selectedVoiceId, approved: true, previewPath: voice?.previewPath } }
+                ? { ...state.filmOrchestration, voiceChoice: { model: NOVIXA_VOICE.model, voiceId, approved: true, previewPath: null } }
                 : state.filmOrchestration,
             })}
-          >{voice?.approved && voice.voiceId === selectedVoiceId ? 'Đã xác nhận giọng' : 'Xác nhận giọng'}</Button>
-          <Button
-            loading={busy === 'preview'}
-            onClick={() => {
-              setBusy('preview');
-              void fetchContentSeriesVoicePreview(selectedVoiceId)
-                .then((blob) => setPreviewUrl(URL.createObjectURL(blob)))
-                .catch(() => setNote('Giọng này chưa có file mẫu thư viện. Không tạo lượt đọc kịch bản.'))
-                .finally(() => setBusy(''));
-            }}
-          >Nghe thử</Button>
+          />
+          <Typography.Text type="secondary">Đổi giọng thì video phải dựng lại và thu giọng lượt mới.</Typography.Text>
         </Space>
-        {previewUrl ? <audio controls src={previewUrl} /> : null}
-        <Space wrap>
-          <Button type="primary" loading={busy === 'video'} onClick={() => void run('video')}>Tạo video</Button>
-          <Button loading={busy === 'video'} onClick={() => void run('video', { force: false, resumeOnly: true })}>Tiếp tục</Button>
-        </Space>
-        {gate ? <Typography.Text type="secondary">{gate}{motion?.status === 'ready' && motion.videoPath ? ' Video đã dựng vẫn xem được phía trên.' : ''}</Typography.Text> : null}
-      </Space>
-    </Card>
+      ) : null}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
+        {sides.map((side) => {
+          const current = side === orientation;
+          const sideRunNow = sideRun(side);
+          const ready = sideRunNow?.status === 'ready' && Boolean(sideRunNow.videoPath);
+          const other = side === 'wide' ? 'tall' : 'wide';
+          const otherReady = sideRun(other)?.status === 'ready';
+          return (
+            <article key={side} style={{ border: `1px solid ${ready ? '#b8e3a6' : '#e3e6eb'}`, borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <Typography.Title level={5} style={{ margin: 0 }}>Bản {nameOf(side)} {side === 'wide' ? '16:9' : '9:16'}</Typography.Title>
+                {ready ? <Tag color="green">Đã dựng</Tag> : sideRunNow?.status === 'running' ? <Tag color="blue">Đang dựng</Tag> : <Tag>Chưa dựng</Tag>}
+              </div>
+              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                {side === 'wide' ? 'Dùng cho YouTube.' : needsWide ? 'Dùng cho TikTok và video ngắn.' : 'Dùng cho TikTok, YouTube Shorts.'}
+                {!ready && otherReady ? ` Dùng lại giọng của bản ${nameOf(other)}, không thu lại.` : ''}
+              </Typography.Text>
+              {current ? (
+                <>
+                  {ready ? (
+                    <div ref={playerRef}>
+                      {videoUrl ? <video controls src={videoUrl} style={{ width: side === 'wide' ? '100%' : 'min(280px, 100%)', borderRadius: 8, background: '#000' }} /> : <Typography.Text type="secondary">Đang mở video đã dựng.</Typography.Text>}
+                    </div>
+                  ) : null}
+                  <Space wrap>
+                    {ready ? (
+                      <Button loading={busy === 'video'} disabled={busyAny} onClick={() => void run('video', { force: true })}>Dựng lại</Button>
+                    ) : (
+                      <Button type="primary" loading={busy === 'video'} disabled={Boolean(gate) || busyAny} onClick={() => void run('video')}>Dựng video {nameOf(side)}</Button>
+                    )}
+                  </Space>
+                  {!ready && gate ? <Typography.Text style={{ color: '#8a4b00', fontSize: 13 }}>{gate === 'Còn ảnh chưa duyệt.' || gate === 'Chưa có ảnh từ kịch bản.' ? `Cần duyệt đủ ảnh ${nameOf(side)} ở bước 2.` : gate}</Typography.Text> : null}
+                </>
+              ) : (
+                <Space wrap>
+                  <Button type={ready ? 'default' : 'primary'} disabled={busyAny} onClick={() => switchOrientation(side)}>
+                    {ready ? `Mở bản ${nameOf(side)}` : `Chuyển sang khung ${nameOf(side)}`}
+                  </Button>
+                  {!ready ? <Typography.Text type="secondary" style={{ fontSize: 13 }}>Ảnh {nameOf(side)}: {sideCount(side)}/{total} đã duyệt</Typography.Text> : null}
+                </Space>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </Space>
   );
 }

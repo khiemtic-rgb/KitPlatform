@@ -8,11 +8,11 @@ import { linesForShot } from '../content-famixa-dialogue-map';
 import { kfPixelsOf } from '../content-famixa-kf-store';
 import { shotRunOf, type FamixaSeriesShot, type SeriesPilotState, type SeriesShotRun } from '../content-famixa-series';
 import { editorialDurationOf, performanceDurationOf, providerDurationOf } from '../famixa-shot-production-timing';
+import { lipsyncBoundArtifactId } from '../famixa-lipsync-motion-authority';
 import { productionHash } from './ShotProductionFingerprint';
-import { computeInputFingerprints, voiceDurationSecOf } from './ShotProductionStamp';
+import { computeInputFingerprints } from './ShotProductionStamp';
 import { shotProductionIntentOf } from './ShotProductionIntent';
 import {
-  acceptedTakeOf,
   lastSuccessTakeOf,
   motionAttemptStatusOf,
   playableMotionTakeOf,
@@ -61,7 +61,7 @@ export type FrozenMotionInput = {
   promptHash: string;
   visualContractHash?: string;
   timingHash: string;
-  provider: 'runway' | 'wan';
+  provider: 'runway' | 'wan' | 'google';
   providerDuration: 5 | 10;
   /** HOW metadata. Not hashed into executionFingerprint. */
   providerStamp?: string;
@@ -77,7 +77,10 @@ export type FrozenVoiceInput = {
 export type FrozenLipSyncInput = {
   motionArtifactId?: string;
   motionFingerprint?: string;
+  motionDurationSec?: number;
+  voiceArtifactId?: string;
   voiceFingerprint: string;
+  voiceDurationSec?: number;
   fingerprint: string;
   usedValidity?: ArtifactValidity;
 };
@@ -106,7 +109,7 @@ export type MotionInput = {
   timingHash: string;
   baseMotionFingerprint: string;
   promptHash: string;
-  provider: 'runway' | 'wan';
+  provider: 'runway' | 'wan' | 'google';
   providerDuration: 5 | 10;
   providerStamp?: string;
   executionFingerprint: string;
@@ -185,7 +188,7 @@ export type ExecutionAttempt = {
   createdAt: string;
   startedAt?: string;
   completedAt?: string;
-  provider?: 'runway' | 'wan' | 'fal' | 'elevenlabs' | 'ffmpeg';
+  provider?: 'runway' | 'wan' | 'google' | 'fal' | 'elevenlabs' | 'ffmpeg';
   providerTaskId?: string;
   providerRequestId?: string;
   decisionId?: string;
@@ -238,7 +241,7 @@ export type ShotExecutionState = {
 };
 
 export type CallbackDecision =
-  | { promote: true; resultClass: 'CURRENT'; attempt: ExecutionAttempt }
+  | { promote: true; resultClass: 'CURRENT'; attempt?: ExecutionAttempt }
   | { promote: false; resultClass: 'LATE_RESULT'; keepHistory: true; attempt?: ExecutionAttempt; reason: string };
 
 export type ExecutionAwareAttempt = RunwayAttempt & {
@@ -270,6 +273,19 @@ export function motionAttemptId(shotId: string, n: number) {
 
 export function actingBeatFingerprintOf(shot: FamixaSeriesShot) {
   return productionHash(['actingBeat', stableJson(shot.actingBeat ?? null)]);
+}
+
+/** Saved beat or frozen take beat ≠ live beat. Empty take beat is not enough. */
+export function actingBeatWantsMotionRemake(opts: {
+  liveFingerprint?: string;
+  usedFingerprint?: string;
+  motionStale?: boolean;
+  pendingFlag?: boolean;
+}) {
+  if (opts.pendingFlag) return true;
+  const live = (opts.liveFingerprint || '').trim();
+  const used = (opts.usedFingerprint || '').trim();
+  return Boolean(live && used && live !== used);
 }
 
 export function timingHashOf(state: SeriesPilotState, shot: FamixaSeriesShot) {
@@ -423,11 +439,14 @@ export function currentPictureInputOf(state: SeriesPilotState, shot: FamixaSerie
   };
 }
 
-export function freezeMotionInput(state: SeriesPilotState, shot: FamixaSeriesShot, opts?: { provider?: 'runway' | 'wan' }): FrozenMotionInput {
+export function freezeMotionInput(state: SeriesPilotState, shot: FamixaSeriesShot, opts?: { provider?: 'runway' | 'wan' | 'google' }): FrozenMotionInput {
   const fps = computeInputFingerprints(state, shot);
   const picture = currentPictureInputOf(state, shot);
   const run = shotRunOf(state, shot);
-  const provider = opts?.provider ?? ((run.model || '').startsWith('wan') ? 'wan' : 'runway');
+  const model = (run.model || '').trim().toLowerCase();
+  const provider =
+    opts?.provider ??
+    (model.startsWith('wan') ? 'wan' : model.startsWith('veo') ? 'google' : 'runway');
   const providerDuration = providerDurationOf(state, shot);
   const actingBeatFingerprint = actingBeatFingerprintOf(shot);
   const promptHash = shotI2vPromptHash(state, shot, run);
@@ -467,7 +486,13 @@ export function freezeVoiceInput(state: SeriesPilotState, shot: FamixaSeriesShot
 export function freezeLipSyncInput(
   state: SeriesPilotState,
   shot: FamixaSeriesShot,
-  opts?: { motionArtifactId?: string; usedValidity?: ArtifactValidity },
+  opts?: {
+    motionArtifactId?: string;
+    usedValidity?: ArtifactValidity;
+    motionDurationSec?: number;
+    voiceArtifactId?: string;
+    voiceDurationSec?: number;
+  },
 ): FrozenLipSyncInput {
   const fps = computeInputFingerprints(state, shot);
   return {
@@ -476,6 +501,9 @@ export function freezeLipSyncInput(
     voiceFingerprint: fps.voice,
     fingerprint: fps.lipsync,
     usedValidity: opts?.usedValidity,
+    ...(opts?.motionDurationSec != null ? { motionDurationSec: opts.motionDurationSec } : {}),
+    ...(opts?.voiceArtifactId ? { voiceArtifactId: opts.voiceArtifactId } : {}),
+    ...(opts?.voiceDurationSec != null ? { voiceDurationSec: opts.voiceDurationSec } : {}),
   };
 }
 
@@ -495,7 +523,8 @@ function frozenFromAttempt(shotId: string, row: ExecutionAwareAttempt): FrozenMo
   const promptHash = (row.promptHash || row.exactRequest?.promptHash || '').trim();
   const duration = (row.duration === 10 ? 10 : 5) as 5 | 10;
   const how = motionHowProviderId(row.selectionSnapshot, row.model);
-  const provider: 'runway' | 'wan' = how === 'wan' ? 'wan' : 'runway';
+  const provider: 'runway' | 'wan' | 'google' =
+    how === 'wan' ? 'wan' : how === 'google' ? 'google' : 'runway';
   if (!pixelHash && !promptHash && !row.fingerprint) return undefined;
   const actingBeatFingerprint = (row.frozenInput?.actingBeatFingerprint || '').trim();
   const baseMotionFingerprint = (row.frozenInput?.baseMotionFingerprint || row.fingerprint || '').trim();
@@ -549,7 +578,12 @@ export function adaptMotionAttempts(shotId: string, attempts?: RunwayAttempt[]):
       createdAt: row.at || '',
       startedAt: row.at,
       completedAt: st === 'SUCCESS' || st === 'FAILED' ? row.at : undefined,
-      provider: motionHowProviderId(row.selectionSnapshot, row.model) === 'wan' ? 'wan' : 'runway',
+      provider:
+        motionHowProviderId(row.selectionSnapshot, row.model) === 'wan'
+          ? 'wan'
+          : motionHowProviderId(row.selectionSnapshot, row.model) === 'google'
+            ? 'google'
+            : 'runway',
       providerTaskId: row.taskId,
       providerRequestId: row.taskId,
       decisionId: row.selectionSnapshot?.decisionId,
@@ -782,12 +816,18 @@ export function validateMotionCallback(opts: {
   const frozenRev = (frozenMotion?.pictureRevisionId || '').trim();
   const liveRev = (opts.current.picture.revisionId || '').trim();
   const sameRevision = samePictureRevision(frozenRev, liveRev);
-  const samePicture = Boolean(sameRevision && frozenPixel && livePixel && frozenPixel === livePixel);
+  const samePixel = Boolean(frozenPixel && livePixel && frozenPixel === livePixel);
+  const samePicture = Boolean((sameRevision || (!frozenRev && samePixel)) && samePixel);
   const pixelMismatch = Boolean(frozenPixel && livePixel && frozenPixel !== livePixel);
   const revisionMismatch = Boolean(frozenRev && liveRev && frozenRev !== liveRev);
-  const revisionUnproven = Boolean(liveRev && !frozenRev);
-  const inFlight = opts.inFlightAttemptId || currentInFlightMotionAttemptId(opts.attempts);
-  const inFlightMismatch = Boolean(inFlight && attempt.attemptId !== inFlight);
+  const revisionUnproven = Boolean(liveRev && !frozenRev && !samePixel);
+  const inFlightId = opts.inFlightAttemptId || currentInFlightMotionAttemptId(opts.attempts);
+  const inFlightRow = opts.attempts.find((a) => a.attemptId === inFlightId);
+  const inFlightMismatch = Boolean(
+    inFlightRow &&
+      attempt.attemptId !== inFlightRow.attemptId &&
+      motionAttemptOrderOf(inFlightRow) > motionAttemptOrderOf(attempt),
+  );
   if (pixelMismatch || inFlightMismatch || revisionMismatch || revisionUnproven) {
     return { promote: false, resultClass: 'LATE_RESULT', keepHistory: true, attempt, reason: 'INPUT_CHANGED' };
   }
@@ -885,33 +925,25 @@ export function motionCallbackRunPatch(opts: {
       }) as ExecutionAwareAttempt[]);
   if (!opts.decision.promote) {
     const liveRev = (opts.run.pictureRevisionId || '').trim();
-    const take = (opts.run.takeUrl || '').trim();
     const newUrl = (opts.outputUrl || '').trim();
     const turbo = (opts.run.turboTaskId || '').trim();
     const row = (idx >= 0 ? attempts[idx] : attempts.find((item) => (item.taskId || '').trim() === taskId)) as
       | ExecutionAwareAttempt
       | undefined;
-    const frozenRev = (row?.frozenInput?.pictureRevisionId || '').trim();
-    const hash = (row?.kf?.hash || row?.frozenInput?.keyframePixelHash || '').trim();
+    const hash = (row?.kf?.hash || row?.source?.hash || row?.frozenInput?.keyframePixelHash || '').trim();
     const liveHash = (opts.run.kfSourceHash || '').trim();
-    const epoch = opts.run.pictureRevisionAttemptN || 0;
+    const pixelClash = Boolean(hash && liveHash && hash !== liveHash);
     const adapted = adaptMotionAttempts(opts.decision.attempt?.shotId || '', attempts);
     const adaptedHit = adapted.find((item) => (item.providerTaskId || '').trim() === taskId || item.attemptId === opts.decision.attempt?.attemptId);
     const superseded = Boolean(adaptedHit && isMotionAttemptSuperseded(adapted, adaptedHit));
     if (
       !opts.failed &&
       !superseded &&
-      liveRev &&
       taskId &&
       turbo &&
       taskId === turbo &&
       newUrl &&
-      newUrl !== take &&
-      (row?.n || 0) > epoch &&
-      !frozenRev &&
-      hash &&
-      liveHash &&
-      hash === liveHash
+      !pixelClash
     ) {
       const stamped = attempts.map((item) =>
         item === row || (item.taskId || '').trim() === taskId
@@ -920,13 +952,16 @@ export function motionCallbackRunPatch(opts: {
             })
           : item,
       );
+      const mute = stampMuteTake(newUrl, opts.silentTake);
       return {
         status: 'turbo_testing',
-        ...stampMuteTake(newUrl, opts.silentTake),
+        ...mute,
+        acceptedTake: undefined,
         turboStatus: 'SUCCEEDED',
         turboError: undefined,
         videoPipe: 'VIDEO_READY',
         motionNeedsRemake: false,
+        actingBeatPendingMotion: false,
         videoVerified: true,
         videoBytes: opts.videoBytes,
         videoMime: opts.videoMime,
@@ -943,13 +978,16 @@ export function motionCallbackRunPatch(opts: {
       runwayAttempts: attempts,
     };
   }
+  const mute = stampMuteTake(opts.outputUrl || '', opts.silentTake);
   return {
     status: 'turbo_testing',
-    ...stampMuteTake(opts.outputUrl || '', opts.silentTake),
+    ...mute,
+    acceptedTake: undefined,
     turboStatus: 'SUCCEEDED',
     turboError: undefined,
     videoPipe: 'VIDEO_READY',
     motionNeedsRemake: false,
+    actingBeatPendingMotion: false,
     videoVerified: true,
     videoBytes: opts.videoBytes,
     videoMime: opts.videoMime,
@@ -1061,13 +1099,17 @@ export function deriveShotExecutionState(opts: {
         run,
         spoken,
         remake: false,
-        motionStale: motionFromAttempt.validity !== 'CURRENT',
+        motionStale: true,
         accepted: Boolean(accepted?.url),
       }));
 
   const lipUrl = (run.lipsyncUrl || '').trim() || undefined;
+  const boundLipMotionId = lipsyncBoundArtifactId(run, shot.id);
   const lipsyncIn: LipSyncInput = {
-    motionArtifactId: motionCurrent?.artifactId || (motionAllowedForLip ? motionFromAttempt?.artifactId : undefined),
+    motionArtifactId:
+      boundLipMotionId ||
+      motionCurrent?.artifactId ||
+      (motionAllowedForLip ? motionFromAttempt?.artifactId : undefined),
     voiceFingerprint: voiceIn.fingerprint,
     fingerprint: fps.lipsync,
   };
@@ -1079,11 +1121,13 @@ export function deriveShotExecutionState(opts: {
         url: lipUrl,
         frozenFp: lipStamp,
         currentFp: fps.lipsync,
-        upstreamOk: Boolean(motionAllowedForLip && (!spoken || voiceArt.validity === 'CURRENT')),
+        upstreamOk: Boolean((boundLipMotionId || motionAllowedForLip) && (!spoken || voiceArt?.validity === 'CURRENT')),
         provenance: {
           motionArtifactId: lipsyncIn.motionArtifactId,
           voiceFingerprint: voiceIn.fingerprint,
-          complete: Boolean(lipStamp && lipsyncIn.motionArtifactId),
+          complete: Boolean(
+            lipStamp && (lipsyncIn.motionArtifactId || run.lipsyncFrozenInput?.motionArtifactId),
+          ),
         },
       })
     : undefined;
@@ -1208,7 +1252,7 @@ export function deriveShotExecutionState(opts: {
     currentArtifacts: {
       picture: pictureArt?.validity === 'CURRENT' ? pictureArt : undefined,
       motion: motionCurrent,
-      voice: voiceArt.validity === 'CURRENT' ? voiceArt : undefined,
+      voice: voiceArt?.validity === 'CURRENT' ? voiceArt : undefined,
       lipsync: lipArt?.validity === 'CURRENT' ? lipArt : undefined,
       mix: mixArt?.validity === 'CURRENT' ? mixArt : undefined,
       final: finalArt?.validity === 'CURRENT' ? finalArt : undefined,

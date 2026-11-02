@@ -174,6 +174,7 @@ export function ContentArticleSeriesDetailPage() {
         <div style={{ maxWidth: 800, marginTop: 12 }}>
           <ContentCanonFields
             rows={[
+              { label: "Series code", value: s.code },
               { label: "Brand Angle", value: seriesBrandAngle(s) },
               { label: "Core Message", value: s.coreMessage },
               { label: "Audience", value: s.audience },
@@ -326,7 +327,7 @@ export function ContentArticleSeriesDetailPage() {
         title={
           <Space>
             <Typography.Title level={4} style={{ margin: 0 }}>
-              Episode Timeline
+              Episode plan
             </Typography.Title>
             <Typography.Text type="secondary" style={{ fontSize: 13, fontWeight: "normal" }}>
               — Câu chuyện đang tiến triển
@@ -464,12 +465,22 @@ export function ContentArticleSeriesDetailPage() {
                           {isNext ? <Tag color="blue">Việc tiếp theo</Tag> : null}
                         </Space>
                         <Space size={8}>
-                          {ep.contentTopicId && (
-                            <Link to={`/content/topics/${ep.contentTopicId}`} onClick={(e) => e.stopPropagation()}>
-                              <Button size="small" type="link">Xem Content</Button>
-                            </Link>
-                          )}
-                          {!ep.contentTopicId && (
+                          {ep.contentTopicId ? (
+                            <>
+                              <Link to={`/content/topics/${ep.contentTopicId}`} onClick={(e) => e.stopPropagation()}>
+                                <Button size="small" type="link">Xem bài</Button>
+                              </Link>
+                              <Button
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(episodeHref);
+                                }}
+                              >
+                                Mở Episode
+                              </Button>
+                            </>
+                          ) : (
                             <Button size="small" type={isNext ? "primary" : "default"} onClick={(e) => { e.stopPropagation(); navigate(episodeHref); }}>
                               Tạo nội dung
                             </Button>
@@ -494,6 +505,9 @@ export function ContentArticleSeriesDetailPage() {
                       )}
                       
                       {/* Production State & Quality Gate */}
+                      <ContentCanonFields
+                        rows={[{ label: "Continuity", value: continuityText }]}
+                      />
                       <Space split={<span style={{ color: "#d9d9d9" }}>·</span>} wrap style={{ fontSize: 12 }}>
                         <Typography.Text style={{ color: stateColor }}>
                           {productionState}

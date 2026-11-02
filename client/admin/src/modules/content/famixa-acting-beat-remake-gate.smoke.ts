@@ -215,7 +215,7 @@ ok(
     !remakeBlock.includes('eleven'),
   '09 no provider in remake gate',
 );
-ok(series.includes('startShotMotion') && series.includes('forceNew: true'), '10 Studio remake wiring kept');
+ok(series.includes('startShotMotion') && series.includes('createProductionVideo'), '10 Studio remake is Production OS CREATE_VIDEO');
 ok(
   series.includes("action: 'He stays in place.'") &&
     series.includes('holdRetry <= maxCameraShift') &&

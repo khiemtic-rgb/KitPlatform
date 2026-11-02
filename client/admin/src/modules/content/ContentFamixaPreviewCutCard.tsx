@@ -323,8 +323,8 @@ export function ContentFamixaPreviewCutCard({
         {vidN > 0 && onAssembleCut ? (
           <Button type="primary" ghost loading={assembleBusy} disabled={assembleBusy} onClick={() => onAssembleCut()}>
             {lipN
-              ? `Ghép tập hoàn chỉnh · ${vidN} take · ${lipN} khớp môi`
-              : `Ghép tập hoàn chỉnh · đủ shot + thoại`}
+              ? `Xuất tương thích · ${vidN} take · ${lipN} khớp môi`
+              : `Xuất tương thích · đủ shot + thoại`}
           </Button>
         ) : null}
         {onAssembleAspect ? (

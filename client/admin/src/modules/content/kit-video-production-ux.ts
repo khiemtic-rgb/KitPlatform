@@ -565,7 +565,7 @@ export const DIRECTOR_SHOT_COMMAND_LABEL: Record<string, string> = {
   WAIT_MOTION: 'Đang tạo video',
   WAIT_VIDEO_REVIEW: 'Duyệt video',
   LIPSYNC_QA_REQUIRED: 'Kiểm tra video',
-  CONFIRM_LIPSYNC: 'Lồng tiếng',
+  CONFIRM_LIPSYNC: 'Khớp môi',
   WAIT_LIPSYNC: 'Đang tạo Lip-sync',
   ENSURE_MIX: 'Hoàn thiện Shot',
   WAIT_MIX: 'Đang hoàn thiện',
@@ -613,24 +613,39 @@ export function mergeCanonicalShotQa(
   return out;
 }
 
-export function directorPictureHoldCopy(blocker?: { code?: string; title?: string; type?: string }) {
+export function directorPictureHoldCopy(blocker?: { code?: string; title?: string; type?: string; message?: string }) {
   if (!blocker) {
     return { reason: 'Chưa thể tạo hình', hint: 'Shot chưa đủ thông tin.' };
   }
   if (blocker.code === 'VOICE_NOT_LOCKED' || blocker.type === 'voice') {
     return {
       reason: 'Thoại của Episode chưa được khóa.',
-      hint: 'Hoàn tất và khóa thoại trước khi tạo hình.',
+      hint: blocker.message || 'Hoàn tất và khóa thoại trước khi tạo hình.',
     };
   }
   if (blocker.code === 'SCENE_MASTER_NOT_LOCKED' || blocker.type === 'scene_master') {
-    return { reason: 'Chưa thể tạo hình', hint: 'Scene Master chưa sẵn sàng.' };
+    return { reason: blocker.title || 'Chưa thể tạo hình', hint: blocker.message || 'Scene Master chưa sẵn sàng.' };
   }
   if (blocker.code === 'SHOT_GRAPH_NOT_LOCKED' || blocker.type === 'shot_graph') {
-    return { reason: 'Chưa thể tạo hình', hint: 'Shot chưa đủ thông tin.' };
+    return { reason: 'Chưa thể tạo hình', hint: blocker.message || 'Shot chưa đủ thông tin.' };
   }
   if (blocker.code === 'SCRIPT_NOT_LOCKED' || blocker.type === 'script') {
-    return { reason: 'Chưa thể tạo hình', hint: 'Kịch bản chưa khóa.' };
+    return { reason: blocker.title || 'Chưa thể tạo hình', hint: blocker.message || 'Kịch bản chưa khóa.' };
   }
-  return { reason: 'Chưa thể tạo hình', hint: blocker.title || 'Shot chưa đủ thông tin.' };
+  if (blocker.code === 'GEMINI_KEY_MISSING' || blocker.type === 'provider') {
+    return {
+      reason: blocker.title || 'Chưa có Gemini API key',
+      hint: blocker.message || 'Cấu hình AI → tab Viết.',
+    };
+  }
+  if (blocker.code === 'CHARACTER_NOT_LOCKED' || blocker.type === 'character_lock') {
+    return {
+      reason: blocker.title || 'Nhân vật chưa LOCK',
+      hint: blocker.message || 'Duyệt và khóa Master trong Character Studio trước khi tạo hình.',
+    };
+  }
+  return {
+    reason: blocker.title || 'Chưa thể tạo hình',
+    hint: blocker.message || blocker.title || 'Shot chưa đủ thông tin.',
+  };
 }
