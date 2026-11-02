@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "kit-video-project/1",
+  "title": "KIT video project manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion", "projectId", "projectName", "brand", "script", "durationPolicy",
+    "storyStructure", "voice", "assets", "visualStyle", "audioProfile", "format",
+    "render", "pipeline", "shotPlan"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "kit-video-project/1"},
+    "projectId": {"type": "string", "minLength": 1},
+    "projectName": {"type": "string", "minLength": 1},
+    "brand": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {"id": {"type": "string"}, "name": {"type": "string"}}
+    },
+    "script": {
+      "type": "object",
+      "required": ["version", "approvalStatus"],
+      "properties": {
+        "version": {"type": "string"},
+        "approvalStatus": {"enum": ["draft", "proposed", "approved"]}
+      }
+    },
+    "durationPolicy": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": {"enum": ["target", "voice_driven", "explicit_scenes"]},
+        "targetSeconds": {"type": ["number", "null"]},
+        "notes": {"type": "string"}
+      }
+    },
+    "shotPlan": {"type": "string"},
+    "render": {
+      "type": "object",
+      "required": ["videoCodec", "audioCodec", "crf", "allowPlaceholders", "versioned", "outputRoot"],
+      "properties": {
+        "videoCodec": {"const": "libx264"},
+        "audioCodec": {"const": "aac"},
+        "versioned": {"const": true}
+      }
+    }
+  },
+  "description": "Contract document. The check that runs is kit_video.validate. No brand, scene count, or runtime is implied by this schema."
+}

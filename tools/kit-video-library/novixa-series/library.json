@@ -1,0 +1,15 @@
+{
+  "id": "novixa-series-20261029",
+  "brand": "novixa",
+  "park": "KIT_MKT",
+  "approvalStatus": "proposed",
+  "inCatalog": false,
+  "linkedVideoJob": null,
+  "aspect": "9:16",
+  "clips": ["01_tien-di-dau", "02_ba-loai-hang", "03_nhap-them", "04_cham-chi", "05_novixa", "long_ban-day-du"],
+  "videoRoot": "proof/kit-video-library/20261029T153000Z-novixa-series/video",
+  "voice": { "provider": "elevenlabs", "model": "eleven_v3", "keySource": "env:ELEVENLABS_API_KEY" },
+  "brandPronunciation": "Nô vi xa",
+  "url": "novixa.vn",
+  "openItems": ["nghe thử giọng và nhạc", "timing chữ theo ước lượng ký tự", "chưa có bản 16:9"]
+}
