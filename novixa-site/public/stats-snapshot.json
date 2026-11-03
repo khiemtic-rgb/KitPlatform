@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-02T16:05:21.202Z",
+  "generatedAt": "2026-11-03T01:00:11.787Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 85,
-    "todayPageViews": 642,
-    "todayRequests": 24666,
-    "last24hVisitors": 135,
-    "last24hPageViews": 922,
-    "last24hRequests": 27637
+    "todayVisitors": 4,
+    "todayPageViews": 271,
+    "todayRequests": 1179,
+    "last24hVisitors": 129,
+    "last24hPageViews": 1534,
+    "last24hRequests": 37173
   },
   "hourly": [
-    {
-      "time": "2026-11-01T17:00:00Z",
-      "visitors": 8,
-      "requests": 644
-    },
-    {
-      "time": "2026-11-01T18:00:00Z",
-      "visitors": 17,
-      "requests": 21
-    },
-    {
-      "time": "2026-11-01T19:00:00Z",
-      "visitors": 10,
-      "requests": 43
-    },
-    {
-      "time": "2026-11-01T20:00:00Z",
-      "visitors": 9,
-      "requests": 243
-    },
-    {
-      "time": "2026-11-01T21:00:00Z",
-      "visitors": 11,
-      "requests": 575
-    },
-    {
-      "time": "2026-11-01T22:00:00Z",
-      "visitors": 9,
-      "requests": 369
-    },
-    {
-      "time": "2026-11-01T23:00:00Z",
-      "visitors": 4,
-      "requests": 1076
-    },
-    {
-      "time": "2026-11-02T00:00:00Z",
-      "visitors": 6,
-      "requests": 1079
-    },
-    {
-      "time": "2026-11-02T01:00:00Z",
-      "visitors": 8,
-      "requests": 1081
-    },
     {
       "time": "2026-11-02T02:00:00Z",
       "visitors": 13,
@@ -125,15 +80,54 @@
       "time": "2026-11-02T15:00:00Z",
       "visitors": 8,
       "requests": 1087
+    },
+    {
+      "time": "2026-11-02T16:00:00Z",
+      "visitors": 24,
+      "requests": 3042
+    },
+    {
+      "time": "2026-11-02T17:00:00Z",
+      "visitors": 19,
+      "requests": 2179
+    },
+    {
+      "time": "2026-11-02T18:00:00Z",
+      "visitors": 8,
+      "requests": 1883
+    },
+    {
+      "time": "2026-11-02T19:00:00Z",
+      "visitors": 3,
+      "requests": 1023
+    },
+    {
+      "time": "2026-11-02T20:00:00Z",
+      "visitors": 6,
+      "requests": 1918
+    },
+    {
+      "time": "2026-11-02T21:00:00Z",
+      "visitors": 7,
+      "requests": 847
+    },
+    {
+      "time": "2026-11-02T22:00:00Z",
+      "visitors": 4,
+      "requests": 1359
+    },
+    {
+      "time": "2026-11-02T23:00:00Z",
+      "visitors": 6,
+      "requests": 1135
+    },
+    {
+      "time": "2026-11-03T00:00:00Z",
+      "visitors": 4,
+      "requests": 1281
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-27",
-      "visitors": 234,
-      "pageViews": 429,
-      "requests": 840
-    },
     {
       "date": "2026-10-28",
       "visitors": 118,
@@ -166,71 +160,77 @@
     },
     {
       "date": "2026-11-02",
-      "visitors": 85,
-      "pageViews": 642,
-      "requests": 24666
+      "visitors": 135,
+      "pageViews": 1266,
+      "requests": 38052
+    },
+    {
+      "date": "2026-11-03",
+      "visitors": 4,
+      "pageViews": 271,
+      "requests": 1179
     }
   ],
   "topPages": [
     {
       "path": "/userfiles",
-      "views": 294
+      "views": 442
     },
     {
       "path": "/",
-      "views": 244
+      "views": 243
     },
     {
       "path": "/api/console/api_server",
-      "views": 170
-    },
-    {
-      "path": "/userfiles/x",
-      "views": 154
+      "views": 226
     },
     {
       "path": "/api/system/fileView",
-      "views": 138
+      "views": 203
+    },
+    {
+      "path": "/userfiles/x",
+      "views": 198
     },
     {
       "path": "/api/fs/read",
-      "views": 131
+      "views": 184
     },
     {
-      "path": "/cms/.env",
-      "views": 115
+      "path": "/.env.local",
+      "views": 147
+    },
+    {
+      "path": "/firebase-service-account.json",
+      "views": 140
+    },
+    {
+      "path": "/v2/.env",
+      "views": 137
+    },
+    {
+      "path": "/panel/.env",
+      "views": 137
     },
     {
       "path": "/.github/.env",
-      "views": 113
+      "views": 137
     },
     {
-      "path": "/static//.env",
-      "views": 111
+      "path": "/serverless.yml",
+      "views": 136
     },
     {
-      "path": "/dashboard%2F.env",
-      "views": 108
+      "path": "/proc/self/cgroup",
+      "views": 135
     },
     {
-      "path": "/site/.env",
-      "views": 106
+      "path": "/cms/.env",
+      "views": 135
     },
     {
-      "path": "/lerna.json",
-      "views": 104
-    },
-    {
-      "path": "/assets/.env",
-      "views": 104
-    },
-    {
-      "path": "/.env",
-      "views": 102
-    },
-    {
-      "path": "/settings/_payload.json",
-      "views": 101
+      "path": "/temp/.env",
+      "views": 133
     }
   ]
 }
