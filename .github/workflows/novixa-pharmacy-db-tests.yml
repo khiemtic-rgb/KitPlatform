@@ -1,0 +1,97 @@
+name: Novixa Pharmacy DB tests
+
+on:
+  push:
+    # release/novixa-ci-v1 is stacked on the Pharmacy and Staff release branches, so a run there tests all three.
+    branches: [main, master, develop, 'release/novixa-*']
+    paths:
+      - 'src/**'
+      - 'tests/KitPlatform.Api.Tests/**'
+      - 'tests/KitPlatform.Application.Tests/**'
+      - 'tests/KitPlatform.Platform.Tests/Pharmacy/**'
+      - 'migrations/**'
+      - 'deploy/ubuntu/migration-files.*.txt'
+      - 'deploy/ubuntu/greenfield-compat/**'
+      - 'scripts/ci/**'
+      - '.github/workflows/novixa-pharmacy-db-tests.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/KitPlatform.Api.Tests/**'
+      - 'tests/KitPlatform.Application.Tests/**'
+      - 'tests/KitPlatform.Platform.Tests/Pharmacy/**'
+      - 'migrations/**'
+      - 'deploy/ubuntu/migration-files.*.txt'
+      - 'deploy/ubuntu/greenfield-compat/**'
+      - 'scripts/ci/**'
+      - '.github/workflows/novixa-pharmacy-db-tests.yml'
+
+jobs:
+  pharmacy-db-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pgadmin
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          # The test factories refuse port 5432 (the dev cluster).
+          - 5436:5432
+        options: >-
+          --health-cmd "pg_isready -U pgadmin"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      KIT_API_TEST_CONNECTION: Host=127.0.0.1;Port=5436;Database=novixa_ci_api;Username=pgadmin;Timeout=15;Command Timeout=60
+      KIT_APP_TEST_CONNECTION: Host=127.0.0.1;Port=5436;Database=novixa_ci_app;Username=pgadmin;Timeout=15;Command Timeout=60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build test databases
+        shell: pwsh
+        run: |
+          psql --version
+          ./scripts/ci/build-pharmacy-test-db.ps1 -Port 5436 -Database novixa_ci_api
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          ./scripts/ci/build-pharmacy-test-db.ps1 -Port 5436 -Database novixa_ci_app
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      # PharmacyKnowledgeExperienceApiTests: fixture written for a hand-made schema (tracked in the release report).
+      - name: Api tests (Sales, Procurement, Inventory, auth)
+        run: >-
+          dotnet test tests/KitPlatform.Api.Tests/KitPlatform.Api.Tests.csproj --configuration Release
+          --filter "FullyQualifiedName!~PharmacyKnowledgeExperienceApiTests"
+          --logger "console;verbosity=minimal"
+
+      # Excluded: InventoryMovementSummaryTests needs a tenant-free database on port 5433;
+      # PharmacyOwnedKnowledge* use a hand-made schema; TestPack and Local OS need their own manifests.
+      - name: Application tests
+        run: >-
+          dotnet test tests/KitPlatform.Application.Tests/KitPlatform.Application.Tests.csproj --configuration Release
+          --filter "FullyQualifiedName!~InventoryMovementSummaryTests&FullyQualifiedName!~PharmacyOwnedKnowledge&FullyQualifiedName!~TestPackPersistenceTests&FullyQualifiedName!~LocalOsOnboardingTests"
+          --logger "console;verbosity=minimal"
+
+      # Consultation safety: negation/screening units + OTC gate and W5 knowledge on a tenant-free database
+      # with a restricted login (the suites refuse superusers and any database holding real tenant codes).
+      - name: Build tenant-free consultation database
+        shell: pwsh
+        run: |
+          ./scripts/ci/build-pharmacy-test-db.ps1 -Port 5436 -Database novixa_ci_noseed -NoSeed
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          ./scripts/ci/build-platform-isolated-db.ps1 -Port 5436 -Source novixa_ci_noseed -Database novixa_ci_plat_iso
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Consultation safety tests
+        env:
+          POS_IDEMPOTENCY_TEST_CONNECTION: Host=127.0.0.1;Port=5436;Database=novixa_ci_plat_iso;Username=novixa_iso;Timeout=15;Command Timeout=60
+        run: >-
+          dotnet test tests/KitPlatform.Platform.Tests/KitPlatform.Platform.Tests.csproj --configuration Release
+          --filter "FullyQualifiedName~Consultation|FullyQualifiedName~NovixaOtcSafetyGateIsolatedTests|FullyQualifiedName~NovixaW5"
+          --logger "console;verbosity=minimal"
