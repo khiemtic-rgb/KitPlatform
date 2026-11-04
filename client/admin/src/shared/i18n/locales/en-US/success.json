@@ -5,7 +5,33 @@
   "loadFailed": "Could not load cockpit",
   "tip": "One snapshot for the pharmacy owner. Drill into reports / inventory / CRM for detail.",
   "backDashboard": "← Back to operations dashboard",
+  "staffToday": {
+    "loadFailed": "Could not load staff today",
+    "open": "View",
+    "checklistTitle": "Open / close checklist today",
+    "openShift": "Open",
+    "closeShift": "Close",
+    "checklistStatus": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "completed": "Done"
+    },
+    "missingRequired": "{{count}} required items missing",
+    "tickedBy": "Ticked by: {{names}}",
+    "noBranches": "No branches",
+    "tasksTitle": "Open tasks by assignee",
+    "openTasks": "{{count}} open",
+    "overdueTasks": "Overdue {{count}}",
+    "noTasks": "No open tasks",
+    "cashTitle": "Cash variance by closer, last 7 days",
+    "cashLine": "{{count}} shifts · variance {{amount}}",
+    "noCash": "No closed shifts in 7 days",
+    "learningTitle": "Learning",
+    "learningHint": "employees without any credential",
+    "learningUnavailable": "Learning is not enabled"
+  },
   "sections": {
+    "staffToday": "Staff today",
     "risk": "Risk today",
     "sales": "Sales",
     "peakHours": "Peak hours",
@@ -105,9 +131,15 @@
     "reports": {
       "cancellations": "Cancelled drafts by employee",
       "discounts": "POS discounts by employee",
-      "adjustments": "Approved stock adjustments by employee"
+      "adjustments": "Approved stock adjustments by employee",
+      "cashByCloser": "Cash variance by shift closer"
     },
     "col": {
+      "openedBy": "Opened by",
+      "closedBy": "Closed by",
+      "shiftCount": "Shifts",
+      "absCashVariance": "Total |variance|",
+      "netCashVariance": "Net variance",
       "shift": "Shift",
       "branch": "Branch",
       "warehouse": "Warehouse",

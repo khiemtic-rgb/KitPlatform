@@ -2,6 +2,7 @@
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Identity;
 using KitPlatform.Infrastructure.Data;
+using Npgsql;
 
 namespace KitPlatform.Infrastructure.Identity;
 
@@ -276,7 +277,77 @@ internal sealed class IdentityAdminRepository
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var row = await conn.QuerySingleOrDefaultAsync<UserDetailRow>(sql, new { UserId = userId, TenantId });
-        return row is null ? null : MapUserDetail(row);
+        if (row is null)
+            return null;
+
+        var detail = MapUserDetail(row);
+        if (row.EmployeeId is not Guid employeeId)
+            return detail;
+
+        var (jobTitle, hireDate) = await GetEmployeeProfileAsync(employeeId, cancellationToken);
+        return detail with { EmployeeJobTitle = jobTitle, EmployeeHireDate = hireDate };
+    }
+
+    /// <summary>job_title comes from migration 434; older databases return null for it.</summary>
+    public async Task<(string? JobTitle, DateOnly? HireDate)> GetEmployeeProfileAsync(
+        Guid employeeId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var args = new { EmployeeId = employeeId, TenantId };
+        try
+        {
+            var row = await conn.QuerySingleOrDefaultAsync<EmployeeProfileRow>(
+                """
+                SELECT job_title AS JobTitle, hire_date AS HireDate
+                FROM employees
+                WHERE id = @EmployeeId AND tenant_id = @TenantId AND deleted_at IS NULL
+                """,
+                args);
+            return row is null ? (null, null) : (row.JobTitle, row.HireDate);
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedColumn)
+        {
+            var hireDate = await conn.ExecuteScalarAsync<DateOnly?>(
+                """
+                SELECT hire_date
+                FROM employees
+                WHERE id = @EmployeeId AND tenant_id = @TenantId AND deleted_at IS NULL
+                """,
+                args);
+            return (null, hireDate);
+        }
+    }
+
+    /// <summary>Without migration 434 only hire_date is saved.</summary>
+    public async Task UpdateEmployeeProfileAsync(
+        Guid employeeId,
+        string? jobTitle,
+        DateOnly? hireDate,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var args = new { EmployeeId = employeeId, TenantId, JobTitle = jobTitle, HireDate = hireDate };
+        try
+        {
+            await conn.ExecuteAsync(
+                """
+                UPDATE employees
+                SET job_title = @JobTitle, hire_date = @HireDate, updated_at = NOW()
+                WHERE id = @EmployeeId AND tenant_id = @TenantId AND deleted_at IS NULL
+                """,
+                args);
+        }
+        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UndefinedColumn)
+        {
+            await conn.ExecuteAsync(
+                """
+                UPDATE employees
+                SET hire_date = @HireDate, updated_at = NOW()
+                WHERE id = @EmployeeId AND tenant_id = @TenantId AND deleted_at IS NULL
+                """,
+                args);
+        }
     }
 
     public async Task<bool> UsernameExistsAsync(string username, Guid? excludeUserId, CancellationToken cancellationToken)
@@ -765,13 +836,16 @@ internal sealed class IdentityAdminRepository
         if (lookup is null) return null;
 
         var branches = await GetEmployeeBranchesAsync(employeeId, cancellationToken);
+        var (jobTitle, hireDate) = await GetEmployeeProfileAsync(employeeId, cancellationToken);
         return new EmployeeDetailDto(
             lookup.Id,
             lookup.EmployeeCode,
             lookup.FullName,
             lookup.Phone,
             lookup.HasUserAccount,
-            branches);
+            branches,
+            jobTitle,
+            hireDate);
     }
 
     public async Task<IReadOnlyList<EmployeeBranchAssignmentDto>> GetEmployeeBranchesAsync(
@@ -948,6 +1022,12 @@ internal sealed class IdentityAdminRepository
         public string[]? RoleCodes { get; init; }
         public DateTime? LastLoginAt { get; init; }
         public DateTime CreatedAt { get; init; }
+    }
+
+    private sealed class EmployeeProfileRow
+    {
+        public string? JobTitle { get; init; }
+        public DateOnly? HireDate { get; init; }
     }
 
     private sealed class UserDetailRow

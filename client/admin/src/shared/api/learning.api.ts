@@ -97,6 +97,8 @@ export type LearningModuleDetail = {
   questions: { id: string; sortOrder: number; prompt: string; options: string[] }[];
   isTenantCustomized?: boolean;
   requireObservation?: boolean;
+  /** Lần làm bài mà server đã dùng để xáo câu/đáp án — gửi lại khi nộp. */
+  quizVariant?: number | null;
 };
 
 export async function fetchLearningModule(id: string) {
@@ -134,6 +136,12 @@ export type LearningMyLearning = {
   } | null;
   modules: LearningModuleProgress[];
   credentials?: { competencyCode: string; levelCode: string; scorePct?: number | null }[];
+  /** Mọi lộ trình của cửa hàng (enrollment null = chưa ghi danh). */
+  programs?: {
+    program: LearningProgramListItem;
+    enrollment?: LearningMyLearning['enrollment'];
+    modules: LearningModuleProgress[];
+  }[];
 };
 
 export type LearningQuizResult = {
@@ -173,11 +181,13 @@ export async function uploadLearningAckSelfie(file: File): Promise<string> {
 export async function submitLearningQuiz(
   id: string,
   answers: number[],
-  opts?: { practice?: boolean },
+  opts?: { practice?: boolean; questionIds?: string[]; quizVariant?: number | null },
 ) {
   const { data } = await http.post<LearningQuizResult>(`/learning/modules/${id}/quiz`, {
     answers,
     practice: Boolean(opts?.practice),
+    questionIds: opts?.questionIds,
+    quizVariant: opts?.quizVariant ?? undefined,
   });
   return data;
 }
@@ -248,6 +258,9 @@ export type LearningObservation = {
   note?: string | null;
   observedAt: string;
   observerName: string;
+  /** false = lần quan sát chưa đạt (vẫn lưu lịch sử). */
+  passed?: boolean;
+  scorePct?: number | null;
 };
 
 export async function fetchPendingLearningObservations() {
@@ -390,6 +403,8 @@ export type LearningRecognition = {
   createdAt: string;
   /** Sao 1–5 từ phản hồi app khách (nếu có). */
   customerRating?: number | null;
+  /** false = góp ý riêng: chỉ người nhận + quản lý thấy. */
+  isPublic?: boolean;
 };
 
 export type LearningBadge = {
@@ -570,7 +585,59 @@ export type LearningEmployeeEvidence = {
   orderCountThisMonth?: number | null;
   salesNetThisMonth?: number | null;
   latestEngagementPulse?: number | null;
+  /** Căn cứ từng điểm gợi ý (luật cố định từ dữ liệu, không phải AI). */
+  suggestionBasis?: {
+    criterion: 'knowledge' | 'attitude' | 'care' | 'stock' | 'discipline';
+    score: number;
+    reason: string;
+  }[];
 };
+
+export type LearningWeakQuestion = {
+  questionId: string;
+  moduleId: string;
+  moduleTitle: string;
+  prompt: string;
+  answered: number;
+  wrong: number;
+  wrongPct: number;
+};
+
+export type LearningEmployeeGap = {
+  employeeId: string;
+  employeeName: string;
+  moduleId: string;
+  moduleTitle: string;
+  signal: 'quiz_failed' | 'observation_failed';
+  failCount: number;
+  lastAt: string;
+  suggestedAction: string;
+};
+
+export type LearningModuleOutcome = {
+  employeeId: string;
+  employeeName: string;
+  moduleId: string;
+  moduleTitle: string;
+  passedOn: string;
+  ordersPerDayBefore: number;
+  ordersPerDayAfter: number;
+  daysAfter: number;
+};
+
+export type LearningGapReport = {
+  days: number;
+  weakQuestions: LearningWeakQuestion[];
+  employeeGaps: LearningEmployeeGap[];
+  outcomes: LearningModuleOutcome[];
+};
+
+export async function fetchLearningGapReport(days?: number) {
+  const { data } = await http.get<LearningGapReport>('/learning/gaps', {
+    params: days ? { days } : undefined,
+  });
+  return data;
+}
 
 export async function fetchEmployeeEvidence(employeeId: string) {
   const { data } = await http.get<LearningEmployeeEvidence>(
@@ -676,6 +743,7 @@ export type OperationalTask = {
   createdByUserId: string;
   completedAt?: string | null;
   createdAt: string;
+  isOverdue?: boolean;
 };
 
 export type OperationalShiftOption = {
@@ -685,9 +753,12 @@ export type OperationalShiftOption = {
   branchId: string;
 };
 
-export async function fetchOperationalTasks(salesShiftId?: string) {
+export async function fetchOperationalTasks(salesShiftId?: string, overdue?: boolean) {
+  const params: Record<string, string | boolean> = {};
+  if (salesShiftId) params.salesShiftId = salesShiftId;
+  if (overdue) params.overdue = true;
   const { data } = await http.get<OperationalTask[]>('/learning/operational-tasks', {
-    params: salesShiftId ? { salesShiftId } : undefined,
+    params: Object.keys(params).length ? params : undefined,
   });
   return data;
 }
@@ -702,6 +773,7 @@ export async function createOperationalTask(payload: {
   title: string;
   salesShiftId?: string | null;
   branchId?: string | null;
+  dueAt?: string | null;
 }) {
   const { data } = await http.post<OperationalTask>('/learning/operational-tasks', payload);
   return data;

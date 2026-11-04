@@ -26,6 +26,36 @@ public static class OperationalTaskRules
             _ => false,
         };
     }
+
+    private static readonly TimeSpan VietnamOffset = TimeSpan.FromHours(7);
+
+    /// <summary>
+    /// Overdue when the due day (Asia/Ho_Chi_Minh, fixed UTC+7, no DST) is before today
+    /// and the task is still open or in progress. A task due today is not overdue yet.
+    /// </summary>
+    public static bool IsOverdue(DateTime? dueAtUtc, string? status, DateTime utcNow)
+    {
+        if (dueAtUtc is not DateTime due)
+            return false;
+        var current = status?.Trim().ToLowerInvariant();
+        if (current is not (Open or InProgress))
+            return false;
+        var dueUtc = due.Kind == DateTimeKind.Local ? due.ToUniversalTime() : due;
+        var dueDay = DateOnly.FromDateTime(dueUtc.Add(VietnamOffset));
+        var today = DateOnly.FromDateTime(utcNow.Add(VietnamOffset));
+        return dueDay < today;
+    }
+
+    public static IReadOnlyList<OperationalTaskDto> ApplyOverdue(
+        IEnumerable<OperationalTaskDto> tasks,
+        DateTime utcNow,
+        bool overdueOnly)
+    {
+        var marked = tasks.Select(t => t with { IsOverdue = IsOverdue(t.DueAt, t.Status, utcNow) });
+        if (overdueOnly)
+            marked = marked.Where(t => t.IsOverdue);
+        return marked.OrderByDescending(t => t.IsOverdue).ToList();
+    }
 }
 
 public sealed record OperationalShiftOptionDto(
@@ -46,7 +76,8 @@ public sealed record OperationalTaskDto(
     string? EvidenceNote,
     Guid CreatedByUserId,
     DateTime? CompletedAt,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    bool IsOverdue = false);
 
 public sealed record CreateOperationalTaskRequest(
     Guid AssigneeEmployeeId,

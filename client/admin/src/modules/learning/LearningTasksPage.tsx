@@ -54,12 +54,14 @@ export function LearningTasksPage() {
   const [shiftId, setShiftId] = useState<string>();
   const [evidenceById, setEvidenceById] = useState<Record<string, string>>({});
   const [showClosed, setShowClosed] = useState(false);
+  const [dueDate, setDueDate] = useState('');
+  const [overdueOnly, setOverdueOnly] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [rows, people, openShifts] = await Promise.all([
-        fetchOperationalTasks(),
+        fetchOperationalTasks(undefined, overdueOnly),
         canWrite ? fetchLearningRoster().catch(() => []) : Promise.resolve([]),
         canWrite ? fetchOperationalOpenShifts().catch(() => []) : Promise.resolve([]),
       ]);
@@ -71,7 +73,7 @@ export function LearningTasksPage() {
     } finally {
       setLoading(false);
     }
-  }, [canWrite, message]);
+  }, [canWrite, message, overdueOnly]);
 
   useEffect(() => {
     void load();
@@ -98,8 +100,10 @@ export function LearningTasksPage() {
         assigneeEmployeeId: assigneeId,
         title: text,
         salesShiftId: belongsToShift ? shiftId : null,
+        dueAt: dueDate ? `${dueDate}T23:59:00+07:00` : null,
       });
       setTitle('');
+      setDueDate('');
       message.success('Đã giao việc.');
       await load();
     } catch (error) {
@@ -153,6 +157,13 @@ export function LearningTasksPage() {
               value={title}
               onChange={(event) => setTitle(event.target.value)}
             />
+            <Input
+              type="date"
+              addonBefore="Hạn hoàn thành"
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+              style={{ maxWidth: 320 }}
+            />
             <Checkbox
               checked={belongsToShift}
               onChange={(event) => {
@@ -198,9 +209,14 @@ export function LearningTasksPage() {
       <Card
         title={canWrite ? 'Việc của đội' : 'Việc của tôi'}
         extra={
-          <Checkbox checked={showClosed} onChange={(event) => setShowClosed(event.target.checked)}>
-            Xem việc đã xong
-          </Checkbox>
+          <Space>
+            <Checkbox checked={overdueOnly} onChange={(event) => setOverdueOnly(event.target.checked)}>
+              Chỉ việc quá hạn
+            </Checkbox>
+            <Checkbox checked={showClosed} onChange={(event) => setShowClosed(event.target.checked)}>
+              Xem việc đã xong
+            </Checkbox>
+          </Space>
         }
       >
         <List
@@ -216,6 +232,12 @@ export function LearningTasksPage() {
                   <Space wrap>
                     <Typography.Text strong>{task.title}</Typography.Text>
                     <Tag color={statusColor(task.status)}>{STATUS_LABEL[task.status] ?? task.status}</Tag>
+                    {task.isOverdue ? <Tag color="error">Quá hạn</Tag> : null}
+                    {task.dueAt ? (
+                      <Typography.Text type="secondary">
+                        Hạn {new Date(task.dueAt).toLocaleDateString('vi-VN')}
+                      </Typography.Text>
+                    ) : null}
                     {canWrite ? <Typography.Text type="secondary">{task.assigneeName}</Typography.Text> : null}
                     {task.salesShiftId ? (
                       <Typography.Text type="secondary">

@@ -58,6 +58,8 @@ function normalizeUserDetail(row: Record<string, unknown>): UserDetail {
     employeeId: (row.employeeId ?? row.EmployeeId) as string | undefined,
     employeeName: (row.employeeName ?? row.EmployeeName) as string | undefined,
     employeePhone: (row.employeePhone ?? row.EmployeePhone) as string | undefined,
+    employeeJobTitle: (row.employeeJobTitle ?? row.EmployeeJobTitle ?? undefined) as string | undefined,
+    employeeHireDate: (row.employeeHireDate ?? row.EmployeeHireDate ?? undefined) as string | undefined,
     roleIds: Array.isArray(roleIds) ? roleIds.map(String) : [],
     roleCodes: Array.isArray(roleCodes) ? roleCodes : [],
     lastLoginAt: (row.lastLoginAt ?? row.LastLoginAt) as string | undefined,
@@ -215,6 +217,8 @@ function normalizeEmployeeDetail(row: Record<string, unknown>): EmployeeDetail {
     fullName: String(row.fullName ?? row.FullName ?? ''),
     phone: (row.phone ?? row.Phone) as string | undefined,
     hasUserAccount: Boolean(row.hasUserAccount ?? row.HasUserAccount),
+    jobTitle: (row.jobTitle ?? row.JobTitle ?? undefined) as string | undefined,
+    hireDate: (row.hireDate ?? row.HireDate ?? undefined) as string | undefined,
     branches: branchesRaw.map((b) => ({
       branchId: String(b.branchId ?? b.BranchId),
       branchCode: String(b.branchCode ?? b.BranchCode ?? ''),

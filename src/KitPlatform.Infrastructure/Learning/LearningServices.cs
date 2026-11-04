@@ -51,18 +51,25 @@ internal sealed class LearningProgressService : ILearningProgressService
     {
         var employeeId = await RequireEmployeeAsync(cancellationToken);
         var programs = await _repo.ListProgramsAsync(cancellationToken);
-        var primary = programs.FirstOrDefault();
         var credentials = await _repo.ListCredentialsAsync(employeeId, cancellationToken);
 
-        if (primary is null)
-            return new LearningMyLearningDto(null, [], credentials);
+        var mine = new List<LearningMyProgramDto>(programs.Count);
+        foreach (var program in programs)
+        {
+            var enrollment = await _repo.GetEnrollmentAsync(employeeId, program.Id, cancellationToken);
+            var modules = enrollment is null
+                ? (IReadOnlyList<LearningModuleProgressDto>)[]
+                : await _repo.ListProgressAsync(enrollment.Id, cancellationToken);
+            mine.Add(new LearningMyProgramDto(program, enrollment, modules));
+        }
 
-        var enrollment = await _repo.GetEnrollmentAsync(employeeId, primary.Id, cancellationToken);
-        if (enrollment is null)
-            return new LearningMyLearningDto(null, [], credentials);
-
-        var modules = await _repo.ListProgressAsync(enrollment.Id, cancellationToken);
-        return new LearningMyLearningDto(enrollment, modules, credentials);
+        // Enrollment/Modules giữ cho client cũ: lộ trình đầu tiên (theo sort_order) mà NV đã ghi danh.
+        var primary = mine.FirstOrDefault(p => p.Enrollment is not null);
+        return new LearningMyLearningDto(
+            primary?.Enrollment,
+            primary?.Modules ?? [],
+            credentials,
+            mine);
     }
 
     public async Task<LearningEnrollmentDto> EnsureMyEnrollmentAsync(
@@ -152,12 +159,16 @@ internal sealed class LearningProgressService : ILearningProgressService
     public async Task<IReadOnlyList<LearningRecognitionDto>> ListRecognitionsAsync(
         int take = 30,
         bool mineOnly = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool canSeePrivate = false)
     {
         Guid? employeeId = null;
         if (mineOnly)
             employeeId = await RequireEmployeeAsync(cancellationToken);
-        return await _repo.ListRecognitionsAsync(take, employeeId, cancellationToken);
+        var viewerEmployeeId = employeeId
+            ?? await _repo.GetEmployeeIdForCurrentUserAsync(cancellationToken);
+        return await _repo.ListRecognitionsAsync(
+            take, employeeId, viewerEmployeeId, canSeePrivate, cancellationToken);
     }
 
     public Task<IReadOnlyList<LearningCustomerFeedbackDto>> ListRecentCustomerFeedbackAsync(
@@ -200,6 +211,11 @@ internal sealed class LearningProgressService : ILearningProgressService
         CancellationToken cancellationToken = default) =>
         _repo.GetEmployeeEvidenceAsync(employeeId, cancellationToken);
 
+    public Task<LearningGapReportDto> GetGapReportAsync(
+        int? days,
+        CancellationToken cancellationToken = default) =>
+        _repo.GetGapReportAsync(LearningGapRules.ClampDays(days), cancellationToken);
+
     public async Task AcknowledgeModuleAsync(
         Guid moduleId,
         string? selfieUrl = null,
@@ -228,6 +244,8 @@ internal sealed class LearningProgressService : ILearningProgressService
             moduleId,
             request.Answers ?? [],
             request.Practice,
+            request.QuestionIds,
+            request.QuizVariant,
             cancellationToken);
     }
 

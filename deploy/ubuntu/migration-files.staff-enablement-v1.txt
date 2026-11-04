@@ -5,3 +5,9 @@
 # This package does not include Knowledge/W5 migrations 414-417.
 412_success_checklist_pos_shift.sql
 413_learning_operational_task.sql
+# 435: append-only observation history (pass + fail). New table only, IF NOT EXISTS, no data rewrite.
+435_learning_observation_history.sql
+# Employee job title (ADD COLUMN IF NOT EXISTS). API works without it; apply after 413.
+434_employee_job_title.sql
+# 437: append-only quiz attempt + answer history. New tables only, IF NOT EXISTS. Quiz submit writes here, so apply with this package.
+437_learning_quiz_attempt_history.sql

@@ -194,7 +194,7 @@ export function CompetencyProfilePanel({
           <button type="button" onClick={() => setDetailKey('all')} style={tileBtn('#52c41a')}>
             <div style={{ fontSize: 18, lineHeight: 1, color: '#52c41a' }}>↗</div>
             <Typography.Title level={3} style={{ margin: '6px 0 2px', color: '#52c41a', fontSize: 26 }}>
-              {summary.competencyScore}
+              {summary.competencyScore != null ? `${summary.competencyScore}%` : '—'}
             </Typography.Title>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               Điểm năng lực
@@ -262,9 +262,16 @@ export function CompetencyProfilePanel({
                     <div key={g.key}>
                       <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                         <Typography.Text>{g.title}</Typography.Text>
-                        <Typography.Text type="secondary">{g.pct}%</Typography.Text>
+                        <Typography.Text type="secondary">
+                          {g.pct != null ? `${g.pct}%` : 'chưa có dữ liệu'}
+                        </Typography.Text>
                       </Space>
-                      <Progress percent={g.pct} strokeColor="#722ed1" showInfo={false} size="small" />
+                      {g.pct != null ? (
+                        <Progress percent={g.pct} strokeColor="#722ed1" showInfo={false} size="small" />
+                      ) : null}
+                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                        {g.hint}
+                      </Typography.Text>
                     </div>
                   ))}
                 </Space>

@@ -139,6 +139,37 @@ internal sealed class LearningRepository
             """,
             new { ModuleId = moduleId })).ToList();
 
+        var publicQuestions = questions.Select(q => new LearningQuizQuestionPublicDto(
+            q.Id,
+            q.SortOrder,
+            q.Prompt,
+            ParseOptions(q.OptionsJson))).ToList();
+
+        int? quizVariant = null;
+        if (UserId != Guid.Empty && publicQuestions.Count > 0)
+        {
+            var learner = await conn.QuerySingleOrDefaultAsync<(Guid? EmployeeId, int? Attempts)>(
+                """
+                SELECT u.employee_id,
+                       (SELECT mp.quiz_attempts
+                        FROM pack_learning.enrollment e
+                        INNER JOIN pack_learning.module_progress mp
+                            ON mp.enrollment_id = e.id AND mp.module_id = @ModuleId
+                        WHERE e.tenant_id = @TenantId
+                          AND e.employee_id = u.employee_id
+                          AND e.program_id = @ProgramId
+                        LIMIT 1)
+                FROM users u
+                WHERE u.id = @UserId AND u.tenant_id = @TenantId AND u.deleted_at IS NULL
+                """,
+                new { UserId, TenantId, ModuleId = moduleId, mod.ProgramId });
+            if (learner.EmployeeId is not null)
+            {
+                quizVariant = (learner.Attempts ?? 0) + 1;
+                publicQuestions = ShuffleForLearner(publicQuestions, moduleId, quizVariant.Value);
+            }
+        }
+
         return new LearningModuleDetailDto(
             mod.Id,
             mod.ProgramId,
@@ -151,13 +182,26 @@ internal sealed class LearningRepository
             mod.CompetencyCodes ?? [],
             mod.PassScorePct,
             mod.RequireAck,
-            questions.Select(q => new LearningQuizQuestionPublicDto(
-                q.Id,
-                q.SortOrder,
-                q.Prompt,
-                ParseOptions(q.OptionsJson))).ToList(),
+            publicQuestions,
             mod.IsTenantCustomized,
-            mod.RequireObservation);
+            mod.RequireObservation,
+            quizVariant);
+    }
+
+    private List<LearningQuizQuestionPublicDto> ShuffleForLearner(
+        IReadOnlyList<LearningQuizQuestionPublicDto> canonical,
+        Guid moduleId,
+        int variant)
+    {
+        var questionOrder = LearningQuizShuffle.QuestionOrder(UserId, moduleId, variant, canonical.Count);
+        return LearningQuizShuffle.ApplyOrder(canonical, questionOrder)
+            .Select(q => q with
+            {
+                Options = LearningQuizShuffle.ApplyOrder(
+                    q.Options,
+                    LearningQuizShuffle.OptionOrder(UserId, q.Id, variant, q.Options.Count)),
+            })
+            .ToList();
     }
 
     public async Task<LearningModuleDetailDto> UpsertModuleTenantContentAsync(
@@ -432,6 +476,8 @@ internal sealed class LearningRepository
         Guid moduleId,
         IReadOnlyList<int> answers,
         bool practice,
+        IReadOnlyList<Guid>? questionIds,
+        int? quizVariant,
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -466,9 +512,11 @@ internal sealed class LearningRepository
                 throw new InvalidOperationException("Cần ký xác nhận đã đọc trước khi làm bài kiểm tra.");
         }
 
-        var keys = (await conn.QueryAsync<(Guid Id, int Correct)>(
+        var keys = (await conn.QueryAsync<(Guid Id, int Correct, int OptionCount)>(
             """
-            SELECT id, correct_option_index
+            SELECT id, correct_option_index,
+                   CASE WHEN jsonb_typeof(options_json) = 'array'
+                        THEN jsonb_array_length(options_json) ELSE 0 END
             FROM pack_learning.quiz_question
             WHERE module_id = @ModuleId
             ORDER BY sort_order
@@ -482,31 +530,49 @@ internal sealed class LearningRepository
         if (answers.Count != keys.Count)
             throw new ArgumentException($"Cần trả lời đủ {keys.Count} câu.");
 
+        var progressRow = await conn.QuerySingleAsync<(string Status, int? ScorePct, int Attempts)>(
+            """
+            SELECT status, score_pct, quiz_attempts
+            FROM pack_learning.module_progress
+            WHERE enrollment_id = @EnrollmentId AND module_id = @ModuleId
+            FOR UPDATE
+            """,
+            new { EnrollmentId = enrollmentId, ModuleId = moduleId },
+            tx);
+
+        var variant = quizVariant is >= 1 ? quizVariant.Value : progressRow.Attempts + 1;
+        var displayKeys = ResolveDisplayedQuestionOrder(keys, questionIds, moduleId, variant);
+
         var correct = 0;
-        for (var i = 0; i < keys.Count; i++)
+        var answerRows = new List<(Guid QuestionId, int Chosen, bool IsCorrect)>(displayKeys.Count);
+        for (var i = 0; i < displayKeys.Count; i++)
         {
-            if (answers[i] == keys[i].Correct)
+            var key = displayKeys[i];
+            var optionOrder = LearningQuizShuffle.OptionOrder(UserId, key.Id, variant, key.OptionCount);
+            var chosen = LearningQuizShuffle.ToCanonical(optionOrder, answers[i]);
+            var isCorrect = chosen == key.Correct;
+            if (isCorrect)
                 correct++;
+            answerRows.Add((key.Id, chosen, isCorrect));
         }
 
         var scorePct = (int)Math.Round(100.0 * correct / keys.Count);
         var passed = scorePct >= passScore;
 
+        await InsertQuizAttemptAsync(
+            conn, tx, enrollmentId, employeeId, moduleId, variant, practice,
+            keys.Count, correct, scorePct, passed, answerRows);
+
         if (practice)
         {
-            var currentStatus = await conn.ExecuteScalarAsync<string>(
-                """
-                SELECT status FROM pack_learning.module_progress
-                WHERE enrollment_id = @EnrollmentId AND module_id = @ModuleId
-                """,
-                new { EnrollmentId = enrollmentId, ModuleId = moduleId },
-                tx) ?? "in_progress";
             await tx.CommitAsync(cancellationToken);
             return new SubmitLearningQuizResultDto(
-                passed, scorePct, passScore, currentStatus, []);
+                passed, scorePct, passScore, progressRow.Status ?? "in_progress", []);
         }
 
-        var status = passed ? "passed" : "failed";
+        var decision = LearningScoringRules.DecideQuizProgress(
+            progressRow.Status, progressRow.ScorePct, passed, scorePct);
+        var status = decision.Status;
 
         await conn.ExecuteAsync(
             """
@@ -515,7 +581,7 @@ internal sealed class LearningRepository
                 score_pct = @ScorePct,
                 quiz_attempts = quiz_attempts + 1,
                 started_at = COALESCE(started_at, NOW()),
-                completed_at = CASE WHEN @Passed THEN NOW() ELSE completed_at END,
+                completed_at = CASE WHEN @FirstPass THEN NOW() ELSE completed_at END,
                 updated_at = NOW()
             WHERE enrollment_id = @EnrollmentId AND module_id = @ModuleId
             """,
@@ -524,65 +590,27 @@ internal sealed class LearningRepository
                 EnrollmentId = enrollmentId,
                 ModuleId = moduleId,
                 Status = status,
-                ScorePct = scorePct,
-                Passed = passed,
+                ScorePct = decision.ScorePct,
+                decision.FirstPass,
             },
             tx);
 
+        if (passed && !decision.FirstPass)
+        {
+            // Làm lại bài đã đạt: chỉ nâng điểm chứng nhận nếu cao hơn; không tạo lại ghi nhận / hoàn thành lộ trình.
+            var retakeComps = await UpsertModuleCredentialsAsync(conn, tx, employeeId, moduleId, scorePct);
+            if (decision.FirstPerfect)
+                await InsertPerfectScoreRecognitionAsync(conn, tx, employeeId, moduleId);
+            await tx.CommitAsync(cancellationToken);
+            return new SubmitLearningQuizResultDto(passed, scorePct, passScore, status, retakeComps);
+        }
+
         if (passed)
         {
-            var comps = (await conn.QueryAsync<string>(
-                """
-                SELECT UNNEST(competency_codes)
-                FROM pack_learning.module
-                WHERE id = @ModuleId
-                """,
-                new { ModuleId = moduleId },
-                tx)).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().ToList();
+            var comps = await UpsertModuleCredentialsAsync(
+                conn, tx, employeeId, moduleId, scorePct, firstPass: true);
 
-            var levelCode = await conn.ExecuteScalarAsync<string>(
-                """
-                SELECT level_code FROM pack_learning.module WHERE id = @ModuleId
-                """,
-                new { ModuleId = moduleId },
-                tx) ?? "L0";
-
-            foreach (var code in comps)
-            {
-                await conn.ExecuteAsync(
-                    """
-                    INSERT INTO pack_learning.credential (
-                        tenant_id, employee_id, competency_code, level_code,
-                        source_module_id, score_pct, earned_at
-                    )
-                    VALUES (
-                        @TenantId, @EmployeeId, @Code, @LevelCode,
-                        @ModuleId, @ScorePct, NOW()
-                    )
-                    ON CONFLICT (tenant_id, employee_id, competency_code) DO UPDATE SET
-                        level_code = EXCLUDED.level_code,
-                        source_module_id = EXCLUDED.source_module_id,
-                        score_pct = EXCLUDED.score_pct,
-                        earned_at = NOW()
-                    """,
-                    new
-                    {
-                        TenantId,
-                        EmployeeId = employeeId,
-                        Code = code,
-                        LevelCode = levelCode,
-                        ModuleId = moduleId,
-                        ScorePct = scorePct,
-                    },
-                    tx);
-            }
-
-            var moduleTitle = await conn.ExecuteScalarAsync<string>(
-                """
-                SELECT title FROM pack_learning.module WHERE id = @ModuleId
-                """,
-                new { ModuleId = moduleId },
-                tx) ?? "Bài học";
+            var (moduleTitle, levelCode) = await GetModuleTitleAndLevelAsync(conn, tx, moduleId);
 
             // L0–L6 = lộ trình / level — không tạo huy hiệu mỗi lần hoàn thành (tránh quá nhiều huy hiệu).
             // Chỉ recognition feed + credential; huy hiệu khi xuất sắc 100% hoặc quản lý trao tay.
@@ -596,29 +624,8 @@ internal sealed class LearningRepository
                 badgeCode: null,
                 badgeTitle: null);
 
-            if (scorePct >= 100)
-            {
-                var perfectTitle = levelCode.ToUpperInvariant() switch
-                {
-                    "L0" => "L0 Xuất sắc — Onboarding",
-                    "L1" => "L1 Xuất sắc — Bán tại quầy",
-                    "L2" => "L2 Xuất sắc — Chăm sóc khách",
-                    "L3" => "L3 Xuất sắc — An toàn thuốc",
-                    "L4" => "L4 Xuất sắc — Vận hành ca",
-                    "L5" => "L5 Xuất sắc — Tư vấn",
-                    "L6" => "L6 Xuất sắc — Ca trưởng",
-                    _ => $"{levelCode} Xuất sắc",
-                };
-                await InsertRecognitionAsync(
-                    conn,
-                    tx,
-                    employeeId,
-                    "badge_award",
-                    $"Xuất sắc 100%: {moduleTitle}",
-                    levelCode,
-                    badgeCode: $"perfect_{levelCode.ToLowerInvariant()}",
-                    badgeTitle: perfectTitle);
-            }
+            if (decision.FirstPerfect)
+                await InsertPerfectScoreRecognitionAsync(conn, tx, employeeId, moduleId);
 
             var remaining = await conn.ExecuteScalarAsync<int>(
                 """
@@ -683,6 +690,186 @@ internal sealed class LearningRepository
 
         await tx.CommitAsync(cancellationToken);
         return new SubmitLearningQuizResultDto(passed, scorePct, passScore, status, []);
+    }
+
+    private IReadOnlyList<(Guid Id, int Correct, int OptionCount)> ResolveDisplayedQuestionOrder(
+        IReadOnlyList<(Guid Id, int Correct, int OptionCount)> canonical,
+        IReadOnlyList<Guid>? questionIds,
+        Guid moduleId,
+        int variant)
+    {
+        if (questionIds is { Count: > 0 })
+        {
+            var byId = canonical.ToDictionary(k => k.Id);
+            if (questionIds.Count != canonical.Count
+                || questionIds.Distinct().Count() != canonical.Count
+                || questionIds.Any(id => !byId.ContainsKey(id)))
+            {
+                throw new ArgumentException("Danh sách câu hỏi không khớp bài học — tải lại bài rồi làm lại.");
+            }
+
+            return questionIds.Select(id => byId[id]).ToList();
+        }
+
+        var order = LearningQuizShuffle.QuestionOrder(UserId, moduleId, variant, canonical.Count);
+        return LearningQuizShuffle.ApplyOrder(canonical, order);
+    }
+
+    private static async Task<(string Title, string LevelCode)> GetModuleTitleAndLevelAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid moduleId)
+    {
+        var row = await conn.QuerySingleOrDefaultAsync<(string? Title, string? LevelCode)>(
+            "SELECT title, level_code FROM pack_learning.module WHERE id = @ModuleId",
+            new { ModuleId = moduleId },
+            tx);
+        return (row.Title ?? "Bài học", row.LevelCode ?? "L0");
+    }
+
+    /// <summary>
+    /// Lần đạt đầu: ghi đè như cũ. Làm lại bài đã đạt: chỉ nâng điểm khi cao hơn — không bao giờ hạ/thu hồi.
+    /// </summary>
+    private async Task InsertQuizAttemptAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid enrollmentId,
+        Guid employeeId,
+        Guid moduleId,
+        int variant,
+        bool practice,
+        int questionCount,
+        int correctCount,
+        int scorePct,
+        bool passed,
+        IReadOnlyList<(Guid QuestionId, int Chosen, bool IsCorrect)> answers)
+    {
+        var attemptId = await conn.ExecuteScalarAsync<Guid>(
+            """
+            INSERT INTO pack_learning.quiz_attempt (
+                tenant_id, enrollment_id, module_id, employee_id, user_id,
+                variant, practice, question_count, correct_count, score_pct, passed, submitted_at
+            )
+            VALUES (
+                @TenantId, @EnrollmentId, @ModuleId, @EmployeeId, @UserId,
+                @Variant, @Practice, @QuestionCount, @CorrectCount, @ScorePct, @Passed, NOW()
+            )
+            RETURNING id
+            """,
+            new
+            {
+                TenantId,
+                EnrollmentId = enrollmentId,
+                ModuleId = moduleId,
+                EmployeeId = employeeId,
+                UserId,
+                Variant = variant,
+                Practice = practice,
+                QuestionCount = questionCount,
+                CorrectCount = correctCount,
+                ScorePct = scorePct,
+                Passed = passed,
+            },
+            tx);
+
+        await conn.ExecuteAsync(
+            """
+            INSERT INTO pack_learning.quiz_attempt_answer (attempt_id, question_id, chosen_option, is_correct)
+            VALUES (@AttemptId, @QuestionId, @Chosen, @IsCorrect)
+            """,
+            answers.Select(a => new
+            {
+                AttemptId = attemptId,
+                a.QuestionId,
+                a.Chosen,
+                a.IsCorrect,
+            }),
+            tx);
+    }
+
+    private async Task<IReadOnlyList<string>> UpsertModuleCredentialsAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid employeeId,
+        Guid moduleId,
+        int scorePct,
+        bool firstPass = false)
+    {
+        var comps = (await conn.QueryAsync<string>(
+            """
+            SELECT UNNEST(competency_codes)
+            FROM pack_learning.module
+            WHERE id = @ModuleId
+            """,
+            new { ModuleId = moduleId },
+            tx)).Where(c => !string.IsNullOrWhiteSpace(c)).Distinct().ToList();
+
+        var (_, levelCode) = await GetModuleTitleAndLevelAsync(conn, tx, moduleId);
+
+        foreach (var code in comps)
+        {
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO pack_learning.credential (
+                    tenant_id, employee_id, competency_code, level_code,
+                    source_module_id, score_pct, earned_at
+                )
+                VALUES (
+                    @TenantId, @EmployeeId, @Code, @LevelCode,
+                    @ModuleId, @ScorePct, NOW()
+                )
+                ON CONFLICT (tenant_id, employee_id, competency_code) DO UPDATE SET
+                    level_code = EXCLUDED.level_code,
+                    source_module_id = EXCLUDED.source_module_id,
+                    score_pct = EXCLUDED.score_pct,
+                    earned_at = NOW()
+                WHERE @FirstPass
+                   OR pack_learning.credential.score_pct IS NULL
+                   OR pack_learning.credential.score_pct < EXCLUDED.score_pct
+                """,
+                new
+                {
+                    TenantId,
+                    EmployeeId = employeeId,
+                    Code = code,
+                    LevelCode = levelCode,
+                    ModuleId = moduleId,
+                    ScorePct = scorePct,
+                    FirstPass = firstPass,
+                },
+                tx);
+        }
+
+        return comps;
+    }
+
+    private async Task InsertPerfectScoreRecognitionAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid employeeId,
+        Guid moduleId)
+    {
+        var (moduleTitle, levelCode) = await GetModuleTitleAndLevelAsync(conn, tx, moduleId);
+        var perfectTitle = levelCode.ToUpperInvariant() switch
+        {
+            "L0" => "L0 Xuất sắc — Onboarding",
+            "L1" => "L1 Xuất sắc — Bán tại quầy",
+            "L2" => "L2 Xuất sắc — Chăm sóc khách",
+            "L3" => "L3 Xuất sắc — An toàn thuốc",
+            "L4" => "L4 Xuất sắc — Vận hành ca",
+            "L5" => "L5 Xuất sắc — Tư vấn",
+            "L6" => "L6 Xuất sắc — Ca trưởng",
+            _ => $"{levelCode} Xuất sắc",
+        };
+        await InsertRecognitionAsync(
+            conn,
+            tx,
+            employeeId,
+            "badge_award",
+            $"Xuất sắc 100%: {moduleTitle}",
+            levelCode,
+            badgeCode: $"perfect_{levelCode.ToLowerInvariant()}",
+            badgeTitle: perfectTitle);
     }
 
     public async Task<IReadOnlyList<LearningCredentialDto>> ListCredentialsAsync(
@@ -1147,35 +1334,48 @@ internal sealed class LearningRepository
             new { Id = id });
 
         return new LearningRecognitionDto(
-            row.Id, row.EmployeeId, row.Name, row.Kind, row.Title, row.Body, row.Badge, row.At, customerRating);
+            row.Id, row.EmployeeId, row.Name, row.Kind, row.Title, row.Body, row.Badge, row.At, customerRating,
+            request.IsPublic);
     }
 
     public async Task<IReadOnlyList<LearningRecognitionDto>> ListRecognitionsAsync(
         int take,
         Guid? employeeId,
+        Guid? viewerEmployeeId,
+        bool canSeePrivate,
         CancellationToken cancellationToken)
     {
         take = Math.Clamp(take, 1, 100);
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var rows = await conn.QueryAsync<(
-            Guid Id, Guid EmployeeId, string Name, string Kind, string Title, string? Body, string? Badge, DateTime At, int? CustomerRating)>(
+            Guid Id, Guid EmployeeId, string Name, string Kind, string Title, string? Body, string? Badge, DateTime At,
+            int? CustomerRating, bool IsPublic)>(
             """
             SELECT r.id, r.employee_id, emp.full_name, r.kind, r.title, r.body, r.badge_code, r.created_at,
-                   fb.rating AS CustomerRating
+                   fb.rating AS CustomerRating, r.is_public
             FROM pack_learning.recognition r
             INNER JOIN employees emp ON emp.id = r.employee_id
             LEFT JOIN pack_learning.customer_sale_feedback fb
                 ON fb.recognition_id = r.id AND fb.tenant_id = r.tenant_id
             WHERE r.tenant_id = @TenantId
-              AND r.is_public
+              AND (r.is_public
+                   OR @CanSeePrivate
+                   OR (@ViewerEmployeeId IS NOT NULL AND r.employee_id = @ViewerEmployeeId))
               AND (@EmployeeId IS NULL OR r.employee_id = @EmployeeId)
             ORDER BY r.created_at DESC
             LIMIT @Take
             """,
-            new { TenantId, Take = take, EmployeeId = employeeId });
+            new
+            {
+                TenantId,
+                Take = take,
+                EmployeeId = employeeId,
+                ViewerEmployeeId = viewerEmployeeId,
+                CanSeePrivate = canSeePrivate,
+            });
 
         return rows.Select(r => new LearningRecognitionDto(
-            r.Id, r.EmployeeId, r.Name, r.Kind, r.Title, r.Body, r.Badge, r.At, r.CustomerRating)).ToList();
+            r.Id, r.EmployeeId, r.Name, r.Kind, r.Title, r.Body, r.Badge, r.At, r.CustomerRating, r.IsPublic)).ToList();
     }
 
     public async Task<IReadOnlyList<LearningCustomerFeedbackDto>> ListRecentCustomerFeedbackAsync(
@@ -1341,7 +1541,7 @@ internal sealed class LearningRepository
                     if (avgNullable is null)
                         missing.Add($"Cần đánh giá ≥ {next.MinAvgEvaluate}");
                     else if (avgNullable.Value < next.MinAvgEvaluate)
-                        missing.Add($"Điểm Evaluate ≥ {next.MinAvgEvaluate} (hiện {avgNullable})");
+                        missing.Add($"Điểm đánh giá ≥ {next.MinAvgEvaluate} (hiện {avgNullable})");
                 }
                 foreach (var c in next.RequiredCompetencyCodes)
                 {
@@ -1634,9 +1834,9 @@ internal sealed class LearningRepository
 
         var actions = new List<string>();
         if (missingPos > 0)
-            actions.Add($"{missingPos} NV chưa có credential POS (pos_basic) — gán/học bài L1, POS sẽ nhắc soft.");
+            actions.Add($"{missingPos} NV chưa có chứng nhận Bán hàng tại quầy cơ bản — giao/học bài L1, quầy bán chỉ nhắc nhẹ.");
         if (unevaluated > 0)
-            actions.Add($"{unevaluated} NV chưa chấm Evaluate tháng {month}/{year} — mở Đánh giá, xem bằng chứng học rồi lưu điểm.");
+            actions.Add($"{unevaluated} NV chưa có đánh giá tháng {month}/{year} — mở Đánh giá, xem bằng chứng học rồi lưu điểm.");
         if (eligiblePromo > 0)
             actions.Add($"{eligiblePromo} NV đủ điều kiện lên bậc — vào Bậc nghề để duyệt (lợi ích lộ trình nghề rõ).");
         if (enrollStats.Enrolled == 0 && employeeCount > 0)
@@ -1779,72 +1979,27 @@ internal sealed class LearningRepository
         var hasGrn = codes.Any(c => string.Equals(c, "grn_receive", StringComparison.OrdinalIgnoreCase));
         var hasShift = codes.Any(c => string.Equals(c, "shift_close", StringComparison.OrdinalIgnoreCase));
 
-        var trainPct = row.ModulesTotal > 0
-            ? (int)Math.Round(100.0 * row.ModulesPassed / row.ModulesTotal)
-            : 0;
-
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var utcNow = DateTime.UtcNow;
+        var monthStart = LearningScoringRules.VnMonthStart(utcNow);
+        var today = LearningScoringRules.VnToday(utcNow);
+        var monthStartUtc = VnDateStartUtc(monthStart);
 
-        var closeDays = await conn.ExecuteScalarAsync<int>(
-            """
-            SELECT COUNT(DISTINCT r.business_date)::int
-            FROM success_shift_checklist_run r
-            INNER JOIN success_shift_checklist_run_item i
-                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
-            INNER JOIN users u ON u.id = i.checked_by_user_id
-            WHERE r.tenant_id = @TenantId
-              AND u.employee_id = @EmployeeId
-              AND r.kind = 'close'
-              AND r.status = 'completed'
-              AND r.business_date >= @MonthStart::date
-            """,
-            new { TenantId, EmployeeId = employeeId, MonthStart = monthStart });
-
-        var closeDates = (await conn.QueryAsync<DateTime>(
-            """
-            SELECT DISTINCT r.business_date
-            FROM success_shift_checklist_run r
-            INNER JOIN success_shift_checklist_run_item i
-                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
-            INNER JOIN users u ON u.id = i.checked_by_user_id
-            WHERE r.tenant_id = @TenantId
-              AND u.employee_id = @EmployeeId
-              AND r.kind = 'close'
-              AND r.status = 'completed'
-            ORDER BY r.business_date DESC
-            LIMIT 60
-            """,
-            new { TenantId, EmployeeId = employeeId }))
-            .Select(d => DateOnly.FromDateTime(d))
-            .ToList();
-
-        var streak = 0;
-        var cursor = today;
-        var dateSet = closeDates.ToHashSet();
-        // nếu hôm nay chưa đóng, streak tính từ hôm qua
-        if (!dateSet.Contains(cursor))
-            cursor = cursor.AddDays(-1);
-        while (dateSet.Contains(cursor))
-        {
-            streak++;
-            cursor = cursor.AddDays(-1);
-        }
+        var closeDays = await CountDisciplineCloseDaysAsync(conn, employeeId, monthStart, today);
+        var dateSet = await ListDisciplineCloseDatesAsync(conn, employeeId);
+        var streak = CloseStreak(dateSet, today);
 
         var sales = await conn.QuerySingleOrDefaultAsync<(int Orders, decimal Net)>(
             """
             SELECT COUNT(o.id)::int AS orders,
                    COALESCE(SUM(o.total_amount), 0)::numeric AS net
             FROM sales_orders o
-            INNER JOIN sales_shifts s ON s.id = o.sales_shift_id
-            INNER JOIN users u ON u.id = s.opened_by
             WHERE o.tenant_id = @TenantId
-              AND u.employee_id = @EmployeeId
-              AND o.created_at >= @MonthStart
+              AND o.employee_id = @EmployeeId
+              AND o.created_at >= @MonthStartUtc
               AND o.status = 2
             """,
-            new { TenantId, EmployeeId = employeeId, MonthStart = monthStart });
+            new { TenantId, EmployeeId = employeeId, MonthStartUtc = monthStartUtc });
 
         var pulse = await conn.ExecuteScalarAsync<int?>(
             """
@@ -1857,24 +2012,28 @@ internal sealed class LearningRepository
             """,
             new { TenantId, EmployeeId = employeeId });
 
-        // Gợi ý điểm từ học + chuyên cần checklist
-        var sk = hasPos ? Math.Clamp(70 + trainPct / 5, 60, 95) : 55;
-        var sa = hasTone ? 82 : 68;
-        var sc = hasTone || hasPos ? 80 : 65;
-        var ss = hasGrn ? 82 : (trainPct >= 50 ? 72 : 60);
-        var expectedDays = Math.Max(1, DateTime.UtcNow.Day);
-        var closePct = (int)Math.Round(100.0 * closeDays / expectedDays);
-        var sd = hasShift
-            ? Math.Clamp(70 + closePct / 5, 60, 95)
-            : Math.Clamp(55 + closePct / 4, 50, 85);
-        if (streak >= 7) sd = Math.Max(sd, 85);
+        var suggestion = LearningScoringRules.SuggestScores(new LearningSuggestionInput(
+            row.ModulesPassed,
+            row.ModulesTotal,
+            hasPos,
+            hasTone,
+            hasGrn,
+            hasShift,
+            closeDays,
+            today.Day,
+            streak));
+        var trainPct = row.ModulesTotal > 0
+            ? (int)Math.Round(100.0 * row.ModulesPassed / row.ModulesTotal)
+            : 0;
 
         var noteParts = new List<string>
         {
             $"Học: {row.ModulesPassed}/{row.ModulesTotal} bài ({trainPct}%).",
-            hasPos ? "Đã có pos_basic." : "Thiếu pos_basic — kiến thức/POS nên thấp hơn.",
-            $"Đóng ca checklist tháng này: {closeDays} ngày (chuỗi {streak} ngày).",
-            sales.Orders > 0 ? $"Bán tháng (ca mở): {sales.Orders} đơn." : "Chưa có đơn gắn ca mở tháng này.",
+            hasPos
+                ? "Đã có chứng nhận Bán hàng tại quầy cơ bản."
+                : "Chưa có chứng nhận Bán hàng tại quầy cơ bản — điểm kiến thức gợi ý thấp hơn.",
+            $"Đóng ca đủ mục bắt buộc tháng này: {closeDays} ngày (chuỗi {streak} ngày).",
+            sales.Orders > 0 ? $"Đơn do nhân viên bán tháng này: {sales.Orders}." : "Chưa có đơn do nhân viên bán tháng này.",
             career?.CurrentLevelTitle is not null
                 ? $"Bậc: {career.CurrentLevelTitle}" + (career.NextLevelTitle is null
                     ? "."
@@ -1895,17 +2054,243 @@ internal sealed class LearningRepository
             career?.EligibleForNext ?? false,
             career?.MissingReasons ?? [],
             career?.TenureMonths ?? 0,
-            sk,
-            sa,
-            sc,
-            ss,
-            sd,
+            suggestion.Knowledge,
+            suggestion.Attitude,
+            suggestion.Care,
+            suggestion.Stock,
+            suggestion.Discipline,
             string.Join(" ", noteParts),
             closeDays,
             streak,
             sales.Orders,
             sales.Net,
-            pulse);
+            pulse,
+            suggestion.Basis);
+    }
+
+    public async Task<LearningGapReportDto> GetGapReportAsync(
+        int days,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var utcNow = DateTime.UtcNow;
+        var today = LearningScoringRules.VnToday(utcNow);
+        var fromUtc = VnDateStartUtc(today.AddDays(-days));
+
+        var questionRows = await conn.QueryAsync<(
+            Guid QuestionId, Guid ModuleId, string ModuleTitle, string Prompt, int Answered, int Wrong)>(
+            """
+            SELECT a.question_id, q.module_id, m.title, q.prompt,
+                   COUNT(*)::int AS answered,
+                   COUNT(*) FILTER (WHERE NOT a.is_correct)::int AS wrong
+            FROM pack_learning.quiz_attempt t
+            INNER JOIN pack_learning.quiz_attempt_answer a ON a.attempt_id = t.id
+            INNER JOIN pack_learning.quiz_question q ON q.id = a.question_id
+            INNER JOIN pack_learning.module m ON m.id = q.module_id
+            WHERE t.tenant_id = @TenantId
+              AND NOT t.practice
+              AND t.submitted_at >= @FromUtc
+            GROUP BY a.question_id, q.module_id, m.title, q.prompt
+            HAVING COUNT(*) >= @MinAnswers
+            """,
+            new { TenantId, FromUtc = fromUtc, MinAnswers = LearningGapRules.MinAnswersForWeakQuestion });
+
+        var weakQuestions = questionRows
+            .Where(r => LearningGapRules.IsWeakQuestion(r.Answered, r.Wrong))
+            .Select(r => new LearningWeakQuestionDto(
+                r.QuestionId, r.ModuleId, r.ModuleTitle, r.Prompt, r.Answered, r.Wrong,
+                LearningGapRules.WrongPct(r.Answered, r.Wrong)))
+            .OrderByDescending(r => r.WrongPct)
+            .ThenByDescending(r => r.Answered)
+            .Take(20)
+            .ToList();
+
+        var quizGaps = await conn.QueryAsync<(
+            Guid EmployeeId, string EmployeeName, Guid ModuleId, string ModuleTitle, int FailCount, DateTime LastAt)>(
+            """
+            SELECT t.employee_id, emp.full_name, t.module_id, m.title,
+                   COUNT(*)::int, MAX(t.submitted_at)
+            FROM pack_learning.quiz_attempt t
+            INNER JOIN public.employees emp ON emp.id = t.employee_id
+            INNER JOIN pack_learning.module m ON m.id = t.module_id
+            INNER JOIN pack_learning.module_progress mp
+                ON mp.enrollment_id = t.enrollment_id AND mp.module_id = t.module_id
+            WHERE t.tenant_id = @TenantId
+              AND NOT t.practice
+              AND NOT t.passed
+              AND t.submitted_at >= @FromUtc
+              AND mp.status <> 'passed'
+            GROUP BY t.employee_id, emp.full_name, t.module_id, m.title
+            """,
+            new { TenantId, FromUtc = fromUtc });
+
+        var observationGaps = await conn.QueryAsync<(
+            Guid EmployeeId, string EmployeeName, Guid ModuleId, string ModuleTitle, int FailCount, DateTime LastAt)>(
+            """
+            SELECT h.employee_id, emp.full_name, h.module_id, m.title,
+                   COUNT(*)::int, MAX(h.observed_at)
+            FROM pack_learning.module_observation_history h
+            INNER JOIN public.employees emp ON emp.id = h.employee_id
+            INNER JOIN pack_learning.module m ON m.id = h.module_id
+            WHERE h.tenant_id = @TenantId
+              AND NOT h.passed
+              AND h.observed_at >= @FromUtc
+              AND NOT EXISTS (
+                  SELECT 1 FROM pack_learning.module_observation_history p
+                  WHERE p.tenant_id = h.tenant_id
+                    AND p.employee_id = h.employee_id
+                    AND p.module_id = h.module_id
+                    AND p.passed
+                    AND p.observed_at > h.observed_at)
+            GROUP BY h.employee_id, emp.full_name, h.module_id, m.title
+            """,
+            new { TenantId, FromUtc = fromUtc });
+
+        var gaps = quizGaps
+            .Select(r => new LearningEmployeeGapDto(
+                r.EmployeeId, r.EmployeeName, r.ModuleId, r.ModuleTitle, "quiz_failed", r.FailCount, r.LastAt,
+                "Ôn lại bài và làm lại bài kiểm tra; quản lý xem các câu hay sai của bài này."))
+            .Concat(observationGaps.Select(r => new LearningEmployeeGapDto(
+                r.EmployeeId, r.EmployeeName, r.ModuleId, r.ModuleTitle, "observation_failed", r.FailCount, r.LastAt,
+                "Kèm tại quầy theo tiêu chí chưa đạt, rồi quan sát lại.")))
+            .OrderByDescending(g => g.LastAt)
+            .ToList();
+
+        var passedRows = (await conn.QueryAsync<(
+            Guid EmployeeId, string EmployeeName, Guid ModuleId, string ModuleTitle, DateTime CompletedAt)>(
+            """
+            SELECT e.employee_id, emp.full_name, mp.module_id, m.title, mp.completed_at
+            FROM pack_learning.module_progress mp
+            INNER JOIN pack_learning.enrollment e ON e.id = mp.enrollment_id
+            INNER JOIN public.employees emp ON emp.id = e.employee_id
+            INNER JOIN pack_learning.module m ON m.id = mp.module_id
+            WHERE e.tenant_id = @TenantId
+              AND mp.status = 'passed'
+              AND mp.completed_at >= @FromUtc
+            ORDER BY mp.completed_at DESC
+            LIMIT 50
+            """,
+            new { TenantId, FromUtc = fromUtc })).ToList();
+
+        var windows = passedRows
+            .Select(r => (Row: r, Window: LearningGapRules.OutcomeWindow(
+                LearningScoringRules.VnToday(r.CompletedAt), today)))
+            .Where(x => x.Window is not null)
+            .Select(x => (x.Row, Window: x.Window!))
+            .ToList();
+
+        var outcomes = new List<LearningModuleOutcomeDto>(windows.Count);
+        if (windows.Count > 0)
+        {
+            var counts = (await conn.QueryAsync<(int Idx, int Before, int After)>(
+                """
+                SELECT w.idx,
+                       (SELECT COUNT(*) FROM sales_orders o
+                        WHERE o.tenant_id = @TenantId AND o.employee_id = w.emp AND o.status = 2
+                          AND o.created_at >= w.before_from AND o.created_at < w.passed_from)::int,
+                       (SELECT COUNT(*) FROM sales_orders o
+                        WHERE o.tenant_id = @TenantId AND o.employee_id = w.emp AND o.status = 2
+                          AND o.created_at >= w.passed_from AND o.created_at < w.after_to)::int
+                FROM unnest(@Idx::int[], @Emp::uuid[], @BeforeFrom::timestamptz[],
+                            @PassedFrom::timestamptz[], @AfterTo::timestamptz[])
+                     AS w(idx, emp, before_from, passed_from, after_to)
+                """,
+                new
+                {
+                    TenantId,
+                    Idx = Enumerable.Range(0, windows.Count).ToArray(),
+                    Emp = windows.Select(w => w.Row.EmployeeId).ToArray(),
+                    BeforeFrom = windows.Select(w => VnDateStartUtc(w.Window.BeforeFrom)).ToArray(),
+                    PassedFrom = windows.Select(w => VnDateStartUtc(w.Window.PassedOn)).ToArray(),
+                    AfterTo = windows.Select(w => VnDateStartUtc(w.Window.AfterTo.AddDays(1))).ToArray(),
+                })).ToDictionary(c => c.Idx);
+
+            for (var i = 0; i < windows.Count; i++)
+            {
+                var (row, window) = windows[i];
+                var c = counts.GetValueOrDefault(i);
+                outcomes.Add(new LearningModuleOutcomeDto(
+                    row.EmployeeId, row.EmployeeName, row.ModuleId, row.ModuleTitle, window.PassedOn,
+                    LearningGapRules.PerDay(c.Before, window.DaysBefore),
+                    LearningGapRules.PerDay(c.After, window.DaysAfter),
+                    window.DaysAfter));
+            }
+        }
+
+        return new LearningGapReportDto(days, weakQuestions, gaps, outcomes);
+    }
+
+    private static DateTime VnDateStartUtc(DateOnly vnDate) =>
+        DateTime.SpecifyKind(vnDate.ToDateTime(TimeOnly.MinValue).AddHours(-7), DateTimeKind.Utc);
+
+    /// <summary>
+    /// Ngày kỷ luật: checklist đóng ca đã hoàn tất, NV có tick ít nhất một mục,
+    /// và mọi mục bắt buộc (is_required) của lần chạy đó đều đã tick.
+    /// </summary>
+    private async Task<int> CountDisciplineCloseDaysAsync(
+        System.Data.Common.DbConnection conn,
+        Guid employeeId,
+        DateOnly monthStart,
+        DateOnly today) =>
+        await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(DISTINCT r.business_date)::int
+            FROM success_shift_checklist_run r
+            WHERE r.tenant_id = @TenantId
+              AND r.kind = 'close'
+              AND r.status = 'completed'
+              AND r.business_date >= @MonthStart
+              AND r.business_date <= @Today
+              AND EXISTS (
+                  SELECT 1
+                  FROM success_shift_checklist_run_item i
+                  INNER JOIN users u ON u.id = i.checked_by_user_id AND u.tenant_id = r.tenant_id
+                  WHERE i.run_id = r.id AND i.is_checked AND u.employee_id = @EmployeeId)
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM success_shift_checklist_run_item i
+                  WHERE i.run_id = r.id AND i.is_required AND NOT i.is_checked)
+            """,
+            new { TenantId, EmployeeId = employeeId, MonthStart = monthStart, Today = today });
+
+    private async Task<HashSet<DateOnly>> ListDisciplineCloseDatesAsync(
+        System.Data.Common.DbConnection conn,
+        Guid employeeId) =>
+        (await conn.QueryAsync<DateTime>(
+            """
+            SELECT DISTINCT r.business_date
+            FROM success_shift_checklist_run r
+            WHERE r.tenant_id = @TenantId
+              AND r.kind = 'close'
+              AND r.status = 'completed'
+              AND EXISTS (
+                  SELECT 1
+                  FROM success_shift_checklist_run_item i
+                  INNER JOIN users u ON u.id = i.checked_by_user_id AND u.tenant_id = r.tenant_id
+                  WHERE i.run_id = r.id AND i.is_checked AND u.employee_id = @EmployeeId)
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM success_shift_checklist_run_item i
+                  WHERE i.run_id = r.id AND i.is_required AND NOT i.is_checked)
+            ORDER BY r.business_date DESC
+            LIMIT 60
+            """,
+            new { TenantId, EmployeeId = employeeId }))
+            .Select(DateOnly.FromDateTime)
+            .ToHashSet();
+
+    /// <summary>Chuỗi ngày đóng ca liên tiếp; hôm nay chưa đóng thì tính từ hôm qua.</summary>
+    internal static int CloseStreak(IReadOnlySet<DateOnly> closeDates, DateOnly today)
+    {
+        var cursor = closeDates.Contains(today) ? today : today.AddDays(-1);
+        var streak = 0;
+        while (closeDates.Contains(cursor))
+        {
+            streak++;
+            cursor = cursor.AddDays(-1);
+        }
+
+        return streak;
     }
 
     private const int MonthlyDrillQuestionCount = 5;
@@ -1915,7 +2300,7 @@ internal sealed class LearningRepository
         Guid employeeId,
         CancellationToken cancellationToken)
     {
-        var now = DateTime.UtcNow;
+        var now = LearningScoringRules.VnToday(DateTime.UtcNow);
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
 
         var passedModules = await conn.ExecuteScalarAsync<int>(
@@ -2024,7 +2409,7 @@ internal sealed class LearningRepository
         if (answers.Count == 0)
             throw new ArgumentException("Thiếu câu trả lời.");
 
-        var now = DateTime.UtcNow;
+        var now = LearningScoringRules.VnToday(DateTime.UtcNow);
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
@@ -2052,7 +2437,29 @@ internal sealed class LearningRepository
                 AlreadyCompleted: true);
         }
 
-        var ids = answers.Select(a => a.QuestionId).Distinct().ToList();
+        answers = answers.GroupBy(a => a.QuestionId).Select(g => g.First()).ToList();
+        if (answers.Count > MonthlyDrillQuestionCount)
+            throw new ArgumentException($"Đề ôn tháng chỉ có tối đa {MonthlyDrillQuestionCount} câu.");
+
+        var ids = answers.Select(a => a.QuestionId).ToList();
+        var poolCount = await conn.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(DISTINCT q.id)::int
+            FROM pack_learning.quiz_question q
+            INNER JOIN pack_learning.module_progress mp ON mp.module_id = q.module_id
+            INNER JOIN pack_learning.enrollment e ON e.id = mp.enrollment_id
+            WHERE e.tenant_id = @TenantId
+              AND e.employee_id = @EmployeeId
+              AND e.status <> 'cancelled'
+              AND mp.status = 'passed'
+              AND CASE WHEN jsonb_typeof(q.options_json) = 'array'
+                       THEN jsonb_array_length(q.options_json) ELSE 0 END > 0
+            """,
+            new { TenantId, EmployeeId = employeeId },
+            tx);
+        // Đề phát ra = min(5, ngân hàng câu đã học); nộp thiếu câu không làm tăng điểm.
+        var questionCount = Math.Max(answers.Count, Math.Min(MonthlyDrillQuestionCount, poolCount));
+
         var keys = (await conn.QueryAsync<(Guid Id, int Correct)>(
             """
             SELECT q.id, q.correct_option_index
@@ -2082,7 +2489,7 @@ internal sealed class LearningRepository
                 correctCount++;
         }
 
-        var scorePct = (int)Math.Round(100.0 * correctCount / answers.Count);
+        var scorePct = LearningScoringRules.DrillScorePct(correctCount, questionCount);
         var passed = scorePct >= MonthlyDrillPassScorePct;
 
         await conn.ExecuteAsync(
@@ -2103,13 +2510,13 @@ internal sealed class LearningRepository
                 Y = now.Year,
                 M = now.Month,
                 ScorePct = scorePct,
-                QCount = answers.Count,
+                QCount = questionCount,
             },
             tx);
 
         await tx.CommitAsync(cancellationToken);
         return new LearningMonthlyDrillResultDto(
-            passed, scorePct, MonthlyDrillPassScorePct, correctCount, answers.Count, false);
+            passed, scorePct, MonthlyDrillPassScorePct, correctCount, questionCount, false);
     }
 
     public async Task<LearningMyHabitsDto> GetMyHabitsAsync(
@@ -2117,23 +2524,11 @@ internal sealed class LearningRepository
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var utcNow = DateTime.UtcNow;
+        var monthStart = LearningScoringRules.VnMonthStart(utcNow);
+        var today = LearningScoringRules.VnToday(utcNow);
 
-        var closeDays = await conn.ExecuteScalarAsync<int>(
-            """
-            SELECT COUNT(DISTINCT r.business_date)::int
-            FROM success_shift_checklist_run r
-            INNER JOIN success_shift_checklist_run_item i
-                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
-            INNER JOIN users u ON u.id = i.checked_by_user_id
-            WHERE r.tenant_id = @TenantId
-              AND u.employee_id = @EmployeeId
-              AND r.kind = 'close'
-              AND r.status = 'completed'
-              AND r.business_date >= @MonthStart::date
-            """,
-            new { TenantId, EmployeeId = employeeId, MonthStart = monthStart });
+        var closeDays = await CountDisciplineCloseDaysAsync(conn, employeeId, monthStart, today);
 
         var openToday = await conn.ExecuteScalarAsync<int>(
             """
@@ -2165,33 +2560,8 @@ internal sealed class LearningRepository
             """,
             new { TenantId, EmployeeId = employeeId, Today = today });
 
-        var closeDates = (await conn.QueryAsync<DateTime>(
-            """
-            SELECT DISTINCT r.business_date
-            FROM success_shift_checklist_run r
-            INNER JOIN success_shift_checklist_run_item i
-                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
-            INNER JOIN users u ON u.id = i.checked_by_user_id
-            WHERE r.tenant_id = @TenantId
-              AND u.employee_id = @EmployeeId
-              AND r.kind = 'close'
-              AND r.status = 'completed'
-            ORDER BY r.business_date DESC
-            LIMIT 60
-            """,
-            new { TenantId, EmployeeId = employeeId }))
-            .Select(d => DateOnly.FromDateTime(d))
-            .ToHashSet();
-
-        var streak = 0;
-        var cursor = today;
-        if (!closeDates.Contains(cursor))
-            cursor = cursor.AddDays(-1);
-        while (closeDates.Contains(cursor))
-        {
-            streak++;
-            cursor = cursor.AddDays(-1);
-        }
+        var closeDates = await ListDisciplineCloseDatesAsync(conn, employeeId);
+        var streak = CloseStreak(closeDates, today);
 
         var hire = await conn.QuerySingleOrDefaultAsync<(DateTime? Hire, DateTime Created)>(
             """
@@ -2473,9 +2843,7 @@ internal sealed class LearningRepository
         if (!mod.RequireObs)
             throw new InvalidOperationException("Bài này không cần quan sát tại quầy.");
 
-        var criteriaError = LearningObservationRules.ValidateOrError(mod.LevelCode, request.Criteria);
-        if (criteriaError is not null)
-            throw new ArgumentException(criteriaError);
+        var score = LearningObservationRules.Evaluate(mod.LevelCode, request.Criteria);
 
         var enrollment = await conn.QuerySingleOrDefaultAsync<(Guid EnrollmentId, string Status)>(
             """
@@ -2494,38 +2862,102 @@ internal sealed class LearningRepository
         if (!string.Equals(enrollment.Status, "passed", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Nhân viên cần đạt quiz trước khi quan sát tại quầy.");
 
-        var criteriaJson = JsonSerializer.Serialize(request.Criteria);
+        var criteriaJson = JsonSerializer.Serialize(request.Criteria ?? new Dictionary<string, bool>());
+        var args = new
+        {
+            TenantId,
+            enrollment.EnrollmentId,
+            request.ModuleId,
+            request.EmployeeId,
+            ObserverUserId = observerUserId,
+            CriteriaJson = criteriaJson,
+            Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(),
+            score.Passed,
+            ScorePct = score.Pct,
+        };
 
-        await conn.ExecuteAsync(
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        // Lịch sử: mọi lần quan sát (đạt + chưa đạt), chỉ INSERT.
+        var historyId = await conn.ExecuteScalarAsync<Guid>(
             """
-            INSERT INTO pack_learning.module_observation (
+            INSERT INTO pack_learning.module_observation_history (
                 tenant_id, enrollment_id, module_id, employee_id,
-                observed_by_user_id, criteria_json, note, observed_at
+                observed_by_user_id, criteria_json, note, passed, score_pct, observed_at
             )
             VALUES (
                 @TenantId, @EnrollmentId, @ModuleId, @EmployeeId,
-                @ObserverUserId, @CriteriaJson::jsonb, @Note, NOW()
+                @ObserverUserId, @CriteriaJson::jsonb, @Note, @Passed, @ScorePct, NOW()
             )
-            ON CONFLICT (tenant_id, enrollment_id, module_id) DO UPDATE SET
-                observed_by_user_id = EXCLUDED.observed_by_user_id,
-                criteria_json = EXCLUDED.criteria_json,
-                note = EXCLUDED.note,
-                observed_at = NOW()
+            RETURNING id
             """,
-            new
-            {
-                TenantId,
-                enrollment.EnrollmentId,
-                request.ModuleId,
-                request.EmployeeId,
-                ObserverUserId = observerUserId,
-                CriteriaJson = criteriaJson,
-                Note = string.IsNullOrWhiteSpace(request.Note) ? null : request.Note.Trim(),
-            });
+            args,
+            tx);
 
-        var row = await GetObservationRowAsync(conn, request.EmployeeId, request.ModuleId)
+        // module_observation = lần đạt gần nhất (bậc nghề / tiến độ đọc bảng này).
+        if (score.Passed)
+        {
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO pack_learning.module_observation (
+                    tenant_id, enrollment_id, module_id, employee_id,
+                    observed_by_user_id, criteria_json, note, observed_at
+                )
+                VALUES (
+                    @TenantId, @EnrollmentId, @ModuleId, @EmployeeId,
+                    @ObserverUserId, @CriteriaJson::jsonb, @Note, NOW()
+                )
+                ON CONFLICT (tenant_id, enrollment_id, module_id) DO UPDATE SET
+                    observed_by_user_id = EXCLUDED.observed_by_user_id,
+                    criteria_json = EXCLUDED.criteria_json,
+                    note = EXCLUDED.note,
+                    observed_at = NOW()
+                """,
+                args,
+                tx);
+        }
+
+        await tx.CommitAsync(cancellationToken);
+
+        var row = await GetObservationHistoryRowAsync(conn, historyId)
             ?? throw new InvalidOperationException("Không lưu được quan sát.");
         return row;
+    }
+
+    private async Task<LearningObservationDto?> GetObservationHistoryRowAsync(
+        System.Data.Common.DbConnection conn,
+        Guid historyId)
+    {
+        var row = await conn.QuerySingleOrDefaultAsync<(
+            Guid Id, Guid EmployeeId, string EmployeeName, Guid ModuleId, string ModuleTitle,
+            string CriteriaJson, string? Note, DateTime ObservedAt, string ObserverName, bool Passed, int ScorePct)>(
+            """
+            SELECT h.id, h.employee_id, emp.full_name, h.module_id, m.title,
+                   h.criteria_json::text, h.note, h.observed_at,
+                   COALESCE(u.username, 'Quản lý'), h.passed, h.score_pct
+            FROM pack_learning.module_observation_history h
+            INNER JOIN public.employees emp ON emp.id = h.employee_id
+            INNER JOIN pack_learning.module m ON m.id = h.module_id
+            LEFT JOIN public.users u ON u.id = h.observed_by_user_id
+            WHERE h.tenant_id = @TenantId AND h.id = @Id
+            """,
+            new { TenantId, Id = historyId });
+
+        if (row.Id == Guid.Empty)
+            return null;
+
+        return new LearningObservationDto(
+            row.Id,
+            row.EmployeeId,
+            row.EmployeeName,
+            row.ModuleId,
+            row.ModuleTitle,
+            ParseCriteria(row.CriteriaJson),
+            row.Note,
+            row.ObservedAt,
+            row.ObserverName,
+            row.Passed,
+            row.ScorePct);
     }
 
     public async Task<LearningObservationDto?> GetModuleObservationForEmployeeAsync(
@@ -3077,17 +3509,7 @@ internal sealed class LearningRepository
         if (row.Id == Guid.Empty)
             return null;
 
-        IReadOnlyDictionary<string, bool> criteria;
-        try
-        {
-            criteria = JsonSerializer.Deserialize<Dictionary<string, bool>>(row.CriteriaJson)
-                       ?? new Dictionary<string, bool>();
-        }
-        catch
-        {
-            criteria = new Dictionary<string, bool>();
-        }
-
+        var criteria = ParseCriteria(row.CriteriaJson);
         return new LearningObservationDto(
             row.Id,
             row.EmployeeId,
@@ -3123,6 +3545,19 @@ internal sealed class LearningRepository
     private static LearningModuleListItemDto MapModuleList(ModuleRow m) =>
         new(m.Id, m.Code, m.Title, m.Summary, m.DurationMinutes, m.LevelCode,
             m.CompetencyCodes ?? [], m.SortOrder, m.PassScorePct, m.RequireAck, m.QuestionCount);
+
+    private static IReadOnlyDictionary<string, bool> ParseCriteria(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, bool>>(json)
+                   ?? new Dictionary<string, bool>();
+        }
+        catch
+        {
+            return new Dictionary<string, bool>();
+        }
+    }
 
     private static IReadOnlyList<string> ParseOptions(string json)
     {

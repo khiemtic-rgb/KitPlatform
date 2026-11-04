@@ -25,6 +25,7 @@ import {
   type LearningPeopleDashboard,
 } from '@/shared/api/learning.api';
 import { PeoplePageShell, PeopleNavButton } from '@/modules/learning/people-ui';
+import { LearningGapReportCard } from '@/modules/learning/LearningGapReportCard';
 
 /** Dashboard chi tiết (quản lý) — bổ sung cho Tổng quan chính. */
 export function LearningPeopleDashboardPage() {
@@ -159,6 +160,8 @@ export function LearningPeopleDashboardPage() {
           description="(1) Gán / nhắc học bán hàng cơ bản cho nhân viên còn thiếu. (2) Đánh giá tháng dựa trên bằng chứng. (3) Nhắc nhân viên phản hồi đánh giá. (4) Tick checklist đóng ca tại Vận hành ca."
         />
       ) : null}
+
+      <LearningGapReportCard />
 
       <Card title="Phân bố bậc nghề" size="small" loading={loading}>
         <Table

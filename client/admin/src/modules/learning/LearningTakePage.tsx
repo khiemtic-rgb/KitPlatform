@@ -111,6 +111,9 @@ export function LearningTakePage() {
 
   const enrollment = mine?.enrollment;
   const modules = mine?.modules ?? [];
+  const otherPrograms = (mine?.programs ?? []).filter(
+    (p) => p.enrollment && p.enrollment.id !== enrollment?.id,
+  );
   const nextModule =
     modules.find((m) => m.status !== 'passed') ?? modules[modules.length - 1] ?? null;
   const pct =
@@ -517,6 +520,32 @@ export function LearningTakePage() {
             />
           </Space>
         )}
+        {otherPrograms.length ? (
+          <Space direction="vertical" style={{ width: '100%', marginTop: 16 }} size={8}>
+            <Typography.Text strong>Lộ trình khác đã được giao</Typography.Text>
+            {otherPrograms.map((p) => {
+              const next = p.modules.find((m) => m.status !== 'passed');
+              return (
+                <Space
+                  key={p.program.id}
+                  style={{ width: '100%', justifyContent: 'space-between' }}
+                  wrap
+                >
+                  <Typography.Text>
+                    {p.program.title} · {p.enrollment?.modulesPassed ?? 0}/{p.enrollment?.modulesTotal ?? 0} bài
+                  </Typography.Text>
+                  {next ? (
+                    <Button size="small" onClick={() => navigate(`/people/learn/modules/${next.moduleId}`)}>
+                      Học tiếp: {next.title}
+                    </Button>
+                  ) : (
+                    <Typography.Text type="success">Đã xong</Typography.Text>
+                  )}
+                </Space>
+              );
+            })}
+          </Space>
+        ) : null}
       </Card>
 
       <CompetencyProfilePanel

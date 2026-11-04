@@ -107,21 +107,21 @@ export function LearningObservationsPanel() {
 
   const onSubmit = async () => {
     if (!active) return;
-    if (!stats.ok) {
-      message.warning(
-        `Cần đạt ≥ ${OBSERVE_PASS_PCT}% tiêu chí (hiện ${stats.passed}/${stats.total} = ${stats.pct}%)`,
-      );
-      return;
-    }
     setSaving(true);
     try {
-      await submitLearningObservation({
+      const saved = await submitLearningObservation({
         employeeId: active.employeeId,
         moduleId: active.moduleId,
         criteria,
         note: note.trim() || null,
       });
-      message.success('Đã ghi nhận «Đã áp dụng tại quầy»');
+      if (saved.passed === false) {
+        message.info(
+          `Đã lưu lần quan sát chưa đạt (${saved.scorePct ?? stats.pct}% / cần ≥${OBSERVE_PASS_PCT}%) — quan sát lại khi nhân viên sẵn sàng.`,
+        );
+      } else {
+        message.success('Đã ghi nhận «Đã áp dụng tại quầy»');
+      }
       setActive(null);
       await reload();
     } catch (e) {
@@ -300,10 +300,9 @@ export function LearningObservationsPanel() {
                 type="primary"
                 block
                 loading={saving}
-                disabled={!stats.ok}
                 onClick={() => void onSubmit()}
               >
-                Xác nhận đã áp dụng tại quầy
+                {stats.ok ? 'Xác nhận đã áp dụng tại quầy' : 'Lưu lần quan sát (chưa đạt)'}
               </Button>
             </Form>
           </Space>

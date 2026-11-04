@@ -73,6 +73,8 @@ export interface LossCashVarianceShift {
   isAlert: boolean;
   openedAt: string;
   closedAt?: string | null;
+  openedByName?: string | null;
+  closedByName?: string | null;
 }
 
 export interface LossCashVarianceToday {
@@ -464,6 +466,14 @@ export interface LossEmployeeAdjustmentRow {
   absVarianceValue: number;
 }
 
+export interface LossCashVarianceByCloserRow {
+  closerUserId?: string | null;
+  closerName: string;
+  shiftCount: number;
+  absVarianceTotal: number;
+  netVarianceTotal: number;
+}
+
 export interface LossEmployeeReports {
   fromUtc: string;
   toUtc: string;
@@ -472,6 +482,17 @@ export interface LossEmployeeReports {
   cancellations: LossEmployeeCancelRow[];
   discounts: LossEmployeeDiscountRow[];
   adjustments: LossEmployeeAdjustmentRow[];
+  cashVarianceByCloser: LossCashVarianceByCloserRow[];
+}
+
+function mapCashVarianceByCloser(items: UnknownRow[]): LossCashVarianceByCloserRow[] {
+  return items.map((r) => ({
+    closerUserId: (r.closerUserId ?? r.CloserUserId) as string | null | undefined,
+    closerName: String(r.closerName ?? r.CloserName ?? ''),
+    shiftCount: num(r.shiftCount ?? r.ShiftCount),
+    absVarianceTotal: num(r.absVarianceTotal ?? r.AbsVarianceTotal),
+    netVarianceTotal: num(r.netVarianceTotal ?? r.NetVarianceTotal),
+  }));
 }
 
 export async function fetchLossEmployeeReports(params?: {
@@ -519,6 +540,9 @@ export async function fetchLossEmployeeReports(params?: {
     cancellations: mapCancel((row.cancellations ?? row.Cancellations ?? []) as UnknownRow[]),
     discounts: mapDiscount((row.discounts ?? row.Discounts ?? []) as UnknownRow[]),
     adjustments: mapAdjust((row.adjustments ?? row.Adjustments ?? []) as UnknownRow[]),
+    cashVarianceByCloser: mapCashVarianceByCloser(
+      (row.cashVarianceByCloser ?? row.CashVarianceByCloser ?? []) as UnknownRow[],
+    ),
   };
 }
 
@@ -629,6 +653,8 @@ export async function fetchLossCashVarianceToday(threshold?: number): Promise<Lo
     isAlert: Boolean(s.isAlert ?? s.IsAlert),
     openedAt: String(s.openedAt ?? s.OpenedAt ?? ''),
     closedAt: (s.closedAt ?? s.ClosedAt) as string | null | undefined,
+    openedByName: (s.openedByName ?? s.OpenedByName) as string | null | undefined,
+    closedByName: (s.closedByName ?? s.ClosedByName) as string | null | undefined,
   }));
   return {
     businessDate: String(row.businessDate ?? row.BusinessDate ?? ''),
@@ -638,6 +664,74 @@ export async function fetchLossCashVarianceToday(threshold?: number): Promise<Lo
     alertCount: num(row.alertCount ?? row.AlertCount),
     maxAbsVariance: num(row.maxAbsVariance ?? row.MaxAbsVariance),
     shifts,
+  };
+}
+
+export interface StaffChecklistKind {
+  status: 'not_started' | 'in_progress' | 'completed' | string;
+  runCount: number;
+  completedRunCount: number;
+  missingRequiredCount: number;
+  tickedByNames: string[];
+}
+
+export interface StaffChecklistBranch {
+  branchId: string;
+  branchName: string;
+  open: StaffChecklistKind;
+  close: StaffChecklistKind;
+}
+
+export interface StaffTaskAssignee {
+  employeeId: string;
+  assigneeName: string;
+  openCount: number;
+  overdueCount: number;
+}
+
+export interface OwnerStaffToday {
+  businessDate: string;
+  checklists: StaffChecklistBranch[];
+  tasksByAssignee: StaffTaskAssignee[];
+  cashVarianceByCloser7d: LossCashVarianceByCloserRow[];
+  employeesWithoutCredentialCount: number | null;
+  activeEmployeeCount: number;
+}
+
+function mapStaffChecklistKind(raw: unknown): StaffChecklistKind {
+  const r = (raw ?? {}) as UnknownRow;
+  return {
+    status: String(r.status ?? r.Status ?? 'not_started'),
+    runCount: num(r.runCount ?? r.RunCount),
+    completedRunCount: num(r.completedRunCount ?? r.CompletedRunCount),
+    missingRequiredCount: num(r.missingRequiredCount ?? r.MissingRequiredCount),
+    tickedByNames: ((r.tickedByNames ?? r.TickedByNames ?? []) as unknown[]).map(String),
+  };
+}
+
+export async function fetchOwnerStaffToday(): Promise<OwnerStaffToday> {
+  const { data } = await http.get<UnknownRow>('/success/owner-cockpit/staff-today');
+  const row = data as UnknownRow;
+  const withoutCredential = row.employeesWithoutCredentialCount ?? row.EmployeesWithoutCredentialCount;
+  return {
+    businessDate: String(row.businessDate ?? row.BusinessDate ?? ''),
+    checklists: ((row.checklists ?? row.Checklists ?? []) as UnknownRow[]).map((c) => ({
+      branchId: String(c.branchId ?? c.BranchId ?? ''),
+      branchName: String(c.branchName ?? c.BranchName ?? ''),
+      open: mapStaffChecklistKind(c.open ?? c.Open),
+      close: mapStaffChecklistKind(c.close ?? c.Close),
+    })),
+    tasksByAssignee: ((row.tasksByAssignee ?? row.TasksByAssignee ?? []) as UnknownRow[]).map((a) => ({
+      employeeId: String(a.employeeId ?? a.EmployeeId ?? ''),
+      assigneeName: String(a.assigneeName ?? a.AssigneeName ?? ''),
+      openCount: num(a.openCount ?? a.OpenCount),
+      overdueCount: num(a.overdueCount ?? a.OverdueCount),
+    })),
+    cashVarianceByCloser7d: mapCashVarianceByCloser(
+      (row.cashVarianceByCloser7d ?? row.CashVarianceByCloser7d ?? []) as UnknownRow[],
+    ),
+    employeesWithoutCredentialCount: withoutCredential == null ? null : num(withoutCredential),
+    activeEmployeeCount: num(row.activeEmployeeCount ?? row.ActiveEmployeeCount),
   };
 }
 

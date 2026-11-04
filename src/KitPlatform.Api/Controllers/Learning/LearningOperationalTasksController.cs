@@ -22,11 +22,12 @@ public sealed class LearningOperationalTasksController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<OperationalTaskDto>>> List(
         [FromQuery] Guid? branchId,
         [FromQuery] Guid? salesShiftId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] bool overdue = false)
     {
         try
         {
-            return Ok(await _tasks.ListAsync(CanManage(), branchId, salesShiftId, cancellationToken));
+            return Ok(await _tasks.ListAsync(CanManage(), branchId, salesShiftId, cancellationToken, overdue));
         }
         catch (UnauthorizedAccessException ex)
         {

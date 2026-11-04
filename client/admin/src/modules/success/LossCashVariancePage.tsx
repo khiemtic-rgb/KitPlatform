@@ -302,6 +302,16 @@ export function LossCashVariancePage() {
                     { title: t('loss.col.branch'), dataIndex: 'branchName' },
                     { title: t('loss.col.warehouse'), dataIndex: 'warehouseName' },
                     {
+                      title: t('loss.col.openedBy'),
+                      dataIndex: 'openedByName',
+                      render: (v: string | null | undefined) => v || '—',
+                    },
+                    {
+                      title: t('loss.col.closedBy'),
+                      dataIndex: 'closedByName',
+                      render: (v: string | null | undefined, row) => (row.status === 'open' ? '—' : v || '—'),
+                    },
+                    {
                       title: t('loss.col.expected'),
                       dataIndex: 'expectedCash',
                       align: 'right',
@@ -538,6 +548,32 @@ export function LossCashVariancePage() {
               <>
                 <Alert type="info" showIcon message={reports?.attributionNotes ?? t('loss.reportsTip')} />
                 {filterBar}
+
+                <Typography.Title level={5} style={{ marginTop: 24 }}>
+                  {t('loss.reports.cashByCloser')}
+                </Typography.Title>
+                <Table
+                  rowKey={(r) => r.closerUserId ?? r.closerName}
+                  loading={loading}
+                  dataSource={reports?.cashVarianceByCloser ?? []}
+                  pagination={false}
+                  columns={[
+                    { title: t('loss.col.closedBy'), dataIndex: 'closerName' },
+                    { title: t('loss.col.shiftCount'), dataIndex: 'shiftCount', align: 'right' },
+                    {
+                      title: t('loss.col.absCashVariance'),
+                      dataIndex: 'absVarianceTotal',
+                      align: 'right',
+                      render: (v: number) => formatDisplayMoney(v),
+                    },
+                    {
+                      title: t('loss.col.netCashVariance'),
+                      dataIndex: 'netVarianceTotal',
+                      align: 'right',
+                      render: (v: number) => formatDisplayMoney(v),
+                    },
+                  ]}
+                />
 
                 <Typography.Title level={5} style={{ marginTop: 24 }}>
                   {t('loss.reports.cancellations')}

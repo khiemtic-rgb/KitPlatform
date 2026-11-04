@@ -259,52 +259,33 @@ export function LearningProgramsPage() {
     };
   }, [message, canWrite]);
 
-  /** Team Health Score — trọng số gần đề xuất PD (không gọi AI). */
+  /** Sức khỏe đội — chỉ tỷ lệ tính được từ dashboard; thiếu dữ liệu thì để trống, không tự đặt số. */
   const health = useMemo(() => {
-    const train = dash?.trainingCompletionPct ?? 0;
-    const evalScore = dash?.avgEvaluateScore ?? 0;
-    const evalPct =
-      dash?.avgEvaluateScore != null
-        ? clampPct(evalScore)
-        : dash?.employeeCount
-          ? clampPct(100 - (dash.unevaluatedThisMonth / dash.employeeCount) * 100)
-          : 0;
-    const missingClose = dash?.missingCloseChecklistBranchesToday ?? 0;
-    const checklist = missingClose === 0 ? 96 : clampPct(100 - missingClose * 28);
-    const kpi = clampPct(
-      72 +
-        Math.min(20, (dash?.modulesPassedThisWeek ?? 0) * 2) -
-        (dash?.unevaluatedThisMonth ?? 0) * 3,
-    );
-    const recognition = clampPct(
-      55 +
-        Math.min(40, (dash?.recognitionCount30d ?? 0) * 2.5) -
-        (dash?.pendingFeedbackCount ?? 0) * 3,
-    );
-    const discipline = missingClose === 0 ? 94 : clampPct(55 - missingClose * 15);
-    const overall = clampPct(
-      train * 0.25 +
-        evalPct * 0.2 +
-        checklist * 0.2 +
-        kpi * 0.2 +
-        recognition * 0.1 +
-        discipline * 0.05,
-    );
-    return { train, evalPct, checklist, kpi, recognition, discipline, overall };
+    const employees = dash?.employeeCount ?? 0;
+    const ratio = (part: number) => (employees > 0 ? clampPct((100 * part) / employees) : null);
+    const train =
+      dash && dash.modulesTotalAssigned > 0 ? clampPct(dash.trainingCompletionPct) : null;
+    const evaluated = dash ? ratio(employees - dash.unevaluatedThisMonth) : null;
+    const evalAvg = dash?.avgEvaluateScore != null ? clampPct(dash.avgEvaluateScore) : null;
+    const posBasic = dash ? ratio(employees - dash.missingPosBasicCount) : null;
+    const known = [train, evaluated, evalAvg, posBasic].filter((v): v is number => v != null);
+    const overall = known.length
+      ? clampPct(known.reduce((s, v) => s + v, 0) / known.length)
+      : null;
+    return { train, evaluated, evalAvg, posBasic, overall };
   }, [dash]);
 
-  const heat = useMemo(
-    () =>
-      [
-        { key: 'train', label: 'Kiến thức / đào tạo', pct: health.train, color: C.train },
-        { key: 'kpi', label: 'Chỉ số hiệu suất vận hành', pct: health.kpi, color: C.grow },
-        { key: 'crm', label: 'Gắn kết / chăm sóc khách', pct: health.recognition, color: C.win },
-        { key: 'check', label: 'Checklist ca', pct: health.checklist, color: C.watch },
-        { key: 'eval', label: 'Đánh giá', pct: health.evalPct, color: C.grow },
-        { key: 'disc', label: 'Kỷ luật ca', pct: health.discipline, color: C.urgent },
-      ] as const,
-    [health],
-  );
+  const heat = useMemo(() => {
+    const rows: { key: string; label: string; pct: number | null; color: string }[] = [
+      { key: 'train', label: 'Hoàn thành đào tạo', pct: health.train, color: C.train },
+      { key: 'pos', label: 'Có chứng nhận bán hàng tại quầy', pct: health.posBasic, color: C.win },
+      { key: 'evaluated', label: 'Đã đánh giá tháng này', pct: health.evaluated, color: C.watch },
+      { key: 'eval', label: 'Điểm đánh giá tháng TB', pct: health.evalAvg, color: C.grow },
+    ];
+    return rows.filter(
+      (h): h is { key: string; label: string; pct: number; color: string } => h.pct != null,
+    );
+  }, [health]);
 
   const healthInsight = useMemo(() => {
     const sorted = [...heat].sort((a, b) => b.pct - a.pct);
@@ -437,6 +418,9 @@ export function LearningProgramsPage() {
 
   const heroMood = useMemo(() => {
     const openCount = priorityCards.filter((c) => c.tone === 'urgent').length;
+    if (health.overall == null) {
+      return openCount ? 'Còn vài việc bạn nên ưu tiên.' : 'Chưa đủ dữ liệu để chấm sức khỏe đội.';
+    }
     if (health.overall >= 85 && openCount === 0) {
       return 'Hôm nay đội ngũ đang hoạt động tốt.';
     }
@@ -495,7 +479,8 @@ export function LearningProgramsPage() {
 
   if (!canWrite) return <StaffLanding />;
 
-  const status = healthLabel(health.overall);
+  const status =
+    health.overall != null ? healthLabel(health.overall) : { text: 'Chưa có dữ liệu', color: '#8c8c8c' };
   const maxLevelCount = Math.max(
     1,
     ...(dash?.careerLevelCounts?.map((c) => c.employeeCount) ?? [1]),
@@ -569,9 +554,11 @@ export function LearningProgramsPage() {
             </Typography.Text>
             <div>
               <Typography.Text strong style={{ color: C.train, fontSize: 18 }}>
-                {health.train}%
+                {health.train != null ? `${health.train}%` : '—'}
               </Typography.Text>
-              <Typography.Text type="secondary"> hoàn thành</Typography.Text>
+              <Typography.Text type="secondary">
+                {health.train != null ? ' hoàn thành' : ' chưa có dữ liệu'}
+              </Typography.Text>
             </div>
           </Col>
           <Col xs={12} sm={6}>
@@ -636,15 +623,25 @@ export function LearningProgramsPage() {
             <Space align="center" size={16} style={{ width: '100%' }}>
               <div style={{ textAlign: 'center', minWidth: 88 }}>
                 <Typography.Title level={1} style={{ margin: 0, color: status.color, lineHeight: 1 }}>
-                  {health.overall}%
+                  {health.overall != null ? `${health.overall}%` : '—'}
                 </Typography.Title>
-                <Tag color={status.color === C.win ? 'success' : status.color === C.watch ? 'warning' : 'error'}>
+                <Tag
+                  color={
+                    health.overall == null
+                      ? 'default'
+                      : status.color === C.win
+                        ? 'success'
+                        : status.color === C.watch
+                          ? 'warning'
+                          : 'error'
+                  }
+                >
                   {status.text}
                 </Tag>
               </div>
               <div style={{ flex: 1 }}>
                 <Progress
-                  percent={health.overall}
+                  percent={health.overall ?? 0}
                   strokeColor={status.color}
                   showInfo={false}
                   size={['100%', 16]}
@@ -664,7 +661,7 @@ export function LearningProgramsPage() {
                 </Typography.Text>
                 <div>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    Theo tín hiệu tuần này (học · ghi nhận · việc mở) — chưa so tháng trước.
+                    Trung bình các tỷ lệ có dữ liệu bên dưới. Xu hướng theo tín hiệu tuần này — chưa so tháng trước.
                   </Typography.Text>
                 </div>
               </div>
@@ -705,23 +702,20 @@ export function LearningProgramsPage() {
         </Row>
         {healthOpen ? (
           <Row gutter={[12, 8]} style={{ marginTop: 16 }}>
-            {(
-              [
-                ['Đào tạo (25%)', health.train, C.train],
-                ['Đánh giá (20%)', health.evalPct, C.grow],
-                ['Checklist (20%)', health.checklist, C.watch],
-                ['Hiệu suất (20%)', health.kpi, C.train],
-                ['Ghi nhận (10%)', health.recognition, C.win],
-                ['Kỷ luật (5%)', health.discipline, C.urgent],
-              ] as const
-            ).map(([label, pct, color]) => (
-              <Col xs={12} sm={8} md={4} key={label}>
-                <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                  {label}
-                </Typography.Text>
-                <Progress percent={pct} strokeColor={color} size="small" />
+            {heat.length ? (
+              heat.map((h) => (
+                <Col xs={12} sm={8} md={6} key={h.key}>
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                    {h.label}
+                  </Typography.Text>
+                  <Progress percent={h.pct} strokeColor={h.color} size="small" />
+                </Col>
+              ))
+            ) : (
+              <Col span={24}>
+                <Typography.Text type="secondary">Chưa có dữ liệu</Typography.Text>
               </Col>
-            ))}
+            )}
           </Row>
         ) : null}
       </Card>
@@ -895,6 +889,7 @@ export function LearningProgramsPage() {
         <Col xs={24} lg={14}>
           <Card title="Điểm nóng đội ngũ — yếu ở đâu?" size="small" loading={loading}>
             <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              {!heat.length ? <Typography.Text type="secondary">Chưa có dữ liệu</Typography.Text> : null}
               {heat.map((h) => (
                 <div key={h.key}>
                   <Space style={{ width: '100%', justifyContent: 'space-between' }}>

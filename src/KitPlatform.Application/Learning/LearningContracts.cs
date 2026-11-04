@@ -48,7 +48,8 @@ public sealed record LearningModuleDetailDto(
     bool RequireAck,
     IReadOnlyList<LearningQuizQuestionPublicDto> Questions,
     bool IsTenantCustomized = false,
-    bool RequireObservation = false);
+    bool RequireObservation = false,
+    int? QuizVariant = null);
 
 public sealed record UpsertLearningModuleTenantContentRequest(
     string? Title,
@@ -96,7 +97,13 @@ public sealed record AcknowledgeLearningModuleRequest(string? SelfieUrl = null);
 public sealed record LearningMyLearningDto(
     LearningEnrollmentDto? Enrollment,
     IReadOnlyList<LearningModuleProgressDto> Modules,
-    IReadOnlyList<LearningCredentialDto> Credentials);
+    IReadOnlyList<LearningCredentialDto> Credentials,
+    IReadOnlyList<LearningMyProgramDto>? Programs = null);
+
+public sealed record LearningMyProgramDto(
+    LearningProgramListItemDto Program,
+    LearningEnrollmentDto? Enrollment,
+    IReadOnlyList<LearningModuleProgressDto> Modules);
 
 public sealed record LearningCredentialDto(
     string CompetencyCode,
@@ -173,7 +180,8 @@ public sealed record LearningRecognitionDto(
     string? Body,
     string? BadgeCode,
     DateTime CreatedAt,
-    int? CustomerRating = null);
+    int? CustomerRating = null,
+    bool IsPublic = true);
 
 /** Phản hồi sau mua từ app khách — có sao, không lộ SĐT khách. */
 public sealed record LearningCustomerFeedbackDto(
@@ -354,7 +362,51 @@ public sealed record LearningEmployeeEvidenceDto(
     int CloseStreakDays = 0,
     int? OrderCountThisMonth = null,
     decimal? SalesNetThisMonth = null,
-    int? LatestEngagementPulse = null);
+    int? LatestEngagementPulse = null,
+    IReadOnlyList<LearningSuggestedScoreBasisDto>? SuggestionBasis = null);
+
+/// <summary>Khoảng trống đào tạo: câu hay sai, tín hiệu yếu theo người, số đơn trước/sau khi đạt bài (không có tiền).</summary>
+public sealed record LearningGapReportDto(
+    int Days,
+    IReadOnlyList<LearningWeakQuestionDto> WeakQuestions,
+    IReadOnlyList<LearningEmployeeGapDto> EmployeeGaps,
+    IReadOnlyList<LearningModuleOutcomeDto> Outcomes);
+
+public sealed record LearningWeakQuestionDto(
+    Guid QuestionId,
+    Guid ModuleId,
+    string ModuleTitle,
+    string Prompt,
+    int Answered,
+    int Wrong,
+    int WrongPct);
+
+/// <summary>Signal: quiz_failed (chưa đạt bài) | observation_failed (quan sát tại quầy chưa đạt, chưa có lần đạt sau).</summary>
+public sealed record LearningEmployeeGapDto(
+    Guid EmployeeId,
+    string EmployeeName,
+    Guid ModuleId,
+    string ModuleTitle,
+    string Signal,
+    int FailCount,
+    DateTime LastAt,
+    string SuggestedAction);
+
+public sealed record LearningModuleOutcomeDto(
+    Guid EmployeeId,
+    string EmployeeName,
+    Guid ModuleId,
+    string ModuleTitle,
+    DateOnly PassedOn,
+    decimal OrdersPerDayBefore,
+    decimal OrdersPerDayAfter,
+    int DaysAfter);
+
+/// <summary>Căn cứ của một điểm gợi ý theo luật (criterion: knowledge|attitude|care|stock|discipline).</summary>
+public sealed record LearningSuggestedScoreBasisDto(
+    string Criterion,
+    int Score,
+    string Reason);
 
 public sealed record LearningMyHabitsDto(
     int CloseChecklistDaysThisMonth,
@@ -368,9 +420,14 @@ public sealed record LearningMyHabitsDto(
 
 public sealed record AssignLearningProgramRequest(Guid? EmployeeId, Guid ProgramId);
 
+/// <summary>
+/// Answers theo thứ tự câu hỏi đã hiển thị. QuestionIds/QuizVariant lấy từ GET module để server map về đáp án gốc.
+/// </summary>
 public sealed record SubmitLearningQuizRequest(
     IReadOnlyList<int> Answers,
-    bool Practice = false);
+    bool Practice = false,
+    IReadOnlyList<Guid>? QuestionIds = null,
+    int? QuizVariant = null);
 
 public sealed record SubmitLearningQuizResultDto(
     bool Passed,
@@ -433,7 +490,9 @@ public sealed record LearningObservationDto(
     IReadOnlyDictionary<string, bool> Criteria,
     string? Note,
     DateTime ObservedAt,
-    string ObserverName);
+    string ObserverName,
+    bool Passed = true,
+    int? ScorePct = null);
 
 public sealed record SubmitLearningObservationRequest(
     Guid EmployeeId,
@@ -511,10 +570,12 @@ public interface ILearningProgressService
         CreateLearningRecognitionRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <param name="canSeePrivate">Caller has learning.write or ADMIN; others see private notes only when they are the recipient.</param>
     Task<IReadOnlyList<LearningRecognitionDto>> ListRecognitionsAsync(
         int take = 30,
         bool mineOnly = false,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        bool canSeePrivate = false);
 
     Task<IReadOnlyList<LearningCustomerFeedbackDto>> ListRecentCustomerFeedbackAsync(
         int hours = 48,
@@ -543,6 +604,10 @@ public interface ILearningProgressService
 
     Task<LearningEmployeeEvidenceDto?> GetEmployeeEvidenceAsync(
         Guid employeeId,
+        CancellationToken cancellationToken = default);
+
+    Task<LearningGapReportDto> GetGapReportAsync(
+        int? days,
         CancellationToken cancellationToken = default);
 
     Task<LearningMyHabitsDto> GetMyHabitsAsync(

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Staff Enablement V1 migrations 412 then 413.
+# Staff Enablement V1 migrations, in the order listed in migration-files.staff-enablement-v1.txt.
 # Not used by run-incremental-migrations-prod.sh.
 # Refuses to run unless the night approval flag is set.
 # Usage:

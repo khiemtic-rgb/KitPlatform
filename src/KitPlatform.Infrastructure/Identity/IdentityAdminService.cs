@@ -117,6 +117,7 @@ internal sealed class IdentityAdminService : IIdentityAdminService
         CancellationToken cancellationToken = default)
     {
         ValidateUserFields(request.Username, request.Email, request.Password, request.RoleIds);
+        EmployeeProfileRules.NormalizeJobTitle(request.EmployeeJobTitle);
 
         var username = request.Username.Trim();
         var email = request.Email.Trim().ToLowerInvariant();
@@ -161,7 +162,10 @@ internal sealed class IdentityAdminService : IIdentityAdminService
             cancellationToken);
 
         if (employeeId is not null)
+        {
             await AssignEmployeeBranchesAsync(employeeId.Value, request.BranchIds, request.PrimaryBranchId, cancellationToken);
+            await ApplyEmployeeProfileAsync(employeeId.Value, request.EmployeeJobTitle, request.EmployeeHireDate, cancellationToken);
+        }
 
         return (await _repository.GetUserAsync(userId, cancellationToken))!;
     }
@@ -182,6 +186,8 @@ internal sealed class IdentityAdminService : IIdentityAdminService
 
         if (request.RoleIds.Count == 0)
             throw new InvalidOperationException("Chọn ít nhất một vai trò.");
+
+        EmployeeProfileRules.NormalizeJobTitle(request.EmployeeJobTitle);
 
         var username = request.Username.Trim();
         if (await _repository.UsernameExistsAsync(username, userId, cancellationToken))
@@ -231,6 +237,9 @@ internal sealed class IdentityAdminService : IIdentityAdminService
 
         if (updated && employeeId is not null && request.BranchIds is not null)
             await AssignEmployeeBranchesAsync(employeeId.Value, request.BranchIds, request.PrimaryBranchId, cancellationToken);
+
+        if (updated && employeeId is not null)
+            await ApplyEmployeeProfileAsync(employeeId.Value, request.EmployeeJobTitle, request.EmployeeHireDate, cancellationToken);
 
         return updated ? await _repository.GetUserAsync(userId, cancellationToken) : null;
     }
@@ -406,6 +415,21 @@ internal sealed class IdentityAdminService : IIdentityAdminService
             throw new InvalidOperationException("Chi nhánh chính phải nằm trong danh sách được gán.");
 
         await _repository.ReplaceEmployeeBranchesAsync(employeeId, distinct, primaryBranchId, cancellationToken);
+    }
+
+    private async Task ApplyEmployeeProfileAsync(
+        Guid employeeId,
+        string? jobTitle,
+        DateOnly? hireDate,
+        CancellationToken cancellationToken)
+    {
+        if (!EmployeeProfileRules.ShouldApply(jobTitle))
+            return;
+        await _repository.UpdateEmployeeProfileAsync(
+            employeeId,
+            EmployeeProfileRules.NormalizeJobTitle(jobTitle),
+            hireDate,
+            cancellationToken);
     }
 
     private async Task<Guid?> ResolveEmployeeIdAsync(

@@ -28,7 +28,8 @@ public sealed class OperationalTaskService
         bool canManage,
         Guid? branchId,
         Guid? salesShiftId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool overdueOnly = false)
     {
         if (branchId is Guid branch)
             await _branchAccess.EnsureBranchAccessAsync(branch, cancellationToken);
@@ -49,10 +50,12 @@ public sealed class OperationalTaskService
                 t.evidence_note AS EvidenceNote,
                 t.created_by_user_id AS CreatedByUserId,
                 t.completed_at AS CompletedAt,
-                t.created_at AS CreatedAt
+                t.created_at AS CreatedAt,
+                FALSE AS IsOverdue
             FROM pack_learning.operational_task t
             INNER JOIN employees e ON e.id = t.assignee_employee_id
             WHERE t.tenant_id = @TenantId
+              AND (NOT @OverdueOnly OR (t.due_at IS NOT NULL AND t.status IN ('open', 'in_progress')))
               AND (@BranchId IS NULL OR t.branch_id = @BranchId)
               AND (@SalesShiftId IS NULL OR t.sales_shift_id = @SalesShiftId)
               AND (
@@ -77,12 +80,13 @@ public sealed class OperationalTaskService
                 TenantId = _tenant.TenantId,
                 UserId = _tenant.UserId,
                 CanManage = canManage,
+                OverdueOnly = overdueOnly,
                 BranchId = branchId,
                 SalesShiftId = salesShiftId,
                 Unrestricted = scope.Unrestricted,
                 AllowedBranches = scope.BranchIds.ToArray(),
             });
-        return rows.AsList();
+        return OperationalTaskRules.ApplyOverdue(rows, DateTime.UtcNow, overdueOnly);
     }
 
     public async Task<OperationalTaskDto> CreateAsync(
@@ -275,13 +279,16 @@ public sealed class OperationalTaskService
                     t.evidence_note AS EvidenceNote,
                     t.created_by_user_id AS CreatedByUserId,
                     t.completed_at AS CompletedAt,
-                    t.created_at AS CreatedAt
+                    t.created_at AS CreatedAt,
+                    FALSE AS IsOverdue
                 FROM pack_learning.operational_task t
                 INNER JOIN employees e ON e.id = t.assignee_employee_id
                 WHERE t.id = @Id AND t.tenant_id = @TenantId
                 """,
                 new { Id = taskId, TenantId = _tenant.TenantId },
-                cancellationToken: cancellationToken));
+                cancellationToken: cancellationToken)) is { } task
+            ? task with { IsOverdue = OperationalTaskRules.IsOverdue(task.DueAt, task.Status, DateTime.UtcNow) }
+            : null;
     }
 
     private sealed class TaskHead

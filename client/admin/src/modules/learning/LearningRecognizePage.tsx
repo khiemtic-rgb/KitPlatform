@@ -568,7 +568,8 @@ export function LearningRecognizePage() {
         title: finalTitle,
         body: praiseNote.trim() || aw.body || undefined,
         badgeCode,
-        isPublic: true,
+        // Khen (≥4★) hiện công khai; góp ý khách (1–3★) chỉ NV đó + quản lý thấy.
+        isPublic: stars >= 4,
         customerRating: stars,
       });
       message.success(stars >= 4 ? 'Đã ghi lời khen khách' : 'Đã ghi góp ý khách');
@@ -601,10 +602,10 @@ export function LearningRecognizePage() {
         title,
         body: note || coachAward.body || undefined,
         badgeCode: coachAward.badgeCode,
-        isPublic: true,
+        isPublic: false,
         customerRating: null,
       });
-      message.success('Đã ghi góp ý');
+      message.success('Đã ghi góp ý riêng — chỉ nhân viên này và quản lý xem được');
       setCoachModalOpen(false);
       setCoachAward(null);
       setCoachNote('');
@@ -1053,7 +1054,6 @@ export function LearningRecognizePage() {
                     key={employeeId ?? 'none'}
                     initialValues={{
                       kind: 'custom',
-                      isPublic: true,
                       customerRating: 5,
                       employeeId: employeeId ?? undefined,
                     }}
@@ -1084,6 +1084,11 @@ export function LearningRecognizePage() {
                           /góp ý|cải thiện/i.test(v.body ?? '')
                             ? `Góp ý — ${v.title}`
                             : v.title;
+                        // Góp ý (coaching / khách 1–3★) là riêng tư; khen / ghi nhận vẫn công khai.
+                        const isCoaching =
+                          v.kind === 'customer_feedback' ||
+                          (isCustomer && (stars ?? 5) < 4) ||
+                          /^góp ý/i.test(String(titlePrefix ?? ''));
                         await createLearningRecognition({
                           employeeId: empId,
                           kind: v.kind,
@@ -1095,7 +1100,7 @@ export function LearningRecognizePage() {
                               : titlePrefix,
                           body: v.body,
                           badgeCode: v.badgeCode || null,
-                          isPublic: true,
+                          isPublic: !isCoaching,
                           customerRating: isCustomer ? stars : null,
                         });
                         message.success('Đã tạo sự kiện ghi nhận');

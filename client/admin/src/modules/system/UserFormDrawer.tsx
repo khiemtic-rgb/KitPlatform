@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { App, Button, Col, Drawer, Form, Input, Row, Select, Space, Tooltip } from 'antd';
+import { App, Button, Col, DatePicker, Drawer, Form, Input, Row, Select, Space, Tooltip } from 'antd';
 import type { FormInstance } from 'antd/es/form';
+import dayjs, { type Dayjs } from 'dayjs';
 import { CloseOutlined, KeyOutlined, QuestionCircleOutlined, SaveOutlined } from '@ant-design/icons';
 import { createUser, fetchBranches, fetchEmployee, fetchEmployees, fetchRoles, updateUser } from '@/shared/api/identity-admin.api';
 import type { BranchListItem, EmployeeLookup, UserDetail } from '@/shared/api/identity-admin.types';
@@ -15,11 +16,19 @@ interface UserFormValues {
   newPassword?: string;
   employeeFullName?: string;
   employeePhone?: string;
+  employeeJobTitle?: string;
+  employeeHireDate?: Dayjs | null;
   status: number;
   roleIds: string[];
   employeeId?: string;
   branchIds?: string[];
   primaryBranchId?: string;
+}
+
+function parseHireDate(value?: string | null): Dayjs | null {
+  if (!value) return null;
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed : null;
 }
 
 function applyUserSaveErrorToForm(form: FormInstance<UserFormValues>, errMsg: string) {
@@ -133,7 +142,12 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
         const detail = await fetchEmployee(employeeId);
         const branchIds = detail.branches.map((b) => b.branchId);
         const primary = detail.branches.find((b) => b.isPrimary)?.branchId ?? branchIds[0];
-        form.setFieldsValue({ branchIds, primaryBranchId: primary });
+        form.setFieldsValue({
+          branchIds,
+          primaryBranchId: primary,
+          employeeJobTitle: detail.jobTitle,
+          employeeHireDate: parseHireDate(detail.hireDate),
+        });
       } catch {
         form.setFieldsValue({ branchIds: [], primaryBranchId: undefined });
       }
@@ -154,6 +168,8 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
         email: editing.email,
         employeeFullName: editing.employeeName,
         employeePhone: editing.employeePhone,
+        employeeJobTitle: editing.employeeJobTitle,
+        employeeHireDate: parseHireDate(editing.employeeHireDate),
         status: editing.status,
         roleIds: editing.roleIds,
         employeeId: editing.employeeId,
@@ -199,8 +215,8 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
   const primaryBranchOptions = branchOptions.filter((o) => branchIds.includes(o.value));
 
   const editFieldNames = showChangePassword
-    ? (['username', 'email', 'employeeFullName', 'employeePhone', 'status', 'roleIds', 'employeeId', 'branchIds', 'primaryBranchId', 'newPassword'] as const)
-    : (['username', 'email', 'employeeFullName', 'employeePhone', 'status', 'roleIds', 'employeeId', 'branchIds', 'primaryBranchId'] as const);
+    ? (['username', 'email', 'employeeFullName', 'employeePhone', 'employeeJobTitle', 'employeeHireDate', 'status', 'roleIds', 'employeeId', 'branchIds', 'primaryBranchId', 'newPassword'] as const)
+    : (['username', 'email', 'employeeFullName', 'employeePhone', 'employeeJobTitle', 'employeeHireDate', 'status', 'roleIds', 'employeeId', 'branchIds', 'primaryBranchId'] as const);
 
   const createFieldNames = [
     'username',
@@ -208,6 +224,8 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
     'password',
     'employeeFullName',
     'employeePhone',
+    'employeeJobTitle',
+    'employeeHireDate',
     'status',
     'roleIds',
     'employeeId',
@@ -259,6 +277,8 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
       employeeId: values.employeeId || undefined,
       employeeFullName: values.employeeFullName?.trim() || undefined,
       employeePhone: values.employeePhone?.trim() || undefined,
+      employeeJobTitle: values.employeeJobTitle?.trim() ?? '',
+      employeeHireDate: values.employeeHireDate ? values.employeeHireDate.format('YYYY-MM-DD') : null,
     };
     const branchPayload = {
       branchIds: values.branchIds ?? [],
@@ -354,6 +374,24 @@ export function UserFormDrawer({ open, editing, onClose, onSaved }: UserFormDraw
           <Col span={10}>
             <Form.Item name="employeePhone" label={t('form.phone')} style={{ marginBottom: 12 }}>
               <Input autoComplete="off" name="novixa-employee-phone" placeholder="090..." />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={12}>
+          <Col span={14}>
+            <Form.Item
+              name="employeeJobTitle"
+              label={t('form.jobTitle')}
+              rules={[{ max: 120, message: t('form.jobTitleMax') }]}
+              style={{ marginBottom: 12 }}
+            >
+              <Input autoComplete="off" name="novixa-employee-job-title" placeholder={t('form.jobTitlePlaceholder')} />
+            </Form.Item>
+          </Col>
+          <Col span={10}>
+            <Form.Item name="employeeHireDate" label={t('form.hireDate')} style={{ marginBottom: 12 }}>
+              <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
             </Form.Item>
           </Col>
         </Row>

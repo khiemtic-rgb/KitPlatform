@@ -30,7 +30,7 @@ import {
   PlayCircleOutlined,
   QuestionCircleOutlined,
   RightOutlined,
-  RobotOutlined,
+  BarChartOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
@@ -131,6 +131,14 @@ const CRITERIA = [
   },
 ] as const;
 
+const BASIS_LABEL: Record<string, string> = {
+  knowledge: 'Kiến thức',
+  attitude: 'Thái độ',
+  care: 'Chăm sóc khách',
+  stock: 'Kho / hết hạn',
+  discipline: 'Kỷ luật ca',
+};
+
 const SMART_GOALS = [
   { key: 'l3', label: 'Hoàn thành bài / bậc tiếp theo (vd. bậc 3)' },
   { key: 'crm', label: 'Chăm sóc khách ổn định (gắn khách tốt hơn)' },
@@ -185,7 +193,7 @@ function pctCrm(ev: LearningEmployeeEvidence) {
   return snapToBand(care);
 }
 
-function buildAiSummary(ev: LearningEmployeeEvidence) {
+function buildDataSummary(ev: LearningEmployeeEvidence) {
   const dims = [
     { key: 'Kiến thức / quầy', score: snapToBand(ev.suggestedKnowledge), label: 'Kiến thức' },
     { key: 'Thái độ', score: snapToBand(ev.suggestedAttitude), label: 'Thái độ' },
@@ -214,7 +222,7 @@ function buildAiSummary(ev: LearningEmployeeEvidence) {
   };
 }
 
-function buildAiComment(ev: LearningEmployeeEvidence, summary: ReturnType<typeof buildAiSummary>) {
+function buildDataComment(ev: LearningEmployeeEvidence, summary: ReturnType<typeof buildDataSummary>) {
   const strong = summary.strengths.filter((s) => s !== 'Đang tích lũy dữ liệu').slice(0, 2);
   const weak = summary.weak.slice(0, 2);
   const parts: string[] = [];
@@ -303,8 +311,8 @@ export function LearningEvaluationsPage() {
     }
   };
 
-  const aiSummary = useMemo(
-    () => (evidence ? buildAiSummary(evidence) : null),
+  const dataSummary = useMemo(
+    () => (evidence ? buildDataSummary(evidence) : null),
     [evidence],
   );
 
@@ -319,9 +327,9 @@ export function LearningEvaluationsPage() {
     };
   }, [evidence]);
 
-  const applyAiScores = () => {
-    if (!evidence || !aiSummary) return;
-    const comment = buildAiComment(evidence, aiSummary);
+  const applySuggestedScores = () => {
+    if (!evidence || !dataSummary) return;
+    const comment = buildDataComment(evidence, dataSummary);
     form.setFieldsValue({
       ...suggestionSnapshot,
       comment,
@@ -333,9 +341,9 @@ export function LearningEvaluationsPage() {
     );
   };
 
-  const applyAiCommentOnly = () => {
-    if (!evidence || !aiSummary) return;
-    form.setFieldsValue({ comment: buildAiComment(evidence, aiSummary) });
+  const applySuggestedComment = () => {
+    if (!evidence || !dataSummary) return;
+    form.setFieldsValue({ comment: buildDataComment(evidence, dataSummary) });
     setEvalStarted(true);
     message.success(
       'Đã điền sẵn ô nhận xét. Bạn vẫn tự chọn mức điểm bên dưới, rồi Lưu đánh giá.',
@@ -636,18 +644,18 @@ export function LearningEvaluationsPage() {
                       Bậc: {evidence.currentLevelTitle ?? '—'}
                     </Tag>
                     <Tag color="blue">
-                      Điểm năng lực gợi ý: {aiSummary?.overall ?? '—'} (
-                      {aiSummary ? competencyLabel(aiSummary.overall) : '—'})
+                      Điểm năng lực gợi ý: {dataSummary?.overall ?? '—'} (
+                      {dataSummary ? competencyLabel(dataSummary.overall) : '—'})
                     </Tag>
                     {evidence.eligibleForNext ? (
                       <Tag color="success">Đủ điều kiện lên {evidence.nextLevelTitle}</Tag>
                     ) : null}
                   </Space>
-                  {aiSummary ? (
+                  {dataSummary ? (
                     <Rate
                       disabled
                       allowHalf
-                      value={scoreToStars(aiSummary.overall)}
+                      value={scoreToStars(dataSummary.overall)}
                       style={{ marginTop: 4, fontSize: 16 }}
                     />
                   ) : null}
@@ -741,22 +749,35 @@ export function LearningEvaluationsPage() {
               </Typography.Text>
             ) : null}
 
-            {/* AI Evaluation Assistant */}
-            {aiSummary ? (
+            {/* Gợi ý theo luật cố định từ dữ liệu học + checklist — không phải AI */}
+            {dataSummary ? (
               <Card
                 size="small"
                 title={
                   <Space>
-                    <RobotOutlined style={{ color: '#722ed1' }} />
-                    Gợi ý thông minh (từ bằng chứng ca)
+                    <BarChartOutlined style={{ color: '#722ed1' }} />
+                    Gợi ý theo dữ liệu
                   </Space>
                 }
                 style={{ borderColor: '#722ed133' }}
               >
+                {evidence.suggestionBasis?.length ? (
+                  <div style={{ marginBottom: 12 }}>
+                    <Typography.Text type="secondary">Căn cứ từng điểm gợi ý</Typography.Text>
+                    {evidence.suggestionBasis.map((b) => (
+                      <div key={b.criterion} style={{ fontSize: 13 }}>
+                        <Typography.Text strong>
+                          {BASIS_LABEL[b.criterion] ?? b.criterion}: {b.score}
+                        </Typography.Text>
+                        <Typography.Text type="secondary"> — {b.reason}</Typography.Text>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 <Row gutter={[16, 12]}>
                   <Col xs={24} md={8}>
                     <Typography.Text type="secondary">Điểm mạnh</Typography.Text>
-                    {aiSummary.strengths.map((s) => (
+                    {dataSummary.strengths.map((s) => (
                       <div key={s}>
                         <Typography.Text style={{ color: '#52c41a' }}>✓ {s}</Typography.Text>
                       </div>
@@ -764,8 +785,8 @@ export function LearningEvaluationsPage() {
                   </Col>
                   <Col xs={24} md={8}>
                     <Typography.Text type="secondary">Điểm cần cải thiện</Typography.Text>
-                    {aiSummary.weak.length ? (
-                      aiSummary.weak.map((s) => (
+                    {dataSummary.weak.length ? (
+                      dataSummary.weak.map((s) => (
                         <div key={s}>
                           <Typography.Text style={{ color: '#faad14' }}>• {s}</Typography.Text>
                         </div>
@@ -776,7 +797,7 @@ export function LearningEvaluationsPage() {
                   </Col>
                   <Col xs={24} md={8}>
                     <Typography.Text type="secondary">Đề xuất</Typography.Text>
-                    {aiSummary.proposals.map((s) => (
+                    {dataSummary.proposals.map((s) => (
                       <div key={s}>
                         <Typography.Text>• {s}</Typography.Text>
                       </div>
@@ -784,10 +805,10 @@ export function LearningEvaluationsPage() {
                   </Col>
                 </Row>
                 <Space wrap style={{ marginTop: 12 }}>
-                  <Button type="primary" icon={<CheckCircleOutlined />} onClick={applyAiScores}>
+                  <Button type="primary" icon={<CheckCircleOutlined />} onClick={applySuggestedScores}>
                     Dùng gợi ý: điền điểm + nhận xét
                   </Button>
-                  <Button onClick={applyAiCommentOnly}>Chỉ điền nhận xét (tự chấm điểm)</Button>
+                  <Button onClick={applySuggestedComment}>Chỉ điền nhận xét (tự chấm điểm)</Button>
                 </Space>
                 <Typography.Paragraph type="secondary" style={{ margin: '8px 0 0', fontSize: 12 }}>
                   Chỉ điền sẵn vào form bên dưới — chưa lưu. Bạn vẫn chỉnh rồi mới bấm Lưu đánh giá.
@@ -920,13 +941,13 @@ export function LearningEvaluationsPage() {
               style={{ marginTop: 16 }}
               title={
                 <Space>
-                  <RobotOutlined />
+                  <BarChartOutlined />
                   Nhận xét quản lý
                 </Space>
               }
               extra={
-                <Button type="link" size="small" onClick={applyAiCommentOnly}>
-                  AI gợi ý lại
+                <Button type="link" size="small" onClick={applySuggestedComment}>
+                  Gợi ý theo dữ liệu
                 </Button>
               }
             >
@@ -935,7 +956,7 @@ export function LearningEvaluationsPage() {
                 extra={
                   usedSuggestion
                     ? 'Đã dùng gợi ý từ bằng chứng — chỉnh nếu thực tế ca khác.'
-                    : 'Có thể bấm AI gợi ý rồi sửa.'
+                    : 'Có thể bấm «Gợi ý theo dữ liệu» rồi sửa.'
                 }
                 rules={[
                   { required: true, message: 'Bắt buộc nhận xét' },

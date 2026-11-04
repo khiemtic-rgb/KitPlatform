@@ -21,6 +21,7 @@ import { formatDisplayMoney } from '@/shared/utils/money';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
 import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { useCanAccessOwnerCockpit, useHasPermission } from '@/shared/auth/usePermission';
+import { OwnerStaffTodaySection } from './OwnerStaffTodaySection';
 
 type TileProps = {
   title: string;
@@ -228,6 +229,11 @@ export function OwnerCockpitPage() {
           />
         </Col>
       </Row>
+
+      <Typography.Title level={5} style={{ marginTop: 24 }}>
+        {t('sections.staffToday')}
+      </Typography.Title>
+      <OwnerStaffTodaySection />
 
       <Typography.Title level={5} style={{ marginTop: 24 }}>
         {t('sections.sales')}

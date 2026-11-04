@@ -5,7 +5,33 @@
   "loadFailed": "Không tải được cockpit",
   "tip": "Một màn tóm tắt cho chủ nhà thuốc. Chi tiết xem Báo cáo / kho / CRM.",
   "backDashboard": "← Về tổng quan vận hành",
+  "staffToday": {
+    "loadFailed": "Không tải được phần nhân sự hôm nay",
+    "open": "Xem",
+    "checklistTitle": "Checklist mở / đóng ca hôm nay",
+    "openShift": "Mở ca",
+    "closeShift": "Đóng ca",
+    "checklistStatus": {
+      "not_started": "Chưa làm",
+      "in_progress": "Đang làm",
+      "completed": "Đã xong"
+    },
+    "missingRequired": "Thiếu {{count}} mục bắt buộc",
+    "tickedBy": "Người tick: {{names}}",
+    "noBranches": "Chưa có chi nhánh",
+    "tasksTitle": "Việc đang giao theo người",
+    "openTasks": "{{count}} việc đang mở",
+    "overdueTasks": "Quá hạn {{count}}",
+    "noTasks": "Không có việc đang mở",
+    "cashTitle": "Chênh tiền 7 ngày theo người đóng ca",
+    "cashLine": "{{count}} ca · lệch {{amount}}",
+    "noCash": "Chưa có ca đóng trong 7 ngày",
+    "learningTitle": "Học tập",
+    "learningHint": "nhân viên chưa có chứng nhận nào",
+    "learningUnavailable": "Chưa bật phần học tập"
+  },
   "sections": {
+    "staffToday": "Nhân sự hôm nay",
     "risk": "Rủi ro hôm nay",
     "sales": "Doanh số",
     "peakHours": "Giờ vàng",
@@ -105,9 +131,15 @@
     "reports": {
       "cancellations": "Hủy hóa đơn (draft) theo NV",
       "discounts": "Giảm giá POS theo NV",
-      "adjustments": "Điều chỉnh tồn (đã duyệt) theo NV"
+      "adjustments": "Điều chỉnh tồn (đã duyệt) theo NV",
+      "cashByCloser": "Chênh tiền theo người đóng ca"
     },
     "col": {
+      "openedBy": "Người mở ca",
+      "closedBy": "Người đóng ca",
+      "shiftCount": "Số ca",
+      "absCashVariance": "Tổng |chênh|",
+      "netCashVariance": "Chênh ròng",
       "shift": "Ca",
       "branch": "Chi nhánh",
       "warehouse": "Kho/quầy",
