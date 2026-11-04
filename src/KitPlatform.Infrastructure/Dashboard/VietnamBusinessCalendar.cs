@@ -10,7 +10,7 @@ internal static class VietnamBusinessCalendar
         var vn = utcNow.Add(Offset);
         var startVn = new DateTime(vn.Year, vn.Month, vn.Day, 0, 0, 0, DateTimeKind.Unspecified);
         var endVn = startVn.AddDays(1);
-        return (startVn - Offset, endVn - Offset);
+        return (AsUtc(startVn - Offset), AsUtc(endVn - Offset));
     }
 
     /// <summary>Last N calendar days in VN including today, as UTC half-open interval.</summary>
@@ -33,6 +33,8 @@ internal static class VietnamBusinessCalendar
         var vn = utcNow.Add(Offset);
         var startVn = new DateTime(vn.Year, vn.Month, 1, 0, 0, 0, DateTimeKind.Unspecified);
         var endVn = startVn.AddMonths(1);
-        return (startVn - Offset, endVn - Offset);
+        return (AsUtc(startVn - Offset), AsUtc(endVn - Offset));
     }
+
+    private static DateTime AsUtc(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc);
 }

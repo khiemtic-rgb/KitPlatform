@@ -98,6 +98,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<KitPlatform.Api.Authorization.LoginAttemptGuard>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Authentication.IClaimsTransformation, DbPermissionsClaimsTransformation>();
 
 builder.Services.AddAuthorization(options =>
@@ -114,6 +115,7 @@ builder.Services.AddAuthorization(options =>
     options.AddDashboardAuthorization();
     options.AddSuccessAuthorization();
     options.AddLearningAuthorization();
+    options.AddPharmacyKnowledgeAuthorization();
     options.AddReportsAuthorization();
     options.AddIdentityAuthorization();
     options.AddClinicAuthorization();
@@ -177,6 +179,33 @@ builder.Services.AddRateLimiter(options =>
             _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
             {
                 PermitLimit = builder.Configuration.GetValue("FamilyOs:PublicRequestsPerMinutePerIp", 10),
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.AddPolicy(KitPlatform.Api.Authorization.AuthRateLimitPolicies.Login, httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("Auth:LoginRequestsPerMinutePerIp", 30),
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.AddPolicy(KitPlatform.Api.Authorization.AuthRateLimitPolicies.Refresh, httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("Auth:RefreshRequestsPerMinutePerIp", 120),
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.AddPolicy(KitPlatform.Api.Authorization.AuthRateLimitPolicies.PublicOtp, httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("Auth:PublicOtpRequestsPerMinutePerIp", 10),
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
             }));
@@ -262,6 +291,13 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+// nginx on loopback sets X-Forwarded-For/Proto; default KnownProxies trusts loopback only.
+app.UseForwardedHeaders(new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+        | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto,
+});
 
 if (app.Environment.IsDevelopment())
 {

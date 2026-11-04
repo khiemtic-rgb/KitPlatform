@@ -36,7 +36,8 @@ internal sealed class DashboardRepository
         var utcNow = DateTime.UtcNow;
         var (todayStart, todayEnd) = VietnamBusinessCalendar.TodayRangeUtc(utcNow);
         var (weekStart, weekEnd) = VietnamBusinessCalendar.RollingDaysRangeUtc(utcNow, 7);
-        var expiryCutoff = VietnamBusinessCalendar.Today(utcNow).AddDays(expiryDays);
+        var expiryOnOrAfter = VietnamBusinessCalendar.Today(utcNow);
+        var expiryCutoff = expiryOnOrAfter.AddDays(expiryDays);
 
         var orderWarehouseFilter = allowedWarehouseIds is { Length: > 0 }
             ? "AND o.warehouse_id = ANY(@AllowedWarehouseIds)"
@@ -174,6 +175,7 @@ internal sealed class DashboardRepository
                 COUNT(*) FILTER (
                     WHERE b.quantity_available > 0
                       AND b.expiry_date IS NOT NULL
+                      AND b.expiry_date >= @ExpiryOnOrAfter
                       AND b.expiry_date <= @ExpiryBefore
                 )::int AS NearExpiryBatchCount,
                 COUNT(*) FILTER (
@@ -191,7 +193,14 @@ internal sealed class DashboardRepository
 
         var inventory = await conn.QuerySingleAsync<(int ActiveBatchCount, int NearExpiryBatchCount, int LowStockBatchCount)>(
             inventorySql,
-            new { TenantId, ExpiryBefore = expiryCutoff, FallbackThreshold = lowStockThreshold, AllowedWarehouseIds = allowedWarehouseIds });
+            new
+            {
+                TenantId,
+                ExpiryOnOrAfter = expiryOnOrAfter,
+                ExpiryBefore = expiryCutoff,
+                FallbackThreshold = lowStockThreshold,
+                AllowedWarehouseIds = allowedWarehouseIds,
+            });
 
         var lowStockProductSql = $"""
             SELECT COUNT(*)::int FROM (

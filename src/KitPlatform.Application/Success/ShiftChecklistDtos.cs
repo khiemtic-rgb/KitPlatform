@@ -1,11 +1,14 @@
 namespace KitPlatform.Application.Success;
 
+public sealed record ShiftChecklistOpenShiftDto(Guid Id, string ShiftNumber, string WarehouseName);
+
 public sealed record ShiftChecklistTodayDto(
     DateOnly BusinessDate,
     Guid? BranchId,
     IReadOnlyList<ShiftChecklistBranchOptionDto> Branches,
     ShiftChecklistKindStatusDto Open,
-    ShiftChecklistKindStatusDto Close);
+    ShiftChecklistKindStatusDto Close,
+    IReadOnlyList<ShiftChecklistOpenShiftDto>? OpenShifts = null);
 
 public sealed record ShiftChecklistBranchOptionDto(Guid Id, string Name, string? Code);
 
@@ -16,7 +19,8 @@ public sealed record ShiftChecklistKindStatusDto(
     int CheckedCount,
     int TotalCount,
     int RequiredMissingCount,
-    DateTime? CompletedAt);
+    DateTime? CompletedAt,
+    Guid? SalesShiftId = null);
 
 public sealed record ShiftChecklistRunDto(
     Guid Id,
@@ -34,8 +38,9 @@ public sealed record ShiftChecklistRunItemDto(
     string Label,
     bool IsRequired,
     bool IsChecked,
-    DateTime? CheckedAt);
+    DateTime? CheckedAt,
+    Guid? CheckedByUserId = null);
 
-public sealed record StartShiftChecklistRequest(Guid BranchId, string Kind);
+public sealed record StartShiftChecklistRequest(Guid BranchId, string Kind, Guid? SalesShiftId = null);
 
 public sealed record SetShiftChecklistItemRequest(bool Checked);

@@ -6,9 +6,39 @@ using KitPlatform.Infrastructure.Data;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
-/// <summary>FEFO batch allocation registered as <see cref="IBatchResolver"/> (BR-INV-001/002).</summary>
+/// <summary>FEFO batch allocation for Pharmacy sales (BR-INV-001/002).</summary>
 internal sealed class BatchResolver : IBatchResolver
 {
+    internal const string AvailableSql =
+        """
+        SELECT
+            id AS Id,
+            batch_number AS BatchNumber,
+            expiry_date AS ExpiryDate,
+            quantity_available AS QuantityAvailable,
+            unit_cost AS UnitCost
+        FROM inventory_batches
+        WHERE tenant_id = @TenantId AND warehouse_id = @WarehouseId
+          AND product_id = @ProductId AND quantity_available > 0
+          AND 
+        """ + SellableBatchRules.SqlUnqualified + """
+
+        ORDER BY expiry_date ASC NULLS LAST, created_at ASC
+        """;
+
+    internal const string AvailableForUpdateSql = AvailableSql + "\nFOR UPDATE";
+
+    private const string ExpiredQuantitySql =
+        """
+        SELECT COALESCE(SUM(quantity_available), 0)
+        FROM inventory_batches
+        WHERE tenant_id = @TenantId AND warehouse_id = @WarehouseId
+          AND product_id = @ProductId AND quantity_available > 0
+          AND NOT (
+        """ + SellableBatchRules.SqlUnqualified + """
+        )
+        """;
+
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
 
@@ -35,21 +65,8 @@ internal sealed class BatchResolver : IBatchResolver
         Guid productId,
         CancellationToken cancellationToken = default)
     {
-        var sql = $"""
-            SELECT
-                id AS Id,
-                batch_number AS BatchNumber,
-                expiry_date AS ExpiryDate,
-                quantity_available AS QuantityAvailable,
-                unit_cost AS UnitCost
-            FROM inventory_batches
-            WHERE tenant_id = @TenantId AND warehouse_id = @WarehouseId
-              AND product_id = @ProductId AND quantity_available > 0
-              AND {SellableLotRules.UnaliasedSql}
-            ORDER BY expiry_date ASC NULLS LAST, created_at ASC
-            """;
         return (await conn.QueryAsync<BatchAvailabilityDto>(
-            sql, new { TenantId, WarehouseId = warehouseId, ProductId = productId })).ToList();
+            AvailableSql, new { TenantId, WarehouseId = warehouseId, ProductId = productId })).ToList();
     }
 
     public IReadOnlyList<FifoAllocationResult> AllocateFromBatches(
@@ -108,21 +125,20 @@ internal sealed class BatchResolver : IBatchResolver
         decimal baseQuantityNeeded,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            SELECT
-                id AS Id,
-                batch_number AS BatchNumber,
-                expiry_date AS ExpiryDate,
-                quantity_available AS QuantityAvailable,
-                unit_cost AS UnitCost
-            FROM inventory_batches
-            WHERE tenant_id = @TenantId AND warehouse_id = @WarehouseId
-              AND product_id = @ProductId AND quantity_available > 0
-            ORDER BY expiry_date ASC NULLS LAST, created_at ASC
-            FOR UPDATE
-            """;
         var batches = (await conn.QueryAsync<BatchAvailabilityDto>(
-            sql, new { TenantId, WarehouseId = warehouseId, ProductId = productId }, tx)).ToList();
+            AvailableForUpdateSql,
+            new { TenantId, WarehouseId = warehouseId, ProductId = productId },
+            tx)).ToList();
+        if (batches.Sum(batch => batch.QuantityAvailable) <= 0.0001m)
+        {
+            var expired = await conn.ExecuteScalarAsync<decimal>(
+                ExpiredQuantitySql,
+                new { TenantId, WarehouseId = warehouseId, ProductId = productId },
+                tx);
+            if (expired > 0)
+                throw new InvalidOperationException("Lô đã hết hạn không được xuất bán.");
+        }
+
         return AllocateFromBatches(batches, baseQuantityNeeded);
     }
 }

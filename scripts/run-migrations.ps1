@@ -163,11 +163,12 @@ $files = @(
     "190_backfill_product_name_normalized.sql",
     "191_customer_name_trgm.sql",
     "210_customer_allow_credit_with_phone.sql",
-    "211_merge_permissions.sql"
+    "211_merge_permissions.sql",
+    "381_pack_test_onboarding_canary.sql"
 )
 
 Write-Host "=== KitPlatform Migrations ===" -ForegroundColor Cyan
-Write-Host "Database: $ConnectionString"
+Write-Host "Database: (connection string provided)"
 Write-Host "psql: $psql"
 
 if (-not $psql) {

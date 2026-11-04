@@ -222,13 +222,11 @@ internal sealed class ConsultationRepository
         IReadOnlyList<string> keywords,
         IReadOnlyList<string> excludeKeywords,
         int limit,
+        bool prescriptionShelf,
         CancellationToken ct)
     {
-        var categories = categoryCodes
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim().ToUpperInvariant())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        // Category codes stay on the rule for review. They do not qualify a product.
+        _ = categoryCodes;
         var keywordPatterns = keywords
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => $"%{x.Trim()}%")
@@ -240,7 +238,7 @@ internal sealed class ConsultationRepository
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        if (categories.Length == 0 && keywordPatterns.Length == 0)
+        if (keywordPatterns.Length == 0)
             return [];
 
         const string sql = """
@@ -300,20 +298,20 @@ internal sealed class ConsultationRepository
             WHERE p.tenant_id = @TenantId
               AND p.deleted_at IS NULL
               AND p.status = 1
-              AND COALESCE(p.dispensing_class, CASE COALESCE(p.drug_type, 1) WHEN 2 THEN 'prescription' WHEN 3 THEN 'controlled' ELSE 'otc' END) = 'otc'
-              AND COALESCE(p.drug_type, 1) = 1
-              AND COALESCE(c.category_code, '') <> 'KHANG_SINH'
-              AND st.stock_available > 0
               AND (
-                (cardinality(@CategoryCodes::text[]) > 0 AND c.category_code = ANY(@CategoryCodes))
-                OR (
-                  cardinality(@KeywordPatterns::text[]) > 0
-                  AND (
+                    @PrescriptionShelf
+                    OR (
+                        COALESCE(p.dispensing_class, CASE COALESCE(p.drug_type, 1) WHEN 2 THEN 'prescription' WHEN 3 THEN 'controlled' ELSE 'otc' END) = 'otc'
+                        AND COALESCE(p.drug_type, 1) = 1
+                        AND COALESCE(c.category_code, '') <> 'KHANG_SINH'
+                    )
+                  )
+              AND st.stock_available > 0
+              AND cardinality(@KeywordPatterns::text[]) > 0
+              AND (
                     p.product_name ILIKE ANY(@KeywordPatterns)
                     OR COALESCE(p.generic_name, '') ILIKE ANY(@KeywordPatterns)
                     OR COALESCE(p.description, '') ILIKE ANY(@KeywordPatterns)
-                  )
-                )
               )
               AND (
                 cardinality(@ExcludePatterns::text[]) = 0
@@ -333,11 +331,11 @@ internal sealed class ConsultationRepository
             TenantId,
             WarehouseId = warehouseId,
             PriceType = priceType,
-            CategoryCodes = categories,
             KeywordPatterns = keywordPatterns,
             ExcludePatterns = excludePatterns,
             CompletedStatus = SalesOrderStatuses.Completed,
-            Limit = Math.Clamp(limit, 1, 12),
+            PrescriptionShelf = prescriptionShelf,
+            Limit = Math.Clamp(limit, 1, 48),
         });
         return rows.ToList();
     }

@@ -132,15 +132,13 @@ public sealed class InventoryApiTests : IClassFixture<KitPlatformWebApplicationF
             },
         });
         Assert.Equal(HttpStatusCode.OK, voidOpeningResponse.StatusCode);
-        var created = await voidOpeningResponse.Content.ReadFromJsonAsync<JsonElement>();
-        var createdBatchId = created!.GetProperty("batchIds").EnumerateArray().First().GetGuid();
 
         var listResponse = await authed.GetAsync(
-            $"/api/inventory/opening-balance/batches?warehouseId={mainWarehouseId}&productId=66666666-6666-6666-6666-666666666604&search={voidBatchNumber}&pageSize=200");
+            $"/api/inventory/opening-balance/batches?warehouseId={mainWarehouseId}&search={Uri.EscapeDataString(voidBatchNumber)}");
         Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
         var list = await listResponse.Content.ReadFromJsonAsync<JsonElement>();
         var voidBatch = list.GetProperty("items").EnumerateArray()
-            .First(b => b.GetProperty("batchId").GetGuid() == createdBatchId);
+            .First(b => string.Equals(b.GetProperty("batchNumber").GetString(), voidBatchNumber, StringComparison.OrdinalIgnoreCase));
         Assert.True(voidBatch.GetProperty("canVoid").GetBoolean());
         var voidBatchId = voidBatch.GetProperty("batchId").GetGuid();
 
@@ -148,11 +146,47 @@ public sealed class InventoryApiTests : IClassFixture<KitPlatformWebApplicationF
         Assert.Equal(HttpStatusCode.NoContent, voidResponse.StatusCode);
 
         var listAfterVoid = await authed.GetAsync(
-            $"/api/inventory/opening-balance/batches?warehouseId={mainWarehouseId}&search={voidBatchNumber}&pageSize=50");
+            $"/api/inventory/opening-balance/batches?warehouseId={mainWarehouseId}&search={Uri.EscapeDataString(voidBatchNumber)}");
         var listAfter = await listAfterVoid.Content.ReadFromJsonAsync<JsonElement>();
         Assert.DoesNotContain(
             listAfter.GetProperty("items").EnumerateArray(),
             b => b.GetProperty("batchId").GetGuid() == voidBatchId);
+    }
+
+    [Fact]
+    public async Task Opening_balance_cannot_be_recorded_twice_for_the_same_lot()
+    {
+        var token = await LoginAsync();
+        using var authed = CreateAuthedClient(token);
+        var warehouses = await authed.GetFromJsonAsync<JsonElement>("/api/inventory/warehouses");
+        var warehouseId = warehouses.EnumerateArray().First().GetProperty("id").GetGuid();
+        var productId = Guid.Parse("66666666-6666-6666-6666-666666666604");
+        var batchNumber = $"OBD{Guid.NewGuid():N}"[..14].ToUpperInvariant();
+        var request = new
+        {
+            warehouseId,
+            lines = new[] { new { productId, batchNumber, expiryDate = "2031-06-30", unitCost = 1000m, quantity = 10m } },
+        };
+
+        Assert.Equal(HttpStatusCode.OK, (await authed.PostAsJsonAsync("/api/inventory/opening-balance", request)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await authed.PostAsJsonAsync("/api/inventory/opening-balance", request)).StatusCode);
+
+        var import = await authed.PostAsJsonAsync("/api/inventory/opening-balance/import", new
+        {
+            warehouseId,
+            rows = new[]
+            {
+                new { rowNumber = 2, productKey = "VITC1000", batchNumber, expiryDate = "2031-06-30", quantity = 10m, unitCost = 1000m },
+            },
+        });
+        Assert.Equal(HttpStatusCode.OK, import.StatusCode);
+        var importResult = await import.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0, importResult.GetProperty("linesProcessed").GetInt32());
+        Assert.Equal(2, importResult.GetProperty("errors")[0].GetProperty("rowNumber").GetInt32());
+
+        var stock = await authed.GetFromJsonAsync<JsonElement>(
+            $"/api/inventory/stock/batches?warehouseId={warehouseId}&search={Uri.EscapeDataString(batchNumber)}");
+        Assert.Equal(10m, stock.GetProperty("items").EnumerateArray().Single().GetProperty("quantityAvailable").GetDecimal());
     }
 
     [Fact]
@@ -184,9 +218,9 @@ public sealed class InventoryApiTests : IClassFixture<KitPlatformWebApplicationF
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new
         {
+            tenantCode = "DEMO_PHARMACY",
             username = "admin",
             password = "Admin@123",
-            tenantCode = "DEMO_PHARMACY",
         });
 
         if (response.StatusCode != HttpStatusCode.OK)

@@ -76,7 +76,7 @@ export function useAdminChatUnread(enabled = true) {
     const onVisibility = () => scheduleFallback();
     document.addEventListener('visibilitychange', onVisibility);
     const unsubscribeSse = accessToken
-      ? subscribeChatSse(buildAdminChatEventsUrl(accessToken), () => {
+      ? subscribeChatSse(buildAdminChatEventsUrl(), accessToken, () => {
           if (sseTimer) return;
           sseTimer = window.setTimeout(() => {
             sseTimer = undefined;

@@ -108,4 +108,12 @@ public interface IReportsService
         Guid? warehouseId,
         string? search,
         CancellationToken cancellationToken = default);
+
+    Task<ReportTableResultDto> RunInventoryMovementLinesAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid productId,
+        Guid warehouseId,
+        string direction,
+        CancellationToken cancellationToken = default);
 }

@@ -36,7 +36,7 @@ import {
   shiftAlreadyOpenMessage,
 } from '@/modules/sales/sales-shift-helpers';
 import { apiErrorMessage } from '@/shared/api/api-error';
-import { useHasPermission } from '@/shared/auth/usePermission';
+import { useCanViewStoreAnalytics, useHasPermission } from '@/shared/auth/usePermission';
 import { CloseShiftModal } from '@/modules/sales/CloseShiftModal';
 import { OpenShiftModal } from '@/modules/sales/OpenShiftModal';
 import { ShiftCloseSheetDrawer } from '@/modules/sales/ShiftCloseSheet';
@@ -56,6 +56,7 @@ export function SalesShiftReportPage() {
   const { t: tPos } = useTranslation('sales', { keyPrefix: 'pos.messages' });
   const { message } = App.useApp();
   const canWrite = useHasPermission('sales.write');
+  const canViewStoreRevenue = useCanViewStoreAnalytics();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string>();
   const [openShift, setOpenShift] = useState<SalesShiftDetail | null>(null);
@@ -158,8 +159,9 @@ export function SalesShiftReportPage() {
   }, [range, t, message]);
 
   useEffect(() => {
+    if (!canViewStoreRevenue) return;
     void loadRangeSummary();
-  }, [loadRangeSummary]);
+  }, [canViewStoreRevenue, loadRangeSummary]);
 
   const handleOpenShift = async (openingCash: number) => {
     if (!warehouseId) {
@@ -450,21 +452,23 @@ export function SalesShiftReportPage() {
         />
       </Card>
 
-      <Card title={t('rangeReport.title')} style={{ marginTop: 16 }}>
-        <Space wrap style={{ marginBottom: 16 }}>
-          <RangePicker
-            showTime
-            value={range}
-            onChange={(values) => {
-              if (values?.[0] && values[1]) setRange([values[0], values[1]]);
-            }}
-          />
-          <Button type="primary" ghost loading={rangeLoading} onClick={() => void loadRangeSummary()}>
-            {t('rangeReport.reload')}
-          </Button>
-        </Space>
-        {rangeSummary && <ShiftSummaryPanel summary={rangeSummary} loading={rangeLoading} />}
-      </Card>
+      {canViewStoreRevenue ? (
+        <Card title={t('rangeReport.title')} style={{ marginTop: 16 }}>
+          <Space wrap style={{ marginBottom: 16 }}>
+            <RangePicker
+              showTime
+              value={range}
+              onChange={(values) => {
+                if (values?.[0] && values[1]) setRange([values[0], values[1]]);
+              }}
+            />
+            <Button type="primary" ghost loading={rangeLoading} onClick={() => void loadRangeSummary()}>
+              {t('rangeReport.reload')}
+            </Button>
+          </Space>
+          {rangeSummary && <ShiftSummaryPanel summary={rangeSummary} loading={rangeLoading} />}
+        </Card>
+      ) : null}
 
       <OpenShiftModal
         open={openModal}

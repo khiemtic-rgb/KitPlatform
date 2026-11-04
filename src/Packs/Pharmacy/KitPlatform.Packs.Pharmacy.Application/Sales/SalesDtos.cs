@@ -141,7 +141,9 @@ public sealed record CreateSaleRequest(
     int? OrderReminderDaysSupply = null,
     Guid? DiscountOverrideWorkflowTaskId = null,
     Guid? PrescriptionId = null,
-    Guid? ConnectRxHandoffId = null);
+    Guid? ConnectRxHandoffId = null,
+    /// <summary>Khóa chống tạo đơn hoàn tất trùng. Null giữ hành vi cũ. Nháp bỏ qua giá trị này.</summary>
+    string? ClientSaleId = null);
 
 public sealed record UpdateDraftSaleRequest(
     Guid? CustomerId,
@@ -159,7 +161,8 @@ public sealed record CreateSaleReturnLineRequest(
 public sealed record CreateSaleReturnRequest(
     string? Reason,
     IReadOnlyList<CreateSaleReturnLineRequest> Items,
-    IReadOnlyList<CreateSalePaymentRequest>? Payments = null);
+    IReadOnlyList<CreateSalePaymentRequest>? Payments = null,
+    string? ClientReturnId = null);
 
 public sealed record SalesReturnListItemDto(
     Guid Id,
@@ -193,7 +196,8 @@ public sealed record SalesReturnDetailDto(
     IReadOnlyList<SalesReturnItemDto> Items,
     IReadOnlyList<SalesPaymentDto> Payments,
     Guid? SalesShiftId = null,
-    string? ShiftNumber = null);
+    string? ShiftNumber = null,
+    bool Replayed = false);
 
 public sealed record ShiftLotComplianceAlertDto(
     Guid ProductId,
@@ -384,7 +388,12 @@ public sealed record SalesOrderDetailDto(
     decimal LoyaltyDiscountAmount = 0,
     decimal VoucherDiscountAmount = 0,
     string? VoucherCode = null,
-    string? VoucherName = null);
+    string? VoucherName = null)
+{
+    /// <summary>Chỉ dùng nội bộ để trả HTTP 200 khi cùng clientSaleId đã commit. Không xuất hiện trên JSON.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IdempotentReplay { get; init; }
+}
 
 public sealed record CustomerReceivablesAgingBucketsDto(
     decimal Current,

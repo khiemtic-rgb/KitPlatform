@@ -160,5 +160,9 @@ public sealed class TenantPlatformSettingsValidatorTests
         Assert.Equal(
             PlatformVerticalCodes.Pharmacy,
             PlatformVerticalCodes.ToColumnValue(PlatformVerticalCodes.Pharmacy, PlatformVerticalCodes.Hybrid));
+        Assert.Equal(
+            PlatformVerticalCodes.Hybrid,
+            PlatformVerticalCodes.ToColumnValue(PlatformVerticalCodes.Marketing, PlatformVerticalCodes.Hybrid));
+        Assert.Equal("marketing", TenantPlatformSettingsValidator.NormalizeVertical("marketing"));
     }
 }

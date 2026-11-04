@@ -621,15 +621,27 @@ internal sealed class IdentityAdminRepository
             return false;
         }
 
-        await conn.ExecuteAsync("DELETE FROM role_permissions WHERE role_id = @RoleId", new { RoleId = roleId }, tx);
+        // Reserved (platform-operator) grants are neither removed nor added from a tenant.
+        await conn.ExecuteAsync(
+            $"""
+            DELETE FROM role_permissions rp
+            USING permissions p
+            WHERE rp.role_id = @RoleId
+              AND p.id = rp.permission_id
+              AND {ReservedPermissions.TenantAssignableSql}
+            """,
+            new { RoleId = roleId },
+            tx);
 
         if (permissionCodes.Count > 0)
         {
-            const string insertSql = """
+            const string insertSql = $"""
                 INSERT INTO role_permissions (role_id, permission_id)
                 SELECT @RoleId, p.id
                 FROM permissions p
                 WHERE p.permission_code = ANY(@PermissionCodes)
+                  AND {ReservedPermissions.TenantAssignableSql}
+                ON CONFLICT DO NOTHING
                 """;
 
             await conn.ExecuteAsync(insertSql, new { RoleId = roleId, PermissionCodes = permissionCodes.ToArray() }, tx);
@@ -641,10 +653,11 @@ internal sealed class IdentityAdminRepository
 
     public async Task<IReadOnlyList<PermissionLookupDto>> ListPermissionsAsync(CancellationToken cancellationToken)
     {
-        const string sql = """
-            SELECT id AS Id, permission_code AS PermissionCode, permission_name AS PermissionName, module_name AS ModuleName
-            FROM permissions
-            ORDER BY module_name, permission_code
+        const string sql = $"""
+            SELECT p.id AS Id, p.permission_code AS PermissionCode, p.permission_name AS PermissionName, p.module_name AS ModuleName
+            FROM permissions p
+            WHERE {ReservedPermissions.TenantAssignableSql}
+            ORDER BY p.module_name, p.permission_code
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);

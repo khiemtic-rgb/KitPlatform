@@ -1,0 +1,10 @@
+# Pharmacy operational completion v2.
+# Do NOT merge into migration-files.prod.txt or the INV-03 release package.
+# Apply only on an isolated database after review. Never on novixa_prod or the shared kitplatform database.
+# Order is a dependency order. 411_415_pharmacy_ops_v2_down.sql is recovery only and is not in this list.
+# Re-running 411-415 is safe: new columns and indexes use IF NOT EXISTS, and safety rows do not upgrade to APPROVED.
+411_sales_return_client_return_id.sql
+412_success_checklist_pos_shift.sql
+413_learning_operational_task.sql
+414_pharmacy_knowledge_approval.sql
+415_pharmacy_knowledge_approval_history.sql

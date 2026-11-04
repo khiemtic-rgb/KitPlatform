@@ -66,7 +66,7 @@ const PERMISSION_UI_GROUP_DEFS: Array<{
   },
   {
     moduleKey: 'success',
-    items: ['success.read'],
+    items: ['success.read', 'success.write', 'success.checklist'],
   },
   {
     moduleKey: 'survey',
@@ -83,6 +83,10 @@ const PERMISSION_UI_GROUP_DEFS: Array<{
   {
     moduleKey: 'learning',
     items: ['learning.read', 'learning.write'],
+  },
+  {
+    moduleKey: 'pharmacy',
+    items: ['pharmacy.knowledge.approve'],
   },
   {
     moduleKey: 'system',

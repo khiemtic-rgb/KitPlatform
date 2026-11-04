@@ -38,4 +38,6 @@ export interface ReportQueryParams {
   search?: string;
   expiryDays?: number;
   categoryId?: string;
+  productId?: string;
+  direction?: 'in' | 'out';
 }

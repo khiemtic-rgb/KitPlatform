@@ -1,7 +1,10 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using KitPlatform.Api.Authorization;
 using KitPlatform.Application.Auth;
+using KitPlatform.Application.Core;
 
 namespace KitPlatform.Api.Controllers;
 
@@ -10,8 +13,15 @@ namespace KitPlatform.Api.Controllers;
 public sealed class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
+    private readonly LoginAttemptGuard _attempts;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService auth) => _auth = auth;
+    public AuthController(IAuthService auth, LoginAttemptGuard attempts, ILogger<AuthController> logger)
+    {
+        _auth = auth;
+        _attempts = attempts;
+        _logger = logger;
+    }
 
     /// <summary>
     /// Đăng nhập — tenant+username (cũ) hoặc email Kit (không gửi tenantCode).
@@ -19,16 +29,30 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting(AuthRateLimitPolicies.Login)]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(LoginWorkspaceChoiceResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var accountKey = LoginAttemptGuard.AccountKey(request.TenantCode, request.Username);
+        if (_attempts.GetLockRemaining(accountKey, ip) is TimeSpan locked)
+        {
+            var minutes = Math.Max(1, (int)Math.Ceiling(locked.TotalMinutes));
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                code = "login_locked",
+                message = $"Đăng nhập sai nhiều lần. Thử lại sau {minutes} phút.",
+            });
+        }
+
         AuthLoginResult? result;
         try
         {
-            result = await _auth.LoginAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), cancellationToken);
+            result = await _auth.LoginAsync(request, ip, cancellationToken);
         }
         catch (AuthTenantRequiredException ex)
         {
@@ -36,7 +60,13 @@ public sealed class AuthController : ControllerBase
         }
 
         if (result is null)
+        {
+            _attempts.RecordFailure(accountKey, ip);
+            _logger.LogWarning("Login failed for {AccountKey} from {Ip}", accountKey, ip);
             return Unauthorized(new { message = "Sai tên đăng nhập hoặc mật khẩu." });
+        }
+
+        _attempts.RecordSuccess(accountKey, ip);
 
         if (result.RequiresWorkspaceChoice)
         {
@@ -51,6 +81,7 @@ public sealed class AuthController : ControllerBase
 
     [HttpPost("select-workspace")]
     [AllowAnonymous]
+    [EnableRateLimiting(AuthRateLimitPolicies.Login)]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SelectWorkspace(
@@ -84,6 +115,7 @@ public sealed class AuthController : ControllerBase
 
     [HttpPost("refresh")]
     [AllowAnonymous]
+    [EnableRateLimiting(AuthRateLimitPolicies.Refresh)]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
@@ -106,13 +138,10 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Me(CancellationToken cancellationToken)
     {
-        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? User.FindFirstValue("sub");
-
-        if (!Guid.TryParse(userIdClaim, out var userId))
+        if (!CoreAuthority.TryResolveCaller(User, out var caller))
             return Unauthorized();
 
-        var user = await _auth.GetUserAsync(userId, cancellationToken);
+        var user = await _auth.GetUserAsync(caller.UserId, caller.TenantId, cancellationToken);
         return user is null ? Unauthorized() : Ok(user);
     }
 }

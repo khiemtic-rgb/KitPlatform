@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -32,10 +32,11 @@ import type { ReportTableResult } from '@/shared/api/reports.types';
 import { fetchReportSalesShift } from '@/shared/api/sales.api';
 import type { SalesShiftDetail } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
+import { buildMovementLineQuery } from '@/modules/reports/movement-line-query';
 import { findReportByPath } from '@/modules/reports/reports-catalog';
 import { ShiftCloseSheetDrawer } from '@/modules/sales/ShiftCloseSheet';
 import { buildReportFilterDisplayEntries, filterHintsForReport } from '@/modules/reports/report-filter-ui';
-import { exportReportCsv, formatReportCell, printReportElement } from '@/modules/reports/report-export';
+import { exportInventoryCountSheet, exportReportCsv, formatReportCell, printReportElement } from '@/modules/reports/report-export';
 import { useCanReportsExport } from '@/shared/auth/usePermission';
 import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
@@ -135,6 +136,16 @@ export function ReportViewPage() {
   const [shiftSheetOpen, setShiftSheetOpen] = useState(false);
   const [shiftSheetLoading, setShiftSheetLoading] = useState(false);
   const [shiftSheet, setShiftSheet] = useState<SalesShiftDetail | null>(null);
+  const loadedReportQuery = useRef<{ from?: string; to?: string }>({});
+  const [movementDrill, setMovementDrill] = useState<{
+    direction: 'in' | 'out';
+    productName: string;
+    warehouseName: string;
+    expectedQty: number;
+  } | null>(null);
+  const [movementDetail, setMovementDetail] = useState<ReportTableResult | null>(null);
+  const [movementDetailLoading, setMovementDetailLoading] = useState(false);
+  const [movementDetailError, setMovementDetailError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!definition) return;
@@ -175,6 +186,9 @@ export function ReportViewPage() {
     if (!definition) return;
     setLoading(true);
     setLoadError(null);
+    setMovementDrill(null);
+    setMovementDetail(null);
+    setMovementDetailError(null);
     try {
       const params: Record<string, string | number> = {};
       if (definition.supportsDateRange) {
@@ -190,6 +204,10 @@ export function ReportViewPage() {
         if (term) params.search = term;
       }
       if (definition.supportsExpiryDays) params.expiryDays = expiryDays;
+      loadedReportQuery.current = {
+        from: typeof params.from === 'string' ? params.from : undefined,
+        to: typeof params.to === 'string' ? params.to : undefined,
+      };
       setResult(await runReport(definition.apiPath, params));
       setLoadedOnce(true);
     } catch (error) {
@@ -236,6 +254,36 @@ export function ReportViewPage() {
     setSearchParams(next, { replace: true });
   };
 
+  const closeMovementDetail = () => {
+    setMovementDrill(null);
+    setMovementDetail(null);
+    setMovementDetailError(null);
+  };
+
+  const openMovementLines = useCallback(
+    async (row: Record<string, unknown>, direction: 'in' | 'out') => {
+      const query = buildMovementLineQuery(loadedReportQuery.current, row, direction);
+      if (!query) return;
+      setMovementDrill({
+        direction,
+        productName: String(row.productName ?? ''),
+        warehouseName: String(row.warehouseName ?? ''),
+        expectedQty: asNumber(direction === 'in' ? row.inQty : row.outQty),
+      });
+      setMovementDetailLoading(true);
+      setMovementDetailError(null);
+      try {
+        setMovementDetail(await runReport('inventory/movement-lines', query));
+      } catch (error) {
+        setMovementDetail(null);
+        setMovementDetailError(apiErrorMessage(error, t('loadFailed')));
+      } finally {
+        setMovementDetailLoading(false);
+      }
+    },
+    [t],
+  );
+
   const visibleResultColumns = useMemo(() => {
     if (!result) return [];
     const hideEmployeeCol =
@@ -254,6 +302,27 @@ export function ReportViewPage() {
         key: col.key,
         align: col.align,
         render: (value: unknown, row: Record<string, unknown>) => {
+          if (
+            definition?.code === 'INV-03' &&
+            (col.key === 'inQty' || col.key === 'outQty') &&
+            row.productId &&
+            row.warehouseId
+          ) {
+            const direction = col.key === 'inQty' ? 'in' : 'out';
+            return (
+              <Button
+                type="link"
+                size="small"
+                style={{ fontVariantNumeric: 'tabular-nums', padding: 0, height: 'auto' }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void openMovementLines(row, direction);
+                }}
+              >
+                {formatReportCell(value, col.format)}
+              </Button>
+            );
+          }
           if (definition?.code === 'SALES-06' && col.key === 'employeeName' && row.employeeId) {
             return (
               <Link
@@ -275,7 +344,7 @@ export function ReportViewPage() {
           );
         },
       })),
-    [visibleResultColumns, definition, range, warehouseId],
+    [visibleResultColumns, definition, range, warehouseId, openMovementLines],
   );
 
   const openShiftSheet = async (row: Record<string, unknown>) => {
@@ -397,8 +466,13 @@ export function ReportViewPage() {
         {result && (
           <div className="report-view__actions">
             {canExportReports ? (
-              <Button icon={<DownloadOutlined />} onClick={() => exportReportCsv(result)}>
-                {t('exportCsv')}
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() =>
+                  definition.code === 'INV-03' ? exportInventoryCountSheet(result) : exportReportCsv(result)
+                }
+              >
+                {definition.code === 'INV-03' ? t('exportCountSheet') : t('exportCsv')}
               </Button>
             ) : null}
             <Button icon={<PrinterOutlined />} onClick={() => printReportElement('report-print-area', pageTitle)}>
@@ -572,6 +646,7 @@ export function ReportViewPage() {
                     {' · '}
                     {t('generatedAt')} {dayjs(result.generatedAtUtc).format('DD/MM/YYYY HH:mm')}
                     {definition?.code === 'SALES-03' ? ` · ${t('clickShiftHint')}` : ''}
+                    {definition?.code === 'INV-03' ? ` · ${t('clickMovementHint')}` : ''}
                   </div>
                 )}
               </div>
@@ -617,6 +692,68 @@ export function ReportViewPage() {
               }
             />
           </Card>
+          {movementDrill && (
+            <Card
+              size="small"
+              className="report-view__table-card"
+              style={{ marginTop: 16 }}
+              title={
+                <div>
+                  <Typography.Text strong>
+                    {movementDrill.direction === 'in' ? t('movementDetailIn') : t('movementDetailOut')}
+                    {movementDrill.productName ? ` — ${movementDrill.productName}` : ''}
+                    {movementDrill.warehouseName ? ` · ${movementDrill.warehouseName}` : ''}
+                  </Typography.Text>
+                </div>
+              }
+              extra={
+                <Button onClick={closeMovementDetail}>{t('closeDetail')}</Button>
+              }
+            >
+              {movementDetailError && (
+                <Alert type="error" showIcon style={{ marginBottom: 12 }} message={movementDetailError} />
+              )}
+              {movementDetail &&
+                Math.abs(asNumber(movementDetail.totals?.quantity) - movementDrill.expectedQty) > 0.0005 && (
+                  <Alert type="warning" showIcon style={{ marginBottom: 12 }} message={t('movementDetailMismatch')} />
+                )}
+              <Table
+                rowKey={(_, index) => `movement-line-${index}`}
+                loading={movementDetailLoading}
+                size="middle"
+                dataSource={movementDetail?.rows ?? []}
+                pagination={false}
+                scroll={{ x: true }}
+                locale={{ emptyText: t('emptyData') }}
+                columns={(movementDetail?.columns ?? []).map((col) => ({
+                  title: col.title,
+                  dataIndex: col.key,
+                  key: col.key,
+                  align: col.align,
+                  render: (value: unknown) => (
+                    <span style={{ fontVariantNumeric: col.align === 'right' ? 'tabular-nums' : undefined }}>
+                      {formatReportCell(value, col.format)}
+                    </span>
+                  ),
+                }))}
+                summary={() =>
+                  movementDetail?.totals ? (
+                    <Table.Summary fixed>
+                      <Table.Summary.Row>
+                        {(movementDetail.columns ?? []).map((col, index) => (
+                          <Table.Summary.Cell key={col.key} index={index} align={col.align}>
+                            <Typography.Text strong>
+                              {formatReportCell(movementDetail.totals?.[col.key], col.format)}
+                            </Typography.Text>
+                          </Table.Summary.Cell>
+                        ))}
+                      </Table.Summary.Row>
+                    </Table.Summary>
+                  ) : null
+                }
+              />
+            </Card>
+          )}
         </div>
       )}
 

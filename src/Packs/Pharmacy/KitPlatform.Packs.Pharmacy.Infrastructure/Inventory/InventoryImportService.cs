@@ -64,6 +64,14 @@ internal sealed class InventoryImportService : IInventoryImportService
                 continue;
             }
 
+            if (await _inventory.LotHasActiveOpeningBalanceAsync(warehouseId, productId.Value, row.BatchNumber, cancellationToken))
+            {
+                errors.Add(new OpeningBalanceImportErrorDto(
+                    row.RowNumber,
+                    InventoryRepository.OpeningBalanceAlreadyRecordedMessage(InventoryLotRules.NormalizeBatchNumber(row.BatchNumber))));
+                continue;
+            }
+
             lines.Add(new OpeningBalanceLineRequest(
                 productId.Value,
                 InventoryLotRules.NormalizeBatchNumber(row.BatchNumber),

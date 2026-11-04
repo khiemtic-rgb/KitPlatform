@@ -9,6 +9,7 @@ param(
     [string]$SshTarget = "root@103.200.23.229",
     [string]$CredentialsFile = "E:\Maychu_VPS\tk.txt",
     [string]$Root = "E:\KitPlatform",
+    [string]$ExpectedApiDllSha256 = "",
     [switch]$RunMigrations
 )
 
@@ -42,25 +43,44 @@ foreach ($f in $required) {
     if (-not (Test-Path $f)) { throw "Missing $f - chay deploy-production.ps1 truoc." }
 }
 
+if ($ExpectedApiDllSha256) {
+    $actualDll = (Get-FileHash (Join-Path $Root "publish\api\KitPlatform.Api.dll") -Algorithm SHA256).Hash.ToLower()
+    $expectedDll = $ExpectedApiDllSha256.Trim().ToLower()
+    if ($actualDll -ne $expectedDll) {
+        throw "KitPlatform.Api.dll hash $actualDll does not match expected $expectedDll. Stop before upload."
+    }
+}
+
+function Invoke-CheckedNative {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][scriptblock]$Action
+    )
+    & $Action
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Label failed (exit $LASTEXITCODE). Stop before the remote cutover."
+    }
+}
+
 $remote = "/tmp/kit-platform-update"
 Write-Host "=== KitPlatform UPDATE (no wipe, cutover pharmacore->kit-platform) -> $SshTarget ===" -ForegroundColor Cyan
 
-& $plink -batch -pw $pass $SshTarget "rm -rf $remote; mkdir -p $remote/api $remote/admin $remote/customer-app $remote/staff-app $remote/prescriber-portal $remote/migrations $remote/deploy"
-& $pscp -batch -pw $pass -r "$Root\publish\api" "${SshTarget}:${remote}/"
-& $pscp -batch -pw $pass -r "$Root\publish\admin" "${SshTarget}:${remote}/"
-& $pscp -batch -pw $pass -r "$Root\publish\customer-app" "${SshTarget}:${remote}/"
-& $pscp -batch -pw $pass -r "$Root\publish\staff-app" "${SshTarget}:${remote}/"
-& $pscp -batch -pw $pass -r "$Root\publish\prescriber-portal" "${SshTarget}:${remote}/"
+Invoke-CheckedNative "prepare remote staging" { & $plink -batch -pw $pass $SshTarget "rm -rf $remote; mkdir -p $remote/api $remote/admin $remote/customer-app $remote/staff-app $remote/prescriber-portal $remote/migrations $remote/deploy" }
+Invoke-CheckedNative "upload api" { & $pscp -batch -pw $pass -r "$Root\publish\api" "${SshTarget}:${remote}/" }
+Invoke-CheckedNative "upload admin" { & $pscp -batch -pw $pass -r "$Root\publish\admin" "${SshTarget}:${remote}/" }
+Invoke-CheckedNative "upload customer-app" { & $pscp -batch -pw $pass -r "$Root\publish\customer-app" "${SshTarget}:${remote}/" }
+Invoke-CheckedNative "upload staff-app" { & $pscp -batch -pw $pass -r "$Root\publish\staff-app" "${SshTarget}:${remote}/" }
+Invoke-CheckedNative "upload prescriber-portal" { & $pscp -batch -pw $pass -r "$Root\publish\prescriber-portal" "${SshTarget}:${remote}/" }
 # FamilyOS consumer SPA — trước đây chỉ deploy qua pilot script, dễ lệch bản.
 if (Test-Path "$Root\publish\family-app\index.html") {
-    & $pscp -batch -pw $pass -r "$Root\publish\family-app" "${SshTarget}:${remote}/"
+    Invoke-CheckedNative "upload family-app" { & $pscp -batch -pw $pass -r "$Root\publish\family-app" "${SshTarget}:${remote}/" }
 }
-& $pscp -batch -pw $pass -r "$Root\migrations" "${SshTarget}:${remote}/"
-& $pscp -batch -pw $pass -r "$Root\deploy\ubuntu" "${SshTarget}:${remote}/deploy/"
+Invoke-CheckedNative "upload migrations" { & $pscp -batch -pw $pass -r "$Root\migrations" "${SshTarget}:${remote}/" }
+Invoke-CheckedNative "upload deploy/ubuntu" { & $pscp -batch -pw $pass -r "$Root\deploy\ubuntu" "${SshTarget}:${remote}/deploy/" }
 # PWA: không cache sw.js / version.json / index.html
-& $plink -batch -pw $pass $SshTarget "mkdir -p /etc/nginx/snippets"
-& $pscp -batch -pw $pass "$Root\deploy\ubuntu\nginx-pwa-cache.conf" "${SshTarget}:/etc/nginx/snippets/pwa-cache.conf"
-& $pscp -batch -pw $pass "$Root\deploy\ubuntu\nginx-staff-pwa-cache.conf" "${SshTarget}:/etc/nginx/snippets/staff-pwa-cache.conf"
+Invoke-CheckedNative "prepare nginx snippets dir" { & $plink -batch -pw $pass $SshTarget "mkdir -p /etc/nginx/snippets" }
+Invoke-CheckedNative "upload pwa-cache snippet" { & $pscp -batch -pw $pass "$Root\deploy\ubuntu\nginx-pwa-cache.conf" "${SshTarget}:/etc/nginx/snippets/pwa-cache.conf" }
+Invoke-CheckedNative "upload staff-pwa snippet" { & $pscp -batch -pw $pass "$Root\deploy\ubuntu\nginx-staff-pwa-cache.conf" "${SshTarget}:/etc/nginx/snippets/staff-pwa-cache.conf" }
 
 $runMig = if ($RunMigrations) { "1" } else { "0" }
 # Use LF remote script via bash -s to avoid PowerShell CRLF/here-string issues.
@@ -238,7 +258,7 @@ $remoteBash = $remoteBash.Replace('__RUN_MIG__', $runMig)
 $remoteBashUnix = ($remoteBash -replace "`r`n", "`n")
 $tmpScript = Join-Path $env:TEMP "kitplatform-update-remote.sh"
 [IO.File]::WriteAllText($tmpScript, $remoteBashUnix, [Text.UTF8Encoding]::new($false))
-& $pscp -batch -pw $pass $tmpScript "${SshTarget}:${remote}/update.sh"
+Invoke-CheckedNative "upload update.sh" { & $pscp -batch -pw $pass $tmpScript "${SshTarget}:${remote}/update.sh" }
 & $plink -batch -pw $pass $SshTarget "bash $remote/update.sh"
 if ($LASTEXITCODE -ne 0) {
     throw "Remote update failed (exit $LASTEXITCODE). Nginx/API may be partially updated - do not assume cutover OK."

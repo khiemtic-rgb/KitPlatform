@@ -1,10 +1,10 @@
 import { apiPath } from '@/shared/api/api-base';
-import { useAuthStore } from '@/shared/auth/auth.store';
+import { adminResourceRequest, stripAccessToken } from '@/shared/utils/bearer-transport';
 
-/** Resolve upload URLs for <img src>. Relative /uploads/... must hit the API origin, not the SPA host. */
+/** Resolve an upload URL onto the API origin. Never appends a bearer token. */
 export function withUploadAuth(url: string | undefined | null): string | undefined {
   if (!url?.trim()) return undefined;
-  const trimmed = url.trim();
+  const trimmed = stripAccessToken(url.trim());
 
   let absolute = trimmed;
   if (trimmed.startsWith('/uploads/')) {
@@ -13,14 +13,10 @@ export function withUploadAuth(url: string | undefined | null): string | undefin
     absolute = apiPath(`/${trimmed}`);
   }
 
-  // Product upload endpoints require JWT (query token for <img> which cannot set Authorization).
-  if (!absolute.includes('/uploads/products/') && !absolute.includes('/uploads/health-records/')) {
-    return absolute;
-  }
+  return adminResourceRequest(absolute, null).url;
+}
 
-  const token = useAuthStore.getState().accessToken;
-  if (!token) return absolute;
-
-  const separator = absolute.includes('?') ? '&' : '?';
-  return `${absolute}${separator}access_token=${encodeURIComponent(token)}`;
+export function adminUploadFetchPlan(url: string, token: string | null) {
+  const absolute = withUploadAuth(url) ?? stripAccessToken(url);
+  return adminResourceRequest(absolute, token);
 }

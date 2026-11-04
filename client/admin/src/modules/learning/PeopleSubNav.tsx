@@ -3,6 +3,7 @@ import { Badge, Menu } from 'antd';
 import {
   DashboardOutlined,
   MailOutlined,
+  CheckSquareOutlined,
   ReadOutlined,
   RiseOutlined,
   StarOutlined,
@@ -58,6 +59,11 @@ export function PeopleSubNav() {
           label: <Link to="/people/learn">Đào tạo</Link>,
         },
         {
+          key: '/people/tasks',
+          icon: <CheckSquareOutlined />,
+          label: <Link to="/people/tasks">Việc trong ca</Link>,
+        },
+        {
           key: '/people/evaluations',
           icon: <StarOutlined />,
           label: <Link to="/people/evaluations">Đánh giá tháng</Link>,
@@ -90,6 +96,11 @@ export function PeopleSubNav() {
           label: <Link to="/people/learn">Học bài</Link>,
         },
         {
+          key: '/people/tasks',
+          icon: <CheckSquareOutlined />,
+          label: <Link to="/people/tasks">Việc của tôi</Link>,
+        },
+        {
           key: '/people/recognize',
           icon: <TrophyOutlined />,
           label: <Link to="/people/recognize">Hồ sơ năng lực</Link>,
@@ -105,7 +116,8 @@ export function PeopleSubNav() {
   let selected = '/people';
   if (path.startsWith('/people/learn') || path.startsWith('/people/enrollments')) {
     selected = '/people/learn';
-  } else if (path.startsWith('/people/evaluations')) selected = '/people/evaluations';
+  } else if (path.startsWith('/people/tasks')) selected = '/people/tasks';
+  else if (path.startsWith('/people/evaluations')) selected = '/people/evaluations';
   else if (path.startsWith('/people/grow')) selected = '/people/grow';
   else if (path.startsWith('/people/recognize')) selected = '/people/recognize';
   else if (path.startsWith('/people/mail')) selected = '/people/mail';

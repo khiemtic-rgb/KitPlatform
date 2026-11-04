@@ -41,6 +41,7 @@ export type ModuleKey =
   | 'kitSales'
   | 'localOs'
   | 'learning'
+  | 'secondBrain'
   | 'system';
 
 /** Tenant platform.vertical — lọc sidebar theo loại tổ chức. */
@@ -221,7 +222,8 @@ export const moduleRegistry: ModuleMenuItem[] = [
     path: '/people',
     icon: <RiseOutlined />,
     enabled: true,
-    // Không gắn platformModule — tránh ẩn tab khi tenant chưa có code `learning` trong enabled_modules.
+    // Mọi API /people, /learning đều chặn khi tenant chưa bật module `learning`.
+    platformModule: ADMIN_MODULE_PLATFORM_CODES.learning,
     verticals: PHARMACY_ONLY,
   },
   {
@@ -259,6 +261,15 @@ export const moduleRegistry: ModuleMenuItem[] = [
     enabled: true,
     platformModule: ADMIN_MODULE_PLATFORM_CODES.localOs,
     verticals: LOCAL_AND_MARKETING,
+  },
+  {
+    key: 'secondBrain',
+    label: 'secondBrain',
+    path: '/second-brain/overview',
+    icon: <FundOutlined />,
+    enabled: true,
+    platformModule: ADMIN_MODULE_PLATFORM_CODES.secondBrain,
+    verticals: ALL_VERTICALS,
   },
   {
     key: 'system',

@@ -37,6 +37,11 @@ public static class PharmacyPackDependencyInjection
         services.AddScoped<IAiCareContextProvider, AiCareContextProvider>();
         services.AddScoped<ICareProductLookup, CareProductLookup>();
         services.AddScoped<IDrugKnowledgeQuery, DrugKnowledgeQuery>();
+        services.AddScoped<IPharmacyKnowledgeApprovalService, PharmacyKnowledgeApprovalService>();
+        services.AddScoped<IPharmacyKnowledgePublicationService, PharmacyKnowledgePublicationService>();
+        services.AddScoped<IPharmacyOwnedKnowledgeService, PharmacyOwnedKnowledgeService>();
+        services.AddScoped<IPharmacyCustomerKnowledgeService, PharmacyCustomerKnowledgeService>();
+        services.AddScoped<IPharmacyLocalRegimenService, PharmacyLocalRegimenService>();
         services.AddScoped<IPlatformEventHandler, PharmacySalesOrderCompletedHandler>();
         services.AddScoped<IPlatformEventHandler, PharmacySalesReturnCompletedHandler>();
         services.AddScoped<PharmacyDispensingNoteRepository>();
@@ -82,6 +87,7 @@ public static class PharmacyPackDependencyInjection
         // Sales / POS
         services.AddScoped<SalesRepository>();
         services.AddScoped<ISalesService, SalesService>();
+        services.AddScoped<ICustomerPosContextService, Infrastructure.Sales.CustomerPosContextService>();
 
         // POS consultation (AI Assistant MVP 1)
         services.AddHttpClient<PharmacyConsultationGeminiClient>()

@@ -74,7 +74,14 @@
     "kitSales": "KIT Sales",
     "familyOs": "FamilyOS",
     "localOs": "Thai Nguyen Life",
+    "secondBrain": "Second Brain",
     "system": "Settings",
+    "pharmacy-knowledge": "Adopt for this pharmacy",
+    "pharmacy-local-regimen": "Local reference regimens",
+    "pharmacy-owned-knowledge": "Internal operating documents",
+    "pharmacy-knowledge-in-use": "Operating document lookup",
+    "platform-knowledge": "Platform knowledge store",
+    "platform-knowledge-governance": "Review and publish",
     "comingSoon": "{{name}} (coming soon)"
   },
   "datePicker": {

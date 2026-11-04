@@ -140,8 +140,10 @@
   "checklist": {
     "title": "Checklist mở / đóng ca",
     "subtitle": "Ngày làm việc (VN): {{date}}",
-    "tip": "Tick các mục vận hành theo ca — không thay sổ quỹ/ca bán (sales shift).",
+    "tip": "Checklist gắn với ca POS đang mở. Nhiều ca mở thì phải chọn đúng ca trước khi tick.",
     "branch": "Chi nhánh",
+    "shift": "Ca bán",
+    "chooseShift": "Chọn ca bán trước khi làm checklist.",
     "openTitle": "Mở ca",
     "closeTitle": "Đóng ca",
     "start": "Bắt đầu checklist",
@@ -152,6 +154,7 @@
     "backCockpit": "← Cockpit chủ NT",
     "loadFailed": "Không tải được checklist ca",
     "actionFailed": "Thao tác checklist thất bại",
+    "readOnly": "Bạn chỉ xem checklist. Tick việc cần quyền checklist ca.",
     "status": {
       "missing": "Chưa làm",
       "inProgress": "Đang làm",

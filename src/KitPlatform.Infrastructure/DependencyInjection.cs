@@ -184,6 +184,7 @@ public static class DependencyInjection
         services.AddScoped<Learning.LearningRepository>();
         services.AddScoped<Application.Learning.ILearningCatalogService, Learning.LearningCatalogService>();
         services.AddScoped<Application.Learning.ILearningProgressService, Learning.LearningProgressService>();
+        services.AddScoped<Learning.OperationalTaskService>();
 
         services.AddScoped<ReportsRepository>();
         services.AddScoped<IReportsService, ReportsService>();

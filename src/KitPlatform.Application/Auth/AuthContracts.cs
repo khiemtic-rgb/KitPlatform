@@ -1,4 +1,6 @@
-﻿namespace KitPlatform.Application.Auth;
+﻿using System.Text.Json.Serialization;
+
+namespace KitPlatform.Application.Auth;
 
 public sealed record LoginRequest(string Username, string Password, string? TenantCode = null);
 
@@ -29,4 +31,5 @@ public sealed record AuthUserDto(
     string Username,
     string Email,
     IReadOnlyList<string> Roles,
-    IReadOnlyList<string> Permissions);
+    IReadOnlyList<string> Permissions,
+    [property: JsonIgnore] short Status = 1);

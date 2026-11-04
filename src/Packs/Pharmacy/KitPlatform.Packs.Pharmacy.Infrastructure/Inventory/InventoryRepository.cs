@@ -1023,6 +1023,10 @@ internal sealed class InventoryRepository
         string tableName,
         CancellationToken cancellationToken)
     {
+        await conn.ExecuteAsync(
+            "SELECT pg_advisory_xact_lock(hashtext(@LockKey)::bigint)",
+            new { LockKey = $"{TenantId:N}:{tableName}" },
+            tx);
         var sql = $"""
             SELECT COUNT(*)::int + 1 FROM {tableName} WHERE tenant_id = @TenantId
             """;
@@ -1039,6 +1043,11 @@ internal sealed class InventoryRepository
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
+        await conn.ExecuteAsync(
+            "SELECT pg_advisory_xact_lock(hashtext(@Key))",
+            new { Key = $"opening-balance:{TenantId}:{warehouseId}" },
+            tx);
+
         var referenceId = Guid.NewGuid();
         var batchIds = new List<Guid>();
 
@@ -1054,6 +1063,8 @@ internal sealed class InventoryRepository
             Guid batchId;
             if (existingId is Guid id)
             {
+                if (!batchIds.Contains(id) && await HasActiveOpeningBalanceAsync(conn, tx, id))
+                    throw new InvalidOperationException(OpeningBalanceAlreadyRecordedMessage(batchNumber));
                 batchId = id;
                 await FillBatchDatesIfEmptyAsync(conn, tx, batchId, dates.ManufactureDate, dates.ExpiryDate, cancellationToken);
                 await IncreaseBatchQuantityAsync(conn, tx, batchId, qty, cancellationToken);
@@ -1075,6 +1086,38 @@ internal sealed class InventoryRepository
         await tx.CommitAsync(cancellationToken);
         return batchIds;
     }
+
+    public static string OpeningBalanceAlreadyRecordedMessage(string batchNumber) =>
+        $"Lô {batchNumber} đã có tồn đầu kỳ trong kho này. Xóa tồn đầu kỳ cũ hoặc dùng Kiểm kê để điều chỉnh.";
+
+    public async Task<bool> LotHasActiveOpeningBalanceAsync(
+        Guid warehouseId,
+        Guid productId,
+        string batchNumber,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        var batchId = await FindBatchIdByKeyAsync(conn, tx, warehouseId, productId, batchNumber, cancellationToken);
+        return batchId is Guid id && await HasActiveOpeningBalanceAsync(conn, tx, id);
+    }
+
+    private async Task<bool> HasActiveOpeningBalanceAsync(IDbConnection conn, IDbTransaction tx, Guid batchId) =>
+        await conn.QuerySingleAsync<bool>(
+            """
+            SELECT COALESCE(SUM(CASE WHEN reference_type = @OpeningRef THEN quantity ELSE -quantity END), 0) > 0
+            FROM stock_movements
+            WHERE tenant_id = @TenantId AND batch_id = @BatchId
+              AND reference_type IN (@OpeningRef, @VoidRef)
+            """,
+            new
+            {
+                TenantId,
+                BatchId = batchId,
+                OpeningRef = StockReferenceTypes.OpeningBalance,
+                VoidRef = StockReferenceTypes.OpeningBalanceVoid,
+            },
+            tx);
 
     public async Task<(IReadOnlyList<OpeningBalanceBatchListItemDto> Items, int Total, int SummaryTotal, int SummaryVoidableCount)>
         GetOpeningBalanceBatchesAsync(
@@ -2528,7 +2571,8 @@ internal sealed class InventoryRepository
 
             var productInfo = await GetProductInfoAsync(conn, group.ProductId, cancellationToken);
             var batchInfo = await GetBatchInfoAsync(conn, batchId, cancellationToken);
-            var systemQty = batchInfo?.QuantityAvailable ?? 0;
+            var systemQty = (batchInfo?.QuantityAvailable ?? 0)
+                - await GetBatchNetMovementSinceAsync(conn, null, batchId, group.LastCountedAt);
             var diff = group.CountedQuantity - systemQty;
             byBatch.Add(new AdjustmentCountPreviewLineDto(
                 group.ProductId,
@@ -2618,7 +2662,12 @@ internal sealed class InventoryRepository
         return row.WarehouseId == Guid.Empty ? null : row;
     }
 
-    private sealed record CountEntryGroup(Guid ProductId, Guid? BatchId, decimal CountedQuantity, int EntryCount);
+    private sealed record CountEntryGroup(
+        Guid ProductId,
+        Guid? BatchId,
+        decimal CountedQuantity,
+        int EntryCount,
+        DateTime LastCountedAt);
 
     private async Task<IReadOnlyList<CountEntryGroup>> GetCountEntryGroupsAsync(
         IDbConnection conn,
@@ -2630,13 +2679,30 @@ internal sealed class InventoryRepository
                 product_id AS ProductId,
                 batch_id AS BatchId,
                 SUM(quantity) AS CountedQuantity,
-                COUNT(*)::int AS EntryCount
+                COUNT(*)::int AS EntryCount,
+                MAX(created_at) AS LastCountedAt
             FROM inventory_adjustment_count_entries
             WHERE adjustment_id = @AdjustmentId
             GROUP BY product_id, batch_id
             """;
         return (await conn.QueryAsync<CountEntryGroup>(sql, new { AdjustmentId = adjustmentId })).ToList();
     }
+
+    // Sales, receipts and transfers keep running while a count is open, so a count is compared with
+    // the book quantity at count time: current quantity minus what moved on the batch since then.
+    private Task<decimal> GetBatchNetMovementSinceAsync(
+        IDbConnection conn,
+        IDbTransaction? tx,
+        Guid batchId,
+        DateTime since) =>
+        conn.QuerySingleAsync<decimal>(
+            """
+            SELECT COALESCE(SUM(CASE WHEN movement_type = @In THEN quantity ELSE -quantity END), 0)
+            FROM stock_movements
+            WHERE tenant_id = @TenantId AND batch_id = @BatchId AND movement_date > @Since
+            """,
+            new { TenantId, BatchId = batchId, Since = since, In = StockMovementTypes.In },
+            tx);
 
     private async Task<(string Code, string Name)> GetProductInfoAsync(
         IDbConnection conn,
@@ -2711,10 +2777,16 @@ internal sealed class InventoryRepository
             if (batch.WarehouseId != warehouseId)
                 throw new InvalidOperationException("Lô không thuộc kho kiểm kê.");
 
-            var diff = group.CountedQuantity - batch.QuantityAvailable;
+            var movedSinceCount = await GetBatchNetMovementSinceAsync(conn, tx, batchId, group.LastCountedAt);
+            var actualNow = group.CountedQuantity + movedSinceCount;
+            if (actualNow < 0)
+                throw new InvalidOperationException(
+                    $"Lô {batch.BatchNumber}: số đã xuất sau khi đếm lớn hơn số đếm. Đếm lại lô này rồi duyệt.");
+
+            var diff = actualNow - batch.QuantityAvailable;
             if (diff != 0)
             {
-                items.Add((batchId, group.ProductId, batch.QuantityAvailable, group.CountedQuantity, diff));
+                items.Add((batchId, group.ProductId, batch.QuantityAvailable, actualNow, diff));
             }
         }
 
@@ -2749,19 +2821,48 @@ internal sealed class InventoryRepository
         return result;
     }
 
-    public async Task<IReadOnlyList<LowStockProductDto>> GetLowStockProductsAsync(
+    public async Task<(IReadOnlyList<LowStockProductDto> Items, int Total)> GetLowStockProductsAsync(
         Guid? warehouseId,
         Guid[]? allowedWarehouseIds,
         decimal defaultThreshold,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken)
     {
         var threshold = defaultThreshold < 0 ? LowStockThresholdSql.SystemFallback : defaultThreshold;
+        var offset = (page - 1) * pageSize;
         var warehouseFilter = warehouseId.HasValue
             ? "AND w.id = @WarehouseId"
             : allowedWarehouseIds is { Length: > 0 }
                 ? "AND w.id = ANY(@AllowedWarehouseIds)"
                 : string.Empty;
         var effective = LowStockThresholdSql.EffectiveMinStockExpr;
+        var grouped = $"""
+            FROM products p
+            INNER JOIN warehouses w
+              ON w.tenant_id = p.tenant_id AND w.deleted_at IS NULL AND w.status = 1
+            LEFT JOIN branches br
+              ON br.id = w.branch_id AND br.tenant_id = p.tenant_id AND br.deleted_at IS NULL
+            LEFT JOIN product_categories c
+              ON c.id = p.category_id AND c.tenant_id = p.tenant_id AND c.deleted_at IS NULL
+            LEFT JOIN inventory_batches b
+              ON b.product_id = p.id AND b.warehouse_id = w.id AND b.tenant_id = p.tenant_id
+             AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
+            WHERE p.tenant_id = @TenantId AND p.deleted_at IS NULL AND p.status = 1
+              {warehouseFilter}
+            GROUP BY
+                p.id, p.product_code, p.product_name, p.min_stock_qty,
+                w.id, w.warehouse_name, w.min_stock_qty,
+                br.id, br.branch_name,
+                c.min_stock_qty
+            HAVING COALESCE(SUM(b.quantity_available), 0) <= {effective}
+            """;
+        var countSql = $"""
+            SELECT COUNT(*)::int FROM (
+                SELECT p.id, w.id
+                {grouped}
+            ) sub
+            """;
         var sql = $"""
             SELECT
                 p.id AS ProductId,
@@ -2777,34 +2878,23 @@ internal sealed class InventoryRepository
                 COALESCE(SUM(b.quantity_available), 0) AS TotalQuantity,
                 {effective} AS MinStockQty,
                 COUNT(b.id)::int AS BatchCount
-            FROM products p
-            INNER JOIN warehouses w
-              ON w.tenant_id = p.tenant_id AND w.deleted_at IS NULL AND w.status = 1
-            LEFT JOIN branches br
-              ON br.id = w.branch_id AND br.tenant_id = p.tenant_id AND br.deleted_at IS NULL
-            LEFT JOIN product_categories c
-              ON c.id = p.category_id AND c.tenant_id = p.tenant_id AND c.deleted_at IS NULL
-            LEFT JOIN inventory_batches b
-              ON b.product_id = p.id AND b.warehouse_id = w.id AND b.tenant_id = p.tenant_id
-            WHERE p.tenant_id = @TenantId AND p.deleted_at IS NULL AND p.status = 1
-              {warehouseFilter}
-            GROUP BY
-                p.id, p.product_code, p.product_name, p.min_stock_qty,
-                w.id, w.warehouse_name, w.min_stock_qty,
-                br.id, br.branch_name,
-                c.min_stock_qty
-            HAVING COALESCE(SUM(b.quantity_available), 0) <= {effective}
-            ORDER BY TotalQuantity ASC, w.warehouse_name, p.product_name
-            LIMIT 500
+            {grouped}
+            ORDER BY TotalQuantity ASC, w.warehouse_name, p.product_name, p.id, w.id
+            LIMIT @PageSize OFFSET @Offset
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return (await conn.QueryAsync<LowStockProductDto>(sql, new
+        var args = new
         {
             TenantId,
             WarehouseId = warehouseId,
             AllowedWarehouseIds = allowedWarehouseIds,
             FallbackThreshold = threshold,
-        })).ToList();
+            PageSize = pageSize,
+            Offset = offset,
+        };
+        var total = await conn.QuerySingleAsync<int>(countSql, args);
+        var items = (await conn.QueryAsync<LowStockProductDto>(sql, args)).ToList();
+        return (items, total);
     }
 
     public async Task<bool> UpdateWarehouseMinStockAsync(

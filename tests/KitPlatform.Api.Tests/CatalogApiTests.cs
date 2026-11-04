@@ -63,9 +63,9 @@ public sealed class CatalogApiTests : IClassFixture<KitPlatformWebApplicationFac
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new
         {
+            tenantCode = "DEMO_PHARMACY",
             username = "admin",
             password = "Admin@123",
-            tenantCode = "DEMO_PHARMACY",
         });
 
         if (response.StatusCode != HttpStatusCode.OK)

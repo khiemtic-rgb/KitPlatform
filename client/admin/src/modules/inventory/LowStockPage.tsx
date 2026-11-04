@@ -20,6 +20,9 @@ export function LowStockPage() {
   const [warehouseId, setWarehouseId] = useState<string>();
   const [warehouseReady, setWarehouseReady] = useState(false);
   const [items, setItems] = useState<LowStockProduct[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
@@ -36,14 +39,16 @@ export function LowStockPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setItems(await fetchLowStockProducts({ warehouseId }));
+      const result = await fetchLowStockProducts({ warehouseId, page, pageSize });
+      setItems(result.items);
+      setTotal(result.total);
       setSelectedRowKeys([]);
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.loadFailed')));
     } finally {
       setLoading(false);
     }
-  }, [warehouseId, t]);
+  }, [warehouseId, page, pageSize, t]);
 
   useEffect(() => {
     if (!warehouseReady) return;
@@ -68,9 +73,14 @@ export function LowStockPage() {
     const targetWarehouseId = warehouseId ?? source[0].warehouseId;
     const targetWarehouseName =
       warehouses.find((w) => w.id === targetWarehouseId)?.warehouseName ?? source[0].warehouseName;
+    const noteKey = selectedRowKeys.length > 0 ? 'requisition.autoNoteSelected' : 'requisition.autoNote';
     savePoRequisitionDraft({
       warehouseId: targetWarehouseId,
-      notes: t('requisition.autoNote', { warehouse: targetWarehouseName }),
+      notes: t(noteKey, {
+        warehouse: targetWarehouseName,
+        shown: source.length,
+        total,
+      }),
       createdAt: new Date().toISOString(),
       lines: source
         .filter((row) => row.warehouseId === targetWarehouseId)
@@ -83,7 +93,7 @@ export function LowStockPage() {
           suggestedQty: Math.max(1, Math.ceil(row.minStockQty - row.totalQuantity)),
         })),
     });
-    message.success(t('requisition.saved'));
+    message.success(t('requisition.saved', { shown: source.length, total }));
     navigate('/procurement/purchase-orders?requisition=1');
   };
 
@@ -160,9 +170,22 @@ export function LowStockPage() {
             placeholder={t('allWarehouses')}
             style={{ minWidth: 220 }}
             value={warehouseId}
-            onChange={(v) => setWarehouseId(v)}
+            onChange={(v) => {
+              setWarehouseId(v);
+              setPage(1);
+            }}
             options={warehouses.map((w) => ({ value: w.id, label: w.warehouseName }))}
           />
+          <Typography.Text>
+            {warehouseId
+              ? t('scopeWarehouse', {
+                  warehouse: warehouses.find((w) => w.id === warehouseId)?.warehouseName ?? '',
+                })
+              : t('scopeAll')}
+          </Typography.Text>
+          <Typography.Text type="secondary">
+            {t('requisition.currentPageOnly', { shown: items.length, total })}
+          </Typography.Text>
           <Button icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
             {tc('actions.reload')}
           </Button>
@@ -187,7 +210,18 @@ export function LowStockPage() {
         loading={loading}
         columns={columns}
         dataSource={items}
-        pagination={{ pageSize: 25, showTotal: (total) => t('paginationTotal', { count: total }) }}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          pageSizeOptions: ['20', '25', '50', '100'],
+          showTotal: (count) => t('paginationTotal', { count }),
+          onChange: (nextPage, nextPageSize) => {
+            setPage(nextPage);
+            setPageSize(nextPageSize);
+          },
+        }}
       />
     </Space>
   );

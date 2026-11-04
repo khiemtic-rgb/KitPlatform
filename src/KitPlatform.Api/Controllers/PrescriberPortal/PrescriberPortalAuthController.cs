@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Packs.Pharmacy.Rx;
@@ -16,6 +17,7 @@ public sealed class PrescriberPortalAuthController : ControllerBase
 
     [HttpPost("otp-request")]
     [AllowAnonymous]
+    [EnableRateLimiting(AuthRateLimitPolicies.PublicOtp)]
     public async Task<ActionResult<PrescriberOtpSentResponse>> RequestOtp(
         [FromBody] PrescriberOtpRequest request,
         CancellationToken cancellationToken)
@@ -32,6 +34,7 @@ public sealed class PrescriberPortalAuthController : ControllerBase
 
     [HttpPost("otp-verify")]
     [AllowAnonymous]
+    [EnableRateLimiting(AuthRateLimitPolicies.PublicOtp)]
     public async Task<ActionResult<PrescriberLoginResponse>> VerifyOtp(
         [FromBody] PrescriberOtpVerifyRequest request,
         CancellationToken cancellationToken)

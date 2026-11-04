@@ -225,6 +225,10 @@
     "viewFefo": "Xem theo lô FEFO",
     "loadingBatches": "Đang tải chi tiết lô…",
     "noBatches": "Không có lô tồn.",
+    "exportExcel": "Xuất Excel",
+    "lotDetail": "Chi tiết lô",
+    "actualQty": "Số liệu thực tế",
+    "note": "Ghi chú",
     "lotConflictBanner": "{{count}} số lô đang có nhiều NSX hoặc HSD. Chủ nhà thuốc chọn ngày đúng rồi áp dụng cho mọi kho.",
     "openLotConflicts": "Mở bảng sửa lô",
     "messages": {
@@ -232,7 +236,9 @@
       "detailLoadFailed": "Không tải được chi tiết lô",
       "emptySearchHint": "Không có SP khớp, hoặc tồn vẫn 0 vì phiếu nhập chưa bấm «Hoàn tất».",
       "revalueOk": "Đã sửa giá vốn lô {{batch}}.",
-      "revalueFailed": "Không sửa được giá vốn lô"
+      "revalueFailed": "Không sửa được giá vốn lô",
+      "exportFailed": "Không xuất được file Excel",
+      "exportEmpty": "Không có dòng để xuất"
     },
     "revalueTitle": "Sửa giá vốn lô",
     "revalueHint": "Chỉ đổi giá vốn trên lô. Số lượng không đổi. Nếu tồn cũng sai: lưu giá đúng trước, rồi mở phiếu kiểm kê — tránh phiếu nhân giá bẩn.",
@@ -513,6 +519,8 @@
     "title": "Tồn thấp",
     "description": "Ngưỡng: SP → kho → danh mục → cài đặt chung → mặc định 10. Mặc định xem theo kho chính; chọn «Tất cả kho» để rà toàn bộ.",
     "allWarehouses": "Tất cả kho",
+    "scopeWarehouse": "Đang lọc một kho: {{warehouse}}.",
+    "scopeAll": "Đang xem mọi kho.",
     "columns": {
       "currentStock": "Tồn hiện tại",
       "threshold": "Ngưỡng",
@@ -523,7 +531,7 @@
       "veryLow": "Rất thấp",
       "low": "Thấp"
     },
-    "paginationTotal": "{{count}} dòng",
+    "paginationTotal": "{{count}} bản ghi",
     "messages": {
       "loadFailed": "Không tải được danh sách tồn thấp"
     },
@@ -531,8 +539,10 @@
       "button": "Đề xuất nhập hàng",
       "empty": "Không có dòng tồn thấp để đề xuất",
       "pickWarehouse": "Chọn một kho cụ thể trước khi đề xuất (hoặc chỉ chọn SP cùng kho)",
-      "saved": "Đã tạo đề xuất — mở form PO để chỉnh sửa",
-      "autoNote": "Đề xuất nhập từ cảnh báo tồn thấp · {{warehouse}}"
+      "saved": "Đã tạo đề xuất từ trang hiện tại ({{shown}}/{{total}}) — mở form PO để chỉnh sửa",
+      "currentPageOnly": "Đề xuất nhập chỉ lấy dòng của trang hiện tại ({{shown}}/{{total}} bản ghi của bộ lọc này).",
+      "autoNote": "Đề xuất nhập từ cảnh báo tồn thấp · trang hiện tại · {{warehouse}} · {{shown}}/{{total}}",
+      "autoNoteSelected": "Đề xuất nhập từ dòng đã chọn trên trang hiện tại · {{warehouse}} · {{shown}} dòng đã chọn / {{total}} bản ghi"
     }
   },
   "lowStockSettings": {

@@ -19,7 +19,7 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EditOutlined, EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { DownloadOutlined, EditOutlined, EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { fetchProduct } from '@/shared/api/catalog.api';
 import { fetchLotConflicts, fetchStockBatches, fetchStockProducts, fetchWarehouses, revalueBatchUnitCost } from '@/shared/api/inventory.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
@@ -29,6 +29,7 @@ import { inventoryAdjustFixPath, inventoryAnomalyReturnPath } from '@/modules/re
 import { ListFilterBar } from '@/shared/ui/ListFilterBar';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney, moneyInputNumberPropsAllowZero } from '@/shared/utils/money';
+import { buildStockExportSheet, downloadStockWorkbook } from '@/modules/inventory/stock-list-export';
 
 type StockTab = 'summary' | 'fefo';
 
@@ -79,6 +80,7 @@ export function StockListPage() {
   const [revalueReason, setRevalueReason] = useState('');
   const [revalueSavingId, setRevalueSavingId] = useState<string>();
   const [lotConflictCount, setLotConflictCount] = useState(0);
+  const [exporting, setExporting] = useState(false);
   const [revalueJustSaved, setRevalueJustSaved] = useState(false);
   const fromAnomaly = searchParams.get('from') === 'anomaly' || searchParams.get('revalue') === '1';
   const revalueContext = {
@@ -93,6 +95,65 @@ export function StockListPage() {
   const adjustNextPath = inventoryAdjustFixPath(revalueContext);
 
   const expiryParam = expiryFilter === 'all' ? undefined : expiryFilter;
+
+  const exportSummary = useCallback(async () => {
+    setExporting(true);
+    try {
+      const loadProducts = async (pageNumber: number) =>
+        fetchStockProducts({
+          warehouseId,
+          search: search || undefined,
+          expiry: expiryParam,
+          page: pageNumber,
+          pageSize: 100,
+        });
+      const loadBatches = async (pageNumber: number) =>
+        fetchStockBatches({
+          warehouseId,
+          search: search || undefined,
+          expiry: expiryParam,
+          page: pageNumber,
+          pageSize: 100,
+        });
+      const collect = async <T,>(
+        loadPage: (pageNumber: number) => Promise<{ items: T[]; total: number }>,
+      ) => {
+        const items: T[] = [];
+        let pageNumber = 1;
+        let totalCount = Number.POSITIVE_INFINITY;
+        while (items.length < totalCount && pageNumber <= 200) {
+          const result = await loadPage(pageNumber);
+          totalCount = result.total;
+          items.push(...result.items);
+          if (result.items.length === 0) break;
+          pageNumber += 1;
+        }
+        return items;
+      };
+      const [products, batches] = await Promise.all([collect(loadProducts), collect(loadBatches)]);
+      if (products.length === 0) {
+        message.info(t('messages.exportEmpty'));
+        return;
+      }
+      const sheet = buildStockExportSheet(products, batches, {
+        productCode: ts('productCode'),
+        productName: ts('productName'),
+        unit: ts('unit'),
+        totalStock: ts('totalStock'),
+        warehouseCount: ts('warehouseCount'),
+        batchCount: ts('batchCount'),
+        lotDetail: t('lotDetail'),
+        actualQty: t('actualQty'),
+        note: t('note'),
+      });
+      const day = new Date().toISOString().slice(0, 10);
+      downloadStockWorkbook(sheet, `ton-kho-${day}.xlsx`);
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('messages.exportFailed')));
+    } finally {
+      setExporting(false);
+    }
+  }, [warehouseId, search, expiryParam, t, ts, message]);
 
   const loadWarehouses = useCallback(async () => {
     try {
@@ -601,6 +662,11 @@ export function StockListPage() {
       <Button type="primary" ghost icon={<ReloadOutlined />} onClick={() => void load()} loading={loading}>
         {tc('actions.reload')}
       </Button>
+      {activeTab === 'summary' && (
+        <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void exportSummary()}>
+          {t('exportExcel')}
+        </Button>
+      )}
     </ListFilterBar>
   );
 

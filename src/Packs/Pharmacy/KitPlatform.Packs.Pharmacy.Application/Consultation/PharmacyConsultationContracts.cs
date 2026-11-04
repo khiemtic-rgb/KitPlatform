@@ -117,7 +117,8 @@ public sealed record PharmacyConsultationProductSuggestionDto(
 public sealed record SuggestPharmacyConsultationRequest(
     PharmacyConsultationFactsDto ConfirmedFacts,
     Guid WarehouseId,
-    int? Limit = null);
+    int? Limit = null,
+    bool KeepOrderWithReferral = false);
 
 public sealed record SuggestPharmacyConsultationResultDto(
     bool Blocked,

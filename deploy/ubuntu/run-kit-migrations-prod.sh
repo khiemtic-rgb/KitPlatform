@@ -45,7 +45,7 @@ files=(
 )
 
 echo "=== KitPlatform KIT migrations 067-087 ==="
-echo "Database: $CONN"
+echo "Database: (uri provided)"
 
 for file in "${files[@]}"; do
   path="$MIGRATIONS/$file"

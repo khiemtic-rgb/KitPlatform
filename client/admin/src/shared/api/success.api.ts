@@ -309,12 +309,19 @@ export interface ShiftChecklistKindStatus {
   completedAt?: string | null;
 }
 
+export interface ShiftChecklistOpenShift {
+  id: string;
+  shiftNumber: string;
+  warehouseName: string;
+}
+
 export interface ShiftChecklistToday {
   businessDate: string;
   branchId?: string | null;
   branches: { id: string; name: string; code?: string | null }[];
   open: ShiftChecklistKindStatus;
   close: ShiftChecklistKindStatus;
+  openShifts: ShiftChecklistOpenShift[];
 }
 
 export interface ShiftChecklistRunItem {
@@ -323,6 +330,7 @@ export interface ShiftChecklistRunItem {
   isRequired: boolean;
   isChecked: boolean;
   checkedAt?: string | null;
+  checkedByUserId?: string | null;
 }
 
 export interface ShiftChecklistRun {
@@ -368,13 +376,20 @@ function normalizeRun(row: UnknownRow): ShiftChecklistRun {
       isRequired: Boolean(item.isRequired ?? item.IsRequired),
       isChecked: Boolean(item.isChecked ?? item.IsChecked),
       checkedAt: (item.checkedAt ?? item.CheckedAt) as string | null | undefined,
+      checkedByUserId: (item.checkedByUserId ?? item.CheckedByUserId) as string | null | undefined,
     })),
   };
 }
 
-export async function fetchShiftChecklistToday(branchId?: string): Promise<ShiftChecklistToday> {
+export async function fetchShiftChecklistToday(
+  branchId?: string,
+  salesShiftId?: string,
+): Promise<ShiftChecklistToday> {
   const { data } = await http.get<UnknownRow>('/success/shift-checklist/today', {
-    params: branchId ? { branchId } : undefined,
+    params: {
+      ...(branchId ? { branchId } : {}),
+      ...(salesShiftId ? { salesShiftId } : {}),
+    },
   });
   const row = data as UnknownRow;
   const branches = ((row.branches ?? row.Branches ?? []) as UnknownRow[]).map((b) => ({
@@ -382,17 +397,31 @@ export async function fetchShiftChecklistToday(branchId?: string): Promise<Shift
     name: String(b.name ?? b.Name ?? ''),
     code: (b.code ?? b.Code) as string | null | undefined,
   }));
+  const openShifts = ((row.openShifts ?? row.OpenShifts ?? []) as UnknownRow[]).map((shift) => ({
+    id: String(shift.id ?? shift.Id ?? ''),
+    shiftNumber: String(shift.shiftNumber ?? shift.ShiftNumber ?? ''),
+    warehouseName: String(shift.warehouseName ?? shift.WarehouseName ?? ''),
+  }));
   return {
     businessDate: String(row.businessDate ?? row.BusinessDate ?? ''),
     branchId: (row.branchId ?? row.BranchId) as string | null | undefined,
     branches,
     open: normalizeKindStatus((row.open ?? row.Open ?? {}) as UnknownRow, 'open'),
     close: normalizeKindStatus((row.close ?? row.Close ?? {}) as UnknownRow, 'close'),
+    openShifts,
   };
 }
 
-export async function startShiftChecklistRun(branchId: string, kind: ShiftChecklistKind): Promise<ShiftChecklistRun> {
-  const { data } = await http.post<UnknownRow>('/success/shift-checklist/runs', { branchId, kind });
+export async function startShiftChecklistRun(
+  branchId: string,
+  kind: ShiftChecklistKind,
+  salesShiftId?: string,
+): Promise<ShiftChecklistRun> {
+  const { data } = await http.post<UnknownRow>('/success/shift-checklist/runs', {
+    branchId,
+    kind,
+    ...(salesShiftId ? { salesShiftId } : {}),
+  });
   return normalizeRun(data as UnknownRow);
 }
 

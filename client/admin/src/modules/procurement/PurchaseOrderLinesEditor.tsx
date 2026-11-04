@@ -251,7 +251,7 @@ export function PurchaseOrderLinesEditor({
                   rules={[{ required: true, message: tVal('selectUnit') }]}
                   style={{ marginBottom: 0 }}
                 >
-                  <ProductUnitSelect productId={productId} width={84} disabled={!isCreate && isExistingLine} />
+                  <ProductUnitSelect baseUnitOnly productId={productId} width={84} disabled={!isCreate && isExistingLine} />
                 </Form.Item>
               </div>
               {!editing && <UnitNameLabel productId={productId} unitId={line?.productUnitId} />}
@@ -457,6 +457,7 @@ export function PurchaseOrderLinesEditor({
             <div>
               <Typography.Text style={{ fontSize: 12 }}>{tShared('columns.unit')}</Typography.Text>
               <ProductUnitSelect
+                baseUnitOnly
                 productId={draftProductId}
                 value={draftUnitId}
                 onChange={setDraftUnitId}

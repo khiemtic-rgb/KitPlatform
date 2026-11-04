@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using KitPlatform.Application.Configuration;
 using System.Security.Claims;
@@ -15,7 +16,10 @@ public static class PlatformGatePolicies
     public static string Feature(string featureCode) => FeaturePrefix + featureCode;
 }
 
-/// <summary>Solution pack module gate — runs for anonymous and authenticated actions.</summary>
+/// <summary>
+/// Solution pack module gate. Anonymous actions that carry a tenant are still checked.
+/// AllowAnonymous with no tenant claim and no tenant code is not a module decision.
+/// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public sealed class RequirePlatformModuleAttribute : TypeFilterAttribute
 {
@@ -50,6 +54,12 @@ public sealed class PlatformModuleGateFilter : IAsyncActionFilter
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
+        if (IsAllowAnonymousWithoutTenant(context))
+        {
+            await next();
+            return;
+        }
+
         var enabled = await IsModuleEnabledAsync(context, cancellationToken: context.HttpContext.RequestAborted);
         if (!enabled)
         {
@@ -73,6 +83,15 @@ public sealed class PlatformModuleGateFilter : IAsyncActionFilter
             return await _platform.IsModuleEnabledForTenantCodeAsync(tenantCode, _moduleCode, cancellationToken);
 
         return false;
+    }
+
+    private static bool IsAllowAnonymousWithoutTenant(ActionExecutingContext context)
+    {
+        if (context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<IAllowAnonymous>() is null)
+            return false;
+        if (PlatformGateTenantResolver.HasTenantClaim(context.HttpContext.User))
+            return false;
+        return PlatformGateTenantResolver.ResolveTenantCode(context) is null;
     }
 }
 

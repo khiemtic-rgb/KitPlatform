@@ -254,6 +254,13 @@ export type InventoryBarcodeResolve = {
   suggestedBatchNumber?: string;
 };
 
+export type PagedLowStockProducts = {
+  items: LowStockProduct[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export type LowStockProduct = {
   productId: string;
   productCode: string;

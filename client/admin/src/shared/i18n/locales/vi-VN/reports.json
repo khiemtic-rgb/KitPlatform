@@ -544,6 +544,7 @@
     "kpiQty": "SL ròng",
     "kpiRefund": "Hoàn trả",
     "exportCsv": "Xuất",
+    "exportCountSheet": "Xuất phiếu kiểm kê",
     "print": "In",
     "loadFailed": "Không tải được báo cáo",
     "loadFailedHint": "Không kết nối được máy chủ báo cáo. Thử lại sau hoặc liên hệ hỗ trợ kỹ thuật.",
@@ -553,7 +554,12 @@
     "paginationTotal": "{{count}} dòng",
     "noResult": "Chưa có kết quả — bấm Xem báo cáo",
     "openSheetFailed": "Không mở được tờ chốt ca",
-    "clickShiftHint": "Bấm một dòng để xem lại tờ chốt (tiền mặt / chuyển khoản)."
+    "clickShiftHint": "Bấm một dòng để xem lại tờ chốt (tiền mặt / chuyển khoản).",
+    "clickMovementHint": "Bấm số Nhập hoặc Xuất để xem các biến động cấu thành số đó.",
+    "movementDetailIn": "Chi tiết nhập",
+    "movementDetailOut": "Chi tiết xuất",
+    "closeDetail": "Đóng chi tiết",
+    "movementDetailMismatch": "Tổng chi tiết không khớp số tổng hợp. Tải lại báo cáo rồi mở lại."
   },
   "shiftClose": {
     "title": "Chốt ca theo nhân viên",

@@ -1657,6 +1657,7 @@ internal sealed class ReportsRepository
     public async Task<IReadOnlyList<Dictionary<string, object?>>> GetInventoryNearExpiryAsync(
         Guid? warehouseId,
         Guid[]? allowedWarehouseIds,
+        DateOnly expiryOnOrAfter,
         DateOnly expiryBefore,
         CancellationToken cancellationToken)
     {
@@ -1677,6 +1678,7 @@ internal sealed class ReportsRepository
             WHERE b.tenant_id = @TenantId
               AND b.quantity_available > 0
               AND b.expiry_date IS NOT NULL
+              AND b.expiry_date >= @ExpiryOnOrAfter
               AND b.expiry_date <= @ExpiryBefore
               AND p.deleted_at IS NULL
               {warehouseFilter}
@@ -1686,7 +1688,14 @@ internal sealed class ReportsRepository
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var rows = await conn.QueryAsync<NearExpiryRow>(
             sql,
-            new { TenantId, WarehouseId = warehouseId, AllowedWarehouseIds = allowedWarehouseIds, ExpiryBefore = expiryBefore });
+            new
+            {
+                TenantId,
+                WarehouseId = warehouseId,
+                AllowedWarehouseIds = allowedWarehouseIds,
+                ExpiryOnOrAfter = expiryOnOrAfter,
+                ExpiryBefore = expiryBefore,
+            });
 
         return rows.Select(r => new Dictionary<string, object?>
         {
@@ -1740,7 +1749,23 @@ internal sealed class ReportsRepository
                              AND sm.movement_date < @ToDate
                         THEN sm.quantity
                         ELSE 0
-                    END) AS OutQty
+                    END) AS OutQty,
+                    SUM(CASE
+                        WHEN sm.reference_type = @AdjustmentRef
+                             AND sm.movement_type = @MovementIn
+                             AND sm.movement_date >= @FromDate
+                             AND sm.movement_date < @ToDate
+                        THEN sm.quantity
+                        ELSE 0
+                    END) AS AdjustmentInQty,
+                    SUM(CASE
+                        WHEN sm.reference_type = @AdjustmentRef
+                             AND sm.movement_type = @MovementOut
+                             AND sm.movement_date >= @FromDate
+                             AND sm.movement_date < @ToDate
+                        THEN sm.quantity
+                        ELSE 0
+                    END) AS AdjustmentOutQty
                 FROM stock_movements sm
                 INNER JOIN {PackPharmacyReadViews.Product} p ON p.id = sm.product_id AND p.tenant_id = sm.tenant_id
                 WHERE sm.tenant_id = @TenantId
@@ -1750,12 +1775,16 @@ internal sealed class ReportsRepository
                 GROUP BY sm.product_id, sm.warehouse_id
             )
             SELECT
+                p.id AS ProductId,
+                w.id AS WarehouseId,
                 p.product_code AS ProductCode,
                 p.product_name AS ProductName,
                 w.warehouse_name AS WarehouseName,
                 ma.OpeningQty,
                 ma.InQty,
                 ma.OutQty,
+                ma.AdjustmentInQty,
+                ma.AdjustmentOutQty,
                 ma.OpeningQty + ma.InQty - ma.OutQty AS ClosingQty
             FROM movement_agg ma
             INNER JOIN {PackPharmacyReadViews.Product} p ON p.id = ma.product_id AND p.tenant_id = @TenantId
@@ -1777,19 +1806,121 @@ internal sealed class ReportsRepository
                 Search = string.IsNullOrWhiteSpace(search) ? null : $"%{search.Trim()}%",
                 MovementIn = StockMovementTypes.In,
                 MovementOut = StockMovementTypes.Out,
+                AdjustmentRef = StockReferenceTypes.InventoryAdjustment,
             });
 
         return rows.Select(r => new Dictionary<string, object?>
         {
+            ["productId"] = r.ProductId,
+            ["warehouseId"] = r.WarehouseId,
             ["productCode"] = r.ProductCode,
             ["productName"] = r.ProductName,
             ["warehouseName"] = r.WarehouseName,
             ["openingQty"] = r.OpeningQty,
             ["inQty"] = r.InQty,
             ["outQty"] = r.OutQty,
+            ["adjustmentInQty"] = r.AdjustmentInQty,
+            ["adjustmentOutQty"] = r.AdjustmentOutQty,
             ["closingQty"] = r.ClosingQty,
         }).ToList();
     }
+
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> GetInventoryMovementLinesAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        Guid productId,
+        Guid warehouseId,
+        short movementType,
+        CancellationToken cancellationToken)
+    {
+        var sql = $"""
+            SELECT
+                to_char(sm.movement_date AT TIME ZONE 'Asia/Ho_Chi_Minh', 'DD/MM/YYYY HH24:MI') AS MovementAt,
+                p.product_name AS ProductName,
+                sm.reference_type AS ReferenceType,
+                sm.movement_type AS MovementType,
+                CASE sm.reference_type
+                    WHEN '{StockReferenceTypes.GoodsReceipt}' THEN gr.grn_number
+                    WHEN '{StockReferenceTypes.SalesOrder}' THEN so.order_number
+                    WHEN '{StockReferenceTypes.SalesReturn}' THEN sr.return_number
+                    WHEN '{StockReferenceTypes.InventoryTransfer}' THEN tr.transfer_number
+                    WHEN '{StockReferenceTypes.InventoryAdjustment}' THEN adj.adjustment_number
+                    ELSE NULL
+                END AS ReferenceCode,
+                w.warehouse_name AS WarehouseName,
+                sm.quantity AS Quantity
+            FROM stock_movements sm
+            INNER JOIN {PackPharmacyReadViews.Product} p
+                ON p.id = sm.product_id AND p.tenant_id = sm.tenant_id
+            INNER JOIN {PackPharmacyReadViews.Warehouse} w
+                ON w.id = sm.warehouse_id AND w.tenant_id = sm.tenant_id
+            LEFT JOIN goods_receipts gr
+                ON sm.reference_type = '{StockReferenceTypes.GoodsReceipt}'
+               AND gr.id = sm.reference_id AND gr.tenant_id = sm.tenant_id
+            LEFT JOIN sales_orders so
+                ON sm.reference_type = '{StockReferenceTypes.SalesOrder}'
+               AND so.id = sm.reference_id AND so.tenant_id = sm.tenant_id
+            LEFT JOIN sales_returns sr
+                ON sm.reference_type = '{StockReferenceTypes.SalesReturn}'
+               AND sr.id = sm.reference_id AND sr.tenant_id = sm.tenant_id
+            LEFT JOIN inventory_transfers tr
+                ON sm.reference_type = '{StockReferenceTypes.InventoryTransfer}'
+               AND tr.id = sm.reference_id AND tr.tenant_id = sm.tenant_id
+            LEFT JOIN inventory_adjustments adj
+                ON sm.reference_type = '{StockReferenceTypes.InventoryAdjustment}'
+               AND adj.id = sm.reference_id AND adj.tenant_id = sm.tenant_id
+            WHERE sm.tenant_id = @TenantId
+              AND sm.product_id = @ProductId
+              AND sm.warehouse_id = @WarehouseId
+              AND sm.movement_type = @MovementType
+              AND sm.movement_date >= @FromDate
+              AND sm.movement_date < @ToDate
+              AND p.deleted_at IS NULL
+            ORDER BY sm.movement_date, sm.id
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<MovementLineRow>(
+            sql,
+            new
+            {
+                TenantId,
+                ProductId = productId,
+                WarehouseId = warehouseId,
+                MovementType = movementType,
+                FromDate = fromUtc,
+                ToDate = toUtc,
+            });
+
+        return rows.Select(r => new Dictionary<string, object?>
+        {
+            ["movementAt"] = r.MovementAt,
+            ["productName"] = r.ProductName,
+            ["movementKind"] = MovementKindLabel(r.ReferenceType, r.MovementType),
+            ["referenceCode"] = string.IsNullOrWhiteSpace(r.ReferenceCode) ? null : r.ReferenceCode,
+            ["warehouseName"] = r.WarehouseName,
+            ["quantity"] = r.Quantity,
+        }).ToList();
+    }
+
+    internal static string MovementKindLabel(string? referenceType, short movementType) =>
+        (referenceType, movementType) switch
+        {
+            (StockReferenceTypes.GoodsReceipt, StockMovementTypes.In) => "Nhập mua hàng",
+            (StockReferenceTypes.SalesReturn, StockMovementTypes.In) => "Hàng trả",
+            (StockReferenceTypes.InventoryTransfer, StockMovementTypes.In) => "Chuyển kho đến",
+            (StockReferenceTypes.InventoryTransfer, StockMovementTypes.Out) => "Chuyển kho đi",
+            (StockReferenceTypes.SalesOrder, StockMovementTypes.Out) => "Bán hàng",
+            (StockReferenceTypes.InventoryAdjustment, StockMovementTypes.In) => "Kiểm kê tăng",
+            (StockReferenceTypes.InventoryAdjustment, StockMovementTypes.Out) => "Kiểm kê giảm",
+            (StockReferenceTypes.OpeningBalance, StockMovementTypes.In) => "Tồn đầu kỳ",
+            (StockReferenceTypes.OpeningBalanceVoid, StockMovementTypes.Out) => "Hủy tồn đầu kỳ",
+            (StockReferenceTypes.ProductMerge, StockMovementTypes.In) => "Gộp sản phẩm — nhập",
+            (StockReferenceTypes.ProductMerge, StockMovementTypes.Out) => "Gộp sản phẩm — xuất",
+            _ when movementType == StockMovementTypes.In => "Nhập khác",
+            _ when movementType == StockMovementTypes.Out => "Xuất khác",
+            _ => string.IsNullOrWhiteSpace(referenceType) ? "Khác" : referenceType,
+        };
 
     private static string FormatPeriodLabel(DateTime periodStart, string groupBy) =>
         groupBy switch
@@ -2043,12 +2174,27 @@ internal sealed class ReportsRepository
 
     private sealed class MovementSummaryRow
     {
+        public Guid ProductId { get; init; }
+        public Guid WarehouseId { get; init; }
         public string ProductCode { get; init; } = "";
         public string ProductName { get; init; } = "";
         public string WarehouseName { get; init; } = "";
         public decimal OpeningQty { get; init; }
         public decimal InQty { get; init; }
         public decimal OutQty { get; init; }
+        public decimal AdjustmentInQty { get; init; }
+        public decimal AdjustmentOutQty { get; init; }
         public decimal ClosingQty { get; init; }
+    }
+
+    private sealed class MovementLineRow
+    {
+        public string MovementAt { get; init; } = "";
+        public string ProductName { get; init; } = "";
+        public string ReferenceType { get; init; } = "";
+        public short MovementType { get; init; }
+        public string? ReferenceCode { get; init; }
+        public string WarehouseName { get; init; } = "";
+        public decimal Quantity { get; init; }
     }
 }

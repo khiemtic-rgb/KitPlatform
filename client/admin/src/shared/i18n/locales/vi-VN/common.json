@@ -74,7 +74,14 @@
     "kitSales": "KIT Sales",
     "familyOs": "FamilyOS",
     "localOs": "Thái Nguyên Life",
+    "secondBrain": "Second Brain",
     "system": "Cấu hình",
+    "pharmacy-knowledge": "Tiếp nhận cho nhà thuốc",
+    "pharmacy-local-regimen": "Kho đơn tham khảo",
+    "pharmacy-owned-knowledge": "Tài liệu vận hành nội bộ",
+    "pharmacy-knowledge-in-use": "Tra cứu tài liệu vận hành",
+    "platform-knowledge": "Kho tri thức nền tảng",
+    "platform-knowledge-governance": "Kiểm duyệt và xuất bản",
     "comingSoon": "{{name}} (sắp có)"
   },
   "datePicker": {

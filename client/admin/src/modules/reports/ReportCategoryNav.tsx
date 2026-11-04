@@ -37,7 +37,7 @@ export function ReportCategoryNav() {
   );
 
   return (
-    <div style={secondaryTabsBarStyle}>
+    <div data-report-tabs="category" style={{ ...secondaryTabsBarStyle, marginBottom: 16, border: '1px solid #e8e8e8', borderRadius: 8 }}>
       <Tabs
         activeKey={activeReport?.path ?? reports[0]?.path}
         size="small"

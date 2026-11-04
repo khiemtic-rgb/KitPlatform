@@ -46,27 +46,30 @@ function Wait-ApiDevLock {
 }
 
 function Stop-ApiDevProcess {
+    # Chỉ dừng process mà script này đã ghi pid, và process đang nghe 5290/7224.
+    # Không dừng mọi KitPlatform.Api.exe: API test cô lập dùng cùng tên process.
+    $managedIds = New-Object 'System.Collections.Generic.HashSet[int]'
     if (Test-Path $script:PidFile) {
         $raw = Get-Content $script:PidFile -ErrorAction SilentlyContinue
         if ($raw -match '^\d+$') {
-            Stop-Process -Id ([int]$raw) -Force -ErrorAction SilentlyContinue
+            [void]$managedIds.Add([int]$raw)
         }
         Remove-Item $script:PidFile -Force -ErrorAction SilentlyContinue
     }
 
-    Get-Process -Name "KitPlatform.Api" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-
     foreach ($port in 5290, 7224) {
         try {
             Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction Stop |
-                ForEach-Object {
-                    $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
-                    if ($proc -and ($proc.ProcessName -eq "KitPlatform.Api" -or $proc.ProcessName -eq "dotnet")) {
-                        Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
-                    }
-                }
+                ForEach-Object { [void]$managedIds.Add([int]$_.OwningProcess) }
         } catch {
-            # NetTCPIP module unavailable in some sandboxes — pid file + process name above is enough.
+            # NetTCPIP module unavailable in some sandboxes — pid file above is enough.
+        }
+    }
+
+    foreach ($id in $managedIds) {
+        $proc = Get-Process -Id $id -ErrorAction SilentlyContinue
+        if ($proc -and ($proc.ProcessName -eq 'KitPlatform.Api' -or $proc.ProcessName -eq 'dotnet')) {
+            Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
         }
     }
 

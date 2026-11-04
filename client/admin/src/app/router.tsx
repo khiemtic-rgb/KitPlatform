@@ -38,6 +38,26 @@ const ShiftChecklistPage = lazy(() =>
 const LossCashVariancePage = lazy(() =>
   import('@/modules/success/LossCashVariancePage').then((m) => ({ default: m.LossCashVariancePage })),
 );
+const KnowledgePublishPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgePublishPage').then((m) => ({ default: m.KnowledgePublishPage })),
+);
+const KnowledgeApprovalPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgeApprovalPage').then((m) => ({ default: m.KnowledgeApprovalPage })),
+);
+const PharmacyOwnedKnowledgePage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyOwnedKnowledgePage').then((m) => ({ default: m.PharmacyOwnedKnowledgePage })),
+);
+const PharmacyKnowledgeInUsePage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyKnowledgeInUsePage').then((m) => ({ default: m.PharmacyKnowledgeInUsePage })),
+);
+const PharmacyLocalRegimenPage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyLocalRegimenPage').then((m) => ({ default: m.PharmacyLocalRegimenPage })),
+);
+const LearningTasksPage = lazy(() =>
+  import('@/modules/learning/LearningTasksPage').then((m) => ({
+    default: m.LearningTasksPage,
+  })),
+);
 const LearningLayout = lazy(() =>
   import('@/modules/learning/LearningLayout').then((m) => ({ default: m.LearningLayout })),
 );
@@ -673,6 +693,54 @@ export function AppRouter() {
                 }
               />
               <Route
+                path="platform/pharmacy-knowledge"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgePublishPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="platform/pharmacy-knowledge/xu-ly"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgePublishPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/knowledge"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgeApprovalPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/owned-knowledge"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyOwnedKnowledgePage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/local-regimens"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyLocalRegimenPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/knowledge-in-use"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyKnowledgeInUsePage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
                 path="people"
                 element={
                   <SuspenseRoute>
@@ -682,6 +750,7 @@ export function AppRouter() {
               >
                 <Route index element={<LearningProgramsPage />} />
                 <Route path="learn" element={<LearningTakePage />} />
+                <Route path="tasks" element={<LearningTasksPage />} />
                 <Route path="learn/modules/:id" element={<LearningTakeModulePage />} />
                 <Route path="dashboard" element={<Navigate to="/people" replace />} />
                 <Route path="programs/:id" element={<LearningProgramDetailPage />} />

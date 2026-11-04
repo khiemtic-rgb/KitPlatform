@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   App,
-  Avatar,
   Button,
   Drawer,
   Divider,
@@ -48,7 +47,7 @@ import {
   type SimilarProductMatch,
 } from '@/shared/api/catalog.api';
 import { apiErrorMessage } from '@/shared/api/api-error';
-import { withUploadAuth } from '@/shared/utils/upload-url';
+import { AuthedUploadAvatar } from '@/shared/utils/upload-image';
 import { uploadImage } from '@/shared/api/files.api';
 import type { LookupItem, ProductDetail } from '@/shared/api/catalog.types';
 import type { ProductFormNationalPrefill } from '@/shared/api/national-drug.types';
@@ -1707,7 +1706,7 @@ export function ProductFormDrawer({ open, editing, nationalPrefill, onClose, onC
         {commercial.images.length ? (
           commercial.images.map((img) => (
             <div key={img.imageUrl} style={{ textAlign: 'center' }}>
-              <Avatar shape="square" size={72} src={withUploadAuth(img.imageUrl)} alt="" />
+              <AuthedUploadAvatar url={img.imageUrl} size={72} />
               <div style={{ marginTop: 4 }}>
                 <Button
                   type="text"

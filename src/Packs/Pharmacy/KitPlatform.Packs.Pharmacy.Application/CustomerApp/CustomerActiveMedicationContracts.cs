@@ -18,7 +18,8 @@ public sealed record ActiveMedicationDto(
     string? LastOrderNumber,
     DateTimeOffset? LastOrderDate,
     int? RepurchaseSuggestionCount,
-    IReadOnlyList<ActiveMedicationTimelineEventDto> Timeline);
+    IReadOnlyList<ActiveMedicationTimelineEventDto> Timeline,
+    int? DaysSupply = null);
 
 public sealed record ActiveMedicationListResult(IReadOnlyList<ActiveMedicationDto> Items);
 

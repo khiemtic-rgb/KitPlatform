@@ -15,6 +15,7 @@ import type { ProductNavTab } from '@/shared/product/product-phases';
 import { useProductNavGuard } from '@/shared/product/useProductNavGuard';
 import { useCanReportsRead } from '@/shared/auth/usePermission';
 import { useAuthStore } from '@/shared/auth/auth.store';
+import { ReportCategoryNav } from '@/modules/reports/ReportCategoryNav';
 import { findReportByPath } from '@/modules/reports/reports-catalog';
 import { pushRecentReport } from '@/modules/reports/report-recent';
 import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
@@ -97,5 +98,10 @@ export function ReportsLayout() {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <ReportCategoryNav />
+      <Outlet />
+    </>
+  );
 }

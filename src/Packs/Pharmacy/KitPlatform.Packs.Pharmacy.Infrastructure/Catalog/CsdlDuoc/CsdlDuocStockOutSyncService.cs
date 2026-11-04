@@ -178,7 +178,8 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
                     tenantId, salesOrderId, "error", null, null, items.Count, skipped, request, raw,
                     $"HTTP {statusCode}: {Truncate(raw, 800)}",
                     cancellationToken);
-                return;
+                throw new RequiredSyncFailedException(
+                    $"CSDL stock-out sync failed for order {salesOrderId} (HTTP {statusCode}).");
             }
 
             var remoteId = body.TransactionId!;
@@ -206,7 +207,7 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
                 "CSDL stock-out submitted order={OrderNumber} remote={RemoteId} lines={Lines} skipped={Skipped}",
                 header.OrderNumber, remoteId, items.Count, skipped);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not RequiredSyncFailedException)
         {
             _logger.LogError(ex, "CSDL stock-out sync failed for order {OrderId}", salesOrderId);
             try
@@ -218,6 +219,8 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
             {
                 _logger.LogError(logEx, "Failed to persist CSDL sync error for {OrderId}", salesOrderId);
             }
+
+            throw;
         }
     }
 
@@ -256,4 +259,13 @@ internal sealed class CsdlDuocStockOutSyncService : ICsdlDuocStockOutSyncService
         string.IsNullOrEmpty(value) ? string.Empty
         : value.Length <= max ? value
         : value[..max] + "…";
+
+    /// <summary>
+    /// Required stock-out was attempted and rejected. Already written to the sync log.
+    /// Must not be rewritten by the generic catch, and must reach the platform event worker.
+    /// </summary>
+    private sealed class RequiredSyncFailedException : Exception
+    {
+        public RequiredSyncFailedException(string message) : base(message) { }
+    }
 }

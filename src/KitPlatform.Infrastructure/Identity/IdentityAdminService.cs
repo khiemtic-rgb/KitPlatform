@@ -268,7 +268,8 @@ internal sealed class IdentityAdminService : IIdentityAdminService
         UpdateRolePermissionsRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (await _repository.GetRoleAsync(roleId, cancellationToken) is null)
+        var current = await _repository.GetRoleAsync(roleId, cancellationToken);
+        if (current is null)
             return null;
 
         var codes = request.PermissionCodes
@@ -276,6 +277,12 @@ internal sealed class IdentityAdminService : IIdentityAdminService
             .Select(c => c.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        var held = new HashSet<string>(current.PermissionCodes, StringComparer.OrdinalIgnoreCase);
+        var escalation = codes.FirstOrDefault(c => ReservedPermissions.IsReserved(c) && !held.Contains(c));
+        if (escalation is not null)
+            throw new InvalidOperationException(
+                $"Quyền {escalation} là quyền vận hành nền tảng, không gán được từ quản trị nhà thuốc.");
 
         var updated = await _repository.UpdateRolePermissionsAsync(roleId, codes, cancellationToken);
         return updated ? await _repository.GetRoleAsync(roleId, cancellationToken) : null;

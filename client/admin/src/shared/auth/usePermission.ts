@@ -1,3 +1,4 @@
+import { canApproveTenantKnowledge } from '@/modules/pharmacy/knowledge-pharmacy-groups';
 import { useAuthStore } from '@/shared/auth/auth.store';
 
 export function useHasPermission(permission: string): boolean {
@@ -5,6 +6,20 @@ export function useHasPermission(permission: string): boolean {
   if (!user) return false;
   if (user.roles.includes('ADMIN')) return true;
   return user.permissions?.includes(permission) ?? false;
+}
+
+/** Không suy ra từ vai trò ADMIN. Dùng cho xuất bản, review và xác minh nguồn. */
+export function useHasExplicitPermission(permission: string): boolean {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return false;
+  return user.permissions?.includes(permission) ?? false;
+}
+
+/** Pin trong tenant hiện tại. ADMIN của tenant được vào; publish nền tảng thì không. */
+export function useCanApproveTenantKnowledge(): boolean {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return false;
+  return canApproveTenantKnowledge(user.roles, user.permissions);
 }
 
 export function useHasAnyPermission(...permissions: string[]): boolean {
@@ -116,6 +131,11 @@ export function useCanConnectRead(): boolean {
 /** Doanh thu / phân tích cửa hàng — chỉ reports hoặc ADMIN (không lấy theo success.*). */
 export function useCanViewStoreAnalytics(): boolean {
   return useHasAnyPermission('reports.read', 'reports.write', 'reports.export') || useIsAdmin();
+}
+
+/** Tick checklist mở/đóng ca. success.read chỉ xem. */
+export function useCanMutateShiftChecklist(): boolean {
+  return useHasAnyPermission('success.checklist', 'success.write', 'sales.pos');
 }
 
 /** Menu Success: checklist NV hoặc Cockpit chủ. */

@@ -29,6 +29,15 @@ internal sealed class CustomerRepurchaseService : ICustomerRepurchaseService
         return new CustomerRepurchaseSuggestionListResult(rows.Select(MapRow).ToList());
     }
 
+    public async Task<CustomerRepurchaseSuggestionListResult> ListForStaffAsync(
+        Guid tenantId,
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _repo.ListForStaffAsync(tenantId, customerId, cancellationToken);
+        return new CustomerRepurchaseSuggestionListResult(rows.Select(MapRow).ToList());
+    }
+
     public async Task<CustomerRepurchaseSuggestionDto?> AcceptAsync(
         Guid tenantId,
         Guid customerId,

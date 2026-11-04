@@ -19,11 +19,21 @@ public sealed class ShiftChecklistController : ControllerBase
     [ProducesResponseType(typeof(ShiftChecklistTodayDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ShiftChecklistTodayDto>> GetToday(
         [FromQuery] Guid? branchId,
-        CancellationToken cancellationToken) =>
-        Ok(await _service.GetTodayAsync(branchId, cancellationToken));
+        [FromQuery] Guid? salesShiftId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _service.GetTodayAsync(branchId, salesShiftId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     [HttpPost("runs")]
-    [Authorize(Policy = SuccessPolicies.Checklist)]
+    [Authorize(Policy = SuccessPolicies.ChecklistMutate)]
     [ProducesResponseType(typeof(ShiftChecklistRunDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ShiftChecklistRunDto>> Start(
         [FromBody] StartShiftChecklistRequest request,
@@ -44,7 +54,7 @@ public sealed class ShiftChecklistController : ControllerBase
     }
 
     [HttpPut("runs/{runId:guid}/items/{itemId:guid}")]
-    [Authorize(Policy = SuccessPolicies.Checklist)]
+    [Authorize(Policy = SuccessPolicies.ChecklistMutate)]
     [ProducesResponseType(typeof(ShiftChecklistRunDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ShiftChecklistRunDto>> SetItem(
         Guid runId,
@@ -67,7 +77,7 @@ public sealed class ShiftChecklistController : ControllerBase
     }
 
     [HttpPost("runs/{runId:guid}/complete")]
-    [Authorize(Policy = SuccessPolicies.Checklist)]
+    [Authorize(Policy = SuccessPolicies.ChecklistMutate)]
     [ProducesResponseType(typeof(ShiftChecklistRunDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ShiftChecklistRunDto>> Complete(
         Guid runId,

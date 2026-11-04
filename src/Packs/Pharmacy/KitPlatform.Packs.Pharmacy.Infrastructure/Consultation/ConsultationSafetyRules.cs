@@ -179,6 +179,8 @@ internal static class ConsultationSafetyRules
             .Select(s => s.Trim().ToLowerInvariant())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        if (facts.HasFever == false)
+            symptoms.RemoveAll(s => s == PharmacyConsultationSymptoms.Fever);
 
         var redFlags = (facts.RedFlags ?? [])
             .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -216,7 +218,7 @@ internal static class ConsultationSafetyRules
     internal static PharmacyConsultationFactsDto EmptyFacts() =>
         new(null, null, null, [], null, null, null, null, [], null);
 
-    private static int LevelRank(string level) => level switch
+    internal static int LevelRank(string level) => level switch
     {
         "stop_sale" => 4,
         "refer_medical" => 3,

@@ -72,7 +72,7 @@ cleanup_migration_tmp() {
 trap cleanup_migration_tmp EXIT
 
 echo "=== KitPlatform PRODUCTION migrations (no demo seed) ==="
-echo "Database: $CONN"
+echo "Database: (uri provided)"
 echo "Manifest: $MANIFEST"
 
 while IFS= read -r file || [[ -n "$file" ]]; do

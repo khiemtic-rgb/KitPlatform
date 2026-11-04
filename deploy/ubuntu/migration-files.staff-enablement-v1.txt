@@ -1,0 +1,7 @@
+# Staff Enablement V1 night release.
+# Do NOT merge into migration-files.prod.txt. The daytime incremental runner would apply these while the pharmacy is open.
+# Apply only with run-staff-enablement-v1-night.sh after an explicit night approval.
+# Order: checklist shift key, then operational tasks. Both are IF NOT EXISTS and keep old checklist rows.
+# This package does not include Knowledge/W5 migrations 414-417.
+412_success_checklist_pos_shift.sql
+413_learning_operational_task.sql

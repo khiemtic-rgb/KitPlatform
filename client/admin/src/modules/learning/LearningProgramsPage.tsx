@@ -35,6 +35,7 @@ import {
   fetchCareerLevels,
   fetchCareerRoster,
   fetchLearningRecognitions,
+  fetchOperationalTasks,
   fetchPeopleDashboard,
   type LearningCareerLevel,
   type LearningCareerRosterItem,
@@ -186,6 +187,11 @@ function StaffLanding() {
               Hồ sơ năng lực của tôi
             </Button>
           </Link>
+          <Link to="/people/tasks">
+            <Button size="large" block icon={<CheckSquareOutlined />}>
+              Việc được giao
+            </Button>
+          </Link>
           <Link to="/success/shift-checklist">
             <Button size="large" block icon={<CheckSquareOutlined />}>
               Checklist mở / đóng ca
@@ -219,6 +225,7 @@ export function LearningProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [healthOpen, setHealthOpen] = useState(true);
+  const [openTaskCount, setOpenTaskCount] = useState(0);
 
   useEffect(() => {
     if (!canWrite) {
@@ -228,17 +235,19 @@ export function LearningProgramsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [lv, d, r, f] = await Promise.all([
+        const [lv, d, r, f, taskRows] = await Promise.all([
           fetchCareerLevels().catch(() => [] as LearningCareerLevel[]),
           fetchPeopleDashboard().catch(() => null),
           fetchCareerRoster().catch(() => [] as LearningCareerRosterItem[]),
           fetchLearningRecognitions(40).catch(() => [] as LearningRecognition[]),
+          fetchOperationalTasks().catch(() => []),
         ]);
         if (cancelled) return;
         setLevels(lv);
         setDash(d);
         setRoster(r);
         setFeed(f);
+        setOpenTaskCount(taskRows.filter((task) => task.status === 'open' || task.status === 'in_progress').length);
       } catch (e) {
         message.error(apiErrorMessage(e, 'Không tải được tổng quan'));
       } finally {
@@ -321,6 +330,16 @@ export function LearningProgramsPage() {
 
   const priorityCards = useMemo((): PriorityCard[] => {
     const cards: PriorityCard[] = [];
+    if (openTaskCount > 0) {
+      cards.push({
+        key: 'tasks',
+        tone: 'urgent',
+        title: `${openTaskCount} việc`,
+        detail: 'Đang mở hoặc chưa xong',
+        cta: 'Theo dõi',
+        to: '/people/tasks',
+      });
+    }
     if ((dash?.missingCloseChecklistBranchesToday ?? 0) > 0) {
       cards.push({
         key: 'close',
@@ -390,7 +409,7 @@ export function LearningProgramsPage() {
       });
     }
     return cards.slice(0, 6);
-  }, [dash, feed]);
+  }, [dash, feed, openTaskCount]);
 
   const urgentCards = useMemo(
     () => priorityCards.filter((c) => c.tone === 'urgent'),

@@ -1,6 +1,7 @@
 ﻿using KitPlatform.Application.Core.Engines;
 using KitPlatform.Application.CustomerApp;
 using KitPlatform.Packs.Pharmacy.Inventory;
+using KitPlatform.Packs.Pharmacy.Procurement;
 using KitPlatform.Packs.Pharmacy.Sales;
 using KitPlatform.Infrastructure.Core.Engines;
 using KitPlatform.Packs.Pharmacy.Infrastructure;
@@ -40,20 +41,21 @@ public class DrugKnowledgeRulesTests
     }
 }
 
-public class PricingEngineTests
+public class PharmacyPricingTests
 {
     [Fact]
-    public void PriceOrder_prices_an_undiscounted_line()
+    public void PriceOrder_prices_quantity_times_unit_price_without_discount()
     {
         var lines = new List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)>
         {
             (new CreateSaleLineRequest(Guid.NewGuid(), Guid.NewGuid(), 2m, null, null), 10000m, 1m),
         };
 
-        var priced = SalesPricing.PriceOrder(lines, null);
+        var pricing = SalesPricing.PriceOrder(lines, null);
 
-        Assert.Equal(20000m, priced.SubtotalGross);
-        Assert.Equal(20000m, priced.TotalAmount);
+        Assert.Equal(20000m, pricing.SubtotalGross);
+        Assert.Equal(0m, pricing.LineDiscountTotal);
+        Assert.Equal(20000m, pricing.TotalAmount);
     }
 
     [Fact]
@@ -66,7 +68,37 @@ public class PricingEngineTests
         var pricing = SalesPricing.PriceOrder(lines, null);
         var policy = new SalesDiscountPolicy(CanApply: false, Unlimited: false, MaxPercent: 0m);
 
-        Assert.Throws<InvalidOperationException>(() => SalesPricing.ValidateDiscounts(pricing, policy));
+        var ex = Assert.Throws<InvalidOperationException>(() => SalesPricing.ValidateDiscounts(pricing, policy));
+        Assert.Contains("không có quyền chiết khấu", ex.Message);
+    }
+
+    [Fact]
+    public void ComputeLineRefundAmount_shares_order_discount_then_prorates_quantity()
+    {
+        var refund = SalesPricing.ComputeLineRefundAmount(
+            lineTotal: 10000m,
+            soldQuantity: 2m,
+            returnQuantity: 1m,
+            merchandiseNet: 20000m,
+            orderDiscountAmount: 2000m);
+
+        Assert.Equal(4500m, refund);
+    }
+
+    [Fact]
+    public void PriceReceipt_prices_quantity_times_unit_cost_without_tax()
+    {
+        var lines = new List<(decimal Quantity, decimal UnitCost, ProcurementDiscountInput LineDiscount)>
+        {
+            (2m, 10000m, new ProcurementDiscountInput(null, null)),
+        };
+
+        var pricing = ProcurementPricing.PriceReceipt(lines, null, taxRatePercent: 0m, vatIsNotSubject: true);
+
+        Assert.Equal(20000m, pricing.SubtotalGross);
+        Assert.Equal(0m, pricing.TaxAmount);
+        Assert.Equal(20000m, pricing.TotalAmount);
+        Assert.Equal(10000m, pricing.Lines[0].InventoryUnitCost);
     }
 }
 

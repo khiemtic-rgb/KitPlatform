@@ -1791,7 +1791,9 @@ internal sealed class LearningRepository
             """
             SELECT COUNT(DISTINCT r.business_date)::int
             FROM success_shift_checklist_run r
-            INNER JOIN users u ON u.id = COALESCE(r.completed_by_user_id, r.started_by_user_id)
+            INNER JOIN success_shift_checklist_run_item i
+                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
+            INNER JOIN users u ON u.id = i.checked_by_user_id
             WHERE r.tenant_id = @TenantId
               AND u.employee_id = @EmployeeId
               AND r.kind = 'close'
@@ -1804,7 +1806,9 @@ internal sealed class LearningRepository
             """
             SELECT DISTINCT r.business_date
             FROM success_shift_checklist_run r
-            INNER JOIN users u ON u.id = COALESCE(r.completed_by_user_id, r.started_by_user_id)
+            INNER JOIN success_shift_checklist_run_item i
+                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
+            INNER JOIN users u ON u.id = i.checked_by_user_id
             WHERE r.tenant_id = @TenantId
               AND u.employee_id = @EmployeeId
               AND r.kind = 'close'
@@ -2120,7 +2124,9 @@ internal sealed class LearningRepository
             """
             SELECT COUNT(DISTINCT r.business_date)::int
             FROM success_shift_checklist_run r
-            INNER JOIN users u ON u.id = COALESCE(r.completed_by_user_id, r.started_by_user_id)
+            INNER JOIN success_shift_checklist_run_item i
+                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
+            INNER JOIN users u ON u.id = i.checked_by_user_id
             WHERE r.tenant_id = @TenantId
               AND u.employee_id = @EmployeeId
               AND r.kind = 'close'
@@ -2131,9 +2137,11 @@ internal sealed class LearningRepository
 
         var openToday = await conn.ExecuteScalarAsync<int>(
             """
-            SELECT COUNT(*)::int
+            SELECT COUNT(DISTINCT r.id)::int
             FROM success_shift_checklist_run r
-            INNER JOIN users u ON u.id = COALESCE(r.completed_by_user_id, r.started_by_user_id)
+            INNER JOIN success_shift_checklist_run_item i
+                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
+            INNER JOIN users u ON u.id = i.checked_by_user_id
             WHERE r.tenant_id = @TenantId
               AND u.employee_id = @EmployeeId
               AND r.kind = 'open'
@@ -2144,9 +2152,11 @@ internal sealed class LearningRepository
 
         var closeToday = await conn.ExecuteScalarAsync<int>(
             """
-            SELECT COUNT(*)::int
+            SELECT COUNT(DISTINCT r.id)::int
             FROM success_shift_checklist_run r
-            INNER JOIN users u ON u.id = COALESCE(r.completed_by_user_id, r.started_by_user_id)
+            INNER JOIN success_shift_checklist_run_item i
+                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
+            INNER JOIN users u ON u.id = i.checked_by_user_id
             WHERE r.tenant_id = @TenantId
               AND u.employee_id = @EmployeeId
               AND r.kind = 'close'
@@ -2159,7 +2169,9 @@ internal sealed class LearningRepository
             """
             SELECT DISTINCT r.business_date
             FROM success_shift_checklist_run r
-            INNER JOIN users u ON u.id = COALESCE(r.completed_by_user_id, r.started_by_user_id)
+            INNER JOIN success_shift_checklist_run_item i
+                ON i.run_id = r.id AND i.is_checked AND i.checked_by_user_id IS NOT NULL
+            INNER JOIN users u ON u.id = i.checked_by_user_id
             WHERE r.tenant_id = @TenantId
               AND u.employee_id = @EmployeeId
               AND r.kind = 'close'

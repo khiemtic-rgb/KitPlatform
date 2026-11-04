@@ -1,0 +1,5 @@
+# Pharmacy report performance v1: foreign-key indexes for sales, returns and goods receipts.
+# Do NOT merge into migration-files.prod.txt. Night release only, after migration-files.pharmacy-knowledge-v1.txt.
+# Index only, no data change. CREATE INDEX CONCURRENTLY: the runner applies each file with plain psql -f (no -1).
+# If an index is left INVALID after a failure, drop it and re-run this manifest.
+431_pharmacy_report_fk_indexes.sql

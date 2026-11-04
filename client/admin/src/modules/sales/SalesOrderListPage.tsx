@@ -414,8 +414,9 @@ export function SalesOrderListPage() {
     reason?: string;
     items: { salesOrderItemId: string; quantity: number }[];
     payments: { paymentMethod: number; amount: number }[];
+    clientReturnId: string;
   }) => {
-    if (!detail) return;
+    if (!detail || returnSaving) return;
     try {
       setReturnSaving(true);
       const ret = await createSaleReturn(detail.id, payload);

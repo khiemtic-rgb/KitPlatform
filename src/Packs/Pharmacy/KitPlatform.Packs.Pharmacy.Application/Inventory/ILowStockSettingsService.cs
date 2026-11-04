@@ -26,4 +26,8 @@ public interface ILowStockSettingsService
         Guid warehouseId,
         decimal? minStockQty,
         CancellationToken cancellationToken = default);
+
+    Task UpdateNotificationEmailAsync(
+        UpdateLowStockNotificationEmailRequest request,
+        CancellationToken cancellationToken = default);
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Packs.Pharmacy.Workflow;
 using KitPlatform.Packs.Pharmacy.Catalog;
@@ -14,11 +15,19 @@ public sealed class SalesController : ControllerBase
 {
     private readonly ISalesService _sales;
     private readonly ICatalogService _catalog;
+    private readonly ICustomerPosContextService _posContext;
+    private readonly IConfiguration _config;
 
-    public SalesController(ISalesService sales, ICatalogService catalog)
+    public SalesController(
+        ISalesService sales,
+        ICatalogService catalog,
+        ICustomerPosContextService posContext,
+        IConfiguration config)
     {
         _sales = sales;
         _catalog = catalog;
+        _posContext = posContext;
+        _config = config;
     }
 
     [HttpGet("price-overrides")]
@@ -75,6 +84,42 @@ public sealed class SalesController : ControllerBase
         [FromQuery] decimal orderTotal,
         CancellationToken cancellationToken = default) =>
         Ok(await _sales.GetPosCustomerVouchersAsync(customerId, orderTotal, cancellationToken));
+
+    /// <summary>
+    /// Get customer context for POS display (display-only MVP).
+    /// Aggregates profile, recent orders, likely active medications, and recent consultations.
+    /// </summary>
+    [HttpGet("pos/customer-context/{customerId}")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    [ProducesResponseType(typeof(CustomerPosContextDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<CustomerPosContextDto>> GetPosCustomerContext(
+        Guid customerId,
+        [FromQuery] Guid warehouseId,
+        CancellationToken cancellationToken = default)
+    {
+        // KPA-PRODUCT-PROOF-008R30: Runtime rollback guard for Customer Context endpoint
+        // When Pharmacy:DisableCustomerContext is explicitly true, return 503 to indicate temporary unavailability
+        var disableCustomerContext = _config.GetValue<bool>("Pharmacy:DisableCustomerContext");
+        if (disableCustomerContext)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new { message = "Customer Context is temporarily unavailable." });
+        }
+
+        // Tenant ID from auth context (enforced by ITenantContext)
+        // warehouseId provided for future stock/branch filtering (not used in MVP)
+        var context = await _posContext.GetContextAsync(
+            Guid.Empty, // TenantId resolved by service via ITenantContext
+            customerId,
+            warehouseId,
+            cancellationToken);
+        
+        // Return 404 if customer does not exist or is outside current tenant
+        return context is null ? NotFound() : Ok(context);
+    }
 
     [HttpGet("pos/lookup")]
     [Authorize(Policy = SalesPolicies.Read)]
@@ -172,6 +217,23 @@ public sealed class SalesController : ControllerBase
         return item is null ? NotFound() : Ok(item);
     }
 
+    [HttpGet("orders/by-client-sale/{clientSaleId}")]
+    [Authorize(Policy = SalesPolicies.Pos)]
+    public async Task<ActionResult<SalesOrderDetailDto>> GetByClientSaleId(
+        string clientSaleId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var item = await _sales.FindSaleByClientSaleIdAsync(clientSaleId, cancellationToken);
+            return item is null ? NotFound() : Ok(item);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("orders")]
     [Authorize(Policy = SalesPolicies.Pos)]
     public async Task<ActionResult<SalesOrderDetailDto>> Create(
@@ -181,6 +243,8 @@ public sealed class SalesController : ControllerBase
         try
         {
             var item = await _sales.CreateSaleAsync(request, cancellationToken);
+            if (item.IdempotentReplay)
+                return Ok(item);
             return CreatedAtAction(nameof(Get), new { id = item.Id }, item);
         }
         catch (DiscountApprovalRequiredException ex)
@@ -318,6 +382,22 @@ public sealed class SalesController : ControllerBase
         {
             var end = to ?? DateTime.UtcNow;
             var start = from ?? end.Date;
+            if (!CanReadStoreRevenue()
+                && !SalesShiftSummaryScope.IsContainedInCurrentVietnamDay(start, end, DateTime.UtcNow))
+            {
+                if (from is null && to is null)
+                {
+                    (start, end) = SalesShiftSummaryScope.CurrentVietnamDayUtc(DateTime.UtcNow);
+                }
+                else
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new
+                    {
+                        message = "Doanh thu theo khoảng ngày cần quyền báo cáo. Thu ngân chỉ xem số ca trong ngày.",
+                    });
+                }
+            }
+
             return Ok(await _sales.GetShiftSummaryAsync(start, end, warehouseId, cancellationToken));
         }
         catch (InvalidOperationException ex)
@@ -394,4 +474,10 @@ public sealed class SalesController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    private bool CanReadStoreRevenue() =>
+        User.IsInRole("ADMIN")
+        || User.Claims.Any(c =>
+            c.Type == "permission"
+            && c.Value is "reports.read" or "reports.write" or "reports.export");
 }

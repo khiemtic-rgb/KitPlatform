@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Npgsql;
 using Xunit;
 
 namespace KitPlatform.Api.Tests;
@@ -41,6 +42,7 @@ public sealed class ControlledPilotSaleTests : IClassFixture<ControlledPilotHost
     {
         var (token, tenantCode) = await LoginDemoAsync();
         Assert.Equal("DEMO_PHARMACY", tenantCode);
+        await PreparePilotLotsAsync();
         using var authed = CreateAuthedClient(token);
         var warehouseId = await GetWarehouseIdAsync(authed, "WH_MAIN");
         await EnsureShiftOpenAsync(authed, warehouseId);
@@ -48,14 +50,11 @@ public sealed class ControlledPilotSaleTests : IClassFixture<ControlledPilotHost
 
         await AssertSafetyGatesAsync(authed, warehouseId);
 
+        // No approved suggestion rule exists for DEMO_PHARMACY, so the counter gets no OTC list.
         var suggestions = await SuggestAsync(authed, warehouseId, Facts(34, ["cough", "sore_throat"], false, []));
-        Assert.False(suggestions.GetProperty("blocked").GetBoolean());
-        var codes = suggestions.GetProperty("suggestions").EnumerateArray()
-            .Select(row => row.GetProperty("productCode").GetString())
-            .ToArray();
-        Assert.NotEmpty(codes);
-        Assert.DoesNotContain("DECK001", codes);
-        Assert.DoesNotContain("DECK006", codes);
+        Assert.True(suggestions.GetProperty("blocked").GetBoolean());
+        Assert.Equal(0, suggestions.GetProperty("suggestions").GetArrayLength());
+        Assert.Contains("Chưa có quy tắc gợi ý", suggestions.GetProperty("blockReason").GetString());
 
         await AssertExpiredProductRefusedAsync(authed, warehouseId, "DECK001", today);
         await AssertExpiredProductRefusedAsync(authed, warehouseId, "DECK006", today);
@@ -131,6 +130,7 @@ public sealed class ControlledPilotSaleTests : IClassFixture<ControlledPilotHost
     {
         var (token, tenantCode) = await LoginDemoAsync();
         Assert.Equal("DEMO_PHARMACY", tenantCode);
+        await PreparePilotLotsAsync();
         using var authed = CreateAuthedClient(token);
         var warehouseId = await GetWarehouseIdAsync(authed, "WH_MAIN");
         await EnsureShiftOpenAsync(authed, warehouseId);
@@ -215,7 +215,7 @@ public sealed class ControlledPilotSaleTests : IClassFixture<ControlledPilotHost
             });
         Assert.False(pregnant.GetProperty("blocked").GetBoolean());
         Assert.Equal("refer_pharmacist", pregnant.GetProperty("safetyLevel").GetString());
-        Assert.True(pregnant.GetProperty("suggestions").GetArrayLength() > 0);
+        Assert.Equal(0, pregnant.GetProperty("suggestions").GetArrayLength());
     }
 
     private async Task AssertExpiredProductRefusedAsync(
@@ -292,6 +292,47 @@ public sealed class ControlledPilotSaleTests : IClassFixture<ControlledPilotHost
         hasFever,
         redFlags,
     };
+
+    // The demo seed dates lots from CURRENT_DATE at seed time, so a fresh database has no expired lot.
+    // Idempotent; DEMO_PHARMACY only, on the isolated test database.
+    private static async Task PreparePilotLotsAsync()
+    {
+        await using var conn = new NpgsqlConnection(KitPlatformWebApplicationFactory.RequireIsolatedConnection());
+        await conn.OpenAsync();
+        await using var cmd = new NpgsqlCommand(
+            """
+            UPDATE inventory_batches b
+            SET expiry_date = CURRENT_DATE - 30, updated_at = NOW()
+            FROM tenants t, products p
+            WHERE t.tenant_code = 'DEMO_PHARMACY'
+              AND b.tenant_id = t.id
+              AND p.id = b.product_id
+              AND (p.product_code IN ('DECK001', 'DECK006') OR b.batch_number = 'VITC-NEAR')
+              AND b.expiry_date >= CURRENT_DATE;
+
+            WITH lot AS (
+                INSERT INTO inventory_batches (
+                    id, tenant_id, warehouse_id, product_id, batch_number, expiry_date,
+                    unit_cost, quantity_received, quantity_available, supplier_id, status)
+                SELECT gen_random_uuid(), t.id, w.id, '66666666-6666-6666-6666-666666666604', '4444',
+                       CURRENT_DATE + 365, 5500, 50, 50, '88888888-8888-8888-8888-888888888801', 1
+                FROM tenants t
+                JOIN warehouses w ON w.tenant_id = t.id AND w.warehouse_code = 'WH_MAIN'
+                WHERE t.tenant_code = 'DEMO_PHARMACY'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM inventory_batches b
+                      WHERE b.tenant_id = t.id AND b.warehouse_id = w.id
+                        AND b.product_id = '66666666-6666-6666-6666-666666666604'
+                        AND b.batch_number = '4444')
+                RETURNING id, tenant_id, warehouse_id, product_id, quantity_received, unit_cost)
+            INSERT INTO stock_movements (
+                tenant_id, warehouse_id, batch_id, product_id, movement_type, reference_type, reference_id, quantity, unit_cost)
+            SELECT tenant_id, warehouse_id, id, product_id, 1, 'TEST_PILOT_FIXTURE', tenant_id, quantity_received, unit_cost
+            FROM lot;
+            """,
+            conn);
+        await cmd.ExecuteNonQueryAsync();
+    }
 
     private async Task<(string Token, string TenantCode)> LoginDemoAsync()
     {

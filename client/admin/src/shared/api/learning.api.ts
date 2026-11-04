@@ -663,3 +663,59 @@ export async function replyLearningMailThread(threadId: string, body: string) {
   await http.post(`/learning/mail/threads/${threadId}/messages`, { body });
 }
 
+export type OperationalTask = {
+  id: string;
+  branchId?: string | null;
+  salesShiftId?: string | null;
+  assigneeEmployeeId: string;
+  assigneeName: string;
+  title: string;
+  dueAt?: string | null;
+  status: string;
+  evidenceNote?: string | null;
+  createdByUserId: string;
+  completedAt?: string | null;
+  createdAt: string;
+};
+
+export type OperationalShiftOption = {
+  id: string;
+  shiftNumber: string;
+  warehouseName: string;
+  branchId: string;
+};
+
+export async function fetchOperationalTasks(salesShiftId?: string) {
+  const { data } = await http.get<OperationalTask[]>('/learning/operational-tasks', {
+    params: salesShiftId ? { salesShiftId } : undefined,
+  });
+  return data;
+}
+
+export async function fetchOperationalOpenShifts() {
+  const { data } = await http.get<OperationalShiftOption[]>('/learning/operational-tasks/open-shifts');
+  return data;
+}
+
+export async function createOperationalTask(payload: {
+  assigneeEmployeeId: string;
+  title: string;
+  salesShiftId?: string | null;
+  branchId?: string | null;
+}) {
+  const { data } = await http.post<OperationalTask>('/learning/operational-tasks', payload);
+  return data;
+}
+
+export async function updateOperationalTaskStatus(
+  id: string,
+  status: string,
+  evidenceNote?: string,
+) {
+  const { data } = await http.post<OperationalTask>(`/learning/operational-tasks/${id}/status`, {
+    status,
+    evidenceNote: evidenceNote ?? null,
+  });
+  return data;
+}
+

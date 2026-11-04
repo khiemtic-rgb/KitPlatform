@@ -140,8 +140,10 @@
   "checklist": {
     "title": "Open / close shift checklist",
     "subtitle": "Business day (VN): {{date}}",
-    "tip": "Tick operational items per shift — separate from cash register sales shifts.",
+    "tip": "The checklist follows an open POS shift. When several shifts are open, choose the right one before ticking.",
     "branch": "Branch",
+    "shift": "POS shift",
+    "chooseShift": "Choose a POS shift before starting the checklist.",
     "openTitle": "Open shift",
     "closeTitle": "Close shift",
     "start": "Start checklist",
@@ -152,6 +154,7 @@
     "backCockpit": "← Owner cockpit",
     "loadFailed": "Could not load shift checklist",
     "actionFailed": "Checklist action failed",
+    "readOnly": "You can view this checklist. Ticking items needs the shift checklist permission.",
     "status": {
       "missing": "Not started",
       "inProgress": "In progress",

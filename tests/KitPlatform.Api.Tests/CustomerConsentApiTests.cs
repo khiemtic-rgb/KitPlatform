@@ -9,10 +9,14 @@ public sealed class CustomerConsentApiTests : IClassFixture<KitPlatformWebApplic
 {
     private static readonly Guid DemoCustomerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01");
 
+    private readonly KitPlatformWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public CustomerConsentApiTests(KitPlatformWebApplicationFactory factory) =>
+    public CustomerConsentApiTests(KitPlatformWebApplicationFactory factory)
+    {
+        _factory = factory;
         _client = factory.CreateClient();
+    }
 
     [Fact]
     public async Task Customer_consent_upsert_writes_outbox_event()
@@ -40,9 +44,9 @@ public sealed class CustomerConsentApiTests : IClassFixture<KitPlatformWebApplic
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new
         {
+            tenantCode = "DEMO_PHARMACY",
             username = "admin",
             password = "Admin@123",
-            tenantCode = "DEMO_PHARMACY",
         });
         response.EnsureSuccessStatusCode();
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -51,8 +55,7 @@ public sealed class CustomerConsentApiTests : IClassFixture<KitPlatformWebApplic
 
     private HttpClient CreateAuthedClient(string token)
     {
-        var client = _client;
-        var authed = new HttpClient { BaseAddress = client.BaseAddress };
+        var authed = _factory.CreateClient();
         authed.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         return authed;

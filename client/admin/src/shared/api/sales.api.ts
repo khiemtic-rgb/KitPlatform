@@ -547,6 +547,7 @@ type CreateSalePayload = Pick<
   orderReminderDaysSupply?: number;
   prescriptionId?: string;
   connectRxHandoffId?: string;
+  clientSaleId?: string;
 };
 
 export type CompleteDraftSaleOptions = CompleteDraftSaleRequest & {
@@ -604,6 +605,20 @@ export async function fetchPosCustomerVouchers(customerId: string, orderTotal: n
   );
   const rows = data.items ?? data.Items ?? [];
   return rows.map(normalizePosCustomerVoucher);
+}
+
+export async function findSaleByClientSaleId(clientSaleId: string): Promise<SalesOrderDetail | null> {
+  try {
+    const { data } = await http.get<Record<string, unknown>>(
+      `/sales/orders/by-client-sale/${encodeURIComponent(clientSaleId)}`,
+    );
+    const rawItems = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+    return normalizeSalesOrderDetail(data, rawItems);
+  } catch (error) {
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    if (status === 404) return null;
+    throw error;
+  }
 }
 
 export async function createSale(payload: CreateSalePayload): Promise<SalesOrderDetail> {
@@ -677,6 +692,7 @@ export async function createSaleReturn(
     reason?: string;
     items: { salesOrderItemId: string; quantity: number }[];
     payments?: { paymentMethod: number; amount: number }[];
+    clientReturnId?: string;
   },
 ): Promise<SalesReturnDetail> {
   const { data } = await http.post<Record<string, unknown>>(`/sales/orders/${orderId}/returns`, payload);

@@ -14,6 +14,7 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
     private readonly PharmacyConsultationAiConfigProvider _aiConfig;
     private readonly IBranchAccessService _branchAccess;
     private readonly ITenantContext _tenant;
+    private readonly ICurrentUserAccessor? _user;
 
     public PharmacyConsultationService(
         ConsultationRepository repo,
@@ -21,7 +22,8 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
         PharmacyConsultationGeminiClient gemini,
         PharmacyConsultationAiConfigProvider aiConfig,
         IBranchAccessService branchAccess,
-        ITenantContext tenant)
+        ITenantContext tenant,
+        ICurrentUserAccessor? user = null)
     {
         _repo = repo;
         _taxonomy = taxonomy;
@@ -29,7 +31,13 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
         _aiConfig = aiConfig;
         _branchAccess = branchAccess;
         _tenant = tenant;
+        _user = user;
     }
+
+    private bool CallerIsPharmacist =>
+        _user is not null
+        && (_user.IsInRole("ADMIN")
+            || _user.Permissions.Contains(PharmacyConsultationPermissions.Pharmacist, StringComparer.Ordinal));
 
     public async Task<PharmacyConsultationSymptomCatalogDto> GetSymptomCatalogAsync(
         CancellationToken cancellationToken = default)
@@ -115,6 +123,8 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
             }
         }
 
+        facts = ConsultationTextParser.ApplyTextSymptoms(facts, natural, quick, catalog.AliasesByCode);
+
         if (request.ConfirmedFacts is not null)
             facts = MergeExtractedWithConfirmed(facts, request.ConfirmedFacts);
 
@@ -175,11 +185,16 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
         var facts = ConsultationSafetyRules.NormalizeFacts(request.ConfirmedFacts);
         var eval = await EvaluateFactsAsync(facts, cancellationToken);
 
-        if (ConsultationSafetyRules.BlocksAutomaticOtcSuggestions(eval.SafetyLevel))
+        var pharmacistOverride = request.KeepOrderWithReferral
+                                 && eval.SafetyLevel is "refer_pharmacist"
+                                 && CallerIsPharmacist;
+        if (!PharmacyOtcSuggestionGate.ShowsOrdinaryOtcList(eval.SafetyLevel) && !pharmacistOverride)
         {
             return new SuggestPharmacyConsultationResultDto(
-                true,
-                ConsultationSafetyRules.AutomaticOtcBlockMessage(eval),
+                ConsultationSafetyRules.BlocksAutomaticOtcSuggestions(eval.SafetyLevel),
+                eval.Flags.FirstOrDefault()?.Message
+                    ?? BuildSuggestionAdvisory(eval.SafetyLevel)
+                    ?? "Cần dược sĩ hoặc chuyển tuyến. Không gợi ý OTC.",
                 eval.SafetyLevel,
                 eval.Flags,
                 []);
@@ -208,14 +223,15 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
                 []);
         }
 
-        var (categoryCodes, keywords, excludeKeywords, reasonByRule) =
+        var (categoryCodes, keywords, excludeKeywords, reasonByKeyword) =
             await ResolveKnowledgeAsync(otcSymptoms, facts, cancellationToken);
+        keywords = keywords.Where(keyword => keyword.Trim().Length >= 3).ToList();
 
-        if (categoryCodes.Count == 0 && keywords.Count == 0)
+        if (keywords.Count == 0)
         {
             return new SuggestPharmacyConsultationResultDto(
                 true,
-                "Chưa có quy tắc gợi ý cho triệu chứng đã chọn.",
+                "Chưa có quy tắc gợi ý đã được duyệt cho triệu chứng này — dược sĩ tư vấn trực tiếp.",
                 eval.SafetyLevel,
                 eval.Flags,
                 []);
@@ -225,38 +241,22 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
             .Concat(ConsultationOtcRules.GetExcludeKeywords(facts))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        var limit = request.Limit is > 0 and <= 12 ? request.Limit.Value : 6;
-
         var rows = await _repo.SearchOtcSuggestionsAsync(
             request.WarehouseId,
             SalesPriceTypes.Retail,
             categoryCodes,
             keywords,
             exclude,
-            limit,
+            48,
+            false,
             cancellationToken);
-
-        if (rows.Count == 0 && keywords.Count > 0)
-        {
-            rows = await _repo.SearchOtcSuggestionsAsync(
-                request.WarehouseId,
-                SalesPriceTypes.Retail,
-                [],
-                keywords,
-                exclude,
-                limit,
-                cancellationToken);
-        }
 
         var suggestions = rows
             .Select(row =>
             {
-                var reason = PickReason(reasonByRule, row.CategoryCode, row.ProductName, row.GenericName)
+                var reason = PickReason(reasonByKeyword, row.ProductName, row.GenericName)
                              ?? "Gợi ý OTC theo triệu chứng";
-                var matchSource = !string.IsNullOrWhiteSpace(row.CategoryCode)
-                                && categoryCodes.Contains(row.CategoryCode, StringComparer.OrdinalIgnoreCase)
-                    ? "category"
-                    : "keyword";
+                const string matchSource = "keyword";
                 return new PharmacyConsultationProductSuggestionDto(
                     row.ProductId,
                     row.ProductCode,
@@ -270,6 +270,9 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
                     reason,
                     matchSource);
             })
+            .GroupBy(item => item.Reason, StringComparer.OrdinalIgnoreCase)
+            .SelectMany(group => group.Take(6))
+            .Take(24)
             .ToList();
 
         if (suggestions.Count == 0)
@@ -282,20 +285,23 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
                 []);
         }
 
+        var screened = ConsultationProductScreening.Apply(suggestions, eval);
         return new SuggestPharmacyConsultationResultDto(
             false,
-            BuildSuggestionAdvisory(eval.SafetyLevel),
-            eval.SafetyLevel,
-            eval.Flags,
-            suggestions);
+            pharmacistOverride
+                ? "Ca cần dược sĩ. Danh sách chỉ để dược sĩ phụ trách tham khảo và tự quyết định."
+                : BuildSuggestionAdvisory(screened.Evaluation.SafetyLevel),
+            screened.Evaluation.SafetyLevel,
+            screened.Evaluation.Flags,
+            screened.Suggestions);
     }
 
     private static string? BuildSuggestionAdvisory(string safetyLevel) => safetyLevel switch
     {
         "refer_medical" =>
-            "Có cảnh báo cần khám — gợi ý OTC chỉ tham khảo cho triệu chứng phù hợp; dược sĩ quyết định trước khi bán.",
+            "Cần chuyển khám. Không hiển thị gợi ý OTC như lựa chọn điều trị.",
         "refer_pharmacist" =>
-            "Nên có dược sĩ xác nhận trước khi bán — danh sách bên dưới chỉ mang tính gợi ý.",
+            "Cần dược sĩ đánh giá thêm. Không hiển thị gợi ý OTC như lựa chọn điều trị.",
         "caution" =>
             "Có điểm cần lưu ý — xác nhận lại với khách trước khi bán.",
         _ => null,
@@ -306,52 +312,62 @@ internal sealed class PharmacyConsultationService : IPharmacyConsultationService
         PharmacyConsultationFactsDto facts,
         CancellationToken cancellationToken)
     {
-        var dbRules = await _taxonomy.GetKnowledgeRulesAsync(otcSymptoms, cancellationToken);
-        if (dbRules.Count > 0)
-        {
-            var categories = dbRules
-                .SelectMany(r => r.CategoryCodes ?? [])
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var keywords = dbRules
-                .SelectMany(r => r.Keywords ?? [])
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var exclude = dbRules
-                .SelectMany(r => r.ExcludeKeywords ?? [])
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var reasons = dbRules.ToDictionary(r => r.RuleCode, r => r.ReasonVi, StringComparer.OrdinalIgnoreCase);
-            return (categories, keywords, exclude, reasons);
-        }
+        var dbRules = await _taxonomy.GetKnowledgeRulesAsync(_tenant.TenantId, otcSymptoms, cancellationToken);
+        var activeRules = dbRules.Where(rule => rule.ProductMatchingEnabled).ToList();
+        if (activeRules.Count == 0)
+            return ([], [], [], new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
 
-        var matches = ConsultationOtcRules.ResolveMatches(otcSymptoms);
-        var legacyCategories = matches.SelectMany(m => m.CategoryCodes).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var legacyKeywords = matches.SelectMany(m => m.Keywords).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        var legacyReasons = matches.ToDictionary(m => m.SymptomCode, m => m.Reason, StringComparer.OrdinalIgnoreCase);
-        return (legacyCategories, legacyKeywords, [], legacyReasons);
+        var categories = activeRules
+            .SelectMany(r => r.CategoryCodes ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var keywords = activeRules
+            .SelectMany(r => r.Keywords ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var exclude = activeRules
+            .SelectMany(r => (r.ExcludeKeywords ?? []).Concat(r.ExtraExcludeKeywords ?? []))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var reasonByKeyword = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var rule in activeRules)
+        {
+            foreach (var keyword in rule.Keywords ?? [])
+            {
+                var key = keyword?.Trim();
+                if (string.IsNullOrWhiteSpace(key) || reasonByKeyword.ContainsKey(key))
+                    continue;
+                reasonByKeyword[key] = rule.ReasonVi;
+            }
+        }
+        return (categories, keywords, exclude, reasonByKeyword);
     }
 
     private static string? PickReason(
-        IReadOnlyDictionary<string, string> reasonByRule,
-        string? categoryCode,
+        IReadOnlyDictionary<string, string> reasonByKeyword,
         string productName,
         string? genericName)
     {
-        if (reasonByRule.Count == 0)
+        if (reasonByKeyword.Count == 0)
             return null;
 
-        var haystack = $"{productName} {genericName}".ToLowerInvariant();
-        foreach (var reason in reasonByRule.Values)
+        var haystack = $"{productName} {genericName}";
+        string? best = null;
+        var bestLength = -1;
+        foreach (var pair in reasonByKeyword)
         {
-            if (!string.IsNullOrWhiteSpace(reason))
-                return reason;
+            if (pair.Key.Length <= bestLength)
+                continue;
+            if (haystack.Contains(pair.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                best = pair.Value;
+                bestLength = pair.Key.Length;
+            }
         }
-
-        return reasonByRule.Values.FirstOrDefault();
+        return best;
     }
 
     public async Task<PharmacyConsultationSessionDto> ConfirmAsync(

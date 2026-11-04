@@ -1,7 +1,9 @@
+import * as XLSX from 'xlsx';
 import type { ReportColumn, ReportTableResult } from '@/shared/api/reports.types';
 import { reportsT } from '@/shared/i18n';
 import { formatDisplayDate } from '@/shared/utils/date';
 import { formatDisplayMoney, formatDisplayQuantity } from '@/shared/utils/money';
+import { buildInventoryCountSheet, type InventoryCountCell } from '@/modules/reports/inventory-count-sheet';
 
 export function formatReportCell(value: unknown, format: ReportColumn['format']): string {
   if (value == null || value === '') return '—';
@@ -36,6 +38,42 @@ export function exportReportCsv(result: ReportTableResult): void {
   link.download = `${result.reportCode}-${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+export function exportInventoryCountSheet(result: ReportTableResult): void {
+  const grid = buildInventoryCountSheet({
+    columns: result.columns.map((column) => ({
+      key: column.key,
+      title: column.title,
+      format: column.format,
+    })),
+    rows: result.rows,
+  });
+  const sheet: XLSX.WorkSheet = {};
+  grid.forEach((row, rowIndex) => {
+    row.forEach((cell, columnIndex) => writeCountCell(sheet, rowIndex, columnIndex, cell));
+  });
+  const lastRow = Math.max(grid.length - 1, 0);
+  const lastColumn = Math.max((grid[0]?.length ?? 1) - 1, 0);
+  sheet['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lastRow, c: lastColumn } });
+  sheet['!cols'] = grid[0]?.map((title) => ({ wch: String(title) === 'Ghi chú' ? 28 : 16 }));
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, 'Kiểm kê');
+  XLSX.writeFile(book, `${result.reportCode}-kiem-ke-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+function writeCountCell(sheet: XLSX.WorkSheet, rowIndex: number, columnIndex: number, cell: InventoryCountCell): void {
+  if (cell === '') return;
+  const address = XLSX.utils.encode_cell({ r: rowIndex, c: columnIndex });
+  if (typeof cell === 'object') {
+    sheet[address] = { f: cell.formula };
+    return;
+  }
+  if (typeof cell === 'number') {
+    sheet[address] = { t: 'n', v: cell };
+    return;
+  }
+  sheet[address] = { t: 's', v: cell };
 }
 
 export function printReportElement(elementId: string, title?: string): void {

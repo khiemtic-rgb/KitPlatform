@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using KitPlatform.Application.Core;
 
 namespace KitPlatform.Api.Authorization;
 
@@ -20,5 +21,5 @@ public static class IdentityAuthorizationExtensions
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>
-        ctx.User.Claims.Any(c => c.Type == "permission" && c.Value == permission);
+        CoreAuthority.HasPermission(ctx.User, permission);
 }

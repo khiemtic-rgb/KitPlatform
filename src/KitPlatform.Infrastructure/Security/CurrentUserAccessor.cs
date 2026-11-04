@@ -1,6 +1,6 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Core;
 
 namespace KitPlatform.Infrastructure.Security;
 
@@ -13,7 +13,7 @@ public sealed class CurrentUserAccessor : ICurrentUserAccessor
 
     public IReadOnlyList<string> Permissions =>
         _httpContextAccessor.HttpContext?.User.Claims
-            .Where(c => c.Type == "permission")
+            .Where(c => c.Type == CoreAuthority.PermissionClaim)
             .Select(c => c.Value)
             .Distinct()
             .ToList()

@@ -1,0 +1,20 @@
+# Pharmacy knowledge v1: platform rule lifecycle, pharmacy-owned knowledge, local regimens.
+# Do NOT merge into migration-files.prod.txt or any other release package.
+# Night release only. Apply on an isolated database first. Never on novixa_prod or the shared kitplatform database.
+# Depends on 414_pharmacy_knowledge_approval.sql and 415_pharmacy_knowledge_approval_history.sql
+# from migration-files.pharmacy-ops-v2.txt. Apply that manifest first.
+# Order is a dependency order. Re-running the list is safe.
+# 432 seeds only pharmacy.knowledge.approve. Platform publish/review/verify-source stay unseeded on purpose.
+# 436 adds pharmacy.consultation.pharmacist without granting it; owners assign it to pharmacist roles.
+416_pharmacy_knowledge_tenant_governance.sql
+417_pharmacy_knowledge_publication_event.sql
+423_pharmacy_knowledge_source_verification.sql
+424_pharmacy_owned_knowledge.sql
+425_pharmacy_owned_knowledge_event_snapshot.sql
+426_pharmacy_owned_knowledge_event_fidelity.sql
+427_pharmacy_owned_knowledge_governance.sql
+428_pharmacy_owned_knowledge_one_open.sql
+429_pharmacy_customer_and_local_regimen.sql
+432_pharmacy_knowledge_permissions.sql
+433_pharmacy_owned_knowledge_review_due.sql
+436_pharmacy_consultation_pharmacist_permission.sql

@@ -544,6 +544,7 @@
     "kpiQty": "Net qty",
     "kpiRefund": "Refunds",
     "exportCsv": "Export",
+    "exportCountSheet": "Export count sheet",
     "print": "Print",
     "loadFailed": "Could not load report",
     "loadFailedHint": "Could not reach the reports server. Try again later or contact support.",
@@ -553,7 +554,12 @@
     "paginationTotal": "{{count}} rows",
     "noResult": "No results yet — click Run report",
     "openSheetFailed": "Could not open the shift close sheet",
-    "clickShiftHint": "Click a row to reopen the close sheet (cash / transfer)."
+    "clickShiftHint": "Click a row to reopen the close sheet (cash / transfer).",
+    "clickMovementHint": "Click an In or Out quantity to see the movements that make up that number.",
+    "movementDetailIn": "Inbound detail",
+    "movementDetailOut": "Outbound detail",
+    "closeDetail": "Close detail",
+    "movementDetailMismatch": "The detail total does not match the summary figure. Reload the report and open it again."
   },
   "shiftClose": {
     "title": "Shift close by cashier",

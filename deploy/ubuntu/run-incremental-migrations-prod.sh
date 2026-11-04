@@ -88,7 +88,7 @@ record_applied() {
 }
 
 echo "=== KitPlatform INCREMENTAL migrations ==="
-echo "Database: $CONN"
+echo "Database: (uri provided)"
 echo "Manifest: $MANIFEST"
 
 if [[ "$(ledger_ready)" != "t" ]]; then

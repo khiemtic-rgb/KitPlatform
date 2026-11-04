@@ -5,8 +5,8 @@ import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store'
  * People / Cockpit / App KH / pack thương mại / gộp SP.
  * Opt-in via settings.platform.features.audit_slim_nav === true (chỉ DEMO).
  *
- * Note: Learning sidebar intentionally has no platformModule (legacy), so
- * audit_slim_nav must hide it explicitly — removing `learning` from enabled_modules alone is not enough.
+ * Learning sidebar also hides when `learning` is not in enabled_modules; audit_slim_nav
+ * still hides it explicitly so DEMO stays slim even if the module is enabled.
  */
 export function isAuditSlimNav(): boolean {
   const { loaded, isFeatureEnabled } = useTenantPlatformStore.getState();
