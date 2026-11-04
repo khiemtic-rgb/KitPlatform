@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Reports;
@@ -8,6 +7,7 @@ using KitPlatform.Infrastructure.Reports;
 using KitPlatform.Infrastructure.Success;
 using KitPlatform.Packs.Pharmacy.Infrastructure;
 using KitPlatform.Packs.Pharmacy.Sales;
+using KitPlatform.Tests;
 using Xunit;
 
 namespace KitPlatform.Application.Tests;
@@ -836,24 +836,10 @@ public sealed class NovixaFixImplement01DatabaseTests
 
     private static string ConnectionString()
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null)
-        {
-            var path = Path.Combine(dir.FullName, "src", "KitPlatform.Api", "appsettings.Development.json");
-            if (File.Exists(path))
-            {
-                using var doc = JsonDocument.Parse(File.ReadAllText(path));
-                var cs = doc.RootElement.GetProperty("ConnectionStrings").GetProperty("Default").GetString()
-                    ?? throw new InvalidOperationException("Missing development connection string.");
-                return cs.Contains("Timezone=", StringComparison.OrdinalIgnoreCase)
-                    ? cs
-                    : cs.TrimEnd(';') + ";Timezone=Asia/Ho_Chi_Minh";
-            }
-
-            dir = dir.Parent;
-        }
-
-        throw new InvalidOperationException("appsettings.Development.json was not found.");
+        var cs = IsolatedDatabase.RequireConnection();
+        return cs.Contains("Timezone=", StringComparison.OrdinalIgnoreCase)
+            ? cs
+            : cs.TrimEnd(';') + ";Timezone=Asia/Ho_Chi_Minh";
     }
 
     private static bool In(DateTime instant, DateTime start, DateTime end) =>
