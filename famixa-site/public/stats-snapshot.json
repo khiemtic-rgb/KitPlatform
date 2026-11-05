@@ -1,71 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-05T07:06:34.976Z",
+  "generatedAt": "2026-11-05T20:09:44.857Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 69,
-    "todayPageViews": 57,
-    "todayRequests": 168,
-    "last24hVisitors": 184,
-    "last24hPageViews": 139,
-    "last24hRequests": 970
+    "todayVisitors": 9,
+    "todayPageViews": 7,
+    "todayRequests": 16,
+    "last24hVisitors": 170,
+    "last24hPageViews": 130,
+    "last24hRequests": 403
   },
   "hourly": [
-    {
-      "time": "2026-11-04T08:00:00Z",
-      "visitors": 1,
-      "requests": 133
-    },
-    {
-      "time": "2026-11-04T10:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-04T12:00:00Z",
-      "visitors": 3,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-04T13:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-04T14:00:00Z",
-      "visitors": 8,
-      "requests": 66
-    },
-    {
-      "time": "2026-11-04T15:00:00Z",
-      "visitors": 4,
-      "requests": 11
-    },
-    {
-      "time": "2026-11-04T16:00:00Z",
-      "visitors": 5,
-      "requests": 84
-    },
-    {
-      "time": "2026-11-04T17:00:00Z",
-      "visitors": 10,
-      "requests": 96
-    },
-    {
-      "time": "2026-11-04T18:00:00Z",
-      "visitors": 28,
-      "requests": 322
-    },
-    {
-      "time": "2026-11-04T19:00:00Z",
-      "visitors": 9,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-04T20:00:00Z",
-      "visitors": 11,
-      "requests": 15
-    },
     {
       "time": "2026-11-04T21:00:00Z",
       "visitors": 11,
@@ -118,17 +63,66 @@
     },
     {
       "time": "2026-11-05T07:00:00Z",
+      "visitors": 12,
+      "requests": 26
+    },
+    {
+      "time": "2026-11-05T08:00:00Z",
+      "visitors": 13,
+      "requests": 21
+    },
+    {
+      "time": "2026-11-05T09:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-05T10:00:00Z",
+      "visitors": 3,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-05T11:00:00Z",
+      "visitors": 4,
+      "requests": 10
+    },
+    {
+      "time": "2026-11-05T12:00:00Z",
+      "visitors": 10,
+      "requests": 18
+    },
+    {
+      "time": "2026-11-05T13:00:00Z",
+      "visitors": 7,
+      "requests": 15
+    },
+    {
+      "time": "2026-11-05T14:00:00Z",
+      "visitors": 3,
+      "requests": 48
+    },
+    {
+      "time": "2026-11-05T15:00:00Z",
+      "visitors": 12,
+      "requests": 17
+    },
+    {
+      "time": "2026-11-05T16:00:00Z",
       "visitors": 1,
-      "requests": 1
+      "requests": 3
+    },
+    {
+      "time": "2026-11-05T18:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-05T19:00:00Z",
+      "visitors": 6,
+      "requests": 11
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-30",
-      "visitors": 108,
-      "pageViews": 89,
-      "requests": 658
-    },
     {
       "date": "2026-10-31",
       "visitors": 61,
@@ -161,71 +155,77 @@
     },
     {
       "date": "2026-11-05",
-      "visitors": 161,
-      "pageViews": 125,
-      "requests": 658
+      "visitors": 140,
+      "pageViews": 102,
+      "requests": 356
+    },
+    {
+      "date": "2026-11-06",
+      "visitors": 9,
+      "pageViews": 7,
+      "requests": 16
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 81
+      "views": 112
     },
     {
       "path": "/vi/",
-      "views": 57
-    },
-    {
-      "path": "/admin/wp-login.php",
-      "views": 26
-    },
-    {
-      "path": "/wp/wp-login.php",
-      "views": 26
-    },
-    {
-      "path": "/blog/wp-login.php",
-      "views": 24
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 23
+      "views": 60
     },
     {
       "path": "/robots.txt",
-      "views": 23
-    },
-    {
-      "path": "/wordpress/wp-login.php",
-      "views": 22
+      "views": 16
     },
     {
       "path": "/en/",
-      "views": 18
-    },
-    {
-      "path": "/site/wp-login.php",
-      "views": 15
-    },
-    {
-      "path": "/web/wp-login.php",
       "views": 14
     },
     {
-      "path": "/cms/wp-login.php",
-      "views": 13
+      "path": "/news/",
+      "views": 6
     },
     {
-      "path": "/store/wp-login.php",
-      "views": 13
+      "path": "/en/stories/",
+      "views": 6
     },
     {
       "path": "/wordpress/",
-      "views": 10
+      "views": 6
     },
     {
-      "path": "/sitemap.xml",
-      "views": 9
+      "path": "/cms/",
+      "views": 6
+    },
+    {
+      "path": "/site/",
+      "views": 6
+    },
+    {
+      "path": "/wp/",
+      "views": 6
+    },
+    {
+      "path": "/blog/",
+      "views": 6
+    },
+    {
+      "path": "/press/",
+      "views": 6
+    },
+    {
+      "path": "/vi/ve-famixa/",
+      "views": 5
+    },
+    {
+      "path": "/media/system/js/core.js",
+      "views": 4
+    },
+    {
+      "path": "/api/v1/settings/public",
+      "views": 4
     }
   ]
 }
