@@ -139,8 +139,8 @@ export function KitSalesLeadsPage() {
   const onDelete = async (lead: KitSalesLead) => {
     setDeletingId(lead.id);
     try {
-      await deleteKitSalesLead(lead.id);
-      message.success(t('leads.deleteSuccess'));
+      const outcome = await deleteKitSalesLead(lead.id);
+      message.success(t(outcome === 'archived' ? 'leads.archiveSuccess' : 'leads.deleteSuccess'));
       await load();
     } catch (error) {
       message.error(apiErrorMessage(error, t('leads.deleteFailed')));

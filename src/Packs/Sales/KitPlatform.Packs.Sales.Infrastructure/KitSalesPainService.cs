@@ -152,6 +152,7 @@ internal sealed class KitSalesPainService : IKitSalesPainService
     {
         var pain = NovixaPainCatalog.Get(painCode);
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await KitSalesLeadGuard.EnsureWorkableAsync(conn, null, TenantId, leadId, cancellationToken);
         await conn.ExecuteAsync(
             """
             INSERT INTO pack_sales.lead_pain (
@@ -182,6 +183,7 @@ internal sealed class KitSalesPainService : IKitSalesPainService
         var pain = NovixaPainCatalog.Get(painCode);
         var points = NovixaPainDiscovery.ResponsePoints(code);
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await KitSalesLeadGuard.EnsureWorkableAsync(conn, null, TenantId, leadId, cancellationToken);
         var current = await conn.QuerySingleOrDefaultAsync<LeadPainRow>(
             """
             SELECT pain_code AS PainCode, category AS Category, confidence AS Confidence,
