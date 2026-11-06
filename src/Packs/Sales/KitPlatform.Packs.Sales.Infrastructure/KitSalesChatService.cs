@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Infrastructure.Data;
@@ -8,29 +9,32 @@ namespace KitPlatform.Packs.Sales.Infrastructure;
 internal sealed class KitSalesChatService : IKitSalesChatService
 {
     private readonly IDbConnectionFactory _db;
-    private readonly ITenantContext _tenant;
     private readonly IKitSalesDeskService _desk;
     private readonly IKitSalesPainService _pains;
-    private readonly KitSalesFacebookMessengerClient _messenger;
+    private readonly IFacebookOutboundGate _gate;
     private readonly KitSalesGeminiVoice _voice;
     private readonly KitSalesFacebookSettingsService _facebook;
 
     public KitSalesChatService(
         IDbConnectionFactory db,
-        ITenantContext tenant,
         IKitSalesDeskService desk,
         IKitSalesPainService pains,
-        KitSalesFacebookMessengerClient messenger,
+        IFacebookOutboundGate gate,
         KitSalesGeminiVoice voice,
         KitSalesFacebookSettingsService facebook)
     {
         _db = db;
-        _tenant = tenant;
         _desk = desk;
         _pains = pains;
-        _messenger = messenger;
+        _gate = gate;
         _voice = voice;
         _facebook = facebook;
+    }
+
+    private async Task<bool> TokenPresentAsync(CancellationToken cancellationToken)
+    {
+        var options = await _facebook.GetEffectiveAsync(cancellationToken);
+        return options.Enabled && !string.IsNullOrWhiteSpace(options.PageAccessToken);
     }
 
     public async Task<KitSalesChatChannelDto> GetChannelAsync(CancellationToken cancellationToken = default)
@@ -38,7 +42,7 @@ internal sealed class KitSalesChatService : IKitSalesChatService
         var options = await _facebook.GetEffectiveAsync(cancellationToken);
         return new(
             options.Enabled,
-            await _messenger.IsSendReadyAsync(cancellationToken),
+            await TokenPresentAsync(cancellationToken),
             options.MeLink,
             options.PhcUrl,
             options.PageUrl);
@@ -55,7 +59,7 @@ internal sealed class KitSalesChatService : IKitSalesChatService
             match.Reply,
             match.Escalate,
             match.Citations,
-            await _messenger.IsSendReadyAsync(cancellationToken),
+            await TokenPresentAsync(cancellationToken),
             options.MeLink,
             options.PhcUrl);
     }
@@ -88,9 +92,10 @@ internal sealed class KitSalesChatService : IKitSalesChatService
                 "message",
                 preview.Reply,
                 preview.Escalate ? "escalate" : preview.Intent,
-                ReviewStatus: "sent",
+                ReviewStatus: "draft",
                 AiGenerated: true,
-                Classification: preview.Intent),
+                Classification: preview.Intent,
+                MarkSent: false),
             cancellationToken);
 
         if (preview.Escalate)
@@ -188,19 +193,7 @@ internal sealed class KitSalesChatService : IKitSalesChatService
             assist = await GetAssistAsync(leadId, cancellationToken);
         }
 
-        var autoReplied = false;
-        if (request.AutoReply && draftId is { } readyId && !string.IsNullOrWhiteSpace(preview.Reply))
-        {
-            var sent = await SendDraftAsync(
-                readyId,
-                new SendKitSalesDraftRequest(preview.Reply),
-                cancellationToken);
-            draftId = sent.Id;
-            status = sent.ReviewStatus;
-            autoReplied = true;
-            if (request.LeadId is { } repliedLead)
-                assist = await GetAssistAsync(repliedLead, cancellationToken);
-        }
+        const bool autoReplied = false;
 
         return new KitSalesChatComposeDto(
             preview.Intent,
@@ -219,76 +212,58 @@ internal sealed class KitSalesChatService : IKitSalesChatService
             autoReplied);
     }
 
-    public async Task<KitSalesInteractionDto> SendDraftAsync(
+    public Task<KitSalesInteractionDto> SendDraftAsync(
         Guid draftId,
         SendKitSalesDraftRequest request,
         CancellationToken cancellationToken = default)
     {
-        var sent = await _desk.ReviewInteractionAsync(
-            draftId,
-            new ReviewKitSalesInteractionRequest("sent", request.Content),
-            cancellationToken);
-
-        var psid = await FindPsidAsync(sent.LeadId, cancellationToken);
-        if (await _messenger.IsSendReadyAsync(cancellationToken)
-            && !string.IsNullOrWhiteSpace(psid)
-            && !string.IsNullOrWhiteSpace(sent.Content))
-        {
-            try
-            {
-                await _messenger.SendTextAsync(psid, sent.Content, cancellationToken);
-            }
-            catch (Exception)
-            {
-                // V1: staff still copied / will paste. Interaction stays sent (human approved).
-            }
-        }
-
-        return sent;
+        if (!string.IsNullOrWhiteSpace(request.Content))
+            throw new InvalidOperationException("Gửi dùng nội dung đã duyệt. Hãy duyệt lại nếu cần sửa.");
+        return _gate.SendApprovedAsync(draftId, cancellationToken);
     }
 
     public async Task HandleFacebookInboundAsync(
         string senderPsid,
         string text,
+        string? messageId,
+        long? sentAtUnixMs,
         CancellationToken cancellationToken = default)
     {
         var psid = senderPsid.Trim();
-        if (string.IsNullOrWhiteSpace(psid))
+        if (string.IsNullOrWhiteSpace(psid) || string.IsNullOrWhiteSpace(text))
             return;
 
         var tenantId = SalesPackDefinition.DedicatedTenantId;
         var preview = await PreviewAsync(text, cancellationToken);
-        preview = preview with
-        {
-            Reply = await _voice.RestyleInboundAsync(text, preview.Reply, preview.Escalate, cancellationToken),
-        };
         var leadId = await FindOrCreateLeadByPsidAsync(tenantId, psid, cancellationToken);
 
-        await InsertInteractionAsync(tenantId, leadId, "inbound", text, preview.Intent, cancellationToken);
-        var sendOutcome = preview.Escalate ? "escalate" : preview.Intent;
-        try
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        var status = await conn.ExecuteScalarAsync<string?>(
+            new CommandDefinition(
+                "SELECT lead_status FROM pack_sales.lead WHERE id = @LeadId AND tenant_id = @TenantId FOR NO KEY UPDATE",
+                new { LeadId = leadId, TenantId = tenantId },
+                tx,
+                cancellationToken: cancellationToken))
+            ?? throw new InvalidOperationException("Lead không tồn tại.");
+
+        var fresh = await KitSalesLeadEventWriter.WriteAsync(
+            conn, tx, tenantId, leadId, FacebookOutboundRules.InboundEvent, null, null,
+            JsonSerializer.Serialize(new { sentAtMs = sentAtUnixMs, intent = preview.Intent }),
+            null, null, FacebookOutboundRules.InboundKey(messageId, psid, sentAtUnixMs), cancellationToken);
+        if (fresh == 0)
         {
-            if (await _messenger.IsSendReadyAsync(cancellationToken))
-            {
-                await _messenger.SendTextAsync(psid, preview.Reply, cancellationToken);
-                sendOutcome += ",sent";
-            }
-            else
-            {
-                sendOutcome += ",queued_no_token";
-            }
-        }
-        catch (Exception)
-        {
-            sendOutcome += ",send_failed";
+            await tx.RollbackAsync(cancellationToken);
+            return;
         }
 
-        await InsertInteractionAsync(tenantId, leadId, "outbound", preview.Reply, sendOutcome, cancellationToken);
-
-        if (preview.Escalate)
-        {
-            await InsertOpenTaskAsync(tenantId, leadId, cancellationToken);
-        }
+        await InsertInboundAsync(conn, tx, tenantId, leadId, text, preview.Intent, cancellationToken);
+        var (draft, task) = FacebookInboundRules.Plan(status, preview.Escalate);
+        if (draft)
+            await InsertDraftAsync(conn, tx, tenantId, leadId, preview, cancellationToken);
+        if (task)
+            await InsertOpenTaskAsync(conn, tx, tenantId, leadId, cancellationToken);
+        await tx.CommitAsync(cancellationToken);
     }
 
     private async Task<Guid> FindOrCreateLeadByPsidAsync(
@@ -389,56 +364,99 @@ internal sealed class KitSalesChatService : IKitSalesChatService
             DateTimeOffset.UtcNow);
     }
 
-    private async Task InsertInteractionAsync(
+    private static async Task InsertInboundAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
         Guid tenantId,
         Guid leadId,
-        string direction,
         string content,
         string? outcome,
         CancellationToken cancellationToken)
     {
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await conn.ExecuteAsync(
-            """
-            INSERT INTO pack_sales.interaction (
-                tenant_id, lead_id, channel, direction, interaction_type, content, outcome,
-                review_status, ai_generated, sent_at, classification
-            )
-            VALUES (
-                @TenantId, @LeadId, 'facebook', @Direction, 'message', @Content, @Outcome,
-                'sent', @AiGenerated, NOW(), @Classification
-            )
-            """,
-            new
-            {
-                TenantId = tenantId,
-                LeadId = leadId,
-                Direction = direction,
-                Content = content,
-                Outcome = outcome,
-                AiGenerated = direction == "outbound",
-                Classification = ClipClassification(outcome),
-            });
+            new CommandDefinition(
+                """
+                INSERT INTO pack_sales.interaction (
+                    tenant_id, lead_id, channel, direction, interaction_type, content, outcome,
+                    review_status, ai_generated, sent_at, classification
+                )
+                VALUES (
+                    @TenantId, @LeadId, 'facebook', 'inbound', 'message', @Content, @Outcome,
+                    'sent', FALSE, NOW(), @Classification
+                )
+                """,
+                new
+                {
+                    TenantId = tenantId,
+                    LeadId = leadId,
+                    Content = content,
+                    Outcome = outcome,
+                    Classification = ClipClassification(outcome),
+                },
+                tx,
+                cancellationToken: cancellationToken));
 
         await conn.ExecuteAsync(
-            """
-            UPDATE pack_sales.lead
-            SET last_interaction_at = NOW(), updated_at = NOW()
-            WHERE id = @LeadId AND tenant_id = @TenantId
-            """,
-            new { LeadId = leadId, TenantId = tenantId });
+            new CommandDefinition(
+                """
+                UPDATE pack_sales.lead
+                SET last_interaction_at = NOW(), updated_at = NOW()
+                WHERE id = @LeadId AND tenant_id = @TenantId
+                """,
+                new { LeadId = leadId, TenantId = tenantId },
+                tx,
+                cancellationToken: cancellationToken));
     }
 
-    private async Task InsertOpenTaskAsync(Guid tenantId, Guid leadId, CancellationToken cancellationToken)
+    private static async Task InsertDraftAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid tenantId,
+        Guid leadId,
+        KitSalesChatPreviewDto preview,
+        CancellationToken cancellationToken)
     {
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        if (FacebookOutboundRules.DenyCreate("facebook", "outbound", "draft") is not null)
+            throw new InvalidOperationException("Outbound Facebook chỉ được tạo ở trạng thái draft.");
         await conn.ExecuteAsync(
-            """
-            INSERT INTO pack_sales.task (tenant_id, lead_id, action_code, title)
-            VALUES (@TenantId, @LeadId, 'follow_up', 'Trả lời Facebook — ngoài SoT')
-            """,
-            new { TenantId = tenantId, LeadId = leadId });
+            new CommandDefinition(
+                """
+                INSERT INTO pack_sales.interaction (
+                    tenant_id, lead_id, channel, direction, interaction_type, content, outcome,
+                    review_status, ai_generated, sent_at, classification
+                )
+                VALUES (
+                    @TenantId, @LeadId, 'facebook', 'outbound', 'message', @Content, @Outcome,
+                    'draft', TRUE, NULL, @Classification
+                )
+                """,
+                new
+                {
+                    TenantId = tenantId,
+                    LeadId = leadId,
+                    Content = preview.Reply,
+                    Outcome = preview.Escalate ? "escalate" : preview.Intent is { Length: > 64 } i ? i[..64] : preview.Intent,
+                    Classification = ClipClassification(preview.Intent),
+                },
+                tx,
+                cancellationToken: cancellationToken));
     }
+
+    private static Task InsertOpenTaskAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid tenantId,
+        Guid leadId,
+        CancellationToken cancellationToken) =>
+        conn.ExecuteAsync(
+            new CommandDefinition(
+                """
+                INSERT INTO pack_sales.task (tenant_id, lead_id, action_code, title)
+                VALUES (@TenantId, @LeadId, 'follow_up', 'Trả lời Facebook — ngoài SoT')
+                """,
+                new { TenantId = tenantId, LeadId = leadId },
+                tx,
+                cancellationToken: cancellationToken));
 
     public IReadOnlyList<KitSalesJourneyPainDto> ListPains() => NovixaSalesJourney.Pains;
 
@@ -515,38 +533,9 @@ internal sealed class KitSalesChatService : IKitSalesChatService
                 "message",
                 draft,
                 outcome,
-                ReviewStatus: "sent",
-                AiGenerated: true),
-            cancellationToken);
-
-        var psid = await FindPsidAsync(leadId, cancellationToken);
-        if (await _messenger.IsSendReadyAsync(cancellationToken) && !string.IsNullOrWhiteSpace(psid))
-        {
-            try
-            {
-                await _messenger.SendTextAsync(psid, draft, cancellationToken);
-                outcome += ",sent";
-            }
-            catch (Exception)
-            {
-                outcome += ",send_failed";
-            }
-        }
-        else
-        {
-            outcome += ",copied";
-        }
-
-        if (step == "hook")
-            await _pains.RecordApproachAsync(leadId, pain, cancellationToken);
-
-        var next = NovixaSalesJourney.NextStep(step);
-        var when = NovixaSalesJourney.NextQuietWindow(DateTimeOffset.UtcNow);
-        await _desk.UpdateLeadAsync(
-            leadId,
-            new UpdateKitSalesLeadRequest(
-                NextActionCode: NovixaSalesJourney.Encode(next, pain),
-                NextActionAt: when),
+                ReviewStatus: "draft",
+                AiGenerated: true,
+                MarkSent: false),
             cancellationToken);
 
         return await GetJourneyAsync(leadId, pain, cancellationToken);
@@ -577,71 +566,9 @@ internal sealed class KitSalesChatService : IKitSalesChatService
         };
     }
 
-    public async Task<int> ProcessDueJourneysAsync(CancellationToken cancellationToken = default)
+    public Task<int> ProcessDueJourneysAsync(CancellationToken cancellationToken = default)
     {
-        if (!await _messenger.IsSendReadyAsync(cancellationToken))
-            return 0;
-
-        var tenantId = SalesPackDefinition.DedicatedTenantId;
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var rows = (await conn.QueryAsync<DueJourneyRow>(
-            """
-            SELECT id AS Id, next_action_code AS Code
-            FROM pack_sales.lead
-            WHERE tenant_id = @TenantId
-              AND next_action_at IS NOT NULL
-              AND next_action_at <= NOW()
-              AND next_action_code LIKE '%:%'
-            ORDER BY next_action_at
-            LIMIT 20
-            """,
-            new { TenantId = tenantId })).ToList();
-
-        var sent = 0;
-        foreach (var row in rows)
-        {
-            if (!NovixaSalesJourney.IsJourneyCode(row.Code))
-                continue;
-            var parsed = NovixaSalesJourney.Parse(row.Code);
-            var psid = await FindPsidOnTenantAsync(tenantId, row.Id, cancellationToken);
-            if (string.IsNullOrWhiteSpace(psid))
-                continue;
-
-            var options = await _facebook.GetEffectiveAsync(cancellationToken);
-            var draft = NovixaSalesJourney.Draft(parsed.Step, parsed.Pain, options.PhcUrl);
-            try
-            {
-                await _messenger.SendTextAsync(psid, draft, cancellationToken);
-            }
-            catch (Exception)
-            {
-                continue;
-            }
-
-            await InsertInteractionAsync(
-                tenantId, row.Id, "outbound", draft, $"journey:{parsed.Step},sent", cancellationToken);
-            var next = NovixaSalesJourney.NextStep(parsed.Step);
-            var when = NovixaSalesJourney.NextQuietWindow(DateTimeOffset.UtcNow);
-            await conn.ExecuteAsync(
-                """
-                UPDATE pack_sales.lead
-                SET next_action_code = @Code,
-                    next_action_at = @When,
-                    last_interaction_at = NOW(),
-                    updated_at = NOW()
-                WHERE id = @LeadId AND tenant_id = @TenantId
-                """,
-                new
-                {
-                    LeadId = row.Id,
-                    TenantId = tenantId,
-                    Code = NovixaSalesJourney.Encode(next, parsed.Pain),
-                    When = when.UtcDateTime,
-                });
-            sent++;
-        }
-
-        return sent;
+        return Task.FromResult(0);
     }
 
     private async Task<KitSalesJourneyPlanDto> BuildPlanAsync(
@@ -694,7 +621,7 @@ internal sealed class KitSalesChatService : IKitSalesChatService
             NovixaSalesJourney.WindowLabel(suggested),
             NovixaSalesJourney.WhyNow,
             due,
-            await _messenger.IsSendReadyAsync(cancellationToken),
+            await TokenPresentAsync(cancellationToken),
             def.Category,
             def.Hook,
             def.Outreach,
@@ -706,56 +633,11 @@ internal sealed class KitSalesChatService : IKitSalesChatService
             lead.FacebookUrl);
     }
 
-    private async Task<string?> FindPsidAsync(Guid leadId, CancellationToken cancellationToken)
-    {
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await conn.ExecuteScalarAsync<string?>(
-            """
-            SELECT i.username
-            FROM pack_sales.lead l
-            INNER JOIN pack_sales.business_identity i
-                ON i.business_id = l.business_id AND i.tenant_id = l.tenant_id
-            WHERE l.id = @LeadId
-              AND l.tenant_id = @TenantId
-              AND i.identity_type = 'facebook'
-              AND i.platform = 'messenger'
-            LIMIT 1
-            """,
-            new { LeadId = leadId, TenantId = _tenant.TenantId == Guid.Empty ? SalesPackDefinition.DedicatedTenantId : _tenant.TenantId });
-    }
-
-    private async Task<string?> FindPsidOnTenantAsync(
-        Guid tenantId,
-        Guid leadId,
-        CancellationToken cancellationToken)
-    {
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        return await conn.ExecuteScalarAsync<string?>(
-            """
-            SELECT i.username
-            FROM pack_sales.lead l
-            INNER JOIN pack_sales.business_identity i
-                ON i.business_id = l.business_id AND i.tenant_id = l.tenant_id
-            WHERE l.id = @LeadId
-              AND l.tenant_id = @TenantId
-              AND i.identity_type = 'facebook'
-              AND i.platform = 'messenger'
-            LIMIT 1
-            """,
-            new { LeadId = leadId, TenantId = tenantId });
-    }
-
     private static string? ClipClassification(string? outcome)
     {
         if (string.IsNullOrWhiteSpace(outcome))
             return null;
         var code = outcome.Split(',', 2)[0].Trim();
         return code.Length <= 64 ? code : code[..64];
-    }
-
-    private sealed class DueJourneyRow
-    {
-        public Guid Id { get; init; }
-        public string? Code { get; init; }
     }
 }
