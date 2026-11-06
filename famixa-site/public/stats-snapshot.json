@@ -1,71 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-06T07:06:08.185Z",
+  "generatedAt": "2026-11-06T19:35:41.450Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 28,
-    "todayPageViews": 21,
-    "todayRequests": 119,
-    "last24hVisitors": 107,
-    "last24hPageViews": 66,
-    "last24hRequests": 309
+    "todayVisitors": 18,
+    "todayPageViews": 7,
+    "todayRequests": 71,
+    "last24hVisitors": 105,
+    "last24hPageViews": 67,
+    "last24hRequests": 356
   },
   "hourly": [
-    {
-      "time": "2026-11-05T08:00:00Z",
-      "visitors": 13,
-      "requests": 21
-    },
-    {
-      "time": "2026-11-05T09:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-05T10:00:00Z",
-      "visitors": 3,
-      "requests": 9
-    },
-    {
-      "time": "2026-11-05T11:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-05T12:00:00Z",
-      "visitors": 10,
-      "requests": 18
-    },
-    {
-      "time": "2026-11-05T13:00:00Z",
-      "visitors": 7,
-      "requests": 15
-    },
-    {
-      "time": "2026-11-05T14:00:00Z",
-      "visitors": 3,
-      "requests": 48
-    },
-    {
-      "time": "2026-11-05T15:00:00Z",
-      "visitors": 12,
-      "requests": 17
-    },
-    {
-      "time": "2026-11-05T16:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-05T18:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-11-05T19:00:00Z",
-      "visitors": 6,
-      "requests": 11
-    },
     {
       "time": "2026-11-05T20:00:00Z",
       "visitors": 2,
@@ -120,15 +65,69 @@
       "time": "2026-11-06T06:00:00Z",
       "visitors": 2,
       "requests": 4
+    },
+    {
+      "time": "2026-11-06T07:00:00Z",
+      "visitors": 11,
+      "requests": 26
+    },
+    {
+      "time": "2026-11-06T08:00:00Z",
+      "visitors": 10,
+      "requests": 14
+    },
+    {
+      "time": "2026-11-06T09:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-06T10:00:00Z",
+      "visitors": 12,
+      "requests": 30
+    },
+    {
+      "time": "2026-11-06T11:00:00Z",
+      "visitors": 1,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-06T12:00:00Z",
+      "visitors": 1,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-06T13:00:00Z",
+      "visitors": 8,
+      "requests": 19
+    },
+    {
+      "time": "2026-11-06T15:00:00Z",
+      "visitors": 7,
+      "requests": 19
+    },
+    {
+      "time": "2026-11-06T16:00:00Z",
+      "visitors": 12,
+      "requests": 20
+    },
+    {
+      "time": "2026-11-06T17:00:00Z",
+      "visitors": 9,
+      "requests": 58
+    },
+    {
+      "time": "2026-11-06T18:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-06T19:00:00Z",
+      "visitors": 5,
+      "requests": 6
     }
   ],
   "daily": [
-    {
-      "date": "2026-10-31",
-      "visitors": 61,
-      "pageViews": 32,
-      "requests": 742
-    },
     {
       "date": "2026-11-01",
       "visitors": 142,
@@ -161,31 +160,41 @@
     },
     {
       "date": "2026-11-06",
-      "visitors": 55,
-      "pageViews": 36,
-      "requests": 162
+      "visitors": 89,
+      "pageViews": 59,
+      "requests": 329
+    },
+    {
+      "date": "2026-11-07",
+      "visitors": 18,
+      "pageViews": 7,
+      "requests": 71
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 113
+      "views": 106
     },
     {
       "path": "/vi/",
-      "views": 52
+      "views": 55
     },
     {
       "path": "/robots.txt",
-      "views": 14
+      "views": 19
     },
     {
-      "path": "/wp-login.php",
+      "path": "/favicon.ico",
+      "views": 11
+    },
+    {
+      "path": "/favicon-32.png",
+      "views": 7
+    },
+    {
+      "path": "/apple-touch-icon.png",
       "views": 5
-    },
-    {
-      "path": "/api/v1/settings/public",
-      "views": 4
     },
     {
       "path": "/wp-includes/css/buttons.css",
@@ -196,35 +205,31 @@
       "views": 4
     },
     {
-      "path": "/favicon-32.png",
+      "path": "/wp-login.php",
+      "views": 4
+    },
+    {
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
       "views": 3
     },
     {
-      "path": "/favicon.ico",
-      "views": 3
-    },
-    {
-      "path": "//images/images/images/images/images/images/images/cache.php",
+      "path": "/vi/robots.txt",
       "views": 2
     },
     {
-      "path": "/vi/goi-cha-me/khen-con-the-nao-de-con-tu-tin-nghe-thuat-khen-ngoi-dung-cach-phu-huynh-nen-biet/",
+      "path": "/_next/static/chunks/main.js",
       "views": 2
     },
     {
-      "path": "//cgi-bin/cgi-bin/cgi-bin/cgi-bin/cache.php",
+      "path": "/config/local.json",
       "views": 2
     },
     {
-      "path": "//images/images/images/images/images/images/images/images/cache.php",
+      "path": "/bundle.js",
       "views": 2
     },
     {
-      "path": "/vi/goi-cha-me/phat-con-the-nao-de-con-khong-ton-thuong-ky-luat-tich-cuc-trong-gia-dinh-modern/",
-      "views": 2
-    },
-    {
-      "path": "/inc/config.php",
+      "path": "/images/blog/nuoi-day-con-trong-thoi-dai-ai.png",
       "views": 2
     }
   ]
