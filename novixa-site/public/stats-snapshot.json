@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-07T06:02:33.128Z",
+  "generatedAt": "2026-11-07T13:07:25.797Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 46,
-    "todayPageViews": 37,
-    "todayRequests": 99,
-    "last24hVisitors": 105,
-    "last24hPageViews": 280,
-    "last24hRequests": 607
+    "todayVisitors": 94,
+    "todayPageViews": 67,
+    "todayRequests": 165,
+    "last24hVisitors": 117,
+    "last24hPageViews": 81,
+    "last24hRequests": 207
   },
   "hourly": [
-    {
-      "time": "2026-11-06T07:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-06T08:00:00Z",
-      "visitors": 13,
-      "requests": 13
-    },
-    {
-      "time": "2026-11-06T09:00:00Z",
-      "visitors": 15,
-      "requests": 22
-    },
-    {
-      "time": "2026-11-06T10:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-06T11:00:00Z",
-      "visitors": 4,
-      "requests": 409
-    },
-    {
-      "time": "2026-11-06T12:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-06T13:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
     {
       "time": "2026-11-06T14:00:00Z",
       "visitors": 6,
@@ -115,6 +80,46 @@
       "time": "2026-11-07T05:00:00Z",
       "visitors": 9,
       "requests": 19
+    },
+    {
+      "time": "2026-11-07T06:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-07T07:00:00Z",
+      "visitors": 20,
+      "requests": 27
+    },
+    {
+      "time": "2026-11-07T08:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-07T09:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-07T10:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-07T11:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-07T12:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-07T13:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -156,34 +161,22 @@
     },
     {
       "date": "2026-11-07",
-      "visitors": 46,
-      "pageViews": 37,
-      "requests": 99
+      "visitors": 94,
+      "pageViews": 67,
+      "requests": 165
     }
   ],
   "topPages": [
     {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 187
-    },
-    {
       "path": "/robots.txt",
-      "views": 32
+      "views": 30
     },
     {
       "path": "/",
-      "views": 27
-    },
-    {
-      "path": "/vi/nguoi-dan/",
-      "views": 13
+      "views": 26
     },
     {
       "path": "/vi/",
-      "views": 10
-    },
-    {
-      "path": "/.env",
       "views": 6
     },
     {
@@ -191,35 +184,47 @@
       "views": 4
     },
     {
-      "path": "/vi/tin-tuc/nhieu-chu-nha-thuoc-khong-thieu-khach-chi-thieu-thoi-gian/",
-      "views": 3
+      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "views": 4
     },
     {
       "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 4
+    },
+    {
+      "path": "/images/tin-tuc/cach-giam-thoi-gian-phuc-vu-khach.png",
       "views": 3
     },
     {
-      "path": "/vi/tin-tuc/mot-he-thong-tot-phai-giup-chu-bot-phai-hoi/",
-      "views": 3
-    },
-    {
-      "path": "/vi/lien-he/",
-      "views": 3
-    },
-    {
-      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "path": "/images/tin-tuc/muon-mo-co-so-thu-hai-nhung-lo-khong-kiem-soat-duoc.jpg",
       "views": 3
     },
     {
       "path": "/vi/tin-tuc/nha-thuoc-co-the-luu-du-lieu-nhung-da-thuc-su-su-dung-du-lieu-chua/",
-      "views": 3
+      "views": 2
     },
     {
-      "path": "/vi/tin-tuc/mot-nha-thuoc-con-quan-ly-bang-kinh-nghiem-hai-co-so-thi-sao/",
-      "views": 3
+      "path": "/filefuns.php",
+      "views": 2
     },
     {
-      "path": "/vi/tai-lieu/van-ban-phap-luat/thong-tu-02-2018-gpp/",
+      "path": "/images/tin-tuc/mot-nha-thuoc-con-quan-ly-bang-kinh-nghiem-hai-co-so-thi-sao.jpg",
+      "views": 2
+    },
+    {
+      "path": "/images/tin-tuc/novixa-hoan-thanh-kiem-thu-ket-noi-api.png",
+      "views": 2
+    },
+    {
+      "path": "/images/tin-tuc/nha-thuoc-co-dang-ra-quyet-dinh-bang-du-lieu-hay-bang-cam-giac.jpg",
+      "views": 2
+    },
+    {
+      "path": "/vi/kien-thuc/",
+      "views": 2
+    },
+    {
+      "path": "/wp-includes/style.php",
       "views": 2
     }
   ]
