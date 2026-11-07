@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-07T06:18:20.542Z",
+  "generatedAt": "2026-11-07T13:22:29.658Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 33,
-    "todayPageViews": 26,
-    "todayRequests": 88,
-    "last24hVisitors": 130,
-    "last24hPageViews": 84,
-    "last24hRequests": 377
+    "todayVisitors": 121,
+    "todayPageViews": 52,
+    "todayRequests": 217,
+    "last24hVisitors": 247,
+    "last24hPageViews": 96,
+    "last24hRequests": 520
   },
   "hourly": [
-    {
-      "time": "2026-11-06T07:00:00Z",
-      "visitors": 11,
-      "requests": 26
-    },
-    {
-      "time": "2026-11-06T08:00:00Z",
-      "visitors": 10,
-      "requests": 14
-    },
-    {
-      "time": "2026-11-06T09:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-11-06T10:00:00Z",
-      "visitors": 12,
-      "requests": 30
-    },
-    {
-      "time": "2026-11-06T11:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-06T12:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-06T13:00:00Z",
-      "visitors": 8,
-      "requests": 19
-    },
     {
       "time": "2026-11-06T15:00:00Z",
       "visitors": 7,
@@ -123,8 +88,33 @@
     },
     {
       "time": "2026-11-07T06:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 6,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-07T08:00:00Z",
+      "visitors": 4,
+      "requests": 12
+    },
+    {
+      "time": "2026-11-07T09:00:00Z",
+      "visitors": 1,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-07T10:00:00Z",
+      "visitors": 11,
+      "requests": 18
+    },
+    {
+      "time": "2026-11-07T12:00:00Z",
+      "visitors": 23,
+      "requests": 29
+    },
+    {
+      "time": "2026-11-07T13:00:00Z",
+      "visitors": 112,
+      "requests": 174
     }
   ],
   "daily": [
@@ -166,71 +156,71 @@
     },
     {
       "date": "2026-11-07",
-      "visitors": 100,
-      "pageViews": 53,
-      "requests": 238
+      "visitors": 255,
+      "pageViews": 86,
+      "requests": 481
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 117
+      "views": 127
     },
     {
       "path": "/vi/",
-      "views": 65
+      "views": 79
     },
     {
       "path": "/robots.txt",
-      "views": 31
+      "views": 29
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 12
     },
     {
       "path": "/favicon.ico",
-      "views": 17
+      "views": 12
     },
     {
       "path": "/favicon-32.png",
       "views": 10
     },
     {
-      "path": "/apple-touch-icon.png",
-      "views": 7
+      "path": "/images/banner-right.png",
+      "views": 10
     },
     {
-      "path": "/media/system/js/core.js",
-      "views": 4
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 6
     },
     {
-      "path": "/images/blog/loi-tu-doi-om-het-viec-nha-va-bai-hoc-chia-se-lich-chung.png",
-      "views": 4
+      "path": "/images/moment-family.png",
+      "views": 6
+    },
+    {
+      "path": "/images/moment-chores.png",
+      "views": 6
+    },
+    {
+      "path": "/images/ch4-stages-art.png",
+      "views": 6
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 3
+      "views": 6
     },
     {
-      "path": "/wp-login.php",
-      "views": 3
+      "path": "/images/moment-sleep.png",
+      "views": 6
     },
     {
-      "path": "/vi",
-      "views": 3
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 6
     },
     {
-      "path": "/_profiler/open",
-      "views": 3
-    },
-    {
-      "path": "/images/blog/nuoi-day-con-trong-thoi-dai-ai.png",
-      "views": 2
-    },
-    {
-      "path": "/bundle.js",
-      "views": 2
-    },
-    {
-      "path": "/.env",
-      "views": 2
+      "path": "/apple-touch-icon.png",
+      "views": 6
     }
   ]
 }
