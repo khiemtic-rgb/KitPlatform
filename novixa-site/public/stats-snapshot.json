@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-07T21:53:49.840Z",
+  "generatedAt": "2026-11-08T06:06:19.595Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 187,
-    "last24hPageViews": 375,
-    "last24hRequests": 1003
+    "todayVisitors": 44,
+    "todayPageViews": 28,
+    "todayRequests": 173,
+    "last24hVisitors": 198,
+    "last24hPageViews": 369,
+    "last24hRequests": 1079
   },
   "hourly": [
-    {
-      "time": "2026-11-06T22:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-06T23:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
-    {
-      "time": "2026-11-07T00:00:00Z",
-      "visitors": 8,
-      "requests": 9
-    },
-    {
-      "time": "2026-11-07T01:00:00Z",
-      "visitors": 7,
-      "requests": 19
-    },
-    {
-      "time": "2026-11-07T02:00:00Z",
-      "visitors": 13,
-      "requests": 20
-    },
-    {
-      "time": "2026-11-07T03:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
-    {
-      "time": "2026-11-07T04:00:00Z",
-      "visitors": 13,
-      "requests": 21
-    },
-    {
-      "time": "2026-11-07T05:00:00Z",
-      "visitors": 9,
-      "requests": 19
-    },
-    {
-      "time": "2026-11-07T06:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
     {
       "time": "2026-11-07T07:00:00Z",
       "visitors": 20,
@@ -123,8 +78,48 @@
     },
     {
       "time": "2026-11-07T21:00:00Z",
+      "visitors": 7,
+      "requests": 27
+    },
+    {
+      "time": "2026-11-07T22:00:00Z",
+      "visitors": 4,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-07T23:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-08T00:00:00Z",
+      "visitors": 11,
+      "requests": 11
+    },
+    {
+      "time": "2026-11-08T01:00:00Z",
+      "visitors": 10,
+      "requests": 132
+    },
+    {
+      "time": "2026-11-08T02:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-08T03:00:00Z",
+      "visitors": 4,
+      "requests": 10
+    },
+    {
+      "time": "2026-11-08T04:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-11-08T05:00:00Z",
       "visitors": 6,
-      "requests": 26
+      "requests": 7
     }
   ],
   "daily": [
@@ -160,9 +155,15 @@
     },
     {
       "date": "2026-11-07",
-      "visitors": 186,
-      "pageViews": 374,
-      "requests": 997
+      "visitors": 195,
+      "pageViews": 379,
+      "requests": 1010
+    },
+    {
+      "date": "2026-11-08",
+      "visitors": 44,
+      "pageViews": 28,
+      "requests": 173
     }
   ],
   "topPages": [
@@ -172,18 +173,18 @@
     },
     {
       "path": "/",
-      "views": 119
+      "views": 129
     },
     {
       "path": "/vi/",
-      "views": 42
+      "views": 41
     },
     {
       "path": "/robots.txt",
-      "views": 40
+      "views": 29
     },
     {
-      "path": "/vi/nguoi-dan/",
+      "path": "/vi/lien-he/",
       "views": 12
     },
     {
@@ -191,40 +192,40 @@
       "views": 12
     },
     {
-      "path": "/vi/lien-he/",
-      "views": 12
+      "path": "/vi/nguoi-dan/",
+      "views": 11
     },
     {
       "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 9
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
       "views": 8
     },
     {
-      "path": "/images/logo.png",
+      "path": "/wp-content/debug.log",
       "views": 7
     },
     {
-      "path": "/_astro/_slug_.OmCW7wJf.css",
-      "views": 7
-    },
-    {
-      "path": "/vi/kien-thuc/",
+      "path": "/.env.bak",
       "views": 6
     },
     {
       "path": "/.env.old",
-      "views": 5
+      "views": 6
     },
     {
-      "path": "/vi/health-check/",
-      "views": 5
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 6
     },
     {
-      "path": "/vi/nha-thuoc/",
-      "views": 5
+      "path": "/backend/.env",
+      "views": 6
+    },
+    {
+      "path": "/.git/config",
+      "views": 6
+    },
+    {
+      "path": "/vi/kien-thuc/",
+      "views": 6
     }
   ]
 }
