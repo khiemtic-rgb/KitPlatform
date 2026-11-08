@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-08T13:29:17.649Z",
+  "generatedAt": "2026-11-08T22:09:31.625Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 86,
-    "todayPageViews": 68,
-    "todayRequests": 272,
-    "last24hVisitors": 175,
-    "last24hPageViews": 158,
-    "last24hRequests": 670
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 130,
+    "last24hPageViews": 90,
+    "last24hRequests": 347
   },
   "hourly": [
-    {
-      "time": "2026-11-07T14:00:00Z",
-      "visitors": 17,
-      "requests": 95
-    },
-    {
-      "time": "2026-11-07T15:00:00Z",
-      "visitors": 15,
-      "requests": 53
-    },
-    {
-      "time": "2026-11-07T16:00:00Z",
-      "visitors": 22,
-      "requests": 148
-    },
-    {
-      "time": "2026-11-07T17:00:00Z",
-      "visitors": 8,
-      "requests": 41
-    },
-    {
-      "time": "2026-11-07T18:00:00Z",
-      "visitors": 7,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-07T20:00:00Z",
-      "visitors": 12,
-      "requests": 12
-    },
-    {
-      "time": "2026-11-07T21:00:00Z",
-      "visitors": 7,
-      "requests": 27
-    },
-    {
-      "time": "2026-11-07T22:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
     {
       "time": "2026-11-07T23:00:00Z",
       "visitors": 5,
@@ -123,17 +83,51 @@
     },
     {
       "time": "2026-11-08T13:00:00Z",
-      "visitors": 2,
-      "requests": 2
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-08T14:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-08T15:00:00Z",
+      "visitors": 4,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-08T16:00:00Z",
+      "visitors": 10,
+      "requests": 13
+    },
+    {
+      "time": "2026-11-08T17:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-08T18:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-08T19:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-08T20:00:00Z",
+      "visitors": 3,
+      "requests": 15
+    },
+    {
+      "time": "2026-11-08T21:00:00Z",
+      "visitors": 7,
+      "requests": 9
     }
   ],
   "daily": [
-    {
-      "date": "2026-11-02",
-      "visitors": 135,
-      "pageViews": 1266,
-      "requests": 38052
-    },
     {
       "date": "2026-11-03",
       "visitors": 107,
@@ -166,71 +160,71 @@
     },
     {
       "date": "2026-11-08",
-      "visitors": 86,
-      "pageViews": 68,
-      "requests": 272
+      "visitors": 126,
+      "pageViews": 88,
+      "requests": 340
     }
   ],
   "topPages": [
     {
-      "path": "/cdn-cgi/l/email-protection",
-      "views": 208
-    },
-    {
       "path": "/",
-      "views": 135
-    },
-    {
-      "path": "/vi/",
-      "views": 45
+      "views": 54
     },
     {
       "path": "/robots.txt",
-      "views": 29
+      "views": 16
     },
     {
-      "path": "/favicon.ico",
-      "views": 13
-    },
-    {
-      "path": "/vi/lien-he/",
-      "views": 12
-    },
-    {
-      "path": "/vi/nguoi-dan/",
-      "views": 11
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 7
-    },
-    {
-      "path": "/wp-content/debug.log",
-      "views": 7
-    },
-    {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 7
-    },
-    {
-      "path": "/.git/config",
-      "views": 6
-    },
-    {
-      "path": "/.env.bak",
-      "views": 6
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 6
-    },
-    {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 6
+      "path": "/vi/",
+      "views": 14
     },
     {
       "path": "/wp-json/batch/v1",
       "views": 6
+    },
+    {
+      "path": "/.htaccess",
+      "views": 4
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 4
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 4
+    },
+    {
+      "path": "/.env.development",
+      "views": 4
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 4
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 4
+    },
+    {
+      "path": "/wp-config.php.txt",
+      "views": 4
+    },
+    {
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 3
+    },
+    {
+      "path": "/_astro/_slug_.OmCW7wJf.css",
+      "views": 3
+    },
+    {
+      "path": "/media/.env",
+      "views": 3
+    },
+    {
+      "path": "/vi/tin-tuc/nhung-kpi-cot-loi-can-theo-doi-tai-quay-thuoc-de-quan-tri-theo-du-lieu/",
+      "views": 3
     }
   ]
 }
