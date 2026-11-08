@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-07T22:07:27.088Z",
+  "generatedAt": "2026-11-08T06:24:27.391Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 23,
-    "todayPageViews": 11,
-    "todayRequests": 37,
+    "todayVisitors": 36,
+    "todayPageViews": 17,
+    "todayRequests": 340,
     "last24hVisitors": 249,
-    "last24hPageViews": 84,
-    "last24hRequests": 451
+    "last24hPageViews": 71,
+    "last24hRequests": 695
   },
   "hourly": [
-    {
-      "time": "2026-11-06T23:00:00Z",
-      "visitors": 6,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-07T00:00:00Z",
-      "visitors": 3,
-      "requests": 9
-    },
-    {
-      "time": "2026-11-07T01:00:00Z",
-      "visitors": 4,
-      "requests": 19
-    },
-    {
-      "time": "2026-11-07T02:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-07T03:00:00Z",
-      "visitors": 7,
-      "requests": 14
-    },
-    {
-      "time": "2026-11-07T04:00:00Z",
-      "visitors": 5,
-      "requests": 12
-    },
-    {
-      "time": "2026-11-07T05:00:00Z",
-      "visitors": 14,
-      "requests": 24
-    },
-    {
-      "time": "2026-11-07T06:00:00Z",
-      "visitors": 6,
-      "requests": 9
-    },
     {
       "time": "2026-11-07T08:00:00Z",
       "visitors": 4,
@@ -115,6 +75,51 @@
       "time": "2026-11-07T21:00:00Z",
       "visitors": 4,
       "requests": 6
+    },
+    {
+      "time": "2026-11-07T22:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-07T23:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-08T00:00:00Z",
+      "visitors": 7,
+      "requests": 10
+    },
+    {
+      "time": "2026-11-08T01:00:00Z",
+      "visitors": 7,
+      "requests": 31
+    },
+    {
+      "time": "2026-11-08T02:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-08T03:00:00Z",
+      "visitors": 4,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-08T04:00:00Z",
+      "visitors": 6,
+      "requests": 15
+    },
+    {
+      "time": "2026-11-08T05:00:00Z",
+      "visitors": 3,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-08T06:00:00Z",
+      "visitors": 3,
+      "requests": 258
     }
   ],
   "daily": [
@@ -150,29 +155,29 @@
     },
     {
       "date": "2026-11-07",
-      "visitors": 245,
-      "pageViews": 80,
-      "requests": 441
+      "visitors": 254,
+      "pageViews": 82,
+      "requests": 451
     },
     {
       "date": "2026-11-08",
-      "visitors": 23,
-      "pageViews": 11,
-      "requests": 37
+      "visitors": 66,
+      "pageViews": 30,
+      "requests": 386
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 119
+      "views": 115
     },
     {
       "path": "/vi/",
-      "views": 68
+      "views": 60
     },
     {
       "path": "/robots.txt",
-      "views": 25
+      "views": 18
     },
     {
       "path": "/cdn-cgi/rum",
@@ -183,7 +188,11 @@
       "views": 10
     },
     {
-      "path": "/images/moment-family.png",
+      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
+      "views": 6
+    },
+    {
+      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
       "views": 6
     },
     {
@@ -191,35 +200,31 @@
       "views": 6
     },
     {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 6
-    },
-    {
       "path": "/images/ch4-stages-art.png",
       "views": 6
     },
     {
+      "path": "/.env.dev",
+      "views": 6
+    },
+    {
       "path": "/images/hero-family.png",
+      "views": 6
+    },
+    {
+      "path": "/images/moment-family.png",
+      "views": 6
+    },
+    {
+      "path": "/images/blog/khen-con-de-con-tu-tin.png",
+      "views": 5
+    },
+    {
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
       "views": 5
     },
     {
       "path": "/images/moment-study.png",
-      "views": 5
-    },
-    {
-      "path": "/favicon-32.png",
-      "views": 5
-    },
-    {
-      "path": "/images/chapter5-scene.png",
-      "views": 5
-    },
-    {
-      "path": "/images/blog/phat-con-de-khong-bi-ton-thuong.png",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "views": 5
     }
   ]
