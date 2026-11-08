@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-08T13:45:32.225Z",
+  "generatedAt": "2026-11-08T22:18:28.602Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 65,
-    "todayPageViews": 32,
-    "todayRequests": 610,
-    "last24hVisitors": 102,
-    "last24hPageViews": 50,
-    "last24hRequests": 695
+    "todayVisitors": 30,
+    "todayPageViews": 13,
+    "todayRequests": 51,
+    "last24hVisitors": 110,
+    "last24hPageViews": 55,
+    "last24hRequests": 711
   },
   "hourly": [
-    {
-      "time": "2026-11-07T14:00:00Z",
-      "visitors": 2,
-      "requests": 5
-    },
-    {
-      "time": "2026-11-07T15:00:00Z",
-      "visitors": 5,
-      "requests": 11
-    },
-    {
-      "time": "2026-11-07T16:00:00Z",
-      "visitors": 2,
-      "requests": 22
-    },
-    {
-      "time": "2026-11-07T17:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-07T18:00:00Z",
-      "visitors": 3,
-      "requests": 5
-    },
-    {
-      "time": "2026-11-07T19:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-07T20:00:00Z",
-      "visitors": 6,
-      "requests": 14
-    },
-    {
-      "time": "2026-11-07T21:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-07T22:00:00Z",
-      "visitors": 4,
-      "requests": 4
-    },
     {
       "time": "2026-11-07T23:00:00Z",
       "visitors": 4,
@@ -130,15 +85,54 @@
       "time": "2026-11-08T13:00:00Z",
       "visitors": 4,
       "requests": 8
+    },
+    {
+      "time": "2026-11-08T14:00:00Z",
+      "visitors": 2,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-08T15:00:00Z",
+      "visitors": 9,
+      "requests": 16
+    },
+    {
+      "time": "2026-11-08T16:00:00Z",
+      "visitors": 2,
+      "requests": 22
+    },
+    {
+      "time": "2026-11-08T17:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-08T18:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-08T19:00:00Z",
+      "visitors": 12,
+      "requests": 17
+    },
+    {
+      "time": "2026-11-08T20:00:00Z",
+      "visitors": 6,
+      "requests": 12
+    },
+    {
+      "time": "2026-11-08T21:00:00Z",
+      "visitors": 5,
+      "requests": 11
+    },
+    {
+      "time": "2026-11-08T22:00:00Z",
+      "visitors": 1,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-11-02",
-      "visitors": 104,
-      "pageViews": 45,
-      "requests": 2127
-    },
     {
       "date": "2026-11-03",
       "visitors": 60,
@@ -171,23 +165,29 @@
     },
     {
       "date": "2026-11-08",
-      "visitors": 96,
-      "pageViews": 45,
-      "requests": 657
+      "visitors": 107,
+      "pageViews": 55,
+      "requests": 706
+    },
+    {
+      "date": "2026-11-09",
+      "visitors": 30,
+      "pageViews": 13,
+      "requests": 51
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 97
+      "views": 105
     },
     {
       "path": "/vi/",
-      "views": 41
+      "views": 46
     },
     {
       "path": "/robots.txt",
-      "views": 20
+      "views": 16
     },
     {
       "path": "/env.js",
@@ -206,19 +206,7 @@
       "views": 7
     },
     {
-      "path": "/vendor/composer/installed.json",
-      "views": 6
-    },
-    {
-      "path": "/.amplifyrc",
-      "views": 6
-    },
-    {
-      "path": "/.gitmodules",
-      "views": 6
-    },
-    {
-      "path": "/.env.staging",
+      "path": "/runtime-config.js",
       "views": 6
     },
     {
@@ -226,7 +214,11 @@
       "views": 6
     },
     {
-      "path": "/secrets.json",
+      "path": "/.gitmodules",
+      "views": 6
+    },
+    {
+      "path": "/vendor/composer/installed.json",
       "views": 6
     },
     {
@@ -234,7 +226,15 @@
       "views": 6
     },
     {
-      "path": "/runtime-config.js",
+      "path": "/secrets.json",
+      "views": 6
+    },
+    {
+      "path": "/.amplifyrc",
+      "views": 6
+    },
+    {
+      "path": "/.env.staging",
       "views": 6
     }
   ]
