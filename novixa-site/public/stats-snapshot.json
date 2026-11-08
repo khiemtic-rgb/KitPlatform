@@ -1,51 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-08T06:06:19.595Z",
+  "generatedAt": "2026-11-08T13:29:17.649Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 44,
-    "todayPageViews": 28,
-    "todayRequests": 173,
-    "last24hVisitors": 198,
-    "last24hPageViews": 369,
-    "last24hRequests": 1079
+    "todayVisitors": 86,
+    "todayPageViews": 68,
+    "todayRequests": 272,
+    "last24hVisitors": 175,
+    "last24hPageViews": 158,
+    "last24hRequests": 670
   },
   "hourly": [
-    {
-      "time": "2026-11-07T07:00:00Z",
-      "visitors": 20,
-      "requests": 27
-    },
-    {
-      "time": "2026-11-07T08:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-07T09:00:00Z",
-      "visitors": 5,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-07T10:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-11-07T11:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-07T12:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
-    {
-      "time": "2026-11-07T13:00:00Z",
-      "visitors": 16,
-      "requests": 448
-    },
     {
       "time": "2026-11-07T14:00:00Z",
       "visitors": 17,
@@ -120,6 +85,46 @@
       "time": "2026-11-08T05:00:00Z",
       "visitors": 6,
       "requests": 7
+    },
+    {
+      "time": "2026-11-08T06:00:00Z",
+      "visitors": 4,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-08T07:00:00Z",
+      "visitors": 7,
+      "requests": 12
+    },
+    {
+      "time": "2026-11-08T08:00:00Z",
+      "visitors": 14,
+      "requests": 44
+    },
+    {
+      "time": "2026-11-08T09:00:00Z",
+      "visitors": 4,
+      "requests": 15
+    },
+    {
+      "time": "2026-11-08T10:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-08T11:00:00Z",
+      "visitors": 5,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-08T12:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-08T13:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
@@ -161,34 +166,34 @@
     },
     {
       "date": "2026-11-08",
-      "visitors": 44,
-      "pageViews": 28,
-      "requests": 173
+      "visitors": 86,
+      "pageViews": 68,
+      "requests": 272
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 209
+      "views": 208
     },
     {
       "path": "/",
-      "views": 129
+      "views": 135
     },
     {
       "path": "/vi/",
-      "views": 41
+      "views": 45
     },
     {
       "path": "/robots.txt",
       "views": 29
     },
     {
-      "path": "/vi/lien-he/",
-      "views": 12
+      "path": "/favicon.ico",
+      "views": 13
     },
     {
-      "path": "/favicon.ico",
+      "path": "/vi/lien-he/",
       "views": 12
     },
     {
@@ -196,19 +201,27 @@
       "views": 11
     },
     {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 8
+      "path": "/wp-login.php",
+      "views": 7
     },
     {
       "path": "/wp-content/debug.log",
       "views": 7
     },
     {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 7
+    },
+    {
+      "path": "/.git/config",
+      "views": 6
+    },
+    {
       "path": "/.env.bak",
       "views": 6
     },
     {
-      "path": "/.env.old",
+      "path": "/cdn-cgi/rum",
       "views": 6
     },
     {
@@ -216,15 +229,7 @@
       "views": 6
     },
     {
-      "path": "/backend/.env",
-      "views": 6
-    },
-    {
-      "path": "/.git/config",
-      "views": 6
-    },
-    {
-      "path": "/vi/kien-thuc/",
+      "path": "/wp-json/batch/v1",
       "views": 6
     }
   ]
