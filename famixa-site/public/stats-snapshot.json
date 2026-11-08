@@ -1,41 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-08T06:24:27.391Z",
+  "generatedAt": "2026-11-08T13:45:32.225Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 36,
-    "todayPageViews": 17,
-    "todayRequests": 340,
-    "last24hVisitors": 249,
-    "last24hPageViews": 71,
+    "todayVisitors": 65,
+    "todayPageViews": 32,
+    "todayRequests": 610,
+    "last24hVisitors": 102,
+    "last24hPageViews": 50,
     "last24hRequests": 695
   },
   "hourly": [
-    {
-      "time": "2026-11-07T08:00:00Z",
-      "visitors": 4,
-      "requests": 12
-    },
-    {
-      "time": "2026-11-07T09:00:00Z",
-      "visitors": 1,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-07T10:00:00Z",
-      "visitors": 11,
-      "requests": 18
-    },
-    {
-      "time": "2026-11-07T12:00:00Z",
-      "visitors": 23,
-      "requests": 29
-    },
-    {
-      "time": "2026-11-07T13:00:00Z",
-      "visitors": 139,
-      "requests": 209
-    },
     {
       "time": "2026-11-07T14:00:00Z",
       "visitors": 2,
@@ -118,8 +93,43 @@
     },
     {
       "time": "2026-11-08T06:00:00Z",
+      "visitors": 5,
+      "requests": 306
+    },
+    {
+      "time": "2026-11-08T07:00:00Z",
       "visitors": 3,
-      "requests": 258
+      "requests": 5
+    },
+    {
+      "time": "2026-11-08T08:00:00Z",
+      "visitors": 2,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-08T09:00:00Z",
+      "visitors": 8,
+      "requests": 165
+    },
+    {
+      "time": "2026-11-08T10:00:00Z",
+      "visitors": 5,
+      "requests": 21
+    },
+    {
+      "time": "2026-11-08T11:00:00Z",
+      "visitors": 1,
+      "requests": 11
+    },
+    {
+      "time": "2026-11-08T12:00:00Z",
+      "visitors": 5,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-08T13:00:00Z",
+      "visitors": 4,
+      "requests": 8
     }
   ],
   "daily": [
@@ -161,71 +171,71 @@
     },
     {
       "date": "2026-11-08",
-      "visitors": 66,
-      "pageViews": 30,
-      "requests": 386
+      "visitors": 96,
+      "pageViews": 45,
+      "requests": 657
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 115
+      "views": 97
     },
     {
       "path": "/vi/",
-      "views": 60
+      "views": 41
     },
     {
       "path": "/robots.txt",
-      "views": 18
+      "views": 20
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 12
+      "path": "/env.js",
+      "views": 14
     },
     {
-      "path": "/images/banner-right.png",
-      "views": 10
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 6
-    },
-    {
-      "path": "/_next/static/chunks/718-1d892128cd51b84e.js",
-      "views": 6
-    },
-    {
-      "path": "/images/moment-chores.png",
-      "views": 6
-    },
-    {
-      "path": "/images/ch4-stages-art.png",
-      "views": 6
+      "path": "/web/.env",
+      "views": 8
     },
     {
       "path": "/.env.dev",
+      "views": 7
+    },
+    {
+      "path": "/.git/config",
+      "views": 7
+    },
+    {
+      "path": "/vendor/composer/installed.json",
       "views": 6
     },
     {
-      "path": "/images/hero-family.png",
+      "path": "/.amplifyrc",
       "views": 6
     },
     {
-      "path": "/images/moment-family.png",
+      "path": "/.gitmodules",
       "views": 6
     },
     {
-      "path": "/images/blog/khen-con-de-con-tu-tin.png",
-      "views": 5
+      "path": "/.env.staging",
+      "views": 6
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 5
+      "path": "/v1/.env",
+      "views": 6
     },
     {
-      "path": "/images/moment-study.png",
-      "views": 5
+      "path": "/secrets.json",
+      "views": 6
+    },
+    {
+      "path": "/application/.env",
+      "views": 6
+    },
+    {
+      "path": "/runtime-config.js",
+      "views": 6
     }
   ]
 }
