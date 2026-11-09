@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-08T22:18:28.602Z",
+  "generatedAt": "2026-11-09T06:57:22.565Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 30,
-    "todayPageViews": 13,
-    "todayRequests": 51,
-    "last24hVisitors": 110,
-    "last24hPageViews": 55,
-    "last24hRequests": 711
+    "todayVisitors": 37,
+    "todayPageViews": 24,
+    "todayRequests": 490,
+    "last24hVisitors": 109,
+    "last24hPageViews": 63,
+    "last24hRequests": 812
   },
   "hourly": [
-    {
-      "time": "2026-11-07T23:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-08T00:00:00Z",
-      "visitors": 7,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-08T01:00:00Z",
-      "visitors": 7,
-      "requests": 31
-    },
-    {
-      "time": "2026-11-08T02:00:00Z",
-      "visitors": 5,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-08T03:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-08T04:00:00Z",
-      "visitors": 6,
-      "requests": 15
-    },
-    {
-      "time": "2026-11-08T05:00:00Z",
-      "visitors": 3,
-      "requests": 9
-    },
-    {
-      "time": "2026-11-08T06:00:00Z",
-      "visitors": 5,
-      "requests": 306
-    },
     {
       "time": "2026-11-08T07:00:00Z",
       "visitors": 3,
@@ -128,8 +88,48 @@
     },
     {
       "time": "2026-11-08T22:00:00Z",
-      "visitors": 1,
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-08T23:00:00Z",
+      "visitors": 3,
       "requests": 3
+    },
+    {
+      "time": "2026-11-09T00:00:00Z",
+      "visitors": 1,
+      "requests": 21
+    },
+    {
+      "time": "2026-11-09T01:00:00Z",
+      "visitors": 6,
+      "requests": 287
+    },
+    {
+      "time": "2026-11-09T02:00:00Z",
+      "visitors": 5,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-09T03:00:00Z",
+      "visitors": 4,
+      "requests": 10
+    },
+    {
+      "time": "2026-11-09T04:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-09T05:00:00Z",
+      "visitors": 10,
+      "requests": 15
+    },
+    {
+      "time": "2026-11-09T06:00:00Z",
+      "visitors": 12,
+      "requests": 145
     }
   ],
   "daily": [
@@ -165,25 +165,25 @@
     },
     {
       "date": "2026-11-08",
-      "visitors": 107,
-      "pageViews": 55,
-      "requests": 706
+      "visitors": 110,
+      "pageViews": 56,
+      "requests": 709
     },
     {
       "date": "2026-11-09",
-      "visitors": 30,
-      "pageViews": 13,
-      "requests": 51
+      "visitors": 74,
+      "pageViews": 39,
+      "requests": 545
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 105
+      "views": 104
     },
     {
       "path": "/vi/",
-      "views": 46
+      "views": 49
     },
     {
       "path": "/robots.txt",
@@ -191,22 +191,22 @@
     },
     {
       "path": "/env.js",
-      "views": 14
+      "views": 11
+    },
+    {
+      "path": "/.env-example",
+      "views": 10
     },
     {
       "path": "/web/.env",
       "views": 8
     },
     {
-      "path": "/.env.dev",
+      "path": "/vendor/composer/installed.json",
       "views": 7
     },
     {
-      "path": "/.git/config",
-      "views": 7
-    },
-    {
-      "path": "/runtime-config.js",
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
       "views": 6
     },
     {
@@ -214,28 +214,28 @@
       "views": 6
     },
     {
-      "path": "/.gitmodules",
+      "path": "/.git/config",
       "views": 6
     },
     {
-      "path": "/vendor/composer/installed.json",
+      "path": "/server/.env",
       "views": 6
     },
     {
-      "path": "/application/.env",
-      "views": 6
+      "path": "/_profiler/phpinfo",
+      "views": 5
     },
     {
-      "path": "/secrets.json",
-      "views": 6
+      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
+      "views": 5
     },
     {
-      "path": "/.amplifyrc",
-      "views": 6
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 5
     },
     {
-      "path": "/.env.staging",
-      "views": 6
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 5
     }
   ]
 }
