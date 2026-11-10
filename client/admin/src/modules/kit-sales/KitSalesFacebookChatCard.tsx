@@ -13,6 +13,7 @@ import {
 import dayjs from 'dayjs';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
+  approveKitSalesDraft,
   composeKitSalesChat,
   createKitSalesTask,
   fetchKitSalesAssist,
@@ -91,7 +92,7 @@ export function KitSalesFacebookChatCard({
     lastAutoKey.current = key;
     setLoading(true);
     try {
-      const next = await composeKitSalesChat(trimmed, leadId, true);
+      const next = await composeKitSalesChat(trimmed, leadId, false);
       setCompose(next);
       setDraft(next.reply);
       setEditing(false);
@@ -145,11 +146,29 @@ export function KitSalesFacebookChatCard({
     await runAutoReply(text);
   };
 
+  const onApprove = async () => {
+    if (!compose?.draftId) return;
+    setSending(true);
+    try {
+      const row = await approveKitSalesDraft(compose.draftId, draft.trim() || compose.reply);
+      setCompose({ ...compose, reviewStatus: row.reviewStatus ?? 'approved', reply: row.content ?? draft });
+      message.success('Đã duyệt. Gửi là bước riêng.');
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('chat.failed')));
+    } finally {
+      setSending(false);
+    }
+  };
+
   const onSend = async () => {
     if (!compose?.draftId || !leadId) return;
     setSending(true);
     try {
-      const row = await sendKitSalesDraft(compose.draftId, draft.trim() || compose.reply);
+      if (compose.reviewStatus !== 'approved') {
+        message.info('Hãy duyệt bản nháp trước khi gửi.');
+        return;
+      }
+      const row = await sendKitSalesDraft(compose.draftId);
       setSent(row);
       setCompose({ ...compose, reviewStatus: 'sent', reply: row.content ?? draft });
       try {
@@ -318,6 +337,11 @@ export function KitSalesFacebookChatCard({
               <Button icon={<CopyOutlined />} onClick={() => void copy(draft)}>
                 {t('chat.copyReply')}
               </Button>
+              {leadId && compose.draftId && reviewStatus === 'draft' && (
+                <Button loading={sending} onClick={() => void onApprove()}>
+                  Duyệt
+                </Button>
+              )}
               {leadId && compose.draftId && reviewStatus !== 'sent' && (
                 <Button
                   type="primary"

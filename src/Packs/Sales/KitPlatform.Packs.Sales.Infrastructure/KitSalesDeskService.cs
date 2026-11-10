@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dapper;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Infrastructure.Data;
@@ -9,11 +10,13 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
 {
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
+    private readonly KitSalesAssessmentLookup _assessments;
 
-    public KitSalesDeskService(IDbConnectionFactory db, ITenantContext tenant)
+    public KitSalesDeskService(IDbConnectionFactory db, ITenantContext tenant, KitSalesAssessmentLookup assessments)
     {
         _db = db;
         _tenant = tenant;
+        _assessments = assessments;
     }
 
     private Guid TenantId => _tenant.TenantId;
@@ -105,11 +108,11 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var rows = await conn.QueryAsync<LeadRow>(
             LeadSelectSql + """
-              AND (@Status IS NULL OR l.lead_status = @Status)
+              AND ((@Status IS NULL AND l.lead_status <> @Archived) OR l.lead_status = @Status)
             ORDER BY l.updated_at DESC
             LIMIT @Limit
             """,
-            new { TenantId, Status = statusFilter, Limit = limit });
+            new { TenantId, Status = statusFilter, Limit = limit, Archived = LeadRetention.Archived });
         return rows.Select(MapLead)
             .Where(l => NovixaFacebookSource.ProvinceMatches(l.Province, province))
             .Where(l => kindFilter is null
@@ -287,7 +290,9 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
                    b.province AS Province, b.phone AS Phone,
                    b.source AS BusinessSource, l.source AS LeadSource,
                    l.notes AS Notes, l.next_action_code AS NextActionCode,
-                   l.next_action_at AS NextActionAt
+                   l.next_action_at AS NextActionAt, l.lead_status AS LeadStatus,
+                   l.product_code AS ProductCode,
+                   l.assessment_submission_id AS AssessmentSubmissionId
             FROM pack_sales.lead l
             INNER JOIN pack_sales.business b ON b.id = l.business_id
             WHERE l.id = @LeadId AND l.tenant_id = @TenantId
@@ -296,6 +301,8 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
             tx);
         if (existing is null)
             throw new InvalidOperationException("Lead không tồn tại.");
+        if (existing.LeadStatus == LeadRetention.Archived)
+            throw new InvalidOperationException("Lead đã lưu trữ, không sửa được.");
 
         var businessId = existing.BusinessId;
         var businessName = TrimOrNull(request.BusinessName) ?? existing.Name;
@@ -325,6 +332,20 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
             },
             tx);
 
+        var newStatus = string.IsNullOrWhiteSpace(request.LeadStatus)
+            ? existing.LeadStatus
+            : NormalizeCode(request.LeadStatus, existing.LeadStatus);
+        Guid? assessmentId = existing.AssessmentSubmissionId;
+        if (request.LinkAssessment)
+        {
+            if (request.AssessmentSubmissionId is null)
+                throw new ArgumentException("Thiếu assessmentSubmissionId.");
+            assessmentId = await LinkAssessmentAsync(conn, tx, leadId, existing, request.AssessmentSubmissionId.Value, cancellationToken);
+        }
+
+        if (!string.Equals(newStatus, existing.LeadStatus, StringComparison.Ordinal))
+            await EnsureStageAsync(conn, tx, leadId, existing, newStatus, assessmentId, request, cancellationToken);
+
         string? nextActionCode = existing.NextActionCode;
         DateTime? nextActionAt = existing.NextActionAt;
         if (request.ClearNextAction)
@@ -346,11 +367,12 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
             """
             UPDATE pack_sales.lead
             SET source = @Source,
-                lead_status = COALESCE(@LeadStatus, lead_status),
+                lead_status = @LeadStatus,
                 lead_temperature = COALESCE(@LeadTemperature, lead_temperature),
                 notes = @Notes,
                 next_action_code = @NextActionCode,
                 next_action_at = @NextActionAt,
+                assessment_submission_id = @AssessmentId,
                 updated_at = NOW()
             WHERE id = @LeadId AND tenant_id = @TenantId
             """,
@@ -359,9 +381,8 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
                 LeadId = leadId,
                 TenantId,
                 Source = request.Source is null ? existing.LeadSource : TrimOrNull(request.Source),
-                LeadStatus = string.IsNullOrWhiteSpace(request.LeadStatus)
-                    ? null
-                    : NormalizeCode(request.LeadStatus, "discovered"),
+                LeadStatus = newStatus,
+                AssessmentId = assessmentId,
                 LeadTemperature = string.IsNullOrWhiteSpace(request.LeadTemperature)
                     ? null
                     : NormalizeCode(request.LeadTemperature, "cold"),
@@ -384,21 +405,55 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
         return MapLead(row);
     }
 
-    public async Task DeleteLeadAsync(Guid leadId, CancellationToken cancellationToken = default)
+    public async Task<string> DeleteLeadAsync(Guid leadId, CancellationToken cancellationToken = default)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
-        var businessId = await conn.ExecuteScalarAsync<Guid?>(
-            """
-            SELECT business_id
-            FROM pack_sales.lead
-            WHERE id = @LeadId AND tenant_id = @TenantId
+        var lead = await conn.QuerySingleOrDefaultAsync<RetentionRow>(
+            $"""
+            SELECT l.business_id AS BusinessId, l.lead_status AS LeadStatus,
+                   ({LeadHistorySql}) AS HasHistory
+            FROM pack_sales.lead l
+            WHERE l.id = @LeadId AND l.tenant_id = @TenantId
+            FOR UPDATE OF l
             """,
             new { LeadId = leadId, TenantId },
             tx);
-        if (businessId is null)
+        if (lead is null)
             throw new InvalidOperationException("Lead không tồn tại.");
+
+        if (LeadRetention.Decide(lead.HasHistory) == LeadRetention.Archived)
+        {
+            if (lead.LeadStatus != LeadRetention.Archived)
+            {
+                await conn.ExecuteAsync(
+                    """
+                    UPDATE pack_sales.lead
+                    SET lead_status = @Archived, next_action_code = NULL, next_action_at = NULL, updated_at = NOW()
+                    WHERE id = @LeadId AND tenant_id = @TenantId
+                    """,
+                    new { LeadId = leadId, TenantId, Archived = LeadRetention.Archived },
+                    tx);
+                var dismissed = await conn.ExecuteAsync(
+                    """
+                    UPDATE pack_sales.agent_task
+                    SET status = 'dismissed',
+                        completed_at = NOW(),
+                        payload_json = payload_json || '{"reason":"lead_archived"}'::jsonb
+                    WHERE tenant_id = @TenantId AND lead_id = @LeadId AND status = 'pending'
+                    """,
+                    new { LeadId = leadId, TenantId },
+                    tx);
+                await KitSalesLeadEventWriter.WriteAsync(
+                    conn, tx, TenantId, leadId, "archived", lead.LeadStatus, LeadRetention.Archived,
+                    JsonSerializer.Serialize(new { reason = "delete_requested_with_history", dismissedAgentTasks = dismissed }),
+                    CurrentUserId, null, $"archived:{leadId:N}", cancellationToken);
+            }
+
+            await tx.CommitAsync(cancellationToken);
+            return LeadRetention.Archived;
+        }
 
         await conn.ExecuteAsync(
             """
@@ -408,26 +463,42 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
             new { LeadId = leadId, TenantId },
             tx);
 
-        var remaining = await conn.ExecuteScalarAsync<int>(
+        var business = await conn.QuerySingleAsync<(int Remaining, bool HasSignals)>(
             """
-            SELECT COUNT(*)::int FROM pack_sales.lead
-            WHERE business_id = @BusinessId AND tenant_id = @TenantId
+            SELECT
+                (SELECT COUNT(*)::int FROM pack_sales.lead
+                 WHERE business_id = @BusinessId AND tenant_id = @TenantId) AS Remaining,
+                EXISTS (SELECT 1 FROM pack_sales.signal
+                        WHERE business_id = @BusinessId AND tenant_id = @TenantId) AS HasSignals
             """,
-            new { BusinessId = businessId.Value, TenantId },
+            new { BusinessId = lead.BusinessId, TenantId },
             tx);
-        if (remaining == 0)
+        if (LeadRetention.MayDeleteBusiness(true, business.Remaining, business.HasSignals))
         {
             await conn.ExecuteAsync(
                 """
                 DELETE FROM pack_sales.business
                 WHERE id = @BusinessId AND tenant_id = @TenantId
                 """,
-                new { BusinessId = businessId.Value, TenantId },
+                new { BusinessId = lead.BusinessId, TenantId },
                 tx);
         }
 
         await tx.CommitAsync(cancellationToken);
+        return LeadRetention.Deleted;
     }
+
+    internal const string LeadHistorySql = """
+        EXISTS (SELECT 1 FROM pack_sales.interaction x WHERE x.lead_id = l.id)
+        OR EXISTS (SELECT 1 FROM pack_sales.lead_event x WHERE x.lead_id = l.id)
+        OR EXISTS (SELECT 1 FROM pack_sales.task x WHERE x.lead_id = l.id)
+        OR EXISTS (SELECT 1 FROM pack_sales.lead_pain x WHERE x.lead_id = l.id)
+        OR EXISTS (SELECT 1 FROM pack_sales.signal x WHERE x.lead_id = l.id)
+        OR EXISTS (SELECT 1 FROM pack_sales.agent_run x WHERE x.lead_id = l.id)
+        OR EXISTS (SELECT 1 FROM pack_sales.agent_task x WHERE x.lead_id = l.id)
+        OR l.assessment_submission_id IS NOT NULL
+        OR l.lead_status <> 'discovered'
+        """;
 
     public async Task<KitSalesLeadDetailDto?> GetLeadDetailAsync(
         Guid leadId,
@@ -447,7 +518,15 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
                    i.occurred_at AS OccurredAt, i.review_status AS ReviewStatus,
                    i.ai_generated AS AiGenerated, i.approved_by_user_id AS ApprovedByUserId,
                    i.sent_at AS SentAt, i.classification AS Classification,
-                   su.username AS SentByName, au.username AS ApprovedByName
+                   su.username AS SentByName, au.username AS ApprovedByName,
+                   CASE WHEN i.channel = 'facebook' AND i.direction = 'outbound' THEN (
+                       SELECT e.event_type FROM pack_sales.lead_event e
+                       WHERE e.tenant_id = i.tenant_id AND e.lead_id = i.lead_id
+                         AND e.event_type = ANY(@DispatchEvents)
+                         AND e.payload->>'interactionId' = i.id::text
+                         AND e.payload ? 'approvalEventId'
+                       ORDER BY e.occurred_at DESC
+                       LIMIT 1) END AS OutboundState
             FROM pack_sales.interaction i
             LEFT JOIN users su ON su.id = i.sent_by_user_id
             LEFT JOIN users au ON au.id = i.approved_by_user_id
@@ -455,7 +534,15 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
             ORDER BY i.occurred_at DESC
             LIMIT 50
             """,
-            new { LeadId = leadId, TenantId });
+            new
+            {
+                LeadId = leadId,
+                TenantId,
+                DispatchEvents = FacebookOutboundRules.DispatchOutcomeEvents
+                    .Append("outbound_dispatching")
+                    .Append(FacebookOutboundRules.UnknownResolvedEvent)
+                    .ToArray(),
+            });
 
         var tasks = await conn.QueryAsync<TaskRow>(
             """
@@ -483,14 +570,11 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
-        var exists = await conn.ExecuteScalarAsync<bool>(
-            "SELECT EXISTS(SELECT 1 FROM pack_sales.lead WHERE id = @LeadId AND tenant_id = @TenantId)",
-            new { LeadId = leadId, TenantId },
-            tx);
-        if (!exists)
-            throw new InvalidOperationException("Lead không tồn tại.");
+        await KitSalesLeadGuard.EnsureWorkableAsync(conn, tx, TenantId, leadId, cancellationToken);
 
         var review = NormalizeReview(request.ReviewStatus);
+        if (FacebookOutboundRules.DenyCreate(request.Channel, request.Direction, review) is not null)
+            throw new InvalidOperationException("Outbound Facebook chỉ được tạo ở trạng thái draft.");
         var markSent = request.MarkSent || review == "sent";
         var sentAt = markSent && review == "sent" ? DateTimeOffset.UtcNow : (DateTimeOffset?)null;
         var row = await conn.QuerySingleAsync<InteractionRow>(
@@ -563,6 +647,15 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
             tx);
         if (existing is null)
             throw new InvalidOperationException("Interaction không tồn tại.");
+        await KitSalesLeadGuard.EnsureWorkableAsync(conn, tx, TenantId, existing.LeadId, cancellationToken);
+        if (string.Equals(existing.Channel, "facebook", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(existing.Direction, "outbound", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(NormalizeReview(request.ReviewStatus), "sent", StringComparison.Ordinal))
+            throw new InvalidOperationException("Outbound Facebook chỉ sang sent qua cổng đã duyệt.");
+        if (string.Equals(existing.Channel, "facebook", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(existing.Direction, "outbound", StringComparison.OrdinalIgnoreCase)
+            && (existing.SentAt is not null || existing.ReviewStatus == "sent"))
+            throw new InvalidOperationException("Tin Facebook đã gửi, không mở lại được.");
 
         var content = TrimOrNull(request.Content) ?? existing.Content;
         DateTime? sentAt = review == "sent" ? DateTime.UtcNow : existing.SentAt;
@@ -636,12 +729,7 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
-        var exists = await conn.ExecuteScalarAsync<bool>(
-            "SELECT EXISTS(SELECT 1 FROM pack_sales.lead WHERE id = @LeadId AND tenant_id = @TenantId)",
-            new { LeadId = leadId, TenantId },
-            tx);
-        if (!exists)
-            throw new InvalidOperationException("Lead không tồn tại.");
+        await KitSalesLeadGuard.EnsureWorkableAsync(conn, tx, TenantId, leadId, cancellationToken);
 
         var row = await conn.QuerySingleAsync<TaskRow>(
             """
@@ -740,11 +828,11 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
             """
             SELECT lead_status AS Status, COUNT(*)::int AS Count
             FROM pack_sales.lead
-            WHERE tenant_id = @TenantId
+            WHERE tenant_id = @TenantId AND lead_status <> @Archived
             GROUP BY lead_status
             ORDER BY Count DESC, lead_status
             """,
-            new { TenantId });
+            new { TenantId, Archived = LeadRetention.Archived });
         var list = buckets.ToList();
         return new KitSalesPipelineSummaryDto(list.Sum(b => b.Count), list);
     }
@@ -870,7 +958,8 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
         ToOffset(r.SentAt),
         r.Classification,
         r.SentByName,
-        r.ApprovedByName);
+        r.ApprovedByName,
+        r.OutboundState);
 
     private static KitSalesTaskDto MapTask(TaskRow r) => new(
         r.Id,
@@ -988,6 +1077,146 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
             tx);
     }
 
+    private async Task<Guid> LinkAssessmentAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid leadId,
+        LeadLookupRow existing,
+        Guid submissionId,
+        CancellationToken cancellationToken)
+    {
+        PhcLinkLock.EnsureOpen();
+        var json = await conn.ExecuteScalarAsync<string?>(
+            new CommandDefinition(
+                """
+                SELECT qualification_json::text
+                FROM pack_sales.product_profile
+                WHERE product_code = @Product AND status = 'active'
+                ORDER BY effective_from DESC
+                LIMIT 1
+                """,
+                new { Product = existing.ProductCode },
+                tx,
+                cancellationToken: cancellationToken));
+        var row = await _assessments.FindAsync(submissionId, cancellationToken);
+        var deny = KitSalesAssessmentLookup.Deny(
+            row,
+            SalesPackDefinition.DedicatedTenantId,
+            KitSalesAgentService.TemplateCodes(json),
+            existing.Phone);
+        if (deny is not null)
+            throw new InvalidOperationException(deny);
+        var taken = await conn.ExecuteScalarAsync<bool>(
+            new CommandDefinition(
+                """
+                SELECT EXISTS(
+                    SELECT 1 FROM pack_sales.lead
+                    WHERE tenant_id = @TenantId
+                      AND assessment_submission_id = @SubmissionId
+                      AND id <> @LeadId
+                      AND lead_status <> 'lost')
+                """,
+                new { TenantId, SubmissionId = submissionId, LeadId = leadId },
+                tx,
+                cancellationToken: cancellationToken));
+        if (taken)
+            throw new InvalidOperationException("Bài PHC đã gắn lead khác.");
+        await KitSalesLeadEventWriter.WriteAsync(
+            conn, tx, TenantId, leadId, "phc_linked", null, null,
+            JsonSerializer.Serialize(new
+            {
+                submissionId,
+                templateCode = row!.TemplateCode,
+                submissionStatus = row.Status,
+                phoneMatch = KitSalesAssessmentLookup.PhoneMatch(row, existing.Phone),
+            }),
+            CurrentUserId, null, $"phc_linked:{leadId:N}:{submissionId:N}", cancellationToken);
+        return submissionId;
+    }
+
+    private async Task EnsureStageAsync(
+        System.Data.Common.DbConnection conn,
+        System.Data.Common.DbTransaction tx,
+        Guid leadId,
+        LeadLookupRow existing,
+        string newStatus,
+        Guid? assessmentId,
+        UpdateKitSalesLeadRequest request,
+        CancellationToken cancellationToken)
+    {
+        var hasReport = await conn.ExecuteScalarAsync<bool>(
+            new CommandDefinition(
+                """
+                SELECT EXISTS(
+                    SELECT 1 FROM pack_sales.lead_event
+                    WHERE tenant_id = @TenantId AND lead_id = @LeadId AND event_type = 'phc_completed')
+                """,
+                new { TenantId, LeadId = leadId },
+                tx,
+                cancellationToken: cancellationToken));
+        var hasWaiver = await conn.ExecuteScalarAsync<bool>(
+            new CommandDefinition(
+                """
+                SELECT EXISTS(
+                    SELECT 1 FROM pack_sales.lead_event
+                    WHERE tenant_id = @TenantId AND lead_id = @LeadId
+                      AND event_type = 'stage_waiver' AND to_status = @ToStatus)
+                """,
+                new { TenantId, LeadId = leadId, ToStatus = newStatus },
+                tx,
+                cancellationToken: cancellationToken));
+        var hasTask = await conn.ExecuteScalarAsync<bool>(
+            new CommandDefinition(
+                """
+                SELECT EXISTS(
+                    SELECT 1 FROM pack_sales.task
+                    WHERE tenant_id = @TenantId AND lead_id = @LeadId
+                      AND action_code = 'phc' AND status = 'open')
+                """,
+                new { TenantId, LeadId = leadId },
+                tx,
+                cancellationToken: cancellationToken));
+        var reason = string.IsNullOrWhiteSpace(request.LostReasonCode)
+            ? null
+            : NormalizeCode(request.LostReasonCode, "");
+        var hasReason = reason is not null && LeadStagePolicy.LostReasons.Contains(reason)
+            && (reason != "other" || !string.IsNullOrWhiteSpace(request.LostNote));
+        var fact = string.IsNullOrWhiteSpace(request.PaidFactCode) ? null : NormalizeCode(request.PaidFactCode, "");
+        var deny = LeadStagePolicy.Deny(
+            existing.LeadStatus,
+            newStatus,
+            assessmentId is not null || hasTask,
+            hasReport,
+            hasWaiver,
+            hasReason,
+            fact);
+        if (deny is not null)
+            throw new InvalidOperationException($"Không chuyển được trạng thái: {deny}.");
+
+        var payload = newStatus switch
+        {
+            "lost" => JsonSerializer.Serialize(new { reasonCode = reason, note = request.LostNote }),
+            "paid" => JsonSerializer.Serialize(new
+            {
+                confirmation = "human",
+                factCode = fact,
+                amountVnd = LeadStagePolicy.PaidAmount(fact!),
+            }),
+            _ => "{}",
+        };
+        await KitSalesLeadEventWriter.WriteAsync(
+            conn, tx, TenantId, leadId, "stage_entered", existing.LeadStatus, newStatus, payload,
+            CurrentUserId, null,
+            $"stage:{leadId:N}:{existing.LeadStatus}:{newStatus}:{DateTime.UtcNow.Ticks}",
+            cancellationToken);
+        if (newStatus == "lost")
+        {
+            await KitSalesLeadEventWriter.WriteAsync(
+                conn, tx, TenantId, leadId, "lost", existing.LeadStatus, "lost", payload,
+                CurrentUserId, null, $"lost:{leadId:N}:{DateTime.UtcNow.Ticks}", cancellationToken);
+        }
+    }
+
     private static DateTimeOffset ToOffset(DateTime value) =>
         new(DateTime.SpecifyKind(value, DateTimeKind.Utc));
 
@@ -1041,6 +1270,13 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
         public DateTime UpdatedAt { get; init; }
     }
 
+    private sealed class RetentionRow
+    {
+        public Guid BusinessId { get; init; }
+        public string LeadStatus { get; init; } = "";
+        public bool HasHistory { get; init; }
+    }
+
     private sealed class LeadLookupRow
     {
         public Guid BusinessId { get; init; }
@@ -1052,6 +1288,9 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
         public string? Notes { get; init; }
         public string? NextActionCode { get; init; }
         public DateTime? NextActionAt { get; init; }
+        public string LeadStatus { get; init; } = "discovered";
+        public string ProductCode { get; init; } = "novixa";
+        public Guid? AssessmentSubmissionId { get; init; }
     }
 
     private sealed class InteractionRow
@@ -1071,6 +1310,7 @@ internal sealed class KitSalesDeskService : IKitSalesDeskService
         public string? Classification { get; init; }
         public string? SentByName { get; init; }
         public string? ApprovedByName { get; init; }
+        public string? OutboundState { get; init; }
     }
 
     private sealed class TaskRow

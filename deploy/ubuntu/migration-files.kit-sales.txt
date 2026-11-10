@@ -11,3 +11,5 @@
 328_pack_kit_sales_pain_library.sql
 329_pack_kit_sales_facebook_settings.sql
 331_pack_kit_sales_ai_settings.sql
+438_pack_kit_sales_lead_event.sql
+440_pack_kit_sales_agent_phases.sql

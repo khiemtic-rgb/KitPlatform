@@ -484,6 +484,9 @@ const KitSalesLeadWorkspacePage = lazy(() =>
 const KitSalesPipelinePage = lazy(() =>
   import('@/modules/kit-sales/KitSalesPipelinePage').then((m) => ({ default: m.KitSalesPipelinePage })),
 );
+const KitSalesQueuePage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesQueuePage').then((m) => ({ default: m.KitSalesQueuePage })),
+);
 const KitSalesCampaignsPage = lazy(() =>
   import('@/modules/kit-sales/KitSalesCampaignsPage').then((m) => ({ default: m.KitSalesCampaignsPage })),
 );
@@ -1037,6 +1040,14 @@ export function AppRouter() {
                   element={
                     <SuspenseRoute>
                       <KitSalesLeadWorkspacePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
+                  path="queue"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesQueuePage />
                     </SuspenseRoute>
                   }
                 />

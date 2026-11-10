@@ -14,6 +14,20 @@ internal static class NovixaSalesKnowledge
 
     public sealed record Match(string Intent, string Reply, bool Escalate, IReadOnlyList<string> Citations);
 
+    internal static IReadOnlyList<(string Intent, string Reply, string Citation, bool Escalate)> Rows(string phcUrl)
+    {
+        var rows = new List<(string, string, string, bool)>
+        {
+            (Unknown.Intent, Fill(Unknown, phcUrl).Reply, Unknown.Citations[0], true),
+        };
+        rows.AddRange(Rules.Select(rule =>
+        {
+            var filled = Fill(rule, phcUrl);
+            return (rule.Intent, filled.Reply, rule.Citations[0], rule.Escalate);
+        }));
+        return rows;
+    }
+
     public static Match Resolve(string raw, string phcUrl)
     {
         var text = Fold(raw);
