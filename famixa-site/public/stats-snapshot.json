@@ -1,61 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-09T22:35:18.193Z",
+  "generatedAt": "2026-11-10T07:33:46.317Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 22,
-    "todayPageViews": 11,
-    "todayRequests": 333,
-    "last24hVisitors": 157,
-    "last24hPageViews": 86,
-    "last24hRequests": 977
+    "todayVisitors": 102,
+    "todayPageViews": 67,
+    "todayRequests": 440,
+    "last24hVisitors": 215,
+    "last24hPageViews": 124,
+    "last24hRequests": 1117
   },
   "hourly": [
-    {
-      "time": "2026-11-08T23:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-09T00:00:00Z",
-      "visitors": 1,
-      "requests": 21
-    },
-    {
-      "time": "2026-11-09T01:00:00Z",
-      "visitors": 6,
-      "requests": 287
-    },
-    {
-      "time": "2026-11-09T02:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-11-09T03:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-09T04:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-09T05:00:00Z",
-      "visitors": 10,
-      "requests": 15
-    },
-    {
-      "time": "2026-11-09T06:00:00Z",
-      "visitors": 17,
-      "requests": 151
-    },
-    {
-      "time": "2026-11-09T07:00:00Z",
-      "visitors": 5,
-      "requests": 26
-    },
     {
       "time": "2026-11-09T08:00:00Z",
       "visitors": 34,
@@ -123,8 +78,53 @@
     },
     {
       "time": "2026-11-09T22:00:00Z",
+      "visitors": 2,
+      "requests": 135
+    },
+    {
+      "time": "2026-11-09T23:00:00Z",
+      "visitors": 4,
+      "requests": 91
+    },
+    {
+      "time": "2026-11-10T00:00:00Z",
+      "visitors": 5,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-10T01:00:00Z",
+      "visitors": 6,
+      "requests": 268
+    },
+    {
+      "time": "2026-11-10T02:00:00Z",
       "visitors": 1,
-      "requests": 1
+      "requests": 2
+    },
+    {
+      "time": "2026-11-10T03:00:00Z",
+      "visitors": 22,
+      "requests": 58
+    },
+    {
+      "time": "2026-11-10T04:00:00Z",
+      "visitors": 59,
+      "requests": 71
+    },
+    {
+      "time": "2026-11-10T05:00:00Z",
+      "visitors": 4,
+      "requests": 15
+    },
+    {
+      "time": "2026-11-10T06:00:00Z",
+      "visitors": 5,
+      "requests": 10
+    },
+    {
+      "time": "2026-11-10T07:00:00Z",
+      "visitors": 5,
+      "requests": 7
     }
   ],
   "daily": [
@@ -160,77 +160,77 @@
     },
     {
       "date": "2026-11-09",
-      "visitors": 154,
-      "pageViews": 85,
-      "requests": 974
+      "visitors": 159,
+      "pageViews": 90,
+      "requests": 1199
     },
     {
       "date": "2026-11-10",
-      "visitors": 22,
-      "pageViews": 11,
-      "requests": 333
+      "visitors": 134,
+      "pageViews": 83,
+      "requests": 998
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 85
+      "views": 95
     },
     {
       "path": "/vi/",
-      "views": 46
+      "views": 53
     },
     {
       "path": "/robots.txt",
-      "views": 18
+      "views": 17
     },
     {
-      "path": "/.env-example",
-      "views": 10
+      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
+      "views": 12
     },
     {
       "path": "/images/quote-thu-card.png",
       "views": 10
     },
     {
-      "path": "/apps/.env",
-      "views": 5
+      "path": "/.git/config",
+      "views": 9
     },
     {
-      "path": "/server/.env",
-      "views": 5
-    },
-    {
-      "path": "/app/.env",
-      "views": 5
-    },
-    {
-      "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 4
-    },
-    {
-      "path": "/_profiler/phpinfo",
-      "views": 4
-    },
-    {
-      "path": "/core/.env",
-      "views": 4
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 4
-    },
-    {
-      "path": "/laravel/.env",
-      "views": 4
+      "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
+      "views": 7
     },
     {
       "path": "/.env.swp",
-      "views": 4
+      "views": 6
     },
     {
-      "path": "/.git/config",
-      "views": 4
+      "path": "/.env.backup",
+      "views": 6
+    },
+    {
+      "path": "/info.php",
+      "views": 6
+    },
+    {
+      "path": "/images/blog/cach-xay-dung-niem-tin.png",
+      "views": 6
+    },
+    {
+      "path": "/images/blog/tao-moi-truong-tu-lap-cho-con.png",
+      "views": 6
+    },
+    {
+      "path": "/wp-json/batch/v1",
+      "views": 6
+    },
+    {
+      "path": "/sentry.properties",
+      "views": 6
+    },
+    {
+      "path": "/wp-login.php",
+      "views": 6
     }
   ]
 }
