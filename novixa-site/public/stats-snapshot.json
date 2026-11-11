@@ -1,71 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-10T19:46:16.825Z",
+  "generatedAt": "2026-11-11T06:29:02.895Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 260,
-    "last24hPageViews": 413,
-    "last24hRequests": 933
+    "todayVisitors": 101,
+    "todayPageViews": 265,
+    "todayRequests": 513,
+    "last24hVisitors": 242,
+    "last24hPageViews": 588,
+    "last24hRequests": 1301
   },
   "hourly": [
-    {
-      "time": "2026-11-09T20:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-09T21:00:00Z",
-      "visitors": 22,
-      "requests": 22
-    },
-    {
-      "time": "2026-11-09T22:00:00Z",
-      "visitors": 13,
-      "requests": 13
-    },
-    {
-      "time": "2026-11-09T23:00:00Z",
-      "visitors": 54,
-      "requests": 55
-    },
-    {
-      "time": "2026-11-10T00:00:00Z",
-      "visitors": 11,
-      "requests": 21
-    },
-    {
-      "time": "2026-11-10T01:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-10T02:00:00Z",
-      "visitors": 8,
-      "requests": 17
-    },
-    {
-      "time": "2026-11-10T03:00:00Z",
-      "visitors": 10,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-10T04:00:00Z",
-      "visitors": 10,
-      "requests": 11
-    },
-    {
-      "time": "2026-11-10T05:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-10T06:00:00Z",
-      "visitors": 3,
-      "requests": 8
-    },
     {
       "time": "2026-11-10T07:00:00Z",
       "visitors": 8,
@@ -128,8 +73,63 @@
     },
     {
       "time": "2026-11-10T19:00:00Z",
-      "visitors": 3,
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-10T20:00:00Z",
+      "visitors": 2,
       "requests": 5
+    },
+    {
+      "time": "2026-11-10T21:00:00Z",
+      "visitors": 10,
+      "requests": 13
+    },
+    {
+      "time": "2026-11-10T22:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-10T23:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-11T00:00:00Z",
+      "visitors": 54,
+      "requests": 56
+    },
+    {
+      "time": "2026-11-11T01:00:00Z",
+      "visitors": 6,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-11T02:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-11T03:00:00Z",
+      "visitors": 10,
+      "requests": 21
+    },
+    {
+      "time": "2026-11-11T04:00:00Z",
+      "visitors": 9,
+      "requests": 387
+    },
+    {
+      "time": "2026-11-11T05:00:00Z",
+      "visitors": 9,
+      "requests": 27
+    },
+    {
+      "time": "2026-11-11T06:00:00Z",
+      "visitors": 6,
+      "requests": 7
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-11-10",
-      "visitors": 166,
-      "pageViews": 340,
-      "requests": 836
+      "visitors": 183,
+      "pageViews": 354,
+      "requests": 864
+    },
+    {
+      "date": "2026-11-11",
+      "visitors": 101,
+      "pageViews": 265,
+      "requests": 513
     }
   ],
   "topPages": [
     {
       "path": "/cdn-cgi/l/email-protection",
-      "views": 188
+      "views": 359
     },
     {
       "path": "/",
-      "views": 110
+      "views": 86
     },
     {
       "path": "/vi/",
-      "views": 20
+      "views": 24
     },
     {
       "path": "/robots.txt",
-      "views": 20
+      "views": 18
     },
     {
       "path": "/favicon.svg",
-      "views": 7
-    },
-    {
-      "path": "/wp-json/batch/v1",
-      "views": 6
-    },
-    {
-      "path": "/wp-login.php",
-      "views": 6
-    },
-    {
-      "path": "/vi/health-check/",
-      "views": 6
-    },
-    {
-      "path": "/_astro/_slug_.OmCW7wJf.css",
-      "views": 5
-    },
-    {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 5
+      "views": 10
     },
     {
       "path": "/vi/lien-he/",
-      "views": 5
+      "views": 9
     },
     {
-      "path": "/vi/tin-tuc/mo-them-nha-thuoc-de-hon-hay-quan-ly-them-mot-nha-thuoc-moi-kho-hon/",
+      "path": "/vi/health-check/",
+      "views": 7
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 7
+    },
+    {
+      "path": "/.env.bak",
+      "views": 6
+    },
+    {
+      "path": "/vi/tin-tuc/nhung-kpi-cot-loi-can-theo-doi-tai-quay-thuoc-de-quan-tri-theo-du-lieu/",
+      "views": 6
+    },
+    {
+      "path": "/vi/nguoi-dan/",
+      "views": 6
+    },
+    {
+      "path": "/.git/config",
       "views": 5
     },
     {
       "path": "/.env.development",
-      "views": 4
+      "views": 5
+    },
+    {
+      "path": "/vi/tin-tuc/quy-trinh-doi-tra-thuoc-tai-nha-thuoc-chuan-hoa-de-giu-chan-khach-hang-va-kiem-soat-an-toan-y-khoa/",
+      "views": 5
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 4
-    },
-    {
-      "path": "/.env.bak",
-      "views": 4
+      "views": 5
     }
   ]
 }
