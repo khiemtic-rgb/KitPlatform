@@ -1,71 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-10T19:54:04.117Z",
+  "generatedAt": "2026-11-11T06:51:35.673Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 16,
-    "todayPageViews": 269,
-    "todayRequests": 495,
-    "last24hVisitors": 195,
-    "last24hPageViews": 373,
-    "last24hRequests": 1763
+    "todayVisitors": 41,
+    "todayPageViews": 14,
+    "todayRequests": 71,
+    "last24hVisitors": 152,
+    "last24hPageViews": 325,
+    "last24hRequests": 948
   },
   "hourly": [
-    {
-      "time": "2026-11-09T20:00:00Z",
-      "visitors": 5,
-      "requests": 287
-    },
-    {
-      "time": "2026-11-09T21:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-09T22:00:00Z",
-      "visitors": 2,
-      "requests": 135
-    },
-    {
-      "time": "2026-11-09T23:00:00Z",
-      "visitors": 4,
-      "requests": 91
-    },
-    {
-      "time": "2026-11-10T00:00:00Z",
-      "visitors": 5,
-      "requests": 9
-    },
-    {
-      "time": "2026-11-10T01:00:00Z",
-      "visitors": 6,
-      "requests": 268
-    },
-    {
-      "time": "2026-11-10T02:00:00Z",
-      "visitors": 1,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-10T03:00:00Z",
-      "visitors": 22,
-      "requests": 58
-    },
-    {
-      "time": "2026-11-10T04:00:00Z",
-      "visitors": 59,
-      "requests": 71
-    },
-    {
-      "time": "2026-11-10T05:00:00Z",
-      "visitors": 4,
-      "requests": 15
-    },
-    {
-      "time": "2026-11-10T06:00:00Z",
-      "visitors": 5,
-      "requests": 10
-    },
     {
       "time": "2026-11-10T07:00:00Z",
       "visitors": 8,
@@ -128,8 +73,63 @@
     },
     {
       "time": "2026-11-10T19:00:00Z",
-      "visitors": 8,
-      "requests": 141
+      "visitors": 14,
+      "requests": 150
+    },
+    {
+      "time": "2026-11-10T20:00:00Z",
+      "visitors": 13,
+      "requests": 37
+    },
+    {
+      "time": "2026-11-10T21:00:00Z",
+      "visitors": 7,
+      "requests": 11
+    },
+    {
+      "time": "2026-11-10T22:00:00Z",
+      "visitors": 1,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-10T23:00:00Z",
+      "visitors": 3,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-11T00:00:00Z",
+      "visitors": 4,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-11T01:00:00Z",
+      "visitors": 10,
+      "requests": 17
+    },
+    {
+      "time": "2026-11-11T02:00:00Z",
+      "visitors": 6,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-11T03:00:00Z",
+      "visitors": 9,
+      "requests": 20
+    },
+    {
+      "time": "2026-11-11T04:00:00Z",
+      "visitors": 2,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-11T05:00:00Z",
+      "visitors": 9,
+      "requests": 17
+    },
+    {
+      "time": "2026-11-11T06:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -165,77 +165,77 @@
     },
     {
       "date": "2026-11-10",
-      "visitors": 178,
-      "pageViews": 363,
-      "requests": 1243
+      "visitors": 203,
+      "pageViews": 376,
+      "requests": 1310
     },
     {
       "date": "2026-11-11",
-      "visitors": 16,
-      "pageViews": 269,
-      "requests": 495
+      "visitors": 87,
+      "pageViews": 296,
+      "requests": 633
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 120
+      "views": 113
     },
     {
       "path": "/vi/",
-      "views": 71
-    },
-    {
-      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
-      "views": 19
+      "views": 65
     },
     {
       "path": "/robots.txt",
-      "views": 18
+      "views": 17
     },
     {
-      "path": "/.git/config",
+      "path": "/favicon.ico",
+      "views": 15
+    },
+    {
+      "path": "/favicon-32.png",
       "views": 12
-    },
-    {
-      "path": "/vi/goi-cha-me/10-sai-lam-pho-bien-khi-nuoi-day-con-ma-cha-me-hien-dai-rat-de-mac-phai/",
-      "views": 11
     },
     {
       "path": "/vi/goi-cha-me/",
       "views": 10
     },
     {
-      "path": "/info.php",
-      "views": 10
-    },
-    {
-      "path": "/.env.backup",
-      "views": 10
-    },
-    {
-      "path": "/vi/goi-cha-me/cha-me-nen-xin-loi-con-khi-nao-bai-hoc-ve-su-tu-te-va-long-dung-cam-trong-gia-dinh/",
-      "views": 9
-    },
-    {
-      "path": "/phpinfo.php",
-      "views": 9
-    },
-    {
-      "path": "/.env.local",
-      "views": 9
+      "path": "/vi/goi-cha-me/nuoi-day-con-trong-thoi-dai-ai-dung-bien-cong-nghe-thanh-ke-thu-hay-bien-ai-thanh-tro-ly-gia-dinh/",
+      "views": 8
     },
     {
       "path": "/en/",
-      "views": 9
+      "views": 8
     },
     {
-      "path": "/vi/goi-cha-me/nuoi-day-con-bang-ky-luat-tich-cuc-phuong-phap-giup-con-tu-giac-khong-nuoc-mat/",
+      "path": "/apple-touch-icon.png",
       "views": 8
+    },
+    {
+      "path": "/vi/huong-dan/chon-thanh-vien/",
+      "views": 6
+    },
+    {
+      "path": "/_next/static/chunks/app/vi/page-b0e96d1fb6cc5bef.js",
+      "views": 6
     },
     {
       "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 8
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/nuoi-day-con-bang-ky-luat-tich-cuc-phuong-phap-giup-con-tu-giac-khong-nuoc-mat/",
+      "views": 6
+    },
+    {
+      "path": "/vi/goi-cha-me/con-khong-hoan-hao-va-cha-me-cung-vay-hoc-cach-chap-nhan-de-cung-nhau-truong-thanh/",
+      "views": 5
+    },
+    {
+      "path": "/vi/huong-dan/them-thanh-vien/",
+      "views": 5
     }
   ]
 }
