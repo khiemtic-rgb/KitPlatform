@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Dapper;
+using KitPlatform.Application.Abstractions;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.Sales;
 using Microsoft.Extensions.Options;
@@ -12,16 +13,19 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
     private static readonly Regex PsidPattern = new(@"^\d{5,128}$", RegexOptions.Compiled);
     private readonly IDbConnectionFactory _db;
     private readonly IHttpClientFactory _http;
+    private readonly IAuditLogService _audit;
     private readonly KitSalesFacebookOptions _file;
     private KitSalesFacebookOptions? _cached;
 
     public KitSalesFacebookSettingsService(
         IDbConnectionFactory db,
         IHttpClientFactory http,
-        IOptions<KitSalesFacebookOptions> options)
+        IOptions<KitSalesFacebookOptions> options,
+        IAuditLogService audit)
     {
         _db = db;
         _http = http;
+        _audit = audit;
         _file = options.Value;
     }
 
@@ -33,6 +37,12 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
         var row = await LoadRowAsync(cancellationToken);
         _cached = Merge(_file, row);
         return _cached;
+    }
+
+    public Task<KitSalesFacebookOptions> GetFreshAsync(CancellationToken cancellationToken)
+    {
+        _cached = null;
+        return GetEffectiveAsync(cancellationToken);
     }
 
     public async Task<KitSalesFacebookSettingsDto> GetMaskedAsync(
@@ -50,6 +60,7 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
     {
         var tenantId = SalesPackDefinition.DedicatedTenantId;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
         var existing = await conn.QuerySingleOrDefaultAsync<SettingsRow>(
             """
             SELECT tenant_id AS TenantId, enabled AS Enabled, page_id AS PageId,
@@ -58,8 +69,10 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
                    phc_url AS PhcUrl
             FROM pack_sales.facebook_settings
             WHERE tenant_id = @TenantId
+            FOR UPDATE
             """,
-            new { TenantId = tenantId });
+            new { TenantId = tenantId },
+            tx);
 
         var token = request.ClearPageToken
             ? null
@@ -103,8 +116,25 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
                 MeLink = TrimOrNull(request.MeLink),
                 PageUrl = TrimOrNull(request.PageUrl),
                 PhcUrl = TrimOrNull(request.PhcUrl),
-            });
+            },
+            tx);
 
+        await KitSalesAuditedCommit.CommitAfterAuditAsync(tx, () => _audit.WriteAsync(
+            SalesSettingsAudit.FacebookEntity,
+            tenantId,
+            "update",
+            SalesSettingsAudit.Facebook(
+                existing?.Enabled ?? false,
+                request.Enabled,
+                existing?.PageAccessToken,
+                token,
+                existing?.VerifyToken,
+                verify,
+                existing?.AppSecret,
+                secret,
+                existing?.PageId,
+                request.PageId),
+            CancellationToken.None));
         _cached = null;
         return await GetMaskedAsync(webhookUrl, cancellationToken);
     }
@@ -216,6 +246,7 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
 
         var tenantId = SalesPackDefinition.DedicatedTenantId;
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
         var lead = await conn.QuerySingleOrDefaultAsync<LeadLookup>(
             """
             SELECT l.id AS LeadId, l.business_id AS BusinessId, b.name AS BusinessName
@@ -224,9 +255,11 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
                 ON b.id = l.business_id AND b.tenant_id = l.tenant_id
             WHERE l.id = @LeadId AND l.tenant_id = @TenantId
             """,
-            new { LeadId = leadId, TenantId = tenantId });
+            new { LeadId = leadId, TenantId = tenantId },
+            tx);
         if (lead is null)
             throw new InvalidOperationException("Không tìm thấy lead.");
+        await KitSalesLeadGuard.EnsureWorkableAsync(conn, tx, tenantId, leadId, cancellationToken);
 
         var conflict = await conn.QuerySingleOrDefaultAsync<LeadLookup>(
             """
@@ -243,7 +276,8 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
               AND l.id <> @LeadId
             LIMIT 1
             """,
-            new { TenantId = tenantId, Psid = psid, LeadId = leadId });
+            new { TenantId = tenantId, Psid = psid, LeadId = leadId },
+            tx);
         if (conflict is not null)
             throw new InvalidOperationException($"PSID đã gắn lead {conflict.BusinessName}.");
 
@@ -258,7 +292,8 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
             ORDER BY created_at DESC
             LIMIT 1
             """,
-            new { TenantId = tenantId, BusinessId = lead.BusinessId });
+            new { TenantId = tenantId, BusinessId = lead.BusinessId },
+            tx);
 
         if (existingId is null)
         {
@@ -271,7 +306,8 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
                     @TenantId, @BusinessId, 'facebook', 'messenger', @Psid, 'staff_psid'
                 )
                 """,
-                new { TenantId = tenantId, BusinessId = lead.BusinessId, Psid = psid });
+                new { TenantId = tenantId, BusinessId = lead.BusinessId, Psid = psid },
+                tx);
         }
         else
         {
@@ -281,9 +317,16 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
                 SET username = @Psid, source = COALESCE(source, 'staff_psid')
                 WHERE id = @Id AND tenant_id = @TenantId
                 """,
-                new { Id = existingId.Value, TenantId = tenantId, Psid = psid });
+                new { Id = existingId.Value, TenantId = tenantId, Psid = psid },
+                tx);
         }
 
+        await KitSalesAuditedCommit.CommitAfterAuditAsync(tx, () => _audit.WriteAsync(
+            SalesSettingsAudit.PsidEntity,
+            leadId,
+            existingId is null ? "attach" : "replace",
+            new Dictionary<string, object?> { ["business_id"] = lead.BusinessId, ["psid"] = "set" },
+            CancellationToken.None));
         return await GetPsidAsync(leadId, cancellationToken)
             ?? throw new InvalidOperationException("Gắn PSID xong nhưng không đọc lại được.");
     }
@@ -291,7 +334,8 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
     public async Task DetachPsidAsync(Guid leadId, CancellationToken cancellationToken = default)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        await conn.ExecuteAsync(
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+        var removed = await conn.ExecuteAsync(
             """
             DELETE FROM pack_sales.business_identity i
             USING pack_sales.lead l
@@ -302,7 +346,20 @@ public sealed class KitSalesFacebookSettingsService : IKitSalesFacebookSettings
               AND i.identity_type = 'facebook'
               AND i.platform = 'messenger'
             """,
-            new { LeadId = leadId, TenantId = SalesPackDefinition.DedicatedTenantId });
+            new { LeadId = leadId, TenantId = SalesPackDefinition.DedicatedTenantId },
+            tx);
+        if (removed == 0)
+        {
+            await tx.CommitAsync(cancellationToken);
+            return;
+        }
+
+        await KitSalesAuditedCommit.CommitAfterAuditAsync(tx, () => _audit.WriteAsync(
+            SalesSettingsAudit.PsidEntity,
+            leadId,
+            "detach",
+            new Dictionary<string, object?> { ["psid"] = "cleared", ["rows"] = removed },
+            CancellationToken.None));
     }
 
     private async Task<SettingsRow?> LoadRowAsync(CancellationToken cancellationToken)
