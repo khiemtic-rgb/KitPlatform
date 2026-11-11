@@ -384,6 +384,16 @@ internal sealed class ContentRepository
         });
     }
 
+    public async Task<int> DeleteSiteAsync(Guid brandId, Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            DELETE FROM pack_content.site_target
+            WHERE id = @Id AND brand_id = @BrandId
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteAsync(sql, new { Id = id, BrandId = brandId });
+    }
+
     public async Task<SiteRow?> GetSiteAsync(Guid id, CancellationToken ct)
     {
         const string sql = """
@@ -444,6 +454,16 @@ internal sealed class ContentRepository
             row.IsActive,
             row.SortOrder,
         });
+    }
+
+    public async Task<int> DeleteChannelAsync(Guid brandId, Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            DELETE FROM pack_content.channel_target
+            WHERE id = @Id AND brand_id = @BrandId
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteAsync(sql, new { Id = id, BrandId = brandId });
     }
 
     public async Task<ChannelRow?> GetChannelAsync(Guid id, CancellationToken ct)
