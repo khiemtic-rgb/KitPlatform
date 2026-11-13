@@ -1,81 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-13T06:49:39.500Z",
+  "generatedAt": "2026-11-13T19:45:22.905Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 60,
-    "todayPageViews": 70,
-    "todayRequests": 133,
-    "last24hVisitors": 255,
-    "last24hPageViews": 222,
-    "last24hRequests": 943
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 215,
+    "last24hPageViews": 451,
+    "last24hRequests": 1469
   },
   "hourly": [
-    {
-      "time": "2026-11-12T07:00:00Z",
-      "visitors": 14,
-      "requests": 16
-    },
-    {
-      "time": "2026-11-12T08:00:00Z",
-      "visitors": 18,
-      "requests": 25
-    },
-    {
-      "time": "2026-11-12T09:00:00Z",
-      "visitors": 38,
-      "requests": 81
-    },
-    {
-      "time": "2026-11-12T10:00:00Z",
-      "visitors": 3,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-12T11:00:00Z",
-      "visitors": 21,
-      "requests": 21
-    },
-    {
-      "time": "2026-11-12T12:00:00Z",
-      "visitors": 15,
-      "requests": 182
-    },
-    {
-      "time": "2026-11-12T13:00:00Z",
-      "visitors": 12,
-      "requests": 14
-    },
-    {
-      "time": "2026-11-12T14:00:00Z",
-      "visitors": 13,
-      "requests": 16
-    },
-    {
-      "time": "2026-11-12T15:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
-    {
-      "time": "2026-11-12T16:00:00Z",
-      "visitors": 9,
-      "requests": 13
-    },
-    {
-      "time": "2026-11-12T17:00:00Z",
-      "visitors": 15,
-      "requests": 15
-    },
-    {
-      "time": "2026-11-12T18:00:00Z",
-      "visitors": 9,
-      "requests": 46
-    },
-    {
-      "time": "2026-11-12T19:00:00Z",
-      "visitors": 10,
-      "requests": 34
-    },
     {
       "time": "2026-11-12T20:00:00Z",
       "visitors": 12,
@@ -128,17 +63,76 @@
     },
     {
       "time": "2026-11-13T06:00:00Z",
+      "visitors": 7,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-13T07:00:00Z",
+      "visitors": 6,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-13T08:00:00Z",
+      "visitors": 2,
+      "requests": 2
+    },
+    {
+      "time": "2026-11-13T09:00:00Z",
       "visitors": 3,
-      "requests": 5
+      "requests": 6
+    },
+    {
+      "time": "2026-11-13T10:00:00Z",
+      "visitors": 21,
+      "requests": 26
+    },
+    {
+      "time": "2026-11-13T11:00:00Z",
+      "visitors": 5,
+      "requests": 6
+    },
+    {
+      "time": "2026-11-13T12:00:00Z",
+      "visitors": 15,
+      "requests": 232
+    },
+    {
+      "time": "2026-11-13T13:00:00Z",
+      "visitors": 14,
+      "requests": 291
+    },
+    {
+      "time": "2026-11-13T14:00:00Z",
+      "visitors": 10,
+      "requests": 17
+    },
+    {
+      "time": "2026-11-13T15:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-11-13T16:00:00Z",
+      "visitors": 11,
+      "requests": 27
+    },
+    {
+      "time": "2026-11-13T17:00:00Z",
+      "visitors": 18,
+      "requests": 36
+    },
+    {
+      "time": "2026-11-13T18:00:00Z",
+      "visitors": 7,
+      "requests": 339
+    },
+    {
+      "time": "2026-11-13T19:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-11-07",
-      "visitors": 195,
-      "pageViews": 379,
-      "requests": 1010
-    },
     {
       "date": "2026-11-08",
       "visitors": 132,
@@ -171,71 +165,71 @@
     },
     {
       "date": "2026-11-13",
-      "visitors": 60,
-      "pageViews": 70,
-      "requests": 133
+      "visitors": 182,
+      "pageViews": 426,
+      "requests": 1137
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 116
-    },
-    {
-      "path": "/robots.txt",
-      "views": 25
+      "views": 161
     },
     {
       "path": "/vi/",
-      "views": 19
+      "views": 28
     },
     {
-      "path": "/vi/tin-tuc/tu-du-lieu-hoc-tap-den-quyet-dinh-thang-tien/",
-      "views": 11
+      "path": "/robots.txt",
+      "views": 21
     },
     {
-      "path": "/vi/tin-tuc/nhung-sai-lam-am-tham-ngon-loi-nhuan-khi-dieu-hanh-nha-thuoc/",
-      "views": 10
+      "path": "/.env.local",
+      "views": 13
+    },
+    {
+      "path": "/smtp/.env",
+      "views": 13
     },
     {
       "path": "/api/session/properties",
+      "views": 13
+    },
+    {
+      "path": "/.gem/credentials",
       "views": 10
     },
     {
-      "path": "/vi/tin-tuc/so-tay-quan-tri-chu-nha-thuoc-nen-lam-gi-moi-ngay-de-van-hanh-tu-chu/",
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
       "views": 9
     },
     {
-      "path": "/favicon.svg",
+      "path": "/vi/lien-he/",
       "views": 8
     },
     {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "path": "/favicon.ico",
       "views": 8
+    },
+    {
+      "path": "/phpinfo",
+      "views": 7
+    },
+    {
+      "path": "/_profiler/phpinfo",
+      "views": 7
     },
     {
       "path": "/_astro/_slug_.OmCW7wJf.css",
       "views": 7
     },
     {
-      "path": "/images/tin-tuc/nhung-sai-lam-pho-bien.png",
-      "views": 6
-    },
-    {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 6
-    },
-    {
-      "path": "/_astro/storefront.A5h2g_eL.css",
-      "views": 6
-    },
-    {
-      "path": "/html/.env",
-      "views": 5
+      "path": "/.env.bak",
+      "views": 7
     },
     {
       "path": "/.git/config",
-      "views": 5
+      "views": 7
     }
   ]
 }
