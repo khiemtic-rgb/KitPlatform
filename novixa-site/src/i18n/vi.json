@@ -2,7 +2,7 @@
   "meta": {
     "siteName": "Novixa",
     "tagline": "Healthcare Platform",
-    "description": "Novixa giúp nhà thuốc tăng khách hàng quay lại và chăm sóc sức khỏe cộng đồng bằng AI — kết nối nhà thuốc, người dân và phòng khám trên một nền tảng.",
+    "description": "Novixa giúp chủ nhà thuốc bán đúng lô, nhắc khách quay lại và không phải đứng quầy cả ngày. Dành cho nhà thuốc độc lập và chuỗi nhỏ.",
     "keywords": "novixa, healthcare platform, phần mềm nhà thuốc, phòng khám, novixa connect, AI health check, POS dược, CRM nhà thuốc"
   },
   "nav": {
@@ -12,9 +12,10 @@
     "solutions": "Giải pháp",
     "forPharmacy": "Dành cho nhà thuốc",
     "forPeople": "Dành cho người dân",
-    "pricing": "Giải pháp & chi phí",
+    "pricing": "Chi phí",
     "enterprise": "Enterprise",
-    "resources": "Kiến thức nhà thuốc",
+    "resources": "Kiến thức",
+    "more": "Thêm",
     "docs": "Tài liệu nhà thuốc",
     "company": "Về Novixa",
     "customers": "Enterprise",
@@ -194,7 +195,7 @@
     "facebookLabel": "Fanpage Facebook",
     "facebookPageName": "Novixa",
     "facebookUrl": "https://www.facebook.com/novixa.health",
-    "formNote": "Nội dung form được gửi tới email Novixa. Ghi “FOUNDING” trong tin nhắn nếu bạn muốn đăng ký Early Access.",
+    "formNote": "Nội dung form được gửi tới email Novixa. Ghi quy mô nhà thuốc (một cửa hoặc chuỗi) để nhận báo giá sau buổi demo.",
     "successTitle": "Đã gửi tin nhắn",
     "successMessage": "Cảm ơn bạn! Chúng tôi sẽ phản hồi qua số điện thoại hoặc email bạn cung cấp.",
     "nameRequired": "Vui lòng nhập họ tên.",
@@ -215,7 +216,7 @@
   },
   "news": {
     "title": "Kiến thức nhà thuốc",
-    "intro": "Kiến thức quản trị, vận hành, bán hàng, AI và Academy dành cho nhà thuốc.",
+    "intro": "Ba cụm: khách không quay lại, hàng cận hạn, và chủ không rời được quầy.",
     "newBadge": "Mới",
     "readMore": "Đọc tiếp",
     "back": "← Quay lại kiến thức nhà thuốc"

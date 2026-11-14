@@ -2,8 +2,6 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Header from '../../../components/Header.astro';
 import Footer from '../../../components/Footer.astro';
-import FoundingEarlyAccess from '../../../components/FoundingEarlyAccess.astro';
-import FoundingFaq from '../../../components/FoundingFaq.astro';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
 
@@ -40,12 +38,13 @@ const m = t('vi');
       </div>
     </div>
   </section>
-  <FoundingEarlyAccess m={m.founding} />
-  <FoundingFaq m={m.foundingFaq} />
   <section class="section" style="padding-top: 0">
     <div class="container">
+      <p class="section-intro">
+        Chi phí báo sau buổi demo, khi đã rõ một cửa hay chuỗi. Novixa không niêm yết một mức giá chung trên website.
+      </p>
       <p>
-        <a class="btn btn-primary" href="/vi/lien-he/#contact-form">{m.founding.ctaPrimary}</a>
+        <a class="btn btn-primary" href="/vi/giai-phap-chi-phi/">Xem giải pháp và chi phí</a>
       </p>
     </div>
   </section>

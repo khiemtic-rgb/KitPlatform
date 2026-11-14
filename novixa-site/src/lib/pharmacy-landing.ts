@@ -16,7 +16,7 @@ export const pharmacyLanding = {
     primaryHref: '/vi/lien-he/',
     secondary: 'Xem video 2 phút',
     secondaryHref: '#ph-video',
-    trusts: ['Không cần thẻ tín dụng', 'Dễ dùng, triển khai nhanh', 'Hỗ trợ tận tâm 24/7'],
+    trusts: ['Bán theo lô và hạn dùng', 'Dễ dùng, triển khai nhanh', 'Có người hỗ trợ khi triển khai'],
     image: '/images/hero/dashboard-desktop.png',
     imageAlt: 'Dashboard Novixa trên laptop và app nhắc thuốc trên điện thoại',
   },

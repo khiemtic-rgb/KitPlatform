@@ -7,7 +7,10 @@ import LandingPain from '../../components/landing/LandingPain.astro';
 import LandingFlow from '../../components/landing/LandingFlow.astro';
 import LandingAudience from '../../components/landing/LandingAudience.astro';
 import LandingEcosystem from '../../components/landing/LandingEcosystem.astro';
+import LandingKnowledge from '../../components/landing/LandingKnowledge.astro';
 import LandingCta from '../../components/landing/LandingCta.astro';
+import { getCollection } from 'astro:content';
+import { filterPublishedPosts } from '../../lib/publishedNews';
 import { t } from '../../i18n';
 import { buildSiteGraphStructuredData } from '../../lib/site-structured-data';
 import '../../styles/global.css';
@@ -15,6 +18,16 @@ import '../../styles/home-landing.css';
 
 const m = t('vi');
 const jsonLd = buildSiteGraphStructuredData();
+const homeArticleIds = [
+  'mot-khach-quay-lai-nhieu-lan-dang-gia-hon-mot-khach-mua-mot-lan',
+  'cach-giam-thuoc-can-han',
+  'nha-thuoc-ban-kha-tot-nhung-chu-van-phai-co-mat-o-quay-ca-ngay',
+];
+const published = filterPublishedPosts(await getCollection('tinTuc'));
+const homeArticles = homeArticleIds.flatMap((id) => {
+  const post = published.find((item) => item.id === id);
+  return post ? [post] : [];
+});
 ---
 
 <BaseLayout
@@ -31,6 +44,7 @@ const jsonLd = buildSiteGraphStructuredData();
     <LandingFlow />
     <LandingAudience />
     <LandingEcosystem />
+    <LandingKnowledge posts={homeArticles} />
     <LandingCta />
   </div>
 

@@ -15,22 +15,25 @@ import { painArts, painIcons } from '../../lib/pain-art';
 
     <ul class="hl-pain__grid">
       {
-        h.problems.items.map((item, i) => (
+        h.problems.items.map((item, i) => {
+          const art = [0, 1, 4][i] ?? i;
+          return (
           <li class={`hl-pain-card hl-pain-card--${item.tone}`}>
             <div class="hl-pain-card__body">
               <span
                 class="hl-pain-card__ico"
                 aria-hidden="true"
-                set:html={`<svg viewBox="0 0 24 24" fill="currentColor">${painIcons[i]}</svg>`}
+                set:html={`<svg viewBox="0 0 24 24" fill="currentColor">${painIcons[art]}</svg>`}
               />
               <div class="hl-pain-card__copy">
                 <h3>{item.title}</h3>
                 <p>{item.desc}</p>
               </div>
             </div>
-            <div class="hl-pain-card__art" aria-hidden="true" set:html={painArts[i]} />
+            <div class="hl-pain-card__art" aria-hidden="true" set:html={painArts[art]} />
           </li>
-        ))
+          );
+        })
       }
     </ul>
   </div>

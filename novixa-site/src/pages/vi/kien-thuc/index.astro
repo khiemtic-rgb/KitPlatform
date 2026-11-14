@@ -6,6 +6,7 @@ import KnowledgeListing from '../../../components/KnowledgeListing.astro';
 import { getCollection } from 'astro:content';
 import { sortPublishedNews } from '../../../lib/newsDate';
 import { getNewsCategory } from '../../../lib/news-categories';
+import { groupKnowledgePosts } from '../../../lib/knowledge-clusters';
 import { t } from '../../../i18n';
 import '../../../styles/global.css';
 
@@ -13,6 +14,7 @@ const m = t('vi');
 const posts = sortPublishedNews(await getCollection('tinTuc')).filter(
   (p) => getNewsCategory(p.data.category).navGroup === 'knowledge',
 );
+const groups = groupKnowledgePosts(posts);
 ---
 
 <BaseLayout
@@ -21,6 +23,6 @@ const posts = sortPublishedNews(await getCollection('tinTuc')).filter(
   canonicalPath="/vi/kien-thuc/"
 >
   <Header slot="header" />
-  <KnowledgeListing title="Kiến thức nhà thuốc" intro={m.news.intro} posts={posts} newLabel={m.news.newBadge} />
+  <KnowledgeListing title="Kiến thức nhà thuốc" intro={m.news.intro} posts={posts} groups={groups} newLabel={m.news.newBadge} />
   <Footer slot="footer" />
 </BaseLayout>

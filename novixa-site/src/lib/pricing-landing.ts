@@ -97,27 +97,6 @@ export const pricingLanding = {
     ],
   },
 
-  social: {
-    title: 'Nhà thuốc đồng hành cùng Novixa',
-    quotes: [
-      {
-        quote: 'Triển khai gọn, đội ngũ nắm POS và kho nhanh — báo cáo sáng rõ hơn trước.',
-        name: 'Anh Minh',
-        role: 'Chủ nhà thuốc độc lập',
-      },
-      {
-        quote: 'Theo dõi được nhiều cửa hàng trên một dashboard, phân quyền nhân sự rõ ràng.',
-        name: 'Chị Hương',
-        role: 'Quản lý chuỗi nhỏ',
-      },
-      {
-        quote: 'Buổi demo giúp chọn đúng phạm vi triển khai, không bị ép gói không cần thiết.',
-        name: 'Anh Tuấn',
-        role: 'Chủ chuỗi nhà thuốc',
-      },
-    ],
-  },
-
   tech: {
     title: 'Nền tảng & công nghệ',
     items: ['Cloud doanh nghiệp', 'Bảo mật tầng ứng dụng', 'API mở rộng', 'Đồng bộ đa thiết bị'],

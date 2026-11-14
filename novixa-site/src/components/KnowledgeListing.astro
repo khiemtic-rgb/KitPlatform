@@ -15,14 +15,22 @@ interface PostLike {
   };
 }
 
+interface Group {
+  id: string;
+  title: string;
+  lead: string;
+  posts: PostLike[];
+}
+
 interface Props {
   title: string;
   intro: string;
   posts: PostLike[];
   newLabel: string;
+  groups?: Group[];
 }
 
-const { title, intro, posts, newLabel } = Astro.props;
+const { title, intro, posts, newLabel, groups = [] } = Astro.props;
 const recent = posts.slice(0, 5);
 ---
 
@@ -36,7 +44,26 @@ const recent = posts.slice(0, 5);
     <div class="kn-page__layout">
       <div class="kn-page__main">
         {
-          posts.length > 0 ? (
+          groups.length > 0 ? (
+            groups.map((group) => (
+              <section class="kn-cluster" aria-labelledby={`kn-${group.id}`}>
+                <h2 id={`kn-${group.id}`}>{group.title}</h2>
+                <p>{group.lead}</p>
+                <ul class="news-list">
+                  {group.posts.map((post) => (
+                    <NewsListItem
+                      slug={post.id}
+                      title={post.data.title}
+                      description={postDescription(post)}
+                      pubDate={post.data.pubDate}
+                      image={post.data.image}
+                      newLabel={newLabel}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))
+          ) : posts.length > 0 ? (
             <ul class="news-list">
               {posts.map((post) => (
                 <NewsListItem

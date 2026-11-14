@@ -65,7 +65,23 @@ async function ensureHeroImage(plan, title, description, { force = false } = {})
   return { ok: true, path: path.join(ROOT, 'public/images/tin-tuc', `${slug}.png`), fallback: 'svg' };
 }
 
+const SATURATED_PAINS = [
+  { id: 'hang-can-han', re: /cận hạn|hết hạn|quá hạn|cận date|hàng hết hạn/i },
+  { id: 'khach-quay-lai', re: /quay lại|giữ chân khách|khách mua một lần|khách một lần|không quay lại/i },
+  { id: 'chu-roi-quay', re: /đứng quầy|rời quầy|vắng mặt|có mặt ở quầy|chủ vắng/i },
+];
+
+function saturatedPain(title) {
+  return SATURATED_PAINS.find((pain) => pain.re.test(title ?? '')) ?? null;
+}
+
 async function publishPlanItem(plan) {
+  const pain = saturatedPain(plan.title);
+  if (pain) {
+    console.log(`  · Bỏ qua «${plan.title}»: cụm ${pain.id} đã có bài, không đăng thêm cùng nỗi đau.`);
+    return 'skipped';
+  }
+
   const filePath = newsMarkdownPath(CONTENT_DIR, plan.slug);
   const existing = readNewsMarkdown(filePath);
   const today = publishDate();
