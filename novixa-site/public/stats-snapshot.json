@@ -1,36 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-14T18:08:00.894Z",
+  "generatedAt": "2026-11-14T22:28:17.818Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
     "todayVisitors": 0,
     "todayPageViews": 0,
     "todayRequests": 0,
-    "last24hVisitors": 211,
-    "last24hPageViews": 100,
-    "last24hRequests": 541
+    "last24hVisitors": 218,
+    "last24hPageViews": 104,
+    "last24hRequests": 547
   },
   "hourly": [
-    {
-      "time": "2026-11-13T19:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-13T20:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-13T21:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-13T22:00:00Z",
-      "visitors": 1,
-      "requests": 1
-    },
     {
       "time": "2026-11-13T23:00:00Z",
       "visitors": 4,
@@ -125,6 +105,26 @@
       "time": "2026-11-14T17:00:00Z",
       "visitors": 8,
       "requests": 9
+    },
+    {
+      "time": "2026-11-14T18:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-14T19:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-14T20:00:00Z",
+      "visitors": 10,
+      "requests": 10
+    },
+    {
+      "time": "2026-11-14T22:00:00Z",
+      "visitors": 1,
+      "requests": 1
     }
   ],
   "daily": [
@@ -160,19 +160,19 @@
     },
     {
       "date": "2026-11-14",
-      "visitors": 200,
-      "pageViews": 81,
-      "requests": 509
+      "visitors": 213,
+      "pageViews": 90,
+      "requests": 526
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 89
+      "views": 85
     },
     {
       "path": "/vi/",
-      "views": 45
+      "views": 33
     },
     {
       "path": "/cdn-cgi/rum",
@@ -180,7 +180,7 @@
     },
     {
       "path": "/vi/health-check/",
-      "views": 21
+      "views": 19
     },
     {
       "path": "/robots.txt",
@@ -188,43 +188,43 @@
     },
     {
       "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 11
+      "views": 10
     },
     {
       "path": "/images/logo.png",
-      "views": 10
-    },
-    {
-      "path": "/smtp/.env",
-      "views": 10
-    },
-    {
-      "path": "/vi/lien-he/",
-      "views": 9
-    },
-    {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
-      "views": 8
+      "views": 6
     },
     {
       "path": "/images/hero/dashboard-desktop.png",
-      "views": 8
-    },
-    {
-      "path": "/favicon.svg",
-      "views": 7
-    },
-    {
-      "path": "/vi/nguoi-dan/",
-      "views": 7
+      "views": 6
     },
     {
       "path": "/vi/kien-thuc/",
-      "views": 7
+      "views": 6
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 5
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 5
+    },
+    {
+      "path": "/.git/refs/heads/main",
+      "views": 4
+    },
+    {
+      "path": "/secrets.yaml",
+      "views": 4
     },
     {
       "path": "/images/audience/pharmacy.png",
-      "views": 6
+      "views": 4
+    },
+    {
+      "path": "/.codeium/windsurf/mcp_config.json",
+      "views": 4
     }
   ]
 }
