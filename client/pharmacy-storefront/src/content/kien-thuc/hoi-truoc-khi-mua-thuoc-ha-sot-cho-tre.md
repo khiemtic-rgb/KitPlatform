@@ -3,6 +3,7 @@ title: "Hỏi trước khi mua thuốc hạ sốt cho trẻ"
 description: "Trẻ sốt, đừng mua theo tên hộp. Dược sĩ Nhà thuốc Xuân Hòa cần biết tuổi của trẻ và thuốc đang dùng cho ai trước khi tư vấn."
 pubDate: 2026-11-16
 category: "Kiến thức sức khỏe"
+image: /brand/xuanhoa-hero.png
 ---
 
 Chiều qua, một mẹ ở phường Phan Đình Phùng đặt hộp thuốc hạ sốt lên quầy và nói: "Lấy hộp này, nhà em hay dùng." Hộp đúng tên. Người sẽ uống thì chưa rõ. Trẻ sốt và người lớn sốt không đi cùng một lời khuyên.

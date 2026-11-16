@@ -3,6 +3,7 @@ title: "Ba chỗ nhìn trên hộp thuốc trước khi để vào tủ"
 description: "Hạn dùng, tên người dùng và chỗ cất xa tầm tay trẻ. Ba việc nhỏ dược sĩ Nhà thuốc Xuân Hòa nhắc mỗi khi khách mang hộp đến quầy."
 pubDate: 2026-11-16
 category: "Kiến thức sức khỏe"
+image: /brand/articles/gap-duoc-si.jpg
 ---
 
 Nhiều nhà ở Thái Nguyên có một hộp thuốc chung: hạ sốt, dầu gió, thuốc ho, viên người lớn để dở. Khi cần lúc tối, ai cũng mở đúng hộp đó. Rủi ro thường không nằm ở tên thuốc, mà ở chỗ không ai còn nhớ hộp ấy của ai và còn hạn không.

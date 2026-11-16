@@ -3,6 +3,7 @@ title: "Nhà thuốc Xuân Hòa mở cửa đến mấy giờ"
 description: "Hai quầy ở Phan Đình Phùng mở 07:00–22:00 mỗi ngày. Số 30 đường Xuân Hòa và số 526 Thống Nhất. Điện thoại 0914.960.069."
 pubDate: 2026-11-16
 category: "Kiến thức sức khỏe"
+image: /brand/about/about-gallery-01.jpg
 ---
 
 Sau giờ hành chính, nhiều nhà mới nhớ hết thuốc hoặc cần hỏi một hộp đang để trong tủ. Nhà thuốc Xuân Hòa mở cả ngày, kể cả tối.

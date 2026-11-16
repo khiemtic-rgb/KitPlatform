@@ -5,9 +5,11 @@ interface Props {
   tenant: PharmacyTenantConfig;
   title?: string;
   description?: string;
+  image?: string;
+  url?: string;
 }
 
-const { tenant, title, description } = Astro.props;
+const { tenant, title, description, image, url } = Astro.props;
 const pageTitle = title ?? tenant.brand.name;
 const pageDescription = description ?? tenant.footer.mission;
 const primary = tenant.brand.primaryColor;
@@ -20,6 +22,10 @@ const accent = tenant.brand.accentColor;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={pageDescription} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    {url ? <meta property="og:url" content={url} /> : null}
+    {image ? <meta property="og:image" content={image} /> : null}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
