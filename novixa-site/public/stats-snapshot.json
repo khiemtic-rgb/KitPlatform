@@ -1,56 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-16T22:08:13.479Z",
+  "generatedAt": "2026-11-17T07:58:34.131Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 481,
-    "last24hPageViews": 622,
-    "last24hRequests": 1772
+    "todayVisitors": 66,
+    "todayPageViews": 33,
+    "todayRequests": 360,
+    "last24hVisitors": 131,
+    "last24hPageViews": 85,
+    "last24hRequests": 548
   },
   "hourly": [
-    {
-      "time": "2026-11-16T00:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-16T01:00:00Z",
-      "visitors": 9,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-16T02:00:00Z",
-      "visitors": 5,
-      "requests": 17
-    },
-    {
-      "time": "2026-11-16T03:00:00Z",
-      "visitors": 61,
-      "requests": 111
-    },
-    {
-      "time": "2026-11-16T04:00:00Z",
-      "visitors": 394,
-      "requests": 1167
-    },
-    {
-      "time": "2026-11-16T05:00:00Z",
-      "visitors": 11,
-      "requests": 285
-    },
-    {
-      "time": "2026-11-16T06:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-16T07:00:00Z",
-      "visitors": 4,
-      "requests": 6
-    },
     {
       "time": "2026-11-16T08:00:00Z",
       "visitors": 5,
@@ -115,6 +75,56 @@
       "time": "2026-11-16T21:00:00Z",
       "visitors": 6,
       "requests": 6
+    },
+    {
+      "time": "2026-11-16T22:00:00Z",
+      "visitors": 9,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-16T23:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-17T00:00:00Z",
+      "visitors": 8,
+      "requests": 14
+    },
+    {
+      "time": "2026-11-17T01:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-17T02:00:00Z",
+      "visitors": 21,
+      "requests": 58
+    },
+    {
+      "time": "2026-11-17T03:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-17T04:00:00Z",
+      "visitors": 12,
+      "requests": 13
+    },
+    {
+      "time": "2026-11-17T05:00:00Z",
+      "visitors": 4,
+      "requests": 252
+    },
+    {
+      "time": "2026-11-17T06:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-17T07:00:00Z",
+      "visitors": 3,
+      "requests": 4
     }
   ],
   "daily": [
@@ -150,71 +160,77 @@
     },
     {
       "date": "2026-11-16",
-      "visitors": 481,
-      "pageViews": 622,
-      "requests": 1772
+      "visitors": 492,
+      "pageViews": 629,
+      "requests": 1789
+    },
+    {
+      "date": "2026-11-17",
+      "visitors": 66,
+      "pageViews": 33,
+      "requests": 360
     }
   ],
   "topPages": [
     {
-      "path": "/kien-thuc",
-      "views": 378
-    },
-    {
-      "path": "/brand/xuanhoa-logo.png",
-      "views": 114
-    },
-    {
       "path": "/",
-      "views": 78
-    },
-    {
-      "path": "/kien-thuc/hoi-truoc-khi-mua-thuoc-ha-sot-cho-tre",
-      "views": 65
-    },
-    {
-      "path": "/brand/xuanhoa-app-qr.png",
-      "views": 43
-    },
-    {
-      "path": "/cdn-cgi/rum",
-      "views": 41
-    },
-    {
-      "path": "/kien-thuc/nha-thuoc-xuan-hoa-mo-cua-den-may-gio",
-      "views": 37
+      "views": 63
     },
     {
       "path": "/index.php",
       "views": 37
     },
     {
-      "path": "/brand/xuanhoa-hero.png",
-      "views": 35
-    },
-    {
       "path": "/robots.txt",
       "views": 28
     },
     {
-      "path": "/kien-thuc/ba-cho-nhin-tren-hop-thuoc",
-      "views": 26
+      "path": "/.aws/.env",
+      "views": 20
+    },
+    {
+      "path": "/vi/",
+      "views": 19
+    },
+    {
+      "path": "/cdn-cgi/rum",
+      "views": 8
+    },
+    {
+      "path": "/config/aws.yml",
+      "views": 6
+    },
+    {
+      "path": "/app.js",
+      "views": 6
+    },
+    {
+      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "views": 6
     },
     {
       "path": "/_astro/storefront.A5h2g_eL.css",
-      "views": 23
+      "views": 6
     },
     {
-      "path": "/images/kien-thuc/nhung-loi-tu-doi-quen-thuoc-khi-dung-thuoc-va-cai-gia-nguoi-benh-phai-tra-tai-qu.png",
-      "views": 22
+      "path": "/brand/xuanhoa-hero.png",
+      "views": 5
     },
     {
-      "path": "/images/kien-thuc/chuyen-moi-ngay-ben-quay-thuoc-xuan-hoa-loi-dan-nho-giu-niem-tin-xom-gieng.png",
-      "views": 22
+      "path": "/api/actuator/env",
+      "views": 4
     },
     {
-      "path": "/kien-thuc/hoi-truoc-khi-mua-thuoc-ha-sot-cho-trerTre",
-      "views": 19
+      "path": "/.streamlit/secrets.toml",
+      "views": 4
+    },
+    {
+      "path": "/.dbeaver/credentials-config.json",
+      "views": 4
+    },
+    {
+      "path": "/vendor/composer/installed.json",
+      "views": 4
     }
   ]
 }
