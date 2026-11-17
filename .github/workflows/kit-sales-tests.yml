@@ -1,0 +1,64 @@
+name: KIT SALES tests
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - 'src/Packs/Sales/**'
+      - 'src/KitPlatform.Api/Controllers/KitSales/**'
+      - 'tests/KitPlatform.Sales.Tests/**'
+      - 'migrations/**'
+      - 'deploy/ubuntu/migration-files.prod.txt'
+      - 'deploy/ubuntu/migration-files.kit-sales.txt'
+      - '.github/workflows/kit-sales-tests.yml'
+  pull_request:
+    paths:
+      - 'src/Packs/Sales/**'
+      - 'src/KitPlatform.Api/Controllers/KitSales/**'
+      - 'tests/KitPlatform.Sales.Tests/**'
+      - 'migrations/**'
+      - 'deploy/ubuntu/migration-files.prod.txt'
+      - 'deploy/ubuntu/migration-files.kit-sales.txt'
+      - '.github/workflows/kit-sales-tests.yml'
+
+jobs:
+  kit-sales-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pgadmin
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          # The KIT SALES DB tests refuse port 5432 and any database not named kit_sales_ci*.
+          - 5437:5432
+        options: >-
+          --health-cmd "pg_isready -U pgadmin"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      KIT_SALES_TEST_CONNECTION: Host=127.0.0.1;Port=5437;Database=kit_sales_ci;Username=pgadmin;Timeout=15;Command Timeout=60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build KIT SALES test database
+        shell: pwsh
+        run: |
+          psql --version
+          ./tests/KitPlatform.Sales.Tests/Db/build-kit-sales-test-db.ps1 -Port 5437
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Sales tests (unit, source, DB integration)
+        run: >-
+          dotnet test tests/KitPlatform.Sales.Tests/KitPlatform.Sales.Tests.csproj --configuration Release
+          --logger "console;verbosity=normal"
+
+      - name: API build
+        run: dotnet build src/KitPlatform.Api/KitPlatform.Api.csproj --configuration Release

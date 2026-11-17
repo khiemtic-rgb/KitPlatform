@@ -65,7 +65,12 @@ public sealed record UpdateKitSalesLeadRequest(
     string? NextActionCode = null,
     DateTimeOffset? NextActionAt = null,
     bool ClearNextAction = false,
-    string? FacebookKind = null);
+    string? FacebookKind = null,
+    string? LostReasonCode = null,
+    string? LostNote = null,
+    Guid? AssessmentSubmissionId = null,
+    bool LinkAssessment = false,
+    string? PaidFactCode = null);
 
 public sealed record KitSalesInteractionDto(
     Guid Id,
@@ -82,7 +87,8 @@ public sealed record KitSalesInteractionDto(
     DateTimeOffset? SentAt = null,
     string? Classification = null,
     string? SentByName = null,
-    string? ApprovedByName = null);
+    string? ApprovedByName = null,
+    string? OutboundState = null);
 
 public sealed record CreateKitSalesInteractionRequest(
     string Channel = "phone",
@@ -188,7 +194,8 @@ public interface IKitSalesDeskService
         UpdateKitSalesLeadRequest request,
         CancellationToken cancellationToken = default);
 
-    Task DeleteLeadAsync(Guid leadId, CancellationToken cancellationToken = default);
+    /// <summary>Archives a lead that has history; deletes only an empty lead. Returns "archived" or "deleted".</summary>
+    Task<string> DeleteLeadAsync(Guid leadId, CancellationToken cancellationToken = default);
 
     Task<KitSalesLeadDetailDto?> GetLeadDetailAsync(
         Guid leadId,
@@ -267,6 +274,9 @@ public sealed record KitSalesChatComposeDto(
     bool AutoReplied = false);
 
 public sealed record SendKitSalesDraftRequest(string? Content = null);
+
+/// <summary>A person checked the Page inbox after an unknown dispatch. Never triggers a send.</summary>
+public sealed record ResolveKitSalesOutboundRequest(bool Delivered, string? Note = null);
 
 public sealed record ReviewKitSalesInteractionRequest(
     string ReviewStatus,
@@ -414,7 +424,9 @@ public sealed record KitSalesGeminiSettingsDto(
     string? ApiKeyLast4,
     string? TextModel,
     bool Ready,
-    string Source);
+    string Source,
+    long WeeklyTokenBudget = 0,
+    long UsedTokens7d = 0);
 
 public sealed record SaveKitSalesGeminiSettingsRequest(
     string? GeminiApiKey = null,
@@ -485,9 +497,12 @@ public interface IKitSalesChatService
         SendKitSalesDraftRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Signed webhook only. Runs on the KIT SALES tenant, without a user principal.</summary>
     Task HandleFacebookInboundAsync(
         string senderPsid,
         string text,
+        string? messageId,
+        long? sentAtUnixMs,
         CancellationToken cancellationToken = default);
 
     IReadOnlyList<KitSalesJourneyPainDto> ListPains();
@@ -540,5 +555,137 @@ public interface IKitSalesPainService
         Guid leadId,
         string painCode,
         RecordKitSalesPainResponseRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed record KitSalesQualificationDto(
+    Guid AgentRunId,
+    Guid? AgentTaskId,
+    string ProductCode,
+    string Decision,
+    bool Scored,
+    decimal? Fit,
+    decimal? Pain,
+    decimal? Intent,
+    decimal? Engagement,
+    decimal? Total,
+    string Formula,
+    string? NextActionCode,
+    string? Draft,
+    IReadOnlyList<string> Citations,
+    IReadOnlyList<string> Missing,
+    string TaskStatus);
+
+public sealed record KitSalesAgentTaskDto(Guid AgentTaskId, string Status, string? Decision);
+
+public sealed record KitSalesStageRateDto(
+    string FromStatus,
+    string ToStatus,
+    int Cohort,
+    int Reached,
+    decimal? Rate,
+    string Label,
+    int FlowCohort,
+    int FlowReached,
+    decimal? FlowRate,
+    string FlowLabel);
+
+public sealed record KitSalesDwellStatDto(string Status, double ClosedHours, int Leads);
+
+public sealed record KitSalesOwnerKpiDto(
+    DateTimeOffset AsOf,
+    DateTimeOffset PeriodStart,
+    int Eligible,
+    int NotYetMature,
+    decimal? QualificationDecisionRate,
+    decimal? ClosureRate,
+    int LostDispositions,
+    decimal? PursuePhcRate,
+    decimal? AcceptanceRate,
+    int HumanPaid,
+    int RevenueRecognized,
+    string RevenueLabel,
+    int UnapprovedSends,
+    int OutboundBlocked,
+    int Waivers,
+    IReadOnlyList<KitSalesStageRateDto> StageRates,
+    IReadOnlyList<KitSalesDwellStatDto> DwellClosed,
+    int OpenDwellLeads,
+    int AiCost,
+    int OutboundSent = 0,
+    int OutboundUnknown = 0,
+    int OutboundFailed = 0);
+
+public sealed record KitSalesDeskKpiDto(
+    int TasksDueToday,
+    int DraftsWaiting,
+    int LeadsWithoutDecision,
+    int PhcPending,
+    DateTimeOffset NextQuietWindow,
+    int OutboundUnknownOpen = 0);
+
+public interface IKitSalesAgentService
+{
+    Task<KitSalesQualificationDto> QualifyAsync(Guid leadId, CancellationToken cancellationToken = default);
+
+    Task<KitSalesAgentTaskDto> AcceptAsync(Guid taskId, CancellationToken cancellationToken = default);
+
+    Task<KitSalesAgentTaskDto> DismissAsync(Guid taskId, CancellationToken cancellationToken = default);
+
+    Task<KitSalesOwnerKpiDto> OwnerKpiAsync(
+        DateTimeOffset? periodStart,
+        DateTimeOffset? asOf,
+        string productCode,
+        CancellationToken cancellationToken = default);
+
+    Task<KitSalesDeskKpiDto> DeskKpiAsync(CancellationToken cancellationToken = default);
+
+    Task ConfirmPhcReportAsync(Guid leadId, CancellationToken cancellationToken = default);
+}
+
+public sealed record KitSalesSweepDto(int Planned, int Skipped, bool SchemaReady, int OutboundUnknown = 0);
+
+public interface IKitSalesAgentSweep
+{
+    Task<KitSalesSweepDto> SweepAsync(CancellationToken cancellationToken = default);
+}
+
+public sealed record KitSalesDiscoveryRunDto(
+    string Source,
+    string Status,
+    int Created,
+    int SkippedDuplicate,
+    int Rejected,
+    bool OutreachSent);
+
+public sealed record KitSalesDiscoverySummaryDto(
+    int Prospects,
+    int FactSignals,
+    int UnknownNeeds,
+    DateTimeOffset? LastRunAt,
+    string? LastStatus,
+    int AiCost);
+
+public interface IKitSalesProspectDiscovery
+{
+    Task<KitSalesDiscoveryRunDto> DiscoverAsync(CancellationToken cancellationToken = default);
+
+    Task<KitSalesDiscoverySummaryDto> SummaryAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IFacebookOutboundGate
+{
+    Task<KitSalesInteractionDto> ApproveAsync(
+        Guid interactionId,
+        string? content,
+        CancellationToken cancellationToken = default);
+
+    Task<KitSalesInteractionDto> SendApprovedAsync(
+        Guid interactionId,
+        CancellationToken cancellationToken = default);
+
+    Task<KitSalesInteractionDto> ResolveUnknownAsync(
+        Guid interactionId,
+        ResolveKitSalesOutboundRequest request,
         CancellationToken cancellationToken = default);
 }

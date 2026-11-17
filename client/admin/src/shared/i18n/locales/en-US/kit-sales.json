@@ -48,8 +48,20 @@
   },
   "leadWorkspace": {
     "back": "Today",
+    "archivedReadOnly": "This lead is archived. History stays here; it takes no new work.",
     "aiSummary": "AI summary",
     "composeQuestion": "Draft the question"
+  },
+  "outbound": {
+    "unknown": "Send unknown",
+    "markDelivered": "It went out",
+    "markNotDelivered": "It did not go out",
+    "confirm": "Confirm",
+    "deliveredHint": "You checked the Page inbox and saw the message. Note what you saw. Nothing is sent from here.",
+    "notDeliveredHint": "The message is not in the Page inbox. It goes back to draft and needs a new approval to send.",
+    "notePlaceholder": "What you saw in the Page inbox",
+    "resolved": "Saved",
+    "resolveFailed": "Could not save"
   },
   "pipeline": {
     "title": "Pipeline",
@@ -84,8 +96,9 @@
     "actions": "Actions",
     "edit": "Edit",
     "delete": "Delete",
-    "deleteConfirm": "Delete lead «{{name}}»?",
+    "deleteConfirm": "Delete lead «{{name}}»? A lead with history is archived, not deleted.",
     "deleteSuccess": "Lead deleted",
+    "archiveSuccess": "Lead has history, so it was archived",
     "deleteFailed": "Could not delete lead",
     "editTitle": "Edit lead",
     "editSuccess": "Lead updated",
@@ -154,7 +167,8 @@
     "demo": "Demo",
     "pilot": "Pilot",
     "paid": "Paid",
-    "lost": "Lost"
+    "lost": "Lost",
+    "archived": "Archived"
   },
   "temperature": {
     "cold": "🔵 Cold",
@@ -181,7 +195,7 @@
   },
   "chat": {
     "title": "Facebook chat assistant",
-    "blurb": "When the pharmacy replies — paste it here. The desk drafts and sends (Messenger if the Page token is on; otherwise it copies for you to paste).",
+    "blurb": "When the pharmacy replies, paste it here. The desk only creates a draft. Approve and send are two steps. Without a Page token nothing is sent.",
     "placeholder": "Paste the customer message here…",
     "inboundLabel": "Customer message",
     "preview": "Draft again",
@@ -216,11 +230,11 @@
     "escalate": "Outside SoT — needs a human",
     "sources": "Sources",
     "live": "Webhook can send",
-    "previewOnly": "No Page token yet — Send logs the interaction and copies"
+    "previewOnly": "No Page token yet — send stays closed until a draft is approved"
   },
   "journey": {
     "title": "Chat journey",
-    "blurb": "Ask about the selected pain first. Do not invite Health Check until they reply. Send copies the opener and opens your personal Messenger.",
+    "blurb": "Ask about the selected pain first. Do not invite Health Check until they reply. Save draft does not send Facebook.",
     "stepHook": "1. Pain opener",
     "stepPhc": "2. Invite Health Check",
     "stepReport": "3. Ask about the report",
@@ -228,9 +242,9 @@
     "schedule": "Schedule quiet window",
     "rewrite": "Rewrite in spoken tone",
     "rewritten": "Rewritten in spoken tone — read it, then copy and send",
-    "send": "Send",
+    "send": "Save draft",
     "openPharmacy": "View pharmacy Facebook",
-    "sentStaffInbox": "Copied the opener and opened your Messenger — paste and send from your personal account",
+    "sentStaffInbox": "Draft saved. The system did not send Facebook. The opener was copied if you want to paste it yourself.",
     "scheduled": "Quiet window scheduled",
     "logged": "Journey step logged",
     "sentOutbound": "Copied the opener and opened their Facebook — paste and send from your account",
@@ -308,6 +322,8 @@
     "psidFailed": "Could not change PSID",
     "geminiTitle": "Gemini — restyle voice",
     "geminiHint": "Restyles wording only. Does not invent features, prices, or PHC. Stored on KIT Sales — not Content.",
+    "geminiBudget": "Used {{used}} / {{budget}} tokens in the last 7 days.",
+    "geminiBudgetOff": "AI is off: weekly token budget = 0 (config KitSales:Ai:WeeklyTokenBudget).",
     "geminiKey": "Gemini API key",
     "geminiPlaceholder": "Paste a new key — leave blank to keep the saved one",
     "geminiEmpty": "No key yet — Rewrite will fail",
