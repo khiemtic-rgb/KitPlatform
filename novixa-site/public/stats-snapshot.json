@@ -1,76 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-17T07:58:34.131Z",
+  "generatedAt": "2026-11-17T20:58:15.481Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 66,
-    "todayPageViews": 33,
-    "todayRequests": 360,
-    "last24hVisitors": 131,
-    "last24hPageViews": 85,
-    "last24hRequests": 548
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 306,
+    "last24hPageViews": 136,
+    "last24hRequests": 961
   },
   "hourly": [
-    {
-      "time": "2026-11-16T08:00:00Z",
-      "visitors": 5,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-16T09:00:00Z",
-      "visitors": 3,
-      "requests": 34
-    },
-    {
-      "time": "2026-11-16T10:00:00Z",
-      "visitors": 8,
-      "requests": 12
-    },
-    {
-      "time": "2026-11-16T11:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-16T12:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-16T13:00:00Z",
-      "visitors": 15,
-      "requests": 18
-    },
-    {
-      "time": "2026-11-16T15:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-16T16:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-16T17:00:00Z",
-      "visitors": 2,
-      "requests": 51
-    },
-    {
-      "time": "2026-11-16T18:00:00Z",
-      "visitors": 10,
-      "requests": 13
-    },
-    {
-      "time": "2026-11-16T19:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-16T20:00:00Z",
-      "visitors": 4,
-      "requests": 5
-    },
     {
       "time": "2026-11-16T21:00:00Z",
       "visitors": 6,
@@ -125,15 +65,74 @@
       "time": "2026-11-17T07:00:00Z",
       "visitors": 3,
       "requests": 4
+    },
+    {
+      "time": "2026-11-17T08:00:00Z",
+      "visitors": 83,
+      "requests": 104
+    },
+    {
+      "time": "2026-11-17T09:00:00Z",
+      "visitors": 10,
+      "requests": 33
+    },
+    {
+      "time": "2026-11-17T10:00:00Z",
+      "visitors": 17,
+      "requests": 266
+    },
+    {
+      "time": "2026-11-17T11:00:00Z",
+      "visitors": 7,
+      "requests": 31
+    },
+    {
+      "time": "2026-11-17T12:00:00Z",
+      "visitors": 36,
+      "requests": 44
+    },
+    {
+      "time": "2026-11-17T13:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-17T14:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-17T15:00:00Z",
+      "visitors": 11,
+      "requests": 11
+    },
+    {
+      "time": "2026-11-17T16:00:00Z",
+      "visitors": 15,
+      "requests": 19
+    },
+    {
+      "time": "2026-11-17T17:00:00Z",
+      "visitors": 23,
+      "requests": 25
+    },
+    {
+      "time": "2026-11-17T18:00:00Z",
+      "visitors": 22,
+      "requests": 22
+    },
+    {
+      "time": "2026-11-17T19:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-17T20:00:00Z",
+      "visitors": 3,
+      "requests": 4
     }
   ],
   "daily": [
-    {
-      "date": "2026-11-11",
-      "visitors": 232,
-      "pageViews": 578,
-      "requests": 1297
-    },
     {
       "date": "2026-11-12",
       "visitors": 241,
@@ -166,38 +165,58 @@
     },
     {
       "date": "2026-11-17",
-      "visitors": 66,
-      "pageViews": 33,
-      "requests": 360
+      "visitors": 286,
+      "pageViews": 127,
+      "requests": 938
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 63
+      "views": 125
     },
     {
-      "path": "/index.php",
+      "path": "/vi/",
       "views": 37
     },
     {
       "path": "/robots.txt",
-      "views": 28
+      "views": 22
     },
     {
       "path": "/.aws/.env",
-      "views": 20
-    },
-    {
-      "path": "/vi/",
-      "views": 19
+      "views": 21
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 8
+      "views": 16
     },
     {
       "path": "/config/aws.yml",
+      "views": 10
+    },
+    {
+      "path": "/favicon.svg",
+      "views": 9
+    },
+    {
+      "path": "/brand/articles/gap-duoc-si.jpg",
+      "views": 7
+    },
+    {
+      "path": "/brand/xuanhoa-hero.png",
+      "views": 7
+    },
+    {
+      "path": "/sites/default/settings.php",
+      "views": 6
+    },
+    {
+      "path": "/project/.env",
+      "views": 6
+    },
+    {
+      "path": "/api/actuator/env",
       "views": 6
     },
     {
@@ -205,32 +224,12 @@
       "views": 6
     },
     {
-      "path": "/_astro/BaseLayout.CFBNtn_V.css",
+      "path": "/admin/.env",
       "views": 6
     },
     {
-      "path": "/_astro/storefront.A5h2g_eL.css",
+      "path": "/appsettings.json",
       "views": 6
-    },
-    {
-      "path": "/brand/xuanhoa-hero.png",
-      "views": 5
-    },
-    {
-      "path": "/api/actuator/env",
-      "views": 4
-    },
-    {
-      "path": "/.streamlit/secrets.toml",
-      "views": 4
-    },
-    {
-      "path": "/.dbeaver/credentials-config.json",
-      "views": 4
-    },
-    {
-      "path": "/vendor/composer/installed.json",
-      "views": 4
     }
   ]
 }
