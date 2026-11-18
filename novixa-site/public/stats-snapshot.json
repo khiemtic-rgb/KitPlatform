@@ -1,71 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-17T20:58:15.481Z",
+  "generatedAt": "2026-11-18T07:33:13.641Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 306,
-    "last24hPageViews": 136,
-    "last24hRequests": 961
+    "todayVisitors": 40,
+    "todayPageViews": 350,
+    "todayRequests": 930,
+    "last24hVisitors": 283,
+    "last24hPageViews": 454,
+    "last24hRequests": 1544
   },
   "hourly": [
-    {
-      "time": "2026-11-16T21:00:00Z",
-      "visitors": 6,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-16T22:00:00Z",
-      "visitors": 9,
-      "requests": 9
-    },
-    {
-      "time": "2026-11-16T23:00:00Z",
-      "visitors": 8,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-17T00:00:00Z",
-      "visitors": 8,
-      "requests": 14
-    },
-    {
-      "time": "2026-11-17T01:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-17T02:00:00Z",
-      "visitors": 21,
-      "requests": 58
-    },
-    {
-      "time": "2026-11-17T03:00:00Z",
-      "visitors": 7,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-17T04:00:00Z",
-      "visitors": 12,
-      "requests": 13
-    },
-    {
-      "time": "2026-11-17T05:00:00Z",
-      "visitors": 4,
-      "requests": 252
-    },
-    {
-      "time": "2026-11-17T06:00:00Z",
-      "visitors": 3,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-17T07:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
     {
       "time": "2026-11-17T08:00:00Z",
       "visitors": 83,
@@ -130,6 +75,61 @@
       "time": "2026-11-17T20:00:00Z",
       "visitors": 3,
       "requests": 4
+    },
+    {
+      "time": "2026-11-17T21:00:00Z",
+      "visitors": 19,
+      "requests": 19
+    },
+    {
+      "time": "2026-11-17T22:00:00Z",
+      "visitors": 8,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-17T23:00:00Z",
+      "visitors": 8,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-18T00:00:00Z",
+      "visitors": 9,
+      "requests": 344
+    },
+    {
+      "time": "2026-11-18T01:00:00Z",
+      "visitors": 11,
+      "requests": 13
+    },
+    {
+      "time": "2026-11-18T02:00:00Z",
+      "visitors": 5,
+      "requests": 281
+    },
+    {
+      "time": "2026-11-18T03:00:00Z",
+      "visitors": 2,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-18T04:00:00Z",
+      "visitors": 7,
+      "requests": 275
+    },
+    {
+      "time": "2026-11-18T05:00:00Z",
+      "visitors": 3,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-18T06:00:00Z",
+      "visitors": 2,
+      "requests": 3
+    },
+    {
+      "time": "2026-11-18T07:00:00Z",
+      "visitors": 2,
+      "requests": 3
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-11-17",
-      "visitors": 286,
-      "pageViews": 127,
-      "requests": 938
+      "visitors": 314,
+      "pageViews": 137,
+      "requests": 974
+    },
+    {
+      "date": "2026-11-18",
+      "visitors": 40,
+      "pageViews": 350,
+      "requests": 930
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 125
+      "views": 103
     },
     {
       "path": "/vi/",
-      "views": 37
+      "views": 24
+    },
+    {
+      "path": "/.hg/requires",
+      "views": 20
     },
     {
       "path": "/robots.txt",
-      "views": 22
-    },
-    {
-      "path": "/.aws/.env",
-      "views": 21
+      "views": 17
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 16
-    },
-    {
-      "path": "/config/aws.yml",
-      "views": 10
+      "views": 14
     },
     {
       "path": "/favicon.svg",
+      "views": 13
+    },
+    {
+      "path": "/storage/logs/laravel.log",
+      "views": 12
+    },
+    {
+      "path": "/api/v3/.env",
+      "views": 10
+    },
+    {
+      "path": "/secrets.yaml",
       "views": 9
     },
     {
-      "path": "/brand/articles/gap-duoc-si.jpg",
-      "views": 7
+      "path": "/.env.txt",
+      "views": 9
     },
     {
-      "path": "/brand/xuanhoa-hero.png",
-      "views": 7
+      "path": "/.codex/auth.json",
+      "views": 9
     },
     {
-      "path": "/sites/default/settings.php",
-      "views": 6
+      "path": "/config/config.json",
+      "views": 9
     },
     {
-      "path": "/project/.env",
-      "views": 6
+      "path": "/.env.dist",
+      "views": 9
     },
     {
-      "path": "/api/actuator/env",
-      "views": 6
+      "path": "/@fs/.env",
+      "views": 9
     },
     {
-      "path": "/app.js",
-      "views": 6
-    },
-    {
-      "path": "/admin/.env",
-      "views": 6
-    },
-    {
-      "path": "/appsettings.json",
-      "views": 6
+      "path": "/app/etc/local.xml",
+      "views": 8
     }
   ]
 }
