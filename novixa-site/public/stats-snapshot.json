@@ -1,81 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-18T07:33:13.641Z",
+  "generatedAt": "2026-11-18T20:35:13.404Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 40,
-    "todayPageViews": 350,
-    "todayRequests": 930,
-    "last24hVisitors": 283,
-    "last24hPageViews": 454,
-    "last24hRequests": 1544
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 129,
+    "last24hPageViews": 450,
+    "last24hRequests": 1636
   },
   "hourly": [
-    {
-      "time": "2026-11-17T08:00:00Z",
-      "visitors": 83,
-      "requests": 104
-    },
-    {
-      "time": "2026-11-17T09:00:00Z",
-      "visitors": 10,
-      "requests": 33
-    },
-    {
-      "time": "2026-11-17T10:00:00Z",
-      "visitors": 17,
-      "requests": 266
-    },
-    {
-      "time": "2026-11-17T11:00:00Z",
-      "visitors": 7,
-      "requests": 31
-    },
-    {
-      "time": "2026-11-17T12:00:00Z",
-      "visitors": 36,
-      "requests": 44
-    },
-    {
-      "time": "2026-11-17T13:00:00Z",
-      "visitors": 5,
-      "requests": 5
-    },
-    {
-      "time": "2026-11-17T14:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-17T15:00:00Z",
-      "visitors": 11,
-      "requests": 11
-    },
-    {
-      "time": "2026-11-17T16:00:00Z",
-      "visitors": 15,
-      "requests": 19
-    },
-    {
-      "time": "2026-11-17T17:00:00Z",
-      "visitors": 23,
-      "requests": 25
-    },
-    {
-      "time": "2026-11-17T18:00:00Z",
-      "visitors": 22,
-      "requests": 22
-    },
-    {
-      "time": "2026-11-17T19:00:00Z",
-      "visitors": 7,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-17T20:00:00Z",
-      "visitors": 3,
-      "requests": 4
-    },
     {
       "time": "2026-11-17T21:00:00Z",
       "visitors": 19,
@@ -128,17 +63,76 @@
     },
     {
       "time": "2026-11-18T07:00:00Z",
+      "visitors": 3,
+      "requests": 4
+    },
+    {
+      "time": "2026-11-18T08:00:00Z",
+      "visitors": 7,
+      "requests": 7
+    },
+    {
+      "time": "2026-11-18T09:00:00Z",
+      "visitors": 1,
+      "requests": 28
+    },
+    {
+      "time": "2026-11-18T10:00:00Z",
+      "visitors": 3,
+      "requests": 27
+    },
+    {
+      "time": "2026-11-18T11:00:00Z",
+      "visitors": 7,
+      "requests": 287
+    },
+    {
+      "time": "2026-11-18T12:00:00Z",
+      "visitors": 9,
+      "requests": 106
+    },
+    {
+      "time": "2026-11-18T13:00:00Z",
+      "visitors": 7,
+      "requests": 8
+    },
+    {
+      "time": "2026-11-18T14:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-11-18T15:00:00Z",
       "visitors": 2,
       "requests": 3
+    },
+    {
+      "time": "2026-11-18T16:00:00Z",
+      "visitors": 11,
+      "requests": 11
+    },
+    {
+      "time": "2026-11-18T17:00:00Z",
+      "visitors": 2,
+      "requests": 175
+    },
+    {
+      "time": "2026-11-18T18:00:00Z",
+      "visitors": 4,
+      "requests": 9
+    },
+    {
+      "time": "2026-11-18T19:00:00Z",
+      "visitors": 5,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-18T20:00:00Z",
+      "visitors": 2,
+      "requests": 2
     }
   ],
   "daily": [
-    {
-      "date": "2026-11-12",
-      "visitors": 241,
-      "pageViews": 180,
-      "requests": 882
-    },
     {
       "date": "2026-11-13",
       "visitors": 192,
@@ -171,70 +165,70 @@
     },
     {
       "date": "2026-11-18",
-      "visitors": 40,
-      "pageViews": 350,
-      "requests": 930
+      "visitors": 99,
+      "pageViews": 440,
+      "requests": 1600
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 103
+      "views": 68
     },
     {
       "path": "/vi/",
-      "views": 24
+      "views": 29
+    },
+    {
+      "path": "/robots.txt",
+      "views": 21
     },
     {
       "path": "/.hg/requires",
       "views": 20
     },
     {
-      "path": "/robots.txt",
-      "views": 17
+      "path": "/.env.dist",
+      "views": 11
     },
     {
-      "path": "/cdn-cgi/rum",
-      "views": 14
+      "path": "/old/.env",
+      "views": 10
     },
     {
-      "path": "/favicon.svg",
-      "views": 13
-    },
-    {
-      "path": "/storage/logs/laravel.log",
-      "views": 12
+      "path": "/.env.txt",
+      "views": 10
     },
     {
       "path": "/api/v3/.env",
       "views": 10
     },
     {
-      "path": "/secrets.yaml",
+      "path": "/.env.development",
       "views": 9
     },
     {
-      "path": "/.env.txt",
-      "views": 9
-    },
-    {
-      "path": "/.codex/auth.json",
-      "views": 9
-    },
-    {
-      "path": "/config/config.json",
-      "views": 9
-    },
-    {
-      "path": "/.env.dist",
-      "views": 9
+      "path": "/config.env",
+      "views": 8
     },
     {
       "path": "/@fs/.env",
-      "views": 9
+      "views": 8
     },
     {
-      "path": "/app/etc/local.xml",
+      "path": "/.git/refs/heads/master",
+      "views": 8
+    },
+    {
+      "path": "/.config/shell_gpt/.sgptrc",
+      "views": 8
+    },
+    {
+      "path": "/.codex/auth.json",
+      "views": 8
+    },
+    {
+      "path": "/__ENV.js",
       "views": 8
     }
   ]
