@@ -5,6 +5,7 @@ import {
   BookOpen,
   Facebook,
   Heart,
+  Youtube,
   Leaf,
   Mail,
   MapPin,
@@ -33,7 +34,7 @@ const SOCIAL_ICON_SRC: Partial<Record<SocialNetwork, string>> = {
 const SOCIAL_LUCIDE: Partial<Record<SocialNetwork, LucideIcon>> = {
   facebook: Facebook,
   tiktok: MessageCircle,
-  youtube: MessageCircle,
+  youtube: Youtube,
   instagram: MessageCircle,
 };
 

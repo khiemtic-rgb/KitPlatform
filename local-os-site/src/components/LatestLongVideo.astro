@@ -1,0 +1,22 @@
+---
+import { latestLongVideo } from '../lib/youtube-latest';
+
+const video = await latestLongVideo('nguoigiuvon');
+---
+{video && (
+  <section class="yt-home" aria-label="Video mới">
+    <div class="section-head">
+      <h2>{video.title}</h2>
+      <a class="see-all" href={video.channelUrl} target="_blank" rel="noopener noreferrer">Kênh Người Giữ Vốn →</a>
+    </div>
+    <div class="yt-frame">
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${video.id}`}
+        title={video.title}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </section>
+)}

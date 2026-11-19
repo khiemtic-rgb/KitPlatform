@@ -453,6 +453,7 @@
     ],
     "social": [
       { "href": "https://www.facebook.com/famixa.vn", "label": "Facebook", "network": "facebook" },
+      { "href": "https://www.youtube.com/@famixavn215", "label": "YouTube", "network": "youtube" },
       { "href": "https://zalo.me/0984660399", "label": "Zalo chat", "network": "zalo" }
     ],
     "newsletter": {
@@ -464,7 +465,7 @@
       "heading": "A product of KIT Technology",
       "name": "KIT Media & Technology Co., Ltd.",
       "address": "Ho Xuong Rong New Urban Area, Phan Dinh Phung Ward, Thai Nguyen, Vietnam",
-      "contactLine": "Facebook page · Zalo 0984.660.399 · Chat consultation"
+      "contactLine": "Facebook page · YouTube @famixavn215 · Zalo 0984.660.399"
     },
     "copyrightSuffix": "Famixa. All rights reserved.",
     "madeWith": "Made with ♥ by KIT Technology"

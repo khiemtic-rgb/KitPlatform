@@ -8,6 +8,7 @@ import LandingFlow from '../../components/landing/LandingFlow.astro';
 import LandingAudience from '../../components/landing/LandingAudience.astro';
 import LandingEcosystem from '../../components/landing/LandingEcosystem.astro';
 import LandingKnowledge from '../../components/landing/LandingKnowledge.astro';
+import LandingVideo from '../../components/landing/LandingVideo.astro';
 import LandingCta from '../../components/landing/LandingCta.astro';
 import { getCollection } from 'astro:content';
 import { filterPublishedPosts } from '../../lib/publishedNews';
@@ -45,6 +46,7 @@ const homeArticles = homeArticleIds.flatMap((id) => {
     <LandingAudience />
     <LandingEcosystem />
     <LandingKnowledge posts={homeArticles} />
+    <LandingVideo />
     <LandingCta />
   </div>
 

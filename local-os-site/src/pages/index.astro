@@ -19,6 +19,7 @@ import {
 import { featuredGuides, featuredPlaces, guideHref, placeHref } from '../lib/discover';
 import { isEventPast } from '../lib/event-date';
 import { jobPay } from '../lib/job-filters';
+import LatestLongVideo from '../components/LatestLongVideo.astro';
 import { collectionJsonLd, siteOrigin } from '../lib/seo';
 
 const homePlaces = featuredPlaces();
@@ -381,6 +382,10 @@ const latestArticles = articles.slice(0, 4);
         {groups.length > 0 && <p class="comm-note">Nhóm quanh Thái Nguyên — mở và tham gia khi muốn.</p>}
       </section>
     </div>
+  </div>
+
+  <div class="wrap">
+    <LatestLongVideo />
   </div>
 
   <section class="life-band">

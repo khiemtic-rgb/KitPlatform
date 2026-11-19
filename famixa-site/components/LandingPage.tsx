@@ -9,6 +9,7 @@ import { GrowthLoop } from '@/components/sections/GrowthLoop';
 import { Testimonials } from '@/components/sections/Testimonials';
 import { Pricing } from '@/components/sections/Pricing';
 import { FAQ } from '@/components/sections/FAQ';
+import { LatestFilm } from '@/components/sections/LatestFilm';
 import { FinalCTA } from '@/components/sections/FinalCTA';
 import { Footer } from '@/components/sections/Footer';
 import type { Metadata } from 'next';
@@ -72,6 +73,7 @@ export async function LandingPage({ locale }: { locale: AppLocale }) {
         <Testimonials content={c.chapter7} locale={locale} />
         <Pricing content={c.chapter8} appUrl={c.appUrl} locale={locale} />
         <FAQ content={c.faq} locale={locale} />
+        <LatestFilm locale={locale} />
         <FinalCTA content={c.finalCta} brand={c.brand} appUrl={c.appUrl} />
       </main>
       <Footer content={c.footer} brand={c.brand} appUrl={c.appUrl} locale={locale} />
