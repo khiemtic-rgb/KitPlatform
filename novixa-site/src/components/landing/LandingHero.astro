@@ -45,13 +45,17 @@ const statIcons = [
         video ? (
           <>
             <div class="hl-hero__frame">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${video.id}`}
-                title={video.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerpolicy="strict-origin-when-cross-origin"
-                allowfullscreen
-              />
+              <button type="button" class="hl-hero__play" data-yt-id={video.id} aria-label={`Phát: ${video.title}`}>
+                <img
+                  src={`https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`}
+                  alt=""
+                  width="1280"
+                  height="720"
+                  data-id={video.id}
+                  onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/'+this.dataset.id+'/hqdefault.jpg'"
+                />
+                <span class="hl-hero__play-icon" aria-hidden="true"></span>
+              </button>
             </div>
             <p class="hl-hero__sample">
               <a href={video.channelUrl} target="_blank" rel="noopener noreferrer">
@@ -76,6 +80,21 @@ const statIcons = [
     </div>
   </div>
 </section>
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.hl-hero__play').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.ytId;
+      if (!id) return;
+      const frame = document.createElement('iframe');
+      frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1`;
+      frame.title = btn.getAttribute('aria-label') || 'Video';
+      frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      btn.replaceWith(frame);
+    });
+  });
+</script>
 
 <section class="hl-stats" aria-label="Điểm mạnh Novixa">
   <div class="container">
