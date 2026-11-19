@@ -11,22 +11,21 @@ const assessmentUrl = ASSESSMENT.pharmacy.surveyUrl;
 
 const title = 'Health Check nhà thuốc miễn phí';
 const description =
-  'Chỉ 7 phút để nhận báo cáo đánh giá miễn phí về vận hành, tồn kho, khách hàng và hiệu suất nhà thuốc.';
+  '31 câu, khoảng 7–10 phút. Làm bài không cần đăng ký, xem kết quả sơ bộ ngay, để lại số điện thoại nếu muốn báo cáo đầy đủ.';
 
 const outcomes = [
-  { icon: 'chart', label: 'Cơ hội tăng doanh thu' },
-  { icon: 'ready', label: 'Mức sẵn sàng cạnh tranh' },
-  { icon: 'retain', label: 'Khả năng giữ chân khách hàng' },
-  { icon: 'priority', label: 'Việc cần ưu tiên trước' },
+  { icon: 'chart', label: 'Chỗ đang để lọt tiền: hàng hết hạn, hết hàng khi khách hỏi' },
+  { icon: 'retain', label: 'Khả năng giữ chân khách quen' },
   { icon: 'risk', label: 'Rủi ro vận hành & tồn kho' },
+  { icon: 'priority', label: 'Ba việc nên làm trước — làm được ngay tuần này' },
   { icon: 'roadmap', label: 'Lộ trình cải thiện theo giai đoạn' },
 ];
 
 const meta = [
   { icon: 'list', label: '31 câu hỏi' },
-  { icon: 'clock', label: '~7 phút' },
+  { icon: 'clock', label: 'khoảng 7–10 phút' },
   { icon: 'flash', label: 'Kết quả ngay' },
-  { icon: 'user', label: 'Không cần đăng ký' },
+  { icon: 'user', label: 'Không đăng ký' },
 ];
 
 const whyCards = [
@@ -42,8 +41,8 @@ const whyCards = [
   },
   {
     icon: 'trophy',
-    title: 'Tăng lợi nhuận bền vững',
-    desc: 'Tối ưu tồn kho, tăng vòng quay, giữ chân khách hàng.',
+    title: 'Thấy chỗ đang để lọt tiền',
+    desc: 'Hàng hết hạn và hết hàng khi khách hỏi, ước tính từ số anh/chị nhập.',
   },
   {
     icon: 'clipboard',
@@ -52,36 +51,37 @@ const whyCards = [
   },
   {
     icon: 'rocket',
-    title: 'Sẵn sàng cạnh tranh',
-    desc: 'Nâng cấp nhà thuốc để không bị bỏ lại phía sau.',
+    title: 'Biết việc làm trong 30 ngày',
+    desc: 'Ba việc nên làm trước, việc nào cũng làm được ngay tuần này.',
   },
 ];
 
 const receiveItems = [
   {
-    title: 'Báo cáo đánh giá 5 nhóm năng lực',
-    desc: 'Khách hàng · Kho · Công nghệ · Vận hành · Nhân sự.',
+    title: 'Kết quả sơ bộ ngay',
+    desc: '6 nhóm: Khách hàng, Vận hành, Kho, Kinh doanh, Dữ liệu & Công nghệ, Phát triển.',
   },
   {
-    title: 'Điểm số & phân tích chi tiết',
-    desc: 'So sánh với chuẩn ngành và gợi ý cải thiện.',
+    title: 'Báo cáo đầy đủ khi để lại số điện thoại',
+    desc: 'Điểm mạnh, chỗ đang nghẽn và lộ trình 30–60–90 ngày. Không cần đăng ký tài khoản.',
   },
   {
-    title: 'Lộ trình cải thiện 30 - 60 - 90 ngày',
-    desc: 'Hành động cụ thể, dễ áp dụng.',
+    title: 'Thang điểm',
+    desc: 'Dưới 40 Cần cải thiện · 40–59 Cơ bản · 60–79 Khá tốt · từ 80 Xuất sắc.',
   },
   {
-    title: 'Tư vấn 1:1 cùng chuyên gia Novixa',
-    desc: '(Nếu bạn muốn)',
+    title: 'Cuộc gọi 10–15 phút',
+    desc: 'Chỉ khi anh/chị đồng ý. Không đồng ý vẫn xem được báo cáo.',
   },
 ];
 
 const dimensions = [
   { label: 'Khách hàng', value: 68 },
-  { label: 'Kho', value: 54 },
-  { label: 'Công nghệ', value: 61 },
   { label: 'Vận hành', value: 48 },
-  { label: 'Nhân sự', value: 57 },
+  { label: 'Kho', value: 54 },
+  { label: 'Kinh doanh', value: 61 },
+  { label: 'Dữ liệu & Công nghệ', value: 57 },
+  { label: 'Phát triển', value: 52 },
 ];
 
 const score = 62;
@@ -101,7 +101,7 @@ const gaugePct = Math.round((score / 100) * 283); // circumference ~ 2πr with r
             Doanh thu tốt không có nghĩa nhà thuốc đang vận hành tốt.
           </h1>
           <p class="hc-v2-hero__lead">
-            Chỉ <strong>7 phút</strong> để nhận báo cáo đánh giá miễn phí về vận hành, tồn kho, khách hàng và hiệu suất.
+            <strong>31 câu, khoảng 7–10 phút</strong>, miễn phí. Làm bài không cần đăng ký, xem kết quả sơ bộ ngay, để lại số điện thoại để xem báo cáo đầy đủ. Nếu đồng ý thì có cuộc gọi 10–15 phút.
           </p>
 
           <ul class="hc-v2-outcomes">
@@ -227,7 +227,7 @@ const gaugePct = Math.round((score / 100) * 283); // circumference ~ 2πr with r
                 </svg>
                 <div class="hc-v2-gauge__text">
                   <strong>{score}<small>/100</small></strong>
-                  <span>Cơ bản</span>
+                  <span>Khá tốt</span>
                 </div>
               </div>
               <ul class="hc-v2-bars">
@@ -246,8 +246,8 @@ const gaugePct = Math.round((score / 100) * 283); // circumference ~ 2πr with r
                 }
               </ul>
               <aside class="hc-v2-opportunity">
-                <strong>Cơ hội cải thiện lớn nhất</strong>
-                <p>Tập trung vào chăm sóc khách hàng và kiểm soát tồn kho.</p>
+                <strong>Hình minh họa, không phải kết quả thật</strong>
+                <p>Điểm 62/100 trên thang này là Khá tốt. Dưới 40 Cần cải thiện, 40–59 Cơ bản, 60–79 Khá tốt, từ 80 Xuất sắc.</p>
               </aside>
             </div>
           </div>
@@ -324,23 +324,24 @@ const gaugePct = Math.round((score / 100) * 283); // circumference ~ 2πr with r
 
         <div class="hc-v2-receive__preview" aria-hidden="true">
           <article class="hc-v2-preview-card hc-v2-preview-card--radar">
-            <p>Phân tích 5 nhóm</p>
-            <svg viewBox="0 0 200 170" class="hc-v2-radar">
-              <polygon points="100,18 168,68 142,148 58,148 32,68" fill="none" stroke="#d1e7e5" />
-              <polygon points="100,38 148,72 130,128 70,128 52,72" fill="none" stroke="#d1e7e5" />
-              <polygon points="100,28 158,70 136,138 64,138 42,70" fill="rgba(22,199,132,0.18)" stroke="#16c784" stroke-width="2" />
+            <p>Phân tích 6 nhóm</p>
+            <svg viewBox="0 0 200 180" class="hc-v2-radar">
+              <polygon points="100,16 164,48 164,112 100,144 36,112 36,48" fill="none" stroke="#d1e7e5" />
+              <polygon points="100,36 148,60 148,108 100,132 52,108 52,60" fill="none" stroke="#d1e7e5" />
+              <polygon points="100,28 156,54 150,116 100,138 44,110 48,52" fill="rgba(22,199,132,0.18)" stroke="#16c784" stroke-width="2" />
               <text x="100" y="12" text-anchor="middle">Khách hàng</text>
-              <text x="178" y="72">Công nghệ</text>
-              <text x="152" y="162" text-anchor="middle">Nhân sự</text>
-              <text x="48" y="162" text-anchor="middle">Vận hành</text>
-              <text x="8" y="72">Kho</text>
+              <text x="168" y="46">Vận hành</text>
+              <text x="168" y="124">Kho</text>
+              <text x="100" y="162" text-anchor="middle">Kinh doanh</text>
+              <text x="4" y="124">Dữ liệu</text>
+              <text x="8" y="46">Phát triển</text>
             </svg>
           </article>
 
           <article class="hc-v2-preview-card hc-v2-preview-card--gauge">
             <p>Điểm tổng</p>
             <strong>62<span>/100</span></strong>
-            <em>Cơ bản</em>
+            <em>Khá tốt</em>
           </article>
 
           <article class="hc-v2-preview-card hc-v2-preview-card--roadmap">
@@ -387,7 +388,7 @@ const gaugePct = Math.round((score / 100) * 283); // circumference ~ 2πr with r
             </span>
             <div>
               <p class="hc-v2-cta__title">Hoàn toàn miễn phí</p>
-              <p class="hc-v2-cta__sub">Chỉ mất 7 phút · Không ràng buộc · Không cần để lại thông tin</p>
+              <p class="hc-v2-cta__sub">31 câu, khoảng 7–10 phút · Không cần đăng ký · Báo cáo đầy đủ khi để lại số điện thoại</p>
             </div>
           </div>
           <div class="hc-v2-cta__action">
