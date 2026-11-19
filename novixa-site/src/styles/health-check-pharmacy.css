@@ -75,8 +75,16 @@ body:has(.hc-page--v2) {
   }
 }
 
+.hc-v2-hero__sub {
+  margin: 0.6rem 0 0;
+  font-size: 1.125rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--hc-ink);
+}
+
 .hc-v2-hero__lead {
-  margin: 1rem 0 0;
+  margin: 0.75rem 0 0;
   max-width: 42ch;
   font-size: 1.0625rem;
   line-height: 1.55;
@@ -132,7 +140,7 @@ body:has(.hc-page--v2) {
 }
 
 .hc-v2-meta {
-  margin-top: 1.45rem;
+  margin-top: 1rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
@@ -159,7 +167,7 @@ body:has(.hc-page--v2) {
 }
 
 .hc-v2-hero__actions {
-  margin-top: 1.65rem;
+  margin-top: 1.25rem;
   display: grid;
   justify-items: start;
   gap: 0.75rem;
@@ -764,5 +772,38 @@ body:has(.hc-page--v2) {
 
   .hc-v2-hero {
     padding-top: calc(var(--hc-header, 72px) + 24px);
+  }
+
+  .hc-v2-hero__actions {
+    justify-items: stretch;
+  }
+}
+
+/* Thanh nút cố định ở đáy màn hình, chỉ trên điện thoại/máy tính bảng nhỏ */
+.hc-v2-sticky {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hc-v2-sticky:not([hidden]) {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.08);
+  }
+
+  .hc-v2-sticky .hc-v2-btn {
+    width: 100%;
+    padding: 0.85rem 1rem;
+  }
+
+  body.hc-has-sticky {
+    padding-bottom: 76px;
   }
 }
