@@ -149,11 +149,26 @@ const WORDS: [RegExp, string][] = Object.entries(EXACT)
   .sort((a, b) => b[0].length - a[0].length)
   .map(([k, v]) => [new RegExp(`\\b${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), v]);
 
+/** Có ký tự tiếng Việt có dấu, tức là câu đã viết đúng và không cần thêm dấu nữa. */
+const HAS_DIACRITICS = /[\u00C0-\u024F\u1E00-\u1EFF]/;
+
+/** Giữ chữ thường nếu chữ gốc viết thường ("doanh thu" không thành "Doanh thu"). */
+function keepCase(matched: string, replacement: string): string {
+  const first = matched.charAt(0);
+  return first && first === first.toLowerCase() && first !== first.toUpperCase()
+    ? replacement.charAt(0).toLowerCase() + replacement.slice(1)
+    : replacement;
+}
+
 export function normalizeVietnamese(text: string): string {
   if (!text) return text;
   let t = text.trim();
   if (EXACT[t]) return EXACT[t];
+  // Bảng thêm dấu chỉ dành cho nội dung cũ viết không dấu. Áp lên câu đã có dấu sẽ làm hỏng
+  // câu (\b của JS không hiểu chữ có dấu) và viết hoa sai giữa câu ("Tăng Doanh thu").
+  const alreadyAccented = HAS_DIACRITICS.test(t);
   for (const [re, rep] of PHRASES) t = t.replace(re, rep);
-  for (const [re, rep] of WORDS) t = t.replace(re, rep);
+  if (alreadyAccented) return t;
+  for (const [re, rep] of WORDS) t = t.replace(re, (m) => keepCase(m, rep));
   return t;
 }

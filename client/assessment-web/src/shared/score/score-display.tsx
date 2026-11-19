@@ -60,7 +60,10 @@ export function OverallScoreHero({ scorePct }: { scorePct: number }) {
 }
 
 export function CategoryScoreTable({ items }: { items: CategoryScore[] }) {
-  const sorted = [...items].sort((a, b) => b.scorePct - a.scorePct);
+  const sorted = [...items].sort((a, b) => {
+    if (a.insufficientData !== b.insufficientData) return a.insufficientData ? 1 : -1;
+    return b.scorePct - a.scorePct;
+  });
 
   return (
     <div className="score-table">
@@ -70,6 +73,19 @@ export function CategoryScoreTable({ items }: { items: CategoryScore[] }) {
         <span>Điểm</span>
       </div>
       {sorted.map((item) => {
+        if (item.insufficientData) {
+          return (
+            <div key={item.code} className="score-table-row">
+              <div className="score-table-name">
+                <CategoryLabel code={item.code} name={item.name} />
+              </div>
+              <div className="score-table-bar-wrap" />
+              <div className="score-table-score">
+                <strong>Chưa đủ dữ liệu</strong>
+              </div>
+            </div>
+          );
+        }
         const score100 = toScore100(item.scorePct);
         const level = getMaturityLevel(score100);
         return (

@@ -1,22 +1,26 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Typography, message } from 'antd';
-import { createSubmission, rememberPartnerRef } from '@/shared/api/assessment.api';
+import { createSubmission, rememberPartnerRef, rememberUtm } from '@/shared/api/assessment.api';
+import { getMaturityLevel } from '@/shared/score/score-display';
 
 const { Title, Paragraph, Text } = Typography;
 
 const BENEFITS = [
-  { icon: '📈', text: 'Cơ hội tăng doanh thu' },
-  { icon: '👥', text: 'Khả năng giữ chân khách hàng' },
+  { icon: '💸', text: 'Chỗ đang để lọt tiền: hàng hết hạn, hết hàng khi khách hỏi' },
+  { icon: '👥', text: 'Khả năng giữ chân khách quen' },
   { icon: '📦', text: 'Rủi ro vận hành & tồn kho' },
-  { icon: '🏆', text: 'Mức sẵn sàng cạnh tranh' },
-  { icon: '🎯', text: 'Việc cần ưu tiên trước' },
+  { icon: '🎯', text: 'Ba việc nên làm trước — làm được ngay tuần này' },
   { icon: '🗺️', text: 'Lộ trình cải thiện theo giai đoạn' },
 ] as const;
 
+// Cập nhật số phút theo thời gian làm bài trung vị đo được từ bài thật.
+const QUESTION_COUNT = 31;
+const DURATION_LABEL = 'khoảng 7–10 phút';
+
 const PROGRESS_CHIPS = [
-  { icon: '📝', label: '31 câu hỏi' },
-  { icon: '⏱', label: '~7 phút' },
+  { icon: '📝', label: `${QUESTION_COUNT} câu hỏi` },
+  { icon: '⏱', label: DURATION_LABEL },
   { icon: '📄', label: 'Kết quả ngay' },
   { icon: '🔒', label: 'Không đăng ký' },
 ] as const;
@@ -27,6 +31,7 @@ const TRUST_ITEMS = [
   'Xem sơ bộ ngay — báo cáo đầy đủ khi bạn muốn nhận',
 ] as const;
 
+const SAMPLE_SCORE = 62;
 const SAMPLE_CATEGORIES = [
   { name: 'Khách hàng', score: 68 },
   { name: 'Kho', score: 54 },
@@ -37,16 +42,16 @@ function SamplePreviewCard({ onStart }: { onStart: () => void }) {
   return (
     <div className="hero-preview" id="sample-preview">
       <Text type="secondary" className="hero-preview-label">
-        Mẫu kết quả (minh họa)
+        Mẫu minh họa — không phải kết quả của một nhà thuốc thật
       </Text>
       <div className="hero-preview-card">
         <div className="hero-preview-score">
           <Text type="secondary">Điểm trưởng thành</Text>
           <div className="hero-preview-score-value">
-            <span className="hero-preview-number">62</span>
+            <span className="hero-preview-number">{SAMPLE_SCORE}</span>
             <span className="hero-preview-max">/ 100</span>
           </div>
-          <span className="hero-preview-badge">Cơ bản</span>
+          <span className="hero-preview-badge">{getMaturityLevel(SAMPLE_SCORE).label}</span>
         </div>
 
         <div className="hero-preview-bars">
@@ -92,6 +97,7 @@ export function LandingPage() {
 
   useEffect(() => {
     rememberPartnerRef(searchParams.get('ref') ?? searchParams.get('partner'));
+    rememberUtm(searchParams);
   }, [searchParams]);
 
   async function handleStart() {
@@ -119,14 +125,12 @@ export function LandingPage() {
 
       <section className="landing-hero">
         <Title level={2} className="landing-headline">
-          Nhà thuốc của bạn đang ở giai đoạn phát triển nào — và có sẵn sàng cạnh tranh khi chuỗi
-          mở rộng không?
+          Nhà thuốc bán tốt chưa chắc đã vận hành tốt. Anh/chị đang để lọt tiền ở đâu?
         </Title>
 
         <Paragraph className="landing-sub">
-          Chỉ <Text strong>7 phút</Text> để nhận{' '}
-          <Text strong>Hồ sơ phát triển nhà thuốc</Text> miễn phí — biết điểm mạnh, điểm nghẽn và
-          việc nên làm trước.
+          <Text strong>{QUESTION_COUNT} câu, {DURATION_LABEL}</Text>, miễn phí — biết điểm mạnh, điểm
+          nghẽn và <Text strong>ba việc nên làm trước</Text>, việc nào cũng làm được ngay tuần này.
         </Paragraph>
 
         <Text type="secondary" className="landing-persona">

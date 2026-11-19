@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Spin, Typography, message } from 'antd';
-import { createSubmission, rememberPartnerRef } from '@/shared/api/assessment.api';
+import { createSubmission, rememberPartnerRef, rememberUtm } from '@/shared/api/assessment.api';
 
 const { Text } = Typography;
 
@@ -14,6 +14,7 @@ export function StartPage() {
 
   useEffect(() => {
     rememberPartnerRef(searchParams.get('ref') ?? searchParams.get('partner'));
+    rememberUtm(searchParams);
   }, [searchParams]);
 
   useEffect(() => {
@@ -24,7 +25,6 @@ export function StartPage() {
     (async () => {
       try {
         const sub = await createSubmission();
-        if (cancelled) return;
         navigate(`/survey/${sub.id}`, { replace: true });
       } catch {
         if (cancelled) return;

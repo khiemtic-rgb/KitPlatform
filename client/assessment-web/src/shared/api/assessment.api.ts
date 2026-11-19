@@ -6,6 +6,10 @@ const api = axios.create({
 });
 
 const PARTNER_REF_KEY = 'kap_partner_ref';
+const UTM_KEY = 'kap_utm';
+const UTM_NAMES = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'] as const;
+
+export type KapUtm = Partial<Record<(typeof UTM_NAMES)[number], string>>;
 
 export function rememberPartnerRef(code: string | null | undefined) {
   const trimmed = code?.trim();
@@ -22,6 +26,34 @@ export function getPartnerRef(): string | null {
     return sessionStorage.getItem(PARTNER_REF_KEY);
   } catch {
     return null;
+  }
+}
+
+export function rememberUtm(params: URLSearchParams) {
+  const next = getUtm();
+  let changed = false;
+  for (const name of UTM_NAMES) {
+    const value = params.get(name)?.trim();
+    if (!value) continue;
+    next[name] = value;
+    changed = true;
+  }
+  if (!changed) return;
+  try {
+    sessionStorage.setItem(UTM_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getUtm(): KapUtm {
+  try {
+    const raw = sessionStorage.getItem(UTM_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as KapUtm;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
 }
 
@@ -89,6 +121,7 @@ export type CategoryScore = {
   name: string;
   score: number;
   scorePct: number;
+  insufficientData?: boolean;
 };
 
 export type CompleteResult = {
@@ -267,22 +300,70 @@ export type OwnerPack = {
   nextStepCta: string;
 };
 
+/** Bộ câu hỏi đang dùng cho bài mới. Bài cũ luôn mở theo templateCode của chính bài đó. */
+export const CURRENT_TEMPLATE = { code: 'PHARMACY_V2', version: '2.0' } as const;
+
 function sessionStorageKey(submissionId: string) {
   return `assessment_session_${submissionId}`;
 }
 
-function rememberSession(submissionId: string, sessionToken: string) {
-  sessionStorage.setItem(sessionStorageKey(submissionId), sessionToken);
-  sessionStorage.setItem('assessment_session', sessionToken);
+function safeGet(store: Storage, key: string): string | null {
+  try {
+    return store.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
-function sessionHeader(submissionId?: string, token?: string) {
-  const stored =
-    token ??
-    (submissionId ? sessionStorage.getItem(sessionStorageKey(submissionId)) : null) ??
-    sessionStorage.getItem('assessment_session') ??
-    undefined;
+function safeSet(store: Storage, key: string, value: string) {
+  try {
+    store.setItem(key, value);
+  } catch {
+    /* trình duyệt chặn storage (chế độ riêng tư...) */
+  }
+}
+
+/**
+ * Lưu mã phiên theo từng bài, ở cả sessionStorage và localStorage, để mở lại bài
+ * trong tab mới hoặc sau khi đóng trình duyệt vẫn làm tiếp được.
+ */
+function rememberSession(submissionId: string, sessionToken: string) {
+  safeSet(sessionStorage, sessionStorageKey(submissionId), sessionToken);
+  safeSet(localStorage, sessionStorageKey(submissionId), sessionToken);
+}
+
+function storedSession(submissionId: string): string | null {
+  return (
+    safeGet(sessionStorage, sessionStorageKey(submissionId)) ??
+    safeGet(localStorage, sessionStorageKey(submissionId))
+  );
+}
+
+function sessionHeader(submissionId: string, token?: string) {
+  const stored = token ?? storedSession(submissionId) ?? undefined;
   return stored ? { 'X-Assessment-Session': stored } : {};
+}
+
+/**
+ * Link "làm tiếp": mang mã phiên trong phần #, phần này không gửi lên server và không
+ * lọt vào Referer. Ai có link thì làm tiếp được bài này, nên chỉ đưa cho chính người làm.
+ */
+export function buildResumeLink(submissionId: string): string | null {
+  const token = storedSession(submissionId);
+  if (!token) return null;
+  return `${window.location.origin}/survey/${submissionId}#t=${encodeURIComponent(token)}`;
+}
+
+/** Nhận mã phiên từ link "làm tiếp" (#t=...), lưu lại rồi xóa khỏi thanh địa chỉ. */
+export function adoptSessionFromHash(submissionId: string) {
+  const match = window.location.hash.match(/[#&]t=([^&]+)/);
+  if (!match) return;
+  rememberSession(submissionId, decodeURIComponent(match[1]));
+  window.history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
+export function isSessionError(err: unknown): boolean {
+  return axios.isAxiosError(err) && (err.response?.status === 401 || err.response?.status === 403);
 }
 
 function isPdfBlob(blob: Blob) {
@@ -318,19 +399,24 @@ export function triggerPdfDownload(blob: Blob, fileName: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-export async function fetchTemplate(code = 'PHARMACY_V1') {
+export async function fetchTemplate(code: string = CURRENT_TEMPLATE.code) {
   const { data } = await api.get<AssessmentTemplate>(`/templates/${code}`);
   return data;
 }
 
 export async function createSubmission() {
   const partnerCode = getPartnerRef();
+  const utm = getUtm();
   const { data } = await api.post<CreateSubmissionResult>('/submissions', {
-    templateCode: 'PHARMACY_V1',
-    templateVersion: '1.1',
+    templateCode: CURRENT_TEMPLATE.code,
+    templateVersion: CURRENT_TEMPLATE.version,
     source: partnerCode ? 'partner' : 'public_web',
     locale: 'vi-VN',
     partnerCode: partnerCode || undefined,
+    utmSource: utm.utm_source,
+    utmMedium: utm.utm_medium,
+    utmCampaign: utm.utm_campaign,
+    utmContent: utm.utm_content,
   });
   rememberSession(data.id, data.sessionToken);
   return data;
