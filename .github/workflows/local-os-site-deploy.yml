@@ -1,0 +1,44 @@
+# Deploy Thái Nguyên Life (Worker thainguyenlife). Feed comes from the public API
+# and the export script refuses a thin feed, so an empty homepage is not published.
+name: Thái Nguyên Life deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: local-os-site/package-lock.json
+
+      - name: Install
+        working-directory: local-os-site
+        run: npm ci
+
+      - name: Export public feed
+        working-directory: local-os-site
+        env:
+          PUBLIC_LOCAL_OS_API: https://api.novixa.vn/api/public/local-os
+        run: node scripts/export-public-feed.mjs
+
+      - name: Build
+        working-directory: local-os-site
+        run: npm run build
+
+      - name: Deploy worker
+        working-directory: local-os-site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-db0d4500b2d1fd3d607105da7d4f931d}"
+          npx --yes wrangler@4 deploy
