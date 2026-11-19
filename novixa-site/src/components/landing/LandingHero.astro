@@ -1,5 +1,8 @@
 ---
 import { homeLanding as h } from '../../lib/home-landing';
+import { latestLongVideo } from '../../lib/youtube-latest';
+
+const video = await latestLongVideo('novixavn');
 
 const icon = (d: string) =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -38,15 +41,38 @@ const statIcons = [
     </div>
 
     <div class="hl-hero__visual">
-      <img
-        src="/images/hero/dashboard-desktop.png"
-        alt="Giao diện mẫu của Novixa trên máy tính và điện thoại. Số trên hình không phải số của một nhà thuốc."
-        width="1400"
-        height="1000"
-        loading="eager"
-        decoding="async"
-      />
-      <p class="hl-hero__sample">Giao diện mẫu. Số trên hình không phải doanh thu thật.</p>
+      {
+        video ? (
+          <>
+            <div class="hl-hero__frame">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${video.id}`}
+                title={video.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen
+              />
+            </div>
+            <p class="hl-hero__sample">
+              <a href={video.channelUrl} target="_blank" rel="noopener noreferrer">
+                {video.title}
+              </a>
+            </p>
+          </>
+        ) : (
+          <>
+            <img
+              src="/images/hero/dashboard-desktop.png"
+              alt="Giao diện mẫu của Novixa trên máy tính và điện thoại. Số trên hình không phải số của một nhà thuốc."
+              width="1400"
+              height="1000"
+              loading="eager"
+              decoding="async"
+            />
+            <p class="hl-hero__sample">Giao diện mẫu. Số trên hình không phải doanh thu thật.</p>
+          </>
+        )
+      }
     </div>
   </div>
 </section>
