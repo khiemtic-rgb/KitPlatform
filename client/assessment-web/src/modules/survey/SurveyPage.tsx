@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Spin, message } from 'antd';
+import { Button, Input, Modal, Spin, message } from 'antd';
 import {
+  adoptSessionFromHash,
+  buildResumeLink,
   completeSubmission,
   fetchTemplate,
   getSubmission,
   groupQuestionsByCategory,
+  isSessionError,
   saveResponses,
   type AssessmentQuestion,
   type AssessmentTemplate,
 } from '@/shared/api/assessment.api';
 import { annotateInsightText } from '@/shared/score/score-display';
-import { visibleQuestions } from '@/shared/survey/survey-logic';
+import { expectedQuestionCount, visibleQuestions } from '@/shared/survey/survey-logic';
 
 const OPTION_TONES = ['rose', 'amber', 'teal', 'blue', 'violet', 'indigo'] as const;
 
@@ -74,6 +77,8 @@ export function SurveyPage() {
   const [qIndex, setQIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [resumeLink, setResumeLink] = useState<string | null>(null);
+  const [exitOpen, setExitOpen] = useState(false);
 
   const categories = useMemo(() => (template ? groupQuestionsByCategory(template) : []), [template]);
   const allQuestions = useMemo(() => categories.flatMap((c) => c.questions), [categories]);
@@ -81,23 +86,23 @@ export function SurveyPage() {
     () => visibleQuestions(allQuestions, answers),
     [allQuestions, answers],
   );
-  const visibleCategories = useMemo(
-    () =>
-      categories
-        .map((cat) => ({
-          ...cat,
-          questions: visibleQuestions(cat.questions, answers),
-        }))
-        .filter((cat) => cat.questions.length > 0),
-    [categories, answers],
-  );
+  const visibleCategories = useMemo(() => {
+    // Lọc theo cả bộ câu hỏi. visibleQuestions trên từng nhóm không thấy câu điều kiện
+    // ở nhóm khác (P3), nên mọi câu rẽ nhánh bị hiện và bộ đếm thành 36/31.
+    const visibleIds = new Set(visibleAllQuestions.map((q) => q.id));
+    return categories
+      .map((cat) => ({
+        ...cat,
+        questions: cat.questions.filter((q) => visibleIds.has(q.id)),
+      }))
+      .filter((cat) => cat.questions.length > 0);
+  }, [categories, visibleAllQuestions]);
 
   const currentCat = visibleCategories[catIndex];
   const currentQuestion: AssessmentQuestion | undefined = currentCat?.questions[qIndex];
+  const totalCount = useMemo(() => expectedQuestionCount(allQuestions, answers), [allQuestions, answers]);
   const answeredCount = visibleAllQuestions.filter((q) => answers[q.id]).length;
-  const progressPct = visibleAllQuestions.length
-    ? Math.round((answeredCount / visibleAllQuestions.length) * 100)
-    : 0;
+  const progressPct = totalCount ? Math.round((answeredCount / totalCount) * 100) : 0;
 
   const categoryAnswered = useMemo(
     () =>
@@ -112,7 +117,10 @@ export function SurveyPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [tpl, sub] = await Promise.all([fetchTemplate(), getSubmission(id)]);
+        adoptSessionFromHash(id);
+        const sub = await getSubmission(id);
+        // Mở theo đúng bộ câu hỏi của bài này (bài V1 làm dở vẫn làm tiếp được).
+        const tpl = await fetchTemplate(sub.templateCode);
         if (cancelled) return;
         setTemplate(tpl);
         const initial: Record<string, string> = {};
@@ -124,8 +132,16 @@ export function SurveyPage() {
         if (sub.status !== 'draft') {
           navigate(`/results/${id}`, { replace: true });
         }
-      } catch {
-        message.error('Không tải được khảo sát.');
+      } catch (err: unknown) {
+        if (isSessionError(err)) {
+          message.error({
+            content:
+              'Không mở được bài này trên trình duyệt này. Hãy mở bằng link "làm tiếp" đã lưu, hoặc bắt đầu bài mới.',
+            duration: 8,
+          });
+        } else {
+          message.error('Không tải được khảo sát. Vui lòng thử lại.');
+        }
         navigate('/', { replace: true });
       } finally {
         if (!cancelled) setLoading(false);
@@ -206,9 +222,12 @@ export function SurveyPage() {
   const globalIndex =
     visibleCategories.slice(0, catIndex).reduce((n, c) => n + c.questions.length, 0) + qIndex + 1;
   const atStart = catIndex === 0 && qIndex === 0;
-  const help =
-    currentQuestion.helpText?.trim() ||
-    'Chọn phương án mô tả đúng nhất với cách nhà thuốc đang vận hành.';
+  // Nhóm "Bắt đầu" là câu hồ sơ: không gắn nhãn tính điểm, không dùng dòng hướng dẫn mặc định.
+  const isProfile = currentCat.code === 'PROFILE';
+  const help = isProfile
+    ? currentQuestion.helpText?.trim() || ''
+    : currentQuestion.helpText?.trim() ||
+      'Chọn phương án mô tả đúng nhất với cách nhà thuốc đang vận hành.';
 
   return (
     <div className="sq-page">
@@ -217,13 +236,20 @@ export function SurveyPage() {
           <a className="sq-brand" href="https://novixa.vn/vi/" aria-label="Novixa">
             <img src="/logo.png" alt="Novixa" width="120" height="34" />
           </a>
-          <button type="button" className="sq-exit" onClick={() => navigate('/')}>
+          <button
+            type="button"
+            className="sq-exit"
+            onClick={() => {
+              setResumeLink(buildResumeLink(id));
+              setExitOpen(true);
+            }}
+          >
             <Icon d={PATH.save} size={14} />
             Lưu &amp; thoát
           </button>
         </div>
         <span className="sq-topbar__meta">
-          Câu {globalIndex}/{visibleAllQuestions.length}
+          Câu {globalIndex}/{totalCount}
         </span>
       </header>
 
@@ -263,16 +289,15 @@ export function SurveyPage() {
               <Icon d={PATH.users} size={13} />
               Nhóm: {currentCat.name}
             </span>
-            <span className="sq-badge sq-badge--code">Câu {currentQuestion.code}</span>
-            {!currentQuestion.scorable ? (
-              <span className="sq-badge sq-badge--info">Không tính điểm · Hỗ trợ tư vấn</span>
+            {!currentQuestion.scorable && !isProfile ? (
+              <span className="sq-badge sq-badge--info">Không tính điểm</span>
             ) : null}
           </div>
           <QuestionArt />
         </div>
 
         <h1 className="sq-question">{annotateInsightText(currentQuestion.title)}</h1>
-        <p className="sq-help">{annotateInsightText(help)}</p>
+        {help ? <p className="sq-help">{annotateInsightText(help)}</p> : null}
 
         <div className="sq-options" role="group" aria-label="Lựa chọn trả lời">
           {currentQuestion.questionType === 'text' || currentQuestion.questionType === 'scale' ? (
@@ -321,6 +346,7 @@ export function SurveyPage() {
                   type="button"
                   role="radio"
                   aria-checked={selected}
+                  aria-label={title}
                   className={['sq-option', selected ? 'is-selected' : ''].filter(Boolean).join(' ')}
                   onClick={() => persistAnswer(currentQuestion.id, { optionId: opt.id })}
                 >
@@ -356,6 +382,44 @@ export function SurveyPage() {
           </button>
         </footer>
       </article>
+
+      <Modal
+        open={exitOpen}
+        title="Câu trả lời đã được lưu"
+        onCancel={() => setExitOpen(false)}
+        footer={[
+          <Button key="stay" onClick={() => setExitOpen(false)}>
+            Làm tiếp
+          </Button>,
+          <Button key="exit" type="primary" onClick={() => navigate('/')}>
+            Thoát
+          </Button>,
+        ]}
+      >
+        {resumeLink ? (
+          <>
+            <p>
+              Giữ link dưới đây để làm tiếp, ví dụ gửi vào Zalo của chính anh/chị. Link dùng được trong 7
+              ngày. Ai có link cũng làm tiếp được bài này, nên đừng chia sẻ cho người khác.
+            </p>
+            <Input.Search
+              readOnly
+              value={resumeLink}
+              enterButton="Sao chép"
+              onSearch={async (value) => {
+                try {
+                  await navigator.clipboard.writeText(value);
+                  message.success('Đã sao chép link làm tiếp.');
+                } catch {
+                  message.info('Hãy chọn và sao chép link thủ công.');
+                }
+              }}
+            />
+          </>
+        ) : (
+          <p>Mở lại trang này trên cùng trình duyệt để làm tiếp.</p>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -201,7 +201,10 @@ export function ResultsPage() {
   const level = getMaturityLevel(score100);
   const categories = useMemo(() => {
     if (!result) return [] as CategoryScore[];
-    return [...result.categoryScores].sort((a, b) => b.scorePct - a.scorePct);
+    return [...result.categoryScores].sort((a, b) => {
+      if (a.insufficientData !== b.insufficientData) return a.insufficientData ? 1 : -1;
+      return b.scorePct - a.scorePct;
+    });
   }, [result]);
 
   const insightCards = result?.previewInsights.slice(0, 2) ?? [];
@@ -226,49 +229,67 @@ export function ResultsPage() {
         </a>
         <button type="button" className="results-pdf-btn" onClick={goUnlock}>
           <span className="results-pdf-btn__icon" aria-hidden>
-            <Icon d={ICON_PATH.pdf} size={16} />
+            <Icon d={ICON_PATH.report} size={16} />
           </span>
+          {/* Trang này chỉ hiện khi báo cáo còn khóa; bài đã để lại thông tin được chuyển sang /report. */}
           <span className="results-pdf-btn__text">
-            <strong>Tải báo cáo PDF</strong>
-            <small>Bản đầy đủ sau khi xác nhận thông tin</small>
+            <strong>Mở báo cáo đầy đủ</strong>
+            <small>Để lại số điện thoại</small>
           </span>
         </button>
       </header>
 
       <section className="results-hero">
         <h1>Kết quả sơ bộ</h1>
-        <p>Điểm được quy đổi về thang 100 để dễ so sánh giữa các nhóm năng lực.</p>
+        <p>Bạn đã hoàn thành khảo sát. Đây là điểm tổng và những điều nổi bật nhất của nhà thuốc.</p>
       </section>
 
       <div className="results-summary">
         <article className="results-card results-card--gauge">
           <Gauge score100={score100} label={level.label} color={level.color} />
         </article>
-        <article className="results-card results-card--done">
-          <div className="results-done">
-            <span className="results-done__icon" aria-hidden>
-              <Icon d={ICON_PATH.trophy} size={22} />
-            </span>
-            <div>
-              <h2>Bạn đã hoàn thành khảo sát!</h2>
-              <p>
-                Điểm dưới đây phản ánh mức độ trưởng thành theo từng nhóm năng lực của nhà thuốc —
-                dùng để ưu tiên việc cần cải thiện trước.
-              </p>
+        <article className="results-card results-next">
+          {insightCards.length > 0 ? (
+            <div className="results-insights results-insights--stack">
+              {insightCards.map((insight, idx) => (
+                <article
+                  key={insight.title}
+                  className="results-insight"
+                  data-tone={idx === 0 ? 'amber' : 'blue'}
+                >
+                  <span className="results-insight__icon" aria-hidden>
+                    <Icon d={idx === 0 ? ICON_PATH.bulb : ICON_PATH.link} size={18} />
+                  </span>
+                  <h3>{annotateInsightText(insight.title)}</h3>
+                  <p>{annotateInsightText(insight.body)}</p>
+                </article>
+              ))}
             </div>
-          </div>
-          <div className="results-tip">
-            <Icon d={ICON_PATH.star} size={16} />
-            <p>
-              <strong>Gợi ý:</strong> Hãy cải thiện từng nhóm để nâng điểm tổng lên mức Khá (≥ 70) và
-              Tốt (≥ 85).
-            </p>
+          ) : null}
+          <div className="results-next__cta">
+            <Button
+              type="primary"
+              size="large"
+              block
+              icon={<Icon d={ICON_PATH.send} size={18} />}
+              onClick={goUnlock}
+            >
+              Xem ba việc nên làm trước
+            </Button>
+            <p>Để lại số điện thoại để xem báo cáo đầy đủ và lộ trình 30–60–90 ngày.</p>
           </div>
         </article>
       </div>
 
       <section className="results-card results-detail">
         <h2 className="results-detail__title">Chi tiết theo nhóm năng lực</h2>
+        <div className="results-tip">
+          <Icon d={ICON_PATH.star} size={16} />
+          <p>
+            <strong>Thang điểm:</strong> dưới 40 Cần cải thiện · 40–59 Cơ bản · 60–79 Khá tốt · từ 80
+            Xuất sắc.
+          </p>
+        </div>
         <div className="results-table-head">
           <span>Nhóm năng lực</span>
           <span>Mức độ</span>
@@ -276,9 +297,26 @@ export function ResultsPage() {
         </div>
         <ul className="results-table">
           {categories.map((item) => {
+            const meta = CATEGORY_META[item.code];
+            if (item.insufficientData) {
+              return (
+                <li key={item.code} className="results-table__row">
+                  <div className="results-cat">
+                    <CategoryIcon code={item.code} />
+                    <div>
+                      <strong>{item.name}</strong>
+                      <p>{meta?.desc ?? 'Nhóm năng lực trong hồ sơ phát triển nhà thuốc'}</p>
+                    </div>
+                  </div>
+                  <div className="results-bar" aria-hidden />
+                  <div className="results-score">
+                    <strong>Chưa đủ dữ liệu</strong>
+                  </div>
+                </li>
+              );
+            }
             const s = toScore100(item.scorePct);
             const lv = getMaturityLevel(s);
-            const meta = CATEGORY_META[item.code];
             return (
               <li key={item.code} className="results-table__row">
                 <div className="results-cat">
@@ -304,41 +342,12 @@ export function ResultsPage() {
         </ul>
       </section>
 
-      <section className="results-insights">
-        {insightCards.map((insight, idx) => (
-          <article
-            key={insight.title}
-            className="results-insight"
-            data-tone={idx === 0 ? 'amber' : 'blue'}
-          >
-            <span className="results-insight__icon" aria-hidden>
-              <Icon d={idx === 0 ? ICON_PATH.bulb : ICON_PATH.link} size={18} />
-            </span>
-            <h3>{annotateInsightText(insight.title)}</h3>
-            <p>{annotateInsightText(insight.body)}</p>
-          </article>
-        ))}
-        <article className="results-insight" data-tone="teal">
-          <span className="results-insight__icon" aria-hidden>
-            <Icon d={ICON_PATH.report} size={18} />
-          </span>
-          <h3>Báo cáo đầy đủ + tư vấn cải thiện</h3>
-          <p>
-            Nhận PDF chi tiết, so sánh ngành và lộ trình 30–60–90 ngày sau khi để lại thông tin liên
-            hệ.
-          </p>
-          <button type="button" className="results-insight__link" onClick={goUnlock}>
-            Nhận báo cáo →
-          </button>
-        </article>
-      </section>
-
       <section className="results-cta">
         <ResultsArt />
         <div className="results-cta__copy">
           <h2>Nhận báo cáo chi tiết &amp; tư vấn miễn phí</h2>
           <p>
-            Báo cáo gồm phân tích chuyên sâu, so sánh ngành và lộ trình cải thiện 30 – 60 – 90 ngày.
+            Báo cáo gồm phân tích từng nhóm, việc nên làm trước và lộ trình cải thiện 30 – 60 – 90 ngày.
           </p>
           <Button
             type="primary"
@@ -351,7 +360,7 @@ export function ResultsPage() {
           </Button>
           <p className="results-cta__trust">
             <Icon d={ICON_PATH.lock} size={14} />
-            Thông tin của bạn được bảo mật tuyệt đối
+            Không chia sẻ thông tin của bạn cho bên thứ ba
           </p>
         </div>
       </section>

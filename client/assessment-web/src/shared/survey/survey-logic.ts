@@ -47,6 +47,27 @@ export function buildQuestionMaps(questions: AssessmentQuestion[]) {
   return { codeToId, idToOptionCode };
 }
 
+/**
+ * Tổng số câu người làm sẽ thấy. Với mỗi câu điều kiện chưa trả lời mà có câu rẽ nhánh phụ thuộc,
+ * cộng thêm 1 (mỗi phương án mở đúng một câu nhánh). Nhờ vậy bộ đếm hiện "/31" ngay từ câu 1
+ * thay vì "/30" rồi nhảy lên. Bộ câu hỏi không có rẽ nhánh (V1) không đổi.
+ */
+export function expectedQuestionCount(
+  questions: AssessmentQuestion[],
+  answers: Record<string, string>,
+): number {
+  const visible = visibleQuestions(questions, answers);
+  const { codeToId } = buildQuestionMaps(questions);
+  const pendingDeps = new Set<string>();
+  for (const q of questions) {
+    const showIf = parseShowIf(q.metadata ?? null);
+    if (!showIf?.questionCode || !showIf.optionCode) continue;
+    const depId = codeToId.get(showIf.questionCode);
+    if (depId && !answers[depId]) pendingDeps.add(depId);
+  }
+  return visible.length + pendingDeps.size;
+}
+
 export function visibleQuestions(
   questions: AssessmentQuestion[],
   answers: Record<string, string>,
