@@ -39,7 +39,11 @@ public sealed class AssessmentSettings
 
     public int BenchmarkAggregateIntervalHours { get; set; } = 24;
 
-    public int BenchmarkAggregateMinSampleSize { get; set; } = 5;
+    /// <summary>
+    /// Số bài hoàn thành tối thiểu trước khi tạo/cập nhật nhóm so sánh. Dưới ngưỡng này báo cáo
+    /// không được nói "so với các nhà thuốc khác" (mẫu quá nhỏ để có ý nghĩa).
+    /// </summary>
+    public int BenchmarkAggregateMinSampleSize { get; set; } = 30;
 
     /// <summary>Phase 3 AI narrative (OpenAI-compatible).</summary>
     public KapAiNarrativeSettings AiNarrative { get; set; } = new();

@@ -70,7 +70,11 @@ public sealed record CreateAssessmentSubmissionRequest(
     string? TemplateVersion,
     string Source,
     string? Locale,
-    string? PartnerCode = null);
+    string? PartnerCode = null,
+    string? UtmSource = null,
+    string? UtmMedium = null,
+    string? UtmCampaign = null,
+    string? UtmContent = null);
 
 public sealed record CreateAssessmentSubmissionResult(
     Guid Id,
@@ -137,7 +141,8 @@ public sealed record AssessmentCategoryScoreDto(
     string Code,
     string Name,
     decimal Score,
-    decimal ScorePct);
+    decimal ScorePct,
+    bool InsufficientData = false);
 
 public sealed record AssessmentDimensionScoreDto(
     string Code,

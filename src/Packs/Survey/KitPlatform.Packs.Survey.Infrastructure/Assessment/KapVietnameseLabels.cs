@@ -33,6 +33,13 @@ internal static class KapVietnameseLabels
         "need_ops" => "Chuẩn hóa vận hành",
         "need_time" => "Tiết kiệm thời gian quản lý",
         "need_telemed" => "Kết nối bác sĩ khám online",
+        // PHARMACY_V2
+        "pain_numbers" => "Nắm rõ lãi lỗ",
+        "pain_compliance" => "Sổ sách, sẵn sàng khi kiểm tra",
+        "pain_growth" => "Chuẩn bị mở thêm cơ sở",
+        "need_profit" => "Nắm rõ lãi lỗ",
+        "need_compliance" => "Sổ sách, sẵn sàng khi kiểm tra",
+        "need_other" => "Việc khác",
         _ => tag.Replace('_', ' '),
     };
 

@@ -123,6 +123,7 @@ internal sealed class AssessmentRepository
         string? userAgent,
         string? locale,
         Guid? partnerId,
+        string? metadataJson,
         CancellationToken cancellationToken)
     {
         const string sql = """
@@ -137,9 +138,10 @@ internal sealed class AssessmentRepository
             RETURNING id
             """;
 
-        var metadata = string.IsNullOrWhiteSpace(locale)
-            ? "{}"
-            : JsonSerializer.Serialize(new { locale });
+        var metadata = metadataJson
+            ?? (string.IsNullOrWhiteSpace(locale)
+                ? "{}"
+                : JsonSerializer.Serialize(new { locale }));
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
@@ -240,6 +242,23 @@ internal sealed class AssessmentRepository
             JOIN assessment_dimension d ON d.category_id = c.id
             JOIN assessment_question q ON q.dimension_id = d.id
             WHERE s.id = @SubmissionId
+              -- Câu rẽ nhánh (metadata.showIf) chỉ bắt buộc khi đang hiển thị: câu điều kiện
+              -- đã được trả lời bằng đúng phương án đó (cùng logic với survey-logic.ts).
+              AND (
+                  q.metadata -> 'showIf' IS NULL
+                  OR EXISTS (
+                      SELECT 1
+                      FROM assessment_response dr
+                      JOIN assessment_question dq ON dq.id = dr.question_id
+                      JOIN assessment_dimension dd ON dd.id = dq.dimension_id
+                      JOIN assessment_category dc ON dc.id = dd.category_id
+                      JOIN assessment_option dop ON dop.id = dr.option_id
+                      WHERE dr.submission_id = @SubmissionId
+                        AND dc.template_id = t.id
+                        AND dq.code = q.metadata -> 'showIf' ->> 'questionCode'
+                        AND dop.code = q.metadata -> 'showIf' ->> 'optionCode'
+                  )
+              )
             """;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);

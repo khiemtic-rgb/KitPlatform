@@ -42,6 +42,11 @@ internal static class AssessmentReportHtmlGenerator
         sb.Append("<h2>Điểm theo nhóm</h2><table><thead><tr><th>Nhóm</th><th>Điểm</th><th>%</th></tr></thead><tbody>");
         foreach (var cat in report.CategoryScores)
         {
+            if (cat.InsufficientData)
+            {
+                sb.Append($"<tr><td>{WebUtility.HtmlEncode(cat.Name)}</td><td colspan=\"2\">Chưa đủ dữ liệu</td></tr>");
+                continue;
+            }
             sb.Append($"<tr><td>{WebUtility.HtmlEncode(cat.Name)}</td><td>{cat.Score:F2}</td><td>{cat.ScorePct:F1}%</td></tr>");
         }
         sb.Append("</tbody></table>");

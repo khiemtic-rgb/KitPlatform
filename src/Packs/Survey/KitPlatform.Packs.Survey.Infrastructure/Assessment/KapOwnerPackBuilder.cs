@@ -178,8 +178,11 @@ internal static class KapOwnerPackBuilder
         return new AssessmentOwnerPilotHingeDto(focus, options, talk);
     }
 
-    private static string SoftStrengthBody(string code, decimal score) =>
-        $"{KapPharmacyLanguage.SimpleName(code)} đang ở mức {KapPharmacyScoreDisplay.Format(score)} — nên giữ vững và tinh chỉnh dần, không cần đập đi làm lại.";
+    private static string SoftStrengthBody(string code, decimal score)
+    {
+        var ten = KapPharmacyScoreDisplay.ToTenFromPct(AssessmentScoringEngine.ScoreToPct(score));
+        return $"{KapPharmacyLanguage.SimpleName(code)} đang ở mức {KapPharmacyScoreDisplay.FormatValue(ten)} — nên giữ vững và tinh chỉnh dần, không cần đập đi làm lại.";
+    }
 
     private static string ResolveConsequence(string? impactHint, string body, string? areaCode)
     {

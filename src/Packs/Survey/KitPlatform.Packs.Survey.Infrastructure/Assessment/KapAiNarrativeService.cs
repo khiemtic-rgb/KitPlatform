@@ -409,6 +409,13 @@ internal static class KapAiNarrativeContextBuilder
         ["need_ops"] = "chuẩn hóa vận hành",
         ["need_time"] = "tiết kiệm thời gian quản lý",
         ["need_telemed"] = "kết nối bác sĩ khám online",
+        // PHARMACY_V2
+        ["pain_numbers"] = "nắm rõ lãi lỗ",
+        ["pain_compliance"] = "sổ sách, sẵn sàng khi kiểm tra",
+        ["pain_growth"] = "chuẩn bị mở thêm cơ sở",
+        ["need_profit"] = "nắm rõ lãi lỗ",
+        ["need_compliance"] = "sổ sách, sẵn sàng khi kiểm tra",
+        ["need_other"] = "việc khác",
     };
 
     public static KapAiNarrativeContext Build(

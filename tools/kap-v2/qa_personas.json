@@ -1,0 +1,47 @@
+{
+  "Vai 1": {
+    "P2": "SITES_1", "P3": "PAIN_INVENTORY", "P5": "AOV_80_150",
+    "C1": "REG_0_2", "C2": "OPT2", "C3": "OPT1", "C4": "OPT1", "C5": "OPT1",
+    "I1": "OPT1", "I2": "EXP_1_3M", "I3": "OPT2", "I4": "OPT2", "I5": "OPT2", "I6": "OPT2", "I7": "NEAR_NONE",
+    "O1": "OPT3", "O2": "OPT3", "O3": "OPT2", "O4": "OPT3", "O5": "OPT3",
+    "B1": "OPT2", "B2": "OPT2", "B3": "OPT2", "B4": "OPT2",
+    "T1": "OPT3", "T2": "OPT2", "T3": "OPT2", "T4": "OPT3",
+    "G1": "OPT2", "G2": "UNKNOWN", "G5": "PRI_STOCK"
+  },
+  "Vai 2": {
+    "P2": "SITES_1", "P3": "PAIN_CUSTOMER", "P5": "AOV_80_150",
+    "C1": "REG_6_8", "C2": "OPT2", "C3": "OPT2", "C4": "OPT2", "C5": "OPT2", "C6": "WHY_FORGET",
+    "I1": "OPT2", "I2": "EXP_LT1M", "I3": "OPT3", "I4": "OPT2", "I5": "OPT3", "I6": "OPT2",
+    "O1": "OPT2", "O2": "OPT2", "O3": "OPT2", "O4": "OPT3", "O5": "OPT2",
+    "B1": "OPT2", "B2": "OPT1", "B3": "UNKNOWN", "B4": "OPT1",
+    "T1": "OPT1", "T2": "OPT2", "T3": "OPT1", "T4": "OPT2",
+    "G1": "OPT1", "G2": "UNKNOWN", "G5": "PRI_RETENTION"
+  },
+  "Vai 3": {
+    "P2": "SITES_2_3", "P3": "PAIN_STAFF", "P5": "AOV_150_300",
+    "C1": "REG_3_5", "C2": "OPT3", "C3": "OPT3", "C4": "OPT2", "C5": "OPT3",
+    "I1": "OPT3", "I2": "EXP_1_3M", "I3": "OPT3", "I4": "OPT3", "I5": "OPT3", "I6": "OPT3",
+    "O1": "OPT2", "O2": "OPT1", "O3": "OPT1", "O4": "OPT1", "O5": "OPT2", "O7": "STAFF_CONTROL",
+    "B1": "OPT3", "B2": "OPT2", "B3": "OPT2", "B4": "OPT2",
+    "T1": "OPT3", "T2": "OPT3", "T3": "OPT3", "T4": "OPT3",
+    "G1": "OPT3", "G2": "OPT2", "G5": "PRI_STAFF"
+  },
+  "Vai 4": {
+    "P2": "SITES_1", "P3": "PAIN_NUMBERS", "P5": "AOV_GT300",
+    "C1": "REG_3_5", "C2": "OPT4", "C3": "OPT3", "C4": "OPT3", "C5": "OPT3",
+    "I1": "OPT4", "I2": "EXP_0", "I3": "OPT4", "I4": "OPT3", "I5": "OPT4", "I6": "OPT3",
+    "O1": "OPT3", "O2": "OPT3", "O3": "OPT3", "O4": "OPT4", "O5": "OPT3",
+    "B1": "OPT3", "B2": "OPT1", "B3": "OPT2", "B4": "OPT2", "B5": "NUM_MARGIN",
+    "T1": "OPT4", "T2": "OPT4", "T3": "OPT3", "T4": "OPT4",
+    "G1": "OPT2", "G2": "OPT3", "G5": "PRI_PROFIT"
+  },
+  "Vai 5": {
+    "P2": "SITES_1", "P3": "PAIN_COMPLIANCE", "P5": "UNKNOWN",
+    "C1": "UNKNOWN", "C2": "OPT2", "C3": "OPT1", "C4": "UNKNOWN", "C5": "OPT1",
+    "I1": "UNKNOWN", "I2": "UNKNOWN", "I3": "UNKNOWN", "I4": "OPT1", "I5": "OPT2", "I6": "OPT1",
+    "O1": "OPT1", "O2": "UNKNOWN", "O3": "UNKNOWN", "O4": "OPT2", "O5": "OPT2", "O6": "INSP_RECORDS",
+    "B1": "OPT1", "B2": "OPT1", "B3": "UNKNOWN", "B4": "OPT1",
+    "T1": "OPT1", "T2": "OPT1", "T3": "OPT1", "T4": "UNKNOWN",
+    "G1": "OPT1", "G2": "UNKNOWN", "G5": "PRI_COMPLIANCE"
+  }
+}

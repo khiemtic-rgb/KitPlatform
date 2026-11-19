@@ -13,6 +13,7 @@ namespace KitPlatform.Packs.Survey.Infrastructure;
 internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
 {
     private static readonly Regex VnPhoneRegex = new(@"^0[0-9]{9}$", RegexOptions.Compiled);
+    private static readonly Regex UtmTokenRegex = new(@"^[A-Za-z0-9_-]{1,100}$", RegexOptions.Compiled);
 
     private readonly AssessmentRepository _repo;
     private readonly AssessmentPartnerRepository _partners;
@@ -59,22 +60,28 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
                 statusCode: 404);
 
         Guid? partnerId = null;
+        string? invalidPartnerCode = null;
         if (!string.IsNullOrWhiteSpace(request.PartnerCode))
         {
-            var partner = await _partners.GetByCodeAsync(request.PartnerCode, cancellationToken);
+            var code = request.PartnerCode.Trim();
+            var partner = await _partners.GetByCodeAsync(code, cancellationToken);
             if (partner is null || !string.Equals(partner.Status, "active", StringComparison.OrdinalIgnoreCase))
             {
-                throw new AssessmentException(
-                    AssessmentErrorCodes.ValidationError,
-                    "Mã đối tác không hợp lệ hoặc đã bị khóa.",
-                    statusCode: 400);
+                invalidPartnerCode = code.Length > 100 ? code[..100] : code;
+                _logger.LogWarning(
+                    "KAP bỏ mã đối tác không hợp lệ hoặc đã khóa: {PartnerCode}",
+                    invalidPartnerCode);
             }
-
-            partnerId = partner.Id;
+            else
+            {
+                partnerId = partner.Id;
+            }
         }
 
         var source = string.IsNullOrWhiteSpace(request.Source) ? "public_web" : request.Source.Trim();
-        if (partnerId.HasValue && source is "public_web")
+        if (invalidPartnerCode is not null && source is "public_web" or "partner")
+            source = "public_web";
+        else if (partnerId.HasValue && source is "public_web")
             source = "partner";
 
         if (source is not ("public_web" or "admin" or "embed" or "sales" or "partner"))
@@ -86,6 +93,7 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         }
 
         var sessionToken = AssessmentRepository.GenerateSessionToken();
+        var metadataJson = BuildCreateMetadata(request, invalidPartnerCode);
         var id = await _repo.InsertSubmissionAsync(
             template.Id,
             template.Version,
@@ -95,6 +103,7 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
             userAgent,
             request.Locale,
             partnerId,
+            metadataJson,
             cancellationToken);
 
         var expiresAt = DateTimeOffset.UtcNow.AddDays(_settings.SessionMaxAgeDays);
@@ -106,6 +115,38 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
             template.Code,
             template.Version,
             expiresAt);
+    }
+
+    private static string BuildCreateMetadata(
+        CreateAssessmentSubmissionRequest request,
+        string? invalidPartnerCode)
+    {
+        var root = new Dictionary<string, object>();
+        if (!string.IsNullOrWhiteSpace(request.Locale))
+            root["locale"] = request.Locale.Trim();
+        if (!string.IsNullOrWhiteSpace(invalidPartnerCode))
+            root["invalidPartnerCode"] = invalidPartnerCode;
+
+        var utm = new Dictionary<string, string>();
+        AddUtm(utm, "utm_source", request.UtmSource);
+        AddUtm(utm, "utm_medium", request.UtmMedium);
+        AddUtm(utm, "utm_campaign", request.UtmCampaign);
+        AddUtm(utm, "utm_content", request.UtmContent);
+        if (utm.Count > 0)
+            root["utm"] = utm;
+
+        return root.Count == 0 ? "{}" : JsonSerializer.Serialize(root);
+    }
+
+    private static void AddUtm(Dictionary<string, string> utm, string key, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+        var trimmed = value.Trim();
+        if (trimmed.Length > 100)
+            trimmed = trimmed[..100];
+        if (UtmTokenRegex.IsMatch(trimmed))
+            utm[key] = trimmed;
     }
 
     public async Task<AssessmentSubmissionDetailDto> GetAsync(
@@ -124,6 +165,8 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         {
             var categoryScores = await _repo.GetCategoryScoresAsync(submissionId, cancellationToken);
             var insights = await _repo.GetInsightsAsync(submissionId, cancellationToken);
+            var scoring = AssessmentScoringEngine.Compute(
+                await _repo.GetScoringDataAsync(submissionId, cancellationToken));
 
             return new AssessmentSubmissionDetailDto(
                 submission.Id,
@@ -135,7 +178,9 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
                 map,
                 submission.OverallScore,
                 submission.OverallPct,
-                categoryScores.Select(c => new AssessmentCategoryScoreDto(c.Code, c.Name, c.Score, c.ScorePct)).ToList(),
+                WithInsufficient(
+                    categoryScores.Select(c => new AssessmentCategoryScoreDto(c.Code, c.Name, c.Score, c.ScorePct)),
+                    scoring),
                 insights.Take(2).Select(i => new AssessmentInsightDto(i.Title, i.Body, i.Severity)).ToList());
         }
 
@@ -251,8 +296,8 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
 
         await _repo.DeleteInsightsAndRecommendationsAsync(conn, tx, submissionId);
 
-        var insightMatches = matches
-            .Where(m => string.Equals(m.Rule.ActionType, "insight", StringComparison.OrdinalIgnoreCase))
+        var insightMatches = RankedInsights(matches)
+            .Where(m => m.Rule.Priority >= 96)
             .Take(2)
             .ToList();
 
@@ -273,7 +318,9 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
             "completed",
             scoring.OverallScore,
             scoring.OverallPct,
-            categoryScores.Select(c => new AssessmentCategoryScoreDto(c.Code, c.Name, c.Score, c.ScorePct)).ToList(),
+            WithInsufficient(
+                categoryScores.Select(c => new AssessmentCategoryScoreDto(c.Code, c.Name, c.Score, c.ScorePct)),
+                scoring),
             insights.Select(i => new AssessmentInsightDto(i.Title, i.Body, i.Severity)).ToList(),
             ReportLocked: true,
             LeadCaptureRequired: true);
@@ -340,14 +387,12 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         await _repo.DeleteInsightsAndRecommendationsAsync(conn, tx, submissionId);
 
         var insightSort = 0;
+        foreach (var match in RankedInsights(matches))
+            await PersistInsightAsync(_repo, conn, tx, submissionId, match, insightSort++);
+
         var recSort = 0;
-        foreach (var match in matches)
-        {
-            if (string.Equals(match.Rule.ActionType, "insight", StringComparison.OrdinalIgnoreCase))
-                await PersistInsightAsync(_repo, conn, tx, submissionId, match, insightSort++);
-            else if (string.Equals(match.Rule.ActionType, "recommendation", StringComparison.OrdinalIgnoreCase))
-                await PersistRecommendationAsync(conn, tx, submissionId, match, recSort++);
-        }
+        foreach (var match in RankedRecommendations(matches))
+            await PersistRecommendationAsync(conn, tx, submissionId, match, recSort++);
 
         await TryWriteLeadCapturedEventAsync(conn, tx, submissionId, phone, cancellationToken);
 
@@ -610,7 +655,13 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
                 var orgScale = artifact.Meta.OrgScale
                     ?? await _intel.GetSubmissionOrgScaleAsync(submission.Id, cancellationToken);
                 var enriched = KapReportIntelligenceEnricher.Enrich(mapped, mapped.Intelligence, orgName, orgScale);
-                return mapped with { Intelligence = enriched, OrgScale = orgScale };
+                var painScoreRows = await _repo.GetScoringDataAsync(submission.Id, cancellationToken);
+                return mapped with
+                {
+                    Intelligence = enriched,
+                    OrgScale = orgScale,
+                    CategoryScores = WithInsufficient(mapped.CategoryScores, AssessmentScoringEngine.Compute(painScoreRows)),
+                };
             }
         }
 
@@ -627,7 +678,9 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
             submission.CompletedAt,
             submission.OverallScore ?? 0m,
             submission.OverallPct ?? 0m,
-            categoryScores.Select(c => new AssessmentCategoryScoreDto(c.Code, c.Name, c.Score, c.ScorePct)).ToList(),
+            WithInsufficient(
+                categoryScores.Select(c => new AssessmentCategoryScoreDto(c.Code, c.Name, c.Score, c.ScorePct)),
+                AssessmentScoringEngine.Compute(scoringRows)),
             dimensionScores.Select(d => new AssessmentDimensionScoreDto(
                 d.Code, d.Name, d.CategoryCode, d.Score, d.ScorePct)).ToList(),
             insights.Select(i => new AssessmentInsightDto(i.Title, i.Body, i.Severity)).ToList(),
@@ -810,6 +863,70 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         if (digits.StartsWith("84") && digits.Length == 11)
             digits = "0" + digits[2..];
         return digits;
+    }
+
+    private static readonly Dictionary<string, decimal> ImpactByQuestion = new()
+    {
+        ["C2"] = 1.0m, ["C3"] = 1.3m, ["C4"] = 0.9m, ["C5"] = 0.8m,
+        ["I1"] = 1.2m, ["I3"] = 1.2m, ["I4"] = 1.0m, ["I5"] = 0.8m, ["I6"] = 0.9m,
+        ["O1"] = 1.1m, ["O2"] = 0.8m, ["O3"] = 0.9m, ["O4"] = 1.0m, ["O5"] = 1.1m,
+        ["B1"] = 1.2m, ["B2"] = 0.9m, ["B3"] = 0.7m, ["B4"] = 0.9m,
+        ["T4"] = 1.0m, ["G1"] = 0.6m, ["G2"] = 0.6m,
+    };
+
+    private static List<AssessmentCategoryScoreDto> WithInsufficient(
+        IEnumerable<AssessmentCategoryScoreDto> scored,
+        AssessmentScoringEngine.Result scoring)
+    {
+        var list = scored.Where(c => !c.InsufficientData).ToList();
+        foreach (var category in scoring.InsufficientCategories)
+        {
+            if (list.Any(c => c.Code == category.Code))
+                continue;
+            list.Add(new AssessmentCategoryScoreDto(category.Code, category.Name, 0, 0, true));
+        }
+
+        return list;
+    }
+
+    private static List<AssessmentRuleEngine.Match> RankedInsights(IReadOnlyList<AssessmentRuleEngine.Match> matches) =>
+        DedupeByTitle(matches, "insight")
+            .OrderByDescending(m => m.Rule.Priority)
+            .ThenByDescending(InsightImpact)
+            .ThenBy(m => m.Rule.Code, StringComparer.Ordinal)
+            .ToList();
+
+    private static List<AssessmentRuleEngine.Match> RankedRecommendations(IReadOnlyList<AssessmentRuleEngine.Match> matches) =>
+        DedupeByTitle(matches, "recommendation")
+            .OrderByDescending(m => m.Rule.Priority)
+            .ThenBy(m => m.Rule.Code, StringComparer.Ordinal)
+            .ToList();
+
+    private static List<AssessmentRuleEngine.Match> DedupeByTitle(
+        IReadOnlyList<AssessmentRuleEngine.Match> matches,
+        string actionType)
+    {
+        var best = new Dictionary<string, AssessmentRuleEngine.Match>(StringComparer.Ordinal);
+        foreach (var match in matches)
+        {
+            if (!string.Equals(match.Rule.ActionType, actionType, StringComparison.OrdinalIgnoreCase))
+                continue;
+            var title = match.Payload.RootElement.TryGetProperty("title", out var titleEl)
+                ? titleEl.GetString() ?? match.Rule.Code
+                : match.Rule.Code;
+            if (!best.TryGetValue(title, out var existing) || match.Rule.Priority > existing.Rule.Priority)
+                best[title] = match;
+        }
+
+        return best.Values.ToList();
+    }
+
+    private static decimal InsightImpact(AssessmentRuleEngine.Match match)
+    {
+        if (match.Rule.Code.StartsWith("V2_EST_", StringComparison.Ordinal))
+            return 0m;
+        var question = match.Rule.Code.Split('_')[^1];
+        return ImpactByQuestion.GetValueOrDefault(question);
     }
 
     private static async Task PersistInsightAsync(

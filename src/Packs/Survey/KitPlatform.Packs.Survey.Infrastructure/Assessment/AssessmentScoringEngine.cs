@@ -11,7 +11,10 @@ internal static class AssessmentScoringEngine
         IReadOnlyList<AssessmentCategoryScoreWrite> CategoryScores,
         IReadOnlyDictionary<string, decimal> CategoryScoreByCode,
         IReadOnlyDictionary<string, decimal> DimensionScoreByCode,
-        AssessmentQualitativeContext Qualitative);
+        AssessmentQualitativeContext Qualitative,
+        IReadOnlyList<InsufficientCategory> InsufficientCategories);
+
+    public sealed record InsufficientCategory(string Code, string Name);
 
     public sealed record AssessmentQualitativeContext(
         string? PainPointTag,
@@ -19,7 +22,23 @@ internal static class AssessmentScoringEngine
 
     public static Result Compute(IReadOnlyList<AssessmentScoringRow> rows)
     {
+        var insufficientIds = new HashSet<Guid>();
+        var insufficient = new List<InsufficientCategory>();
+        foreach (var group in rows.GroupBy(r => r.CategoryId))
+        {
+            var scorable = group.Where(r => r.Scorable).ToList();
+            if (scorable.Count == 0)
+                continue;
+            var nullAnswers = scorable.Count(r => r.ResponseOptionId.HasValue && !r.OptionScore.HasValue);
+            if (nullAnswers * 2 < scorable.Count)
+                continue;
+            insufficientIds.Add(group.Key);
+            var first = group.First();
+            insufficient.Add(new InsufficientCategory(first.CategoryCode, first.CategoryName));
+        }
+
         var dimensionGroups = rows
+            .Where(r => !insufficientIds.Contains(r.CategoryId))
             .GroupBy(r => r.DimensionId)
             .Select(g =>
             {
@@ -39,8 +58,12 @@ internal static class AssessmentScoringEngine
                     first.CategoryId,
                     first.CategoryCode,
                     Score = score,
+                    ScoredCount = questionScores.Count,
                 };
             })
+            // Nhóm không có câu nào được chấm (nhóm hồ sơ của PHARMACY_V2, hoặc toàn đáp án
+            // "Không biết") không được tính 0 điểm vào trung bình: bỏ khỏi điểm nhóm và điểm tổng.
+            .Where(d => d.ScoredCount > 0)
             .ToList();
 
         var categoryGroups = dimensionGroups
@@ -84,7 +107,8 @@ internal static class AssessmentScoringEngine
                 ScoreToPct(c.Score)))
             .ToList();
 
-        var painRow = rows.FirstOrDefault(r => r.QuestionCode == "G4" && r.ResponseOptionId.HasValue);
+        // V1: G4 = nỗi đau, G5 = ưu tiên. PHARMACY_V2: P3 = nỗi đau (hỏi đầu bài), G5 = ưu tiên.
+        var painRow = rows.FirstOrDefault(r => (r.QuestionCode is "G4" or "P3") && r.ResponseOptionId.HasValue);
         var needRow = rows.FirstOrDefault(r => r.QuestionCode == "G5" && r.ResponseOptionId.HasValue);
 
         return new Result(
@@ -96,7 +120,8 @@ internal static class AssessmentScoringEngine
             dimensionGroups.ToDictionary(d => d.DimensionCode, d => RoundScore(d.Score)),
             new AssessmentQualitativeContext(
                 ExtractTag(painRow?.OptionMetadataJson),
-                ExtractTag(needRow?.OptionMetadataJson)));
+                ExtractTag(needRow?.OptionMetadataJson)),
+            insufficient);
     }
 
     public static decimal ScoreToPct(decimal score) =>

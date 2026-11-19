@@ -122,12 +122,15 @@ internal sealed class AssessmentAnalysisPipeline
             var validation = BuildValidation(scoringRows);
             phasesCompleted.Add(KapAnalysisPhases.Validation);
 
+            // Chỉ giữ nhóm đã được chấm. GetValueOrDefault(..., 0) biến nhóm hồ sơ
+            // "Bắt đầu" (không có câu tính điểm) thành nhóm yếu nhất của báo cáo.
             var categoryScores = scoringRows
                 .GroupBy(r => r.CategoryCode)
+                .Where(g => scoring.CategoryScoreByCode.ContainsKey(g.Key))
                 .Select(g =>
                 {
                     var first = g.First();
-                    var score = scoring.CategoryScoreByCode.GetValueOrDefault(first.CategoryCode, 0m);
+                    var score = scoring.CategoryScoreByCode[first.CategoryCode];
                     return new AssessmentCategoryScoreDto(
                         first.CategoryCode,
                         first.CategoryName,
@@ -139,10 +142,11 @@ internal sealed class AssessmentAnalysisPipeline
 
             var dimensionScores = scoringRows
                 .GroupBy(r => r.DimensionCode)
+                .Where(g => scoring.DimensionScoreByCode.ContainsKey(g.Key))
                 .Select(g =>
                 {
                     var first = g.First();
-                    var score = scoring.DimensionScoreByCode.GetValueOrDefault(first.DimensionCode, 0m);
+                    var score = scoring.DimensionScoreByCode[first.DimensionCode];
                     return new AssessmentDimensionScoreDto(
                         first.DimensionCode,
                         first.DimensionName,

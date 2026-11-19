@@ -742,6 +742,7 @@ internal static class AssessmentReportPdfGenerator
         IReadOnlyList<AssessmentCategoryScoreDto> categories,
         KapBenchmarkAnalysisDto? benchmark)
     {
+        categories = categories.Where(c => !c.InsufficientData).ToList();
         if (categories.Count == 0) return;
 
         var benchMap = benchmark?.Categories.ToDictionary(c => c.Code, StringComparer.OrdinalIgnoreCase)
@@ -788,6 +789,7 @@ internal static class AssessmentReportPdfGenerator
         IReadOnlyList<AssessmentCategoryScoreDto> categories,
         KapBenchmarkAnalysisDto? benchmark)
     {
+        categories = categories.Where(c => !c.InsufficientData).ToList();
         if (categories.Count == 0) return;
 
         var benchMap = benchmark?.Categories.ToDictionary(c => c.Code, StringComparer.OrdinalIgnoreCase)
@@ -1407,6 +1409,7 @@ internal static class AssessmentReportPdfGenerator
 
     private static void RenderCategoryScores(ColumnDescriptor col, IReadOnlyList<AssessmentCategoryScoreDto> categories)
     {
+        categories = categories.Where(c => !c.InsufficientData).ToList();
         if (categories.Count == 0) return;
         col.Item().PaddingTop(10).Text("Điểm theo nhóm năng lực").Bold().FontSize(Fs(11)).FontColor(Brand);
         col.Item().PaddingTop(6).Table(table =>
@@ -1604,6 +1607,7 @@ internal static class AssessmentReportPdfGenerator
 
     private static void RenderScoreHeatmap(ColumnDescriptor col, IReadOnlyList<AssessmentCategoryScoreDto> categories)
     {
+        categories = categories.Where(c => !c.InsufficientData).ToList();
         if (categories.Count == 0) return;
         col.Item().Text("Bản đồ nhiệt điểm theo nhóm (màu đậm = điểm cao)").Bold().FontSize(Fs(9)).FontColor(Brand);
         col.Item().PaddingTop(6).Table(table =>
@@ -1756,7 +1760,9 @@ internal static class AssessmentReportPdfGenerator
 
         col.Item().PaddingTop(8).Text("6 mặt hoạt động").Bold().FontSize(Fs(9)).FontColor(Brand);
         foreach (var cat in report.CategoryScores.OrderBy(c => KapPharmacyScoreDisplay.Letter(c.Code)))
-            col.Item().PaddingTop(3).Text(KapPharmacyScoreDisplay.LabeledLine(cat.Code, cat.Name, cat.Score)).FontSize(Fs(9));
+            col.Item().PaddingTop(3).Text(cat.InsufficientData
+                ? $"{KapPharmacyScoreDisplay.Letter(cat.Code)} {cat.Name}: Chưa đủ dữ liệu"
+                : KapPharmacyScoreDisplay.LabeledLine(cat.Code, cat.Name, cat.Score)).FontSize(Fs(9));
 
         if (intel.ExecutiveSummary?.Paragraphs.Count > 0)
         {
@@ -1780,6 +1786,11 @@ internal static class AssessmentReportPdfGenerator
         if (categories.Count == 0) return;
         foreach (var cat in categories.OrderBy(c => KapPharmacyScoreDisplay.Letter(c.Code)))
         {
+            if (cat.InsufficientData)
+            {
+                col.Item().PaddingTop(6).Text($"{cat.Name}: Chưa đủ dữ liệu").FontSize(Fs(10));
+                continue;
+            }
             col.Item().PaddingTop(6).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(8).Column(c =>
             {
                 c.Item().Text(KapPharmacyScoreDisplay.LabeledLine(cat.Code, cat.Name, cat.Score)).Bold().FontSize(Fs(10));
@@ -1797,8 +1808,13 @@ internal static class AssessmentReportPdfGenerator
 
         col.Item().PaddingTop(4).Text("Thang 10 điểm — số bên phải mỗi dòng").FontSize(Fs(8)).FontColor(TextMuted);
 
-        foreach (var cat in categories.OrderByDescending(c => c.Score))
+        foreach (var cat in categories.OrderByDescending(c => c.InsufficientData ? -1 : c.Score))
         {
+            if (cat.InsufficientData)
+            {
+                col.Item().PaddingTop(6).Text($"{cat.Name}: Chưa đủ dữ liệu").FontSize(Fs(8));
+                continue;
+            }
             var ten = KapPharmacyScoreDisplay.ToTen(cat.Score);
             var scoreWeight = Math.Max(1, (int)Math.Round((double)(ten / KapPharmacyScoreDisplay.ToTen(4m) * 100m)));
             var restWeight = Math.Max(1, 100 - scoreWeight);

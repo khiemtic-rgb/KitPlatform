@@ -1,0 +1,244 @@
+{
+  "templateCode": "PHARMACY_V2",
+  "version": "2.0",
+  "ranking": {
+    "rule": "priority = impact * (4 - score) / 3; câu thuộc nhóm trùng với P3 (nỗi đau) hoặc G5 (ưu tiên) được nhân 1.5",
+    "pick": "Lấy 3 việc có priority cao nhất, mỗi nhóm tối đa 1 việc. Chỉ xét câu trả lời mức 1–2.",
+    "pain_to_category": {
+      "PAIN_CUSTOMER": "CUSTOMER",
+      "PAIN_INVENTORY": "INVENTORY",
+      "PAIN_STAFF": "OPERATIONS",
+      "PAIN_NUMBERS": "BUSINESS",
+      "PAIN_COMPLIANCE": "OPERATIONS",
+      "PAIN_GROWTH": "GROWTH"
+    },
+    "priority_to_category": {
+      "PRI_RETENTION": "CUSTOMER",
+      "PRI_STOCK": "INVENTORY",
+      "PRI_STAFF": "OPERATIONS",
+      "PRI_PROFIT": "BUSINESS",
+      "PRI_COMPLIANCE": "OPERATIONS",
+      "PRI_DOCTOR": null,
+      "PRI_OTHER": null
+    },
+    "note": "Câu ưu tiên có mã G5 để backend (AssessmentScoringEngine) đọc tag priority_need như V1.",
+    "levels": [
+      {
+        "min": 80,
+        "label": "Vững"
+      },
+      {
+        "min": 60,
+        "label": "Khá"
+      },
+      {
+        "min": 40,
+        "label": "Cơ bản"
+      },
+      {
+        "min": 0,
+        "label": "Cần cải thiện"
+      }
+    ],
+    "unknown_answers": "Phương án có score=null không tính vào điểm trung bình. Nếu một nhóm có từ 50% câu trở lên là null thì hiển thị 'Chưa đủ dữ liệu' thay cho điểm, và đưa vào báo cáo dòng 'Những điều anh/chị chưa đo được'.",
+    "benchmark": "Không hiển thị so sánh với nhà thuốc khác cho đến khi mỗi nhóm quy mô (P2) có ít nhất 30 bài hoàn thành. Khi hiển thị thì luôn ghi kèm n."
+  },
+  "actions": {
+    "C2": {
+      "finding": "Khách quen quay lại mà nhân viên không biết lần trước họ mua gì, nên khó tư vấn tiếp và khó bán thêm đúng nhu cầu.",
+      "this_week": "Mở một cuốn sổ (hoặc một trang Excel) cho 20 khách quen nhất: tên, số điện thoại, thuốc hay mua. Nhân viên ghi thêm sau mỗi lần bán cho họ.",
+      "metric": "Sau 30 ngày: số khách quen đã có hồ sơ.",
+      "novixa": "Hồ sơ khách gắn với từng đơn bán, tra bằng số điện thoại."
+    },
+    "C3": {
+      "finding": "Khách dùng thuốc lâu dài không được nhắc khi sắp hết thuốc. Đây là nhóm khách dễ chuyển sang chỗ khác nhất.",
+      "this_week": "Lập danh sách khách mua thuốc huyết áp, tiểu đường trong tháng, ghi ngày dự kiến hết thuốc. Mỗi sáng xem danh sách và nhắn Zalo cho người sắp hết.",
+      "metric": "Sau 30 ngày: trong số khách được nhắc, bao nhiêu người quay lại mua.",
+      "novixa": "Nhắc lịch mua lại tự động theo đơn trước."
+    },
+    "C4": {
+      "finding": "Sau khi bán, nhà thuốc gần như không hỏi thăm lại khách.",
+      "this_week": "Mỗi ngày chọn 3 khách mua thuốc điều trị (kháng sinh, thuốc đau dạ dày…), 2–3 ngày sau nhắn hỏi thăm thuốc có hợp không.",
+      "metric": "Số khách được hỏi thăm mỗi tuần.",
+      "novixa": "Danh sách khách cần hỏi thăm tự sinh theo đơn."
+    },
+    "C5": {
+      "finding": "Nhà thuốc chưa biết mỗi tháng có bao nhiêu khách mới, bao nhiêu khách cũ quay lại, nên không biết việc giữ khách đang tốt lên hay xấu đi.",
+      "this_week": "Trong 1 tuần, mỗi đơn bán đánh dấu 'mới' hoặc 'quen' vào sổ. Cuối tuần đếm tổng.",
+      "metric": "Tỷ lệ khách quen trên tổng khách, đo lại sau 30 ngày.",
+      "novixa": "Báo cáo khách mới và khách quay lại theo tháng."
+    },
+    "I1": {
+      "finding": "Hàng sắp hết hạn được phát hiện tình cờ hoặc khi đã quá muộn để xử lý.",
+      "this_week": "Thứ Hai hằng tuần, rà các lô hết hạn trong 3 tháng tới. Dán nhãn màu lên hộp và xếp ra trước để bán trước.",
+      "metric": "Tiền hàng phải hủy hoặc trả lại tháng sau so với tháng này.",
+      "novixa": "Cảnh báo cận hạn theo từng lô."
+    },
+    "I3": {
+      "finding": "Khách hỏi mua mà nhà thuốc hết hàng khá thường xuyên. Mỗi lần như vậy là một đơn có thể mất, và khách có thể không quay lại.",
+      "this_week": "Để một tờ giấy ở quầy: mỗi lần hết hàng khi khách hỏi, ghi tên thuốc. Cuối tuần nhập bổ sung những mặt hàng bị ghi từ 2 lần trở lên.",
+      "metric": "Số lần hết hàng mỗi tuần.",
+      "novixa": "Mức tồn tối thiểu và gợi ý đặt hàng."
+    },
+    "I4": {
+      "finding": "Số lượng đặt hàng dựa vào cảm giác hoặc gợi ý của trình dược viên, nên dễ vừa thiếu hàng bán chạy vừa dư hàng bán chậm.",
+      "this_week": "Chọn 30 mặt hàng bán chạy nhất. Ghi mức tồn tối thiểu cho từng món (bằng khoảng 1 tuần bán), dưới mức đó thì đặt.",
+      "metric": "Số lần hết hàng của 30 mặt hàng này.",
+      "novixa": "Mức tồn tối thiểu và gợi ý đặt hàng."
+    },
+    "I5": {
+      "finding": "Đã lâu chưa kiểm kê toàn bộ kho, nên số trên sổ hoặc trên máy có thể lệch xa với hàng thật.",
+      "this_week": "Không cần kiểm kê cả kho cùng lúc. Mỗi tuần kiểm một nhóm hàng (ví dụ tuần này kiểm nhóm kháng sinh), ghi lại phần lệch.",
+      "metric": "Tỷ lệ lệch giữa sổ và hàng thật của từng nhóm.",
+      "novixa": "Kiểm kê theo nhóm hàng trên điện thoại."
+    },
+    "I6": {
+      "finding": "Chưa biết hàng nào bán chậm đang giữ vốn.",
+      "this_week": "Đi một vòng kệ, đánh dấu những hộp còn nguyên và có bụi. Lập danh sách 10 mặt hàng đó và ngừng nhập thêm.",
+      "metric": "Tiền vốn nằm trong 10 mặt hàng này, đo lại sau 60 ngày.",
+      "novixa": "Báo cáo hàng chậm bán theo giá trị tồn."
+    },
+    "O1": {
+      "finding": "Nhà thuốc phụ thuộc vào anh/chị. Vắng mặt vài ngày là việc bán bị ảnh hưởng.",
+      "this_week": "Viết ra 10 câu nhân viên hay gọi hỏi anh/chị nhất, kèm câu trả lời. Dán ở quầy.",
+      "metric": "Số cuộc gọi hỏi việc trong tuần anh/chị vắng mặt.",
+      "novixa": null
+    },
+    "O2": {
+      "finding": "Nhân viên mới mất nhiều thời gian mới tự đứng quầy được.",
+      "this_week": "Viết danh sách những việc nhân viên mới phải biết trong tuần đầu, và ai kèm từng việc.",
+      "metric": "Số ngày để nhân viên mới tự đứng quầy, ở lần tuyển tiếp theo.",
+      "novixa": null
+    },
+    "O3": {
+      "finding": "Mỗi nhân viên tư vấn một kiểu. Khách có thể nhận lời khuyên khác nhau ở cùng một nhà thuốc.",
+      "this_week": "Chọn 5 bệnh hay gặp nhất. Mỗi bệnh viết 1 trang: hỏi khách gì, khuyên gì, khi nào khuyên đi khám. Cả nhóm cùng thống nhất.",
+      "metric": "Số bệnh đã có hướng dẫn chung.",
+      "novixa": null
+    },
+    "O4": {
+      "finding": "Tiền cuối ngày hay lệch với số đã bán mà không rõ nguyên nhân. Đây có thể là thất thoát.",
+      "this_week": "Đối chiếu tiền với số bán ngay cuối mỗi ca, không để đến cuối ngày. Ghi phần lệch và tên người trực ca.",
+      "metric": "Số ngày lệch tiền trong tháng.",
+      "novixa": "Chốt ca theo từng nhân viên."
+    },
+    "O5": {
+      "finding": "Các việc định kỳ như ghi nhiệt độ, độ ẩm và sổ sách chưa được làm đều. Đây thường là phần bị nhắc khi có kiểm tra.",
+      "this_week": "Giao cho một người cụ thể, đặt giờ cố định mỗi ngày, và để sổ ngay cạnh nhiệt kế.",
+      "metric": "Số ngày trong tháng có ghi đủ.",
+      "novixa": null
+    },
+    "B1": {
+      "finding": "Chưa biết rõ mỗi tháng nhà thuốc lãi bao nhiêu.",
+      "this_week": "Cuối tháng này, ghi 4 con số: tiền bán, tiền nhập hàng, tiền thuê, tiền lương và các chi phí khác. Lấy tiền bán trừ ba khoản sau là ra con số lãi đầu tiên.",
+      "metric": "Có con số lãi của 2 tháng liền để so sánh.",
+      "novixa": "Báo cáo lãi gộp theo ngày và theo tháng."
+    },
+    "B2": {
+      "finding": "Chưa biết nhóm hàng nào thật sự mang lại lãi. Bán nhiều chưa chắc đã lãi nhiều.",
+      "this_week": "Lấy 20 mặt hàng bán chạy nhất, ghi giá nhập và giá bán của từng món. Xếp theo tiền lãi mỗi hộp.",
+      "metric": "Danh sách 10 mặt hàng lãi nhất để ưu tiên trưng bày và tư vấn.",
+      "novixa": "Lãi gộp theo mặt hàng và nhóm hàng."
+    },
+    "B3": {
+      "finding": "Khuyến mại được làm mà chưa biết lời hay lỗ.",
+      "this_week": "Lần khuyến mại tới, ghi số bán của mặt hàng đó 2 tuần trước và 2 tuần trong đợt. Trừ phần đã giảm giá để biết lời hay lỗ.",
+      "metric": "Đợt khuyến mại tới có lãi thêm hay không.",
+      "novixa": null
+    },
+    "B4": {
+      "finding": "Khi bán chậm lại, chưa có cách tìm ra chậm ở đâu.",
+      "this_week": "Chia tiền bán theo 5 nhóm hàng chính và ghi theo tuần. Khi bán chậm thì so nhóm nào giảm.",
+      "metric": "Có số bán theo nhóm hàng của 4 tuần liền.",
+      "novixa": "Số bán theo nhóm hàng, nhóm khách."
+    },
+    "T1": {
+      "finding": "Việc bán hàng chưa được ghi lại để tra cứu và tính toán được.",
+      "this_week": "Bắt đầu bằng một file Excel với 4 cột: ngày, mặt hàng, số lượng, tiền. Ghi trong 1 tuần để thấy mình cần gì.",
+      "metric": "Số ngày trong tuần có ghi đủ.",
+      "novixa": "Phần mềm bán hàng cho nhà thuốc."
+    },
+    "T2": {
+      "finding": "Không ở nhà thuốc thì không nắm được tình hình bán hàng.",
+      "this_week": "Cuối mỗi ca, nhân viên nhắn Zalo 3 con số: số đơn, tiền thu, những mặt hàng bị hết.",
+      "metric": "Số ngày nhận đủ tin nhắn.",
+      "novixa": "Xem số bán trên điện thoại."
+    },
+    "T3": {
+      "finding": "Thông tin bán hàng, kho và khách mỗi thứ một nơi, nên không trả lời được những câu như 'khách nào hay mua hàng sắp hết hạn này'.",
+      "this_week": "Ghi số điện thoại của khách vào cùng chỗ ghi đơn bán, kể cả khi chỉ dùng sổ.",
+      "metric": "Tỷ lệ đơn bán có ghi số điện thoại khách.",
+      "novixa": "Bán hàng, kho và khách hàng trên cùng một phần mềm."
+    },
+    "T4": {
+      "finding": "Việc liên thông dữ liệu bán thuốc chưa ổn định hoặc chưa rõ yêu cầu.",
+      "this_week": "Hỏi lại cơ quan quản lý dược địa phương hoặc nhà cung cấp phần mềm xem nhà thuốc đang thiếu bước nào.",
+      "metric": "Nhà thuốc biết rõ mình đã đủ yêu cầu hay chưa.",
+      "novixa": "Kết nối liên thông từ phần mềm bán hàng (cần xác nhận phạm vi hỗ trợ trước khi ghi vào báo cáo)."
+    },
+    "G1": {
+      "finding": "Chưa có mục tiêu cụ thể cho năm tới.",
+      "this_week": "Viết 1 mục tiêu đo được cho 90 ngày tới, ví dụ 'giảm hàng hủy còn dưới 1 triệu/tháng'.",
+      "metric": "Có mục tiêu và được xem lại mỗi tháng.",
+      "novixa": null
+    },
+    "G2": {
+      "finding": "Cách làm hiện nay phụ thuộc vào người, nên khó áp dụng sang cơ sở mới.",
+      "this_week": "Ghi lại 3 quy trình quan trọng nhất (nhận hàng, bán hàng, chốt ca) thành từng bước.",
+      "metric": "Số quy trình đã được viết ra.",
+      "novixa": "Phần mềm dùng chung cho nhiều cơ sở."
+    }
+  },
+  "gifts": {
+    "CUSTOMER": "Mẫu sổ khách quen và lịch nhắc thuốc dùng lâu dài (in được, 1 trang)",
+    "INVENTORY": "Checklist rà cận hạn hằng tuần và mẫu nhãn màu",
+    "OPERATIONS": "Mẫu hướng dẫn tư vấn 5 bệnh hay gặp và checklist tuần đầu cho nhân viên mới",
+    "BUSINESS": "Bảng tính lãi tháng đầu tiên (4 con số)",
+    "TECH": "File Excel ghi bán hàng 4 cột",
+    "GROWTH": "Mẫu viết 3 quy trình cốt lõi"
+  },
+  "midpoints": {
+    "P5": {
+      "AOV_LT80": 60000,
+      "AOV_80_150": 115000,
+      "AOV_150_300": 225000,
+      "AOV_GT300": 350000
+    },
+    "I2": {
+      "EXP_0": 0,
+      "EXP_LT1M": 500000,
+      "EXP_1_3M": 2000000,
+      "EXP_3_7M": 5000000,
+      "EXP_GT7M": 8000000
+    },
+    "I3": {
+      "OPT1": 18,
+      "OPT2": 10,
+      "OPT3": 3.5,
+      "OPT4": 0.5
+    }
+  },
+  "estimates": [
+    {
+      "code": "EXPIRED_PER_YEAR",
+      "needs": [
+        "I2"
+      ],
+      "formula": "I2 * 12",
+      "show_if": "I2 >= 1000000",
+      "text": "Theo số anh/chị nhập, hàng hết hạn phải hủy hoặc trả lại khoảng {value} mỗi năm.",
+      "caveat": "Ước tính từ con số anh/chị nhập, nhân 12 tháng. Chưa trừ phần trả lại được nhà cung cấp."
+    },
+    {
+      "code": "STOCKOUT_PER_YEAR",
+      "needs": [
+        "I3",
+        "P5"
+      ],
+      "formula": "I3 * 52 * P5",
+      "show_if": "I3 >= 2",
+      "text": "Nếu mỗi lần hết hàng là một đơn không bán được, nhà thuốc đang để lọt khoảng {value} tiền bán mỗi năm.",
+      "caveat": "Đây là mức trên. Có khách sẽ chờ hoặc đổi sang thuốc khác, nên con số thật thấp hơn."
+    }
+  ]
+}

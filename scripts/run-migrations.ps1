@@ -163,7 +163,8 @@ $files = @(
     "190_backfill_product_name_normalized.sql",
     "191_customer_name_trgm.sql",
     "210_customer_allow_credit_with_phone.sql",
-    "211_merge_permissions.sql"
+    "211_merge_permissions.sql",
+    "447_kap_pharmacy_v2.sql"
 )
 
 Write-Host "=== KitPlatform Migrations ===" -ForegroundColor Cyan
