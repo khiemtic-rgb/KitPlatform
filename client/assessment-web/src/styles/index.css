@@ -2896,3 +2896,234 @@ a {
 
 
 
+
+/* ---- Báo cáo cho chủ nhà thuốc (PHARMACY_V2) ---- */
+.or-page .or-headline {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--rp-ink);
+}
+
+.or-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.or-section p {
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.or-said {
+  color: var(--rp-muted);
+  font-style: italic;
+}
+
+.or-leaks {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.or-leak {
+  border-left: 4px solid #d97706;
+  background: #fffbeb;
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.or-leak h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: #92400e;
+}
+
+.or-concern {
+  border-left: 4px solid var(--rp-teal);
+}
+
+.or-actions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.or-action {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rp-line);
+}
+
+.or-action:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.or-action__num {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--rp-teal);
+  color: #fff;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.or-action h3 {
+  margin: 0.2rem 0 0.4rem;
+  font-size: 1.02rem;
+}
+
+.or-label {
+  margin-top: 0.6rem !important;
+  font-weight: 700;
+}
+
+.or-steps {
+  margin: 0 0 0.6rem;
+  padding-left: 1.2rem;
+  line-height: 1.5;
+}
+
+.or-steps li + li {
+  margin-top: 0.3rem;
+}
+
+.or-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+}
+
+.or-meta div {
+  background: #f7f8fa;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+
+.or-meta dt {
+  font-size: 0.75rem;
+  color: var(--rp-muted);
+  margin: 0 0 0.15rem;
+}
+
+.or-meta dd {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.or-tool {
+  background: #ecfdf5;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.9rem;
+}
+
+.or-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.55;
+}
+
+.or-list--good li::marker {
+  color: var(--rp-teal);
+}
+
+.or-note {
+  color: var(--rp-muted);
+  font-size: 0.85rem;
+}
+
+.or-areas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.or-areas li {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr) 8.5rem;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.or-areas__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #e4e6eb;
+  overflow: hidden;
+}
+
+.or-areas__bar span {
+  display: block;
+  height: 100%;
+}
+
+.or-areas__score em {
+  font-style: normal;
+  font-weight: 700;
+  margin-left: 0.25rem;
+}
+
+.or-areas__note {
+  grid-column: 2 / 4;
+  color: var(--rp-muted);
+  font-size: 0.88rem;
+}
+
+.or-cta__phone a {
+  font-weight: 700;
+  color: var(--rp-teal);
+}
+
+@media (max-width: 640px) {
+  .or-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .or-areas li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .or-areas__bar {
+    grid-column: 1 / 3;
+    grid-row: 2;
+  }
+
+  .or-areas__note {
+    grid-column: 1 / 3;
+  }
+}
+
+@media print {
+  .or-noprint {
+    display: none !important;
+  }
+
+  .or-page {
+    background: #fff;
+    padding: 0;
+    max-width: none;
+  }
+
+  .or-page .report-card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .or-action {
+    break-inside: avoid;
+  }
+}

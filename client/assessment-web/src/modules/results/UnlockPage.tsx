@@ -16,32 +16,32 @@ type FormValues = {
 
 const BENEFITS = [
   {
-    title: 'Báo cáo đánh giá chi tiết',
-    desc: 'Điểm mạnh, điểm yếu và mức độ trưởng thành của nhà thuốc',
-    icon: 'report',
-    tone: 'blue',
-  },
-  {
-    title: 'Phân tích chuyên sâu',
-    desc: 'So sánh với chuẩn ngành và phát hiện cơ hội cải thiện',
+    title: 'Nhà thuốc đang mất tiền ở đâu',
+    desc: 'Ước tính từ chính con số anh/chị nhập: hàng hết hạn, khách hỏi mà hết hàng',
     icon: 'insight',
     tone: 'amber',
   },
   {
-    title: 'Lộ trình cải thiện 30 – 60 – 90 ngày',
-    desc: 'Hành động cụ thể, ưu tiên đúng việc cần làm trước',
+    title: '3 việc nên làm trước',
+    desc: 'Làm thế nào, ai làm, mất bao lâu, sau 30 ngày xem lại gì',
     icon: 'roadmap',
     tone: 'teal',
   },
   {
-    title: 'Khuyến nghị giải pháp',
-    desc: 'Gợi ý công cụ và giải pháp giúp vận hành hiệu quả hơn',
+    title: 'Dùng phần mềm đang có',
+    desc: 'Nhà thuốc đã có phần mềm thì chỉ chỗ dùng phần mềm đó cho từng việc',
     icon: 'chart',
     tone: 'violet',
   },
   {
-    title: 'Tư vấn 1:1 cùng chuyên gia Novixa',
-    desc: 'Được hỗ trợ trực tiếp, giải đáp thắc mắc và định hướng triển khai',
+    title: 'Điểm từng phần',
+    desc: 'Khách hàng, kho và hạn dùng, nhân viên, lãi lỗ, ghi chép',
+    icon: 'report',
+    tone: 'blue',
+  },
+  {
+    title: 'Gọi trao đổi 10–15 phút nếu anh/chị muốn',
+    desc: 'Cùng chọn việc làm trước cho nhà thuốc, không bắt buộc',
     icon: 'support',
     tone: 'rose',
   },
@@ -50,8 +50,7 @@ const BENEFITS = [
 const COMMITMENTS = [
   'Hoàn toàn miễn phí — Không ràng buộc',
   'Không spam — Không chia sẻ thông tin',
-  'Bảo mật tuyệt đối thông tin của bạn',
-  'Nhận báo cáo trong vòng 24h',
+  'Xem báo cáo ngay sau khi gửi thông tin',
 ] as const;
 
 const SCALE_CHIPS = [
@@ -178,7 +177,7 @@ export function UnlockPage() {
         </a>
         <span className="unlock-privacy">
           <Icon d="M7 11V8a5 5 0 0110 0v3M6 11h12v10H6V11z" />
-          Thông tin của bạn được bảo mật tuyệt đối
+          Không chia sẻ thông tin cho bên thứ ba
         </span>
       </header>
 
@@ -188,7 +187,7 @@ export function UnlockPage() {
           Nhận báo cáo chi tiết và tư vấn <em>giải pháp phù hợp</em> cho nhà thuốc của bạn
         </h1>
         <p className="unlock-hero__sub">
-          Chỉ mất 7 phút hoàn thành — Nhận ngay báo cáo đánh giá và khuyến nghị cải thiện
+          Báo cáo hiện ngay sau khi bạn gửi thông tin — kèm những việc nên làm trước
         </p>
       </section>
 
@@ -237,7 +236,7 @@ export function UnlockPage() {
             onFinishFailed={onFinishFailed}
             scrollToFirstError={{ behavior: 'smooth', block: 'center' }}
             requiredMark
-            initialValues={{ orgScale: 'small', consentMarketing: true }}
+            initialValues={{ orgScale: 'small', consentMarketing: false }}
           >
             <div className="unlock-section">
               <h3 className="unlock-section__title">
@@ -260,7 +259,7 @@ export function UnlockPage() {
                 label="Số điện thoại"
                 name="respondentPhone"
                 rules={[{ required: true, pattern: /^0[0-9]{9}$/, message: 'SĐT 10 số, bắt đầu 0' }]}
-                extra="Chuyên gia sẽ liên hệ tư vấn cho bạn"
+                extra="Dùng để gắn báo cáo với nhà thuốc của bạn"
               >
                 <Input
                   size="middle"
@@ -273,7 +272,7 @@ export function UnlockPage() {
               <Form.Item
                 label="Email (tuỳ chọn)"
                 name="respondentEmail"
-                extra="Dùng để nhận báo cáo chi tiết"
+                extra="Không bắt buộc"
                 rules={[
                   {
                     validator: async (_, value?: string) => {
@@ -334,10 +333,10 @@ export function UnlockPage() {
 
             <Form.Item name="consentMarketing" valuePropName="checked" className="unlock-consent">
               <Checkbox>
-                Tôi đồng ý nhận thông tin tư vấn từ Novixa.
+                Tôi đồng ý để chuyên gia Novixa gọi điện tư vấn.
                 <span className="unlock-consent__note">
                   {' '}
-                  Chúng tôi cam kết bảo mật thông tin và không chia sẻ cho bên thứ ba.
+                  Không đánh dấu thì bạn vẫn xem được báo cáo. Novixa không chia sẻ thông tin cho bên thứ ba.
                 </span>
               </Checkbox>
             </Form.Item>
@@ -357,8 +356,8 @@ export function UnlockPage() {
             <div className="unlock-eta">
               <Icon d="M12 4a8 8 0 100 16 8 8 0 000-16zm0 4v4l3 2" />
               <span>
-                <strong>Hoàn thành trong 2 phút.</strong> Báo cáo sẽ được gửi qua email và chuyên gia liên
-                hệ trong 24h.
+                <strong>Hoàn thành trong 2 phút.</strong> Báo cáo hiện ngay trên màn hình và tải được
+                bản PDF.
               </span>
             </div>
           </Form>
@@ -371,8 +370,8 @@ export function UnlockPage() {
             <Icon d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" size={18} />
           </span>
           <div>
-            <strong>Bảo mật tuyệt đối</strong>
-            <p>Thông tin của bạn được mã hóa và bảo vệ an toàn</p>
+            <strong>Không chia sẻ thông tin</strong>
+            <p>Chỉ dùng cho báo cáo và tư vấn của Novixa</p>
           </div>
         </div>
         <div className="unlock-footer__item">
@@ -381,7 +380,7 @@ export function UnlockPage() {
           </span>
           <div>
             <strong>Nhanh chóng</strong>
-            <p>Chỉ 7 phút — Nhận báo cáo trong 24h</p>
+            <p>Báo cáo hiện ngay sau khi gửi thông tin</p>
           </div>
         </div>
         <div className="unlock-footer__item">

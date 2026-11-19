@@ -4,10 +4,13 @@ import { Collapse, Spin, message } from 'antd';
 import {
   fetchReport,
   fetchReportPdf,
+  fetchTemplate,
+  getSubmission,
   triggerPdfDownload,
   type FullReport,
   type OwnerPack,
 } from '@/shared/api/assessment.api';
+import { answersByCode, buildOwnerReport, type OwnerReport } from '@/shared/report/owner-report';
 import { getMaturityLevel, toScore100 } from '@/shared/score/score-display';
 import { ReportIntelligenceSections } from '@/modules/report/ReportIntelligenceSections';
 
@@ -30,7 +33,17 @@ const I = {
   headset: 'M4 14v-1a4 4 0 014-4h1M19 14v-1a4 4 0 00-4-4h-1M8 14h8v2a3 3 0 01-3 3h-2a3 3 0 01-3-3v-2z',
 };
 
-function Gauge({ score100, label, color }: { score100: number; label: string; color: string }) {
+function Gauge({
+  score100,
+  label,
+  color,
+  note = '0 = sơ khai · 100 = trưởng thành cao nhất',
+}: {
+  score100: number;
+  label: string;
+  color: string;
+  note?: string;
+}) {
   const halfLen = Math.PI * 70;
   const dash = halfLen * (Math.max(0, Math.min(100, score100)) / 100);
   return (
@@ -63,7 +76,7 @@ function Gauge({ score100, label, color }: { score100: number; label: string; co
           {label}
         </span>
       </div>
-      <p className="report-gauge__note">0 = sơ khai · 100 = trưởng thành cao nhất</p>
+      <p className="report-gauge__note">{note}</p>
     </div>
   );
 }
@@ -203,18 +216,197 @@ function OwnerPackView({
   );
 }
 
+const HOTLINE = { tel: '+84984660399', label: '0984.660.399' };
+
+/** Báo cáo cho chủ nhà thuốc (bài PHARMACY_V2): dựng từ câu trả lời, đọc trong vài phút. */
+function OwnerReportView({ owner, score100 }: { owner: OwnerReport; score100: number }) {
+  const level = getMaturityLevel(score100);
+  return (
+    <div className="report-page or-page">
+      <header className="report-topbar or-noprint">
+        <a className="report-brand" href="https://novixa.vn/vi/" aria-label="Novixa">
+          <img className="report-brand__logo" src="/logo.png" alt="Novixa" width="140" height="40" />
+        </a>
+        <button type="button" className="report-pdf-btn" onClick={() => window.print()}>
+          <span className="report-pdf-btn__icon" aria-hidden>
+            <Icon d={I.pdf} size={16} />
+          </span>
+          <span className="report-pdf-btn__text">
+            <strong>In hoặc lưu PDF</strong>
+            <small>Chọn "Lưu dưới dạng PDF" khi in</small>
+          </span>
+        </button>
+      </header>
+
+      <section className="report-card report-score or-hero">
+        <div className="report-score__grid">
+          <Gauge score100={score100} label={level.label} color={level.color} note="Điểm càng cao, nhà thuốc càng ít phụ thuộc vào trí nhớ và sự có mặt của chủ" />
+          <div className="report-score__copy">
+            <p className="report-owner__eyebrow">Báo cáo cho nhà thuốc</p>
+            <h1 className="or-headline">{owner.headline}</h1>
+          </div>
+        </div>
+      </section>
+
+      {owner.leaks.length > 0 ? (
+        <section className="report-card or-section">
+          <h2>Nhà thuốc đang mất tiền ở đâu</h2>
+          <div className="or-leaks">
+            {owner.leaks.map((l) => (
+              <article key={l.code} className="or-leak">
+                <h3>{l.title}</h3>
+                <p className="or-said">{l.said}</p>
+                <p>{l.body}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {owner.concern ? (
+        <section className="report-card or-section or-concern">
+          <h2>Điều anh/chị lo nhất: {owner.concern.label.toLowerCase()}</h2>
+          <p>{owner.concern.text}</p>
+        </section>
+      ) : null}
+
+      {owner.actions.length > 0 ? (
+        <section className="report-card or-section">
+          <h2>{owner.actions.length === 3 ? '3 việc nên làm trước' : 'Việc nên làm trước'}</h2>
+          <ol className="or-actions">
+            {owner.actions.map((a, idx) => (
+              <li key={a.code} className="or-action">
+                <span className="or-action__num" aria-hidden>
+                  {idx + 1}
+                </span>
+                <div className="or-action__body">
+                  <h3>{a.title}</h3>
+                  <p className="or-said">{a.said}</p>
+                  <p>{a.why}</p>
+                  <p className="or-label">Cách làm</p>
+                  <ul className="or-steps">
+                    {a.steps.map((s) => (
+                      <li key={s}>{s}</li>
+                    ))}
+                  </ul>
+                  <dl className="or-meta">
+                    <div>
+                      <dt>Ai làm</dt>
+                      <dd>{a.who}</dd>
+                    </div>
+                    <div>
+                      <dt>Mất bao lâu</dt>
+                      <dd>{a.time}</dd>
+                    </div>
+                    <div>
+                      <dt>Sau 30 ngày xem lại</dt>
+                      <dd>{a.check}</dd>
+                    </div>
+                  </dl>
+                  {a.tool ? (
+                    <p className="or-tool">
+                      {owner.hasSoftware ? <strong>Với phần mềm đang dùng: </strong> : null}
+                      {a.tool}
+                    </p>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
+      {owner.strengths.length > 0 ? (
+        <section className="report-card or-section">
+          <h2>Anh/chị đang làm tốt</h2>
+          <ul className="or-list or-list--good">
+            {owner.strengths.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {owner.watch.length > 0 ? (
+        <section className="report-card or-section">
+          <h2>Nên bắt đầu để ý</h2>
+          <ul className="or-list">
+            {owner.watch.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="report-card or-section">
+        <h2>Điểm từng phần</h2>
+        <p className="or-note">
+          Thang 100: dưới 40 Cần cải thiện · 40–59 Cơ bản · 60–79 Khá tốt · từ 80 Xuất sắc.
+        </p>
+        <ul className="or-areas">
+          {owner.areas.map((a) => {
+            const lv = a.pct == null ? null : getMaturityLevel(a.pct);
+            return (
+              <li key={a.code}>
+                <span className="or-areas__name">{a.name}</span>
+                {a.pct == null || !lv ? (
+                  <span className="or-areas__note">{a.note}</span>
+                ) : (
+                  <>
+                    <span className="or-areas__bar" aria-hidden>
+                      <span style={{ width: `${a.pct}%`, background: lv.color }} />
+                    </span>
+                    <span className="or-areas__score">
+                      <strong>{a.pct}</strong>/100 <em style={{ color: lv.color }}>{lv.label}</em>
+                    </span>
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className="report-card or-section or-cta">
+        <h2>Muốn có người cùng làm?</h2>
+        <p>
+          Novixa có thể gọi 10–15 phút để cùng anh/chị chọn việc làm trước và cách làm cho hợp với nhà thuốc.
+          Không bắt buộc.
+        </p>
+        <p className="or-cta__phone">
+          Gọi hoặc nhắn: <a href={`tel:${HOTLINE.tel}`}>{HOTLINE.label}</a>
+        </p>
+      </section>
+
+      <div className="report-done or-noprint">
+        <Link to="/thank-you">Hoàn tất</Link>
+      </div>
+    </div>
+  );
+}
+
 export function ReportPage() {
   const { id = '' } = useParams();
   const [report, setReport] = useState<FullReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloadingOwner, setDownloadingOwner] = useState(false);
   const [downloadingFull, setDownloadingFull] = useState(false);
+  const [owner, setOwner] = useState<OwnerReport | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const data = await fetchReport(id);
+        if (data.templateCode === 'PHARMACY_V2') {
+          try {
+            const [sub, tpl] = await Promise.all([getSubmission(id), fetchTemplate(data.templateCode)]);
+            const built = buildOwnerReport(tpl, answersByCode(tpl, sub.responses), data.categoryScores, data.overallPct);
+            if (!cancelled) setOwner(built);
+          } catch {
+            // Không dựng được thì dùng bản báo cáo cũ bên dưới.
+          }
+        }
         if (!cancelled) setReport(data);
       } catch {
         message.error('Báo cáo chưa mở khóa hoặc session hết hạn.');
@@ -232,7 +424,9 @@ export function ReportPage() {
   const ownerPack = report?.intelligence?.ownerPack ?? null;
   const categoryScoreByCode = useMemo(() => {
     const map = new Map<string, number>();
-    for (const c of report?.categoryScores ?? []) map.set(c.code, c.scorePct);
+    for (const c of report?.categoryScores ?? []) {
+      if (!c.insufficientData) map.set(c.code, c.scorePct);
+    }
     return map;
   }, [report]);
 
@@ -271,6 +465,8 @@ export function ReportPage() {
       </div>
     );
   }
+
+  if (owner) return <OwnerReportView owner={owner} score100={score100} />;
 
   return (
     <div className="report-page">

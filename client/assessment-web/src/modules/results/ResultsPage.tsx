@@ -3,10 +3,12 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button, Spin, message } from 'antd';
 import {
   completeSubmission,
+  fetchTemplate,
   getSubmission,
   type CategoryScore,
   type CompleteResult,
 } from '@/shared/api/assessment.api';
+import { answersByCode, buildOwnerReport, type OwnerReport } from '@/shared/report/owner-report';
 import {
   annotateInsightText,
   getMaturityLevel,
@@ -17,32 +19,32 @@ const CATEGORY_META: Record<string, { icon: string; desc: string; tone: string }
   BUSINESS: {
     icon: 'biz',
     tone: 'teal',
-    desc: 'Doanh thu, khuyến mại và mục tiêu kinh doanh',
+    desc: 'Biết lãi bao nhiêu, nhóm hàng nào lãi, khuyến mại lời hay lỗ',
   },
   TECH: {
     icon: 'tech',
     tone: 'violet',
-    desc: 'Phần mềm, dữ liệu và bảng điều khiển vận hành',
+    desc: 'Bán hàng ghi ở đâu, xem số bán khi vắng mặt, liên thông dữ liệu',
   },
   INVENTORY: {
     icon: 'stock',
     tone: 'amber',
-    desc: 'Tồn kho, hạn dùng, nhập hàng và kiểm kê',
+    desc: 'Hàng cận hạn, hết hàng, nhập hàng, kiểm kê',
   },
   CUSTOMER: {
     icon: 'customer',
     tone: 'blue',
-    desc: 'Hồ sơ khách hàng, thân thiết và chăm sóc sau bán',
+    desc: 'Nhớ khách quen, nhắc mua lại, hỏi thăm sau khi bán',
   },
   OPERATIONS: {
     icon: 'ops',
     tone: 'rose',
-    desc: 'Quy trình làm việc, phân quyền và chuẩn vận hành',
+    desc: 'Chủ vắng có chạy được không, nhân viên mới, tiền cuối ngày, sổ sách',
   },
   GROWTH: {
     icon: 'growth',
     tone: 'indigo',
-    desc: 'Kế hoạch mở rộng và phát triển dài hạn',
+    desc: 'Mục tiêu năm tới, mở thêm cơ sở được không',
   },
 };
 
@@ -107,7 +109,7 @@ function Gauge({
         />
       </svg>
       <div className="results-gauge__center">
-        <p className="results-gauge__caption">Điểm trưởng thành tổng (thang 100)</p>
+        <p className="results-gauge__caption">Điểm tổng (thang 100)</p>
         <p className="results-gauge__value">
           <strong style={{ color }}>{score100}</strong>
           <span>/100</span>
@@ -116,7 +118,7 @@ function Gauge({
           {label}
         </span>
       </div>
-      <p className="results-gauge__note">0 = sơ khai · 100 = trưởng thành cao nhất</p>
+      <p className="results-gauge__note">Điểm càng cao, nhà thuốc càng ít phụ thuộc vào trí nhớ và sự có mặt của chủ</p>
     </div>
   );
 }
@@ -197,6 +199,32 @@ export function ResultsPage() {
     };
   }, [id, navigate, result]);
 
+  // Bài PHARMACY_V2: hai điểm nổi bật dựng từ câu trả lời, cùng lời với báo cáo đầy đủ.
+  const [owner, setOwner] = useState<OwnerReport | null>(null);
+  useEffect(() => {
+    if (!result) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const sub = await getSubmission(id);
+        if (sub.templateCode !== 'PHARMACY_V2') return;
+        const tpl = await fetchTemplate(sub.templateCode);
+        const built = buildOwnerReport(
+          tpl,
+          answersByCode(tpl, sub.responses),
+          result.categoryScores,
+          result.overallPct,
+        );
+        if (!cancelled) setOwner(built);
+      } catch {
+        // Giữ hai điểm nổi bật từ máy chủ nếu không dựng được.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, result]);
+
   const score100 = result ? toScore100(result.overallPct) : 0;
   const level = getMaturityLevel(score100);
   const categories = useMemo(() => {
@@ -207,7 +235,12 @@ export function ResultsPage() {
     });
   }, [result]);
 
-  const insightCards = result?.previewInsights.slice(0, 2) ?? [];
+  const insightCards = owner
+    ? owner.preview
+    : (result?.previewInsights.slice(0, 2) ?? []).map((i) => ({
+        title: annotateInsightText(i.title),
+        body: annotateInsightText(i.body),
+      }));
 
   if (loading || !result) {
     return (
@@ -241,7 +274,7 @@ export function ResultsPage() {
 
       <section className="results-hero">
         <h1>Kết quả sơ bộ</h1>
-        <p>Bạn đã hoàn thành khảo sát. Đây là điểm tổng và những điều nổi bật nhất của nhà thuốc.</p>
+        <p>Anh/chị đã làm xong bài. Đây là điểm tổng và hai điều nổi bật nhất của nhà thuốc.</p>
       </section>
 
       <div className="results-summary">
@@ -253,15 +286,15 @@ export function ResultsPage() {
             <div className="results-insights results-insights--stack">
               {insightCards.map((insight, idx) => (
                 <article
-                  key={insight.title}
+                  key={idx}
                   className="results-insight"
                   data-tone={idx === 0 ? 'amber' : 'blue'}
                 >
                   <span className="results-insight__icon" aria-hidden>
                     <Icon d={idx === 0 ? ICON_PATH.bulb : ICON_PATH.link} size={18} />
                   </span>
-                  <h3>{annotateInsightText(insight.title)}</h3>
-                  <p>{annotateInsightText(insight.body)}</p>
+                  <h3>{insight.title}</h3>
+                  <p>{insight.body}</p>
                 </article>
               ))}
             </div>
@@ -276,13 +309,13 @@ export function ResultsPage() {
             >
               Xem ba việc nên làm trước
             </Button>
-            <p>Để lại số điện thoại để xem báo cáo đầy đủ và lộ trình 30–60–90 ngày.</p>
+            <p>Để lại số điện thoại để xem đủ 3 việc nên làm: làm thế nào, ai làm, mất bao lâu.</p>
           </div>
         </article>
       </div>
 
       <section className="results-card results-detail">
-        <h2 className="results-detail__title">Chi tiết theo nhóm năng lực</h2>
+        <h2 className="results-detail__title">Điểm từng phần</h2>
         <div className="results-tip">
           <Icon d={ICON_PATH.star} size={16} />
           <p>
@@ -291,7 +324,7 @@ export function ResultsPage() {
           </p>
         </div>
         <div className="results-table-head">
-          <span>Nhóm năng lực</span>
+          <span>Phần</span>
           <span>Mức độ</span>
           <span>Điểm</span>
         </div>
@@ -305,12 +338,16 @@ export function ResultsPage() {
                     <CategoryIcon code={item.code} />
                     <div>
                       <strong>{item.name}</strong>
-                      <p>{meta?.desc ?? 'Nhóm năng lực trong hồ sơ phát triển nhà thuốc'}</p>
+                      <p>{meta?.desc ?? ''}</p>
                     </div>
                   </div>
                   <div className="results-bar" aria-hidden />
                   <div className="results-score">
-                    <strong>Chưa đủ dữ liệu</strong>
+                    <strong>
+                      {owner?.areas.find((a) => a.code === item.code)?.note?.startsWith('Chưa áp dụng')
+                        ? 'Chưa áp dụng'
+                        : 'Chưa đủ dữ liệu'}
+                    </strong>
                   </div>
                 </li>
               );
@@ -323,7 +360,7 @@ export function ResultsPage() {
                   <CategoryIcon code={item.code} />
                   <div>
                     <strong>{item.name}</strong>
-                    <p>{meta?.desc ?? 'Nhóm năng lực trong hồ sơ phát triển nhà thuốc'}</p>
+                    <p>{meta?.desc ?? ''}</p>
                   </div>
                 </div>
                 <div className="results-bar" aria-hidden>
@@ -347,7 +384,7 @@ export function ResultsPage() {
         <div className="results-cta__copy">
           <h2>Nhận báo cáo chi tiết &amp; tư vấn miễn phí</h2>
           <p>
-            Báo cáo gồm phân tích từng nhóm, việc nên làm trước và lộ trình cải thiện 30 – 60 – 90 ngày.
+            Báo cáo cho biết nhà thuốc đang mất tiền ở đâu, 3 việc nên làm trước, ai làm và mất bao lâu.
           </p>
           <Button
             type="primary"
