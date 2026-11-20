@@ -72,7 +72,16 @@ public sealed class KitSalesFacebookWebhookController : ControllerBase
                 if (!entry.TryGetProperty("messaging", out var messaging))
                     continue;
                 foreach (var item in messaging.EnumerateArray())
-                    await HandleItemAsync(item, cancellationToken);
+                {
+                    try
+                    {
+                        await HandleItemAsync(item, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "KIT Sales Facebook webhook item failed");
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -105,7 +114,14 @@ public sealed class KitSalesFacebookWebhookController : ControllerBase
         if (string.IsNullOrWhiteSpace(text))
             return;
 
-        await _chat.HandleFacebookInboundAsync(psid, text, cancellationToken);
+        var mid = message.TryGetProperty("mid", out var midEl) && midEl.ValueKind == JsonValueKind.String
+            ? midEl.GetString()
+            : null;
+        long? sentAt = item.TryGetProperty("timestamp", out var tsEl)
+            && tsEl.ValueKind == JsonValueKind.Number && tsEl.TryGetInt64(out var ts)
+            ? ts
+            : null;
+        await _chat.HandleFacebookInboundAsync(psid, text, mid, sentAt, cancellationToken);
     }
 
     private bool SignatureOk(string raw, KitSalesFacebookOptions options)
