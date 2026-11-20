@@ -1,0 +1,115 @@
+ prescription_code | status |    date    |     customer      | product_code |          product_name           | qty_prescribed | dosage_instruction  
+-------------------+--------+------------+-------------------+--------------+---------------------------------+----------------+---------------------
+ RX-000001         | signed | 2026-07-10 | bà gái            | PVN650       | 12B (USA Pharma)                |         1.0000 | 1 viên x 2 lan/ngay
+ RX-000002         | signed | 2026-07-10 | bà gái            | PVN650       | 12B (USA Pharma)                |         1.0000 | 1 viên x 2 lan/ngay
+ RX-000003         | signed | 2026-07-10 | bà gái            | PVN650       | 12B (USA Pharma)                |         1.0000 | 1 viên x 2 lan/ngay
+ RX-000004         | signed | 2026-07-10 | bà gái            | PVN650       | 12B (USA Pharma)                |         1.0000 | 1 viên x 2 lan/ngay
+ RX-000005         | signed | 2026-07-10 | BN Demo Portal Rx | RXDEMO-AMOX  | Amoxicillin 500mg (Demo Portal) |        10.0000 | 1x2
+ RX-000005         | signed | 2026-07-10 | BN Demo Portal Rx | RXDEMO-PARA  | Paracetamol 500mg (Demo Portal) |        10.0000 | 1x3
+ RX-000006         | signed | 2026-07-10 | bà gái            | PVN650       | 12B (USA Pharma)                |         1.0000 | 1 viên x 2 lan/ngay
+(7 rows)
+
+ prescription_code | status |    date    | line_count |                             products                              
+-------------------+--------+------------+------------+-------------------------------------------------------------------
+ RX-000001         | signed | 2026-07-10 |          1 | 12B (USA Pharma)
+ RX-000002         | signed | 2026-07-10 |          1 | 12B (USA Pharma)
+ RX-000003         | signed | 2026-07-10 |          1 | 12B (USA Pharma)
+ RX-000004         | signed | 2026-07-10 |          1 | 12B (USA Pharma)
+ RX-000005         | signed | 2026-07-10 |          2 | Amoxicillin 500mg (Demo Portal) + Paracetamol 500mg (Demo Portal)
+ RX-000006         | signed | 2026-07-10 |          1 | 12B (USA Pharma)
+(6 rows)
+
+ order_number |    date    | status |    customer    | product_code |          product_name          | quantity | unit_price 
+--------------+------------+--------+----------------+--------------+--------------------------------+----------+------------
+ SO-000037    | 2026-07-16 |      2 |                | PVN1620      | Amucopect - New (Gói)          |    1.000 |    3000.00
+ SO-000036    | 2026-07-12 |      2 | c hoà TNG      | PVN3879      | Bominity - vitamin C ống - Hộp |    1.000 |  120000.00
+ SO-000036    | 2026-07-12 |      2 | c hoà TNG      | PVN1701      | Paracetamol 500mg - Vỉ         |    2.000 |    5000.00
+ SO-000035    | 2026-07-11 |      2 | A chuc         | PVN1701      | Paracetamol 500mg - Vỉ         |    2.000 |    5000.00
+ SO-000031    | 2026-07-01 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000030    | 2026-07-01 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000029    | 2026-07-01 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000028    | 2026-07-01 |      2 | A chuc         | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000027    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000026    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000025    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000024    | 2026-06-29 |      2 | A chuc         | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000023    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000022    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000021    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000020    | 2026-06-29 |      2 | A chuc         | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000019    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000018    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000017    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000016    | 2026-06-29 |      2 | A chuc         | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000015    | 2026-06-29 |      2 | A chuc         | PVN358       | Acemuc 200mg                   |   10.000 |    2800.00
+ SO-000014    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000013    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000012    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000011    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000010    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000009    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000008    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000007    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+ SO-000006    | 2026-06-29 |      2 | Khách Xuan Hoa | PVN2152      | Zilgo 102M - Hộp               |    1.000 |   30000.00
+(30 rows)
+
+ order_number |    date    | item_count |                        products                         
+--------------+------------+------------+---------------------------------------------------------
+ SO-000037    | 2026-07-16 |          1 | Amucopect - New (Gói)
+ SO-000036    | 2026-07-12 |          2 | Paracetamol 500mg - Vỉ + Bominity - vitamin C ống - Hộp
+ SO-000035    | 2026-07-11 |          1 | Paracetamol 500mg - Vỉ
+ SO-000031    | 2026-07-01 |          1 | Zilgo 102M - Hộp
+ SO-000030    | 2026-07-01 |          1 | Zilgo 102M - Hộp
+ SO-000029    | 2026-07-01 |          1 | Zilgo 102M - Hộp
+ SO-000028    | 2026-07-01 |          1 | Zilgo 102M - Hộp
+ SO-000027    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000026    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000025    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000024    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000023    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000022    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000021    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000020    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000019    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000018    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000017    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000016    | 2026-06-29 |          1 | Zilgo 102M - Hộp
+ SO-000015    | 2026-06-29 |          1 | Acemuc 200mg
+(20 rows)
+
+ product_code |          product_name           | prescription_count | total_qty_prescribed 
+--------------+---------------------------------+--------------------+----------------------
+ PVN650       | 12B (USA Pharma)                |                  5 |               5.0000
+ RXDEMO-AMOX  | Amoxicillin 500mg (Demo Portal) |                  1 |              10.0000
+ RXDEMO-PARA  | Paracetamol 500mg (Demo Portal) |                  1 |              10.0000
+(3 rows)
+
+ product_code |          product_name          | order_count | total_qty_sold 
+--------------+--------------------------------+-------------+----------------
+ PVN2152      | Zilgo 102M - Hộp               |          28 |         28.000
+ PVN358       | Acemuc 200mg                   |           2 |         40.000
+ PVN1701      | Paracetamol 500mg - Vỉ         |           2 |          4.000
+ PVN2735      | 5D kids                        |           1 |          1.000
+ PVN365       | Acemuc Kids 100mg              |           1 |         10.000
+ PVN4011      | Acetylcystein soha 100         |           1 |          1.000
+ PVN1620      | Amucopect - New (Gói)          |           1 |          1.000
+ PVN3879      | Bominity - vitamin C ống - Hộp |           1 |          1.000
+(8 rows)
+
+   data_type   | total | with_customer | with_prescriber | with_patient_name | with_notes 
+---------------+-------+---------------+-----------------+-------------------+------------
+ Prescriptions |     6 |             6 |               6 |                 6 |          6
+ Sales Orders  |    34 |            32 |              34 |                   |          0
+(2 rows)
+
+ prescription_code |    date    | line_count |                                 prescription_detail                                  
+-------------------+------------+------------+--------------------------------------------------------------------------------------
+ RX-000005         | 2026-07-10 |          2 | Amoxicillin 500mg (Demo Portal) (10.0000); Paracetamol 500mg (Demo Portal) (10.0000)
+(1 row)
+
+ order_number |    date    | item_count |                                order_detail                                 
+--------------+------------+------------+-----------------------------------------------------------------------------
+ SO-000001    | 2026-06-28 |          3 | Acemuc Kids 100mg (10.000); 5D kids (1.000); Acetylcystein soha 100 (1.000)
+ SO-000036    | 2026-07-12 |          2 | Paracetamol 500mg - Vỉ (2.000); Bominity - vitamin C ống - Hộp (1.000)
+(2 rows)
+

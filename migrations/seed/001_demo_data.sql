@@ -157,7 +157,7 @@ VALUES
     ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa06', '11111111-1111-1111-1111-111111111101', 'KH006', 'Võ Thị Lan', '0909678901', 'lan.vo@email.com', '1995-09-03');
 
 INSERT INTO loyalty_programs (id, tenant_id, program_code, program_name, points_per_amount, amount_per_point)
-VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb01', '11111111-1111-1111-1111-111111111101', 'LOYALTY_DEFAULT', 'Tích điểm Pharmar', 10000, 10000);
+VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb01', '11111111-1111-1111-1111-111111111101', 'LOYALTY_DEFAULT', 'Tích điểm Pharmar', 10000, 100);
 
 INSERT INTO loyalty_tiers (id, program_id, tier_code, tier_name, min_points, discount_percent, sort_order)
 VALUES
