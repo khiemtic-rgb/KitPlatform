@@ -11,7 +11,8 @@ import { loadReceiptStoreSettings, type ReceiptStoreSettings } from '@/modules/s
 import {
   buildThermalReceiptDocument,
   dashedLine,
-  formatReceiptDateTime,
+  formatReceiptDate,
+  formatReceiptSaleTime,
   formatThermalMoney,
   openThermalPrintWindow,
   rowBetween,
@@ -188,7 +189,8 @@ export function buildSalesInvoiceHtml(order: SalesOrderDetail, receiptStore: Rec
     <div class="center title">${escapeHtml(t('receipt.invoice.title'))}</div>
 
     <div class="meta">${t('receipt.invoice.orderNo')}: <strong>${escapeHtml(order.orderNumber)}</strong></div>
-    <div class="meta">${t('receipt.invoice.date')}: ${formatReceiptDateTime(order.orderDate)}</div>
+    <div class="meta">${t('receipt.invoice.date')}: ${formatReceiptDate(order.orderDate)}</div>
+    <div class="meta">${t('receipt.invoice.saleTime')}: ${formatReceiptSaleTime(order.orderDate)}</div>
     ${order.shiftNumber ? `<div class="meta">${t('receipt.invoice.shift')}: ${escapeHtml(order.shiftNumber)}</div>` : ''}
     ${order.customerName ? `<div class="meta">${t('receipt.invoice.customer')}: ${escapeHtml(order.customerName)}</div>` : `<div class="meta">${t('receipt.invoice.customer')}: ${escapeHtml(t('receipt.invoice.walkIn'))}</div>`}
     ${(order.loyaltyPointsEarned ?? 0) > 0 ? `<div class="meta">${escapeHtml(t('receipt.invoice.pointsEarned', { points: formatPoints(order.loyaltyPointsEarned!) }))}</div>` : ''}

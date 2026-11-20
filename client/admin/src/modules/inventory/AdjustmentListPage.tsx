@@ -553,7 +553,7 @@ export function AdjustmentListPage() {
             <Button icon={<TeamOutlined />} onClick={openCreateSession}>
               {t('countSession')}
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate()}>
               {t('batchDocument')}
             </Button>
           </Space>

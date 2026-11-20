@@ -330,6 +330,7 @@
     "saveReceipt": "Save receipt",
     "printA4": "Print A4",
     "complete": "Complete receipt",
+    "completeConfirm": "Complete this receipt? Stock and supplier payables will be posted and cannot be edited.",
     "cancelReceipt": "Cancel receipt",
     "cancelConfirm": "Cancel this draft receipt?",
     "cancelOk": "Cancel receipt",

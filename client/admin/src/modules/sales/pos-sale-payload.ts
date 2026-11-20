@@ -39,6 +39,7 @@ export function buildCreateSalePayload(
   orderReminder?: { label?: string; daysSupply?: number },
   prescriptionId?: string,
   connectRxHandoffId?: string,
+  clientSaleId?: string,
 ) {
   return {
     warehouseId,
@@ -51,6 +52,7 @@ export function buildCreateSalePayload(
     ...(customerVoucherId ? { customerVoucherId } : {}),
     ...(prescriptionId ? { prescriptionId } : {}),
     ...(connectRxHandoffId ? { connectRxHandoffId } : {}),
+    ...(!saveAsDraft && clientSaleId ? { clientSaleId } : {}),
     ...(orderReminder?.daysSupply != null && orderReminder.daysSupply >= 1
       ? {
           orderReminderLabel: orderReminder.label ?? null,

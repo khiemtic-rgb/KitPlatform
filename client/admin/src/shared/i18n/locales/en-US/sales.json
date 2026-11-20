@@ -307,6 +307,7 @@
       "phonePrefix": "Tel",
       "orderNo": "No.",
       "date": "Date",
+      "saleTime": "Sale time",
       "shift": "Shift",
       "customer": "Customer",
       "walkIn": "Walk-in",
@@ -388,7 +389,10 @@
       "reload": "Reload",
       "documentPlaceholder": "Order no.",
       "dateFrom": "From",
-      "dateTo": "To"
+      "dateTo": "To",
+      "warehouse": "Warehouse",
+      "employee": "Staff",
+      "shift": "Shift"
     },
     "paginationTotal": "{{count}} orders",
     "columns": {
@@ -1244,7 +1248,9 @@
     "pointsPerAmount": "Spend amount to earn",
     "pointsEarned": "Points earned",
     "onePoint": "1 point",
-    "earnRuleHint": "Example: {{amount}} → 1 point — earn and redeem on POS use the same rule (spend {{amount}} for +1 point; redeem 1 point for {{amount}} off).",
+    "amountPerPoint": "1 point equals",
+    "enterPointValue": "Enter the value of 1 point",
+    "earnRuleHint": "Example: spend {{amount}} to earn +1 point. Redeeming 1 point takes {{pointValue}} off.",
     "maxRedeemPercent": "Max discount per order (%)",
     "redeemExampleHint": "Example: customer has 100 points (= {{pointsValue}}) but on a {{orderAmount}} order with a {{percent}}% cap, they can only redeem up to {{maxDiscount}} in points, not the full order value.",
     "tiersSection": "Membership tiers",

@@ -104,7 +104,7 @@ export function usePendingCustomerDraftCount(enabled = true) {
     const onVisibility = () => scheduleFallback();
     document.addEventListener('visibilitychange', onVisibility);
     const unsubscribeSse = accessToken
-      ? subscribeChatSse(buildAdminDraftOrderEventsUrl(accessToken), () => {
+      ? subscribeChatSse(buildAdminDraftOrderEventsUrl(), accessToken, () => {
           if (sseTimer) return;
           sseTimer = window.setTimeout(() => {
             sseTimer = undefined;

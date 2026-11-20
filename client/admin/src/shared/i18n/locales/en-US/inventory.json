@@ -225,6 +225,10 @@
     "viewFefo": "View by batch (FEFO)",
     "loadingBatches": "Loading batch details…",
     "noBatches": "No batches in stock.",
+    "exportExcel": "Export Excel",
+    "lotDetail": "Lot detail",
+    "actualQty": "Actual quantity",
+    "note": "Note",
     "lotConflictBanner": "{{count}} lots have more than one manufacture or expiry date. Pick the correct dates and apply them to every warehouse.",
     "openLotConflicts": "Open lot fix table",
     "messages": {
@@ -232,7 +236,9 @@
       "detailLoadFailed": "Could not load batch details",
       "emptySearchHint": "No matching products, or stock is still 0 because the goods receipt was not completed.",
       "revalueOk": "Updated unit cost for lot {{batch}}.",
-      "revalueFailed": "Could not update lot unit cost"
+      "revalueFailed": "Could not update lot unit cost",
+      "exportFailed": "Could not export the Excel file",
+      "exportEmpty": "Nothing to export"
     },
     "revalueTitle": "Fix lot unit cost",
     "revalueHint": "This changes unit cost only. Quantity stays the same. If on-hand is also wrong: save the correct cost first, then open a count — a count against a dirty cost books a huge movement.",
@@ -513,6 +519,8 @@
     "title": "Low stock",
     "description": "Threshold priority: product → warehouse → category → global setting → default 10. Defaults to the main warehouse; choose «All warehouses» to scan everything.",
     "allWarehouses": "All warehouses",
+    "scopeWarehouse": "Filtering one warehouse: {{warehouse}}.",
+    "scopeAll": "Showing every warehouse.",
     "columns": {
       "currentStock": "Current stock",
       "threshold": "Threshold",
@@ -523,7 +531,7 @@
       "veryLow": "Very low",
       "low": "Low"
     },
-    "paginationTotal": "{{count}} rows",
+    "paginationTotal": "{{count}} records",
     "messages": {
       "loadFailed": "Could not load low stock list"
     },
@@ -531,8 +539,10 @@
       "button": "Suggest purchase order",
       "empty": "No low-stock rows to suggest",
       "pickWarehouse": "Select a single warehouse first (or pick rows from one warehouse)",
-      "saved": "Draft created — review the PO form before saving",
-      "autoNote": "Suggested from low stock · {{warehouse}}"
+      "saved": "Draft created from the current page ({{shown}}/{{total}}) — review the PO form before saving",
+      "currentPageOnly": "The purchase suggestion uses only the current page ({{shown}}/{{total}} records in this filter).",
+      "autoNote": "Suggested from low stock · current page · {{warehouse}} · {{shown}}/{{total}}",
+      "autoNoteSelected": "Suggested from rows selected on the current page · {{warehouse}} · {{shown}} selected / {{total}} records"
     }
   },
   "lowStockSettings": {

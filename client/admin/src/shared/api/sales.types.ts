@@ -124,6 +124,14 @@ export interface SalesOrderListFilters {
   to?: string;
   page?: number;
   pageSize?: number;
+  warehouseId?: string;
+  employeeId?: string;
+  salesShiftId?: string;
+}
+
+export interface SalesSellerLookup {
+  id: string;
+  fullName: string;
 }
 
 export interface SalesOrderPagedListResult {

@@ -33,8 +33,12 @@ import {
   fetchSalesOrder,
   fetchSalesOrders,
   fetchSalesReturn,
+  fetchSalesSellers,
+  fetchSalesShifts,
   searchCustomers,
 } from '@/shared/api/sales.api';
+import { fetchWarehouses } from '@/shared/api/inventory.api';
+import type { Warehouse } from '@/shared/api/inventory.types';
 import type {
   CustomerListItem,
   PosCheckoutConfirm,
@@ -42,6 +46,8 @@ import type {
   SalesOrderDetail,
   SalesOrderListItem,
   SalesReturnListItem,
+  SalesSellerLookup,
+  SalesShiftListItem,
 } from '@/shared/api/sales.types';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { useCanSalesPos, useCanSalesRead } from '@/shared/auth/usePermission';
@@ -70,7 +76,7 @@ import {
 } from '@/modules/sales/sales-list-customer-search';
 import { SalesListDualSearchBar, SalesListDualSearchWrap } from '@/modules/sales/SalesListDualSearchBar';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { formatDisplayDate } from '@/shared/utils/date';
+import { formatDisplayDate, formatDisplaySaleStamp } from '@/shared/utils/date';
 import { formatDisplayMoney } from '@/shared/utils/money';
 
 function isCompletedSaleStatus(status: number): boolean {
@@ -101,6 +107,13 @@ export function SalesOrderListPage() {
   const [appliedDocument, setAppliedDocument] = useState('');
   const [statusFilter, setStatusFilter] = useState<number | typeof PARTIAL_RETURN_STATUS | undefined>();
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(() => todayRange());
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [sellers, setSellers] = useState<SalesSellerLookup[]>([]);
+  const [shifts, setShifts] = useState<SalesShiftListItem[]>([]);
+  const [warehouseId, setWarehouseId] = useState<string>();
+  const [employeeId, setEmployeeId] = useState<string>();
+  const [salesShiftId, setSalesShiftId] = useState<string>();
+  const canFilterByWarehouse = warehouses.length > 1;
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<SalesOrderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -124,6 +137,9 @@ export function SalesOrderListPage() {
     customerSearch: string = appliedCustomer,
     documentSearch: string = appliedDocument,
     nextDateRange: [Dayjs, Dayjs] | null = dateRange,
+    nextWarehouseId: string | undefined = warehouseId,
+    nextEmployeeId: string | undefined = employeeId,
+    nextShiftId: string | undefined = salesShiftId,
   ) => {
     setLoading(true);
     try {
@@ -139,6 +155,9 @@ export function SalesOrderListPage() {
         to: useDate ? nextDateRange![1].startOf('day').add(1, 'day').toISOString() : undefined,
         page: nextPage,
         pageSize: nextPageSize,
+        warehouseId: nextWarehouseId,
+        employeeId: nextEmployeeId,
+        salesShiftId: nextShiftId,
       });
       const rows =
         nextStatus === PARTIAL_RETURN_STATUS
@@ -153,7 +172,7 @@ export function SalesOrderListPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, appliedCustomer, appliedDocument, dateRange, t]);
+  }, [statusFilter, appliedCustomer, appliedDocument, dateRange, warehouseId, employeeId, salesShiftId, t]);
 
   const applySearch = (values: { customer: string; document: string }) => {
     const customer = values.customer.trim();
@@ -183,8 +202,45 @@ export function SalesOrderListPage() {
   }, [reloadList]);
 
   useEffect(() => {
-    void load(1, pageSize, statusFilter, appliedCustomer, appliedDocument, dateRange);
-  }, [statusFilter, pageSize, appliedCustomer, appliedDocument, dateRange, load]);
+    void load(
+      1,
+      pageSize,
+      statusFilter,
+      appliedCustomer,
+      appliedDocument,
+      dateRange,
+      warehouseId,
+      employeeId,
+      salesShiftId,
+    );
+  }, [statusFilter, pageSize, appliedCustomer, appliedDocument, dateRange, warehouseId, employeeId, salesShiftId, load]);
+
+  useEffect(() => {
+    void fetchWarehouses()
+      .then(setWarehouses)
+      .catch(() => setWarehouses([]));
+  }, []);
+
+  useEffect(() => {
+    if (!canFilterByWarehouse) return;
+    void fetchSalesSellers()
+      .then(setSellers)
+      .catch(() => setSellers([]));
+  }, [canFilterByWarehouse]);
+
+  useEffect(() => {
+    if (!canFilterByWarehouse) return;
+    const from = dateRange?.[0].startOf('day').toISOString();
+    const to = dateRange?.[1].startOf('day').add(1, 'day').toISOString();
+    void fetchSalesShifts({
+      limit: 100,
+      warehouseId,
+      from,
+      to,
+    })
+      .then(setShifts)
+      .catch(() => setShifts([]));
+  }, [canFilterByWarehouse, dateRange, warehouseId]);
 
   const customerSuggestions = useMemo(() => {
     const rows = [
@@ -214,6 +270,9 @@ export function SalesOrderListPage() {
     setAppliedDocument('');
     setStatusFilter(undefined);
     setDateRange(todayRange());
+    setWarehouseId(undefined);
+    setEmployeeId(undefined);
+    setSalesShiftId(undefined);
   };
 
   const loadOrderReturns = useCallback(async (orderId: string) => {
@@ -414,8 +473,9 @@ export function SalesOrderListPage() {
     reason?: string;
     items: { salesOrderItemId: string; quantity: number }[];
     payments: { paymentMethod: number; amount: number }[];
+    clientReturnId: string;
   }) => {
-    if (!detail) return;
+    if (!detail || returnSaving) return;
     try {
       setReturnSaving(true);
       const ret = await createSaleReturn(detail.id, payload);
@@ -448,8 +508,8 @@ export function SalesOrderListPage() {
       {
         title: t('columns.date'),
         dataIndex: 'orderDate',
-        width: 110,
-        render: (v: string) => formatDisplayDate(v),
+        width: 156,
+        render: (v: string) => formatDisplaySaleStamp(v),
       },
       {
         title: t('columns.status'),
@@ -715,6 +775,54 @@ export function SalesOrderListPage() {
           format="DD/MM/YYYY"
           placeholder={[t('filters.dateFrom'), t('filters.dateTo')]}
         />
+        {canFilterByWarehouse ? (
+          <>
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder={t('filters.warehouse')}
+              style={{ width: 180 }}
+              value={warehouseId}
+              onChange={(value) => {
+                setWarehouseId(value);
+                setSalesShiftId(undefined);
+              }}
+              options={warehouses.map((warehouse) => ({
+                value: warehouse.id,
+                label: warehouse.warehouseName,
+              }))}
+            />
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder={t('filters.employee')}
+              style={{ width: 180 }}
+              value={employeeId}
+              onChange={(value) => setEmployeeId(value)}
+              options={sellers.map((seller) => ({
+                value: seller.id,
+                label: seller.fullName,
+              }))}
+            />
+            <Select
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder={t('filters.shift')}
+              style={{ width: 240 }}
+              value={salesShiftId}
+              onChange={(value) => setSalesShiftId(value)}
+              options={shifts
+                .filter((shift) => !warehouseId || shift.warehouseId === warehouseId)
+                .map((shift) => ({
+                  value: shift.id,
+                  label: `${shift.shiftNumber} · ${shift.openedByUserName} · ${dayjs(shift.openedAt).format('HH:mm DD/MM')}`,
+                }))}
+            />
+          </>
+        ) : null}
         <Button onClick={resetFilters}>{t('filters.clear')}</Button>
         <Button
           type="primary"
@@ -854,7 +962,7 @@ export function SalesOrderListPage() {
                 })}
               </Descriptions.Item>
               <Descriptions.Item label={t('detail.descriptions.date')}>
-                {formatDisplayDate(detail.orderDate)}
+                {formatDisplaySaleStamp(detail.orderDate)}
               </Descriptions.Item>
               <Descriptions.Item label={t('detail.descriptions.shift')}>
                 {detail.shiftNumber ?? '—'}

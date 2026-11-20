@@ -32,7 +32,7 @@ export const DEFAULT_LOYALTY_PROGRAM: LoyaltyProgramAdmin = {
   programCode: 'LOYALTY_DEFAULT',
   programName: 'Tích điểm Pharmar',
   pointsPerAmount: 10000,
-  amountPerPoint: 10000,
+  amountPerPoint: 100,
   maxRedeemPercent: 5,
   status: 1,
   tiers: [

@@ -351,6 +351,7 @@
     "saveReceipt": "Lưu phiếu",
     "printA4": "In A4",
     "complete": "Hoàn tất nhập kho",
+    "completeConfirm": "Hoàn tất nhập kho? Tồn kho và công nợ NCC sẽ được ghi nhận, không sửa lại được.",
     "cancelReceipt": "Hủy phiếu",
     "cancelConfirm": "Hủy phiếu chờ nhập kho?",
     "cancelOk": "Hủy phiếu",
