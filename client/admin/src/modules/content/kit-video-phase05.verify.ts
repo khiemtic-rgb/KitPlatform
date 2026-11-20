@@ -2,7 +2,8 @@
 import { famixaGoldenContract } from './kit-video-pixel';
 
 const API = process.env.KIT_API_URL || 'http://localhost:5290/api';
-const PASS = process.env.KIT_MKT_PASSWORD || process.env.KIT_ADMIN_PASSWORD || 'Admin@123';
+const PASS = process.env.KIT_MKT_PASSWORD || process.env.KIT_ADMIN_PASSWORD;
+if (!PASS) throw new Error('Set KIT_MKT_PASSWORD or KIT_ADMIN_PASSWORD. No default password.');
 
 function tinyJpeg(): string {
   const jpeg = Uint8Array.from([

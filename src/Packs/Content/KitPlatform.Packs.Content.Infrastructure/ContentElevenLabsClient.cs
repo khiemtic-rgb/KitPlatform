@@ -6,6 +6,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using KitPlatform.Packs.Content;
+using KitPlatform.Packs.Content.Production;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
@@ -61,6 +62,200 @@ internal sealed class ContentElevenLabsClient
         return (true, $"ElevenLabs kết nối OK · voice {resolved.VoiceId}");
     }
 
+    public async Task<(byte[] Bytes, string ProviderJobId, string MimeType)> SynthesizeProductionOnceAsync(
+        string text,
+        string voiceId,
+        string modelId,
+        CancellationToken cancellationToken,
+        string? authorizedKey = null)
+    {
+        var spoken = (text ?? "").Trim();
+        var voice = (voiceId ?? "").Trim();
+        var model = (modelId ?? "").Trim();
+        if (spoken.Length == 0 || voice.Length is < 8 or > 64)
+            throw new InvalidOperationException(ProductionFailureReasons.CanonicalVoiceInputNotBound);
+        if (!string.Equals(model, ProductionVoiceCatalog.ElevenV3, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(ProductionFailureReasons.ProviderModelMismatch);
+        foreach (var ch in voice)
+        {
+            if (ch is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or (>= '0' and <= '9') or '_' or '-')
+                continue;
+            throw new InvalidOperationException(ProductionFailureReasons.CanonicalVoiceInputNotBound);
+        }
+
+        var key = RequireProductionKey(authorizedKey);
+
+        using var req = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"v1/text-to-speech/{Uri.EscapeDataString(voice)}");
+        req.Headers.Add("xi-api-key", key);
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("audio/mpeg"));
+        req.Content = JsonContent.Create(new
+        {
+            text = spoken,
+            model_id = ProductionVoiceCatalog.ElevenV3,
+            language_code = "vi",
+            apply_text_normalization = "on",
+        });
+
+        using var res = await _http.SendAsync(req, cancellationToken);
+        var bytes = await res.Content.ReadAsByteArrayAsync(cancellationToken);
+        if (!res.IsSuccessStatusCode)
+        {
+            var snippet = Encoding.UTF8.GetString(bytes);
+            if (snippet.Length > 300) snippet = snippet[..300] + "…";
+            throw new InvalidOperationException($"ElevenLabs TTS failed ({(int)res.StatusCode}): {snippet}");
+        }
+        if (bytes.Length < 32)
+            throw new InvalidOperationException(ProductionFailureReasons.FailedIdentity);
+
+        var requestId = res.Headers.TryGetValues("request-id", out var values)
+            ? values.FirstOrDefault()
+            : null;
+        if (string.IsNullOrWhiteSpace(requestId)
+            && res.Headers.TryGetValues("x-request-id", out var alt))
+            requestId = alt.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(requestId))
+            requestId = "elevenlabs-" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes))[..16].ToLowerInvariant();
+
+        return (bytes, requestId.Trim(), "audio/mpeg");
+    }
+
+    /// <summary>Famixa và các nhánh cũ không truyền model: vẫn là eleven_v3. BTA truyền mã đã hỏi từ GET v1/models.</summary>
+    internal static string ResolveTtsModelId(string? modelId) =>
+        string.IsNullOrWhiteSpace(modelId) ? "eleven_v3" : modelId.Trim();
+
+    public async Task<string> FindModelIdByNameAsync(
+        string displayName,
+        CancellationToken cancellationToken,
+        string? authorizedKey = null)
+    {
+        NovixaE2eIsolation.ThrowIfExternalCall("ElevenLabs");
+        var wanted = (displayName ?? "").Trim();
+        if (wanted.Length == 0)
+            throw new InvalidOperationException("BTA_VOICE_MODEL: thiếu tên model.");
+        var key = await KeyOrConfiguredAsync(authorizedKey, cancellationToken);
+        using var req = new HttpRequestMessage(HttpMethod.Get, "v1/models");
+        req.Headers.Add("xi-api-key", key);
+        using var res = await _http.SendAsync(req, cancellationToken);
+        var body = await res.Content.ReadAsStringAsync(cancellationToken);
+        if (!res.IsSuccessStatusCode)
+            throw new InvalidOperationException($"ElevenLabs models {(int)res.StatusCode}: {Cut(body)}");
+        using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+        var list = doc.RootElement.ValueKind == JsonValueKind.Array
+            ? doc.RootElement
+            : doc.RootElement.TryGetProperty("models", out var models) ? models : default;
+        if (list.ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException("ElevenLabs models: không đọc được danh sách.");
+        var names = new List<string>();
+        foreach (var item in list.EnumerateArray())
+        {
+            var name = FirstJsonString(item, "name", "display_name");
+            if (!string.IsNullOrWhiteSpace(name))
+                names.Add(name.Trim());
+            if (!string.Equals(name?.Trim(), wanted, StringComparison.OrdinalIgnoreCase))
+                continue;
+            var id = FirstJsonString(item, "model_id", "modelId");
+            if (!string.IsNullOrWhiteSpace(id))
+                return id.Trim();
+        }
+        throw new InvalidOperationException(
+            "Không thấy model tên \"" + wanted + "\". Có: " + string.Join(", ", names.Take(12)) + ".");
+    }
+
+    public async Task<(byte[] Mp3, string TimingJson, string? RequestId)> SynthesizeWithTimestampsAsync(
+        BtaElevenLabsSpeechRequest speech,
+        CancellationToken cancellationToken,
+        string? authorizedKey = null)
+    {
+        NovixaE2eIsolation.ThrowIfExternalCall("ElevenLabs");
+        var key = await KeyOrConfiguredAsync(authorizedKey, cancellationToken);
+        using var req = new HttpRequestMessage(HttpMethod.Post, speech.Path);
+        req.Headers.Add("xi-api-key", key);
+        req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        req.Content = JsonContent.Create(speech.Body());
+        using var res = await _http.SendAsync(req, cancellationToken);
+        var raw = await res.Content.ReadAsByteArrayAsync(cancellationToken);
+        var text = Encoding.UTF8.GetString(raw);
+        if (!res.IsSuccessStatusCode)
+            throw new InvalidOperationException($"ElevenLabs TTS failed ({(int)res.StatusCode}): {Cut(text)}");
+        using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
+        var root = doc.RootElement;
+        var audio = root.TryGetProperty("audio_base64", out var audioEl) ? audioEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(audio))
+            throw new InvalidOperationException("ElevenLabs TTS: không có audio_base64.");
+        var mp3 = Convert.FromBase64String(audio);
+        if (mp3.Length < 100)
+            throw new InvalidOperationException("ElevenLabs trả audio rỗng.");
+        if (!root.TryGetProperty("alignment", out var alignment))
+            throw new InvalidOperationException("ElevenLabs TTS: không có alignment.");
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("alignment");
+            alignment.WriteTo(writer);
+            if (root.TryGetProperty("normalized_alignment", out var normalized))
+            {
+                writer.WritePropertyName("normalized_alignment");
+                normalized.WriteTo(writer);
+            }
+            writer.WriteEndObject();
+        }
+        var requestId = res.Headers.TryGetValues("request-id", out var values)
+            ? values.FirstOrDefault()
+            : null;
+        if (string.IsNullOrWhiteSpace(requestId)
+            && res.Headers.TryGetValues("x-request-id", out var alt))
+            requestId = alt.FirstOrDefault();
+        return (mp3, Encoding.UTF8.GetString(stream.ToArray()), string.IsNullOrWhiteSpace(requestId) ? null : requestId.Trim());
+    }
+
+    async Task<string> KeyOrConfiguredAsync(string? authorizedKey, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(authorizedKey))
+            return authorizedKey.Trim();
+        var resolved = await ResolveAsync(cancellationToken);
+        return resolved.ElevenLabsApiKey
+               ?? throw new InvalidOperationException("Chưa cấu hình ElevenLabsApiKey.");
+    }
+
+    static string? FirstJsonString(JsonElement item, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
+                return value.GetString();
+        }
+        return null;
+    }
+
+    static string Cut(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        var t = text.Trim();
+        return t.Length <= 300 ? t : t[..300];
+    }
+
+    /// <summary>Cùng giọng thì cùng seed (CRC32 như voice_seed() của build_stock_motion.py).</summary>
+    internal static uint VoiceSeed(string voice)
+    {
+        var crc = 0xFFFFFFFFu;
+        foreach (var b in Encoding.UTF8.GetBytes(voice))
+        {
+            crc ^= b;
+            for (var i = 0; i < 8; i++) crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320u : crc >> 1;
+        }
+        return ~crc;
+    }
+
+    static string RequireProductionKey(string? authorizedKey)
+    {
+        if (string.IsNullOrWhiteSpace(authorizedKey))
+            throw new InvalidOperationException(ProductionCredentialResolver.Unresolved);
+        return authorizedKey.Trim();
+    }
+
     public Task<byte[]> SynthesizeMp3Async(string text, CancellationToken cancellationToken) =>
         SynthesizeMp3Async(text, voiceId: null, publicOwnerId: null, voiceName: null, voiceSettings: null, cancellationToken);
 
@@ -82,8 +277,10 @@ internal sealed class ContentElevenLabsClient
         string? voiceName,
         ContentSeriesTtsVoiceSettings? voiceSettings,
         CancellationToken cancellationToken,
-        string? accent = null)
+        string? accent = null,
+        string? modelId = null)
     {
+        NovixaE2eIsolation.ThrowIfExternalCall("ElevenLabs");
         var resolved = await ResolveAsync(cancellationToken);
         var key = resolved.ElevenLabsApiKey
                   ?? throw new InvalidOperationException("Chưa cấu hình ElevenLabsApiKey.");
@@ -92,6 +289,9 @@ internal sealed class ContentElevenLabsClient
             throw new InvalidOperationException("Thiếu Voice ID ElevenLabs.");
         voice = await EnsureLibraryVoiceAsync(key, voice, publicOwnerId, voiceName, cancellationToken);
         var spoken = StripSpokenDirection(text);
+        // Như build_stock_motion.py: chấm than làm eleven_v3 đổi cảm xúc giữa chừng.
+        spoken = System.Text.RegularExpressions.Regex.Replace(spoken, "!+", ".");
+        var seed = VoiceSeed(voice);
         if (spoken.Length > 5000) spoken = spoken[..5000];
         var stability = Clamp01(voiceSettings?.Stability, 0.5);
         var similarity = Clamp01(voiceSettings?.SimilarityBoost, 0.75);
@@ -110,15 +310,17 @@ internal sealed class ContentElevenLabsClient
             ? new
             {
                 text = spoken,
-                model_id = "eleven_v3",
+                model_id = ResolveTtsModelId(modelId),
                 apply_text_normalization = "off",
+                seed,
                 voice_settings = settings,
             }
             : new
             {
                 text = spoken,
-                model_id = "eleven_v3",
+                model_id = ResolveTtsModelId(modelId),
                 language_code = "vi",
+                seed,
                 apply_text_normalization = "on",
                 voice_settings = settings,
             };

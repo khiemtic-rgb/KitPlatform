@@ -235,13 +235,13 @@ export function assembleConfirmCopy(plan: PreviewCutPlan) {
   if (tts.length) {
     bits.push(`Thoại mix TTS: ${tts.join(', ')}${hold.length ? ' (kể cả HOLD)' : ''} — miệng chưa theo lời nếu chưa Fal.`);
   }
-  bits.push('Không bỏ shot. File phải có thoại. 0 cr Runway. 0 Fal.');
+  bits.push('Không bỏ shot. File phải có thoại. 0 cr Runway. 0 Fal. Xuất tương thích — không phải tập Production OS.');
   return {
     okText: hold.length
-      ? `Ghép tập hoàn chỉnh · ${take.length} take + ${hold.length} HOLD + thoại`
+      ? `Xuất tương thích · ${take.length} take + ${hold.length} HOLD + thoại`
       : fal.length && !tts.length
-        ? 'Ghép tập hoàn chỉnh · MP4 + thoại khớp môi'
-        : `Ghép tập hoàn chỉnh · ${plan.items.length} shot + thoại`,
+        ? 'Xuất tương thích · MP4 + thoại khớp môi'
+        : `Xuất tương thích · ${plan.items.length} shot + thoại`,
     detail: bits.join(' '),
   };
 }

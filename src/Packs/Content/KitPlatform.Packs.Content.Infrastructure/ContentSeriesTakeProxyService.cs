@@ -9,20 +9,51 @@ internal sealed class ContentSeriesTakeProxyService : IContentSeriesTakeProxySer
 {
     private const int MaxBytes = 80_000_000;
     private readonly IHttpClientFactory _http;
+    private readonly KitVideoVideoStore _videos;
 
-    public ContentSeriesTakeProxyService(IHttpClientFactory http)
+    public ContentSeriesTakeProxyService(IHttpClientFactory http, KitVideoVideoStore videos)
     {
         _http = http;
+        _videos = videos;
+    }
+
+    public byte[]? ReadVeoTake(string? taskIdOrUrl)
+    {
+        var fileId = FamixaVeoTakePlaybackV1.FileIdFromUrl(taskIdOrUrl);
+        if (string.IsNullOrWhiteSpace(fileId)) return null;
+        return _videos.TryReadNamed("veo", fileId);
+    }
+
+    public byte[]? ReadFalTake(string? taskIdOrUrl)
+    {
+        var fileId = FamixaFalLipsyncPlaybackV1.FileIdFromUrl(taskIdOrUrl);
+        if (string.IsNullOrWhiteSpace(fileId)) return null;
+        return _videos.TryReadNamed("fal", fileId);
     }
 
     public async Task<(byte[] Bytes, string ContentType, string FileName)> FetchAsync(
         string url,
         CancellationToken cancellationToken = default)
     {
-        if (!Uri.TryCreate((url ?? "").Trim(), UriKind.Absolute, out var uri)
+        var raw = (url ?? "").Trim();
+        if (raw.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase))
+        {
+            var bytes = DecodeDataVideo(raw);
+            if (bytes.Length < 32) throw new InvalidOperationException("Take data-URI trống.");
+            return (bytes, "video/mp4", "take.mp4");
+        }
+
+        var veo = ReadVeoTake(raw);
+        if (veo is { Length: >= 32 })
+            return (veo, "video/mp4", "take.mp4");
+        var fal = ReadFalTake(raw);
+        if (fal is { Length: >= 32 })
+            return (fal, "video/mp4", "lipsync.mp4");
+
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri)
             || uri.Scheme != Uri.UriSchemeHttps)
         {
-            throw new InvalidOperationException("Chỉ tải take HTTPS (Runway / Fal).");
+            throw new InvalidOperationException("Chỉ tải take HTTPS (Runway / Fal) hoặc file Veo / Fal đã lưu.");
         }
 
         if (IsBlockedHost(uri.Host))
@@ -69,10 +100,26 @@ internal sealed class ContentSeriesTakeProxyService : IContentSeriesTakeProxySer
         string url,
         CancellationToken cancellationToken = default)
     {
-        if (!Uri.TryCreate((url ?? "").Trim(), UriKind.Absolute, out var uri)
+        var raw = (url ?? "").Trim();
+        if (raw.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase))
+        {
+            var bytes = DecodeDataVideo(raw);
+            return bytes.Length >= 32
+                ? new ContentSeriesTakeProbeDto(true, "video/mp4", bytes.Length, null)
+                : new ContentSeriesTakeProbeDto(false, null, null, "Take data-URI trống.");
+        }
+
+        var veo = ReadVeoTake(raw);
+        if (veo is { Length: >= 32 })
+            return new ContentSeriesTakeProbeDto(true, "video/mp4", veo.Length, null);
+        var fal = ReadFalTake(raw);
+        if (fal is { Length: >= 32 })
+            return new ContentSeriesTakeProbeDto(true, "video/mp4", fal.Length, null);
+
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri)
             || uri.Scheme != Uri.UriSchemeHttps)
         {
-            return new ContentSeriesTakeProbeDto(false, null, null, "Chỉ đọc take HTTPS.");
+            return new ContentSeriesTakeProbeDto(false, null, null, "Chỉ đọc take HTTPS hoặc file Veo / Fal đã lưu.");
         }
 
         if (IsBlockedHost(uri.Host))
@@ -170,5 +217,20 @@ internal sealed class ContentSeriesTakeProxyService : IContentSeriesTakeProxySer
         }
 
         return false;
+    }
+
+    private static byte[] DecodeDataVideo(string raw)
+    {
+        var comma = raw.IndexOf(',');
+        if (comma < 0) return [];
+        try
+        {
+            var bytes = Convert.FromBase64String(raw[(comma + 1)..]);
+            return bytes.Length > MaxBytes ? [] : bytes;
+        }
+        catch
+        {
+            return [];
+        }
     }
 }

@@ -181,7 +181,13 @@ internal sealed record ContentAdaptFitRow(
     string? Angle,
     string? Audience,
     string? Cta,
-    string? Outline);
+    string? Outline,
+    string? Territory = null,
+    string? TerritoryId = null,
+    bool? NarrativeFit = null,
+    double? Confidence = null,
+    string? BrandAngle = null,
+    IReadOnlyList<string>? BoundaryWarnings = null);
 
 internal sealed record ContentAdaptParsed(
     string? Insight,
@@ -263,10 +269,16 @@ internal static class ContentAdaptJson
             ReadScore(row),
             ReadFlexible(row, "reason"),
             ReadFlexible(row, "title"),
-            ReadFlexible(row, "angle"),
+            ReadFlexible(row, "angle", "brandAngle"),
             ReadFlexible(row, "audience"),
             ReadFlexible(row, "cta"),
-            ReadFlexible(row, "outline"));
+            ReadFlexible(row, "outline"),
+            ReadFlexible(row, "territory"),
+            ReadFlexible(row, "territoryId", "territory_id"),
+            ReadBool(row, "fit", "narrativeFit"),
+            ReadDouble(row, "confidence"),
+            ReadFlexible(row, "brandAngle", "brand_angle"),
+            ReadList(row, "boundaryWarnings", "boundary_warnings"));
     }
 
     /// <summary>Close an unterminated string / array / object when Gemini hits max tokens.</summary>
@@ -415,6 +427,34 @@ internal static class ContentAdaptJson
                 continue;
             var text = Flatten(el);
             if (!string.IsNullOrWhiteSpace(text)) return text;
+        }
+
+        return null;
+    }
+
+    private static bool? ReadBool(JsonElement obj, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(name, out var el))
+                continue;
+            if (el.ValueKind == JsonValueKind.True) return true;
+            if (el.ValueKind == JsonValueKind.False) return false;
+            if (el.ValueKind == JsonValueKind.String && bool.TryParse(el.GetString(), out var b))
+                return b;
+        }
+
+        return null;
+    }
+
+    private static double? ReadDouble(JsonElement obj, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (obj.ValueKind != JsonValueKind.Object || !obj.TryGetProperty(name, out var el))
+                continue;
+            if (el.ValueKind == JsonValueKind.Number && el.TryGetDouble(out var n))
+                return n;
         }
 
         return null;

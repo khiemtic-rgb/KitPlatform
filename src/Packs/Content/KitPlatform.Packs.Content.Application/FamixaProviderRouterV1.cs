@@ -58,10 +58,11 @@ public static class FamixaProviderRouterPriority
     {
         var id = (providerId ?? "").Trim().ToLowerInvariant();
         if (capability == FamixaProviderCapability.Motion && id == FamixaProviderIds.Wan) return "wan-2.1";
+        if (capability == FamixaProviderCapability.Motion && id == FamixaProviderIds.Google) return "veo-3.1";
         if (capability == FamixaProviderCapability.Motion) return "gen4_turbo";
         if (capability == FamixaProviderCapability.Voice) return "eleven_v3";
         if (capability == FamixaProviderCapability.LipSync) return "1.9";
-        if (capability == FamixaProviderCapability.Picture) return "gemini-2.5-flash-image";
+        if (capability == FamixaProviderCapability.Picture) return Production.ProductionImageCatalog.GeminiFlashImage;
         return null;
     }
 
@@ -298,6 +299,8 @@ public static class FamixaProviderRouter
             return 0;
         var wan = FamixaProviderResolver.IsWanEngine(req.Engine);
         if (wan) return providerId == FamixaProviderIds.Wan ? 0 : 1;
+        if (FamixaProviderResolver.IsVeoEngine(req.Engine))
+            return providerId == FamixaProviderIds.Google ? 0 : 1;
         return providerId == FamixaProviderIds.Runway ? 0 : 1;
     }
 

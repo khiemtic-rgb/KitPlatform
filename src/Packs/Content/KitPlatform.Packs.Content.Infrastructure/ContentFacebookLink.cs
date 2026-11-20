@@ -22,6 +22,7 @@ internal static class ContentFacebookLink
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
     public static ContentFacebookLinkState Parse(string? configJson)

@@ -46,7 +46,7 @@ public static class ProductionOsRules
 
     public static readonly string[] ProviderTokens =
     [
-        "gemini", "runway", "veo", "gen4_turbo", "gen4_x", "gemini-2.5-flash-image",
+        "gemini", "runway", "veo", "gen4_turbo", "gen4_x", "gemini-2.5-flash-image", "gemini-3.1-flash-image",
         "runway_prompt", "gemini_prompt", "veo_prompt",
     ];
 

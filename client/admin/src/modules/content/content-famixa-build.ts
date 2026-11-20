@@ -17,8 +17,17 @@ export const SERIES_BUILD_STATUS_VI: Record<SeriesBuildStatus, string> = {
   final: 'Final',
 };
 
+/** UUID v4. `randomUUID` chỉ có trên HTTPS hoặc localhost; HTTP vẫn có `getRandomValues`. */
 export function newBuildId() {
-  return crypto.randomUUID();
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 export function ensureBuildId(state: SeriesPilotState): SeriesPilotState {
@@ -39,7 +48,7 @@ export function bindBuildMedia(state: SeriesPilotState) {
 export function buildStatusOf(state: SeriesPilotState): SeriesBuildStatus {
   if (state.sceneLocked) return 'final';
   const shots = episodeShots(state);
-  const runs = shots.map((s) => state.runs[s.id]).filter(Boolean);
+  const runs = shots.map((s) => state.runs?.[s.id]).filter(Boolean);
   const hasVideo = runs.some((r) => Boolean(r?.takeUrl?.trim() || r?.previewUrl?.trim() || r?.localVideoPath || r?.lipsyncUrl?.trim()));
   const hasKf = runs.some((r) => Boolean(r?.keyframeFileName || r?.keyframePath || r?.keyframeDataUrl));
   if (hasVideo || hasKf) return 'in_prod';

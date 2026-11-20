@@ -56,7 +56,7 @@ ok(ws.includes("action === 'picture'") && ws.includes('actingEditorRef.current?.
 ok(ws.includes('preferKeyframe: showStill') && ws.includes('directorShowsStillPreview'), 'pending picture shows still not old take');
 ok(series.includes('kfForceNew: true') && series.includes('onlyIds.includes'), 'Tạo hình mới forces new KF');
 ok(series.includes('remake && lock?.id === s.id'), 'remake does not attach own KF as Scene Master');
-ok(series.includes('onActingBeat') && series.includes('persistState') && /shots:\s*live\.episode\.shots\.map/.test(series), 'persist path unchanged');
+ok(series.includes('onActingBeat') && series.includes('persistActingBeat') && series.includes('actingBeatPendingMotion') && /shots:\s*live\.episode\.shots\.map/.test(series), 'persist path marks beat remake');
 ok(
   helper.includes('Không di chuyển') &&
     helper.includes('Hơi chuyển trọng tâm') &&

@@ -58,7 +58,9 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
         var stripped = StripBinaries(raw);
         if (stripped.Length > MaxGraphChars)
             throw new InvalidOperationException("Graph Series quá lớn — bỏ packDraft cũ hoặc ảnh data URL rồi lưu lại.");
-        var row = await _repo.UpsertSeriesPilotAsync(code, stripped, cancellationToken);
+        var prior = await _repo.GetSeriesPilotAsync(code, cancellationToken);
+        var persisted = SeriesGraphMediaWriteCutover.Apply(prior?.GraphJson, stripped);
+        var row = await _repo.UpsertSeriesPilotAsync(code, persisted, cancellationToken);
         return ToDto(row);
     }
 
@@ -111,6 +113,31 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
         return rows.Select(ToSummary).ToList();
     }
 
+    public async Task<IReadOnlyList<ContentSeriesBuildSummaryDto>> ListBuildsForBrandAsync(
+        string brandCode,
+        CancellationToken cancellationToken = default)
+    {
+        var code = NormalizeCode(brandCode);
+        var asked = new string((brandCode ?? "").Where(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-').ToArray())
+            .Replace('-', '_')
+            .ToUpperInvariant();
+        if (!string.Equals(asked, code, StringComparison.Ordinal))
+            return [];
+        var rows = await _repo.ListSeriesBuildsForBrandAsync(code, cancellationToken);
+        return rows.Select(ToSummary).ToList();
+    }
+
+    public async Task<IReadOnlyList<ContentSeriesBuildSummaryDto>> ListBuildsForBrandIdAsync(
+        Guid brandId,
+        CancellationToken cancellationToken = default)
+    {
+        var brand = await _repo.GetBrandAsync(brandId, cancellationToken)
+                    ?? throw new InvalidOperationException("Brand không tồn tại.");
+        var code = NormalizeCode(brand.Code);
+        var rows = await _repo.ListSeriesBuildsByBrandIdAsync(brand.Id, code, cancellationToken);
+        return rows.Select(ToSummary).ToList();
+    }
+
     public async Task<ContentSeriesBuildDto> GetBuildAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var row = await _repo.GetSeriesBuildAsync(id, cancellationToken)
@@ -130,7 +157,40 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
         if (stripped.Length > MaxGraphChars)
             throw new InvalidOperationException("Graph Series quá lớn — bỏ packDraft cũ hoặc ảnh data URL rồi lưu lại.");
         var id = request.Id is { } given && given != Guid.Empty ? given : Guid.NewGuid();
-        var meta = SummarizeGraph(stripped);
+        var prior = await _repo.GetSeriesBuildAsync(id, cancellationToken);
+        var pipelineReady = await _repo.HasColumnAsync("series_build", "film_type_id", cancellationToken);
+        Guid? brandId = null;
+        Guid? filmTypeId = null;
+        if (request.FilmTypeId is Guid requestedType && requestedType != Guid.Empty)
+        {
+            if (!pipelineReady)
+                throw new InvalidOperationException("Migration 398 chưa được áp dụng.");
+            if (request.BrandId is not Guid requestedBrand || requestedBrand == Guid.Empty)
+                throw new InvalidOperationException("Tạo phim cần brand của pipeline.");
+            var film = await _repo.GetFilmTypeAsync(requestedType, cancellationToken)
+                       ?? throw new InvalidOperationException("Pipeline không tồn tại.");
+            if (VideoPipelineRules.BindRefusal(requestedBrand, film.BrandId, film.Status, prior is null) is string bindRefusal)
+                throw new InvalidOperationException(bindRefusal);
+            if (VideoPipelineRules.RetargetRefusal(prior?.FilmTypeId, requestedType) is string retarget)
+                throw new InvalidOperationException(retarget);
+            var pipelineCode = VideoPipelineRules.SeriesCodeForPipeline(film.Code);
+            if (pipelineCode is null)
+                throw new InvalidOperationException("Mã pipeline không dùng được cho phim.");
+            if (prior is null)
+                code = pipelineCode;
+            brandId = film.BrandId;
+            filmTypeId = film.Id;
+        }
+        else if (prior?.FilmTypeId is Guid stored && stored != Guid.Empty)
+        {
+            if (VideoPipelineRules.RetargetRefusal(stored, request.FilmTypeId) is string retarget)
+                throw new InvalidOperationException(retarget);
+            code = prior.SeriesCode;
+            brandId = prior.BrandId;
+            filmTypeId = stored;
+        }
+        var persisted = SeriesGraphMediaWriteCutover.Apply(prior?.GraphJson, stripped);
+        var meta = SummarizeGraph(persisted);
         var row = await _repo.UpsertSeriesBuildAsync(
             id,
             code,
@@ -141,9 +201,11 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
             meta.VoiceLines,
             meta.KfCount,
             meta.VideoCount,
-            stripped,
-            cancellationToken);
-        await _repo.SetSeriesPilotActiveBuildAsync(code, row.Id, cancellationToken);
+            persisted,
+            cancellationToken,
+            brandId,
+            filmTypeId);
+        await _repo.ClaimSeriesPilotActiveBuildIfUnsetAsync(code, row.Id, cancellationToken);
         return ToBuildDto(row);
     }
 
@@ -155,17 +217,27 @@ internal sealed class ContentSeriesPilotService : IContentSeriesPilotService
         await _repo.SetSeriesPilotActiveBuildAsync(row.SeriesCode, null, cancellationToken);
     }
 
-    private static ContentSeriesBuildSummaryDto ToSummary(ContentRepository.SeriesBuildRow row) =>
-        new(row.Id, row.SeriesCode, row.EpisodeCode, row.Title, row.Status,
-            row.ShotCount, row.VoiceLines, row.KfCount, row.VideoCount, row.CreatedAt, row.UpdatedAt);
+    private static ContentSeriesBuildSummaryDto ToSummary(ContentRepository.SeriesBuildRow row)
+    {
+        var config = VideoPipelineRules.ReadConfig(row.PipelineConfigJson);
+        return new(row.Id, row.SeriesCode, row.EpisodeCode, row.Title, row.Status,
+            row.ShotCount, row.VoiceLines, row.KfCount, row.VideoCount, row.CreatedAt, row.UpdatedAt,
+            SeriesBuildCatalogOwnership.FromTenant(row.TenantId),
+            row.BrandId, row.FilmTypeId, row.WorkflowKey, row.PipelineName,
+            config.SeriesLabel, config.Purpose, config.Aspect, config.Steps);
+    }
 
     private static ContentSeriesBuildDto ToBuildDto(ContentRepository.SeriesBuildRow row)
     {
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(row.GraphJson) ? "{}" : row.GraphJson);
+        var config = VideoPipelineRules.ReadConfig(row.PipelineConfigJson);
         return new ContentSeriesBuildDto(
             row.Id, row.SeriesCode, row.EpisodeCode, row.Title, row.Status,
             row.ShotCount, row.VoiceLines, row.KfCount, row.VideoCount,
-            doc.RootElement.Clone(), row.CreatedAt, row.UpdatedAt);
+            doc.RootElement.Clone(), row.CreatedAt, row.UpdatedAt,
+            SeriesBuildCatalogOwnership.FromTenant(row.TenantId),
+            row.BrandId, row.FilmTypeId, row.WorkflowKey, row.PipelineName,
+            config.SeriesLabel, config.Purpose, config.Aspect, config.Steps);
     }
 
     private readonly record struct GraphMeta(

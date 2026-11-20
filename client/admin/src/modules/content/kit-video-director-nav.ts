@@ -152,7 +152,7 @@ export function directorShotAttention(
   if (cmd.type === 'WAIT_PICTURE_APPROVAL') return { mark: '●', label: 'Duyệt hình' };
   if (cmd.type === 'WAIT_VIDEO_REVIEW') return { mark: '●', label: 'Duyệt video' };
   if (cmd.type === 'CONFIRM_MOTION') return { mark: '○', label: 'Chưa tạo video' };
-  if (cmd.type === 'CONFIRM_LIPSYNC') return { mark: '●', label: 'Lồng tiếng' };
+  if (cmd.type === 'CONFIRM_LIPSYNC') return { mark: '●', label: 'Khớp môi' };
   if (cmd.type === 'ACCEPT_EXISTING') return { mark: '●', label: 'Dùng video này' };
   if (cmd.type === 'ENSURE_MIX') return { mark: '●', label: 'Hoàn thiện Shot' };
   const label = DIRECTOR_SHOT_COMMAND_LABEL[cmd.type] || 'Cần xử lý';

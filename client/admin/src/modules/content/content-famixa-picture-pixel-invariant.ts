@@ -22,9 +22,9 @@ export type PictureIdentityRun = {
   lipsyncUrl?: string;
   lipsynced?: boolean;
   motionNeedsRemake?: boolean;
-  acceptedTake?: unknown;
+  acceptedTake?: { n?: number; url?: string; promptHash?: string; kfHash?: string; acceptedAt?: string };
   videoApproved?: boolean;
-  finalSource?: unknown;
+  finalSource?: 'FAL' | 'RUNWAY_TTS' | 'RUNWAY' | 'NONE';
   runwayAttempts?: { n?: number }[];
   pictureRevisionAttemptN?: number;
 };
@@ -89,7 +89,11 @@ export function applyPictureApproveGuard<T extends PictureIdentityRun>(
   const incoming = (incomingDataUrl || '').startsWith('data:image') ? incomingDataUrl : run.keyframeDataUrl;
   const incomingHash = picturePixelHashOfData(incoming);
   const approvedHash = currentApprovedPictureHash(run);
-  const kind = classifyPictureApprove(incomingHash, approvedHash);
+  const kind = run.kfApproved
+    ? classifyPictureApprove(incomingHash, approvedHash)
+    : incomingHash
+      ? 'APPROVE_NEW'
+      : 'GENERATION_FAILED';
   if (kind !== 'APPROVE_NEW') return { kind, run };
   return {
     kind,

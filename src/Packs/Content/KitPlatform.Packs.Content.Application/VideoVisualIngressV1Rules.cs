@@ -142,14 +142,25 @@ public static class VideoVisualIngressV1Rules
     {
         var cap = max < 1 ? RunwayPromptMax : max;
         var source = compiledOrMotion ?? "";
-        var hasAuthority = source.Contains("[FAMIXA VISUAL UNIVERSE AUTHORITY V1]", StringComparison.Ordinal);
-        var motionAt = IndexOfMotionLayer(source);
-        var slice = motionAt >= 0 ? source[motionAt..] : hasAuthority ? "" : source;
+        if (Production.RunwayPromptBudget.HasVisualJson(source))
+            return Production.RunwayPromptBudget.CapVisualPrompt(source, cap);
+        var markerAt = source.IndexOf(Production.ProductionVisualContinuity.Marker, StringComparison.Ordinal);
+        var continuity = markerAt < 0 ? "" : Production.ProductionVisualContinuity.Slice(source);
+        var body = markerAt < 0 ? source : source[..markerAt];
+        var hasAuthority = body.Contains("[FAMIXA VISUAL UNIVERSE AUTHORITY V1]", StringComparison.Ordinal);
+        var motionAt = IndexOfMotionLayer(body);
+        var slice = motionAt >= 0 ? body[motionAt..] : hasAuthority ? "" : body;
         var raw = SeriesStillVisualIngressV1Rules.StripCallerStyleAuthority(slice);
         raw = System.Text.RegularExpressions.Regex.Replace(raw ?? "", @"\s+", " ").Trim();
-        if (raw.Length == 0)
+        if (raw.Length == 0 && continuity.Length == 0)
             raw = "Subtle body movement, blink and breathe. Camera remains steady.";
-        return raw.Length <= cap ? raw : raw[..cap];
+        if (continuity.Length == 0)
+            return raw.Length <= cap ? raw : raw[..cap];
+        if (continuity.Length >= cap)
+            return continuity[..cap];
+        var room = cap - continuity.Length - 1;
+        var head = raw.Length <= room ? raw : raw[..room].Trim();
+        return head.Length == 0 ? continuity : head + " " + continuity;
     }
 
     public static bool ProviderMayCall(UnifiedVisualContract? contract) =>

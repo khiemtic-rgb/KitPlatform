@@ -4,7 +4,8 @@ import { famixaGoldenMotion } from './kit-video-motion';
 const API = process.env.KIT_API_URL || 'http://localhost:5290/api';
 const TENANT = process.env.KIT_MKT_TENANT || 'KIT_MKT';
 const USER = process.env.KIT_MKT_USER || 'admin';
-const PASS = process.env.KIT_MKT_PASSWORD || process.env.KIT_ADMIN_PASSWORD || 'Admin@123';
+const PASS = process.env.KIT_MKT_PASSWORD || process.env.KIT_ADMIN_PASSWORD;
+if (!PASS) throw new Error('Set KIT_MKT_PASSWORD or KIT_ADMIN_PASSWORD. No default password.');
 const ATTEMPT_01 = process.env.KIT_VIDEO_ATTEMPT_01 || '6036d11b-35de-43f1-88e4-f0138365016d';
 const CONFIRM = process.env.KIT_VIDEO_RUNWAY_CONFIRM === '1';
 

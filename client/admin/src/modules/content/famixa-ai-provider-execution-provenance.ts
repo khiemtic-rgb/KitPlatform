@@ -133,7 +133,9 @@ export function motionHowProviderId(
   if (fromSnap) return fromSnap;
   const m = (model || '').trim();
   if (!m) return undefined;
-  return m.startsWith('wan') ? 'wan' : 'runway';
+  if (m.startsWith('wan')) return 'wan';
+  if (m.startsWith('veo')) return 'google';
+  return 'runway';
 }
 
 export type MotionReverseFrozen = {

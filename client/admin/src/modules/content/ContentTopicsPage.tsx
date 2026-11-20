@@ -30,6 +30,7 @@ import {
   DownloadOutlined,
   FacebookOutlined,
   FileExcelOutlined,
+  FileTextOutlined,
   FolderOpenOutlined,
   PictureOutlined,
   PlusOutlined,
@@ -64,10 +65,10 @@ import {
   type ContentSiteTarget,
   type ContentTopic,
   type ContentTopicDetail,
-  type ContentVariant,
 } from '@/shared/api/content.api';
 import { FB_RETURN_KEY } from '@/modules/content/ContentFacebookCallbackPage';
 import { ContentManualPostTab } from '@/modules/content/ContentManualPostTab';
+import { VariantCopyPanel } from '@/modules/content/VariantCopyPanel';
 import { writeClipboardImage } from '@/modules/content/content-manual-dest';
 import { buildStaffImagePrompt } from '@/modules/content/content-staff-image-prompt';
 import {
@@ -94,7 +95,9 @@ import {
   usePackagesForBrand,
   useTopicLineageIndex,
   variantKindLabel,
+  type TopicSeriesLineage,
 } from '@/modules/content/content-lineage';
+import { useContentBrand } from './content-brand-context';
 import {
   downloadCsvTemplate,
   parseOptionalDate,
@@ -104,7 +107,7 @@ import {
 
 const CONTENT_EXCEL_HEADERS = ['tieu_de', 'ngay_hien_thi', 'series', 'goi_y'];
 
-const STATUS_LABEL: Record<string, { text: string; color: string }> = {
+export const STATUS_LABEL: Record<string, { text: string; color: string }> = {
   Draft: { text: 'Nháp', color: 'default' },
   Generating: { text: 'Đang tạo…', color: 'processing' },
   Review: { text: 'Chờ duyệt', color: 'blue' },
@@ -115,7 +118,7 @@ const STATUS_LABEL: Record<string, { text: string; color: string }> = {
   Rejected: { text: 'Từ chối', color: 'orange' },
 };
 
-function StatusTag({ status }: { status: string }) {
+export function StatusTag({ status }: { status: string }) {
   const m = STATUS_LABEL[status] ?? { text: status, color: 'default' };
   return <Tag color={m.color}>{m.text}</Tag>;
 }
@@ -130,12 +133,12 @@ const CONNECTOR_LABEL: Record<string, { title: string; color: string }> = {
   zalo_oa: { title: 'Zalo OA', color: 'green' },
 };
 
-function connectorLabel(type: string) {
+export function connectorLabel(type: string) {
   return CONNECTOR_LABEL[type] ?? { title: type, color: 'default' };
 }
 
 /** Human-readable publish error; keep raw text for expand. */
-function formatPublishError(raw: string): { summary: string; hint?: string; raw: string } {
+export function formatPublishError(raw: string): { summary: string; hint?: string; raw: string } {
   const text = raw.trim();
   const lower = text.toLowerCase();
   if (
@@ -213,7 +216,7 @@ function formatPublishError(raw: string): { summary: string; hint?: string; raw:
   return { summary: short, raw: text };
 }
 
-function isFacebookReconnectJob(job: ContentPublishJob) {
+export function isFacebookReconnectJob(job: ContentPublishJob) {
   if (job.connectorType !== 'facebook_page' || job.status !== 'Failed') return false;
   const err = (job.lastError ?? '').toLowerCase();
   return (
@@ -225,6 +228,238 @@ function isFacebookReconnectJob(job: ContentPublishJob) {
     err.includes('(#190)') ||
     err.includes('expired')
   );
+}
+
+/** Series content (any status) and approved standalone content cannot be rewritten from the topic. */
+export function topicRewriteBlocked(
+  lineageIndex: Map<string, TopicSeriesLineage> | null,
+  topicId?: string | null,
+  status?: string | null,
+) {
+  if (!topicId || !lineageIndex) return true;
+  if (lineageIndex.has(topicId)) return true;
+  return contentStatusApproved(status);
+}
+
+function firstCommentTags(resultJson: string | null | undefined): { label: string; color: string }[] {
+  if (!resultJson) return [];
+  try {
+    const r = JSON.parse(resultJson) as { firstComment?: string | null; firstCommentPin?: string | null };
+    const text = (r.firstComment ?? '').trim();
+    const tags: { label: string; color: string }[] = [];
+    if (text === 'đã bình luận') tags.push({ label: 'Đã bình luận', color: 'success' });
+    else if (text === 'Đang chờ lên sóng') tags.push({ label: 'Đang chờ lên sóng', color: 'processing' });
+    else if (text.startsWith('lỗi:') || text.startsWith('NEED_RECONNECT')) {
+      const reason = text.replace(/^lỗi:\s*/i, '').replace(/^NEED_RECONNECT:\s*/, '');
+      tags.push({ label: reason ? `Lỗi: ${reason}` : 'Lỗi', color: 'error' });
+    } else if (text) tags.push({ label: `Lỗi: ${text}`, color: 'error' });
+    if (r.firstCommentPin === 'cần ghim tay') tags.push({ label: 'Cần ghim tay', color: 'warning' });
+    return tags;
+  } catch {
+    return [];
+  }
+}
+
+function playlistLine(resultJson: string | null | undefined): string | null {
+  if (!resultJson) return null;
+  try {
+    const playlist = (JSON.parse(resultJson) as {
+      playlist?: { title?: string | null; action?: string | null; reason?: string | null } | null;
+    }).playlist;
+    if (!playlist?.title) return null;
+    const verb = playlist.action === 'created' ? 'tạo mới' : playlist.action === 'added' ? 'đã thêm' : '';
+    return `Danh sách phát: ${playlist.title}${verb ? ` (${verb})` : ''}${playlist.reason ? ` — ${playlist.reason}` : ''}`;
+  } catch {
+    return null;
+  }
+}
+
+function PublishJobInfo({ job: j }: { job: ContentPublishJob }) {
+  if (j.lastError) {
+    const err = formatPublishError(j.lastError);
+    return (
+      <div style={{ maxWidth: 520 }}>
+        <Typography.Text type="danger" strong style={{ display: 'block' }}>
+          {err.summary}
+        </Typography.Text>
+        {err.hint ? (
+          <Typography.Paragraph
+            type="secondary"
+            style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.45 }}
+          >
+            {err.hint}
+          </Typography.Paragraph>
+        ) : null}
+        <Collapse
+          ghost
+          size="small"
+          style={{ marginTop: 4 }}
+          items={[
+            {
+              key: 'raw',
+              label: (
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  Xem lỗi kỹ thuật
+                </Typography.Text>
+              ),
+              children: (
+                <Typography.Paragraph
+                  code
+                  copyable
+                  style={{
+                    margin: 0,
+                    fontSize: 11,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    maxHeight: 120,
+                    overflow: 'auto',
+                  }}
+                >
+                  {err.raw}
+                </Typography.Paragraph>
+              ),
+            },
+          ]}
+        />
+      </div>
+    );
+  }
+  let mediaHint = '';
+  let pathHint = '';
+  let categoryHint = '';
+  const commentTags = firstCommentTags(j.resultJson);
+  const playlistNote = playlistLine(j.resultJson);
+  try {
+    const r = j.resultJson
+      ? (JSON.parse(j.resultJson) as {
+          facebook?: string;
+          hasImage?: boolean;
+          image?: string;
+          path?: string;
+          url?: string;
+          category?: string;
+        })
+      : null;
+    if (r?.facebook === 'photo') mediaHint = 'Có ảnh';
+    else if (r?.facebook === 'feed') mediaHint = 'Chỉ chữ (không ảnh)';
+    else if (r?.hasImage) mediaHint = `Có ảnh${r.image ? ` · ${r.image}` : ''}`;
+    else if (j.connectorType === 'astro_git' && r && r.hasImage === false)
+      mediaHint = 'Chưa kèm ảnh';
+    if (r?.url) pathHint = r.url;
+    else if (r?.path) pathHint = r.path;
+    if (r?.category) categoryHint = r.category;
+  } catch {
+    /* ignore */
+  }
+  return (
+    <Space direction="vertical" size={2} style={{ maxWidth: 480 }}>
+      <Typography.Text style={{ wordBreak: 'break-all' }}>
+        {j.externalRef || 'OK'}
+      </Typography.Text>
+      <Space size={4} wrap>
+        {mediaHint ? (
+          <Tag color={mediaHint.startsWith('Có') ? 'success' : 'warning'}>{mediaHint}</Tag>
+        ) : null}
+        {categoryHint ? <Tag color="purple">Chuyên mục: {categoryHint}</Tag> : null}
+        {commentTags.map((t) => (
+          <Tag key={t.label} color={t.color}>{t.label}</Tag>
+        ))}
+      </Space>
+      {playlistNote ? (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {playlistNote}
+        </Typography.Text>
+      ) : null}
+      {pathHint ? (
+        pathHint.startsWith('http') ? (
+          <Typography.Link href={pathHint} target="_blank" style={{ fontSize: 12 }} copyable>
+            {pathHint}
+          </Typography.Link>
+        ) : (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }} copyable>
+            {pathHint}
+          </Typography.Text>
+        )
+      ) : null}
+    </Space>
+  );
+}
+
+export function PublishJobStatusTag({ status: s }: { status: string }) {
+  return (
+    <Tag color={s === 'Failed' ? 'error' : s === 'Succeeded' ? 'success' : 'processing'}>
+      {s === 'Succeeded'
+        ? 'Thành công'
+        : s === 'Failed'
+          ? 'Lỗi'
+          : s === 'Queued'
+            ? 'Chờ'
+            : s}
+    </Tag>
+  );
+}
+
+export function contentPublishJobColumns(opts: {
+  busy: boolean;
+  onRetry: (job: ContentPublishJob) => void;
+  onReconnectFacebook: (job: ContentPublishJob) => void;
+}): ColumnsType<ContentPublishJob> {
+  return [
+    {
+      title: 'Kênh',
+      dataIndex: 'connectorType',
+      width: 200,
+      render: (t: string) => {
+        const c = connectorLabel(t);
+        return <Tag color={c.color}>{c.title}</Tag>;
+      },
+    },
+    {
+      title: 'Kết quả',
+      dataIndex: 'status',
+      width: 120,
+      render: (s: string) => <PublishJobStatusTag status={s} />,
+    },
+    {
+      title: 'Chi tiết',
+      key: 'info',
+      render: (_, j: ContentPublishJob) => <PublishJobInfo job={j} />,
+    },
+    {
+      title: 'Thao tác',
+      width: 220,
+      fixed: 'right',
+      render: (_, j) =>
+        j.status === 'Failed' || j.status === 'Queued' || j.status === 'Succeeded' ? (
+          <Space size={6} wrap>
+            {isFacebookReconnectJob(j) ? (
+              <Button
+                type="primary"
+                size="small"
+                icon={<FacebookOutlined />}
+                loading={opts.busy}
+                onClick={() => opts.onReconnectFacebook(j)}
+              >
+                Kết nối lại
+              </Button>
+            ) : null}
+            <Button
+              type={j.status === 'Failed' && !isFacebookReconnectJob(j) ? 'primary' : 'link'}
+              size="small"
+              danger={j.status === 'Failed' && !isFacebookReconnectJob(j)}
+              loading={opts.busy}
+              onClick={() => opts.onRetry(j)}
+            >
+              {j.connectorType === 'facebook_page' ||
+              j.connectorType === 'astro_git' ||
+              j.connectorType === 'wordpress_rest'
+                ? 'Đăng lại + ảnh'
+                : 'Chạy lại'}
+            </Button>
+          </Space>
+        ) : null,
+    },
+  ];
 }
 
 function parseTitleLines(raw: string): string[] {
@@ -246,7 +481,8 @@ export function ContentTopicsPage() {
   const [loading, setLoading] = useState(true);
   const [topics, setTopics] = useState<ContentTopic[]>([]);
   const [brands, setBrands] = useState<ContentBrand[]>([]);
-  const [brandFilter, setBrandFilter] = useState<string | undefined>();
+  const workspace = useContentBrand();
+  const brandFilter = workspace.brandId;
   const [coreFilter, setCoreFilter] = useState<string | undefined>();
   const [open, setOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -256,11 +492,8 @@ export function ContentTopicsPage() {
   const lineageIndex = useTopicLineageIndex();
   const topicPackages = usePackagesForBrand(detail?.topic.brandId);
   const topicLineage = detail?.topic.id ? lineageIndex?.get(detail.topic.id) ?? null : null;
-  const rewriteBlocked = (topicId?: string | null, status?: string | null) => {
-    if (!topicId || !lineageIndex) return true;
-    if (lineageIndex.has(topicId)) return true;
-    return contentStatusApproved(status);
-  };
+  const rewriteBlocked = (topicId?: string | null, status?: string | null) =>
+    topicRewriteBlocked(lineageIndex, topicId, status);
   const openPackage = packageForTopic(topicPackages, detail?.topic.id);
   const standaloneAngleLabel = openPackage?.angle?.trim() || openPackage?.title?.trim() || '';
   const [detailLoading, setDetailLoading] = useState(false);
@@ -527,10 +760,14 @@ export function ContentTopicsPage() {
   }, [searchParams.get('topic')]);
 
   const openCreate = () => {
+    if (!workspace.canWrite || !workspace.brandId) {
+      message.warning('Chọn một thương hiệu trước khi tạo nội dung.');
+      return;
+    }
     setEditing(null);
     form.resetFields();
     form.setFieldsValue({
-      brandId: brandFilter ?? brands[0]?.id,
+      brandId: workspace.brandId,
       priority: 'P1',
       status: 'Draft',
       goal: 'traffic',
@@ -539,7 +776,7 @@ export function ContentTopicsPage() {
   };
 
   const openBulk = () => {
-    setBulkBrandId(brandFilter ?? brands[0]?.id);
+    setBulkBrandId(workspace.brandId);
     setBulkTitles('');
     setBulkOpen(true);
   };
@@ -636,7 +873,7 @@ export function ContentTopicsPage() {
   };
 
   const saveBulk = async () => {
-    const brandId = bulkBrandId;
+    const brandId = workspace.canWrite ? bulkBrandId : undefined;
     if (!brandId) {
       message.warning('Chọn thương hiệu');
       return;
@@ -671,8 +908,8 @@ export function ContentTopicsPage() {
   };
 
   const importExcel = async (file: File) => {
-    const brandId = brandFilter ?? brands[0]?.id;
-    if (!brandId) {
+    const brandId = workspace.brandId;
+    if (!workspace.canWrite || !brandId) {
       message.warning('Chọn thương hiệu (bộ lọc hoặc tạo brand trước)');
       return false;
     }
@@ -1316,7 +1553,7 @@ export function ContentTopicsPage() {
         if (detail?.topic.id) {
           sessionStorage.setItem(FB_RETURN_KEY, `/content/topics?topic=${detail.topic.id}`);
         }
-        navigate('/content/ai#facebook');
+        navigate('/content/ai-text#facebook');
       }
       setBusy(false);
     }
@@ -1352,13 +1589,9 @@ export function ContentTopicsPage() {
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ maxWidth: 560 }}>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Bài viết
-          </Typography.Title>
+        <div style={{ flex: '1 1 320px', maxWidth: 560 }}>
           <Typography.Text type="secondary">
-            Ảnh + duyệt + xuất bản cho góc brand đã viết. Ý tưởng gốc chỉ nằm ở Góc brand / Idea Pool,
-            không đưa vào đây.
+            Bài viết theo từng nơi đăng: chọn ảnh, duyệt, xuất bản. Ý tưởng và góc nhìn brand nằm ở hai tab trước.
             {brands.length === 0 ? ' Hãy thêm thương hiệu trước.' : null}
           </Typography.Text>
         </div>
@@ -1372,14 +1605,6 @@ export function ContentTopicsPage() {
             value={coreFilter}
             onChange={setCoreFilter}
             options={coreOptions}
-          />
-          <Select
-            allowClear
-            placeholder="Lọc / chọn thương hiệu"
-            style={{ width: 200 }}
-            value={brandFilter}
-            onChange={(v) => setBrandFilter(v)}
-            options={brands.map((b) => ({ value: b.id, label: b.name }))}
           />
           <Button
             icon={<CheckOutlined />}
@@ -1425,6 +1650,9 @@ export function ContentTopicsPage() {
           </Button>
           <Button icon={<UnorderedListOutlined />} onClick={openBulk} disabled={brands.length === 0}>
             Dán nhiều tiêu đề
+          </Button>
+          <Button icon={<FileTextOutlined />} onClick={() => navigate(`/content/import${window.location.search}`)}>
+            Nhập bài có sẵn
           </Button>
         </Space>
       </div>
@@ -1720,7 +1948,7 @@ export function ContentTopicsPage() {
       </Drawer>
 
       <Drawer
-        title={detail ? detail.topic.title : 'Chi tiết bài'}
+        title="Chi tiết bài"
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         width={1040}
@@ -1729,6 +1957,9 @@ export function ContentTopicsPage() {
         extra={
           detail ? (
             <Space wrap>
+              <Link to={`/content/topics/${detail.topic.id}`}>
+                <Button>Xem toàn màn hình</Button>
+              </Link>
               <Button
                 type={detail.variants.length === 0 ? 'primary' : 'default'}
                 icon={<ThunderboltOutlined />}
@@ -1785,6 +2016,9 @@ export function ContentTopicsPage() {
       >
         {detail ? (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
+            <Typography.Title level={4} style={{ margin: 0, lineHeight: 1.45 }}>
+              {detail.topic.title}
+            </Typography.Title>
             <Card size="small" title="Nguồn bài">
               {lineageIndex && topicLineage ? (
                 <Space direction="vertical" size={4}>
@@ -1809,6 +2043,7 @@ export function ContentTopicsPage() {
                     items={standaloneContentTrail(
                       detail.topic.brandName,
                       standaloneAngleLabel ? { label: standaloneAngleLabel, packageId: openPackage?.id } : null,
+                      detail.topic.brandId,
                     )}
                   />
                 </Space>
@@ -1863,20 +2098,7 @@ export function ContentTopicsPage() {
                         description="Đây thường là ý tưởng gốc (Xuân Hòa / sổ tay), không phải góc Famixa/KIT Tech đã Generate. Xóa lọc thương hiệu trên bảng, tìm hàng Bản viết > 0, hoặc mở từ Góc brand."
                       />
                     ) : (
-                      detail.variants.map((v: ContentVariant) => (
-                        <div key={v.id} style={{ marginBottom: 16 }}>
-                          <Typography.Text strong>
-                            {v.kind}
-                            {v.title ? ` — ${v.title}` : ''}
-                          </Typography.Text>
-                          <Typography.Paragraph
-                            ellipsis={{ rows: 4, expandable: true, symbol: 'xem thêm' }}
-                            style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}
-                          >
-                            {v.bodyMarkdown}
-                          </Typography.Paragraph>
-                        </div>
-                      ))
+                      <VariantCopyPanel variants={detail.variants} />
                     ),
                 },
                 {
@@ -2253,171 +2475,11 @@ export function ContentTopicsPage() {
                 dataSource={detail.jobs}
                 locale={{ emptyText: 'Chưa xuất bản' }}
                 scroll={{ x: 880 }}
-                columns={[
-                  {
-                    title: 'Kênh',
-                    dataIndex: 'connectorType',
-                    width: 200,
-                    render: (t: string) => {
-                      const c = connectorLabel(t);
-                      return <Tag color={c.color}>{c.title}</Tag>;
-                    },
-                  },
-                  {
-                    title: 'Kết quả',
-                    dataIndex: 'status',
-                    width: 120,
-                    render: (s: string) => (
-                      <Tag color={s === 'Failed' ? 'error' : s === 'Succeeded' ? 'success' : 'processing'}>
-                        {s === 'Succeeded'
-                          ? 'Thành công'
-                          : s === 'Failed'
-                            ? 'Lỗi'
-                            : s === 'Queued'
-                              ? 'Chờ'
-                              : s}
-                      </Tag>
-                    ),
-                  },
-                  {
-                    title: 'Chi tiết',
-                    key: 'info',
-                    render: (_, j: ContentPublishJob) => {
-                      if (j.lastError) {
-                        const err = formatPublishError(j.lastError);
-                        return (
-                          <div style={{ maxWidth: 520 }}>
-                            <Typography.Text type="danger" strong style={{ display: 'block' }}>
-                              {err.summary}
-                            </Typography.Text>
-                            {err.hint ? (
-                              <Typography.Paragraph
-                                type="secondary"
-                                style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.45 }}
-                              >
-                                {err.hint}
-                              </Typography.Paragraph>
-                            ) : null}
-                            <Collapse
-                              ghost
-                              size="small"
-                              style={{ marginTop: 4 }}
-                              items={[
-                                {
-                                  key: 'raw',
-                                  label: (
-                                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                                      Xem lỗi kỹ thuật
-                                    </Typography.Text>
-                                  ),
-                                  children: (
-                                    <Typography.Paragraph
-                                      code
-                                      copyable
-                                      style={{
-                                        margin: 0,
-                                        fontSize: 11,
-                                        whiteSpace: 'pre-wrap',
-                                        wordBreak: 'break-word',
-                                        maxHeight: 120,
-                                        overflow: 'auto',
-                                      }}
-                                    >
-                                      {err.raw}
-                                    </Typography.Paragraph>
-                                  ),
-                                },
-                              ]}
-                            />
-                          </div>
-                        );
-                      }
-                      let mediaHint = '';
-                      let pathHint = '';
-                      let categoryHint = '';
-                      try {
-                        const r = j.resultJson
-                          ? (JSON.parse(j.resultJson) as {
-                              facebook?: string;
-                              hasImage?: boolean;
-                              image?: string;
-                              path?: string;
-                              url?: string;
-                              category?: string;
-                            })
-                          : null;
-                        if (r?.facebook === 'photo') mediaHint = 'Có ảnh';
-                        else if (r?.facebook === 'feed') mediaHint = 'Chỉ chữ (không ảnh)';
-                        else if (r?.hasImage) mediaHint = `Có ảnh${r.image ? ` · ${r.image}` : ''}`;
-                        else if (j.connectorType === 'astro_git' && r && r.hasImage === false)
-                          mediaHint = 'Chưa kèm ảnh';
-                        if (r?.url) pathHint = r.url;
-                        else if (r?.path) pathHint = r.path;
-                        if (r?.category) categoryHint = r.category;
-                      } catch {
-                        /* ignore */
-                      }
-                      return (
-                        <Space direction="vertical" size={2} style={{ maxWidth: 480 }}>
-                          <Typography.Text style={{ wordBreak: 'break-all' }}>
-                            {j.externalRef || 'OK'}
-                          </Typography.Text>
-                          <Space size={4} wrap>
-                            {mediaHint ? (
-                              <Tag color={mediaHint.startsWith('Có') ? 'success' : 'warning'}>{mediaHint}</Tag>
-                            ) : null}
-                            {categoryHint ? <Tag color="purple">Chuyên mục: {categoryHint}</Tag> : null}
-                          </Space>
-                          {pathHint ? (
-                            pathHint.startsWith('http') ? (
-                              <Typography.Link href={pathHint} target="_blank" style={{ fontSize: 12 }} copyable>
-                                {pathHint}
-                              </Typography.Link>
-                            ) : (
-                              <Typography.Text type="secondary" style={{ fontSize: 12 }} copyable>
-                                {pathHint}
-                              </Typography.Text>
-                            )
-                          ) : null}
-                        </Space>
-                      );
-                    },
-                  },
-                  {
-                    title: 'Thao tác',
-                    width: 220,
-                    fixed: 'right',
-                    render: (_, j) =>
-                      j.status === 'Failed' || j.status === 'Queued' || j.status === 'Succeeded' ? (
-                        <Space size={6} wrap>
-                          {isFacebookReconnectJob(j) ? (
-                            <Button
-                              type="primary"
-                              size="small"
-                              icon={<FacebookOutlined />}
-                              loading={busy}
-                              onClick={() => void onReconnectFacebook(j)}
-                            >
-                              Kết nối lại
-                            </Button>
-                          ) : null}
-                          <Button
-                            type={j.status === 'Failed' && !isFacebookReconnectJob(j) ? 'primary' : 'link'}
-                            size="small"
-                            danger={j.status === 'Failed' && !isFacebookReconnectJob(j)}
-                            loading={busy}
-                            onClick={() => void onRetryJob(j)}
-                          >
-                            {j.connectorType === 'facebook_page' ||
-                            j.connectorType === 'astro_git' ||
-                            j.connectorType === 'wordpress_rest'
-                              ? 'Đăng lại + ảnh'
-                              : 'Chạy lại'}
-                          </Button>
-                        </Space>
-                      ) : null,
-                  },
-                ]}
+                columns={contentPublishJobColumns({
+                  busy,
+                  onRetry: (j) => void onRetryJob(j),
+                  onReconnectFacebook: (j) => void onReconnectFacebook(j),
+                })}
               />
             </Card>
                   ),

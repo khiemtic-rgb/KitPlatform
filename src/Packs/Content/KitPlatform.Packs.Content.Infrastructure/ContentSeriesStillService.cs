@@ -1,4 +1,6 @@
+using System.Security.Cryptography;
 using KitPlatform.Packs.Content;
+using KitPlatform.Packs.Content.VisualIntelligence;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
@@ -6,31 +8,38 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
 {
     private const int MaxRefs = 4;
     private const int MaxDataUrlChars = 2_400_000;
+    private static int _approvedStillAttempts;
 
     private readonly ContentGeminiClient _gemini;
     private readonly IFamixaProviderRegistry _providers;
     private readonly IFamixaProviderSelectionService _selector;
     private readonly IVisualUniverseSnapshotResolver _snapshots;
     private readonly IUnifiedVisualCompiler _compiler;
+    private readonly IVisualIntelligenceGateway _visual;
 
     public ContentSeriesStillService(
         ContentGeminiClient gemini,
         IFamixaProviderRegistry providers,
         IFamixaProviderSelectionService selector,
         IVisualUniverseSnapshotResolver snapshots,
-        IUnifiedVisualCompiler compiler)
+        IUnifiedVisualCompiler compiler,
+        IVisualIntelligenceGateway visual)
     {
         _gemini = gemini;
         _providers = providers;
         _selector = selector;
         _snapshots = snapshots;
         _compiler = compiler;
+        _visual = visual;
     }
 
     public async Task<ContentSeriesStillDto> GenerateAsync(
         ContentSeriesStillRequest request,
         CancellationToken cancellationToken = default)
     {
+        if (request.VisualDemand is not null)
+            return VisualStillBridge.ToDto(_visual.Resolve(request.VisualDemand, VisualResolveOptions.Studio));
+
         var prompt = (request.Prompt ?? "").Trim();
         if (prompt.Length is < 12 or > 8000)
             throw new InvalidOperationException("Prompt KF cảnh 12–8000 ký tự.");
@@ -47,64 +56,14 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
             throw new InvalidOperationException(compiled.Gate ?? SeriesStillVisualIngressV1Rules.GateCompile);
 
         var mode = ProjectVisualModeAuthorityV1Rules.FamixaCurrent();
-        var claims = (request.References ?? Array.Empty<ContentSeriesStillRefDto>())
-            .Select(r =>
-            {
-                var role = (r.Role ?? "").Trim();
-                var identity = role.Equals("identity", StringComparison.OrdinalIgnoreCase)
-                    || role.Equals("identity-secondary", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(r.ReferenceRole, ProjectVisualModeAuthorityV1Rules.RoleIdentityAnchor, StringComparison.OrdinalIgnoreCase);
-                var missingMode = string.IsNullOrWhiteSpace(r.VisualMode);
-                var legacyIdentity = identity && missingMode;
-                return new VisualReferenceClaim(
-                    mode.ProjectId,
-                    r.CharacterId ?? "",
-                    r.Name,
-                    legacyIdentity
-                        ? ProjectVisualModeAuthorityV1Rules.ModePhotoreal
-                        : (r.VisualMode ?? mode.VisualMode),
-                    mode.VisualUniverse,
-                    mode.VisualStyle,
-                    r.ReferenceRole ?? (identity
-                        ? ProjectVisualModeAuthorityV1Rules.RoleIdentityAnchor
-                        : role.Equals("scene", StringComparison.OrdinalIgnoreCase)
-                            ? ProjectVisualModeAuthorityV1Rules.RoleScene
-                            : role),
-                    r.AuthorityStatus ?? (identity ? "" : "LOCKED"),
-                    r.ReferenceStatus ?? (legacyIdentity
-                        ? ProjectVisualModeAuthorityV1Rules.StatusLegacy
-                        : ProjectVisualModeAuthorityV1Rules.StatusActive),
-                    legacyIdentity ? "CANON_SEED" : "CHARACTER_STUDIO",
-                    null);
-            })
-            .ToList();
-        var identityClaims = claims
-            .Where(c => c.ReferenceRole == ProjectVisualModeAuthorityV1Rules.RoleIdentityAnchor)
-            .ToList();
-        var visualPreflight = ProjectVisualModeAuthorityV1Rules.Preflight(
-            new VisualGenerationPreflightInput(
-                mode,
-                mode.VisualUniverse,
-                mode.VisualMode,
-                identityClaims.Any(c =>
-                    string.Equals(c.AuthorityStatus, "LOCKED", StringComparison.OrdinalIgnoreCase)),
-                identityClaims.Count > 0 ? identityClaims : claims,
-                identityClaims.Any(c => c.Source == "CANON_SEED"),
-                mode.VisualMode,
-                mode.VisualMode));
-        if (!visualPreflight.Allowed)
-            throw new InvalidOperationException(
-                (visualPreflight.Code ?? ProjectVisualModeAuthorityV1Rules.GateConflict)
-                + ": " + ProjectVisualModeAuthorityV1Rules.StaffConflict);
-
         var aspect = NormalizeAspect(request.Aspect);
-        var refs = request.References ?? Array.Empty<ContentSeriesStillRefDto>();
-        if (refs.Count is < 1 or > MaxRefs)
+        var incoming = request.References ?? Array.Empty<ContentSeriesStillRefDto>();
+        if (incoming.Count is < 1 or > MaxRefs)
             throw new InvalidOperationException("Cần 1–4 ảnh Canon mặt (không gửi crop mặt làm KF I2V).");
 
-        var parsed = new List<(string Mime, string Base64)>(refs.Count);
+        var parsed = new List<(string Mime, string Base64, string Sha)>(incoming.Count);
         var kept = new List<ContentSeriesStillRefDto>();
-        foreach (var row in refs)
+        foreach (var row in incoming)
         {
             var url = (row.ImageDataUrl ?? "").Trim();
             var scene = string.Equals(row.Role, "scene", StringComparison.OrdinalIgnoreCase);
@@ -118,10 +77,36 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
                 if (scene) continue;
                 throw new InvalidOperationException($"Canon {(row.Name ?? "CHAR")} không phải data URL ảnh.");
             }
-            parsed.Add((mime, b64));
+            var raw = Convert.FromBase64String(b64);
+            var sha = Convert.ToHexString(SHA256.HashData(raw)).ToLowerInvariant();
+            parsed.Add((mime, b64, sha));
             kept.Add(row);
         }
-        refs = kept;
+        var refs = kept;
+        var approved = Sh02ApprovedLinhStillReferenceV1.IsApprovedScope(request.BuildId, request.ShotCode);
+        var claims = new List<VisualReferenceClaim>(refs.Count);
+        for (var i = 0; i < refs.Count; i++)
+            claims.Add(Sh02ApprovedLinhStillReferenceV1.Classify(mode, refs[i], parsed[i].Sha, approved));
+        if (approved && !Sh02ApprovedLinhStillReferenceV1.HasRequiredPair(claims))
+            throw new InvalidOperationException("SH02_APPROVED_STILL_REFERENCES_REQUIRED");
+        var identityClaims = claims
+            .Where(c => c.ReferenceRole == ProjectVisualModeAuthorityV1Rules.RoleIdentityAnchor)
+            .ToList();
+        var visualPreflight = ProjectVisualModeAuthorityV1Rules.Preflight(
+            new VisualGenerationPreflightInput(
+                mode,
+                mode.VisualUniverse,
+                mode.VisualMode,
+                identityClaims.Any(c =>
+                    string.Equals(c.AuthorityStatus, "LOCKED", StringComparison.OrdinalIgnoreCase)),
+                approved || identityClaims.Count == 0 ? claims : identityClaims,
+                identityClaims.Any(c => c.Source == "CANON_SEED"),
+                mode.VisualMode,
+                mode.VisualMode));
+        if (!visualPreflight.Allowed)
+            throw new InvalidOperationException(
+                (visualPreflight.Code ?? ProjectVisualModeAuthorityV1Rules.GateConflict)
+                + ": " + ProjectVisualModeAuthorityV1Rules.StaffConflict);
 
         var guarded = compiled.Contract.CompiledPrompt;
 
@@ -131,7 +116,9 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
             var row = refs[i];
             var n = i + 1;
             var role = (row.Role ?? "").Trim();
-            var label = role.Equals("scene", StringComparison.OrdinalIgnoreCase)
+            var label = claims[i].AuthorityStatus == Sh02ApprovedLinhStillReferenceV1.Authority
+                ? $"REFERENCE {n} — Linh appearance for this one still. Match face, hair, and age. This file is not a locked master. Not a pose to copy."
+                : role.Equals("scene", StringComparison.OrdinalIgnoreCase)
                 ? $"REFERENCE {n} — Scene Master ({row.Name}). Exact environment. Do not redesign the room."
                 : role.Equals("continuity", StringComparison.OrdinalIgnoreCase)
                     ? $"REFERENCE {n} — Previous KF ({row.Name}). Keep faces, wardrobe, room, lighting, props. Do not copy crop, zoom, or pose."
@@ -141,20 +128,55 @@ internal sealed class ContentSeriesStillService : IContentSeriesStillService
             labeled.Add((parsed[i].Mime, parsed[i].Base64, label));
         }
 
-        var decision = _selector.Select(new FamixaProviderSelectionRequirements(FamixaProviderCapability.Picture));
-        var picture = _providers.GetPicture(decision.ProviderId);
-        var generated = await picture.GenerateAsync(
-            new FamixaPictureProviderRequest(
+        FamixaProviderSelectionDecision decision;
+        try
+        {
+            decision = _selector.Select(new FamixaProviderSelectionRequirements(FamixaProviderCapability.Picture));
+        }
+        catch (FamixaProviderRoutingException ex) when (ex.Outcome == FamixaProviderRouterOutcomes.NoProvider)
+        {
+            throw new InvalidOperationException(
+                "Chưa có Gemini API key. Tạo hình dùng Gemini — file Join Veo không thay thế được.");
+        }
+
+        byte[] bytes;
+        string? modelId;
+        string? mimeType;
+        if (approved)
+        {
+            if (Interlocked.Increment(ref _approvedStillAttempts) != 1)
+                throw new InvalidOperationException("SH02_APPROVED_STILL_ALREADY_ATTEMPTED");
+            var once = await _gemini.GenerateProductionStillOnceAsync(
                 guarded,
-                labeled.Select(r => new FamixaPictureRef(r.Mime, r.Base64, r.Label)).ToList(),
-                aspect),
-            cancellationToken);
-        var bytes = generated.Bytes ?? throw new InvalidOperationException("Không vẽ được KF cảnh từ Canon. Kiểm tra Gemini image model / quota.");
-        var mimeOut = generated.MimeType
+                labeled,
+                aspect,
+                cancellationToken,
+                Sh02ApprovedLinhStillReferenceV1.ModelId);
+            if (!once.Accepted || once.Bytes is null || once.Bytes.Length == 0)
+                throw new InvalidOperationException(once.Error ?? "SH02_APPROVED_STILL_FAILED");
+            bytes = once.Bytes;
+            modelId = once.Model;
+            mimeType = once.Mime;
+        }
+        else
+        {
+            var picture = _providers.GetPicture(decision.ProviderId);
+            var generated = await picture.GenerateAsync(
+                new FamixaPictureProviderRequest(
+                    guarded,
+                    labeled.Select(r => new FamixaPictureRef(r.Mime, r.Base64, r.Label)).ToList(),
+                    aspect),
+                cancellationToken);
+            bytes = generated.Bytes ?? throw new InvalidOperationException("Không vẽ được KF cảnh từ Canon. Kiểm tra Gemini image model / quota.");
+            modelId = generated.ModelId;
+            mimeType = generated.MimeType;
+        }
+
+        var mimeOut = mimeType
                       ?? (bytes.Length >= 8 && bytes[0] == 0x89 ? "image/png" : "image/jpeg");
         return new ContentSeriesStillDto(
             $"data:{mimeOut};base64,{Convert.ToBase64String(bytes)}",
-            generated.ModelId ?? decision.ModelId ?? "",
+            modelId ?? decision.ModelId ?? "",
             aspect,
             decision.DecisionId,
             decision.ProviderId);

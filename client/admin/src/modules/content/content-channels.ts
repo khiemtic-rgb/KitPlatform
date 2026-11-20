@@ -110,20 +110,27 @@ export type FacebookLink = {
   connectedAt?: string;
 };
 
+function facebookText(fb: Record<string, unknown>, camel: string, pascal: string): string | undefined {
+  const value = fb[camel] ?? fb[pascal];
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
 export function parseFacebookLink(configJson?: string | null): FacebookLink | null {
   try {
-    const v = JSON.parse(configJson || '{}') as { facebook?: FacebookLink };
+    const v = JSON.parse(configJson || '{}') as { facebook?: Record<string, unknown> };
     const fb = v.facebook;
     if (!fb || typeof fb !== 'object') return null;
-    const status = (fb.status ?? '').toString().trim();
+    const status = facebookText(fb, 'status', 'Status');
     if (!status) return null;
     return {
       status,
-      pageId: fb.pageId,
-      pageName: fb.pageName,
-      lastError: fb.lastError,
-      lastVerifiedAt: fb.lastVerifiedAt,
-      connectedAt: fb.connectedAt,
+      pageId: facebookText(fb, 'pageId', 'PageId'),
+      pageName: facebookText(fb, 'pageName', 'PageName'),
+      lastError: facebookText(fb, 'lastError', 'LastError'),
+      lastVerifiedAt: facebookText(fb, 'lastVerifiedAt', 'LastVerifiedAt'),
+      connectedAt: facebookText(fb, 'connectedAt', 'ConnectedAt'),
     };
   } catch {
     return null;

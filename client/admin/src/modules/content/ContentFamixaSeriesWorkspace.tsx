@@ -58,6 +58,7 @@ export function ContentFamixaSeriesWorkspace({
   episodeCode,
   episodeTitle,
   seriesTitle,
+  pipelineLine,
   episodeDesc,
   mode,
   tab,
@@ -67,6 +68,8 @@ export function ContentFamixaSeriesWorkspace({
   track,
   currentTrack,
   sceneOpen,
+  hideStoryForm,
+  showFamixaCastLock,
   overview,
   script,
   scenes,
@@ -85,6 +88,7 @@ export function ContentFamixaSeriesWorkspace({
   episodeCode: string;
   episodeTitle?: string;
   seriesTitle?: string;
+  pipelineLine?: string;
   episodeDesc?: string;
   onBack?: () => void;
   mode: ProductionUserMode;
@@ -94,6 +98,10 @@ export function ContentFamixaSeriesWorkspace({
   track: { id: string; done: boolean; label: string }[];
   currentTrack?: string;
   sceneOpen: boolean;
+  /** Short and guided films already enter the script on the film desk. */
+  hideStoryForm?: boolean;
+  /** The Famixa cast lock line is only for a film that owns the Famixa character set. */
+  showFamixaCastLock?: boolean;
   overview: ReactNode;
   script: ReactNode;
   scenes: ReactNode;
@@ -110,12 +118,13 @@ export function ContentFamixaSeriesWorkspace({
   returnBanner?: { label: string; onBack: () => void };
 }) {
   const director = mode === 'director';
-  const nav = episodeNavTabs(mode);
-  const crumb = nav.find((t) => t.id === tab)?.label || SERIES_STAFF_TABS.find((t) => t.id === tab)?.label;
+  const shown = hideStoryForm && tab === 'script' ? 'overview' : tab;
+  const nav = episodeNavTabs(mode).filter((item) => !(hideStoryForm && item.id === 'script'));
+  const crumb = nav.find((t) => t.id === shown)?.label || SERIES_STAFF_TABS.find((t) => t.id === shown)?.label;
   const body =
-    tab === 'overview'
+    shown === 'overview'
       ? overview
-      : tab === 'script'
+      : shown === 'script'
         ? script
         : tab === 'scenes'
           ? scenes
@@ -147,7 +156,9 @@ export function ContentFamixaSeriesWorkspace({
           <h1 className="fx-sw__title" data-episode-heading="1">
             {episodeCode} · {episodeTitle?.trim() || 'Chưa đặt tên tập'}
           </h1>
-          <p className="fx-sw__series">{seriesTitle?.trim() || 'Famixa'} · Video giáo dục</p>
+          <p className="fx-sw__series">
+            {(pipelineLine || '').trim() || `${seriesTitle?.trim() || 'Famixa'} · Video giáo dục`}
+          </p>
           {episodeDesc ? <p className="fx-sw__desc">{episodeDesc}</p> : null}
           <p className="fx-sw__ep">
             Trạng thái: {track.every((t) => t.done) ? 'Hoàn thành' : 'Đang làm'}
@@ -241,7 +252,7 @@ export function ContentFamixaSeriesWorkspace({
             },
           ]}
         />
-      ) : track.find((t) => t.id === 'cast')?.done ? (
+      ) : showFamixaCastLock && track.find((t) => t.id === 'cast')?.done ? (
         <p className="fx-sw__lock">Nhân vật đã khóa · Minh</p>
       ) : null}
     </section>

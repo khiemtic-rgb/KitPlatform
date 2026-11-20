@@ -16,13 +16,14 @@ const api = readFileSync(new URL("../../shared/api/content.api.ts", import.meta.
 const factory = readFileSync(new URL("../../../../../src/Packs/Content/KitPlatform.Packs.Content.Infrastructure/ContentGenerateService.cs", import.meta.url), "utf8");
 const videoCtrl = readFileSync(new URL("../../../../../src/KitPlatform.Api/Controllers/Content/ContentController.cs", import.meta.url), "utf8");
 const seriesCtrl = readFileSync(new URL("../../../../../src/KitPlatform.Api/Controllers/Content/ContentArticleSeriesController.cs", import.meta.url), "utf8");
-const mig = readFileSync(new URL("../../../../../migrations/370_pack_content_article_series.sql", import.meta.url), "utf8");
+const mig = readFileSync(new URL("../../../../../migrations/383_pack_content_article_series.sql", import.meta.url), "utf8");
 const manifest = readFileSync(new URL("../../../../../deploy/ubuntu/migration-files.content.txt", import.meta.url), "utf8");
 const rules = readFileSync(new URL("../../../../../src/Packs/Content/KitPlatform.Packs.Content.Application/ContentArticleSeriesRules.cs", import.meta.url), "utf8");
 
-ok(nav.includes("path: '/content/article-series'"), "nav article-series");
+ok(router.includes('path="article-series"'), "article-series route stays");
+ok(nav.includes("'/content/article-series'"), "work door owns article-series");
 ok(!nav.includes("path: '/content/series'"), "nav does not smash video /content/series");
-ok(nav.includes("label: 'Series'"), "nav label Series");
+ok(nav.includes("label: 'Content'"), "content door");
 ok(router.includes("article-series/:seriesId/episodes/:episodeId"), "episode route");
 ok(api.includes("/content/article-series"), "client api prefix");
 ok(readFileSync(new URL("../../../../../src/Packs/Content/KitPlatform.Packs.Content.Infrastructure/ContentArticleSeriesService.cs", import.meta.url), "utf8").includes("EnqueueGenerateTopicAsync"), "episode calls existing factory");
@@ -41,7 +42,7 @@ ok(
 ok(mig.includes("pack_content.content_series"), "mig series table");
 ok(mig.includes("UNIQUE (series_id, episode_no)"), "unique episode no");
 ok(!mig.includes("DROP TABLE") || !mig.toLowerCase().includes("series_pilot"), "no drop video tables");
-ok(manifest.includes("370_pack_content_article_series.sql"), "content manifest");
+ok(manifest.includes("383_pack_content_article_series.sql"), "content manifest");
 ok(rules.includes("NOVIXA") || rules.includes("SeriesCode"), "codes");
 ok(rules.includes("AllowReadingFromString") && rules.includes("FlexibleInt32JsonConverter"), "blueprint accepts string numbers");
 ok(readFileSync(new URL("./ContentArticleSeriesPage.tsx", import.meta.url), "utf8").includes("export function ContentArticleSeriesPage"), "list page export");
@@ -50,7 +51,7 @@ ok(readFileSync(new URL("./ContentArticleSeriesPage.tsx", import.meta.url), "utf
 ok(readFileSync(new URL("./ContentArticleSeriesDetailPage.tsx", import.meta.url), "utf8").includes('status: "PAUSED"'), "pause series action");
 ok(
   readFileSync(new URL("./ContentArticleSeriesDetailPage.tsx", import.meta.url), "utf8").includes(
-    "contentTopicHref(ep.contentTopicId)",
+    "/content/topics/${ep.contentTopicId}",
   ),
   "series episode links topic",
 );
@@ -66,8 +67,10 @@ ok(readFileSync(new URL("./ContentPackagesPage.tsx", import.meta.url), "utf8").i
 ok(readFileSync(new URL("./ContentArticleSeriesDetailPage.tsx", import.meta.url), "utf8").includes("ContentSeriesNarrative"), "series narrative");
 ok(readFileSync(new URL("./ContentArticleEpisodePage.tsx", import.meta.url), "utf8").includes("ContentEpisodeContinuity"), "episode continuity");
 ok(readFileSync(new URL("./ContentTopicsPage.tsx", import.meta.url), "utf8").includes("useTopicLineageIndex"), "article lineage");
-ok(nav.includes("CONTENT_NAV_OUTSIDE"), "videos outside narrative nav");
-ok(nav.indexOf("label: 'Lịch tuần'") < nav.indexOf("label: 'Videos'"), "work group ends before videos");
+ok(nav.includes("CONTENT_NAV_OUTSIDE"), "outside list remains an export");
+ok(nav.includes("path: '/content/studio'"), "studio door");
+ok(nav.includes("path: '/content/calendar'"), "publishing door");
+ok(!nav.includes("path: '/content/videos'"), "videos is not a content sibling");
 ok(!readFileSync(new URL("./ContentOpsPage.tsx", import.meta.url), "utf8").includes("Idea Pool → Góc brand → duyệt"), "ops is not the narrative journey");
 ok(readFileSync(new URL("./content-lineage.tsx", import.meta.url), "utf8").includes("Series content"), "series content label");
 ok(readFileSync(new URL("./content-lineage.tsx", import.meta.url), "utf8").includes("Standalone"), "standalone content label");
@@ -106,10 +109,12 @@ ok(lineage.includes("Next Episode Direction"), "continuity next direction");
 ok(lineage.includes("Core Point") && lineage.includes("Format"), "creative brief fields");
 ok(episodeDetail.includes('title="Content"') && episodeDetail.includes('ContentKindTag kind="series"'), "content block");
 ok(episodeDetail.includes('label: "Quality Gate"'), "episode quality gate");
-const contentBranch = episodeDetail.slice(episodeDetail.lastIndexOf("ep.contentTopicId ?"));
-const createAt = contentBranch.indexOf("Tạo bài");
-ok(createAt > contentBranch.indexOf(") : ("), "create article only without content");
-ok(!contentBranch.slice(0, contentBranch.indexOf(") : (")).includes("Tạo bài"), "existing content hides create");
+const contentGate = episodeDetail.indexOf("!ep.contentTopicId ?");
+const contentSplit = episodeDetail.indexOf(") : (", contentGate);
+const noContentBranch = episodeDetail.slice(contentGate, contentSplit);
+const hasContentBranch = episodeDetail.slice(contentSplit, episodeDetail.indexOf("</Card>", contentSplit));
+ok(contentGate >= 0 && noContentBranch.includes("Tạo bài"), "create article only without content");
+ok(!hasContentBranch.includes("Tạo bài"), "existing content hides create");
 ok(seriesDetail.includes("seriesHasEpisodeContent"), "series detects episode content");
 ok(seriesDetail.includes("Series đã có nội dung. Canon được khóa để bảo vệ tính liên tục."), "series canon lock copy");
 ok(seriesDetail.includes('disabled={canonLocked}'), "series canon actions disabled");
@@ -118,7 +123,7 @@ ok(seriesDetail.includes('disabled={canonLocked}') && seriesDetail.includes("Gen
 ok(seriesDetail.includes("Thêm episode") && seriesDetail.includes('disabled={canonLocked}'), "add episode disabled with content");
 ok(episodeDetail.includes("Episode đã được duyệt. Canon đã khóa."), "approved episode canon lock");
 ok(episodeDetail.includes("contentStatusApproved"), "episode checks approved status");
-ok(contentBranch.includes("Regenerate") && !contentBranch.slice(0, contentBranch.indexOf(") : (")).includes("Tạo bài"), "regenerate stays on episode");
+ok(hasContentBranch.includes("Regenerate") && !hasContentBranch.includes("Tạo bài"), "regenerate stays on episode");
 const topics = readFileSync(new URL("./ContentTopicsPage.tsx", import.meta.url), "utf8");
 ok(topics.includes("rewriteBlocked"), "content detail rewrite guard");
 ok(topics.includes("if (lineageIndex.has(topicId)) return true;"), "series content blocks direct rewrite");

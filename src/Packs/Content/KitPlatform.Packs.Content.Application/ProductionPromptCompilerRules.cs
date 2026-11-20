@@ -23,7 +23,7 @@ public static class ProductionPromptCompilerRules
 
     public static readonly string[] ProviderTokens =
     [
-        "gemini", "runway", "gen4_turbo", "gemini-2.5-flash-image", "gemini_model", "runway_model",
+        "gemini", "runway", "gen4_turbo", "gemini-2.5-flash-image", "gemini-3.1-flash-image", "gemini_model", "runway_model",
     ];
 
     public static readonly string[] InjectionPhrases =

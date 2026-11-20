@@ -186,6 +186,19 @@ if (falKeep.previewUrl) fail.push('Fal must not overwrite previewUrl');
 if (falKeep.lipsyncUrl !== 'https://fal.example/lip.mp4' || falKeep.finalSource !== 'FAL') {
   fail.push('Fal stamps FINAL only');
 }
+const brokenPtr = stampFalFinal(
+  { takeUrl: 'https://runway.example/raw.mp4' },
+  '/api/content/series/fal-video?taskId=lipsync_v3_dead',
+);
+if (brokenPtr.lipsynced || brokenPtr.lipsyncUrl) fail.push('T3 broken local pointer is not lipsynced');
+const verifiedPtr = stampFalFinal(
+  { takeUrl: 'https://runway.example/raw.mp4' },
+  '/api/content/series/fal-video?taskId=lipsync_v3_ok',
+  true,
+);
+if (!verifiedPtr.lipsynced || !verifiedPtr.lipsyncUrl?.includes('fal-video')) {
+  fail.push('T1 verified local path stamps FINAL');
+}
 if (resolveTakeUrl({ ...mute, ...falKeep }) !== 'https://runway.example/raw.mp4') {
   fail.push('resolve TAKE after Fal');
 }

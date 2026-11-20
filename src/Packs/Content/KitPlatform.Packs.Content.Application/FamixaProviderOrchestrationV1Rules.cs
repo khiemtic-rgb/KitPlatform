@@ -9,6 +9,7 @@ public static class FamixaProviderIds
     public const string Gemini = "gemini";
     public const string Runway = "runway";
     public const string Wan = "wan";
+    public const string Google = "google";
     public const string ElevenLabs = "elevenlabs";
     public const string Fal = "fal";
 }
@@ -41,6 +42,7 @@ public enum FamixaCostKind
     Estimate,
     Unknown,
     FalBilledEstimate,
+    Known,
 }
 
 public static class FamixaProviderErrorCodes
@@ -113,7 +115,14 @@ public sealed record FamixaLipSyncStartRequest(
     string VideoUrl,
     string AudioUrl,
     string? SyncMode,
-    string? ModelKind);
+    string? ModelKind,
+    double? SpeakerX = null,
+    double? SpeakerY = null,
+    int? SpeakerVideoWidth = null,
+    int? SpeakerVideoHeight = null,
+    int? SpeakerFrameNumber = null,
+    double? SpeakerDurationSec = null,
+    int? SpeakerFrameCount = null);
 
 public sealed record FamixaProviderResult(
     string ProviderId,
@@ -192,7 +201,7 @@ public static class FamixaProviderCatalog
         FamixaProviderIds.Gemini,
         "Gemini",
         [FamixaProviderCapability.Picture],
-        ["gemini-2.5-flash-image"],
+        [Production.ProductionImageCatalog.GeminiFlashImage],
         "standard",
         "UNKNOWN",
         true);
@@ -215,6 +224,15 @@ public static class FamixaProviderCatalog
         "FAL_BILLED_ESTIMATE",
         true);
 
+    public static readonly FamixaProviderDescriptor Google = new(
+        FamixaProviderIds.Google,
+        "Google Veo 3",
+        [FamixaProviderCapability.Motion],
+        ["veo-3.1"],
+        "standard",
+        "UNKNOWN",
+        true);
+
     public static readonly FamixaProviderDescriptor ElevenLabs = new(
         FamixaProviderIds.ElevenLabs,
         "ElevenLabs",
@@ -234,7 +252,7 @@ public static class FamixaProviderCatalog
         true);
 
     public static IReadOnlyList<FamixaProviderDescriptor> All =>
-        [Gemini, Runway, Wan, ElevenLabs, Fal];
+        [Gemini, Runway, Wan, Google, ElevenLabs, Fal];
 
     public static FamixaProviderDescriptor? Find(string? providerId) =>
         All.FirstOrDefault(d => d.ProviderId.Equals((providerId ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
@@ -299,6 +317,8 @@ public static class FamixaProviderResolver
 
         if (capability == FamixaProviderCapability.Motion)
         {
+            if (IsVeoEngine(s.Engine))
+                return new(FamixaProviderIds.Google, "veo-3.1");
             if (IsWanEngine(s.Engine))
                 return new(FamixaProviderIds.Wan, "wan-2.1");
             if (!string.IsNullOrWhiteSpace(s.Engine))
@@ -328,6 +348,9 @@ public static class FamixaProviderResolver
     public static bool IsWanEngine(string? engine) =>
         string.Equals((engine ?? "").Trim(), "wan", StringComparison.OrdinalIgnoreCase);
 
+    public static bool IsVeoEngine(string? engine) =>
+        string.Equals((engine ?? "").Trim(), "veo", StringComparison.OrdinalIgnoreCase);
+
     public static string NormalizeLipsyncModel(string? raw)
     {
         var m = (raw ?? "").Trim().ToLowerInvariant();
@@ -342,6 +365,8 @@ public static class FamixaProviderResolver
             return NormalizeLipsyncModel(s.LipsyncModel);
         if (capability == FamixaProviderCapability.Motion && providerId == FamixaProviderIds.Wan)
             return "wan-2.1";
+        if (capability == FamixaProviderCapability.Motion && providerId == FamixaProviderIds.Google)
+            return "veo-3.1";
         if (capability == FamixaProviderCapability.Motion)
             return "gen4_turbo";
         if (capability == FamixaProviderCapability.Voice)
@@ -387,6 +412,8 @@ public static class FamixaProviderTaskIdentity
             return new(FamixaProviderIds.Fal, FamixaProviderCapability.LipSync, FamixaProviderTaskSource.LegacyPrefix, LipsyncModelOf(raw));
         if (IsLegacyWanPrefix(raw))
             return new(FamixaProviderIds.Wan, FamixaProviderCapability.Motion, FamixaProviderTaskSource.LegacyPrefix, "wan-2.1");
+        if (IsLegacyVeoPrefix(raw))
+            return new(FamixaProviderIds.Google, FamixaProviderCapability.Motion, FamixaProviderTaskSource.LegacyPrefix, "veo-3.1");
         if (raw.Length == 0)
             throw new FamixaProviderException(
                 FamixaProviderErrorCodes.Unsupported, "", "PROVIDER_UNAVAILABLE: thiếu task id.");
@@ -411,13 +438,18 @@ public static class FamixaProviderTaskIdentity
             return IsLegacyLipsyncPrefix(raw) && id.Equals(FamixaProviderIds.Fal, StringComparison.OrdinalIgnoreCase);
         if (capability == FamixaProviderCapability.Motion && id.Equals(FamixaProviderIds.Wan, StringComparison.OrdinalIgnoreCase))
             return IsLegacyWanPrefix(raw);
+        if (capability == FamixaProviderCapability.Motion && id.Equals(FamixaProviderIds.Google, StringComparison.OrdinalIgnoreCase))
+            return IsLegacyVeoPrefix(raw);
         if (capability == FamixaProviderCapability.Motion && id.Equals(FamixaProviderIds.Runway, StringComparison.OrdinalIgnoreCase))
-            return !IsLegacyWanPrefix(raw) && !IsLegacyLipsyncPrefix(raw);
+            return !IsLegacyWanPrefix(raw) && !IsLegacyVeoPrefix(raw) && !IsLegacyLipsyncPrefix(raw);
         return false;
     }
 
     public static bool IsLegacyWanPrefix(string? taskId) =>
         (taskId ?? "").StartsWith("wan_", StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsLegacyVeoPrefix(string? taskId) =>
+        (taskId ?? "").StartsWith("veo_", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsLegacyLipsyncPrefix(string? taskId)
     {
@@ -475,6 +507,7 @@ public static class FamixaProviderTaskIdentity
         if (capability == FamixaProviderCapability.LipSync)
             return LipsyncModelOf(taskId);
         if (providerId == FamixaProviderIds.Wan) return "wan-2.1";
+        if (providerId == FamixaProviderIds.Google) return "veo-3.1";
         if (providerId == FamixaProviderIds.Runway) return "gen4_turbo";
         return null;
     }
@@ -489,7 +522,9 @@ public sealed record FamixaProviderCostQuote(
     string BillingBasis,
     string BillingUnit,
     double BilledQuantity,
-    double MinimumBillableQuantity);
+    double MinimumBillableQuantity,
+    FamixaProviderCostProvenance? Provenance = null,
+    FamixaVeoCostVariant? Variant = null);
 
 public static class FamixaProviderCostCatalog
 {
@@ -497,6 +532,7 @@ public static class FamixaProviderCostCatalog
     public const string BasisFalBilledEstimate = "FAL_BILLED_ESTIMATE";
     public const string BasisFalUsdPerMin = "FAL_USD_PER_MIN";
     public const string BasisFalLatentSyncClip = "FAL_LATENTSYNC_CLIP";
+    public const string BasisGoogleVeo31PerCount = "PER_COUNT";
     public const string BasisUnknown = "UNKNOWN";
 
     /// <summary>Adapter wrapper. Prefer <see cref="Quote"/> — this is not vendor actual.</summary>
@@ -517,9 +553,22 @@ public static class FamixaProviderCostCatalog
         string providerId,
         string? modelId,
         double? quantity = null)
+        => Quote(providerId, modelId, quantity, variant: null);
+
+    public static FamixaProviderCostQuote Quote(
+        string providerId,
+        string? modelId,
+        double? quantity,
+        FamixaVeoCostVariant? variant)
     {
         var id = (providerId ?? "").Trim().ToLowerInvariant();
+        var rawModel = (modelId ?? "").Trim();
         var model = FamixaProviderResolver.NormalizeLipsyncModel(modelId);
+        if (id == FamixaProviderIds.Google
+            && string.Equals(rawModel, FamixaVeo31OfficialPricing.ModelId, StringComparison.OrdinalIgnoreCase))
+        {
+            return FamixaVeo31OfficialPricing.Quote(variant);
+        }
         if (id == FamixaProviderIds.Runway)
         {
             var sec = quantity is >= 8 ? 10 : 5;
@@ -587,6 +636,24 @@ public static class FamixaProviderCostCatalog
                 "second",
                 sec,
                 5);
+        }
+        if (id == FamixaProviderIds.Gemini)
+        {
+            var approved = Production.ProductionImageCatalog.GeminiFlashImage;
+            if (string.IsNullOrWhiteSpace(rawModel)
+                || string.Equals(rawModel, approved, StringComparison.OrdinalIgnoreCase))
+            {
+                return new FamixaProviderCostQuote(
+                    FamixaProviderIds.Gemini,
+                    approved,
+                    0.045m,
+                    "usd",
+                    FamixaCostKind.Estimate,
+                    "PUBLISHED_LIST_0_5K",
+                    "image",
+                    1,
+                    1);
+            }
         }
         return new FamixaProviderCostQuote(
             id,

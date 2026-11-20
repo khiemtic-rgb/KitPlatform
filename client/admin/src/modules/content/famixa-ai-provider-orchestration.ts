@@ -9,6 +9,7 @@ export const FAMIXA_PROVIDER_IDS = {
   gemini: 'gemini',
   runway: 'runway',
   wan: 'wan',
+  google: 'google',
   elevenlabs: 'elevenlabs',
   fal: 'fal',
 } as const;
@@ -130,7 +131,7 @@ export const FAMIXA_PROVIDER_CATALOG: FamixaProviderDescriptor[] = [
     providerId: 'gemini',
     displayName: 'Gemini',
     capabilities: ['PICTURE'],
-    models: ['gemini-2.5-flash-image'],
+    models: ['gemini-3.1-flash-image'],
     qualityTier: 'standard',
     costInfo: 'UNKNOWN',
     available: true,
@@ -151,6 +152,15 @@ export const FAMIXA_PROVIDER_CATALOG: FamixaProviderDescriptor[] = [
     models: ['wan-2.1'],
     qualityTier: 'economy',
     costInfo: 'FAL_BILLED_ESTIMATE',
+    available: true,
+  },
+  {
+    providerId: 'google',
+    displayName: 'Google Veo 3',
+    capabilities: ['MOTION'],
+    models: ['veo-3.1'],
+    qualityTier: 'standard',
+    costInfo: 'UNKNOWN',
     available: true,
   },
   {
@@ -242,6 +252,10 @@ export function isLegacyWanTaskPrefix(taskId?: string) {
   return (taskId || '').toLowerCase().startsWith('wan_');
 }
 
+export function isLegacyVeoTaskPrefix(taskId?: string) {
+  return (taskId || '').toLowerCase().startsWith('veo_');
+}
+
 export function isLegacyLipsyncTaskPrefix(taskId?: string) {
   const t = taskId || '';
   return t.startsWith('lipsync_') || t.startsWith('lipsync_v3_') || t.startsWith('lipsync_v1_') || t.startsWith('lipsync_ls_');
@@ -274,6 +288,9 @@ export function resolveFamixaProviderTask(
   if (isLegacyWanTaskPrefix(raw)) {
     return { providerId: 'wan', capability: 'MOTION', source: 'LEGACY_PREFIX', modelId: 'wan-2.1' };
   }
+  if (isLegacyVeoTaskPrefix(raw)) {
+    return { providerId: 'google', capability: 'MOTION', source: 'LEGACY_PREFIX', modelId: 'veo-3.1' };
+  }
   if (!raw) {
     throw Object.assign(new Error('PROVIDER_UNAVAILABLE: thiếu task id'), { code: FAMIXA_PROVIDER_ERROR.PROVIDER_UNAVAILABLE });
   }
@@ -292,7 +309,10 @@ export function famixaProviderCanHandleTask(
   if (!raw) return false;
   if (capability === 'LIPSYNC') return isLegacyLipsyncTaskPrefix(raw) && providerId === 'fal';
   if (capability === 'MOTION' && providerId === 'wan') return isLegacyWanTaskPrefix(raw);
-  if (capability === 'MOTION' && providerId === 'runway') return !isLegacyWanTaskPrefix(raw) && !isLegacyLipsyncTaskPrefix(raw);
+  if (capability === 'MOTION' && providerId === 'google') return isLegacyVeoTaskPrefix(raw);
+  if (capability === 'MOTION' && providerId === 'runway') {
+    return !isLegacyWanTaskPrefix(raw) && !isLegacyVeoTaskPrefix(raw) && !isLegacyLipsyncTaskPrefix(raw);
+  }
   return false;
 }
 

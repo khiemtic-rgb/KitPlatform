@@ -518,6 +518,16 @@ internal sealed class CharacterStudioOrchestrator : ICharacterStudioOrchestrator
         return await GetAsync(characterId, ctx.Provider, era, cancellationToken);
     }
 
+    public async Task<(byte[] Bytes, string Mime, string Sha256)?> ReadOfficialLockedMasterAsync(
+        string characterId, string eraId = "ERA-01", CancellationToken cancellationToken = default)
+    {
+        var ctx = await LoadAsync(characterId, eraId, null, cancellationToken);
+        if (!ctx.OfficialLocked) return null;
+        var image = await _init.ReadMasterImageAsync(characterId, eraId, cancellationToken);
+        if (image is not { } locked || locked.Bytes is not { Length: > 32 }) return null;
+        return (locked.Bytes, locked.Mime, KitVideoIntegrityRules.Sha256Hex(locked.Bytes));
+    }
+
     public async Task<(byte[] Bytes, string Mime)?> ReadMasterAsync(
         string characterId, string eraId = "ERA-01", CancellationToken cancellationToken = default)
     {

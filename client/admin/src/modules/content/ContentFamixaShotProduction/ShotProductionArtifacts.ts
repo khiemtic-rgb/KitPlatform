@@ -2,7 +2,7 @@
 
 import type { RunwayAttempt } from '../content-famixa-runway-pipe';
 import { dataUriHash, lastGenerationFail, sameFailedInput } from '../content-famixa-runway-pipe';
-import { resolveTakeUrl } from '../content-famixa-final-source';
+import { resolveTakeUrl, type FinalSourceRun } from '../content-famixa-final-source';
 
 export type MotionAttemptStatus = 'SUCCESS' | 'FAILED' | 'PENDING' | 'UNKNOWN';
 
@@ -65,11 +65,19 @@ export type MotionLifecycle = {
   acceptedTake?: MotionAttemptArtifact;
 };
 
+function terminalMotionFailure(attempt?: Pick<RunwayAttempt, 'failureCode' | 'error'>) {
+  const blob = `${attempt?.failureCode || ''} ${attempt?.error || ''}`.trim();
+  if (!blob) return false;
+  return /INTERNAL|BAD_OUTPUT|quota|RESOURCE_EXHAUSTED|keyframe|429|rate.?limit|daily-quota|hết hạn mức|billing|payment|exhausted|invalid[_\s-]?input/i.test(
+    blob,
+  );
+}
+
 export function motionAttemptStatusOf(attempt?: Pick<RunwayAttempt, 'status' | 'failureCode' | 'error'>): MotionAttemptStatus {
   const st = (attempt?.status || '').toUpperCase();
   if (st === 'SUCCEEDED' || st === 'SUCCESS' || st === 'READY') return 'SUCCESS';
   if (st === 'FAILED' || st === 'CANCELLED') return 'FAILED';
-  if (/INTERNAL|BAD_OUTPUT/i.test(`${attempt?.failureCode || ''} ${attempt?.error || ''}`)) return 'FAILED';
+  if (terminalMotionFailure(attempt)) return 'FAILED';
   if (st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'SUBMITTED' || st === 'QUEUED') return 'PENDING';
   return 'UNKNOWN';
 }
@@ -243,12 +251,20 @@ export function motionLifecycleOf(run?: MotionLifecycleRun): MotionLifecycle {
 }
 
 /** Prompt hash of the last SUCCESS take — never a FAILED attempt. */
-export function lastSuccessfulTakePromptHashOf(run?: { runwayAttempts?: RunwayAttempt[] }) {
+export function lastSuccessfulTakePromptHashOf(run?: {
+  runwayAttempts?: {
+    promptHash?: string;
+    status?: string;
+    failureCode?: string;
+    error?: string;
+    exactRequest?: { promptHash?: string };
+  }[];
+}) {
   const list = run?.runwayAttempts ?? [];
   for (let i = list.length - 1; i >= 0; i--) {
-    const take = motionArtifactOf(list[i]!);
-    if (take.status !== 'SUCCESS') continue;
-    const hash = (take.promptHash || '').trim();
+    const row = list[i];
+    if (!row || motionAttemptStatusOf(row) !== 'SUCCESS') continue;
+    const hash = (row.promptHash || row.exactRequest?.promptHash || '').trim();
     if (hash) return hash;
   }
   return '';
@@ -280,7 +296,7 @@ export function takeFromOtherPicture(opts: {
 }
 
 /** New still cannot keep Fal / accepted take as the playing clip. History stays in runwayAttempts. */
-export function detachAvAfterPictureChange(run?: MotionLifecycleRun & { previewUrl?: string }) {
+export function detachAvAfterPictureChange(run?: FinalSourceRun) {
   const hadAv = Boolean(
     resolveTakeUrl(run) || run?.previewUrl || run?.takeUrl || run?.lipsyncUrl || run?.lipsynced,
   );
@@ -300,6 +316,11 @@ export function detachAvAfterPictureChange(run?: MotionLifecycleRun & { previewU
   };
 }
 
+/**
+ * In-memory compatibility object only.
+ * acceptedTake ≠ official accept authority.
+ * Does not create Production OS ACCEPTED and does not authorize official preview.
+ */
 export function acceptExistingTake(run?: MotionLifecycleRun): { acceptedTake: AcceptedTake } | undefined {
   const visible = visibleTakeOf(run);
   const url = (visible?.url || '').trim();

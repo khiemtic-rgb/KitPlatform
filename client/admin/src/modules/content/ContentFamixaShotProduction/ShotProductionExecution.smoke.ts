@@ -475,6 +475,49 @@ ok(
 );
 ok(patched7.takeUrl !== 'https://take/late-a.mp4', 'T20 does not heal a late other task');
 
+const runT21 = runOf({
+  takeUrl: 'https://take/44.mp4',
+  turboTaskId: 'task-wan-46',
+  pictureRevisionAttemptN: 44,
+  runwayAttempts: [
+    successRow(44, frozenA, 'https://take/44.mp4'),
+    { ...successRow(46, frozenA, 'https://take/46.mp4'), taskId: 'task-wan-46' },
+  ],
+});
+const patched21 = motionCallbackRunPatch({
+  run: runT21,
+  decision: { promote: false, resultClass: 'LATE_RESULT', keepHistory: true, reason: 'INPUT_CHANGED' },
+  outputUrl: 'https://take/46.mp4',
+  taskId: 'task-wan-46',
+});
+ok(patched21.takeUrl === 'https://take/46.mp4', 'T21 current job INPUT_CHANGED still writes takeUrl');
+
+const runT22 = runOf({
+  takeUrl: 'https://take/3.mp4',
+  turboTaskId: 'task-veo-now',
+  kfSourceHash: undefined,
+  pictureRevisionId: undefined,
+  runwayAttempts: [{ n: 5, at: '', status: 'SUCCEEDED', taskId: 'task-veo-now', outputUrl: 'https://take/5.mp4' }],
+});
+const patched22 = motionCallbackRunPatch({
+  run: runT22,
+  decision: { promote: false, resultClass: 'LATE_RESULT', keepHistory: true, reason: 'INPUT_CHANGED' },
+  outputUrl: 'https://take/5.mp4',
+  taskId: 'task-veo-now',
+});
+ok(patched22.takeUrl === 'https://take/5.mp4', 'T22 current Veo job attaches without revision/hash');
+
+const quotaRunning = adaptMotionAttempts(shot.id, [
+  { n: 9, at: 't', status: 'RUNNING', taskId: 'task-quota', error: '429 daily-quota', failureCode: 'RATE_LIMITED' },
+]);
+ok(quotaRunning[0]?.status === 'FAILED', 'T23 quota with task id is FAILED, not RUNNING');
+const keyframeRunning = adaptMotionAttempts(shot.id, [
+  { n: 10, at: 't', status: 'RUNNING', taskId: 'task-kf', error: 'Approved keyframe không đọc được' },
+]);
+ok(keyframeRunning[0]?.status === 'FAILED', 'T24 keyframe failure with task id is FAILED');
+const liveRunning = adaptMotionAttempts(shot.id, [{ n: 11, at: 't', status: 'RUNNING', taskId: 'task-live' }]);
+ok(liveRunning[0]?.status === 'RUNNING', 'T25 clean RUNNING stays RUNNING');
+
 const root = dirname(fileURLToPath(import.meta.url));
 const src = [
   'ShotProductionExecution.ts',
@@ -490,6 +533,6 @@ if (fail.length) {
   console.error(`ShotProductionExecution FAIL ${fail.length}\n${fail.map((x) => `- ${x}`).join('\n')}`);
   process.exit(1);
 }
-console.log('ShotProductionExecution T1-T20 PASS');
+console.log('ShotProductionExecution T1-T25 PASS');
 void fpsBeat;
 void runT7base;

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -12,11 +13,13 @@ internal sealed class ContentVideoService : IContentVideoService
     private static readonly string[] PreferredScriptKinds =
         ["tiktok_script", "web_long", "fb_page", "fb_short", "social_caption"];
 
+    private const int MaxSceneImageBytes = 8 * 1024 * 1024;
     private readonly ContentRepository _repo;
     private readonly ContentCreatomateClient _creatomate;
     private readonly ContentElevenLabsClient _elevenLabs;
     private readonly IOptions<ContentOptions> _options;
     private readonly IConfiguration _configuration;
+    private readonly MarketingLocalVideoRenderer _localRenderer = new(new ProcessMarketingVideoFfmpeg());
 
     public ContentVideoService(
         ContentRepository repo,
@@ -59,6 +62,7 @@ internal sealed class ContentVideoService : IContentVideoService
         CreateVideoJobFromPackageRequest request,
         CancellationToken cancellationToken = default)
     {
+        await NovixaE2eIsolation.AssertAsync(_repo, _options.Value.VideoAssetRoot, cancellationToken);
         var package = await _repo.GetPackageAsync(request.PackageId, cancellationToken)
                       ?? throw new InvalidOperationException("Package không tồn tại.");
 
@@ -66,7 +70,7 @@ internal sealed class ContentVideoService : IContentVideoService
         if (!template.IsActive)
             throw new InvalidOperationException("Template đang tắt.");
 
-        var variants = await _repo.ListVariantsAsync(package.TopicId, cancellationToken);
+        var variants = await _repo.ListVariantsAsync(ContentPackageScope.RequireTopic(package), cancellationToken);
         var script = PickScript(variants);
         if (string.IsNullOrWhiteSpace(script))
             throw new InvalidOperationException(
@@ -76,9 +80,9 @@ internal sealed class ContentVideoService : IContentVideoService
         if (title.Length > 480) title = title[..480];
 
         var id = await _repo.InsertVideoJobAsync(
-            package.BrandId,
+            ContentPackageScope.RequireBrand(package),
             package.Id,
-            package.TopicId,
+            ContentPackageScope.RequireTopic(package),
             template.Id,
             title,
             script.Trim(),
@@ -127,6 +131,7 @@ internal sealed class ContentVideoService : IContentVideoService
 
     public async Task<ContentVideoJobDto?> PrepareStoryboardAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        await NovixaE2eIsolation.AssertAsync(_repo, _options.Value.VideoAssetRoot, cancellationToken);
         var job = await _repo.GetVideoJobAsync(id, cancellationToken);
         if (job is null) return null;
 
@@ -146,17 +151,18 @@ internal sealed class ContentVideoService : IContentVideoService
         var storyboard = BuildStoryboard(script ?? "", beats, template.DurationSec);
         var storyboardJson = ContentRepository.ToJson(storyboard);
 
+        var novixa = IsNovixaTiktokHooks(job, template);
         await _repo.UpdateVideoJobAsync(
             id,
             scriptBody: script,
-            status: "Ready",
+            status: NovixaLocalRenderGate.StatusAfterStoryboard(novixa),
             externalRenderId: job.ExternalRenderId,
             previewUrl: job.PreviewUrl,
-            outputUrl: job.OutputUrl,
+            outputUrl: novixa ? null : job.OutputUrl,
             errorMessage: null,
             storyboardJson: storyboardJson,
             configJson: job.ConfigJson,
-            renderedAt: DateTimeOffset.UtcNow,
+            renderedAt: novixa ? null : DateTimeOffset.UtcNow,
             cancellationToken);
 
         return await GetJobAsync(id, cancellationToken);
@@ -176,6 +182,9 @@ internal sealed class ContentVideoService : IContentVideoService
 
         var pipelineNotes = new List<string>();
         var config = ParseConfigObject(job.ConfigJson);
+        var storyboardJson = job.StoryboardJson;
+        var configJson = job.ConfigJson;
+        var novixa = IsNovixaTiktokHooks(job, template);
 
         try
         {
@@ -221,7 +230,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 pipelineNotes.Add("voice=skipped (no ElevenLabsApiKey)");
             }
 
-            var storyboardJson = ContentRepository.ToJson(storyboard);
+            storyboardJson = ContentRepository.ToJson(storyboard);
             config["mvpPipeline"] = new
             {
                 at = DateTimeOffset.UtcNow,
@@ -229,7 +238,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 creatomateConfigured = videoCfg.CreatomateConfigured,
                 elevenLabsConfigured = videoCfg.ElevenLabsConfigured,
             };
-            var configJson = ContentRepository.ToJson(config);
+            configJson = ContentRepository.ToJson(config);
 
             await _repo.UpdateVideoJobAsync(
                 id,
@@ -237,7 +246,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 "PreparingRender",
                 job.ExternalRenderId,
                 job.PreviewUrl,
-                job.OutputUrl,
+                novixa ? null : job.OutputUrl,
                 null,
                 storyboardJson,
                 configJson,
@@ -247,6 +256,16 @@ internal sealed class ContentVideoService : IContentVideoService
             if (!opts.Render)
             {
                 var preview = FirstSceneImage(storyboard) ?? job.PreviewUrl;
+                if (novixa)
+                {
+                    var note = string.Join("; ", pipelineNotes);
+                    await _repo.UpdateVideoJobAsync(
+                        id, null, "PreparingRender", job.ExternalRenderId, preview, null,
+                        string.IsNullOrWhiteSpace(note) ? null : note,
+                        storyboardJson, configJson, null, cancellationToken);
+                    return await GetJobAsync(id, cancellationToken);
+                }
+
                 await _repo.UpdateVideoJobAsync(
                     id, null, "Ready", job.ExternalRenderId, preview, job.OutputUrl,
                     string.Join("; ", pipelineNotes),
@@ -266,10 +285,10 @@ internal sealed class ContentVideoService : IContentVideoService
                 "Failed",
                 job.ExternalRenderId,
                 job.PreviewUrl,
-                job.OutputUrl,
+                novixa ? null : job.OutputUrl,
                 ex.Message,
-                job.StoryboardJson,
-                job.ConfigJson,
+                storyboardJson,
+                configJson,
                 null,
                 cancellationToken);
             return await GetJobAsync(id, cancellationToken);
@@ -289,7 +308,7 @@ internal sealed class ContentVideoService : IContentVideoService
             string.Equals(j.ExternalRenderId, renderId, StringComparison.OrdinalIgnoreCase));
         if (job is null) return null;
 
-        var mapped = MapCreatomateStatus(status);
+        var mapped = ContentVideoRenderStatus.FromProvider(status, url);
         await _repo.UpdateVideoJobAsync(
             job.Id,
             null,
@@ -297,7 +316,7 @@ internal sealed class ContentVideoService : IContentVideoService
             renderId,
             snapshotUrl ?? url ?? job.PreviewUrl,
             mapped == "Ready" ? (url ?? job.OutputUrl) : job.OutputUrl,
-            mapped == "Failed" ? "Creatomate webhook: failed" : null,
+            mapped == "Failed" ? ContentVideoRenderStatus.FailureNote(status, url) : null,
             job.StoryboardJson,
             job.ConfigJson,
             mapped == "Ready" ? DateTimeOffset.UtcNow : job.RenderedAt,
@@ -312,6 +331,9 @@ internal sealed class ContentVideoService : IContentVideoService
 
         var template = await _repo.GetVideoTemplateAsync(job.TemplateId, cancellationToken)
                        ?? throw new InvalidOperationException("Template thiếu.");
+
+        if (IsNovixaTiktokHooks(job, template))
+            return await RenderNovixaLocalFromJobAsync(job, template, cancellationToken);
 
         var videoCfg = await _creatomate.ResolveAsync(cancellationToken);
         var creatomateTemplateId = FirstNonEmpty(template.ExternalTemplateId, videoCfg.CreatomateTemplateId);
@@ -360,6 +382,9 @@ internal sealed class ContentVideoService : IContentVideoService
         string? voicePublicUrl,
         CancellationToken cancellationToken)
     {
+        if (IsNovixaTiktokHooks(job, template))
+            return await RenderNovixaLocalAsync(job, template, scenes, storyboardJson, configJson, cancellationToken);
+
         var videoCfg = await _creatomate.ResolveAsync(cancellationToken);
         var creatomateTemplateId = FirstNonEmpty(template.ExternalTemplateId, videoCfg.CreatomateTemplateId);
         if (template.Provider != "creatomate"
@@ -400,7 +425,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 mods,
                 cancellationToken);
 
-            var status = MapCreatomateStatus(render.Status);
+            var status = ContentVideoRenderStatus.FromProvider(render.Status, render.Url);
             await _repo.UpdateVideoJobAsync(
                 job.Id,
                 null,
@@ -408,7 +433,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 render.Id,
                 render.SnapshotUrl ?? render.Url,
                 status == "Ready" ? render.Url : null,
-                null,
+                status == "Failed" ? ContentVideoRenderStatus.FailureNote(render.Status, render.Url) : null,
                 storyboardJson,
                 configJson,
                 status == "Ready" ? DateTimeOffset.UtcNow : null,
@@ -434,7 +459,7 @@ internal sealed class ContentVideoService : IContentVideoService
         try
         {
             var render = await _creatomate.GetRenderAsync(job.ExternalRenderId, cancellationToken);
-            var status = MapCreatomateStatus(render.Status);
+            var status = ContentVideoRenderStatus.FromProvider(render.Status, render.Url);
             await _repo.UpdateVideoJobAsync(
                 id,
                 null,
@@ -442,7 +467,7 @@ internal sealed class ContentVideoService : IContentVideoService
                 render.Id,
                 render.SnapshotUrl ?? render.Url ?? job.PreviewUrl,
                 status == "Ready" ? render.Url : job.OutputUrl,
-                status == "Failed" ? "Creatomate render failed" : null,
+                status == "Failed" ? ContentVideoRenderStatus.FailureNote(render.Status, render.Url) : null,
                 job.StoryboardJson,
                 job.ConfigJson,
                 status == "Ready" ? DateTimeOffset.UtcNow : job.RenderedAt,
@@ -473,6 +498,22 @@ internal sealed class ContentVideoService : IContentVideoService
         if (job is null) return null;
         if (job.Status is not ("Ready" or "Approved"))
             throw new InvalidOperationException("Chỉ duyệt job đã Ready (storyboard hoặc file render).");
+
+        var template = await _repo.GetVideoTemplateAsync(job.TemplateId, cancellationToken)
+                       ?? throw new InvalidOperationException("Template thiếu.");
+        if (IsNovixaTiktokHooks(job, template))
+        {
+            if (!ContentVideoMediaPaths.IsJobOutputRoute(job.Id, job.OutputUrl))
+                throw new InvalidOperationException("Chỉ duyệt khi MP4 đã gắn đúng route media của job.");
+            var mediaPath = ResolveLocalMediaPath(job.Id, ContentVideoMediaPaths.OutputFileName);
+            if (mediaPath is null)
+                throw new InvalidOperationException("Không thấy output.mp4 của job để duyệt.");
+            var total = StoryboardDuration(ReadStoryboard(job.StoryboardJson));
+            var probe = await NovixaLocalRenderGate.ProbeMp4Async(
+                mediaPath, template.AspectRatio, total, cancellationToken);
+            if (!probe.Ok)
+                throw new InvalidOperationException(probe.Error ?? "MP4 không giải mã được.");
+        }
 
         await _repo.UpdateVideoJobAsync(
             id,
@@ -649,14 +690,21 @@ internal sealed class ContentVideoService : IContentVideoService
                + "?width=1080&height=1920&nologo=true";
     }
 
-    private string ResolveVideoAssetRoot()
+    private string ResolveVideoAssetRoot() =>
+        ContentVideoMediaPaths.ResolveRoot(_options.Value.VideoAssetRoot, Directory.GetCurrentDirectory());
+
+    public string? ResolveLocalMediaPath(Guid jobId, string fileName)
     {
-        var configured = string.IsNullOrWhiteSpace(_options.Value.VideoAssetRoot)
-            ? "App_Data/content-video"
-            : _options.Value.VideoAssetRoot;
-        return Path.IsPathRooted(configured)
-            ? configured
-            : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), configured));
+        if (!ContentVideoMediaPaths.IsSafeFileName(fileName))
+            return null;
+        var root = ResolveVideoAssetRoot();
+        var path = Path.GetFullPath(ContentVideoMediaPaths.File(root, jobId, fileName));
+        var prefix = ContentVideoMediaPaths.JobDirectory(root, jobId)
+                     .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                     + Path.DirectorySeparatorChar;
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || !File.Exists(path))
+            return null;
+        return path;
     }
 
     private async Task<string> SaveVideoMediaAsync(
@@ -670,6 +718,411 @@ internal sealed class ContentVideoService : IContentVideoService
         var path = Path.Combine(dir, fileName);
         await File.WriteAllBytesAsync(path, bytes, ct);
         return path;
+    }
+
+    private static bool IsNovixaTiktokHooks(
+        ContentRepository.VideoJobRow job,
+        ContentRepository.VideoTemplateRow template) =>
+        NovixaLocalRenderGate.IsGate(job.BrandCode, template.Code, template.Provider);
+
+    private const long MaxImportedVideoBytes = 300L * 1024 * 1024;
+
+    public async Task<ContentVideoJobDto> ImportFinishedAsync(
+        ImportFinishedVideoRequest request,
+        Stream mp4,
+        CancellationToken cancellationToken = default)
+    {
+        await NovixaE2eIsolation.AssertAsync(_repo, _options.Value.VideoAssetRoot, cancellationToken);
+        var brand = await _repo.GetBrandAsync(request.BrandId, cancellationToken)
+                    ?? throw new InvalidOperationException("Brand không tồn tại.");
+        var title = (request.Title ?? "").Trim();
+        if (title.Length == 0)
+            throw new InvalidOperationException("Thiếu tiêu đề video.");
+        if (title.Length > 480)
+            title = title[..480];
+        var templateCode = string.IsNullOrWhiteSpace(request.TemplateCode)
+            ? "tiktok_45s_hooks"
+            : request.TemplateCode.Trim();
+        var template = await _repo.GetVideoTemplateByCodeAsync(templateCode, cancellationToken)
+                       ?? throw new InvalidOperationException("Template không tồn tại: " + templateCode);
+        if (!template.IsActive)
+            throw new InvalidOperationException("Template đang tắt.");
+        if (!MarketingLocalVideoRenderer.TryFrameSize(template.AspectRatio, out _, out _))
+            throw new InvalidOperationException("Tỷ lệ khung của template không hỗ trợ nhập: " + template.AspectRatio);
+
+        var id = await _repo.InsertVideoJobAsync(
+            brand.Id,
+            null,
+            null,
+            template.Id,
+            title,
+            (request.ScriptBody ?? "").Trim(),
+            "Draft",
+            "storyboard_local",
+            "[]",
+            ContentRepository.ToJson(new { imported = true }),
+            cancellationToken);
+
+        var jobDir = ContentVideoMediaPaths.JobDirectory(ResolveVideoAssetRoot(), id);
+        Directory.CreateDirectory(jobDir);
+        var tempPath = Path.Combine(jobDir, "import.tmp.mp4");
+        var outputPath = Path.Combine(jobDir, ContentVideoMediaPaths.OutputFileName);
+        try
+        {
+            long written = 0;
+            await using (var target = File.Create(tempPath))
+            {
+                var buffer = new byte[81920];
+                int read;
+                while ((read = await mp4.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    written += read;
+                    if (written > MaxImportedVideoBytes)
+                        throw new InvalidOperationException("File MP4 quá lớn (tối đa 300 MB).");
+                    await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                }
+            }
+
+            if (written == 0)
+                throw new InvalidOperationException("File MP4 rỗng.");
+
+            var probe = await NovixaLocalRenderGate.ProbeMp4Async(tempPath, template.AspectRatio, 0, cancellationToken);
+            if (!probe.Ok)
+                throw new InvalidOperationException(probe.Error ?? "MP4 không giải mã được.");
+            var seconds = (int)Math.Floor(probe.DurationSec);
+            if (seconds < 1)
+                throw new InvalidOperationException("MP4 ngắn hơn 1 giây.");
+
+            string sha256;
+            await using (var hashStream = File.OpenRead(tempPath))
+                sha256 = Convert.ToHexString(await SHA256.HashDataAsync(hashStream, cancellationToken)).ToLowerInvariant();
+
+            File.Move(tempPath, outputPath, overwrite: true);
+            var storyboard = JsonSerializer.Serialize(new[]
+            {
+                new SceneBeat { Order = 1, Beat = "IMPORT", Type = "imported", StartSec = 0, EndSec = seconds, Text = title },
+            });
+            var config = ContentRepository.ToJson(new
+            {
+                imported = true,
+                sourceFileName = request.SourceFileName,
+                sha256,
+                bytes = written,
+                durationSeconds = Math.Round(probe.DurationSec, 2),
+                importedAt = DateTimeOffset.UtcNow,
+            });
+            await _repo.UpdateVideoJobAsync(
+                id,
+                null,
+                "Ready",
+                null,
+                null,
+                ContentVideoMediaPaths.OutputRoute(id),
+                null,
+                storyboard,
+                config,
+                DateTimeOffset.UtcNow,
+                cancellationToken);
+            return (await GetJobAsync(id, cancellationToken))!;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException)
+        {
+            try
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
+            catch (IOException)
+            {
+                /* the failure below is the answer; a locked temp file is not advertised */
+            }
+
+            await _repo.UpdateVideoJobAsync(
+                id,
+                null,
+                "Failed",
+                null,
+                null,
+                null,
+                ex.Message,
+                "[]",
+                ContentRepository.ToJson(new { imported = true, sourceFileName = request.SourceFileName }),
+                null,
+                cancellationToken);
+            throw ex is InvalidOperationException ? ex : new InvalidOperationException("Không ghi được file MP4: " + ex.Message);
+        }
+    }
+
+    private async Task<ContentVideoJobDto?> RenderNovixaLocalFromJobAsync(
+        ContentRepository.VideoJobRow job,
+        ContentRepository.VideoTemplateRow template,
+        CancellationToken cancellationToken)
+    {
+        var scenes = ReadStoryboard(job.StoryboardJson);
+        if (scenes.Count == 0)
+        {
+            var trimmed = (job.StoryboardJson ?? "").Trim();
+            var reason = trimmed is "" or "[]" or "null"
+                ? "Chưa có storyboard NOVIXA. Chạy MVP (ảnh + giọng) trước khi render."
+                : "storyboard_json không đọc được.";
+            return await FailNovixaAsync(job, job.StoryboardJson ?? "[]", job.ConfigJson ?? "{}", reason, cancellationToken);
+        }
+
+        return await RenderNovixaLocalAsync(
+            job, template, scenes, job.StoryboardJson ?? "[]", job.ConfigJson ?? "{}", cancellationToken);
+    }
+
+    private async Task<ContentVideoJobDto?> RenderNovixaLocalAsync(
+        ContentRepository.VideoJobRow job,
+        ContentRepository.VideoTemplateRow template,
+        IReadOnlyList<SceneBeat> scenes,
+        string storyboardJson,
+        string configJson,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var jobDir = ContentVideoMediaPaths.JobDirectory(ResolveVideoAssetRoot(), job.Id);
+            Directory.CreateDirectory(jobDir);
+            var prepared = new List<NovixaLocalRenderGate.SceneInput>(scenes.Count);
+            for (var i = 0; i < scenes.Count; i++)
+            {
+                var scene = scenes[i];
+                if (string.IsNullOrWhiteSpace(scene.Text))
+                    return await FailNovixaAsync(job, storyboardJson, configJson, "Scene " + scene.Beat + " thiếu lời.", cancellationToken);
+                if (scene.EndSec <= scene.StartSec)
+                    return await FailNovixaAsync(job, storyboardJson, configJson, "Scene " + scene.Beat + " không có thời lượng.", cancellationToken);
+                var imagePath = await MaterializeSceneImageAsync(jobDir, scene, i, cancellationToken);
+                prepared.Add(new NovixaLocalRenderGate.SceneInput(
+                    scene.Beat, scene.Text.Trim(), scene.StartSec, scene.EndSec, imagePath));
+            }
+
+            var total = StoryboardDuration(scenes);
+            string voicePath;
+            try
+            {
+                voicePath = await ResolveJobVoicePathAsync(jobDir, configJson, total, cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return await FailNovixaAsync(job, storyboardJson, configJson, ex.Message, cancellationToken);
+            }
+
+            await _repo.UpdateVideoJobAsync(
+                job.Id, null, "Rendering", job.ExternalRenderId, job.PreviewUrl, null, null,
+                storyboardJson, configJson, null, cancellationToken);
+
+            var outputUrl = BuildPublicMediaUrl(job.Id, ContentVideoMediaPaths.OutputFileName)
+                            ?? ContentVideoMediaPaths.OutputRoute(job.Id);
+            var attempt = await NovixaLocalRenderGate.TryRenderAsync(
+                _localRenderer,
+                jobDir,
+                template.AspectRatio,
+                prepared,
+                voicePath,
+                job.Id,
+                outputUrl,
+                cancellationToken);
+            if (!attempt.Ready || !ContentVideoMediaPaths.IsJobOutputRoute(job.Id, attempt.OutputUrl))
+            {
+                return await FailNovixaAsync(
+                    job, storyboardJson, configJson,
+                    attempt.Error ?? "Render local không tạo được MP4 hợp lệ.",
+                    cancellationToken);
+            }
+
+            var published = ResolveLocalMediaPath(job.Id, ContentVideoMediaPaths.OutputFileName);
+            if (published is null)
+            {
+                return await FailNovixaAsync(
+                    job, storyboardJson, configJson,
+                    "Đã có MP4 nhưng không gắn được vào route media của job.",
+                    cancellationToken);
+            }
+
+            await _repo.UpdateVideoJobAsync(
+                job.Id,
+                null,
+                "Ready",
+                job.ExternalRenderId,
+                FirstSceneImage(scenes) ?? job.PreviewUrl,
+                attempt.OutputUrl,
+                null,
+                storyboardJson,
+                configJson,
+                DateTimeOffset.UtcNow,
+                cancellationToken);
+            return await GetJobAsync(job.Id, cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return await FailNovixaAsync(job, storyboardJson, configJson, ex.Message, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return await FailNovixaAsync(
+                job, storyboardJson, configJson,
+                "Render local thất bại: " + ex.GetType().Name, cancellationToken);
+        }
+    }
+
+    private async Task<ContentVideoJobDto?> FailNovixaAsync(
+        ContentRepository.VideoJobRow job,
+        string storyboardJson,
+        string configJson,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        await _repo.UpdateVideoJobAsync(
+            job.Id, null, "Failed", job.ExternalRenderId, job.PreviewUrl, null, reason,
+            storyboardJson, configJson, null, cancellationToken);
+        return await GetJobAsync(job.Id, cancellationToken);
+    }
+
+    private static async Task<string> ResolveJobVoicePathAsync(
+        string jobDir,
+        string configJson,
+        int storyboardTotalSec,
+        CancellationToken cancellationToken)
+    {
+        var configured = ReadConfigString(configJson, "voiceLocalPath");
+        var candidate = string.IsNullOrWhiteSpace(configured)
+            ? Path.Combine(jobDir, "voice.mp3")
+            : configured;
+        var voice = await NovixaLocalRenderGate.ProbeAudioCoversAsync(
+            jobDir, candidate, storyboardTotalSec, cancellationToken);
+        if (!voice.Ok || string.IsNullOrWhiteSpace(voice.Path))
+            throw new InvalidOperationException(voice.Error ?? "Thiếu voice.mp3 trong thư mục job.");
+        return voice.Path;
+    }
+
+    private static int StoryboardDuration(IReadOnlyList<SceneBeat> scenes)
+    {
+        var total = 0;
+        foreach (var scene in scenes)
+        {
+            if (scene.EndSec > scene.StartSec)
+                total += scene.EndSec - scene.StartSec;
+        }
+
+        return total;
+    }
+
+    private async Task<string> MaterializeSceneImageAsync(
+        string jobDir,
+        SceneBeat scene,
+        int index,
+        CancellationToken cancellationToken)
+    {
+        var dest = Path.Combine(jobDir, "scene-" + (index + 1).ToString("00") + "-source.bin");
+        if (NovixaLocalRenderGate.ImageDecodes(dest))
+            return dest;
+        if (File.Exists(dest))
+            File.Delete(dest);
+
+        NovixaE2eIsolation.ThrowIfExternalCall("Pollinations");
+        var raw = scene.ImageUrl?.Trim();
+        if (string.IsNullOrWhiteSpace(raw)
+            || !Uri.TryCreate(raw, UriKind.Absolute, out var uri)
+            || uri.Scheme != Uri.UriSchemeHttps
+            || !uri.Host.Equals("image.pollinations.ai", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "Scene " + scene.Beat + " thiếu ảnh Pollinations đã lưu trên storyboard. Renderer không tự tạo ảnh.");
+        }
+
+        try
+        {
+            using var http = new HttpClient(new SocketsHttpHandler
+            {
+                AllowAutoRedirect = true,
+                MaxAutomaticRedirections = 3,
+            })
+            {
+                Timeout = TimeSpan.FromSeconds(30),
+            };
+            using var response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                throw new InvalidOperationException("Scene " + scene.Beat + ": tải ảnh thất bại (" + (int)response.StatusCode + ").");
+            var finalUri = response.RequestMessage?.RequestUri;
+            if (finalUri is null
+                || finalUri.Scheme != Uri.UriSchemeHttps
+                || !finalUri.Host.Equals("image.pollinations.ai", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Scene " + scene.Beat + ": ảnh không còn ở image.pollinations.ai.");
+            }
+
+            await using (var input = await response.Content.ReadAsStreamAsync(cancellationToken))
+            await using (var output = File.Create(dest))
+            {
+                var buffer = new byte[81920];
+                var total = 0;
+                while (true)
+                {
+                    var read = await input.ReadAsync(buffer.AsMemory(), cancellationToken);
+                    if (read == 0)
+                        break;
+                    total += read;
+                    if (total > MaxSceneImageBytes)
+                        throw new InvalidOperationException("Scene " + scene.Beat + ": ảnh lớn hơn 8 MB.");
+                    await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                }
+
+                if (total < 32)
+                    throw new InvalidOperationException("Scene " + scene.Beat + ": ảnh rỗng.");
+            }
+        }
+        catch
+        {
+            if (File.Exists(dest))
+                File.Delete(dest);
+            throw;
+        }
+
+        if (!HasImageFileHeader(dest) || !NovixaLocalRenderGate.ImageDecodes(dest))
+        {
+            File.Delete(dest);
+            throw new InvalidOperationException("Scene " + scene.Beat + ": file tải về không phải ảnh đã giải mã.");
+        }
+
+        return dest;
+    }
+
+    private static bool HasImageFileHeader(string path)
+    {
+        Span<byte> header = stackalloc byte[12];
+        using var stream = File.OpenRead(path);
+        var read = stream.Read(header);
+        return read >= 12 && MarketingLocalVideoRenderer.IsImageHeader(header[..read]);
+    }
+
+    private static string? ReadConfigString(string json, string key)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json);
+            if (!doc.RootElement.TryGetProperty(key, out var value) || value.ValueKind != JsonValueKind.String)
+                return null;
+            return value.GetString();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static List<SceneBeat> ReadStoryboard(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return [];
+        try
+        {
+            return JsonSerializer.Deserialize<List<SceneBeat>>(json) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
     }
 
     private string? BuildPublicMediaUrl(Guid jobId, string fileName, string? publicBase = null)
@@ -838,16 +1291,6 @@ internal sealed class ContentVideoService : IContentVideoService
         [JsonPropertyName("imageUrl")]
         public string? ImageUrl { get; set; }
     }
-
-    private static string MapCreatomateStatus(string status) =>
-        status.Trim().ToLowerInvariant() switch
-        {
-            "succeeded" or "success" or "completed" => "Ready",
-            "failed" or "error" => "Failed",
-            "planned" or "waiting" or "queued" => "Queued",
-            "rendering" or "transcribing" or "processing" => "Rendering",
-            _ => "Rendering",
-        };
 
     private static ContentVideoTemplateDto MapTemplate(ContentRepository.VideoTemplateRow r) =>
         new(

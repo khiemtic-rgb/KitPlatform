@@ -21,16 +21,72 @@ export type StaffShotAction =
   | 'accept-existing'
   | 'edit-input'
   | 'picture'
-  | 'retry-camera';
+  | 'retry-camera'
+  | 'os-create-video'
+  | 'os-create-image'
+  | 'os-create-voice'
+  | 'os-create-lipsync'
+  | 'os-create-mix'
+  | 'os-accept'
+  | 'os-assemble'
+  | 'os-regenerate';
 
 export const DIRECTOR_CURRENT_TAKE_NOTE = 'Video hiện tại đã khớp hình và có thể sử dụng.';
+export const DIRECTOR_REMAKE_MOTION_LABEL = 'Tạo lại video';
+export const DIRECTOR_LIPSYNC_LABEL = 'Khớp môi';
+export const DIRECTOR_LIPSYNC_RESUME_LABEL = 'Hỏi lại môi';
+export const DIRECTOR_LIPSYNC_NEW_LABEL = 'Khớp môi mới';
+
+export type DirectorDeskCta = { label: string; action: StaffShotAction };
 
 function directorVisibleTakeUrl(snap: ShotProductionSnapshot) {
   return (
     (snap.visibleTake?.url || '').trim() ||
-    (snap.execution?.currentArtifacts.motion?.url || '').trim() ||
-    (snap.execution?.visibleArtifacts.motion?.url || '').trim()
+    (snap.execution?.currentArtifacts?.motion?.url || '').trim() ||
+    (snap.execution?.visibleArtifacts?.motion?.url || '').trim()
   );
+}
+
+/** Desk Khớp môi. Same-picture take + voice. Does not send Fal. */
+export function deskCanOfferLipsync(snap: ShotProductionSnapshot) {
+  if (snap.isSilent || snap.lipsyncBusy || snap.takeFromOtherPicture) return false;
+  if (!directorVisibleTakeUrl(snap)) return false;
+  return Boolean(snap.voiceReady);
+}
+
+/** CURRENT + playable LipSync is not a Director production CTA. */
+export function deskLipsyncOutputCurrent(snap: ShotProductionSnapshot) {
+  const lip = snap.execution?.currentArtifacts.lipsync;
+  if (lip?.validity !== 'CURRENT') return false;
+  return Boolean((lip.url || '').trim() || snap.input.hasLipSync);
+}
+
+/** Offer Khớp môi on the desk. Hidden when LipSync is already CURRENT. */
+export function deskExposeLipsyncCta(snap: ShotProductionSnapshot, forceNew?: boolean) {
+  if (forceNew) return deskCanOfferLipsync(snap);
+  if (deskLipsyncOutputCurrent(snap) && !snap.lipSyncStale) return false;
+  return deskCanOfferLipsync(snap);
+}
+
+/** Quality remake. CURRENT LipSync stays off the next-step primary. Confirm still required. */
+export function deskExposeLipsyncRemakeCta(snap: ShotProductionSnapshot) {
+  if (!deskCanOfferLipsync(snap)) return false;
+  return deskLipsyncOutputCurrent(snap) && !snap.lipSyncStale;
+}
+
+function deskLipsyncRemakeCta(): DirectorDeskCta {
+  return { label: DIRECTOR_LIPSYNC_NEW_LABEL, action: 'lipsync' };
+}
+
+function deskLipsyncCta(snap?: ShotProductionSnapshot, forceNew?: boolean): DirectorDeskCta {
+  return {
+    label: forceNew
+      ? DIRECTOR_LIPSYNC_NEW_LABEL
+      : snap?.lipsyncFailed
+        ? DIRECTOR_LIPSYNC_RESUME_LABEL
+        : DIRECTOR_LIPSYNC_LABEL,
+    action: 'lipsync',
+  };
 }
 
 /** Desk-only. Does not change nextShotProductionCommand or ACCEPT_EXISTING. */
@@ -44,11 +100,13 @@ export function shotPipelineBusy(opts: {
   busyShotId?: string;
   motionBusyId?: string;
   lipsyncBusyId?: string;
+  mixBusyId?: string;
 }) {
   const motionBusy = opts.motionBusyId === opts.shotId;
   const lipsyncBusy = opts.lipsyncBusyId === opts.shotId;
-  const pictureBusy = Boolean(opts.busyShotId === opts.shotId && !motionBusy && !lipsyncBusy);
-  return { pictureBusy, motionBusy, lipsyncBusy };
+  const mixBusy = opts.mixBusyId === opts.shotId;
+  const pictureBusy = Boolean(opts.busyShotId === opts.shotId && !motionBusy && !lipsyncBusy && !mixBusy);
+  return { pictureBusy, motionBusy, lipsyncBusy, mixBusy };
 }
 
 export function staffPrimaryCta(snap: ShotProductionSnapshot) {
@@ -75,13 +133,32 @@ export function directorExecutionNote(opts: { snap: ShotProductionSnapshot; cmd:
   return opts.snap.execution?.reason || '';
 }
 
+/** CREATE_VIDEO CTA is applyProductionOsActionAuthority. This no longer enables Tạo video. */
+export function applyOsCreateVideoCta<T extends {
+  pendingApproval: boolean;
+  phase?: 'picture' | 'motion' | 'finish';
+  note: string;
+  primary?: DirectorDeskCta;
+}>(desk: T): T {
+  return desk;
+}
+
 export function directorPictureVideoSurface(opts: {
   snap: ShotProductionSnapshot;
   cmd: ShotProductionCommand;
   hasLiveStill: boolean;
   kfApproved: boolean;
   duplicatePixel?: boolean;
-}) {
+  forceNewLipsync?: boolean;
+}): {
+  pendingApproval: boolean;
+  phase?: 'picture' | 'motion' | 'finish';
+  note: string;
+  technical?: string;
+  primary?: DirectorDeskCta;
+  secondary?: DirectorDeskCta;
+  tertiary?: DirectorDeskCta;
+} {
   if (opts.duplicatePixel) {
     return {
       pendingApproval: false,
@@ -92,8 +169,13 @@ export function directorPictureVideoSurface(opts: {
     };
   }
   const approved = Boolean(opts.kfApproved || opts.snap.keyframeApproved);
-  const pendingApproval = Boolean(opts.hasLiveStill && !approved && !opts.snap.pictureUnusable);
-  const needPicture = Boolean(!opts.hasLiveStill && (!opts.snap.keyframeReady || opts.snap.pictureUnusable));
+  const displayableStill = Boolean(
+    opts.hasLiveStill ||
+      opts.snap.picturePendingApproval ||
+      (opts.snap.keyframeReady && !approved),
+  );
+  const pendingApproval = Boolean(displayableStill && !approved && !opts.snap.pictureUnusable);
+  const needPicture = Boolean(!displayableStill && (!opts.snap.keyframeReady || opts.snap.pictureUnusable));
   if (pendingApproval) {
     return {
       pendingApproval: true,
@@ -134,28 +216,125 @@ export function directorPictureVideoSurface(opts: {
       phase: 'motion' as const,
       note,
       primary: { label: 'Dùng video này', action: 'use-current-take' as const },
-      secondary: { label: 'Tạo hình mới', action: 'picture' as const },
+      secondary: { label: DIRECTOR_REMAKE_MOTION_LABEL, action: 'motion' as const },
+      tertiary: deskExposeLipsyncCta(opts.snap, opts.forceNewLipsync)
+        ? deskLipsyncCta(opts.snap, opts.forceNewLipsync)
+        : { label: 'Tạo hình mới', action: 'picture' as const },
     };
   }
-  if (opts.cmd.type === 'CONFIRM_MOTION' && !motionCurrent && !opts.snap.motionBusy) {
+  const voiceAfterBeat =
+    (opts.cmd.type === 'ENSURE_VOICE' || opts.cmd.type === 'WAIT_VOICE') &&
+    opts.snap.motionStale &&
+    !opts.snap.acceptedTake?.url;
+  if (
+    (opts.cmd.type === 'CONFIRM_MOTION' ||
+      opts.cmd.type === 'ACCEPT_EXISTING' ||
+      opts.snap.actingBeatPendingMotion ||
+      voiceAfterBeat) &&
+    !motionCurrent &&
+    !opts.snap.motionBusy
+  ) {
+    const lipsync = deskExposeLipsyncCta(opts.snap, opts.forceNewLipsync);
     return {
       pendingApproval: false,
       phase: 'motion' as const,
-      note,
+      note:
+        opts.cmd.type === 'ACCEPT_EXISTING' || opts.snap.actingBeatPendingMotion
+          ? note || 'Diễn xuất đã đổi. Tạo video mới — Confirm mới gửi Veo.'
+          : note,
       primary: { label: 'Tạo video', action: 'motion' as const },
-      secondary: { label: 'Tạo hình mới', action: 'picture' as const },
+      secondary:
+        opts.cmd.type === 'ACCEPT_EXISTING'
+          ? { label: 'Dùng video này', action: 'accept-existing' as const }
+          : lipsync
+            ? deskLipsyncCta(opts.snap, opts.forceNewLipsync)
+            : { label: 'Tạo hình mới', action: 'picture' as const },
+      tertiary:
+        opts.cmd.type === 'ACCEPT_EXISTING'
+          ? lipsync
+            ? deskLipsyncCta(opts.snap, opts.forceNewLipsync)
+            : { label: 'Tạo hình mới', action: 'picture' as const }
+          : lipsync
+            ? { label: 'Tạo hình mới', action: 'picture' as const }
+            : undefined,
     };
   }
+  if (opts.cmd.type === 'LIPSYNC_QA_REQUIRED' && !opts.snap.lipsyncBusy) {
+    return {
+      pendingApproval: false,
+      phase: 'finish' as const,
+      note: note || 'Đánh dấu kiểm tra cảnh trước khi khớp môi.',
+      primary: deskExposeLipsyncCta(opts.snap, opts.forceNewLipsync)
+        ? deskLipsyncCta(opts.snap, opts.forceNewLipsync)
+        : { label: 'Kiểm tra Shot', action: 'qa' as const },
+      secondary: { label: DIRECTOR_REMAKE_MOTION_LABEL, action: 'motion' as const },
+      tertiary: { label: 'Tạo hình mới', action: 'picture' as const },
+    };
+  }
+  if (opts.cmd.type === 'CONFIRM_LIPSYNC' && !opts.snap.lipsyncBusy) {
+    return {
+      pendingApproval: false,
+      phase: 'finish' as const,
+      note: note || 'Video đã chọn. Tiếp theo là khớp môi — chưa ghép tập.',
+      primary: deskLipsyncCta(opts.snap, opts.forceNewLipsync),
+      secondary: { label: DIRECTOR_REMAKE_MOTION_LABEL, action: 'motion' as const },
+      tertiary: { label: 'Tạo hình mới', action: 'picture' as const },
+    };
+  }
+  if ((opts.cmd.type === 'ENSURE_MIX' || opts.cmd.type === 'WAIT_MIX') && !opts.snap.mixBusy) {
+    const lipsync = deskExposeLipsyncCta(opts.snap, opts.forceNewLipsync);
+    const remakeLip = deskExposeLipsyncRemakeCta(opts.snap);
+    return {
+      pendingApproval: false,
+      phase: 'finish' as const,
+      note: note || 'Bản mix không còn khớp nguồn hiện tại.',
+      primary: { label: 'Hoàn thiện Shot', action: 'mix' as const },
+      secondary: { label: DIRECTOR_REMAKE_MOTION_LABEL, action: 'motion' as const },
+      tertiary: lipsync
+        ? deskLipsyncCta(opts.snap, opts.forceNewLipsync)
+        : remakeLip
+          ? deskLipsyncRemakeCta()
+          : { label: 'Tạo hình mới', action: 'picture' as const },
+    };
+  }
+  if (opts.cmd.type === 'READY_FINAL' && !opts.snap.mixBusy) {
+    const remakeMix = Boolean(opts.snap.mixStale || opts.snap.finalArtifactReady === false);
+    const lipsync = deskExposeLipsyncCta(opts.snap, opts.forceNewLipsync);
+    const remakeLip = deskExposeLipsyncRemakeCta(opts.snap);
+    return {
+      pendingApproval: false,
+      phase: 'finish' as const,
+      note: remakeMix ? note || 'Bản mix không còn khớp nguồn hiện tại.' : note || 'Shot đã có video và thoại.',
+      primary: remakeMix
+        ? { label: 'Hoàn thiện Shot', action: 'mix' as const }
+        : { label: 'Xem video', action: 'watch' as const },
+      secondary: remakeLip
+        ? deskLipsyncRemakeCta()
+        : lipsync
+          ? deskLipsyncCta(opts.snap, opts.forceNewLipsync)
+          : { label: DIRECTOR_REMAKE_MOTION_LABEL, action: 'motion' as const },
+      tertiary: remakeLip || lipsync
+        ? { label: DIRECTOR_REMAKE_MOTION_LABEL, action: 'motion' as const }
+        : { label: 'Tạo hình mới', action: 'picture' as const },
+    };
+  }
+  const lipsync = deskExposeLipsyncCta(opts.snap, opts.forceNewLipsync);
   return {
     pendingApproval: false,
     phase: undefined,
     note,
-    primary: undefined,
+    primary: lipsync ? deskLipsyncCta(opts.snap, opts.forceNewLipsync) : undefined,
     secondary: { label: 'Tạo hình mới', action: 'picture' as const },
   };
 }
 
 export function directorPrimaryCta(snap: ShotProductionSnapshot) {
+  if (
+    !snap.pictureUnusable &&
+    (snap.picturePendingApproval || (snap.keyframeReady && !snap.keyframeApproved))
+  ) {
+    return { label: 'Duyệt hình', action: 'approve-picture' as const };
+  }
   const recovery = directorRecoveryOf(snap);
   if (recovery.status === 'PICTURE_REQUIRED') {
     return { label: 'Tạo hình mới', action: 'picture' as const };
@@ -173,20 +352,36 @@ export function directorPrimaryCta(snap: ShotProductionSnapshot) {
 
 /** Studio CTA only. Reuses startSceneTurbo remake. Does not restamp or touch batch I2V. */
 export function studioMotionSendOpts(snap: ShotProductionSnapshot): { remake?: boolean } {
-  if (nextShotProductionCommand(snap).type !== 'CONFIRM_MOTION') return {};
+  const type = nextShotProductionCommand(snap).type;
+  if (type !== 'CONFIRM_MOTION' && !snap.actingBeatPendingMotion) return {};
   if (snap.retryLocked || snap.execution?.gates.sameFailedInput) return {};
   if (snap.execution?.currentArtifacts.motion?.validity === 'CURRENT') return {};
-  if (snap.execution?.acceptedArtifacts.motion?.validity === 'ACCEPTED_STALE') return {};
+  if (snap.execution?.acceptedArtifacts.motion?.validity === 'ACCEPTED_STALE' && !snap.actingBeatPendingMotion) return {};
   if (snap.visibleTake?.url || snap.execution?.lastSuccessArtifacts.motion?.url) return { remake: true };
   return {};
 }
 
 /** Studio CTA only. Reuses startLipsync remake. Does not change Fal / timing. */
 export function studioLipsyncSendOpts(snap: ShotProductionSnapshot): { remake?: boolean } {
-  if (nextShotProductionCommand(snap).type !== 'CONFIRM_LIPSYNC') return {};
-  if (snap.voiceStale || snap.takeFromOtherPicture) return { remake: true };
-  if (!snap.lipSyncStale || !snap.input.hasLipSync) return {};
-  return { remake: true };
+  if (snap.lipsyncFailed) return {};
+  const type = nextShotProductionCommand(snap).type;
+  if (type === 'CONFIRM_LIPSYNC') {
+    if (snap.voiceStale || snap.takeFromOtherPicture) return { remake: true };
+    if (!snap.lipSyncStale || !snap.input.hasLipSync) return {};
+    return { remake: true };
+  }
+  if (
+    deskCanOfferLipsync(snap) &&
+    (type === 'CONFIRM_MOTION' ||
+      type === 'LIPSYNC_QA_REQUIRED' ||
+      type === 'WAIT_VIDEO_REVIEW' ||
+      type === 'ACCEPT_EXISTING' ||
+      type === 'ENSURE_MIX' ||
+      type === 'READY_FINAL')
+  ) {
+    return { remake: true };
+  }
+  return {};
 }
 
 export function shotQaMissing(
@@ -197,6 +392,7 @@ export function shotQaMissing(
   const missing: string[] = [];
   if (!shotQa?.action) missing.push('Hành động phù hợp');
   if (!shotQa?.continuity) missing.push('Continuity ổn');
+  if (!shotQa?.motion) missing.push('Chuyển động thực hiện nhịp');
   if (spoken && !shotQa?.voiceFace) missing.push('Giọng / khuôn mặt phù hợp');
   if (spoken && opts?.afterLipsync && !shotQa?.lipsyncQuality) missing.push('Lip-sync đạt');
   if (spoken && (opts?.afterMix || opts?.afterLipsync) && !shotQa?.finalAv) missing.push('Final A/V đạt');

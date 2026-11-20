@@ -152,6 +152,12 @@ const t5 = validateMotionCallback({
   providerTaskId: 'task-10',
 });
 ok(!t5.promote && t5.reason === 'SUPERSEDED', 'T5 A late after B SUCCESS → SUPERSEDED');
+const t5b = validateMotionCallback({
+  attempts: adaptMotionAttempts(shot.id, aStillRunning.runwayAttempts),
+  current: currentOf(aStillRunning),
+  providerTaskId: 'task-11',
+});
+ok(t5b.promote && t5b.resultClass === 'CURRENT', 'T5b B SUCCESS while A still PENDING does not INPUT_CHANGED');
 const patch5 = motionCallbackRunPatch({
   run: aStillRunning,
   decision: t5,

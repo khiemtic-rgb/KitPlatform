@@ -1,5 +1,6 @@
 /** Director-readable recovery. Technical hashes / provider codes stay in Technical mode. */
 
+import { directorBlockerLines } from '../famixa-short-quality-pipeline';
 import { nextShotProductionCommand, type ShotProductionCommandType } from './ShotProductionOrchestrator';
 import type { ShotProductionSnapshot } from './ShotProductionState';
 
@@ -63,6 +64,18 @@ export function directorRecoveryOf(snap: ShotProductionSnapshot): DirectorRecove
       ? rec
       : { ...rec, actions: [...rec.actions, remakePicture] };
   const finish = (rec: DirectorRecovery): DirectorRecovery => withRemake({ ...rec, nextCommand: canonical.type });
+  const qualityNotes = directorBlockerLines(snap.qualityBlockers);
+  const withQuality = (message: string) =>
+    qualityNotes.length ? [message, ...qualityNotes].filter(Boolean).join('\n') : message;
+
+  if (snap.picturePendingApproval || (snap.keyframeReady && !snap.keyframeApproved && !snap.pictureUnusable)) {
+    return finish({
+      status: 'WAIT_PICTURE_APPROVAL',
+      message: 'Ảnh này chưa duyệt. Bấm Duyệt hình — chưa tạo video.',
+      actions: [remakePicture],
+      nextCommand: 'WAIT_PICTURE_APPROVAL',
+    });
+  }
 
   if (!snap.isSilent && !snap.voiceReady) {
     const saved = snap.voiceDurationSec > 0.2;
@@ -151,9 +164,10 @@ export function directorRecoveryOf(snap: ShotProductionSnapshot): DirectorRecove
   }
 
   if (!hasVisible) {
+    const legacy = qualityNotes.find((line) => line.includes('Production OS'));
     return finish({
       status: 'VIDEO_REQUIRED',
-      message: '',
+      message: legacy || '',
       actions: [{ type: 'CONFIRM_MOTION', label: 'Tạo video', command: 'CONFIRM_MOTION' }],
       nextCommand: 'CONFIRM_MOTION',
     });
@@ -178,6 +192,7 @@ export function directorRecoveryOf(snap: ShotProductionSnapshot): DirectorRecove
       message: '',
       actions: [
         { type: 'ACCEPT_EXISTING', label: 'Dùng video này', command: 'ACCEPT_EXISTING' },
+        { type: 'CONFIRM_MOTION', label: 'Tạo lại video', command: 'CONFIRM_MOTION' },
         remakePicture,
         { type: 'EDIT_INPUT', label: 'Đổi diễn', command: 'EDIT_INPUT' },
       ],
@@ -202,7 +217,7 @@ export function directorRecoveryOf(snap: ShotProductionSnapshot): DirectorRecove
       status: 'LIPSYNC_READY',
       message: DIRECTOR_COPY.ACCEPTED_LIPSYNC,
       actions: [
-        { type: 'LIPSYNC', label: 'Lồng tiếng', command: 'CONFIRM_LIPSYNC' },
+        { type: 'LIPSYNC', label: 'Khớp môi', command: 'CONFIRM_LIPSYNC' },
         remakePicture,
       ],
       nextCommand: 'CONFIRM_LIPSYNC',
@@ -212,7 +227,7 @@ export function directorRecoveryOf(snap: ShotProductionSnapshot): DirectorRecove
   if (!snap.isSilent && !snap.qualityPassed) {
     return finish({
       status: 'QUALITY_QA',
-      message: DIRECTOR_COPY.QUALITY_QA,
+      message: withQuality(DIRECTOR_COPY.QUALITY_QA),
       actions: [{ type: 'QA', label: 'Kiểm tra video', command: 'LIPSYNC_QA_REQUIRED' }],
       nextCommand: 'LIPSYNC_QA_REQUIRED',
     });

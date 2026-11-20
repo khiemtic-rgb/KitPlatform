@@ -9,6 +9,7 @@ import {
   Drawer,
   Input,
   InputNumber,
+  Modal,
   Segmented,
   Select,
   Space,
@@ -30,9 +31,9 @@ import {
   SoundOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import './content-famixa-studio.css';
-import { apiErrorMessage } from '@/shared/api/api-error';
+import { apiErrorMessage, deskToastContent, isUnauthorizedError } from '@/shared/api/api-error';
 import { ContentKitVideoGoldenShotCard } from './ContentKitVideoGoldenShotCard';
 import { ContentFamixaMinhDnaCard } from './ContentFamixaMinhDnaCard';
 import { ContentKitVideoMasterReferenceCard } from './ContentKitVideoMasterReferenceCard';
@@ -52,26 +53,110 @@ import { ContentKitVideoProductionVideoContractCard } from './ContentKitVideoPro
 import { ContentKitVideoVideoGenerationExecutionCard } from './ContentKitVideoVideoGenerationExecutionCard';
 import { ContentFamixaProductionOverview } from './ContentFamixaProductionOverview';
 import {
+  famixaMotionEngineReady,
+  loadFamixaMotionEngine,
+  motionProviderFromEngine,
+  type FamixaMotionEngine,
+} from './famixa-motion-engine';
+import {
+  applyDirectorVideoModelSelection,
+  bindVideoTakeProvenance,
+  directorVideoSelectionFromRow,
+  hydrateDirectorVideoSelection,
+  motionEngineFromProviderModel,
+  productionAiSelectionHttpStatus,
+  productionScopeFromShotCode,
+  providerModelFromEngine,
+  revertDirectorVideoSelectionAfterPostFailure,
+  type DirectorVideoModelDisplay,
+} from './famixa-director-video-model-display';
+import {
+  directorTimingFromPreview,
+  directorTimingFromSnapshot,
+  explicitDirectorSpeechInterval,
+  isAuthoritativeDirectorTiming,
+  type DirectorProductionDurationSec,
+  type DirectorProductionTiming,
+  type DirectorSpeechInterval,
+} from './famixa-director-timing';
+import { qualityTierOf, readQualityTier } from './famixa-quality-tier';
+import {
+  formatProductionActionReason,
+  EPISODE_ASSEMBLY_ORDER,
+  EPISODE_ASSEMBLY_SHOT_CODE,
+  mayExecuteProductionAction,
+  mayAuthorizeTenantEp01Image,
+  mayMutateProductionOs,
+  mayPostProductionEpisode,
+  productionNodeArtifactId,
+  resolveCurrentVoiceArtifactId,
+  productionOsBuildIdForShot,
+  productionOsDeskShots,
+  productionOsIdempotencyKey,
+  productionOsLegacyPathClosed,
+  productionOsLegacyRefuseNote,
+  isProductionOsTestShot,
+  resolveShotWorkspaceIdentity,
+  formatShotIdentityError,
+  looksLikeProductionShotCode,
+  prepareOfficialVoiceIngress,
+  prepareOfficialLipsyncIngress,
+  VIDEO_TAKE_CURRENT_INPUT,
+  VOICE_PRODUCTION_OS_NOT_READY,
+  LIPSYNC_PRODUCTION_OS_NOT_READY,
+  OFFICIAL_SH02_LINE_ID,
+  OFFICIAL_SH02_SHOT_CODE,
+  OFFICIAL_SH02_VIDEO_TAKE_ID,
+  OFFICIAL_SH02_VOICE_ARTIFACT_ID,
+  PRODUCTION_OS_CTA,
+  PRODUCTION_OS_TEST_SCOPE_ID,
+} from './production-os-action-authority';
+import { ACCEPT_EXISTING_NON_AUTHORITY_NOTE, acceptExistingAuthorityEffect } from './famixa-accept-existing-authority';
+import { approvedDialogueIntervals, clickTimeLipsyncClock, currentLipsyncMeasurement, episodeAssemblyNotice, futureDeskActing, futureDeskStory, directorBlockerLines, productionClockBlockers, voiceDraftForRequest } from './famixa-short-quality-pipeline';
+import { osPreviewIdentityFromMeta, previewBytesMatch, type OsPlaybackIdentity } from './famixa-short-acceptance';
+import { isVeoMotionTaskId, veoAssembleDurationSec, veoMappedDurationSec, veoSpeechOverflowReason } from './famixa-veo-take-playback';
+import {
+  canStampFalLipsyncFinal,
+  isFalLipsyncTaskId,
+  isFalPlaybackSrc,
+  playableFalLipsyncSrc,
+} from './famixa-fal-lipsync-playback';
+import {
   ContentFamixaShotProductionPanel,
   applyProductionStamps,
   computeInputFingerprints,
   ensureShotVoiceAssets,
+  asPlayableVideoBlob,
+  finalArtifactIdentityOf,
+  loadFinalArtifact,
   loadFinalBlob,
+  playableCurrentFinalBlob,
+  resolveCurrentProductionVideoSource,
   oneShotAssembleBody,
   saveFinalBlob,
   snapshotOfShot,
-  failedJobsOnThisKf,
-  runwayFailedOnCurrentKf,
   nextShotProductionCommand,
   episodeFinishReady,
   stampAssemble,
   studioLipsyncSendOpts,
-  acceptExistingTake,
   detachAvAfterPictureChange,
-  lastSuccessMotionTaskId,
+  actingBeatFingerprintOf,
   adaptMotionAttempts,
   currentPictureInputOf,
+  createLipSyncAttemptProvenance,
+  createIdbVoicePhysicalStore,
+  freezeLipSyncExecutionInput,
   freezeLipSyncInput,
+  buildLipSyncProviderHowRequest,
+  loadFrozenVoicePhysicalBytes,
+  mintVoicePhysicalArtifactId,
+  resolveLipSyncRemakeSources,
+  resolveStoredVoicePhysicalSource,
+  saveVoicePhysicalArtifact,
+  voicePhysicalStorageKey,
+  stampLipSyncAttemptProviderRequest,
+  submitLipSyncFrozenExecution,
+  voicePhysicalIdentityOf,
   freezeMixInput,
   freezeMotionInput,
   hasProductionTakeLineage,
@@ -109,8 +194,6 @@ import {
 } from './kit-video-director-nav';
 import { ContentKitVideoDirectorProductionWorkspace } from './ContentKitVideoDirectorProductionWorkspace';
 import {
-  countImageReviewed,
-  countVideoReviewed,
   deriveSeriesTrack,
   directorPictureHoldCopy,
   mergeCanonicalShotQa,
@@ -126,6 +209,9 @@ import {
   resolveSceneCharacterRefs,
 } from './kit-video-production-workflow';
 import { buildSceneViews } from './kit-video-scene-workspace';
+import { ContentFilmProductionDesk } from './ContentFilmProductionDesk';
+import { FILM_SERIES_DESK_STEPS } from './film-production-orchestrator';
+import { characterDeskForFilm, reopenFilmSurface, usesFilmScriptDesk } from './video-pipeline';
 import { ContentKitVideoEngineCard } from './ContentKitVideoEngineCard';
 import { ContentKitVideoVisualSystemCard } from './ContentKitVideoVisualSystemCard';
 import {
@@ -136,6 +222,7 @@ import {
   fetchContentSettings,
   generateContentSeriesStill,
   qaContentSeriesStill,
+  fetchContentSeriesFalVideo,
   getContentSeriesTurbo,
   startContentSeriesLipsync,
   previewContentSeriesTts,
@@ -160,6 +247,30 @@ import {
   createFamixaCharacter,
   type ContentSeriesBuildSummary,
   assembleContentSeriesCut,
+  createProductionRequest,
+  fetchProductionPreviewMedia,
+  fetchProductionKeyframeMedia,
+  getProductionKeyframe,
+  resolveVisualShot,
+  readVisualShotBinding,
+  fetchVisualAssetImage,
+  approveVisualShotBinding,
+  fetchProductionVoiceMedia,
+  getProductionCurrentVoice,
+  materializeVoiceProductionIngress,
+  materializeLipsyncProductionIngress,
+  getProductionPreview,
+  getAuthoritativeProductionVideo,
+  getCreateVideoInputPreview,
+  getProductionAiSelection,
+  getProductionShotActions,
+  getProductionShotState,
+  materializeProductionDirectorTiming,
+  upsertProductionAiSelection,
+  type ProductionShotActions,
+  type ProductionShotState,
+  type AuthoritativeVideoTakeMeta,
+  type ProductionVoiceArtifactMeta,
   startContentSeriesTurbo,
   probeContentSeriesTake,
   type CharacterLibraryViewRow,
@@ -167,10 +278,25 @@ import {
   type ProjectVisualStyleRow,
   type ContentBrand,
   type ContentSeriesVoice,
-  fetchImageDirectorReview,
   fetchKitVideoProductionShots,
-  fetchVideoGenerationExecution,
 } from '@/shared/api/content.api';
+import {
+  afterVisualSearch,
+  buildShotVisualDemand,
+  interpretVisualResolve,
+  normalizeFilmBrand,
+  type VisualDeskView,
+} from './visual-studio-still';
+import { fetchTenantAiConfig } from '@/shared/api/tenant-ai-config.api';
+import { providerKeyFlagsFromSources } from './famixa-tenant-provider-keys';
+import { productionKeyframeIsDisplayable, productionPictureBlockCopy } from './famixa-production-still';
+import { NovixaShortStrategyDesk } from './NovixaShortStrategyDesk';
+import {
+  backendAcceptedStrategy,
+  isConfirmedStaticVoiceOver,
+  strategyClaim,
+  strategyEngaged,
+} from './novixa-short-strategy';
 import {
   CONTINUITY_GATES,
   FAMIXA_PACK_SKELETON,
@@ -223,6 +349,7 @@ import {
   localFileRef,
   mergeRemotePilot,
   linesForScene,
+  rebindVoicePhysicalGraphRef,
   replaceStoryFromParse,
   refreshSpokenLinesFromPack,
   newRoleRow,
@@ -264,7 +391,6 @@ import {
   shortRunOf,
   stillsForShort,
   shotRunOf,
-  shotCharacterIds,
   type FamixaSeriesShot,
   type FamixaListenCue,
   type SceneContinuityLock,
@@ -282,7 +408,7 @@ import {
   sceneKfToGenerate,
 } from './content-famixa-batch-plan';
 import { mapPreviewCut, shotsInInclusiveRange } from './content-famixa-preview-cut';
-import { productionShorts, setShortSeconds, canWorkV2Scene, v2SceneBlockReason, readyV2VideoShots, isLockedTemplateKf, isOperatorSuppliedKf, visualLockShot, canRetryTurboStart, shouldResumeTurboPoll, isTurboRateLimit, isTurboDailyQuota, parseRetryAfterSec, loadRunwayQuietUntil, persistRunwayQuietUntil, clearRunwayQuietUntil, nextRunwayQuietUntil, runwayQuietRemainMin, shouldResumeLipsync, estimateFalLipsyncUsdForShots, lipsyncVideoUrl, parseFalLipsyncRef, takeVideoUrl, lipsyncQaReady, lipsyncSendEligible, normalizeLipsyncModel, normalizeLipsyncSyncMode, lipsyncTierOf, lipsyncTaskPrefix, parseFalJobIdFromError, shotI2vPromptHash, clampShortSeconds } from './content-famixa-prod-v2';
+import { productionShorts, setShortSeconds, canWorkV2Scene, v2SceneBlockReason, readyV2VideoShots, isLockedTemplateKf, isOperatorSuppliedKf, visualLockShot, canRetryTurboStart, shouldResumeTurboPoll, isTurboRateLimit, isTurboDailyQuota, parseRetryAfterSec, loadRunwayQuietUntil, persistRunwayQuietUntil, clearRunwayQuietUntil, nextRunwayQuietUntil, runwayQuietRemainMin, shouldResumeLipsync, lipsyncFalHasNoOutput, estimateFalLipsyncUsdForShots, lipsyncVideoUrl, parseFalLipsyncRef, takeVideoUrl, lipsyncQaReady, lipsyncSendEligible, normalizeLipsyncModel, normalizeLipsyncSyncMode, lipsyncTierOf, lipsyncTaskPrefix, lipsyncResumeTaskId, parseFalJobIdFromError, shotI2vPromptHash } from './content-famixa-prod-v2';
 import { assembleVideoUrl, finalSourceBlockReason, resolveTakeUrl, stampFalFinal, stampMuteTake } from './content-famixa-final-source';
 import {
   attemptToDiagRow,
@@ -381,7 +507,20 @@ import {
   mergeReferencePack,
   nextShotNeedingKf,
 } from './content-famixa-kf-pipeline';
-import { applyDialogueMap, coverageOf, dialogueMapNeedsHeal, linesForShot, lipsyncSpeakerMismatch, multiSpeakerBlock } from './content-famixa-dialogue-map';
+import { applyDialogueMap, coverageOf, dialogueMapNeedsHeal, linesForShot, lipsyncNeedsSpeakerPick, lipsyncSpeakerMismatch, multiSpeakerBlock } from './content-famixa-dialogue-map';
+import { clearTwoFaceLipsyncMixOnly, leftoverTwoFaceMixOnly } from './famixa-lipsync-two-face-mix';
+import {
+  assertLipSyncSpeakerTargetReady,
+  canMutateLiveSpeakerTarget,
+  isSpeakerFaceBandMark,
+  lipsyncSpeakerCharacterIdFromFaceMark,
+  lipsyncSpeakerPickOf,
+  lipsyncSpeakerSideOfFaceMark,
+  shouldOmitRejectedSpeakerPin,
+  LIPSYNC_SPEAKER_MARK_FRAME_NUMBER,
+  stampLipsyncSpeakerPick,
+} from './famixa-lipsync-speaker-target';
+import { mapFrozenSpeakerToFalV3How } from './famixa-fal-v3-lipsync-speaker-how';
 import { ACTING_EMOTIONS, actingTtsPerformText, actingTtsVoiceSettings, resolveLinePerformance } from './content-famixa-acting-law';
 import { isChildFromBible, linePerformanceOf, patchDialoguePerformance, patchVoiceBible, stampDialoguePerformances } from './content-famixa-performance';
 import {
@@ -409,15 +548,12 @@ import { findUnregisteredNames } from './content-famixa-character-create';
 import { clipOf } from './content-famixa-shot-catalog';
 import {
   MIX_STAFF_EPISODE_ROLE,
-  PROJECT_VISUAL_MODE,
   characterVoiceProfile,
   mergeSameSpeakerCues,
   shotProductionInputOf,
   videoProductionPreflight,
-  type DialogueCue,
-  type ShotProductionInput,
 } from './famixa-video-audio-lipsync-pipeline';
-import { editorialDurationOf, performanceDurationOf, providerDurationOf, shotTimingOf } from './famixa-shot-production-timing';
+import { dialogueEndOf, dialogueFloorOf, editorialDurationOf, performanceDurationOf, providerDurationOf } from './famixa-shot-production-timing';
 import { famixaMotionBatchCost, famixaMotionGenerateCost, quoteFamixaProviderCost } from './famixa-ai-provider-cost';
 import { selectFamixaProvider } from './famixa-ai-provider-routing-foundation';
 import { lastFrameFromUrlOf, smoothnessOf } from './famixa-shot-smoothness-contract';
@@ -431,7 +567,6 @@ import {
 import {
   FAMIXA_VISUAL_MODE,
   existingScenePipelineStatus,
-  legacyPhotorealCanonClaim,
   lockedStudioClaim,
   resolveSceneVisualReferences,
 } from './kit-video-visual-mode';
@@ -541,7 +676,7 @@ function ContinuityMemoryCard({
 
 let persistCache: { json: string; state: SeriesPilotState } | undefined;
 
-function persist(next: SeriesPilotState, setState: (s: SeriesPilotState) => void) {
+function persist(next: SeriesPilotState, setState: (s: SeriesPilotState) => void, rememberLocal = true) {
   const seeded =
     next.buildId ||
     (next.packDraft ?? '').trim() ||
@@ -562,7 +697,7 @@ function persist(next: SeriesPilotState, setState: (s: SeriesPilotState) => void
     setState(hit);
     return hit;
   }
-  saveSeriesPilot(bound, json);
+  if (rememberLocal) saveSeriesPilot(bound, json);
   const cloned: SeriesPilotState = {
     ...bound,
     roles: [...bound.roles],
@@ -663,15 +798,10 @@ function runwayCredits(seconds: number) {
   return { sec: quote.billedQuantity, credits: quote.estimatedAmount ?? 0 };
 }
 
-const ENGINE_KEY = 'kit.famixaSeries.engine';
 const VOICE_KEY = 'kit.famixaSeries.voice';
 
-function loadEngine(): 'turbo' | 'wan' {
-  try {
-    return localStorage.getItem(ENGINE_KEY) === 'wan' ? 'wan' : 'turbo';
-  } catch {
-    return 'turbo';
-  }
+function loadEngine(): FamixaMotionEngine {
+  return loadFamixaMotionEngine();
 }
 
 function loadVoice(): 'elevenlabs' | 'f5' {
@@ -682,7 +812,8 @@ function loadVoice(): 'elevenlabs' | 'f5' {
   }
 }
 
-function generateCost(engine: 'turbo' | 'wan', seconds: number) {
+function generateCost(engine: FamixaMotionEngine, seconds: number) {
+  if (engine === 'veo') return { credits: null as number | null, label: 'Google Veo 3 · Vertex' };
   return famixaMotionGenerateCost(engine, seconds);
 }
 
@@ -812,8 +943,45 @@ function readImageFile(file: File) {
   });
 }
 
-export function ContentFamixaSeriesTab() {
-  const { message, modal } = App.useApp();
+export function ContentFamixaSeriesTab({
+  catalogCode,
+  seriesLine,
+  pipelineSteps,
+  workflowKey,
+  brandCode,
+}: {
+  catalogCode?: string;
+  seriesLine?: string;
+  pipelineSteps?: string[] | null;
+  workflowKey?: string | null;
+  brandCode?: string | null;
+} = {}) {
+  const catalog = (catalogCode || '').trim() || FAMIXA_SERIES_CODE;
+  const filmLed = usesFilmScriptDesk(workflowKey);
+  const characterScope = { seriesCode: catalog, workflowKey };
+  const characterDesk = characterDeskForFilm(characterScope);
+  const famixaCharacters = characterDesk === 'famixa';
+  const deskTitle = (seriesLine || '').trim() || 'Famixa – Video giáo dục';
+  const episodeSeriesTitle = (seriesLine || '').trim() || 'Famixa';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkDone = useRef('');
+  const app = App.useApp();
+  const modal = app.modal;
+  const message = useMemo(() => {
+    const inner = app.message;
+    const error = ((content: unknown, ...rest: unknown[]) => {
+      const text = deskToastContent(content);
+      if (content && typeof content === 'object' && 'content' in (content as object)) {
+        return inner.error({
+          ...(content as { content?: unknown; key?: string; duration?: number }),
+          content: text,
+          key: (content as { key?: string }).key || 'famixa-desk-err',
+        });
+      }
+      return inner.error({ content: text, key: 'famixa-desk-err' }, ...(rest as []));
+    }) as typeof inner.error;
+    return { ...inner, error };
+  }, [app.message]);
   const [state, setState] = useState<SeriesPilotState>(emptyPilot);
   const [packText, setPackText] = useState('');
   const [activeId, setActiveId] = useState<string | undefined>();
@@ -821,11 +989,36 @@ export function ContentFamixaSeriesTab() {
   const [stillOnlyActive, setStillOnlyActive] = useState(true);
   const [packResult, setPackResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [builds, setBuilds] = useState<ContentSeriesBuildSummary[]>([]);
+  const [catalogAuthRequired, setCatalogAuthRequired] = useState(false);
+  const [catalogSettled, setCatalogSettled] = useState(false);
   const [progressById, setProgressById] = useState<Record<string, ProductionProgressRow>>({});
   const [buildBusy, setBuildBusy] = useState(false);
   const [sessionClips, setSessionClips] = useState<Record<string, string>>({});
   const [turboBusy, setTurboBusy] = useState<string | undefined>();
-  const turboBusyRef = useRef<string | undefined>();
+  const [osPreviewByShot, setOsPreviewByShot] = useState<Record<string, string>>({});
+  const [osKeyframeByShot, setOsKeyframeByShot] = useState<Record<string, string>>({});
+  const [osPictureBlockByShot, setOsPictureBlockByShot] = useState<Record<string, string>>({});
+  const [osPreviewIdentityByShot, setOsPreviewIdentityByShot] = useState<Record<string, OsPlaybackIdentity>>({});
+  const [osActionsByShot, setOsActionsByShot] = useState<Record<string, ProductionShotActions>>({});
+  const [strategyAcceptedByShot, setStrategyAcceptedByShot] = useState<Record<string, boolean>>({});
+  const [osStateByShot, setOsStateByShot] = useState<Record<string, ProductionShotState>>({});
+  const [osAuthoritativeByShot, setOsAuthoritativeByShot] = useState<Record<string, AuthoritativeVideoTakeMeta>>({});
+  const [osVoiceByShot, setOsVoiceByShot] = useState<Record<string, ProductionVoiceArtifactMeta>>({});
+  const [osVoiceUrlByShot, setOsVoiceUrlByShot] = useState<Record<string, string>>({});
+  const [osVideoModelByShot, setOsVideoModelByShot] = useState<Record<string, DirectorVideoModelDisplay>>({});
+  const [osDirectorTimingByShot, setOsDirectorTimingByShot] = useState<Record<string, DirectorProductionTiming>>({});
+  const [directorTimingBusy, setDirectorTimingBusy] = useState(false);
+  const [directorSelectionBusy, setDirectorSelectionBusy] = useState(false);
+  const osActionsByShotRef = useRef(osActionsByShot);
+  osActionsByShotRef.current = osActionsByShot;
+  const osStateByShotRef = useRef(osStateByShot);
+  osStateByShotRef.current = osStateByShot;
+  const osPreviewIdentityByShotRef = useRef(osPreviewIdentityByShot);
+  osPreviewIdentityByShotRef.current = osPreviewIdentityByShot;
+  const osVideoModelByShotRef = useRef(osVideoModelByShot);
+  osVideoModelByShotRef.current = osVideoModelByShot;
+  const osInflightRef = useRef<Record<string, string>>({});
+  const turboBusyRef = useRef<string | undefined>(undefined);
   const [lipsyncBusy, setLipsyncBusy] = useState<string | undefined>();
   const turboLockRef = useRef(Promise.resolve());
   const turboLaunchRef = useRef(new Set<string>());
@@ -834,7 +1027,7 @@ export function ContentFamixaSeriesTab() {
   const [assembleBusy, setAssembleBusy] = useState(false);
   const assembleAspect = outputAspectOf(state);
   const [stillBusy, setStillBusy] = useState<string | undefined>();
-  const kfInflightRef = useRef<string | undefined>(undefined);
+  const kfInflightRef = useRef<Record<string, true>>({});
   const [memOpen, setMemOpen] = useState(false);
   const [prodView, setProdView] = useState<'overview' | 'shot'>('overview');
   const [seriesDesk, setSeriesDesk] = useState<'list' | 'workspace'>('list');
@@ -867,9 +1060,13 @@ export function ContentFamixaSeriesTab() {
   const [studioPane, setStudioPane] = useState<'script' | 'voice' | 'shorts' | 'studio' | 'timeline' | 'advanced'>(
     'script',
   );
-  const [engine, setEngine] = useState<'turbo' | 'wan'>(loadEngine);
+  const [watchClip, setWatchClip] = useState<{ title: string; url: string }>();
+  const [engine, setEngine] = useState<FamixaMotionEngine>(loadEngine);
   const [voiceProvider, setVoiceProvider] = useState<'elevenlabs' | 'f5'>(loadVoice);
-  const [keys, setKeys] = useState({ runway: false, fal: false, elevenLabs: false, gemini: false });
+  const [keys, setKeys] = useState({ runway: false, fal: false, elevenLabs: false, gemini: false, veo: false });
+  const keysRef = useRef(keys);
+  keysRef.current = keys;
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
   const [voices, setVoices] = useState<ContentSeriesVoice[]>([]);
   const [voicesLoading, setVoicesLoading] = useState(true);
   const [universe, setUniverse] = useState<FamixaCharacterRecord[]>([]);
@@ -879,6 +1076,15 @@ export function ContentFamixaSeriesTab() {
   const [packSeed, setPackSeed] = useState('');
   const [draftBusy, setDraftBusy] = useState(false);
   const [famixaBrand, setFamixaBrand] = useState<ContentBrand | undefined>();
+  const [filmBrandCode, setFilmBrandCode] = useState(() => normalizeFilmBrand(brandCode));
+  const filmBrandRef = useRef(filmBrandCode);
+  filmBrandRef.current = filmBrandCode;
+  const [visualByShot, setVisualByShot] = useState<Record<string, VisualDeskView & { url?: string }>>({});
+  const [visualBrandChoice, setVisualBrandChoice] = useState('');
+  const visualBrandChoiceRef = useRef('');
+  visualBrandChoiceRef.current = visualBrandChoice;
+  const visualBoundBrandRef = useRef<Record<string, string>>({});
+  const [visualBrandChoices, setVisualBrandChoices] = useState<{ code: string; name: string }[]>([]);
   const videoContext = useMemo(
     () => formatSeriesVideoContext(famixaBrand?.knowledge),
     [famixaBrand],
@@ -887,6 +1093,7 @@ export function ContentFamixaSeriesTab() {
   stateRef.current = state;
   const ttsUrls = useRef(new Map<string, string>());
   const ttsBlobs = useRef(new Map<string, Blob>());
+  const voicePhysicalStoreRef = useRef(createIdbVoicePhysicalStore());
   const ttsSent = useRef(new Map<string, string>());
   const ttsAudio = useRef<HTMLAudioElement | null>(null);
   const ttsStop = useRef(false);
@@ -905,8 +1112,8 @@ export function ContentFamixaSeriesTab() {
   const serverSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const refreshBuilds = () =>
     Promise.all([
-      fetchContentSeriesBuilds(FAMIXA_SERIES_CODE),
-      fetchProductionProgressList(FAMIXA_SERIES_CODE).catch(() => ({ items: [] as ProductionProgressRow[] })),
+      fetchContentSeriesBuilds(catalog),
+      fetchProductionProgressList(catalog).catch(() => ({ items: [] as ProductionProgressRow[] })),
     ])
       .then(([rows, list]) => {
         setBuilds(rows);
@@ -915,40 +1122,82 @@ export function ContentFamixaSeriesTab() {
           if (item.buildId) map[item.buildId] = item;
         }
         setProgressById(map);
+        setCatalogAuthRequired(false);
+        setCatalogSettled(true);
       })
-      .catch(() => undefined);
+      .catch((error) => {
+        if (isUnauthorizedError(error)) setCatalogAuthRequired(true);
+        setCatalogSettled(true);
+      });
 
   const lastSlimJson = useRef('');
+  const explicitBuildRef = useRef<string | null>(null);
+  const flushServerSaveRef = useRef<() => void>(() => undefined);
+  const writeServerGraph = (next: SeriesPilotState) => {
+    const slim = slimPilotForServer(next) as unknown as Record<string, unknown>;
+    const json = JSON.stringify(slim);
+    if (json === lastSlimJson.current) return;
+    lastSlimJson.current = json;
+    const openId = explicitBuildRef.current;
+    if (openId) {
+      void putContentSeriesBuild({
+        id: openId,
+        seriesCode: catalog,
+        graph: slim,
+      })
+        .then(() => fetchProductionProgress(openId))
+        .then((item) => setProgressById((cur) => ({ ...cur, [item.buildId]: item })))
+        .catch(() => {
+          if (lastSlimJson.current === json) lastSlimJson.current = '';
+          message.error('Không lưu được nội dung phim.');
+        });
+      return;
+    }
+    if (next.buildId) {
+      void putContentSeriesBuild({
+        id: next.buildId,
+        seriesCode: catalog,
+        graph: slim,
+      })
+        .then(() => fetchProductionProgress(next.buildId!))
+        .then((item) => setProgressById((cur) => ({ ...cur, [item.buildId]: item })))
+        .catch(() => undefined);
+    }
+    void putContentSeriesPilot({
+      seriesCode: catalog,
+      graph: slim,
+    }).catch(() => undefined);
+  };
   const queueServerSave = (next: SeriesPilotState) => {
     if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
-    serverSaveTimer.current = setTimeout(() => {
-      const slim = slimPilotForServer(next) as unknown as Record<string, unknown>;
-      const json = JSON.stringify(slim);
-      if (json === lastSlimJson.current) return;
-      lastSlimJson.current = json;
-      if (next.buildId) {
-        void putContentSeriesBuild({
-          id: next.buildId,
-          seriesCode: FAMIXA_SERIES_CODE,
-          graph: slim,
-        })
-          .then(() => fetchProductionProgress(next.buildId!))
-          .then((item) => setProgressById((cur) => ({ ...cur, [item.buildId]: item })))
-          .catch(() => undefined);
-      }
-      void putContentSeriesPilot({
-        seriesCode: FAMIXA_SERIES_CODE,
-        graph: slim,
-      }).catch(() => undefined);
-    }, 2400);
+    const delay = explicitBuildRef.current ? 400 : 2400;
+    serverSaveTimer.current = setTimeout(() => writeServerGraph(next), delay);
   };
-  const persistState = (next: SeriesPilotState) => {
+  flushServerSaveRef.current = () => {
+    if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
+    writeServerGraph(stateRef.current);
+  };
+  const persistState = (next: SeriesPilotState, server = true) => {
     const stamped = applyProductionStamps(stateRef.current, next);
-    const cloned = persist(ensureScriptFollowsVoice(syncVoiceOnlyRoles(stamped)), setState);
+    const selectedSession = Boolean(explicitBuildRef.current);
+    const cloned = persist(ensureScriptFollowsVoice(syncVoiceOnlyRoles(stamped)), setState, !selectedSession);
     stateRef.current = cloned;
-    queueServerSave(cloned);
+    if (server) queueServerSave(cloned);
     return cloned;
   };
+  const commitFilmGraph = (next: SeriesPilotState) => {
+    const id = next.buildId || stateRef.current.buildId || explicitBuildRef.current;
+    const saved = persistState(id ? { ...next, buildId: id } : next, false);
+    if (!id) {
+      persistState(saved, true);
+      return;
+    }
+    const slim = slimPilotForServer(saved) as unknown as Record<string, unknown>;
+    void putContentSeriesBuild({ id, seriesCode: catalog, graph: slim }).catch(() => {
+      message.error('Không lưu được tiến độ phim.');
+    });
+  };
+  const filmSteps = pipelineSteps?.length ? pipelineSteps : [...FILM_SERIES_DESK_STEPS];
 
   const setOutputAspect = (aspect: '16:9' | '9:16') => {
     const live = stateRef.current;
@@ -1018,18 +1267,30 @@ export function ContentFamixaSeriesTab() {
   };
 
   const openBuild = (id: string) => {
-    if (id === state.buildId) {
+    setStudioShotId(undefined);
+    if (id === state.buildId && explicitBuildRef.current === id) {
       setSeriesDesk('workspace');
       return Promise.resolve();
     }
-    persistState(stateRef.current);
     setBuildBusy(true);
     return fetchContentSeriesBuild(id)
       .then(async (row) => {
+        explicitBuildRef.current = row.id;
         const remote = (row.graph && typeof row.graph === 'object' ? row.graph : {}) as SeriesPilotState;
+        const live = stateRef.current;
+        const liveText = live.buildId === row.id ? (live.packDraft || live.scriptDraft || '').trim() : '';
+        const remoteText = (remote.packDraft || remote.scriptDraft || '').trim();
+        const text = liveText || remoteText;
         clearSessionTts();
-        const next = persistState(ensurePilotGraph({ ...remote, buildId: row.id, schemaVersion: PILOT_SCHEMA }));
-        setPackText(next.packDraft ?? '');
+        const next = persistState(
+          ensurePilotGraph({
+            ...remote,
+            buildId: row.id,
+            schemaVersion: PILOT_SCHEMA,
+            ...(text ? { packDraft: text, scriptDraft: text } : {}),
+          }),
+        );
+        setPackText(next.packDraft || next.scriptDraft || '');
         await hydratePilotKeyframes(await hydratePilotCanon(next));
         setState((cur) => ({ ...cur, runs: { ...cur.runs } }));
         await hydrateSessionTts(stateRef.current);
@@ -1064,8 +1325,8 @@ export function ContentFamixaSeriesTab() {
       ...newSeriesBuild(stateRef.current),
       packDraft: input.script || '',
       episode: {
-        seriesCode: FAMIXA_SERIES_CODE,
-        seriesTitle: 'Famixa',
+        seriesCode: catalog,
+        seriesTitle: episodeSeriesTitle,
         episode: input.episode,
         title: input.title,
         premise: input.premise,
@@ -1182,6 +1443,16 @@ export function ContentFamixaSeriesTab() {
     ttsSent.current.set(cue.id, cue.text);
     void saveTtsBlob(ttsLineKey(cue.id, voiceId), blob);
     void saveTtsBlob(ttsTextKey(cue.text, voiceId), blob);
+    const physicalId = voicePhysicalIdentityOf({
+      artifactId: mintVoicePhysicalArtifactId(),
+      buildId: stateRef.current.buildId,
+      lineId: cue.id,
+      voiceId,
+    });
+    if (physicalId) {
+      const buf = await blob.arrayBuffer();
+      await saveVoicePhysicalArtifact(physicalId, new Uint8Array(buf), voicePhysicalStoreRef.current);
+    }
     void measureAudioSec(blob).then((sec) => {
       if (sec <= 0) return;
       const cur = stateRef.current;
@@ -1194,6 +1465,14 @@ export function ContentFamixaSeriesTab() {
             characterId: cue.characterId,
             duration: Number(sec.toFixed(2)),
             status: 'ready',
+            ...(physicalId
+              ? {
+                  artifactId: physicalId.artifactId,
+                  storageKey: voicePhysicalStorageKey(physicalId),
+                  voiceId,
+                  physicalArtifactResolvable: true,
+                }
+              : {}),
             selectionSnapshot: preview.selectionSnapshot,
           },
         },
@@ -1252,7 +1531,7 @@ export function ContentFamixaSeriesTab() {
       commitVoicePreview();
       await playCueAudio(url);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : apiErrorMessage(e, 'Không nghe được thoại.'));
+      message.error({ content: apiErrorMessage(e, 'Không nghe được thoại.'), key: 'famixa-desk-err' });
     } finally {
       if (!ttsStop.current) setPlayingLineId(undefined);
       setTtsBusy(false);
@@ -1332,7 +1611,7 @@ export function ContentFamixaSeriesTab() {
             }
             message.success(`Voice COMPLETE · ${report.generatedLineCount} câu · ${report.generatedCharCount} ký tự.`);
           } catch (e) {
-            message.error(e instanceof Error ? e.message : apiErrorMessage(e, 'Không nghe được thoại.'));
+            message.error({ content: apiErrorMessage(e, 'Không nghe được thoại.'), key: 'famixa-desk-err' });
           } finally {
             setPlayingLineId(undefined);
             setTtsBusy(false);
@@ -1395,7 +1674,7 @@ export function ContentFamixaSeriesTab() {
             a.click();
             message.success(`COMPLETE · ${fileName}`);
           } catch (e) {
-            message.error(e instanceof Error ? e.message : apiErrorMessage(e, 'Không ghép được MP3 cả tập.'));
+            message.error({ content: apiErrorMessage(e, 'Không ghép được MP3 cả tập.'), key: 'famixa-desk-err' });
           } finally {
             setPlayingLineId(undefined);
             setTtsBusy(false);
@@ -1435,6 +1714,7 @@ export function ContentFamixaSeriesTab() {
   const ready = rolesReady(state.roles);
   const shorts = state.shorts ?? [];
   const shots = episodeShots(state);
+  const deskShots = prodMode === 'director' ? productionOsDeskShots(state.buildId, shots) : shots;
   const ep = state.episode;
   const activeShort = shorts.find((s) => s.id === activeShortId) ?? shorts[0];
   const shortRun = activeShort ? shortRunOf(state, activeShort.id) : undefined;
@@ -1460,40 +1740,29 @@ export function ContentFamixaSeriesTab() {
   );
 
   useEffect(() => {
-    void fetchCharacterLibrary()
+    if (!famixaCharacters) {
+      setLibrary([]);
+      return;
+    }
+    void fetchCharacterLibrary(characterScope)
       .then((row) => setLibrary(row.items ?? []))
       .catch(() => setLibrary([]));
-  }, []);
+  }, [famixaCharacters, catalog, workflowKey]);
 
   useEffect(() => {
     const loadProd = () => {
       void fetchKitVideoProductionShots()
         .then(async (bundle) => {
           const list = bundle.shots || [];
-          const live = await Promise.all(
-            list.map(async (shot) => {
-              const [review, generation] = await Promise.all([
-                fetchImageDirectorReview(shot.id).catch(() => undefined),
-                fetchVideoGenerationExecution(shot.id).catch(() => undefined),
-              ]);
-              return { review, generation };
-            }),
-          );
           const locked =
-            (Boolean(bundle.master?.lockedAt) &&
-              (bundle.dna?.status || '').toUpperCase() === 'LOCKED' &&
-              (bundle.pack?.status || '').toUpperCase() === 'LOCKED') ||
-            live.some(
-              (row) =>
-                (row.review?.master || '').toUpperCase() === 'LOCKED' &&
-                (row.review?.dna || '').toUpperCase() === 'LOCKED' &&
-                (row.review?.prp || '').toUpperCase() === 'LOCKED',
-            );
+            Boolean(bundle.master?.lockedAt) &&
+            (bundle.dna?.status || '').toUpperCase() === 'LOCKED' &&
+            (bundle.pack?.status || '').toUpperCase() === 'LOCKED';
           setProdLive({
             shotTotal: list.length,
-            imagesReviewed: live.filter((row) => countImageReviewed(row.review?.directorApproval)).length,
-            videosReviewed: live.filter((row) => countVideoReviewed(row.generation?.status)).length,
-            videosDone: live.filter((row) => countVideoReviewed(row.generation?.status)).length,
+            imagesReviewed: list.filter((shot) => Boolean(shot.approvedAt)).length,
+            videosReviewed: 0,
+            videosDone: 0,
             characterLocked: locked,
             firstShotId: list[0]?.id || '',
           });
@@ -1509,13 +1778,13 @@ export function ContentFamixaSeriesTab() {
     if (voiceScript.lines.length > 0) return;
     const next = refreshSpokenLinesFromPack(stateRef.current);
     if (deriveVoiceScript(next).lines.length <= voiceScript.lines.length) return;
-    persistState(next);
+    persistState(next, false);
   }, [state.packDraft, voiceScript.lines.length]);
 
   useEffect(() => {
     if (!state.shotGraphLocked) return;
     if (!dialogueMapNeedsHeal(stateRef.current)) return;
-    persistState(applyDialogueMap(stateRef.current));
+    persistState(applyDialogueMap(stateRef.current), false);
   }, [state.shotGraphLocked, voiceScript.lines.length, state.episode?.shots?.length]);
   const voiceLockHint =
     !keys.elevenLabs && state.voicePreview?.status !== 'complete'
@@ -1523,6 +1792,8 @@ export function ContentFamixaSeriesTab() {
       : voiceLockBlockReason(state) ?? '';
 
   useEffect(() => {
+    const selected = (new URLSearchParams(window.location.search).get('build') || '').trim();
+    if (selected) return;
     const t = window.requestAnimationFrame(() => {
       const s = loadSeriesPilot();
       bindBuildMedia(s);
@@ -1547,19 +1818,82 @@ export function ContentFamixaSeriesTab() {
   }, [studioPane, state.shorts?.length, state.scriptLocked]);
 
   useEffect(() => {
-    void fetchContentSettings()
-      .then((s) => {
-        setKeys({
-          runway: Boolean(s.video?.runwayConfigured),
-          fal: Boolean(s.video?.falConfigured),
-          elevenLabs: Boolean(s.video?.elevenLabsConfigured),
-          gemini: Boolean(s.ai?.apiKeyConfigured),
-        });
-      })
-      .catch(() => undefined);
+    let cancel = false;
+    const load = () => {
+      void Promise.all([
+        fetchContentSettings().catch(() => null),
+        fetchTenantAiConfig().catch(() => []),
+      ]).then(([settings, tenant]) => {
+        if (cancel) return;
+        const next = providerKeyFlagsFromSources(settings, tenant);
+        keysRef.current = next;
+        setKeys(next);
+        setSettingsHydrated(true);
+      });
+    };
+    load();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancel = true;
+      document.removeEventListener('visibilitychange', onVisible);
+    };
     void fetchContentBrands(true)
       .then((rows) => setFamixaBrand(pickFamixaBrand(rows)))
       .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const given = normalizeFilmBrand(brandCode);
+    if (given) {
+      setFilmBrandCode(given);
+      return;
+    }
+    const seriesBrand = normalizeFilmBrand(catalog);
+    const seriesIsVisualBrand = seriesBrand === 'famixa' || seriesBrand === 'novixa' || seriesBrand === 'trade';
+    const build = (searchParams.get('build') || state.buildId || '').trim();
+    if (!build) {
+      if (seriesIsVisualBrand) setFilmBrandCode(seriesBrand);
+      return;
+    }
+    let cancel = false;
+    void fetchContentSeriesBuild(build)
+      .then(async (row) => {
+        const brandId = (row.brandId || '').trim();
+        if (!brandId) {
+          if (!cancel && seriesIsVisualBrand) setFilmBrandCode(seriesBrand);
+          return;
+        }
+        const brands = await fetchContentBrands(true);
+        if (cancel) return;
+        const code = normalizeFilmBrand(brands.find((brand) => brand.id === brandId)?.code);
+        setFilmBrandCode(code || (seriesIsVisualBrand ? seriesBrand : ''));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancel = true;
+    };
+  }, [brandCode, catalog, searchParams, state.buildId]);
+
+  useEffect(() => {
+    let cancel = false;
+    void fetchContentBrands(true)
+      .then((rows) => {
+        if (cancel) return;
+        const seen = new Set<string>();
+        setVisualBrandChoices(rows.flatMap((row) => {
+          const code = normalizeFilmBrand(row.code);
+          if (!code || seen.has(code)) return [];
+          seen.add(code);
+          return [{ code, name: row.name || row.code }];
+        }));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancel = true;
+    };
   }, []);
 
   const loadVoiceLibrary = (opts?: { force?: boolean }) => {
@@ -1637,20 +1971,41 @@ export function ContentFamixaSeriesTab() {
     updatedAt: row.updatedAt,
   });
 
-  const loadUniverse = () =>
-    fetchFamixaCharacters()
-      .then((rows) => setUniverse((rows ?? []).map(toUniverseRow)))
-      .catch(() => setUniverse([]));
-
-  const loadStudioPreflight = () => {
-    void Promise.all([fetchCharacterStudioList(), fetchProjectVisualStyle('FAMIXA')])
-      .then(([list, style]) => {
-        setStudioRows(list.items ?? []);
-        setProjectStyle(style);
+  const loadUniverse = () => {
+    if (!famixaCharacters) {
+      setUniverse([]);
+      return Promise.resolve([] as FamixaCharacterRecord[]);
+    }
+    return fetchFamixaCharacters(characterScope)
+      .then((rows) => {
+        const next = (rows ?? []).map(toUniverseRow);
+        setUniverse(next);
+        return next;
       })
       .catch(() => {
-        setStudioRows([]);
+        setUniverse([]);
+        return [] as FamixaCharacterRecord[];
       });
+  };
+
+  const loadStudioPreflight = async () => {
+    if (!famixaCharacters) {
+      setStudioRows([]);
+      return { items: [] as CharacterStudioRow[], style: projectStyle };
+    }
+    try {
+      const [list, style] = await Promise.all([
+        fetchCharacterStudioList(characterScope),
+        fetchProjectVisualStyle('FAMIXA'),
+      ]);
+      const items = list.items ?? [];
+      setStudioRows(items);
+      setProjectStyle(style);
+      return { items, style };
+    } catch {
+      setStudioRows([]);
+      return { items: [] as CharacterStudioRow[], style: projectStyle };
+    }
   };
 
   useEffect(() => {
@@ -1661,6 +2016,7 @@ export function ContentFamixaSeriesTab() {
 
   useEffect(
     () => () => {
+      flushServerSaveRef.current();
       ttsStop.current = true;
       ttsAudio.current?.pause();
       ttsUrls.current.forEach((url) => URL.revokeObjectURL(url));
@@ -1673,18 +2029,21 @@ export function ContentFamixaSeriesTab() {
   useEffect(() => {
     void refreshBuilds();
     const retry = window.setTimeout(() => void refreshBuilds(), 1500);
+    const selected = (searchParams.get('build') || new URLSearchParams(window.location.search).get('build') || '').trim();
+    if (selected) {
+      void openBuild(selected);
+      return () => window.clearTimeout(retry);
+    }
     let cancelled = false;
     void (async () => {
       try {
-        const row = await fetchContentSeriesPilot(FAMIXA_SERIES_CODE);
+        const row = await fetchContentSeriesPilot(catalog);
         if (cancelled) return;
         const remote = row.graph && typeof row.graph === 'object' ? (row.graph as SeriesPilotState) : null;
         const local = stateRef.current;
         void refreshBuilds();
-        if (!remote || !hasSeriesGraph(remote as SeriesPilotState)) {
-          if (hasSeriesGraph(local)) queueServerSave(local);
-        } else {
-          persistState(bindPictureHashOnRuns(slimPilotForStorage(mergeRemotePilot(remote, local))));
+        if (remote && hasSeriesGraph(remote as SeriesPilotState)) {
+          persistState(bindPictureHashOnRuns(slimPilotForStorage(mergeRemotePilot(remote, local))), false);
         }
       } catch {
         void refreshBuilds();
@@ -1709,8 +2068,26 @@ export function ContentFamixaSeriesTab() {
   }, []);
 
   useEffect(() => {
+    if (!filmLed || prodTab !== 'script') return;
+    setProdTab('overview');
+  }, [filmLed, prodTab]);
+
+  useEffect(() => {
+    if (seriesDesk !== 'workspace') return;
+    const opened = reopenFilmSurface({
+      workflowKey,
+      seriesCode: catalog,
+      shot: searchParams.get('shot'),
+    });
+    if (opened.autoOpenShot !== 'first') return;
+    if ((studioShotId || '').trim()) return;
+    const first = state.episode?.shots?.[0]?.id;
+    if (first) setStudioShotId(first);
+  }, [seriesDesk, studioShotId, state.buildId, state.episode?.shots, searchParams, workflowKey, catalog]);
+
+  useEffect(() => {
     const next = syncVoiceOnlyRoles(stateRef.current);
-    if (next !== stateRef.current) persistState(next);
+    if (next !== stateRef.current) persistState(next, false);
   }, [state.roles.length, state.characters, state.castLocked]);
 
   useEffect(() => {
@@ -1721,7 +2098,7 @@ export function ContentFamixaSeriesTab() {
       if (!cancelled) {
         setState((cur) => {
           const next = bindPictureHashOnRuns(withRunPixels(cur));
-          saveSeriesPilot(next);
+          if (!explicitBuildRef.current) saveSeriesPilot(next);
           return next;
         });
       }
@@ -1746,13 +2123,381 @@ export function ContentFamixaSeriesTab() {
     };
   }, [studioPane, prodTab, prodMode, directorBench, studioShotId, state.buildId]);
 
-  const persistEngine = (next: 'turbo' | 'wan') => {
-    setEngine(next);
+  useEffect(() => {
+    const shot =
+      productionShorts(stateRef.current).find((s) => s.id === studioShotId) ||
+      (stateRef.current.episode?.shots ?? []).find((s) => s.id === studioShotId);
+    if (!shot) return;
+    const run = shotRunOf(stateRef.current, shot);
+    if (!leftoverTwoFaceMixOnly(run)) return;
+    patchRun(shot.id, clearTwoFaceLipsyncMixOnly());
+  }, [studioShotId, state.buildId]);
+
+  const rememberOsKeyframe = (shotId: string, url?: string) => {
+    setOsKeyframeByShot((current) => {
+      const prior = current[shotId];
+      if (prior && prior !== url) URL.revokeObjectURL(prior);
+      if (!url) {
+        if (!prior) return current;
+        const next = { ...current };
+        delete next[shotId];
+        return next;
+      }
+      return { ...current, [shotId]: url };
+    });
+  };
+
+  const loadOsKeyframe = async (buildId: string, shotId: string, isCancelled?: () => boolean) => {
     try {
-      localStorage.setItem(ENGINE_KEY, next);
+      const meta = await getProductionKeyframe(buildId, shotId);
+      if (isCancelled?.()) return false;
+      const block = productionPictureBlockCopy(meta.reason);
+      setOsPictureBlockByShot((current) => ({ ...current, [shotId]: block }));
+      if (block || !productionKeyframeIsDisplayable(meta) || !meta.byteSha256) {
+        rememberOsKeyframe(shotId);
+        return false;
+      }
+      const blob = await fetchProductionKeyframeMedia(buildId, shotId);
+      if (isCancelled?.()) return false;
+      if (!(await previewBytesMatch(blob, meta.byteSha256))) {
+        rememberOsKeyframe(shotId);
+        return false;
+      }
+      const mime = (meta.mimeType || 'image/png').trim();
+      const typed = blob.type.startsWith('image/') ? blob : new Blob([await blob.arrayBuffer()], { type: mime });
+      rememberOsKeyframe(shotId, URL.createObjectURL(typed));
+      return true;
     } catch {
-      /* quota */
+      setOsPictureBlockByShot((current) => ({ ...current, [shotId]: '' }));
+      rememberOsKeyframe(shotId);
+      return false;
     }
+  };
+
+  useEffect(() => {
+    const filmBuildId = state.buildId;
+    const shotId = studioShotId;
+    if (!shotId) return;
+    const identity = resolveShotWorkspaceIdentity({ requestedBuildId: filmBuildId, requestedShotId: shotId });
+    const buildId = identity.ok ? identity.requestedBuildId : productionOsBuildIdForShot(filmBuildId, shotId);
+    if (!identity.ok || !buildId) return;
+    let cancelled = false;
+    const shot = productionOsDeskShots(buildId, [
+      ...productionShorts(stateRef.current),
+      ...(stateRef.current.episode?.shots ?? []),
+    ]).find((s) => s.id === shotId);
+    const claim = shot
+      ? {
+          episodeCode: isProductionOsTestShot(shotId) ? 'TEST' : shotId.startsWith('EP01-') ? 'EP01' : undefined,
+          sceneCode: isProductionOsTestShot(shotId) ? 'TEST-SC01' : undefined,
+          story: futureDeskStory(shotId, (shot.story || '').trim()) || undefined,
+          actingBeat: futureDeskActing(shotId, [shot.actingBeat?.before?.action, shot.actingBeat?.before?.body].map((x) => (x || '').trim()).filter(Boolean).join(' ')) || undefined,
+          visualContract: (shot.visual || '').trim() || undefined,
+          ...strategyClaim(shot),
+        }
+      : undefined;
+    const scope = productionScopeFromShotCode(shotId);
+    void (async () => {
+      const shown = await loadOsKeyframe(buildId, shotId, () => cancelled);
+      if (cancelled) return;
+      await hydrateVisualShot(buildId, shotId, () => cancelled, !shown);
+    })();
+    void (async () => {
+      try {
+        const [actions, osState, selectionHydrate, preview, authoritative] = await Promise.all([
+          getProductionShotActions(buildId, shotId, claim),
+          getProductionShotState(buildId, shotId, claim),
+          getProductionAiSelection(buildId, shotId, 'VIDEO').then(
+            (row) => ({ status: 'ok' as const, row }),
+            (error) => ({
+              status: (productionAiSelectionHttpStatus(error) === 404 ? 'missing' : 'error') as 'missing' | 'error',
+              row: null,
+            }),
+          ),
+          getCreateVideoInputPreview(buildId, shotId, scope.episodeCode || undefined, scope.sceneCode || undefined).catch(() => null),
+          getAuthoritativeProductionVideo(buildId, shotId).catch(() => null),
+        ]);
+        if (cancelled) return;
+        setOsActionsByShot((m) => ({ ...m, [shotId]: actions }));
+        noteStrategyCatalog(shotId, actions);
+        setOsStateByShot((m) => ({ ...m, [shotId]: osState }));
+        if (authoritative) setOsAuthoritativeByShot((m) => ({ ...m, [shotId]: authoritative }));
+        const voiceLineId = shotId === OFFICIAL_SH02_SHOT_CODE
+          ? OFFICIAL_SH02_LINE_ID
+          : shotId === 'EP01-SC01-SH01'
+            ? 'line-SC01-CHAR-003-1'
+            : '';
+        if (voiceLineId) {
+          try {
+            const voice = await getProductionCurrentVoice(buildId, shotId, voiceLineId);
+            if (!cancelled && voice && !voice.empty && voice.artifactId) {
+              setOsVoiceByShot((m) => ({ ...m, [shotId]: voice }));
+              try {
+                const blob = await fetchProductionVoiceMedia(buildId, shotId, voiceLineId);
+                if (!cancelled) {
+                  const url = URL.createObjectURL(blob);
+                  setOsVoiceUrlByShot((m) => {
+                    const prior = m[shotId];
+                    if (prior) URL.revokeObjectURL(prior);
+                    return { ...m, [shotId]: url };
+                  });
+                }
+              } catch {
+                if (!cancelled) {
+                  setOsVoiceUrlByShot((m) => {
+                    const next = { ...m };
+                    const prior = next[shotId];
+                    if (prior) URL.revokeObjectURL(prior);
+                    delete next[shotId];
+                    return next;
+                  });
+                }
+              }
+            }
+          } catch {
+            /* voice hydrate is optional until CREATE_VOICE succeeds */
+          }
+        }
+        if (preview) {
+          setOsDirectorTimingByShot((m) => ({ ...m, [shotId]: directorTimingFromPreview(preview) }));
+        }
+        const nextSelection = hydrateDirectorVideoSelection({
+          status: selectionHydrate.status,
+          row: selectionHydrate.row,
+          previous: osVideoModelByShotRef.current[shotId]?.selection,
+        });
+        const artifactId =
+          (authoritative && !authoritative.empty && (authoritative.artifactId || '').trim()) ||
+          (osState.videoArtifactId || '').trim() ||
+          undefined;
+        setOsVideoModelByShot((m) => ({
+          ...m,
+          [shotId]: {
+            selection: nextSelection,
+            take: bindVideoTakeProvenance(m[shotId]?.take, { artifactId, selection: nextSelection }),
+          },
+        }));
+        const osEngine = motionEngineFromProviderModel(nextSelection?.providerId, nextSelection?.modelId);
+        if (osEngine) setEngine(osEngine);
+      } catch {
+        /* actions stay empty until API/mig is up */
+      }
+      try {
+        const meta = await getProductionPreview(buildId, shotId);
+        if (cancelled || meta.empty || !meta.artifactId || !meta.byteSha256) {
+          if (!cancelled) {
+            setOsPreviewIdentityByShot((m) => {
+              const next = { ...m };
+              delete next[shotId];
+              return next;
+            });
+            setOsPreviewByShot((m) => {
+              const next = { ...m };
+              const prior = next[shotId];
+              if (prior) URL.revokeObjectURL(prior);
+              delete next[shotId];
+              return next;
+            });
+          }
+          return;
+        }
+        try {
+          const blob = await fetchProductionPreviewMedia(buildId, shotId);
+          if (cancelled) return;
+          if (!(await previewBytesMatch(blob, meta.byteSha256))) {
+            setOsPreviewIdentityByShot((m) => {
+              const next = { ...m };
+              delete next[shotId];
+              return next;
+            });
+            setOsPreviewByShot((m) => {
+              const next = { ...m };
+              const prior = next[shotId];
+              if (prior) URL.revokeObjectURL(prior);
+              delete next[shotId];
+              return next;
+            });
+            return;
+          }
+          const url = URL.createObjectURL(asPlayableVideoBlob(blob));
+          setOsPreviewIdentityByShot((m) => ({
+            ...m,
+            [shotId]: osPreviewIdentityFromMeta(meta),
+          }));
+          setOsPreviewByShot((m) => {
+            const prior = m[shotId];
+            if (prior) URL.revokeObjectURL(prior);
+            return { ...m, [shotId]: url };
+          });
+        } catch {
+          if (cancelled) return;
+          setOsPreviewIdentityByShot((m) => {
+            const next = { ...m };
+            delete next[shotId];
+            return next;
+          });
+          setOsPreviewByShot((m) => {
+            const next = { ...m };
+            const prior = next[shotId];
+            if (prior) URL.revokeObjectURL(prior);
+            delete next[shotId];
+            return next;
+          });
+          return;
+        }
+        setOsVideoModelByShot((m) => ({
+          ...m,
+          [shotId]: {
+            selection: m[shotId]?.selection,
+            take: bindVideoTakeProvenance(m[shotId]?.take, {
+              artifactId: (meta.role || '').includes('VIDEO_TAKE') ? meta.artifactId : m[shotId]?.take?.artifactId,
+              selection: m[shotId]?.selection,
+              durationSec: (meta.role || '').includes('VIDEO_TAKE') ? meta.durationSec : m[shotId]?.take?.durationSec,
+            }),
+          },
+        }));
+      } catch {
+        /* VISIBLE empty is explicit EMPTY, not a fallback */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [studioShotId, state.buildId]);
+
+  const persistEngine = (next: FamixaMotionEngine) => {
+    setEngine(next);
+    const shotId = studioShotId;
+    if (!shotId) return;
+    const mapped = providerModelFromEngine(next);
+    const identity = resolveShotWorkspaceIdentity({
+      requestedBuildId: stateRef.current.buildId,
+      requestedShotId: shotId,
+    });
+    const buildId = identity.ok ? identity.requestedBuildId : undefined;
+    if (!buildId) {
+      message.error({ content: formatShotIdentityError(identity), key: 'famixa-desk-err' });
+      return;
+    }
+    const previous = osVideoModelByShotRef.current[shotId]?.selection;
+    const scope = productionScopeFromShotCode(shotId);
+    setDirectorSelectionBusy(true);
+    void upsertProductionAiSelection({
+      buildId,
+      shotCode: shotId,
+      episodeCode: scope.episodeCode || 'EP01',
+      sceneCode: scope.sceneCode || 'SC01',
+      stage: 'VIDEO',
+      providerId: mapped.providerId,
+      modelId: mapped.modelId,
+      reason: 'DIRECTOR_SELECTION',
+    })
+      .then((row) => {
+        const committed = directorVideoSelectionFromRow(row);
+        if (!committed) throw new Error('INVALID_PRODUCTION_AI_SELECTION');
+        setOsVideoModelByShot((m) => ({
+          ...m,
+          [shotId]: applyDirectorVideoModelSelection(m[shotId], committed),
+        }));
+      })
+      .catch((e) => {
+        const reverted = revertDirectorVideoSelectionAfterPostFailure(previous);
+        setOsVideoModelByShot((m) => ({
+          ...m,
+          [shotId]: { selection: reverted, take: m[shotId]?.take },
+        }));
+        message.error({ content: apiErrorMessage(e, 'Không lưu được Model video.'), key: 'famixa-desk-err' });
+      })
+      .finally(() => {
+        setDirectorSelectionBusy(false);
+      });
+  };
+
+  const persistDirectorTiming = (
+    durationSec: DirectorProductionDurationSec,
+    speech?: DirectorSpeechInterval | null,
+  ) => {
+    const shotId = studioShotId;
+    if (!shotId) return;
+    const current = osDirectorTimingByShot[shotId];
+    const currentSpeech = explicitDirectorSpeechInterval(current);
+    const sameDuration = isAuthoritativeDirectorTiming(current) && Number(current.durationSec) === durationSec;
+    const sameSpeech = (currentSpeech?.speechStartSec ?? null) === (speech?.speechStartSec ?? null)
+      && (currentSpeech?.speechEndSec ?? null) === (speech?.speechEndSec ?? null);
+    if (sameDuration && sameSpeech) return;
+    const identity = resolveShotWorkspaceIdentity({
+      requestedBuildId: stateRef.current.buildId,
+      requestedShotId: shotId,
+    });
+    const buildId = identity.ok ? identity.requestedBuildId : undefined;
+    if (!buildId) return;
+    const scope = productionScopeFromShotCode(shotId);
+    setDirectorTimingBusy(true);
+    void materializeProductionDirectorTiming({
+      buildId,
+      shotCode: shotId,
+      episodeCode: scope.episodeCode || 'EP01',
+      sceneCode: scope.sceneCode || 'SC01',
+      durationSec,
+      speechStartSec: speech?.speechStartSec,
+      speechEndSec: speech?.speechEndSec,
+    })
+      .then(async (row) => {
+        setOsDirectorTimingByShot((m) => ({ ...m, [shotId]: directorTimingFromSnapshot(row) }));
+        const claimShot = productionOsDeskShots(buildId, [
+          ...productionShorts(stateRef.current),
+          ...(stateRef.current.episode?.shots ?? []),
+        ]).find((s) => s.id === shotId);
+        const claim = claimShot
+          ? {
+              episodeCode: isProductionOsTestShot(shotId) ? 'TEST' : shotId.startsWith('EP01-') ? 'EP01' : undefined,
+              sceneCode: isProductionOsTestShot(shotId) ? 'TEST-SC01' : undefined,
+              story: futureDeskStory(shotId, (claimShot.story || '').trim()) || undefined,
+              actingBeat: futureDeskActing(shotId, [claimShot.actingBeat?.before?.action, claimShot.actingBeat?.before?.body].map((x) => (x || '').trim()).filter(Boolean).join(' ')) || undefined,
+              visualContract: (claimShot.visual || '').trim() || undefined,
+              ...strategyClaim(claimShot),
+            }
+          : undefined;
+        try {
+          const [actions, osState, preview] = await Promise.all([
+            getProductionShotActions(buildId, shotId, claim),
+            getProductionShotState(buildId, shotId, claim),
+            getCreateVideoInputPreview(buildId, shotId, scope.episodeCode || undefined, scope.sceneCode || undefined).catch(() => null),
+          ]);
+          setOsActionsByShot((m) => ({ ...m, [shotId]: actions }));
+          noteStrategyCatalog(shotId, actions);
+          setOsStateByShot((m) => ({ ...m, [shotId]: osState }));
+          if (preview) {
+            const fromPreview = directorTimingFromPreview(preview);
+            const saved = directorTimingFromSnapshot(row);
+            const kept = explicitDirectorSpeechInterval(fromPreview) ?? explicitDirectorSpeechInterval(saved);
+            setOsDirectorTimingByShot((m) => ({
+              ...m,
+              [shotId]: {
+                ...fromPreview,
+                speechStartSec: kept?.speechStartSec ?? null,
+                speechEndSec: kept?.speechEndSec ?? null,
+              },
+            }));
+          }
+        } catch {
+          /* POST already froze OS timing; next open reloads actions */
+        }
+      })
+      .catch((e) => {
+        message.error({ content: apiErrorMessage(e, 'Không lưu được Production duration.'), key: 'famixa-desk-err' });
+      })
+      .finally(() => {
+        setDirectorTimingBusy(false);
+      });
+  };
+
+  const refuseUnwiredVeo = () => {
+    if (engine !== 'veo' || keys.veo) return false;
+    message.warning(
+      'Đã chọn Google Veo 3. Lưu file Join ở Cấu hình AI → Video. Không gửi Runway / Wan thay thế.',
+    );
+    return true;
   };
 
   const persistVoice = (next: 'elevenlabs' | 'f5') => {
@@ -1822,7 +2567,7 @@ export function ContentFamixaSeriesTab() {
       );
       void saveCanonPixels(charId, imageDataUrl, ref.fileName);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : 'Không gắn được Canon');
+      message.error({ content: apiErrorMessage(e, 'Không gắn được Canon.'), key: 'famixa-desk-err' });
     }
   };
 
@@ -1866,6 +2611,73 @@ export function ContentFamixaSeriesTab() {
     persistState({ ...cur, runs: { ...cur.runs, [id]: { ...prev, ...nextPatch } } });
   };
 
+  const noteStrategyCatalog = (shotId: string, actions: ProductionShotActions) => {
+    const shot = (stateRef.current.episode?.shots ?? []).find((s) => s.id === shotId);
+    setStrategyAcceptedByShot((current) => ({
+      ...current,
+      [shotId]: backendAcceptedStrategy(actions, strategyEngaged(shot) && shot?.strategyConfirmed === true),
+    }));
+  };
+
+  const persistShotStrategy = (
+    shotId: string,
+    patch: Pick<FamixaSeriesShot, 'pictureStrategy' | 'speechDelivery' | 'strategyConfirmed'>,
+  ) => {
+    const live = stateRef.current;
+    if (!live.episode) return;
+    setStrategyAcceptedByShot((current) => ({ ...current, [shotId]: false }));
+    persistState({
+      ...live,
+      episode: {
+        ...live.episode,
+        shots: live.episode.shots.map((s) => {
+          if (s.id !== shotId) return s;
+          const picture = (patch.pictureStrategy || '').trim();
+          const speech = (patch.speechDelivery || '').trim();
+          if (!picture && !speech) {
+            const { pictureStrategy: _picture, speechDelivery: _speech, strategyConfirmed: _confirmed, ...rest } = s;
+            return rest;
+          }
+          return {
+            ...s,
+            pictureStrategy: picture,
+            speechDelivery: speech,
+            strategyConfirmed: patch.strategyConfirmed === true,
+          };
+        }),
+      },
+    });
+  };
+
+  const persistActingBeat = (shotId: string, actingBeat: NonNullable<FamixaSeriesShot['actingBeat']>) => {
+    const live = stateRef.current;
+    if (!live.episode) return;
+    const shot = live.episode.shots.find((s) => s.id === shotId);
+    const prevFp = shot ? actingBeatFingerprintOf(shot) : '';
+    persistState({
+      ...live,
+      episode: {
+        ...live.episode,
+        shots: live.episode.shots.map((s) => (s.id === shotId ? { ...s, actingBeat } : s)),
+      },
+    });
+    if (prevFp !== actingBeatFingerprintOf({ ...(shot || { id: shotId }), actingBeat } as FamixaSeriesShot)) {
+      patchRun(shotId, { actingBeatPendingMotion: true });
+    }
+  };
+
+  const applyLipsyncSpeakerPick = (
+    shotId: string,
+    pt: { x: number; y: number; width: number; height: number; characterId?: string; frameNumber?: number },
+  ) => {
+    const run = shotRunOf(stateRef.current, { id: shotId, status: 'story_locked' } as FamixaSeriesShot);
+    if (!canMutateLiveSpeakerTarget(run.lipsyncFrozenInput, run)) {
+      message.warning('Speaker đã freeze — không đổi target Fal.');
+      return;
+    }
+    patchRun(shotId, { lipsyncSpeaker: stampLipsyncSpeakerPick(pt, stateRef.current.characters) });
+  };
+
   const onKeyframeFile = async (id: string, file: File | undefined) => {
     if (!file) return;
     try {
@@ -1892,7 +2704,7 @@ export function ContentFamixaSeriesTab() {
       const pack = productionShorts(cur);
       persistState(applySceneKfReuses(cur, pack, buildSceneKfPlan(cur, pack)));
     } catch (e) {
-      message.error(e instanceof Error ? e.message : 'Không gắn được KF01');
+      message.error({ content: apiErrorMessage(e, 'Không gắn được KF01.'), key: 'famixa-desk-err' });
     }
   };
 
@@ -1916,15 +2728,17 @@ export function ContentFamixaSeriesTab() {
     correction?: string;
     failedKfUrl?: string;
   }): Promise<PictureGenerationKind> => {
-    if (!keys.gemini) {
+    message.warning(productionOsLegacyRefuseNote('CREATE_IMAGE', 'POST /series/still'));
+    if (productionOsLegacyPathClosed()) return 'GENERATION_FAILED';
+    if (!keysRef.current.gemini) {
       message.warning('Cần Gemini API key (Cấu hình AI) để vẽ KF từ Canon mặt.');
       return 'GENERATION_FAILED';
     }
-    if (kfInflightRef.current) {
+    if (kfInflightRef.current[opts.clipId]) {
       message.warning('Đang vẽ 1 KF — chờ xong, không bấm lần 2.');
       return 'GENERATION_FAILED';
     }
-    kfInflightRef.current = opts.clipId;
+    kfInflightRef.current[opts.clipId] = true;
     try {
     const failedRun = shortRunOf(stateRef.current, opts.clipId);
     if (lastGenerationFail(failedRun) && !failedRun.failedKfHash) {
@@ -1942,10 +2756,14 @@ export function ContentFamixaSeriesTab() {
     const voiceIds = Object.fromEntries(
       visualIds.map((id) => [id, (st.characters ?? []).find((c) => c.id === id)?.voiceId ?? '']),
     );
+    if (!famixaCharacters) {
+      message.warning('Phim này không dùng bộ nhân vật Famixa.');
+      return 'GENERATION_FAILED';
+    }
     let studioLockRows = studioRows;
     if (!studioLockRows.length) {
       try {
-        const list = await fetchCharacterStudioList();
+        const list = await fetchCharacterStudioList(characterScope);
         studioLockRows = list.items ?? [];
         setStudioRows(studioLockRows);
       } catch {
@@ -1955,7 +2773,7 @@ export function ContentFamixaSeriesTab() {
     let registry = universe;
     if (!registry.length) {
       try {
-        registry = (await fetchFamixaCharacters()).map(toUniverseRow);
+        registry = (await fetchFamixaCharacters(characterScope)).map(toUniverseRow);
         setUniverse(registry);
       } catch {
         message.error('Character Registry chưa sẵn (mig 330). Không đoán Canon — không vẽ KF.');
@@ -2000,11 +2818,23 @@ export function ContentFamixaSeriesTab() {
     const subset = resolveFamixaCharacters(registry, visualIds)
       .map((row) => compileCharacterPromptSubset(row.canon))
       .join(' ');
+    const unlockedId = visualIds.find((id) => !findStudioLockRow(id, studioLockRows)?.officialLocked);
+    if (unlockedId) {
+      const studio = findStudioLockRow(unlockedId, studioLockRows);
+      const name = studio?.characterName || unlockedId;
+      const copy = directorPictureHoldCopy({
+        code: 'CHARACTER_NOT_LOCKED',
+        type: 'character_lock',
+        title: `${name} chưa LOCK`,
+        message: `Để khuôn mặt và tạo hình không đổi giữa các shot, ${name} phải được Director duyệt và khóa Master trước khi vào production. APPROVED chưa đủ.`,
+      });
+      message.error({ content: `${copy.reason} — ${copy.hint}`, key: 'fx-kf-gen' });
+      return 'GENERATION_FAILED';
+    }
     const visualClaims = visualIds.map((id) => {
       const studio = findStudioLockRow(id, studioLockRows);
       const name = studio?.characterName || id;
-      if (studio?.officialLocked) return lockedStudioClaim(id, name, studio.masterSha256);
-      return legacyPhotorealCanonClaim(id, name);
+      return lockedStudioClaim(id, name, studio?.masterSha256);
     });
     const visualResolved = resolveSceneVisualReferences(visualClaims, FAMIXA_VISUAL_MODE.visualMode);
     if (visualIds.length && !visualResolved.allowed) {
@@ -2211,7 +3041,7 @@ export function ContentFamixaSeriesTab() {
       message.error({ content: apiErrorMessage(e, 'Không vẽ được KF từ Canon.'), key: 'fx-kf-gen' });
       return 'GENERATION_FAILED';
     } finally {
-      kfInflightRef.current = undefined;
+      delete kfInflightRef.current[opts.clipId];
       setStillBusy(undefined);
     }
   };
@@ -2426,13 +3256,14 @@ export function ContentFamixaSeriesTab() {
     });
   };
 
+  /** LEGACY / NON-AUTHORITATIVE for CREATE_VIDEO. LEGACY / NON-AUTHORITY. Desk Tạo video uses Production OS (createProductionVideo → createProductionRequest). Do not bind CURRENT / VISIBLE from this path. */
   const sendTurbo = async (opts: {
     clipId: string;
     prompt: string;
     negative?: string;
     seconds: number;
     ratio: '16:9' | '9:16';
-    engine: 'turbo' | 'wan';
+    engine: 'turbo' | 'wan' | 'veo';
     silent?: boolean;
     resume?: boolean;
     forceNew?: boolean;
@@ -2443,6 +3274,8 @@ export function ContentFamixaSeriesTab() {
     maxCost?: number | null;
     currency?: string | null;
   }) => {
+    message.warning(productionOsLegacyRefuseNote('CREATE_VIDEO', 'POST /series/turbo'));
+    if (productionOsLegacyPathClosed()) return false;
     const existing = shortRunOf(stateRef.current, opts.clipId);
     const resume = Boolean(opts.resume || (!opts.forceNew && shouldResumeTurboPoll(existing)));
     const keyframe = existing.keyframeDataUrl;
@@ -2483,7 +3316,13 @@ export function ContentFamixaSeriesTab() {
       const shotRow = (stateRef.current.episode?.shots ?? []).find((s) => s.id === opts.clipId);
       const silentTake = shotRow ? linesForShot(stateRef.current, shotRow).length === 0 : false;
       const attempts = adaptMotionAttempts(opts.clipId, current.runwayAttempts);
-      const wanProvider = wan || (task.model ?? '').startsWith('wan') ? 'wan' as const : 'runway' as const;
+      const wanProvider = motionProviderFromEngine(
+        wan || (task.model ?? '').startsWith('wan')
+          ? 'wan'
+          : opts.engine === 'veo' || (task.model ?? '').startsWith('veo')
+            ? 'veo'
+            : 'turbo',
+      );
       const currentMotion = shotRow
         ? {
             ...freezeMotionInput(stateRef.current, shotRow, { provider: wanProvider }),
@@ -2519,6 +3358,7 @@ export function ContentFamixaSeriesTab() {
               turboError: undefined,
               videoPipe: 'VIDEO_READY' as const,
               motionNeedsRemake: false,
+              actingBeatPendingMotion: false,
               videoVerified: true,
               videoBytes: task.videoBytes ?? undefined,
               videoMime: task.videoMime ?? undefined,
@@ -2527,19 +3367,24 @@ export function ContentFamixaSeriesTab() {
         ...callbackPatch,
       });
       if (!opts.silent) {
-        if (decision.promote) {
+        const attached = Boolean(
+          decision.promote || callbackPatch.takeUrl || callbackPatch.previewUrl || callbackPatch.videoPipe === 'VIDEO_READY',
+        );
+        if (attached) {
           message.success(
             wan
               ? `Take Wan sẵn. Fal đã trừ ~1 đơn vị 720p — sổ KIT không ghi Runway cr.`
-              : resume
-                ? `Lấy được take từ task cũ (0 cr thêm).`
-                : `Take sẵn. Runway đã trừ ~${runwayCredits(task.seconds || opts.seconds).credits} cr — sổ KIT chỉ ghi khi khóa take đạt.`,
+              : opts.engine === 'veo'
+                ? 'Take Veo sẵn. Không gửi Runway / Wan.'
+                : resume
+                  ? `Lấy được take từ task cũ (0 cr thêm).`
+                  : `Take sẵn. Runway đã trừ ~${runwayCredits(task.seconds || opts.seconds).credits} cr — sổ KIT chỉ ghi khi khóa take đạt.`,
           );
         } else {
           message.warning(
             wan
-              ? `Wan xong nhưng chưa gắn vào shot này (${decision.reason}). Không coi là video hiện tại.`
-              : `Take xong nhưng chưa gắn vào shot này (${decision.reason}).`,
+              ? `Wan xong nhưng chưa gắn vào shot này (${decision.promote ? '' : decision.reason}). Không coi là video hiện tại.`
+              : `Take xong nhưng chưa gắn vào shot này (${decision.promote ? '' : decision.reason}).`,
           );
         }
       }
@@ -2584,7 +3429,7 @@ export function ContentFamixaSeriesTab() {
           });
           if (task.status === 'SUCCEEDED' && task.videoUrl) {
             const wan = opts.engine === 'wan' || (task.model ?? '').startsWith('wan');
-            if (task.videoVerified) return finishOk(task, wan);
+            if (task.videoVerified || task.videoUrl.startsWith('data:video')) return finishOk(task, wan);
             patchRun(opts.clipId, { videoPipe: 'VIDEO_DOWNLOADING' });
             try {
               const probed = await probeContentSeriesTake(task.videoUrl);
@@ -2630,7 +3475,13 @@ export function ContentFamixaSeriesTab() {
             const failCurrent = failShot
               ? {
                   ...freezeMotionInput(stateRef.current, failShot, {
-                    provider: opts.engine === 'wan' || (task.model ?? '').startsWith('wan') ? 'wan' : 'runway',
+                    provider: motionProviderFromEngine(
+                      opts.engine === 'wan' || (task.model ?? '').startsWith('wan')
+                        ? 'wan'
+                        : opts.engine === 'veo' || (task.model ?? '').startsWith('veo')
+                          ? 'veo'
+                          : 'turbo',
+                    ),
                   }),
                   picture: currentPictureInputOf(stateRef.current, failShot),
                 }
@@ -2820,13 +3671,13 @@ export function ContentFamixaSeriesTab() {
           if (!opts.diagnostic && current.previewUrl?.trim()) {
             takeHistory.unshift({ url: current.previewUrl.trim(), taskId: current.turboTaskId });
           }
-          if (opts.engine !== 'wan' && !imageDataUrl.startsWith('data:image')) {
+          if (opts.engine !== 'wan' && opts.engine !== 'veo' && !imageDataUrl.startsWith('data:image')) {
             throw new Error('KF phải là data-URI — không gửi URL gốc vào Runway (0 cr).');
           }
           const shotRow = (stateRef.current.episode?.shots ?? []).find((s) => s.id === opts.clipId);
           const peopleN = shotRow ? visibleFrameCast(stateRef.current, shotRow).count : 0;
           const kf =
-            opts.engine === 'wan'
+            opts.engine === 'wan' || opts.engine === 'veo'
               ? imageDataUrl
               : await prepareRunwayKf(imageDataUrl, opts.ratio, { people: peopleN });
           const sentDim = kf.startsWith('data:image')
@@ -2859,7 +3710,7 @@ export function ContentFamixaSeriesTab() {
               },
             ],
           };
-          if (opts.engine !== 'wan' && !sentCheck.ok) {
+          if (opts.engine !== 'wan' && opts.engine !== 'veo' && !sentCheck.ok) {
             patchRun(opts.clipId, {
               kfCheck: sourceCheck,
               sentKfCheck: sentCheck,
@@ -2879,7 +3730,7 @@ export function ContentFamixaSeriesTab() {
             width: sentDim.width || sentCheck.width,
             height: sentDim.height || sentCheck.height,
           });
-          if (!job.ok) {
+          if (opts.engine !== 'wan' && opts.engine !== 'veo' && !job.ok) {
             patchRun(opts.clipId, {
               kfCheck: sourceCheck,
               sentKfCheck: sentCheck,
@@ -2900,7 +3751,7 @@ export function ContentFamixaSeriesTab() {
           }
           const started = await startContentSeriesTurbo({
             clipId: opts.clipId,
-            prompt: job.payload.promptText,
+            prompt: job.exact.promptText,
             negativePrompt: opts.negative,
             imageDataUrl: kf,
             seconds: opts.seconds,
@@ -2910,27 +3761,32 @@ export function ContentFamixaSeriesTab() {
             maxCost: opts.maxCost,
             currency: opts.currency,
             lastFrameFromUrl:
-              opts.forceNew || opts.resume || opts.diagnostic
-                ? opts.lastFrameFromUrl
-                : opts.lastFrameFromUrl ||
-                  lastFrameFromUrlOf(
-                    stateRef.current,
-                    productionShorts(stateRef.current).find((s) => s.id === opts.clipId) ||
-                      ({ id: opts.clipId } as FamixaSeriesShot),
-                  ),
+              opts.engine === 'veo'
+                ? undefined
+                : opts.forceNew || opts.resume || opts.diagnostic
+                  ? opts.lastFrameFromUrl
+                  : opts.lastFrameFromUrl ||
+                    lastFrameFromUrlOf(
+                      stateRef.current,
+                      productionShorts(stateRef.current).find((s) => s.id === opts.clipId) ||
+                        ({ id: opts.clipId } as FamixaSeriesShot),
+                    ),
           });
           createdTask = true;
-          const estimatedCost = generateCost(opts.engine === 'wan' ? 'wan' : 'turbo', opts.seconds).credits ?? undefined;
+          const estimatedCost = generateCost(opts.engine, opts.seconds).credits ?? undefined;
           const sentBytes = kf.startsWith('data:') ? Math.max(0, Math.floor((kf.length * 3) / 4) - 32) : sourceCheck.bytes;
           const keepTake = Boolean(opts.diagnostic && current.previewUrl?.trim());
           const frozenMotion = shotRow
             ? (() => {
                 const liveRun = shortRunOf(stateRef.current, opts.clipId);
                 const frozen = freezeMotionInput(stateRef.current, shotRow, {
-                  provider: selectFamixaProvider({
-                    capability: 'MOTION',
-                    engine: opts.engine,
-                  }).providerId === 'wan' ? 'wan' : 'runway',
+                  provider: (() => {
+                    const picked = selectFamixaProvider({
+                      capability: 'MOTION',
+                      engine: opts.engine,
+                    }).providerId;
+                    return picked === 'wan' ? 'wan' : picked === 'google' ? 'google' : 'runway';
+                  })(),
                 });
                 const revisionId =
                   (frozen.pictureRevisionId || liveRun.pictureRevisionId || '').trim() ||
@@ -2948,7 +3804,7 @@ export function ContentFamixaSeriesTab() {
             selectionSnapshot: started.decisionId
               ? {
                   decisionId: started.decisionId,
-                  providerId: started.providerId || (opts.engine === 'wan' ? 'wan' : 'runway'),
+                  providerId: started.providerId || motionProviderFromEngine(opts.engine),
                   modelId: started.model,
                   selectionMode: started.selectionMode || '',
                   reason: started.selectionReason || undefined,
@@ -3040,7 +3896,7 @@ export function ContentFamixaSeriesTab() {
               takeUrl: keepTake ? current.takeUrl : after.takeUrl,
               videoPipe: keepTake && current.previewUrl ? 'VIDEO_READY' : after.videoPipe,
               videoVerified: keepTake ? current.videoVerified : after.videoVerified,
-              runwayBilled: ready ? (current.runwayBilled ?? current.runwaySpent ?? 0) + estimatedCost : current.runwayBilled,
+              runwayBilled: ready ? (current.runwayBilled ?? current.runwaySpent ?? 0) + (estimatedCost ?? 0) : current.runwayBilled,
               ...failedStamp,
               runwayAttempts: patchRunwayAttempt(after.runwayAttempts, started.taskId, {
                 classification: klass,
@@ -3119,6 +3975,7 @@ export function ContentFamixaSeriesTab() {
   }, [state.episode?.shots?.length]);
 
   const startTurbo = () => {
+    if (refuseUnwiredVeo()) return;
     if (!active || !run) {
       message.warning('Chọn shot đang làm.');
       return;
@@ -3134,7 +3991,7 @@ export function ContentFamixaSeriesTab() {
       scriptLocked: state.scriptLocked,
       shortsReady: canWorkScene(state),
       engine,
-      hasEngineKey: engine === 'wan' ? keys.fal : keys.runway,
+      hasEngineKey: engine === 'wan' ? keys.fal : engine === 'veo' ? keys.veo : keys.runway,
       state,
       shot: active,
       videoContext,
@@ -3152,13 +4009,20 @@ export function ContentFamixaSeriesTab() {
     }
     const cost = generateCost(engine, active.seconds);
     modal.confirm({
-      title: engine === 'wan' ? 'Pre-check đạt · gửi Wan (Fal)' : `Confirm credit · ước ${cost.credits} cr (5 cr/s)`,
+      title:
+        engine === 'wan'
+          ? 'Pre-check đạt · gửi Wan (Fal)'
+          : engine === 'veo'
+            ? 'Pre-check đạt · gửi Google Veo 3'
+            : `Confirm credit · ước ${cost.credits} cr (5 cr/s)`,
       content: `${pre.warnings.length ? `${pre.warnings.join(' ')} ` : ''}${
         engine === 'wan'
           ? `${cost.label}. Status: PENDING đến khi SUCCEEDED + file đọc được. Không gửi lại cùng KF.`
-          : `RUNWAY COST — Estimated: ${cost.credits} cr · Status: PENDING đến khi SUCCEEDED + file đọc được. Lỗi generation = REFUND PENDING (Runway), KIT không ghi «đã trừ». Không gửi lại cùng KF.`
+          : engine === 'veo'
+            ? `${cost.label}. 1 shot / 1 lần. Không gửi Runway / Wan thay thế.`
+            : `RUNWAY COST — Estimated: ${cost.credits} cr · Status: PENDING đến khi SUCCEEDED + file đọc được. Lỗi generation = REFUND PENDING (Runway), KIT không ghi «đã trừ». Không gửi lại cùng KF.`
       }`,
-      okText: engine === 'wan' ? 'Gửi Wan' : `Confirm · ước ${cost.credits} cr`,
+      okText: engine === 'wan' ? 'Gửi Wan' : engine === 'veo' ? 'Gửi Veo 3' : `Confirm · ước ${cost.credits} cr`,
       cancelText: 'Không gửi',
       onOk: () =>
         sendTurbo({
@@ -3326,7 +4190,7 @@ export function ContentFamixaSeriesTab() {
       message.warning('Mở khóa kịch bản rồi mới nhận pack lại.');
       return undefined;
     }
-    const raw = (live.packDraft || '').trim();
+    const raw = (live.packDraft || live.scriptDraft || '').trim();
     if (!raw) {
       message.warning('Dán kịch bản vào Nội dung chi tiết (hành động + thoại) trước.');
       return undefined;
@@ -3341,15 +4205,18 @@ export function ContentFamixaSeriesTab() {
       if (wrapped !== raw) parsed = parseFamixaPack(wrapped);
     }
     if (parsed.error) {
+      flushServerSaveRef.current();
       message.error(parsed.error);
       return undefined;
     }
     const n = (parsed.episode?.shots?.length ?? 0) + (parsed.shorts?.length ?? 0);
     if (n === 0) {
+      flushServerSaveRef.current();
       message.warning('Chưa tách được shot từ nội dung. Thêm hành động + thoại rồi thử lại.');
       return undefined;
     }
-    const next = persistState(replaceStoryFromParse(live, parsed, raw));
+    const next = persistState({ ...replaceStoryFromParse(live, parsed, raw), scriptDraft: raw });
+    flushServerSaveRef.current();
     setPackText(raw);
     setProposeNote(
       `Đã tách ${parsed.scenes?.length || 0} cảnh · ${parsed.episode?.shots?.length || 0} shot. Duyệt rồi Hoàn tất. Chưa tạo ảnh/video.`,
@@ -3403,7 +4270,7 @@ export function ContentFamixaSeriesTab() {
       (live.shorts?.length ?? 0) +
       episodeShots(live).filter((s) => shotHasValidAction(s, shotRunOf(live, s))).length;
     const action = nextDirectorStoryAction({
-      body: live.packDraft || '',
+      body: live.packDraft || live.scriptDraft || '',
       sceneCount: live.scenes?.length ?? 0,
       shotCount,
       storyReviewed: Boolean(live.storyReviewed),
@@ -3517,16 +4384,21 @@ export function ContentFamixaSeriesTab() {
     active && lockFromGraph(state, active).locked
       ? continuityPlaceHint(lockFromGraph(state, active), active, shotRunOf(state, active).shotAction)
       : undefined;
-  const hasVideoKey = engine === 'wan' ? keys.fal : keys.runway;
-  const sceneBatchCredits = famixaMotionBatchCost(
-    engine,
-    sceneVideo.ready.map((s) => s.seconds),
-  ).credits ?? 0;
+  const hasVideoKey = famixaMotionEngineReady(engine, keys);
+  const sceneBatchCredits =
+    engine === 'veo'
+      ? 0
+      : famixaMotionBatchCost(
+          engine,
+          sceneVideo.ready.map((s) => s.seconds),
+        ).credits ?? 0;
   const sceneBatchLabel =
     !hasVideoKey
       ? engine === 'wan'
         ? 'Cần key Fal (Cấu hình AI → Video)'
-        : 'Cần key Runway (Cấu hình AI → Video)'
+        : engine === 'veo'
+          ? 'Cần file Join Veo (Cấu hình AI → Video)'
+          : 'Cần key Runway (Cấu hình AI → Video)'
       : sceneVideo.ready.length === 0
         ? prodQueue.length === 0
           ? 'Chưa có Short từ kịch bản'
@@ -3534,11 +4406,27 @@ export function ContentFamixaSeriesTab() {
             (sceneVideo.blocked[0]
               ? `${sceneVideo.blocked.length} Short: ${sceneVideo.blocked[0].reason}`
               : 'Chưa có Short để gửi')
-        : engine === 'wan'
+        : engine === 'veo'
+          ? 'Google Veo 3 — Tạo video 1 shot trên bàn'
+          : engine === 'wan'
           ? `Tạo video ${sceneVideo.ready.length} Short · Wan`
           : state.i2vProductionMode
             ? `BATCH · tối đa 3 · ước −${sceneBatchCredits} cr`
             : `SAFE MODE · 1 shot · Confirm credit`;
+
+  const pictureIdentityIds = (
+    st: SeriesPilotState,
+    s: FamixaSeriesShot,
+    pack: FamixaSeriesShot[],
+    specOverride?: VisualSpec,
+  ) => {
+    const prev = previousSceneKf(st, s, pack);
+    const card = compileShotSceneCard(st, s, prev?.shot);
+    const spec = specOverride ?? card.visualSpec;
+    const soloFrame = !spec.secondary.length && spec.subjectKind !== 'prop';
+    return identityCanonIds(spec, soloFrame && spec.primary?.id ? [spec.primary.id] : card.cast.ids)
+      .filter((id) => !/^CHAR-VO$/i.test(id) && !/loi binh|narrator/i.test(id));
+  };
 
   const stillArgsFor = (
     s: FamixaSeriesShot,
@@ -3582,7 +4470,7 @@ export function ContentFamixaSeriesTab() {
       visual: placeLock,
       action: spec.shotAction || card.stillAction,
       location: [master.location || loc.environment || s.location, card.lighting].filter(Boolean).join('. '),
-      characterIds: identityCanonIds(spec, soloFrame && spec.primary?.id ? [spec.primary.id] : card.cast.ids),
+      characterIds: pictureIdentityIds(st, s, pack, spec),
       prevKfUrl: attachPrev ? prevUrl : undefined,
       sceneMasterUrl: lockUrl?.startsWith('data:image') ? lockUrl : undefined,
       inheritFromId: prev?.shot.id,
@@ -3613,10 +4501,15 @@ export function ContentFamixaSeriesTab() {
     return `Cảnh ${String((idx >= 0 ? idx : 0) + 1).padStart(2, '0')}`;
   };
 
-  const preflightForShot = (shotId: string) => {
+  const preflightForShot = (
+    shotId: string,
+    live?: { universe?: FamixaCharacterRecord[]; studioRows?: CharacterStudioRow[]; gemini?: boolean },
+  ) => {
     const shot = shots.find((s) => s.id === shotId) || episodeShots(state).find((s) => s.id === shotId);
     const sceneId = shot ? sceneIdOfShot(shot) : '';
-    const characterIds = shot ? shotCharacterIds(shot) : [];
+    const characterIds = shot
+      ? pictureIdentityIds(state, shot, productionShorts(state))
+      : [];
     const spoken = shot ? linesForShot(state, shot) : [];
     const shotVoiceOk =
       spoken.length === 0 ||
@@ -3625,10 +4518,13 @@ export function ContentFamixaSeriesTab() {
         return dur > 0.2 || Boolean(ttsFiles[l.id]?.url || ttsBlobs.current.has(l.id));
       });
     const directorCopyOk = prodMode === 'director' && directorShotHasSpokenCopy(shotId);
+    const registry = live?.universe ?? universe;
+    const studio = live?.studioRows ?? studioRows;
+    const geminiOk = live?.gemini ?? (settingsHydrated ? keys.gemini : undefined);
     return canGenerateScene({
       characterIds,
-      registry: universe,
-      studioRows,
+      registry,
+      studioRows: studio,
       scriptLocked: canOpenStudio(state),
       voiceReady: voiceProductionReady(state) || directorCopyOk || (prodMode === 'director' && shotVoiceOk),
       shotGraphLocked: state.shotGraphLocked !== false,
@@ -3636,18 +4532,17 @@ export function ContentFamixaSeriesTab() {
       visualStyleKnown: projectStyle != null,
       visualStyleReady: Boolean(projectStyle?.ready),
       aspectOk: state.outputAspect === '16:9' || state.outputAspect === '9:16',
-      hasGemini: Boolean(keys.gemini),
+      hasGemini: geminiOk,
       shotAllowsGeneration: shot ? shotHasValidAction(shot, shotRunOf(state, shot)) : false,
       sceneLabel: sceneLabelOfShot(shotId),
       projectVisualMode: FAMIXA_VISUAL_MODE.visualMode,
       visualReferences: characterIds
         .filter((id) => !/^CHAR-VO$/i.test(id) && !/loi binh|narrator/i.test(id))
-        .map((id) => {
-          const studio = findStudioLockRow(id, studioRows);
-          const name = studio?.characterName || sceneCharacterName(id, universe, studioRows);
-          return studio?.officialLocked
-            ? lockedStudioClaim(id, name, studio.masterSha256)
-            : legacyPhotorealCanonClaim(id, name);
+        .flatMap((id) => {
+          const lock = findStudioLockRow(id, studio);
+          if (!lock?.officialLocked) return [];
+          const name = lock.characterName || sceneCharacterName(id, registry, studio);
+          return [lockedStudioClaim(id, name, lock.masterSha256)];
         }),
     });
   };
@@ -3768,7 +4663,9 @@ export function ContentFamixaSeriesTab() {
   };
 
   const confirmCreateShotImage = (shotId: string) => {
-    if (kfInflightRef.current) {
+    message.warning(productionOsLegacyRefuseNote('CREATE_IMAGE', 'POST /series/still'));
+    if (productionOsLegacyPathClosed()) return;
+    if (kfInflightRef.current[shotId]) {
       message.warning('Đang vẽ/chấm hình — chờ xong, không bấm lần 2.');
       return;
     }
@@ -3776,31 +4673,65 @@ export function ContentFamixaSeriesTab() {
       message.warning('Đang tạo video. Không vẽ hình mới.');
       return;
     }
-    const preflight = preflightForShot(shotId);
-    if (!preflight.allowed) {
-      const copy = directorPictureHoldCopy(preflight.blockers[0]);
-      message.warning([copy.reason, copy.hint].filter(Boolean).join(' '));
-      if (prodMode !== 'director') {
-        setProdTab('images');
-        setImageShotId(shotId);
+    void (async () => {
+      let gemini = keys.gemini;
+      let chars = universe;
+      let studio = studioRows;
+      if (!settingsHydrated || !gemini || !chars.length || !studio.length) {
+        message.loading({ content: 'Đang nạp cấu hình vẽ hình…', key: 'fx-kf-pre', duration: 0 });
+        try {
+          if (!settingsHydrated || !gemini) {
+            const [s, tenant] = await Promise.all([
+              fetchContentSettings().catch(() => null),
+              fetchTenantAiConfig().catch(() => []),
+            ]);
+            const nextKeys = providerKeyFlagsFromSources(s, tenant);
+            gemini = nextKeys.gemini;
+            keysRef.current = nextKeys;
+            setKeys(nextKeys);
+            setSettingsHydrated(true);
+          }
+          if (!chars.length) chars = await loadUniverse();
+          if (!studio.length) studio = (await loadStudioPreflight()).items;
+        } catch {
+          /* preflight below */
+        }
+        message.destroy('fx-kf-pre');
       }
-      return;
-    }
-    modal.confirm({
-      title: 'Tạo ảnh cảnh này?',
-      content: 'Gemini vẽ 1 khung hình theo kịch bản + diễn xuất đã lưu + Canon. Không trừ Runway.',
-      okText: 'Tạo ảnh',
-      cancelText: 'Hủy',
-      zIndex: 3100,
-      getContainer: () => document.body,
-      onOk: () => {
-        void generateSceneKf([shotId]);
-      },
-    });
+      const preflight = preflightForShot(shotId, { universe: chars, studioRows: studio, gemini });
+      if (!preflight.allowed) {
+        const copy = directorPictureHoldCopy(preflight.blockers[0]);
+        if (prodMode !== 'director') {
+          setProdTab('images');
+          setImageShotId(shotId);
+        }
+        modal.warning({
+          title: copy.reason,
+          content: copy.hint,
+          okText: 'Đóng',
+          zIndex: 3100,
+          getContainer: () => document.body,
+        });
+        return;
+      }
+      modal.confirm({
+        title: 'Tạo ảnh cảnh này?',
+        content: 'Gemini vẽ 1 khung hình theo kịch bản + diễn xuất đã lưu + Canon. Không trừ Runway.',
+        okText: 'Tạo ảnh',
+        cancelText: 'Hủy',
+        zIndex: 3100,
+        getContainer: () => document.body,
+        onOk: () => {
+          void generateSceneKf([shotId]);
+        },
+      });
+    })();
   };
 
   const generateSceneKf = (onlyIds?: string[]) => {
-    if (kfInflightRef.current) {
+    message.warning(productionOsLegacyRefuseNote('CREATE_IMAGE', 'POST /series/still'));
+    if (productionOsLegacyPathClosed()) return;
+    if (onlyIds && onlyIds.length === 1 && kfInflightRef.current[onlyIds[0]!]) {
       message.warning('Đang vẽ/chấm hình — chờ xong, không bấm lần 2.');
       return;
     }
@@ -3808,7 +4739,7 @@ export function ContentFamixaSeriesTab() {
       message.warning('Đang tạo video. Không vẽ hình mới.');
       return;
     }
-    if (onlyIds?.length === 1) {
+    if (onlyIds && onlyIds.length === 1) {
       const pf = preflightForShot(onlyIds[0]);
       if (!pf.allowed) {
         setImageShotId(onlyIds[0]);
@@ -3829,7 +4760,7 @@ export function ContentFamixaSeriesTab() {
       const remakeStill = usableRemakeStill(oneShot ? shotRunOf(stateRef.current, oneShot) : undefined);
       const shotOk =
         prodMode === 'director' &&
-        onlyIds?.length === 1 &&
+        onlyIds && onlyIds.length === 1 &&
         (shotVoiceReadyForPicture(onlyIds[0]!) || remakeStill || directorShotHasSpokenCopy(onlyIds[0]!));
       if (!shotOk) {
         message.warning('Duyệt thoại (VOICE LOCKED) trước khi tạo hình.');
@@ -3843,7 +4774,16 @@ export function ContentFamixaSeriesTab() {
     }
     const packNow = productionShorts(stateRef.current);
     const unlocked = [...new Set(packNow.map(sceneIdOfShot))].filter((sc) => !sceneMasterOf(stateRef.current, sc).locked);
-    if (unlocked.length) {
+    if (onlyIds && onlyIds.length === 1) {
+      const oneShot =
+        packNow.find((s) => s.id === onlyIds[0]) ||
+        episodeShots(stateRef.current).find((s) => s.id === onlyIds[0]);
+      const oneScene = oneShot ? sceneIdOfShot(oneShot) : '';
+      if (oneScene && !sceneMasterOf(stateRef.current, oneScene).locked) {
+        message.warning(`Khóa Scene Master (${oneScene}) trước khi tạo hình.`);
+        return;
+      }
+    } else if (unlocked.length) {
       message.warning(`Khóa Scene Master (${unlocked.join(', ')}) trước khi tạo hình.`);
       return;
     }
@@ -3851,7 +4791,7 @@ export function ContentFamixaSeriesTab() {
       message.warning('Chọn khung xuất 16:9 hoặc 9:16 trên Scene Master trước khi vẽ KF.');
       return;
     }
-    if (!keys.gemini) {
+    if (!keysRef.current.gemini) {
       message.warning('Cần Gemini API key (Cấu hình AI) để vẽ KF từ Canon.');
       return;
     }
@@ -3902,7 +4842,7 @@ export function ContentFamixaSeriesTab() {
         message.success({ content: `REUSE ${shCode(st, one)} — 0 Gemini. Duyệt KF rồi mới shot tiếp.`, key: 'fx-kf-gen' });
         return;
       }
-      if (kfInflightRef.current) {
+      if (draw.some((s) => kfInflightRef.current[s.id])) {
         message.warning({ content: 'Đang vẽ 1 KF — chờ xong.', key: 'fx-kf-gen' });
         return;
       }
@@ -3910,10 +4850,7 @@ export function ContentFamixaSeriesTab() {
         if (!shotHasValidAction(s, shotRunOf(stateRef.current, s))) continue;
         const kind = await generateKfFromCanon(stillArgsFor(s, pack));
         if (kind === 'DUPLICATE_PIXEL') return;
-        if (kind !== 'NEW_PENDING_PICTURE') {
-          message.error({ content: `Dừng KF tại ${shCode(stateRef.current, s)}.`, key: 'fx-kf-gen' });
-          return;
-        }
+        if (kind !== 'NEW_PENDING_PICTURE') return;
         const qa = shotRunOf(stateRef.current, s).visualQa;
         if (qa && !visualQaAllowsApprove(qa)) {
           message.warning({
@@ -3958,7 +4895,7 @@ export function ContentFamixaSeriesTab() {
       }
       const one = targets[0]!;
       const failed = shotRunOf(st, one).keyframeDataUrl;
-      if (kfInflightRef.current) {
+      if (kfInflightRef.current[one.id]) {
         message.warning('Đang vẽ 1 KF — chờ xong.');
         return;
       }
@@ -3984,10 +4921,7 @@ export function ContentFamixaSeriesTab() {
         }),
       );
       if (kind === 'DUPLICATE_PIXEL') return;
-      if (kind !== 'NEW_PENDING_PICTURE') {
-        message.error(`Dừng KF tại ${shCode(stateRef.current, one)}.`);
-        return;
-      }
+      if (kind !== 'NEW_PENDING_PICTURE') return;
       persistState(applySceneKfReuses(stateRef.current, pack, buildSceneKfPlan(stateRef.current, pack)));
     })();
   };
@@ -4086,6 +5020,7 @@ export function ContentFamixaSeriesTab() {
         turboError: undefined,
         videoPipe: 'VIDEO_READY',
         motionNeedsRemake: false,
+        actingBeatPendingMotion: false,
         videoVerified: true,
         videoBytes: probed.bytes ?? undefined,
         videoMime: probed.mime ?? undefined,
@@ -4178,10 +5113,16 @@ export function ContentFamixaSeriesTab() {
   };
 
   const startSceneTurbo = (onlyIds?: string[], opts?: { remake?: boolean; cameraShift?: number }) => {
+    if (refuseUnwiredVeo()) return;
+    if (engine === 'veo' && (onlyIds?.length ?? 0) !== 1) {
+      message.warning('Google Veo 3: gửi 1 shot / 1 lần. Dùng Tạo video trên bàn shot. Không gửi hàng loạt.');
+      return;
+    }
     const quietMin = runwayQuietRemainMin(runwayQuietUntil);
     if (opts?.remake && (onlyIds?.length ?? 0) !== 1) {
       const pack = productionShorts(stateRef.current);
-      const shots = (onlyIds?.length ? pack.filter((s) => onlyIds.includes(s.id)) : pack).filter((s) => {
+      const ids = onlyIds ?? [];
+      const shots = (ids.length ? pack.filter((s) => ids.includes(s.id)) : pack).filter((s) => {
         const run = shotRunOf(stateRef.current, s);
         if (!run.keyframeDataUrl || !kfIsApproved(run) || run.prodSkip || !shotHasValidAction(s, run)) return false;
         const promptHash = shotI2vPromptHash(stateRef.current, s, run);
@@ -4230,7 +5171,7 @@ export function ContentFamixaSeriesTab() {
       });
       return;
     }
-    if (onlyIds?.length === 1) {
+    if (onlyIds && onlyIds.length === 1) {
       const one =
         productionShorts(stateRef.current).find((s) => s.id === onlyIds[0]) ||
         (stateRef.current.episode?.shots ?? []).find((s) => s.id === onlyIds[0]);
@@ -4252,14 +5193,14 @@ export function ContentFamixaSeriesTab() {
       }
     }
     if (quietMin) {
-      const one = onlyIds?.length === 1 ? productionShorts(stateRef.current).find((s) => s.id === onlyIds[0]) : undefined;
+      const one = onlyIds && onlyIds.length === 1 ? productionShorts(stateRef.current).find((s) => s.id === onlyIds[0]) : undefined;
       const resumeOne = Boolean(one && shouldResumeTurboPoll(shotRunOf(stateRef.current, one)));
       if (!resumeOne) {
         message.warning('KIT còn khóa gửi job mới vì 429 cũ. Bấm «Đã lên tier — mở gửi» trên bước Video. Hỏi lại · 0 cr không bị khóa.');
         return;
       }
     }
-    const explicitOne = onlyIds?.length === 1;
+    const explicitOne = onlyIds && onlyIds.length === 1;
     if (!canWorkV2Scene(state)) {
       const muteShot = onlyIds?.[0]
         ? episodeShots(stateRef.current).find((s) => s.id === onlyIds[0]) ||
@@ -4301,7 +5242,7 @@ export function ContentFamixaSeriesTab() {
         blocked = [];
       }
     }
-    if (onlyIds?.length === 1 && turboLaunchRef.current.has(onlyIds[0]!)) {
+    if (onlyIds && onlyIds.length === 1 && turboLaunchRef.current.has(onlyIds[0]!)) {
       turboLaunchRef.current.delete(onlyIds[0]!);
     }
     if ((onlyIds?.length ?? 0) !== 1 && turboLaunchRef.current.size) {
@@ -4344,7 +5285,7 @@ export function ContentFamixaSeriesTab() {
       );
       return;
     }
-    if (onlyIds?.length === 1 && resumePack.length === 1 && newPack.length === 0) {
+    if (onlyIds && onlyIds.length === 1 && resumePack.length === 1 && newPack.length === 0) {
       const shot = resumePack[0]!;
       const run = shotRunOf(stateRef.current, shot);
       const replaceTake = Boolean(opts?.remake || run.motionNeedsRemake || (opts?.cameraShift ?? 0) > 0);
@@ -4352,7 +5293,10 @@ export function ContentFamixaSeriesTab() {
         void sendTurbo({
           clipId: shot.id,
           prompt: i2vActionOf(stateRef.current, shot, run) || run.shotAction || shot.story || '',
-          seconds: providerDurationOf(stateRef.current, shot),
+          seconds:
+            engine === 'veo'
+              ? veoMappedDurationSec(providerDurationOf(stateRef.current, shot), dialogueFloorOf(stateRef.current, shot))
+              : providerDurationOf(stateRef.current, shot),
           ratio: outputAspectOf(stateRef.current),
           engine,
           resume: true,
@@ -4427,7 +5371,7 @@ export function ContentFamixaSeriesTab() {
                 patchRun(shot.id, { status: 'keyframe_ready' });
               }
               const loc = lockFromGraph(stateRef.current, shot);
-              const lock = { ...loc, locked: loc.locked || Boolean(loc.environment) || explicitOne };
+              const lock = { ...loc, locked: Boolean(loc.locked) || Boolean(loc.environment) || Boolean(explicitOne) };
               const pre = studioI2vPrecheck({
                 lock,
                 action: i2vActionOf(after, shot, run),
@@ -4438,7 +5382,7 @@ export function ContentFamixaSeriesTab() {
                 scriptLocked: Boolean(after.scriptLocked) || (prodMode === 'director' && explicitOne),
                 shortsReady: explicitOne || canWorkV2Scene(after),
                 engine,
-                hasEngineKey: engine === 'wan' ? keys.fal : keys.runway,
+                hasEngineKey: engine === 'wan' ? keys.fal : engine === 'veo' ? keys.veo : keys.runway,
                 state: after,
                 shot,
                 videoContext,
@@ -4460,10 +5404,12 @@ export function ContentFamixaSeriesTab() {
                 const dur = Number(stateRef.current.voiceAssets?.[line.id]?.duration || 0);
                 return n + (dur || 0) + (idx + 1 < all.length ? 0.1 : 0);
               }, 0.2);
+              const askedSec = spokenEnd > 0.3 ? providerDurationOf(after, shot) : shot.seconds;
               const ok = await sendTurbo({
                 clipId: shot.id,
                 prompt: pre.prompt,
-                seconds: spokenEnd > 0.3 ? providerDurationOf(after, shot) : shot.seconds,
+                seconds:
+                  engine === 'veo' ? veoMappedDurationSec(askedSec, dialogueFloorOf(after, shot)) : askedSec,
                 ratio: outputAspectOf(stateRef.current),
                 engine,
                 silent: true,
@@ -4517,137 +5463,502 @@ export function ContentFamixaSeriesTab() {
     });
   };
 
-  const startShotMotion = (shotId: string, liveStill?: string) => {
-    void (async () => {
-    try {
-      if (kfInflightRef.current && stillBusy) {
-        message.warning('Đang vẽ/chấm hình. Đợi xong rồi mới Tạo video.');
-        return;
-      }
-      kfInflightRef.current = undefined;
-      if (turboBusyRef.current) {
-        message.warning('Đang có job video. Đợi file về — không gửi thêm.');
-        return;
-      }
-      const shot =
-        productionShorts(stateRef.current).find((s) => s.id === shotId) ||
-        (stateRef.current.episode?.shots ?? []).find((s) => s.id === shotId);
-      let run = shot ? shotRunOf(stateRef.current, shot) : undefined;
-      const shown =
-        (liveStill?.startsWith('data:image') ? liveStill : undefined) ||
-        (run?.keyframeDataUrl?.startsWith('data:image') ? run.keyframeDataUrl : undefined) ||
-        (shot ? kfPixelsOf(shot.id) : undefined);
-      if (shown?.startsWith('data:image') && shot && shown !== run?.keyframeDataUrl) {
-        patchRun(shot.id, { keyframeDataUrl: shown });
-        void saveKfPixels(shot.id, shown, run?.keyframeFileName);
-        run = shotRunOf(stateRef.current, shot);
-      } else if (!shot || !run?.keyframeDataUrl?.startsWith('data:image')) {
-        const cached = shot ? await loadKfPixels(shot.id) : undefined;
-        const mem = shot ? kfPixelsOf(shot.id) : undefined;
-        const dataUrl = cached?.dataUrl?.startsWith('data:image') ? cached.dataUrl : mem;
-        if (dataUrl?.startsWith('data:image') && shot) {
-          patchRun(shot.id, { keyframeDataUrl: dataUrl, keyframeFileName: cached?.fileName });
-          void saveKfPixels(shot.id, dataUrl, cached?.fileName);
-          run = shotRunOf(stateRef.current, shot);
-        }
-      }
-      if (!shot || !run?.keyframeDataUrl?.startsWith('data:image')) {
-        message.warning('Chưa có hình để tạo video.');
-        return;
-      }
-      if (!kfIsApproved(run)) {
-        message.warning('Duyệt hình rồi mới tạo video.');
-        return;
-      }
-      if (!(run.pictureRevisionId || '').trim()) {
-        const minted = nextPictureRevisionId(shotId, run.pictureRevisionId);
-        patchRun(shotId, { pictureRevisionId: minted });
-        run = shotRunOf(stateRef.current, shot);
-      }
-      const motionSnap = snapshotOfShot(stateRef.current, shot, ttsFilesRef.current);
-      console.info('[FAMIXA_MOTION_START]', {
-        shotId,
-        pictureRevisionId: run.pictureRevisionId,
-        pictureHash: (run.kfSourceHash || '').slice(0, 24),
-        currentMotion: motionSnap.execution.currentArtifacts.motion?.validity ?? 'NONE',
-        nextAction: motionSnap.nextAction,
-        remake: run.motionNeedsRemake,
-        sameFailedInput: sameFailedInput(run, dataUriHash(run.keyframeDataUrl), shotI2vPromptHash(stateRef.current, shot, run)),
-      });
-      for (const line of linesForShot(stateRef.current, shot)) {
-        if (ttsFilesRef.current[line.id]?.url || ttsBlobs.current.has(line.id)) continue;
-        void resolveLineAudio(line);
-      }
-      const seconds = providerDurationOf(stateRef.current, shot);
-      const kfHash = dataUriHash(run.keyframeDataUrl);
-      const runwayFailed = runwayFailedOnCurrentKf(run, kfHash);
-      const sendMotion = async (useEngine: 'turbo' | 'wan') => {
-        const beforeTask = run.turboTaskId || '';
-        const beforeErr = run.turboError || '';
-        const ok = await sendTurbo({
-          clipId: shot.id,
-          prompt: i2vActionOf(stateRef.current, shot, run) || run.shotAction || shot.story || '',
-          seconds,
-          ratio: outputAspectOf(stateRef.current),
-          engine: useEngine,
-          silent: false,
-          resume: false,
-          forceNew: true,
-          lastFrameFromUrl: undefined,
-        });
-        if (ok) return;
-        const after = shotRunOf(stateRef.current, shot);
-        const newTask = after.turboTaskId && after.turboTaskId !== beforeTask;
-        const failsAfter = failedJobsOnThisKf(after, dataUriHash(after.keyframeDataUrl || run.keyframeDataUrl));
-        if (newTask) {
-          message.error(
-            failsAfter >= 1 && useEngine === 'turbo'
-              ? `Job mới FAIL · ${String(after.turboTaskId).slice(0, 8)}. Runway không render ảnh này — không gửi Runway thêm.`
-              : `Job mới FAIL · ${String(after.turboTaskId).slice(0, 8)}. Ảnh giữ nguyên.`,
-          );
-        } else if (!after.turboError || after.turboError === beforeErr) {
-          message.warning('Chưa gửi job mới. Không trừ credit — không phải lỗi Runway cũ.');
-        }
+  const startShotMotion = (_shotId: string, _liveStill?: string) => {
+    /* LEGACY. CREATE_VIDEO CTA never calls this. No production requests. No turbo send. */
+    return;
+  };
+
+  const putVisual = (shotId: string, next: VisualDeskView & { url?: string }) => {
+    setVisualByShot((current) => {
+      const prior = current[shotId];
+      const url = next.keepPicture ? prior?.url : next.url;
+      if (prior?.url && prior.url !== url) URL.revokeObjectURL(prior.url);
+      return {
+        ...current,
+        [shotId]: {
+          phase: next.phase,
+          detail: next.detail,
+          assetId: next.keepPicture ? prior?.assetId : next.assetId,
+          approved: next.approved,
+          undrawable: next.undrawable,
+          decision: next.decision ?? prior?.decision,
+          searchDecision: next.searchDecision ?? prior?.searchDecision,
+          variantUrl: next.variantUrl ?? prior?.variantUrl,
+          url,
+        },
       };
-      if (runwayFailed && engine !== 'wan') {
+    });
+  };
+
+  const showVisualAsset = async (assetId: string) => {
+    const blob = await fetchVisualAssetImage(assetId);
+    const typed = blob.type.startsWith('image/') ? blob : new Blob([await blob.arrayBuffer()], { type: 'image/png' });
+    return URL.createObjectURL(typed);
+  };
+
+  const applyVisualCreate = async (
+    buildId: string,
+    shot: FamixaSeriesShot,
+    opts: { regenerate: boolean; medium?: 'auto' | 'photo' },
+  ) => {
+    const brand = normalizeFilmBrand(filmBrandRef.current)
+      || normalizeFilmBrand(visualBrandChoiceRef.current)
+      || normalizeFilmBrand(visualBoundBrandRef.current[shot.id]);
+    if (!brand) {
+      putVisual(shot.id, {
+        phase: 'missing',
+        detail: 'Phim chưa có brand. Không dùng tạm hình của brand khác.',
+        keepPicture: true,
+      });
+      return false;
+    }
+    visualBoundBrandRef.current[shot.id] = brand;
+    const demand = buildShotVisualDemand({ filmId: buildId, brandCode: brand, shot, medium: opts.medium });
+    if (!opts.regenerate) {
+      putVisual(shot.id, {
+        phase: 'searching',
+        detail: `Đang tìm tài nguyên cho brand ${brand}.`,
+        keepPicture: true,
+        decision: '',
+        searchDecision: '',
+      });
+      const found = await resolveVisualShot({ demand, searchOnly: true });
+      const step = afterVisualSearch(found);
+      if (step === 'bind' && found.assetId) {
+        const view = interpretVisualResolve(found, 'search');
+        const url = await showVisualAsset(found.assetId);
+        putVisual(shot.id, { ...view, detail: `${view.detail} Brand ${brand}.`, url });
+        return false;
+      }
+      if (step !== 'create') {
+        putVisual(shot.id, { ...interpretVisualResolve(found, 'search'), keepPicture: true, searchDecision: found.decision || '' });
+        return false;
+      }
+      putVisual(shot.id, {
+        phase: 'missing',
+        detail: found.reason || 'Chưa có tài nguyên đúng cảnh. Không lấy ảnh khác chủ đề.',
+        keepPicture: true,
+        decision: found.decision || 'NO_FIT',
+        searchDecision: found.decision || 'NO_FIT',
+      });
+    }
+    putVisual(shot.id, {
+      phase: 'generating',
+      detail: opts.regenerate
+        ? 'Đang lưu biến thể mới. Ảnh đã duyệt không bị ghi đè.'
+        : `Đang tạo hình cục bộ cho brand ${brand}.`,
+      keepPicture: true,
+    });
+    const made = await resolveVisualShot({ demand, regenerate: opts.regenerate });
+    const view = interpretVisualResolve(made, opts.regenerate ? 'variant' : 'create');
+    const url = !view.keepPicture && view.assetId && made.hasImage ? await showVisualAsset(view.assetId) : undefined;
+    const priorGap = !opts.regenerate && view.decision !== 'REUSE' && view.decision !== 'BOUND'
+      ? 'Không có ảnh đúng cảnh (NO_FIT). '
+      : '';
+    const paidNote = view.decision === 'GENERATION_REQUIRED' ? ` Provider calls ${made.paidProviderCalls ?? 0}.` : '';
+    const variantUrl = view.decision === 'VARIANT_STORED' && made.variantAssetId && made.hasImage
+      ? await showVisualAsset(made.variantAssetId)
+      : undefined;
+    putVisual(shot.id, {
+      ...view,
+      detail: `${priorGap}${view.undrawable ? `${view.detail} Chưa vẽ được chữ có dấu: ${view.undrawable}.` : view.detail} Brand ${brand}.${paidNote}`,
+      variantUrl,
+      searchDecision: opts.regenerate ? undefined : 'NO_FIT',
+      url,
+    });
+    return view.offerPaid === true;
+  };
+
+  const hydrateVisualShot = async (
+    buildId: string,
+    shotId: string,
+    isCancelled: () => boolean,
+    replacePicture: boolean,
+  ) => {
+    try {
+      const row = await readVisualShotBinding(buildId, shotId);
+      if (isCancelled()) return;
+      if (!row.found || !row.assetId) return;
+      if (row.brandCode) visualBoundBrandRef.current[shotId] = row.brandCode;
+      let url: string | undefined;
+      if (row.hasImage) {
+        url = await showVisualAsset(row.assetId);
+        if (isCancelled()) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+      }
+      putVisual(shotId, {
+        phase: row.approved ? 'approved' : 'ready',
+        detail: row.approved
+          ? `Giữ ảnh đã duyệt. Brand ${row.brandCode || ''}. Mở lại phim không tạo ảnh mới.${replacePicture ? '' : ' Ảnh production của shot không bị thay.'}`
+          : `Ảnh đã lưu cho shot. Brand ${row.brandCode || ''}. Mở lại phim không tạo ảnh mới.${replacePicture ? '' : ' Ảnh production của shot không bị thay.'}`,
+        assetId: row.assetId,
+        approved: row.approved,
+        decision: row.decision || (row.approved ? 'BOUND' : 'BOUND'),
+        keepPicture: false,
+        url,
+      });
+    } catch {
+      /* A failed read must not resolve or generate. */
+    }
+  };
+
+  const approveVisualStill = (shotId: string) => {
+    const filmBuildId = stateRef.current.buildId;
+    const identity = resolveShotWorkspaceIdentity({ requestedBuildId: filmBuildId, requestedShotId: shotId });
+    if (!identity.ok) return;
+    void (async () => {
+      try {
+        const row = await approveVisualShotBinding(identity.requestedBuildId, shotId);
+        putVisual(shotId, {
+          phase: 'approved',
+          detail: 'Đã duyệt ảnh này. Tạo biến thể sẽ lưu file mới và giữ nguyên ảnh này.',
+          assetId: row.assetId || undefined,
+          approved: true,
+          keepPicture: true,
+        });
+      } catch (e) {
+        message.error(apiErrorMessage(e, 'Chưa duyệt được ảnh.'));
+      }
+    })();
+  };
+
+  const requestVisualLibrary = (shotId: string, medium?: 'auto' | 'photo') => {
+    if (osInflightRef.current[shotId]) return;
+    const filmBuildId = stateRef.current.buildId;
+    const identity = resolveShotWorkspaceIdentity({ requestedBuildId: filmBuildId, requestedShotId: shotId });
+    if (!identity.ok) return;
+    const shot = productionOsDeskShots(identity.requestedBuildId, [
+      ...productionShorts(stateRef.current),
+      ...(stateRef.current.episode?.shots ?? []),
+    ]).find((s) => s.id === shotId);
+    if (!shot) return;
+    const mark = medium === 'photo' ? 'VISUAL_PHOTO' : 'VISUAL_LIBRARY';
+    osInflightRef.current[shotId] = mark;
+    setStillBusy(shotId);
+    void (async () => {
+      try {
+        await applyVisualCreate(identity.requestedBuildId, shot, { regenerate: false, medium });
+      } catch (e) {
+        message.error(apiErrorMessage(e, 'Không tìm được hình dùng chung.'));
+      } finally {
+        if (osInflightRef.current[shotId] === mark) delete osInflightRef.current[shotId];
+        setStillBusy((cur) => (cur === shotId ? undefined : cur));
+      }
+    })();
+  };
+
+  const requestVisualVariant = (shotId: string) => {
+    if (osInflightRef.current[shotId]) return;
+    const filmBuildId = stateRef.current.buildId;
+    const identity = resolveShotWorkspaceIdentity({ requestedBuildId: filmBuildId, requestedShotId: shotId });
+    if (!identity.ok) return;
+    const shot = productionOsDeskShots(identity.requestedBuildId, [
+      ...productionShorts(stateRef.current),
+      ...(stateRef.current.episode?.shots ?? []),
+    ]).find((s) => s.id === shotId);
+    if (!shot) return;
+    osInflightRef.current[shotId] = 'VISUAL_VARIANT';
+    setStillBusy(shotId);
+    void (async () => {
+      try {
+        await applyVisualCreate(identity.requestedBuildId, shot, { regenerate: true });
+      } catch (e) {
+        message.error(apiErrorMessage(e, 'Không lưu được biến thể.'));
+      } finally {
+        if (osInflightRef.current[shotId] === 'VISUAL_VARIANT') delete osInflightRef.current[shotId];
+        setStillBusy((cur) => (cur === shotId ? undefined : cur));
+      }
+    })();
+  };
+
+  const executeProductionOsAction = (shotId: string, action: string) => {
+    if (action === 'CREATE_LIPSYNC' && shotId === OFFICIAL_SH02_SHOT_CODE) {
+      void prepareOfficialLipsync(shotId);
+      return;
+    }
+    void (async () => {
+      try {
+        const catalog = osActionsByShotRef.current[shotId];
+        const blocked = formatProductionActionReason(catalog, action);
+        if (!mayExecuteProductionAction(catalog, action)) {
+          message.warning(blocked || `${action} · UNAVAILABLE`);
+          return;
+        }
+        const filmBuildId = stateRef.current.buildId;
+        const identity = resolveShotWorkspaceIdentity({ requestedBuildId: filmBuildId, requestedShotId: shotId });
+        const buildId = identity.ok ? identity.requestedBuildId : undefined;
+        if (!identity.ok || !buildId) {
+          message.error(formatShotIdentityError(identity));
+          return;
+        }
+        const shot = productionOsDeskShots(buildId, [
+          ...productionShorts(stateRef.current),
+          ...(stateRef.current.episode?.shots ?? []),
+        ]).find((s) => s.id === shotId);
+        if (!shot) {
+          message.error(formatShotIdentityError({
+            reason: 'SHOT_NOT_FOUND',
+            requestedBuildId: filmBuildId,
+            requestedShotId: shotId,
+          }));
+          return;
+        }
+        const episodePost = action === 'ASSEMBLE_EPISODE';
+        const tenantImage = action === 'CREATE_IMAGE' && mayAuthorizeTenantEp01Image(buildId, shotId);
+        if (action === 'CREATE_IMAGE' && shotId.toUpperCase() === 'EP01-SC01-SH03') {
+          message.warning('EP01-SC01-SH03 · SPOKEN_LINE_INCOMPLETE');
+          return;
+        }
+        if (action === 'CREATE_IMAGE') {
+          if (osInflightRef.current[shotId] === 'CREATE_IMAGE') return;
+          osInflightRef.current[shotId] = 'CREATE_IMAGE';
+          setStillBusy(shotId);
+          let offerPaid = false;
+          try {
+            offerPaid = await applyVisualCreate(buildId, shot, { regenerate: false });
+          } catch (e) {
+            message.error(apiErrorMessage(e, 'Không chọn được hình.'));
+            return;
+          } finally {
+            if (osInflightRef.current[shotId] === 'CREATE_IMAGE') delete osInflightRef.current[shotId];
+            setStillBusy((cur) => (cur === shotId ? undefined : cur));
+          }
+          if (!offerPaid || !tenantImage) return;
+        }
+        if (episodePost) {
+          if (!mayPostProductionEpisode(buildId)) {
+            message.warning(`${action} · PROVIDER_UNAVAILABLE · FILM_PROTECTED`);
+            return;
+          }
+        } else if (!mayMutateProductionOs(buildId, shotId) && !tenantImage) {
+          message.warning(`${action} · PROVIDER_UNAVAILABLE · FILM_PROTECTED`);
+          return;
+        }
+        const story = futureDeskStory(shot.id, (shot.story || '').trim() || 'TEST fixture story');
+        const voiceDraft = action === 'CREATE_VOICE' ? voiceDraftForRequest(shot.id, '') : null;
+        if (voiceDraft && !voiceDraft.permitted) {
+          message.warning(directorBlockerLines([voiceDraft.blocker]).join(' ') || voiceDraft.blocker);
+          return;
+        }
+        if (action === 'CREATE_LIPSYNC' || action === 'MIX_VIDEO') {
+          const run = shotRunOf(stateRef.current, shot);
+          const director = osDirectorTimingByShot[shotId];
+          const speech = run.lipsyncFrozenInput?.voiceDurationSec
+            || osVoiceByShot[shotId]?.durationSec
+            || 0;
+          const picture = run.lipsyncFrozenInput?.motionDurationSec ?? 0;
+          const os = osStateByShotRef.current[shotId];
+          const preview = osPreviewIdentityByShotRef.current[shotId];
+          const measured = currentLipsyncMeasurement({
+            lipsyncArtifactId: os?.lipsyncArtifactId || productionNodeArtifactId(os, 'LIPSYNC'),
+            previewArtifactId: preview?.artifactId,
+            previewRole: preview?.role,
+            previewDurationSec: preview?.durationSec,
+          });
+          const clocks = clickTimeLipsyncClock({
+            action,
+            hasCurrentLipsyncArtifact: measured.hasArtifact,
+            currentLipsyncDurationSec: measured.durationSec,
+            directDialogue: (shot.dialogueSegmentIds?.length ?? 0) > 0,
+            audioSec: speech,
+            pictureSec: picture,
+            dialogueIntervals: approvedDialogueIntervals({
+              source: director?.timingSource ?? undefined,
+              speechStartSec: director?.speechStartSec ?? undefined,
+              speechEndSec: director?.speechEndSec ?? undefined,
+            }),
+          });
+          if (clocks.length) {
+            message.warning(directorBlockerLines(clocks).join(' ') || clocks[0]);
+            return;
+          }
+        }
+        const acting = futureDeskActing(
+          shot.id,
+          [shot.actingBeat?.before?.action, shot.actingBeat?.before?.body]
+            .map((x) => (x || '').trim())
+            .filter(Boolean)
+            .join(' ') || 'TEST fixture acting',
+        );
+        const label = PRODUCTION_OS_CTA[action] || action;
+        const imageTier = tenantImage ? qualityTierOf('IMAGE', readQualityTier(shot.id, 'IMAGE')) : null;
+        const tenantVideo = action === 'CREATE_VIDEO' && shot.id.startsWith('EP01-') && !isProductionOsTestShot(shot.id);
+        const videoTier = tenantVideo ? qualityTierOf('VIDEO', readQualityTier(shot.id, 'VIDEO')) : null;
         modal.confirm({
-          title: 'CONFIRM WAN · Fal I2V',
-          content: `Runway đã FAIL trên ảnh đang duyệt. Không gửi Runway (${famixaMotionGenerateCost('turbo', 5).credits} cr). Gửi 1 lần Wan trên ảnh này.`,
-          okText: keys.fal ? 'CONFIRM WAN' : 'Hết key Fal',
-          okButtonProps: { disabled: !keys.fal },
-          cancelText: 'Đóng',
+          title: label,
+          content: episodePost
+            ? `ASSEMBLE_EPISODE trên Production OS. Server ffmpeg ghép CURRENT:ASSEMBLY đã có. Không gọi Gemini / Veo / Runway / Wan / Fal / ElevenLabs. ${episodeAssemblyNotice(EPISODE_ASSEMBLY_ORDER)}`
+            : tenantImage
+              ? `Tạo ảnh Gemini 3.1 Flash Image, ${imageTier?.label}. ${imageTier?.detail} theo bảng giá đã công bố, chưa phải hóa đơn. Công đoạn này tối đa 3 lượt có phí, tính cả lượt này.`
+            : videoTier
+              ? `Tạo video Runway Gen-4 Turbo, ${videoTier.label}. ${videoTier.detail}.`
+            : `${action} trên Production OS. Fixture — không gửi Gemini / Veo / Runway / Wan / Fal / ElevenLabs.`,
+          okText: label,
+          cancelText: 'Hủy',
           zIndex: 3100,
           getContainer: () => document.body,
           onOk: async () => {
-            if (!keys.fal) {
-              message.warning('Hết key Fal — không gửi được Wan.');
-              return;
+            if (!mayExecuteProductionAction(osActionsByShotRef.current[shotId], action)) return;
+            if (osInflightRef.current[shotId] === action) return;
+            osInflightRef.current[shotId] = action;
+            if (action === 'CREATE_VIDEO' || action === 'REGENERATE') setTurboBusy(shotId);
+            else if (action === 'CREATE_IMAGE') setStillBusy(shotId);
+            else if (action === 'CREATE_LIPSYNC' || action === 'CREATE_VOICE') setLipsyncBusy(shotId);
+            else setOrchMixId(shotId);
+            try {
+              const osState = osStateByShotRef.current[shotId]
+                || await getProductionShotState(buildId, shotId, {
+                  episodeCode: 'TEST',
+                  sceneCode: 'TEST-SC01',
+                  story,
+                  actingBeat: acting,
+                  visualContract: shot.visual || 'TEST fixture visual',
+                  timing: '5',
+                  ...strategyClaim(shot),
+                });
+              const motionId = productionNodeArtifactId(osState, 'MOTION');
+              let voiceArtId = resolveCurrentVoiceArtifactId(osState);
+              if (action === 'CREATE_LIPSYNC') {
+                try {
+                  const resolved = await getProductionCurrentVoice(buildId, shot.id, `LINE-${shot.id}`);
+                  if (resolved.artifactId) voiceArtId = resolved.artifactId;
+                } catch {
+                  /* GET /voice 404/mismatch: keep OS CURRENT:VOICE node. Never kit-famixa-tts. */
+                }
+              }
+              const lipsyncId = (osState.lipsyncArtifactId || '').trim() || productionNodeArtifactId(osState, 'LIPSYNC');
+              const mixId = productionNodeArtifactId(osState, 'MIX');
+              const acceptId = mixId || lipsyncId || osState.visibleArtifactId || motionId || osState.currentArtifactId;
+              if (action === 'CREATE_LIPSYNC' && (!motionId || !voiceArtId)) {
+                throw new Error(formatProductionActionReason(catalog, action) || 'MISSING_DEPENDENCY · VIDEO_TAKE+VOICE');
+              }
+              if (action === 'REGENERATE' && !motionId) {
+                throw new Error('MISSING_DEPENDENCY');
+              }
+              if (action === 'MIX_VIDEO' && !lipsyncId && !isConfirmedStaticVoiceOver(shot)) {
+                throw new Error('MISSING_LIPSYNC');
+              }
+              if (action === 'ACCEPT' && !acceptId) {
+                throw new Error('MISSING_DEPENDENCY');
+              }
+              let assemblyArtifactIds: string[] | undefined;
+              let assemblyShotCodes: string[] | undefined;
+              if (action === 'ASSEMBLE') {
+                const accepted: { shotCode: string; artifactId: string }[] = [];
+                for (const code of ['TEST-SC01-SH01', 'TEST-SC01-SH02']) {
+                  const row = code === shotId
+                    ? osState
+                    : osStateByShotRef.current[code] || await getProductionShotState(PRODUCTION_OS_TEST_SCOPE_ID, code);
+                  const id = (row.acceptedArtifactId || '').trim();
+                  if (id) accepted.push({ shotCode: code, artifactId: id });
+                }
+                if (!accepted.length) throw new Error('MISSING_DEPENDENCY');
+                assemblyArtifactIds = accepted.map((row) => row.artifactId);
+                assemblyShotCodes = accepted.map((row) => row.shotCode);
+              }
+              if (action === 'ASSEMBLE_EPISODE') {
+                const ordered: { shotCode: string; artifactId: string }[] = [];
+                for (const code of EPISODE_ASSEMBLY_ORDER) {
+                  const row = code === shotId
+                    ? osState
+                    : osStateByShotRef.current[code] || await getProductionShotState(buildId, code, {
+                      episodeCode: 'EP01',
+                      sceneCode: 'SC01',
+                    });
+                  const id = productionNodeArtifactId(row, 'ASSEMBLY');
+                  if (!id) throw new Error('MISSING_DEPENDENCY');
+                  ordered.push({ shotCode: code, artifactId: id });
+                }
+                assemblyArtifactIds = ordered.map((row) => row.artifactId);
+                assemblyShotCodes = ordered.map((row) => row.shotCode);
+              }
+              const result = await createProductionRequest({
+                buildId,
+                episodeCode: action === 'ASSEMBLE_EPISODE'
+                  ? 'EP01'
+                  : isProductionOsTestShot(shotId)
+                  ? 'TEST'
+                  : episodeCodeOf(stateRef.current.episode?.episode || stateRef.current.episode?.title) || 'EP01',
+                sceneCode: action === 'ASSEMBLE_EPISODE'
+                  ? 'EP01'
+                  : isProductionOsTestShot(shotId) ? 'TEST-SC01' : sceneIdOfShot(shot) || shot.scene || 'SC01',
+                shotCode: action === 'ASSEMBLE_EPISODE' ? EPISODE_ASSEMBLY_SHOT_CODE : shot.id,
+                story: voiceDraft?.text || story,
+                actingBeat: acting,
+                visualContract: shot.visual || '',
+                timing: String(dialogueFloorOf(stateRef.current, shot) || shot.seconds || 5),
+                ...strategyClaim(shot),
+                aspectRatio: outputAspectOf(stateRef.current),
+                durationSec: action === 'CREATE_VIDEO'
+                  ? Number(readQualityTier(shot.id, 'VIDEO')) || 5
+                  : Number(shot.seconds) || 5,
+                action,
+                imageSize: action === 'CREATE_IMAGE' ? readQualityTier(shot.id, 'IMAGE') : undefined,
+                idempotencyKey: productionOsIdempotencyKey(
+                  action,
+                  buildId,
+                  shot.id,
+                  action === 'CREATE_IMAGE'
+                    ? `${readQualityTier(shot.id, 'IMAGE')}:${Date.now()}`
+                    : action === 'REGENERATE' ? motionId : undefined,
+                ),
+                lineId: action === 'CREATE_VOICE' || action === 'CREATE_LIPSYNC' ? `LINE-${shot.id}` : undefined,
+                speakerCharacterId: action === 'CREATE_VOICE' ? 'CHAR-TEST' : undefined,
+                voiceId: action === 'CREATE_VOICE' ? 'VOICE-TEST' : undefined,
+                motionArtifactId: action === 'CREATE_LIPSYNC' || action === 'REGENERATE' ? motionId : undefined,
+                voiceArtifactId: action === 'CREATE_LIPSYNC' ? voiceArtId : undefined,
+                lipsyncArtifactId: action === 'MIX_VIDEO' ? lipsyncId : undefined,
+                acceptArtifactId: action === 'ACCEPT' ? acceptId || undefined : undefined,
+                assemblyArtifactIds,
+                assemblyShotCodes,
+                authorizePaidNetwork: tenantImage,
+              });
+              if (result.action !== action) throw new Error('Request bị đổi action.');
+              const nextState = await getProductionShotState(buildId, shot.id, strategyClaim(shot));
+              setOsStateByShot((m) => ({ ...m, [shot.id]: nextState }));
+              const actions = await getProductionShotActions(buildId, shot.id, strategyClaim(shot));
+              setOsActionsByShot((m) => ({ ...m, [shot.id]: actions }));
+              noteStrategyCatalog(shot.id, actions);
+              try {
+                const meta = await getProductionPreview(buildId, shot.id);
+                if (meta.empty || !meta.artifactId || !meta.byteSha256) throw new Error('preview identity missing');
+                const blob = await fetchProductionPreviewMedia(buildId, shot.id);
+                if (!(await previewBytesMatch(blob, meta.byteSha256))) throw new Error('preview hash mismatch');
+                const url = URL.createObjectURL(asPlayableVideoBlob(blob));
+                setOsPreviewIdentityByShot((m) => ({
+                  ...m,
+                  [shot.id]: osPreviewIdentityFromMeta(meta),
+                }));
+                setOsPreviewByShot((m) => ({ ...m, [shot.id]: url }));
+              } catch {
+                /* VISIBLE absent or hash mismatch is empty — not a URL fallback */
+              }
+              if (action === 'CREATE_IMAGE') void loadOsKeyframe(buildId, shot.id);
+              message.success(`${result.action} · ${result.artifactId.slice(0, 8)}`);
+            } catch (e) {
+              message.error(apiErrorMessage(e, 'Tạo không xong.'));
+            } finally {
+              if (osInflightRef.current[shotId] === action) delete osInflightRef.current[shotId];
+              setTurboBusy((cur) => (cur === shotId ? undefined : cur));
+              setStillBusy((cur) => (cur === shotId ? undefined : cur));
+              setLipsyncBusy((cur) => (cur === shotId ? undefined : cur));
+              setOrchMixId((cur) => (cur === shotId ? undefined : cur));
             }
-            await sendMotion('wan');
           },
         });
-        return;
+      } catch (e) {
+        message.error({ content: apiErrorMessage(e, formatProductionActionReason(osActionsByShotRef.current[shotId], action) || 'Không mở được Production OS.'), key: 'famixa-desk-err' });
       }
-      const stillCost = generateCost(engine, seconds);
-      const total = stillCost.credits;
-      modal.confirm({
-        title:
-          engine === 'wan'
-            ? `Tạo video · đứng yên · ${stillCost.label}`
-            : `Tạo video · đứng yên · ước ${total} cr`,
-        content: 'Gửi I2V đứng yên từ ảnh đang duyệt. Che chữ trên JPEG gửi đi. Không tạo ảnh mới.',
-        okText: 'CONFIRM & GENERATE',
-        cancelText: 'Hủy',
-        zIndex: 3100,
-        getContainer: () => document.body,
-        onOk: async () => {
-          await sendMotion(engine);
-        },
-      });
-    } catch (e) {
-      message.error(e instanceof Error ? e.message : 'Không mở được Confirm tạo video.');
-    }
     })();
+  };
+
+  /** Accept Existing click. Non-authority. Does not POST ACCEPT and does not stamp the accepted record. */
+  const acceptExistingOfficial = (_shotId: string) => {
+    const effect = acceptExistingAuthorityEffect();
+    if (effect.createsProductionArtifact || effect.createsProductionBinding || effect.refreezesInput) return;
+    message.warning(ACCEPT_EXISTING_NON_AUTHORITY_NOTE);
   };
 
   const rememberLineAudio = (lineId: string, blob: Blob) => {
@@ -4664,6 +5975,7 @@ export function ContentFamixaSeriesTab() {
     return url;
   };
 
+  /** LEGACY / CACHE / RECOVERY. Not Production OS CURRENT:VOICE authority. OS execution uses GET /voice. */
   const resolveLineAudio = async (line: { id: string; text: string; voiceId?: string; characterId?: string }) => {
     const hit = ttsBlobs.current.get(line.id);
     if (hit) {
@@ -4695,11 +6007,197 @@ export function ContentFamixaSeriesTab() {
     return linesForShot(stateRef.current, shot);
   };
 
-  const startLipsync = async (onlyIds?: string[], opts?: { confirmed?: boolean; remake?: boolean }) => {
+  const proveLocalFalFile = async (taskId?: string) => {
+    const id = (taskId || '').trim();
+    if (!isFalLipsyncTaskId(id)) return false;
+    try {
+      const blob = await fetchContentSeriesFalVideo(id);
+      return blob.size >= 80;
+    } catch {
+      return false;
+    }
+  };
+
+  const startLipsync = async (
+    onlyIds?: string[],
+    opts?: { confirmed?: boolean; remake?: boolean; forceNew?: boolean; resumeOnly?: boolean },
+  ) => {
+    message.warning(productionOsLegacyRefuseNote('CREATE_LIPSYNC', 'POST /series/lipsync'));
+    if (productionOsLegacyPathClosed()) return;
     const pack = productionShorts(stateRef.current);
-    const range = onlyIds?.length ? pack.filter((s) => onlyIds.includes(s.id)) : cutRange;
+    const ids = onlyIds ?? [];
+    const range = ids.length ? pack.filter((s) => ids.includes(s.id)) : cutRange;
     const falModel = normalizeLipsyncModel(stateRef.current.lipsyncModel);
     const falSync = normalizeLipsyncSyncMode(stateRef.current.lipsyncSyncMode);
+    const keepLipsyncError = (ids: string[], text: string) => {
+      const why = text.trim();
+      if (!why) return;
+      for (const id of ids) patchRun(id, { lipsyncError: why, lipsyncStatus: 'FAILED' });
+      message.error(why);
+    };
+    const pollExistingLipsync = async (shot: FamixaSeriesShot, taskId: string) => {
+      const t0 = Date.now();
+      while (Date.now() - t0 < 90_000) {
+        const task = await getContentSeriesTurbo(taskId);
+        const st = (task.status || '').toUpperCase();
+        const missingFile = /chưa thấy URL|chưa lấy file|không có file|keys:\s*status/i.test(task.error || '');
+        const noOutput = lipsyncFalHasNoOutput(task.error);
+        const waiting = !task.videoUrl && !missingFile && !noOutput && (st === 'PENDING' || st === 'RUNNING' || st === 'PROCESSING' || st === 'IN_PROGRESS' || st === 'RETRY');
+        patchRun(shot.id, {
+          lipsyncStatus: task.status,
+          lipsyncTaskId: task.taskId || taskId,
+          lipsyncError: waiting
+            ? task.error || `Đang hỏi lại Fal (${st || 'PENDING'}). Task ${taskId}. 0$ — đợi file.`
+            : task.error ?? undefined,
+        });
+        if ((missingFile || noOutput) && !task.videoUrl) {
+          const why = noOutput
+            ? task.error || `Fal không có mp4 cho job này. Task ${taskId}. Gắn Fal · 0$ nếu fal.ai có link. Hỏi lại sẽ không ra file.`
+            : task.error || `Fal xong — KIT chưa lấy file. Task ${taskId}. Gắn Fal · 0$ từ Usage.`;
+          patchRun(shot.id, {
+            lipsyncStatus: noOutput ? 'FAILED' : 'RETRY',
+            lipsyncTaskId: task.taskId || taskId,
+            lipsyncError: why,
+          });
+          message.warning(
+            noOutput
+              ? `${studioShotCode(shot, pack)}: job Fal này không có file môi. Hỏi lại không ra. Take Veo + thoại vẫn xem được.`
+              : `${studioShotCode(shot, pack)}: Fal xong, chưa lấy được file. Take Veo + thoại vẫn xem được.`,
+          );
+          return false;
+        }
+        if (task.status === 'SUCCEEDED' && task.videoUrl) {
+          const live = shotRunOf(stateRef.current, shot);
+          const localReady =
+            isFalPlaybackSrc(task.videoUrl) &&
+            (await proveLocalFalFile(task.taskId || taskId));
+          if (!canStampFalLipsyncFinal(task.videoUrl, localReady)) {
+            patchRun(shot.id, {
+              lipsyncStatus: 'SUCCEEDED',
+              lipsynced: false,
+              lipsyncTaskId: task.taskId || taskId,
+              lipsyncError:
+                'Fal xong — KIT chưa có file playable trên máy API. Gắn Fal · 0$ (dán video.url). Không Confirm job mới.',
+            });
+            return false;
+          }
+          const frozen = live.lipsyncFrozenInput;
+          const now = freezeLipSyncInput(stateRef.current, shot, {
+            motionArtifactId: frozen?.motionArtifactId,
+            usedValidity: frozen?.usedValidity as import('./ContentFamixaShotProduction/ShotProductionExecution').ArtifactValidity,
+          });
+          const late = Boolean(frozen?.fingerprint && frozen.fingerprint !== now.fingerprint);
+          if (late) {
+            patchRun(shot.id, {
+              lipsyncStatus: 'SUCCEEDED',
+              lipsyncError: undefined,
+            });
+            return true;
+          }
+          patchRun(shot.id, {
+            ...stampFalFinal(live, task.videoUrl, localReady),
+            lipsyncStatus: 'SUCCEEDED',
+            lipsyncError: undefined,
+            model: task.model || 'sync-lipsync-1.9',
+            shotQa: { ...live.shotQa, lipsync: true },
+          });
+          return true;
+        }
+        if (task.status === 'FAILED' || task.status === 'CANCELLED') {
+          patchRun(shot.id, {
+            lipsyncStatus: task.status,
+            lipsyncError: task.error || 'Fal lipsync lỗi. Take cũ còn trên hàng.',
+          });
+          message.error(`${studioShotCode(shot, pack)}: ${task.error || 'Fal khớp môi lỗi.'}`);
+          return false;
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      patchRun(shot.id, {
+        lipsyncStatus: 'RETRY',
+        lipsyncTaskId: taskId,
+        lipsyncError: `Fal chưa trả take khớp môi. Task ${taskId}. Hỏi lại môi · 0$ — đừng Confirm job mới.`,
+      });
+      message.warning(`${studioShotCode(shot, pack)}: Fal chưa trả file. Hỏi lại môi · 0$ — đừng Confirm job mới.`);
+      return false;
+    };
+    if (opts?.resumeOnly) {
+      opts = { ...opts, confirmed: true, remake: false, forceNew: false };
+    }
+    const resumeShots = range.filter((s) => {
+      if (opts?.forceNew) return false;
+      const run = shotRunOf(stateRef.current, s);
+      if (!lipsyncResumeTaskId(run, falModel)) return false;
+      if (opts?.resumeOnly || shouldResumeLipsync(run)) return true;
+      if (opts?.remake) return false;
+      return true;
+    });
+    if (opts?.resumeOnly && !resumeShots.length) {
+      keepLipsyncError(
+        range.map((s) => s.id),
+        'Hết task Fal để hỏi lại. Gắn Fal · 0$ từ Usage — đừng Confirm job mới.',
+      );
+      return;
+    }
+    if (resumeShots.length) {
+      if (!opts?.confirmed) {
+        modal.confirm({
+          title: `Hỏi lại khớp môi ${resumeShots.length} Short · 0$ Fal`,
+          content: `${resumeShots.map((s) => studioShotCode(s, pack)).join(', ')}. Task cũ còn trên Fal — KIT chỉ hỏi lại file. Không gửi job mới, không trừ thêm.`,
+          okText: 'Hỏi lại · 0$',
+          cancelText: 'Hủy',
+          onOk: () => void startLipsync(resumeShots.map((s) => s.id), { confirmed: true }),
+        });
+        return;
+      }
+      let resumed = 0;
+      for (let i = 0; i < resumeShots.length; i++) {
+        const shot = resumeShots[i]!;
+        const run = shotRunOf(stateRef.current, shot);
+        const resumeId = lipsyncResumeTaskId(run, falModel);
+        if (!resumeId) {
+          keepLipsyncError([shot.id], `${studioShotCode(shot, pack)}: hết task id. Dán URL từ fal.ai → Usage (Gắn Fal · 0$).`);
+          continue;
+        }
+        const prev = turboLockRef.current;
+        let release = () => {};
+        turboLockRef.current = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        await prev;
+        setLipsyncBusy(shot.id);
+        patchRun(shot.id, {
+          lipsyncTaskId: resumeId,
+          lipsyncStatus: 'RETRY',
+          lipsyncError: `Đang hỏi lại Fal. Task ${resumeId}. 0$ — đợi file.`,
+        });
+        try {
+          message.loading({
+            content: `Hỏi lại khớp môi ${studioShotCode(shot, pack)} (${i + 1}/${resumeShots.length}) · 0 Fal mới`,
+            key: 'lipsync',
+            duration: 0,
+          });
+          if (await pollExistingLipsync(shot, resumeId)) resumed += 1;
+        } catch (e) {
+          const why = apiErrorMessage(e, 'Không hỏi lại được Fal.');
+          patchRun(shot.id, {
+            lipsyncStatus: 'RETRY',
+            lipsyncTaskId: resumeId,
+            lipsyncError: `${why} Task ${resumeId}. Hỏi lại môi · 0$ — đừng Confirm job mới.`,
+          });
+          message.error(`${studioShotCode(shot, pack)}: ${why}`);
+        } finally {
+          setLipsyncBusy(undefined);
+          release();
+        }
+      }
+      if (resumed) {
+        message.success({ content: `Đã khớp môi ${resumed}/${resumeShots.length} Short. Ghép sẽ giữ tiếng trong video.`, key: 'lipsync' });
+      } else {
+        message.destroy('lipsync');
+      }
+      return;
+    }
     const need = range.filter((s) => {
       const run = shotRunOf(stateRef.current, s);
       const snap = snapshotOfShot(stateRef.current, s, ttsFilesRef.current, {
@@ -4708,25 +6206,65 @@ export function ContentFamixaSeriesTab() {
       return lipsyncSendEligible({
         run,
         spoken: spokenLinesOf(s).length > 0,
-        remake: opts?.remake,
+        remake: opts?.remake || opts?.forceNew,
         motionStale: snap.motionStale,
         accepted: snap.motionAccepted,
       });
     });
     if (!need.length) {
-      message.warning('Chưa có take + thoại cần khớp môi (hoặc đã khớp). Không gửi Fal.');
+      const why = 'Chưa có take + thoại cần khớp môi (hoặc đã khớp). Không gửi Fal.';
+      keepLipsyncError(onlyIds && onlyIds.length ? onlyIds : [], why);
+      if (!onlyIds?.length) message.warning(why);
+      return;
+    }
+    const overflow = need
+      .map((s) => {
+        const why = veoSpeechOverflowReason({
+          takeSec: performanceDurationOf(stateRef.current, s),
+          dialogueEndSec: dialogueEndOf(stateRef.current, s),
+          floorSec: dialogueFloorOf(stateRef.current, s),
+        });
+        return why && isVeoMotionTaskId(shotRunOf(stateRef.current, s).turboTaskId)
+          ? `${studioShotCode(s, pack)}: ${why}`
+          : '';
+      })
+      .filter(Boolean);
+    if (overflow.length) {
+      keepLipsyncError(need.map((s) => s.id), `${overflow.join(' ')} Không gửi Fal trên take ngắn.`);
+      return;
+    }
+    const facePick = need.filter((s) =>
+      lipsyncNeedsSpeakerPick(s, spokenLinesOf(s), stateRef.current.characters),
+    );
+    if (facePick.length > 0 && falModel !== 'v3') {
+      keepLipsyncError(
+        facePick.map((s) => s.id),
+        `${facePick.map((s) => studioShotCode(s, pack)).join(', ')} có 2 mặt. Chọn Fal v3 (Chuẩn) — 1.9 kéo môi cả Minh lẫn Linh. Không gửi.`,
+      );
+      return;
+    }
+    if (facePick.some((s) => {
+      const pt = shotRunOf(stateRef.current, s).lipsyncSpeaker;
+      return !(pt && pt.x >= 0 && pt.x <= 1 && pt.y >= 0 && pt.y <= 1);
+    })) {
+      keepLipsyncError(
+        facePick.map((s) => s.id),
+        `${facePick.map((s) => studioShotCode(s, pack)).join(', ')}: chấm mặt người nói (Linh) trên video rồi mới khớp môi. Không gửi Fal.`,
+      );
       return;
     }
     const qaBlock = need.filter((s) => !lipsyncQaReady(shotRunOf(stateRef.current, s)));
     if (qaBlock.length) {
-      message.error(
+      keepLipsyncError(
+        qaBlock.map((s) => s.id),
         `${qaBlock.map((s) => studioShotCode(s, pack)).join(', ')} chưa tick ACTION + CONTINUITY + VOICE/FACE. Sai mặt/giọng thì sửa KF — không gửi Fal.`,
       );
       return;
     }
     const speakerBlock = need.filter((s) => multiSpeakerBlock(spokenLinesOf(s)));
     if (speakerBlock.length) {
-      message.error(
+      keepLipsyncError(
+        speakerBlock.map((s) => s.id),
         speakerBlock.map((s) => `${studioShotCode(s, pack)}: ${multiSpeakerBlock(spokenLinesOf(s))}`).join(' '),
       );
       return;
@@ -4740,11 +6278,11 @@ export function ContentFamixaSeriesTab() {
       })
       .filter(Boolean);
     if (faceBlock.length) {
-      message.error(`${faceBlock.join(' · ')} — không gửi Fal. Sửa map thoại hoặc KF.`);
+      keepLipsyncError(need.map((s) => s.id), `${faceBlock.join(' · ')} — không gửi Fal. Sửa map thoại hoặc KF.`);
       return;
     }
     if (!keys.fal) {
-      message.error('Chưa có Fal API key (Model AI → Video). Khớp môi không trừ Runway.');
+      keepLipsyncError(need.map((s) => s.id), 'Chưa có Fal API key (Model AI → Video). Khớp môi không trừ Runway.');
       return;
     }
     await hydrateSessionTts(stateRef.current);
@@ -4757,12 +6295,28 @@ export function ContentFamixaSeriesTab() {
       }
     }
     if (missingVoice.length) {
-      message.error(
+      keepLipsyncError(
+        need.map((s) => s.id),
         `Thiếu Voice master: ${missingVoice.join(' · ')}. Mở tab Voice → phát lại đúng câu (KIT nhớ file trên máy). Không tạo TTS lúc Fal.`,
       );
       return;
     }
+    const resumeIds = new Set(
+      need
+        .filter((s) => !opts?.forceNew && shouldResumeLipsync(shotRunOf(stateRef.current, s)))
+        .map((s) => s.id),
+    );
     if (!opts?.confirmed) {
+      const attachInstead = opts?.forceNew
+        ? []
+        : need.filter((s) => shouldResumeLipsync(shotRunOf(stateRef.current, s)));
+      if (attachInstead.length) {
+        keepLipsyncError(
+          attachInstead.map((s) => s.id),
+          'Job Fal cũ còn — Hỏi lại môi · 0$ hoặc Gắn Fal · 0$. Không mở Confirm trừ tiền.',
+        );
+        return;
+      }
       const falUsd = estimateFalLipsyncUsdForShots(
         need.map((s) => ({
           seconds: performanceDurationOf(stateRef.current, s),
@@ -4770,28 +6324,81 @@ export function ContentFamixaSeriesTab() {
         })),
         falModel,
       );
+      const codes = need.map((s) => studioShotCode(s, pack)).join(', ');
+      if (resumeIds.size) {
+        modal.confirm({
+          title: `Hỏi lại khớp môi ${resumeIds.size} Short · 0$ Fal`,
+          content: `${codes}. Task cũ còn trên Fal — KIT chỉ hỏi lại file. Không gửi job mới, không trừ thêm.`,
+          okText: 'Hỏi lại · 0$',
+          cancelText: 'Hủy',
+          onOk: () => void startLipsync(need.map((s) => s.id), { confirmed: true }),
+        });
+        return;
+      }
       const alreadyTried = need.some((s) => Boolean(shotRunOf(stateRef.current, s).lipsyncError));
+      const deadJob =
+        Boolean(opts?.forceNew) ||
+        need.some((s) => lipsyncFalHasNoOutput(shotRunOf(stateRef.current, s).lipsyncError));
       const tier = lipsyncTierOf(falModel);
       modal.confirm({
-        title: `Khớp môi ${need.length} Short · ${tier.title} · ~$${falUsd.toFixed(2)} · 0 cr Runway`,
-        content: alreadyTried
-          ? `${need.map((s) => studioShotCode(s, pack)).join(', ')}. Lần trước Fal có thể đã trừ. Confirm = job MỚI, trừ thêm ~$${falUsd.toFixed(2)}. Xem fal.ai → Usage trước — file có thể đã xong.`
-          : `${need.map((s) => studioShotCode(s, pack)).join(', ')}. ${tier.title} — ${tier.hint} · ${tier.rate}. Sync ${falSync}. Nhận job là trừ. KIT chỉ hiện KHỚP MÔI khi có file. Take cũ giữ lịch sử.`,
+        title: deadJob
+          ? `Khớp môi mới ${need.length} Short · job Fal mới · ~$${falUsd.toFixed(2)}`
+          : `Khớp môi ${need.length} Short · ${tier.title} · ~$${falUsd.toFixed(2)} · 0 cr Runway`,
+        content: deadJob
+          ? `${codes}. Job mới. ${
+              need.some((s) =>
+                shouldOmitRejectedSpeakerPin({
+                  remake: true,
+                  error: shotRunOf(stateRef.current, s).lipsyncError,
+                }),
+              )
+                ? 'Thoại Linh — Confirm gửi khung mặt Linh, đúng số khung file take. Không điểm, không auto, không để câm.'
+                : 'Thoại Linh — Confirm gửi khung mặt Linh, đúng số khung file take. Không để câm.'
+            } Confirm = trừ ~$${falUsd.toFixed(2)}. Hủy = dừng, take Veo vẫn còn.`
+          : alreadyTried
+            ? `${codes}. Lần trước Fal có thể đã trừ. Confirm = job MỚI, trừ thêm ~$${falUsd.toFixed(2)}. Xem fal.ai → Usage trước — file có thể đã xong.`
+            : `${codes}. ${tier.title} — ${tier.hint} · ${tier.rate}. Sync ${falSync}. Nhận job là trừ. KIT chỉ hiện KHỚP MÔI khi có file. Take cũ giữ lịch sử.`,
         okText: `Confirm · trừ ~$${falUsd.toFixed(2)} Fal`,
         cancelText: 'Hủy — 0 Fal',
-        onOk: () => void startLipsync(need.map((s) => s.id), { confirmed: true, remake: opts?.remake }),
+        onOk: () =>
+          void startLipsync(need.map((s) => s.id), {
+            confirmed: true,
+            remake: opts?.remake || opts?.forceNew,
+            forceNew: opts?.forceNew,
+          }),
       });
       return;
     }
     for (const s of need) {
+      const spoken = spokenLinesOf(s);
+      if (!lipsyncNeedsSpeakerPick(s, spoken, stateRef.current.characters)) continue;
+      const live = shotRunOf(stateRef.current, s);
+      if (isSpeakerFaceBandMark(live.lipsyncSpeaker)) continue;
+      const side = lipsyncSpeakerSideOfFaceMark(live.lipsyncSpeaker) || 'right';
+      patchRun(s.id, { lipsyncSpeaker: lipsyncSpeakerPickOf(side, stateRef.current.characters) });
+    }
+    const omitSpeakerByShot = new Map(
+      need.map((s) => {
+        const live = shotRunOf(stateRef.current, s);
+        return [
+          s.id,
+          shouldOmitRejectedSpeakerPin({
+            remake: Boolean(opts?.forceNew || opts?.remake),
+            error: live.lipsyncError,
+            frozenRegion: live.lipsyncFrozenInput?.speakerFaceRegion,
+            liveMark: live.lipsyncSpeaker,
+          }),
+        ] as const;
+      }),
+    );
+    for (const s of need) {
+      if (resumeIds.has(s.id)) continue;
       patchRun(s.id, { lipsyncError: undefined, lipsyncStatus: undefined });
     }
     let ok = 0;
     for (let i = 0; i < need.length; i++) {
       const shot = need[i]!;
       const run = shotRunOf(stateRef.current, shot);
-      const videoUrl = resolveTakeUrl(run);
-      if (!videoUrl) continue;
       const lines = spokenLinesOf(shot);
       if (!lines.length) continue;
       if (multiSpeakerBlock(lines)) {
@@ -4812,23 +6419,6 @@ export function ContentFamixaSeriesTab() {
           status: (Number(stateRef.current.voiceAssets?.[line.id]?.duration || 0) > 0.2 ? 'READY' : 'MISSING') as 'READY' | 'MISSING',
         })),
       );
-      const voiceParts = [];
-      let local = 0;
-      for (const line of lines) {
-        const blob = await resolveLineAudio(line);
-        if (!blob) {
-          message.warning(
-            `${studioShotCode(shot, pack)}: thiếu Voice «${(line.text || line.id).slice(0, 42)}». Không bỏ câu. Không tạo TTS lúc Fal.`,
-          );
-          break;
-        }
-        const sec = Number(stateRef.current.voiceAssets?.[line.id]?.duration || 0) || 1;
-        const lead = shotTimingOf(stateRef.current, shot)?.speechStartSec ?? 0.2;
-        voiceParts.push({ line, blob, startSec: local === 0 ? lead : local });
-        local = (local === 0 ? lead : local) + sec;
-      }
-      if (voiceParts.length !== lines.length) continue;
-      const first = voiceParts[0]!;
       if (merged.discarded.length) {
         message.error(`${studioShotCode(shot, pack)}: không được bỏ câu thoại.`);
         continue;
@@ -4839,56 +6429,9 @@ export function ContentFamixaSeriesTab() {
         release = resolve;
       });
       await prev;
-      setLipsyncBusy(shot.id);
-      try {
-        const pollLipsync = async (taskId: string) => {
-          const t0 = Date.now();
-          while (Date.now() - t0 < 720_000) {
-            const task = await getContentSeriesTurbo(taskId);
-            patchRun(shot.id, { lipsyncStatus: task.status, lipsyncTaskId: task.taskId, lipsyncError: task.error ?? undefined });
-            if (task.status === 'SUCCEEDED' && task.videoUrl) {
-              const live = shotRunOf(stateRef.current, shot);
-              const frozen = live.lipsyncFrozenInput;
-              const now = freezeLipSyncInput(stateRef.current, shot, {
-                motionArtifactId: frozen?.motionArtifactId,
-                usedValidity: frozen?.usedValidity as import('./ContentFamixaShotProduction/ShotProductionExecution').ArtifactValidity,
-              });
-              const late = Boolean(frozen?.fingerprint && frozen.fingerprint !== now.fingerprint);
-              if (late) {
-                patchRun(shot.id, {
-                  lipsyncStatus: 'SUCCEEDED',
-                  lipsyncError: undefined,
-                });
-                return true;
-              }
-              patchRun(shot.id, {
-                ...stampFalFinal(live, task.videoUrl),
-                lipsyncStatus: 'SUCCEEDED',
-                lipsyncError: undefined,
-                model: task.model || 'sync-lipsync-1.9',
-                shotQa: { ...live.shotQa, lipsync: true },
-              });
-              return true;
-            }
-            if (task.status === 'FAILED' || task.status === 'CANCELLED') {
-              patchRun(shot.id, {
-                lipsyncStatus: task.status,
-                lipsyncError: task.error || 'Fal lipsync lỗi. Take cũ còn trên hàng.',
-              });
-              message.error(`${studioShotCode(shot, pack)}: ${task.error || 'Fal khớp môi lỗi.'}`);
-              return false;
-            }
-            await new Promise((r) => setTimeout(r, 6000));
-          }
-          patchRun(shot.id, {
-            lipsyncStatus: 'RETRY',
-            lipsyncError: 'Fal chưa trả take khớp môi. Hỏi lại sau — 0 cr Runway.',
-          });
-          message.warning(`${studioShotCode(shot, pack)}: Fal chưa trả file. Hỏi lại môi nếu còn task — đừng Confirm job mới.`);
-          return false;
-        };
-
-        if (shouldResumeLipsync(run) && !opts?.remake) {
+        setLipsyncBusy(shot.id);
+        try {
+        if (resumeIds.has(shot.id) || (shouldResumeLipsync(run) && !opts?.forceNew)) {
           const recovered = parseFalJobIdFromError(run.lipsyncError);
           const resumeId =
             run.lipsyncTaskId?.trim() ||
@@ -4903,62 +6446,253 @@ export function ContentFamixaSeriesTab() {
             key: 'lipsync',
             duration: 0,
           });
-          if (await pollLipsync(resumeId)) ok += 1;
+          if (await pollExistingLipsync(shot, resumeId)) ok += 1;
           continue;
         }
 
-        const takeHistory = [...(run.takeHistory ?? [])];
-        const muteTake = resolveTakeUrl(run);
-        if (muteTake) {
-          takeHistory.unshift({ url: muteTake, taskId: run.turboTaskId });
+        const fps = computeInputFingerprints(stateRef.current, shot);
+        const liveRun = shotRunOf(stateRef.current, shot);
+        const remakeLineIds = lines.map((line) => line.id);
+        const remakeDurationByLine = Object.fromEntries(
+          lines.map((line) => [line.id, Number(stateRef.current.voiceAssets?.[line.id]?.duration || 0)]),
+        );
+        const remakeVoiceId = voiceIdsForLine(lines[0]!).find(Boolean);
+        let remakeSrc = resolveLipSyncRemakeSources({
+          run: liveRun,
+          shotId: shot.id,
+          motionFingerprint: fps.motion,
+          lineIds: remakeLineIds,
+          voiceFingerprint: fps.voice,
+          durationByLineId: remakeDurationByLine,
+          voiceAssets: stateRef.current.voiceAssets,
+          voiceId: remakeVoiceId,
+        });
+        if (!remakeSrc.voice) {
+          const storedVoice = await resolveStoredVoicePhysicalSource({
+            store: voicePhysicalStoreRef.current,
+            buildId: stateRef.current.buildId,
+            lineId: lines[0]!.id,
+            lineIds: remakeLineIds,
+            voiceId: remakeVoiceId,
+            voiceFingerprint: fps.voice,
+            durationSec:
+              remakeDurationByLine[lines[0]!.id] || Number(liveRun.lipsyncFrozenInput?.voiceDurationSec) || 0,
+            durationByLineId: remakeDurationByLine,
+            preferredArtifactId: liveRun.lipsyncFrozenInput?.voiceArtifactId,
+          });
+          if (storedVoice) {
+            remakeSrc = { ...remakeSrc, voice: storedVoice };
+            if (
+              storedVoice.artifactId !== storedVoice.lineId &&
+              storedVoice.storageKey &&
+              storedVoice.voiceId
+            ) {
+              persistState(
+                rebindVoicePhysicalGraphRef(stateRef.current, storedVoice.lineId, {
+                  artifactId: storedVoice.artifactId,
+                  storageKey: storedVoice.storageKey,
+                  voiceId: storedVoice.voiceId,
+                }),
+              );
+            }
+          }
         }
+        if (!remakeSrc.voice && remakeVoiceId && stateRef.current.buildId) {
+          const line = lines[0]!;
+          const blob = await resolveLineAudio(line);
+          if (blob) {
+            const durationSec =
+              remakeDurationByLine[line.id] ||
+              Number(liveRun.lipsyncFrozenInput?.voiceDurationSec) ||
+              (await measureAudioSec(blob));
+            const physicalId = voicePhysicalIdentityOf({
+              artifactId: mintVoicePhysicalArtifactId(),
+              buildId: stateRef.current.buildId,
+              lineId: line.id,
+              voiceId: remakeVoiceId,
+              durationSec,
+            });
+            if (physicalId && durationSec > 0) {
+              const saved = await saveVoicePhysicalArtifact(
+                physicalId,
+                new Uint8Array(await blob.arrayBuffer()),
+                voicePhysicalStoreRef.current,
+              );
+              const prev = stateRef.current.voiceAssets?.[line.id];
+              persistState(
+                prev
+                  ? rebindVoicePhysicalGraphRef(stateRef.current, line.id, {
+                      artifactId: saved.artifactId,
+                      storageKey: saved.storageKey,
+                      voiceId: saved.voiceId,
+                    })
+                  : {
+                      ...stateRef.current,
+                      voiceAssets: {
+                        ...(stateRef.current.voiceAssets ?? {}),
+                        [line.id]: {
+                          lineId: line.id,
+                          characterId: line.characterId,
+                          duration: Number(durationSec.toFixed(2)),
+                          status: 'ready',
+                          artifactId: saved.artifactId,
+                          storageKey: saved.storageKey,
+                          voiceId: saved.voiceId,
+                          physicalArtifactResolvable: true,
+                        },
+                      },
+                    },
+              );
+              remakeSrc = {
+                ...remakeSrc,
+                voice: {
+                  artifactId: saved.artifactId,
+                  lineId: line.id,
+                  lineIds: remakeLineIds,
+                  storageKey: saved.storageKey,
+                  voiceId: saved.voiceId,
+                  fingerprint: fps.voice,
+                  durationSec,
+                  durationByLineId: { ...remakeDurationByLine, [line.id]: durationSec },
+                },
+              };
+            }
+          }
+        }
+        const motionSrc = remakeSrc.motion;
+        const voiceSrc = remakeSrc.voice;
+        if (!motionSrc || !voiceSrc) {
+          message.error({
+            content: !motionSrc
+              ? `${studioShotCode(shot, pack)}: thiếu Motion CURRENT (bound take). Không gửi Fal.`
+              : `${studioShotCode(shot, pack)}: thiếu Voice artifact. Mở tab Người — phát lại câu Linh. Không gửi Fal.`,
+            key: 'famixa-desk-err',
+          });
+          continue;
+        }
+        const execNow = snapshotOfShot(stateRef.current, shot, ttsFilesRef.current).execution;
+        const speakerMark = shotRunOf(stateRef.current, shot).lipsyncSpeaker;
+        const multiFace = lipsyncNeedsSpeakerPick(shot, lines, stateRef.current.characters);
+        const omitSpeakerPin = multiFace ? false : omitSpeakerByShot.get(shot.id) === true;
+        const frozen = freezeLipSyncExecutionInput({
+          motionArtifactId: motionSrc.artifactId,
+          motionFingerprint: motionSrc.fingerprint || fps.motion,
+          motionDurationSec: motionSrc.durationSec,
+          voiceArtifactId: voiceSrc.artifactId,
+          voiceFingerprint: voiceSrc.fingerprint,
+          voiceDurationSec: voiceSrc.durationSec,
+          fingerprint: fps.lipsync,
+          voiceLineIds: voiceSrc.lineIds,
+          voiceDurationByLineId: voiceSrc.durationByLineId,
+          usedValidity: execNow?.currentArtifacts.motion?.validity,
+          providerId: 'fal',
+          modelId: falModel,
+          buildId: stateRef.current.buildId,
+          voiceId: voiceSrc.voiceId || voiceIdsForLine(lines[0]!).find(Boolean),
+          lineId: voiceSrc.lineId,
+          motionTaskId: motionSrc.taskId,
+          motionUrl: motionSrc.url,
+          speakerCharacterId:
+            lipsyncSpeakerCharacterIdFromFaceMark(speakerMark, stateRef.current.characters) ||
+            lines[0]?.characterId,
+          speakerFaceRegion:
+            omitSpeakerPin || !speakerMark
+              ? undefined
+              : {
+                  x: speakerMark.x,
+                  y: speakerMark.y,
+                  width: speakerMark.width,
+                  height: speakerMark.height,
+                },
+          speakerFrameNumber: speakerMark?.frameNumber ?? LIPSYNC_SPEAKER_MARK_FRAME_NUMBER,
+        });
+        try {
+          if (!omitSpeakerPin) {
+            assertLipSyncSpeakerTargetReady({
+              multiFace: lipsyncNeedsSpeakerPick(shot, lines, stateRef.current.characters),
+              speakerCharacterId: frozen.speakerCharacterId,
+              speakerFaceRegion: frozen.speakerFaceRegion,
+              requiredCharacterId: lines[0]?.characterId,
+            });
+          }
+        } catch (err) {
+          message.error(`${studioShotCode(shot, pack)}: ${(err as Error).message || 'thiếu speaker target. Không gửi Fal.'}`);
+          continue;
+        }
+        patchRun(shot.id, {
+          lipsyncFrozenInput: frozen,
+          lipsyncExecutionAttempt: createLipSyncAttemptProvenance(frozen),
+          lipsyncError: undefined,
+          lipsynced: false,
+          lipsyncStatus: 'PENDING',
+        });
+        const takeHistory = [...(run.takeHistory ?? [])];
+        if (motionSrc.url) takeHistory.unshift({ url: motionSrc.url, taskId: motionSrc.taskId });
         message.loading({
           content: `Khớp môi ${studioShotCode(shot, pack)} (${i + 1}/${need.length}) · Fal`,
           key: 'lipsync',
           duration: 0,
         });
-        let takeUrl = videoUrl;
-        const takeTaskId = lastSuccessMotionTaskId(run);
-        if (takeTaskId && !takeUrl.startsWith('data:')) {
-          try {
-            const fresh = await getContentSeriesTurbo(takeTaskId);
-            if ((fresh.status || '').toUpperCase() === 'SUCCEEDED' && fresh.videoUrl?.trim()) {
-              takeUrl = fresh.videoUrl.trim();
-              patchRun(shot.id, { takeUrl });
+        const submitted = await submitLipSyncFrozenExecution({
+          frozen,
+          run: shotRunOf(stateRef.current, shot),
+          shotId: shot.id,
+          persistAttempt: (attempt) => {
+            patchRun(shot.id, { lipsyncExecutionAttempt: attempt, lipsyncStatus: attempt.status });
+          },
+          loadVoiceBytes: async () => {
+            const bytes = await loadFrozenVoicePhysicalBytes(frozen, voicePhysicalStoreRef.current);
+            return new Blob([bytes], { type: 'audio/mpeg' });
+          },
+          startProvider: async (input) => {
+            const how = buildLipSyncProviderHowRequest({
+              frozen,
+              input,
+              clipId: shot.id,
+              syncMode: falSync,
+              model: falModel,
+            });
+            if (frozen.speakerFaceRegion) {
+              mapFrozenSpeakerToFalV3How({
+                videoUrl: how.videoUrl,
+                takeTaskId: how.takeTaskId,
+                syncMode: how.syncMode,
+                speakerCharacterId: how.speakerCharacterId,
+                speakerFaceRegion: frozen.speakerFaceRegion,
+                speakerFrameNumber: frozen.speakerFrameNumber,
+              });
             }
-          } catch {
-            /* API retries from TakeTaskId if this 0-cr poll fails */
-          }
-        }
-        const started = await startContentSeriesLipsync({
-          clipId: shot.id,
-          videoUrl: takeUrl,
-          audioBase64: await blobToBase64(first.blob),
-          mime: first.blob.type || 'audio/mpeg',
-          syncMode: falSync,
-          model: falModel,
-          performanceDurationSec: performanceDurationOf(stateRef.current, shot) || undefined,
-          takeTaskId: takeTaskId || undefined,
-          voices: await Promise.all(
-            voiceParts.map(async (part) => ({
-              audioBase64: await blobToBase64(part.blob),
-              startSec: part.startSec,
-              mime: part.blob.type || 'audio/mpeg',
-            })),
-          ),
+            const audioBase64 = await blobToBase64(input.voiceBytes);
+            return startContentSeriesLipsync({
+              clipId: how.clipId,
+              videoUrl: how.videoUrl,
+              audioBase64,
+              mime: input.voiceBytes.type || 'audio/mpeg',
+              syncMode: falSync,
+              model: falModel,
+              performanceDurationSec: how.performanceDurationSec,
+              takeTaskId: how.takeTaskId,
+              speakerX: omitSpeakerPin ? undefined : how.speakerX,
+              speakerY: omitSpeakerPin ? undefined : how.speakerY,
+              speakerVideoWidth: omitSpeakerPin ? undefined : how.speakerVideoWidth,
+              speakerVideoHeight: omitSpeakerPin ? undefined : how.speakerVideoHeight,
+              speakerFrameNumber: omitSpeakerPin ? undefined : how.speakerFrameNumber,
+              voices: [{ audioBase64, startSec: 0, mime: input.voiceBytes.type || 'audio/mpeg' }],
+            });
+          },
         });
-        const execNow = snapshotOfShot(stateRef.current, shot, ttsFilesRef.current).execution;
-        const usedValidity =
-          execNow?.lastSuccessArtifacts.motion?.validity === 'ACCEPTED_STALE' ||
-          execNow?.acceptedArtifacts.motion?.validity === 'ACCEPTED_STALE'
-            ? 'ACCEPTED_STALE'
-            : execNow?.currentArtifacts.motion?.validity;
+        const started = submitted.providerResult;
         patchRun(shot.id, {
           lipsyncTaskId: started.taskId,
           lipsyncStatus: started.status,
           lipsyncError: undefined,
           lipsynced: false,
           takeHistory: takeHistory.slice(0, 6),
+          lipsyncExecutionAttempt: stampLipSyncAttemptProviderRequest(
+            submitted.attempt,
+            started.taskId,
+            started.status === 'SUCCEEDED' ? 'SUCCEEDED' : 'PENDING',
+          ),
           lipsyncSelectionSnapshot: started.decisionId
             ? {
                 decisionId: started.decisionId,
@@ -4970,22 +6704,30 @@ export function ContentFamixaSeriesTab() {
                 costKind: started.costKind || undefined,
               }
             : undefined,
-          lipsyncFrozenInput: freezeLipSyncInput(stateRef.current, shot, {
-            motionArtifactId: execNow?.currentArtifacts.motion?.artifactId || execNow?.lastSuccessArtifacts.motion?.artifactId,
-            usedValidity,
-          }),
         });
         if (started.status === 'SUCCEEDED' && started.videoUrl) {
           const live = shotRunOf(stateRef.current, shot);
-          patchRun(shot.id, {
-            ...stampFalFinal(live, started.videoUrl),
-            lipsyncStatus: 'SUCCEEDED',
-            lipsyncError: undefined,
-            model: started.model || 'sync-lipsync-1.9',
-            shotQa: { ...live.shotQa, lipsync: true },
-          });
-          ok += 1;
-        } else if (await pollLipsync(started.taskId)) {
+          const localReady =
+            isFalPlaybackSrc(started.videoUrl) && (await proveLocalFalFile(started.taskId));
+          if (!canStampFalLipsyncFinal(started.videoUrl, localReady)) {
+            patchRun(shot.id, {
+              lipsyncStatus: 'SUCCEEDED',
+              lipsynced: false,
+              lipsyncTaskId: started.taskId,
+              lipsyncError:
+                'Fal xong — KIT chưa có file playable trên máy API. Gắn Fal · 0$ (dán video.url). Không Confirm job mới.',
+            });
+          } else {
+            patchRun(shot.id, {
+              ...stampFalFinal(live, started.videoUrl, localReady),
+              lipsyncStatus: 'SUCCEEDED',
+              lipsyncError: undefined,
+              model: started.model || 'sync-lipsync-1.9',
+              shotQa: { ...live.shotQa, lipsync: true },
+            });
+            ok += 1;
+          }
+        } else if (await pollExistingLipsync(shot, started.taskId)) {
           ok += 1;
         }
       } catch (e) {
@@ -5018,6 +6760,7 @@ export function ContentFamixaSeriesTab() {
     }
   };
 
+  /** EDITORIAL. Pastes a Fal file onto the desk run. Does not create ProductionArtifact or ProductionBinding. */
   const attachLipsync = (shotId: string) => {
     let raw = '';
     const shot = productionShorts(stateRef.current).find((s) => s.id === shotId);
@@ -5027,7 +6770,7 @@ export function ContentFamixaSeriesTab() {
       content: (
         <div>
           <p style={{ marginTop: 0 }}>
-            Usage đã trừ loạt v3 cho Short này. Dán URL mp4 (Assets) hoặc Request ID — KIT chỉ lấy file, không gửi job mới.
+            Chỉ dán khi bạn đã có link mp4 trên tay (https://…fal.media/….mp4). Không có link thì bấm Hủy — Play video trên bàn để xem + nghe thoại. KIT không gửi job mới, không trừ tiền.
           </p>
           <Input.TextArea
             rows={3}
@@ -5067,9 +6810,15 @@ export function ContentFamixaSeriesTab() {
           message.error(task.error || 'Fal chưa trả file cho id này. Thử dòng Quantity lớn hơn (0.17).');
           return Promise.reject();
         }
+        const localReady =
+          isFalPlaybackSrc(task.videoUrl) && (await proveLocalFalFile(task.taskId || ref.taskId));
+        if (!canStampFalLipsyncFinal(task.videoUrl, localReady)) {
+          message.error('Fal chưa có file playable trên máy này. Dán URL mp4 fal.media — đừng Confirm job mới.');
+          return Promise.reject();
+        }
         const live = shotRunOf(stateRef.current, shot);
         patchRun(shotId, {
-          ...stampFalFinal(live, task.videoUrl!),
+          ...stampFalFinal(live, task.videoUrl, localReady),
           lipsyncTaskId: task.taskId || ref.taskId,
           lipsyncStatus: 'SUCCEEDED',
           lipsyncError: undefined,
@@ -5211,7 +6960,7 @@ export function ContentFamixaSeriesTab() {
     const holdN = completeCutHolds(readyPlan).length;
     if (!opts?.confirmed) {
       modal.confirm({
-        title: `Ghép tập hoàn chỉnh · ${readyPlan.items.length} shot + thoại · 0 cr Runway`,
+        title: `Xuất tương thích · ${readyPlan.items.length} shot + thoại · 0 cr Runway`,
         content: `${confirm.detail} Câu chưa gắn Short không đưa vào file. Không gửi job mới.`,
         okText: confirm.okText,
         cancelText: 'Hủy',
@@ -5375,7 +7124,7 @@ export function ContentFamixaSeriesTab() {
         triggerDownload(mp4, `${stem}.mp4`);
         persistState({ ...stateRef.current, previewApproved: true });
         message.success({
-          content: `Đã ghép tập hoàn chỉnh ${tl.clips.length} shot${
+          content: `Đã xuất file tương thích ${tl.clips.length} shot${
             holdN ? ` · ${holdN} HOLD KF` : ''
           }${lipN ? ` · ${lipN} khớp môi` : ''}${voiceCount ? ` · ${voiceCount} câu thoại` : ''}${
             mixSheet.room ? ' · phòng' : ''
@@ -5526,6 +7275,8 @@ export function ContentFamixaSeriesTab() {
 
   /** Editorial V1. Preview = ready shots. Final = all shots. Overlay only — 0 provider calls. */
   const exportEditorialCut = (kind: 'preview' | 'final' | 'watch', mode?: EditorialCutMode) => {
+    message.warning(productionOsLegacyRefuseNote('ASSEMBLE', 'POST /content/series/assemble'));
+    if (productionOsLegacyPathClosed()) return;
     const live = stateRef.current;
     const pack = episodeShots(live);
     const ready = pack.filter((s) => editorialSourceReady(shotRunOf(live, s)));
@@ -5580,7 +7331,7 @@ export function ContentFamixaSeriesTab() {
             mix,
           });
           if (kind === 'watch') {
-            window.open(URL.createObjectURL(mp4), '_blank', 'noopener');
+            openWatchClip(`${stem} preview`, mp4);
             message.success({ content: `Preview ${httpClips.length} shot · ~${totalSec.toFixed(1)}s`, key: 'final-cut' });
             return;
           }
@@ -5620,7 +7371,7 @@ export function ContentFamixaSeriesTab() {
           onProgress: (msg) => message.loading({ content: `Ghép ${msg}`, key: 'final-cut', duration: 0 }),
         });
         if (kind === 'watch') {
-          window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+          openWatchClip(`${stem} preview`, blob);
           message.success({ content: `Preview ${clips.length} shot (máy)`, key: 'final-cut' });
           return;
         }
@@ -5654,7 +7405,235 @@ export function ContentFamixaSeriesTab() {
     });
   };
 
+  const prepareOfficialVoice = async (shotId: string) => {
+    const buildId = productionOsBuildIdForShot(stateRef.current.buildId, shotId);
+    if (!buildId) {
+      message.warning(VOICE_PRODUCTION_OS_NOT_READY);
+      return;
+    }
+    try {
+      const take = await getAuthoritativeProductionVideo(buildId, shotId);
+      const verdict = prepareOfficialVoiceIngress({ buildId, shotCode: shotId, take });
+      if (take && !take.empty) setOsAuthoritativeByShot((m) => ({ ...m, [shotId]: take }));
+      if (verdict.reason === VIDEO_TAKE_CURRENT_INPUT) return;
+      if (!verdict.execute || !verdict.artifactId || !verdict.lineId || !verdict.voiceId) {
+        message.warning(verdict.reason || VOICE_PRODUCTION_OS_NOT_READY);
+        return;
+      }
+      const shot =
+        episodeShots(stateRef.current).find((s) => s.id === shotId) ||
+        (stateRef.current.episode?.shots ?? []).find((s) => s.id === shotId);
+      const episodeCode = episodeCodeOf(stateRef.current.episode?.episode || stateRef.current.episode?.title) || 'EP01';
+      const sceneCode = shot ? sceneIdOfShot(shot) || shot.scene || 'SC01' : 'SC01';
+      const ingress = await materializeVoiceProductionIngress({
+        buildId,
+        shotCode: shotId,
+        episodeCode,
+        sceneCode,
+      });
+      const voiceDraft = voiceDraftForRequest(shotId, ingress.lineText || '');
+      if (!voiceDraft.permitted) {
+        message.warning(directorBlockerLines([voiceDraft.blocker]).join(' ') || voiceDraft.blocker);
+        return;
+      }
+      const result = await createProductionRequest({
+        buildId,
+        episodeCode,
+        sceneCode,
+        shotCode: shotId,
+        story: voiceDraft.text,
+        actingBeat: futureDeskActing(shotId, shot?.actingBeat?.before?.action || ''),
+        visualContract: shot?.visual || '',
+        ...strategyClaim(shot),
+        timing: String(verdict.durationSec || 10),
+        aspectRatio: outputAspectOf(stateRef.current),
+        durationSec: verdict.durationSec || 10,
+        action: 'CREATE_VOICE',
+        idempotencyKey: productionOsIdempotencyKey('CREATE_VOICE', buildId, shotId, verdict.artifactId),
+        lineId: ingress.lineId,
+        speakerCharacterId: ingress.speakerCharacterId,
+        voiceId: ingress.voiceId,
+        motionArtifactId: verdict.artifactId,
+        authorizePaidNetwork: true,
+        performanceSnapshotId: ingress.performanceSnapshotId,
+        performanceHash: ingress.performanceHash,
+      });
+      if (result.action !== 'CREATE_VOICE') throw new Error('Request bị đổi action.');
+      await createProductionRequest({
+        buildId,
+        episodeCode,
+        sceneCode,
+        shotCode: shotId,
+        story: voiceDraft.text,
+        actingBeat: futureDeskActing(shotId, shot?.actingBeat?.before?.action || ''),
+        visualContract: shot?.visual || '',
+        ...strategyClaim(shot),
+        timing: String(verdict.durationSec || 10),
+        aspectRatio: outputAspectOf(stateRef.current),
+        durationSec: verdict.durationSec || 10,
+        action: 'ACCEPT',
+        idempotencyKey: productionOsIdempotencyKey('ACCEPT', buildId, shotId, result.artifactId),
+        acceptArtifactId: result.artifactId,
+      });
+      const [nextState, actions, voice] = await Promise.all([
+        getProductionShotState(buildId, shotId, strategyClaim(shot)),
+        getProductionShotActions(buildId, shotId, strategyClaim(shot)),
+        getProductionCurrentVoice(buildId, shotId, ingress.lineId),
+      ]);
+      setOsStateByShot((m) => ({ ...m, [shotId]: nextState }));
+      setOsActionsByShot((m) => ({ ...m, [shotId]: actions }));
+      noteStrategyCatalog(shotId, actions);
+      if (voice && !voice.empty) setOsVoiceByShot((m) => ({ ...m, [shotId]: voice }));
+      try {
+        const blob = await fetchProductionVoiceMedia(buildId, shotId, ingress.lineId);
+        const url = URL.createObjectURL(blob);
+        setOsVoiceUrlByShot((m) => {
+          const prior = m[shotId];
+          if (prior) URL.revokeObjectURL(prior);
+          return { ...m, [shotId]: url };
+        });
+      } catch {
+        /* meta bind is enough */
+      }
+      message.success(`VOICE · ${result.artifactId.slice(0, 8)}`);
+    } catch {
+      message.warning(VOICE_PRODUCTION_OS_NOT_READY);
+    }
+  };
+
+  const prepareOfficialLipsync = async (shotId: string) => {
+    const buildId = productionOsBuildIdForShot(stateRef.current.buildId, shotId);
+    if (!buildId) {
+      message.warning(LIPSYNC_PRODUCTION_OS_NOT_READY);
+      return;
+    }
+    setLipsyncBusy(shotId);
+    try {
+      const [take, voice] = await Promise.all([
+        getAuthoritativeProductionVideo(buildId, shotId),
+        getProductionCurrentVoice(buildId, shotId, OFFICIAL_SH02_LINE_ID),
+      ]);
+      const verdict = prepareOfficialLipsyncIngress({ buildId, shotCode: shotId, video: take, voice });
+      if (take && !take.empty) setOsAuthoritativeByShot((m) => ({ ...m, [shotId]: take }));
+      if (voice && !voice.empty) setOsVoiceByShot((m) => ({ ...m, [shotId]: voice }));
+      if (verdict.reason === VIDEO_TAKE_CURRENT_INPUT) return;
+      if (!verdict.execute || !verdict.videoArtifactId || !verdict.voiceArtifactId || !verdict.lineId) {
+        message.warning(verdict.reason || LIPSYNC_PRODUCTION_OS_NOT_READY);
+        return;
+      }
+      const shot =
+        episodeShots(stateRef.current).find((s) => s.id === shotId) ||
+        (stateRef.current.episode?.shots ?? []).find((s) => s.id === shotId);
+      const episodeCode = episodeCodeOf(stateRef.current.episode?.episode || stateRef.current.episode?.title) || 'EP01';
+      const sceneCode = shot ? sceneIdOfShot(shot) || shot.scene || 'SC01' : 'SC01';
+      await materializeLipsyncProductionIngress({
+        buildId,
+        shotCode: shotId,
+        episodeCode,
+        sceneCode,
+      });
+      const lipsyncLine = voiceDraftForRequest(shotId, verdict.lineText || '');
+      if (!lipsyncLine.permitted) {
+        message.warning(directorBlockerLines([lipsyncLine.blocker]).join(' ') || lipsyncLine.blocker);
+        return;
+      }
+      const knownSplit =
+        (verdict.videoArtifactId || '').toLowerCase() === OFFICIAL_SH02_VIDEO_TAKE_ID
+        && (verdict.voiceArtifactId || '').toLowerCase() === OFFICIAL_SH02_VOICE_ARTIFACT_ID;
+      const clocks = knownSplit
+        ? productionClockBlockers({
+            directDialogue: true,
+            audioSec: 2.534,
+            pictureSec: 8,
+            lipsyncSec: 2.5,
+            mouthDuringSilence: true,
+            mouthDuringSpeech: false,
+          })
+        : [];
+      if (clocks.length) {
+        message.warning(directorBlockerLines(clocks).join(' '));
+        return;
+      }
+      const result = await createProductionRequest({
+        buildId,
+        episodeCode,
+        sceneCode,
+        shotCode: shotId,
+        story: lipsyncLine.text,
+        actingBeat: futureDeskActing(shotId, shot?.actingBeat?.before?.action || ''),
+        visualContract: shot?.visual || '',
+        ...strategyClaim(shot),
+        timing: '10',
+        aspectRatio: outputAspectOf(stateRef.current),
+        durationSec: 10,
+        action: 'CREATE_LIPSYNC',
+        idempotencyKey: productionOsIdempotencyKey(
+          'CREATE_LIPSYNC',
+          buildId,
+          shotId,
+          `${verdict.videoArtifactId}${verdict.voiceArtifactId}`,
+        ),
+        lineId: verdict.lineId,
+        speakerCharacterId: verdict.speakerCharacterId,
+        motionArtifactId: verdict.videoArtifactId,
+        voiceArtifactId: verdict.voiceArtifactId,
+        authorizePaidNetwork: true,
+      });
+      if (result.action !== 'CREATE_LIPSYNC') throw new Error('Request bị đổi action.');
+      await createProductionRequest({
+        buildId,
+        episodeCode,
+        sceneCode,
+        shotCode: shotId,
+        story: lipsyncLine.text,
+        actingBeat: futureDeskActing(shotId, shot?.actingBeat?.before?.action || ''),
+        visualContract: shot?.visual || '',
+        ...strategyClaim(shot),
+        timing: '10',
+        aspectRatio: outputAspectOf(stateRef.current),
+        durationSec: 10,
+        action: 'ACCEPT',
+        idempotencyKey: productionOsIdempotencyKey('ACCEPT', buildId, shotId, result.artifactId),
+        acceptArtifactId: result.artifactId,
+      });
+      const [nextState, actions, preview] = await Promise.all([
+        getProductionShotState(buildId, shotId, strategyClaim(shot)),
+        getProductionShotActions(buildId, shotId, strategyClaim(shot)),
+        getProductionPreview(buildId, shotId).catch(() => null),
+      ]);
+      setOsStateByShot((m) => ({ ...m, [shotId]: nextState }));
+      setOsActionsByShot((m) => ({ ...m, [shotId]: actions }));
+      noteStrategyCatalog(shotId, actions);
+      if (preview && !preview.empty && preview.artifactId) {
+        try {
+          if (!preview.byteSha256) throw new Error('preview hash missing');
+          const blob = await fetchProductionPreviewMedia(buildId, shotId);
+          if (!(await previewBytesMatch(blob, preview.byteSha256))) throw new Error('preview hash mismatch');
+          const url = URL.createObjectURL(asPlayableVideoBlob(blob));
+          setOsPreviewIdentityByShot((m) => ({
+            ...m,
+            [shotId]: osPreviewIdentityFromMeta(preview),
+          }));
+          setOsPreviewByShot((m) => {
+            const prior = m[shotId];
+            if (prior) URL.revokeObjectURL(prior);
+            return { ...m, [shotId]: url };
+          });
+        } catch {
+          /* HTTP contract still proves the artifact */
+        }
+      }
+      message.success(`LIPSYNC · ${result.artifactId.slice(0, 8)}`);
+    } catch {
+      message.warning(LIPSYNC_PRODUCTION_OS_NOT_READY);
+    } finally {
+      setLipsyncBusy(undefined);
+    }
+  };
+
   const ensureShotVoice = async (shotId: string) => {
+    message.warning(productionOsLegacyRefuseNote('CREATE_VOICE', 'ElevenLabs / IDB TTS'));
+    if (productionOsLegacyPathClosed()) return;
     const shot = episodeShots(stateRef.current).find((s) => s.id === shotId);
     if (!shot) return;
     const lines = linesForShot(stateRef.current, shot);
@@ -5709,17 +7688,35 @@ export function ContentFamixaSeriesTab() {
       });
     } catch (e) {
       if (e instanceof Error && e.message === 'Đã hủy tạo thoại.') return;
-      message.error(e instanceof Error ? e.message : 'Không nạp được thoại.');
+      message.error({ content: apiErrorMessage(e, 'Không nạp được thoại.'), key: 'famixa-desk-err' });
       throw e;
     }
   };
 
+  void ensureShotVoice;
+
   const assembleOneShot = async (shotId: string) => {
+    message.warning(productionOsLegacyRefuseNote('MIX_VIDEO', 'POST /content/series/assemble'));
+    if (productionOsLegacyPathClosed()) return;
     const pack = productionShorts(stateRef.current);
     const shot = pack.find((s) => s.id === shotId);
     if (!shot) return;
     const run = shotRunOf(stateRef.current, shot);
-    const videoUrl = assembleVideoUrl(run) || takeVideoUrl(run) || '';
+    const localReady =
+      isFalPlaybackSrc(run.lipsyncUrl) && (await proveLocalFalFile(run.lipsyncTaskId));
+    const lipPlay = playableFalLipsyncSrc({ lipsyncUrl: run.lipsyncUrl, localFileReady: localReady });
+    const fallbackMotionUrl = [resolveTakeUrl(run), run.takeUrl, run.previewUrl]
+      .map((u) => (u || '').trim())
+      .find((u) => u && !isFalPlaybackSrc(u));
+    const mixFloor = dialogueFloorOf(stateRef.current, shot);
+    const mixSource = resolveCurrentProductionVideoSource({
+      run,
+      shotId: shot.id,
+      lipsyncPlayableUrl: lipPlay,
+      fallbackMotionUrl,
+      speechFloorSec: mixFloor,
+    });
+    const videoUrl = mixSource.url || '';
     if (!videoUrl) {
       message.warning('Chưa có video để hoàn thiện.');
       return;
@@ -5739,11 +7736,15 @@ export function ContentFamixaSeriesTab() {
       t += Number(stateRef.current.voiceAssets?.[line.id]?.duration || 1);
     }
     const spoken = lines.length > 0;
-    const lipsynced = Boolean(run.lipsynced || run.lipsyncUrl?.trim() || run.finalSource === 'FAL');
-    if (spoken && !lipsynced) {
+    const lipsynced = Boolean(lipPlay) && !mixSource.usesSpeechCoveringTake;
+    if (spoken && !lipsynced && !lipsyncFalHasNoOutput(run.lipsyncError)) {
       message.error('Chưa khớp môi. Không ghép thoại đè lên video.');
       return;
     }
+    const asked = editorialDurationOf(stateRef.current, shot) || shot.editSeconds || 5;
+    const seconds = isVeoMotionTaskId(run.turboTaskId)
+      ? veoAssembleDurationSec(Number(asked) || 5, dialogueFloorOf(stateRef.current, shot))
+      : asked;
     setOrchMixId(shotId);
     setAssembleBusy(true);
     patchRun(shotId, {
@@ -5756,7 +7757,7 @@ export function ContentFamixaSeriesTab() {
       const mp4 = await assembleContentSeriesCut(
         oneShotAssembleBody({
           shotCode: studioShotCode(shot, pack),
-          seconds: editorialDurationOf(stateRef.current, shot) || shot.editSeconds || 5,
+          seconds,
           videoUrl,
           spoken,
           lipsynced,
@@ -5766,16 +7767,15 @@ export function ContentFamixaSeriesTab() {
           interpolate: stateRef.current.smoothness?.interpolate === true,
         }),
       );
-      await saveFinalBlob(shot.id, mp4);
       const live = stateRef.current;
       const liveShot = episodeShots(live).find((s) => s.id === shot.id) ?? shot;
-      const fps = computeInputFingerprints(live, liveShot);
-      const stamped = stampAssemble(shotRunOf(live, liveShot), fps.mix, fileName);
+      const identity = finalArtifactIdentityOf(live, liveShot);
+      await saveFinalBlob(shot.id, mp4, identity);
+      const stamped = stampAssemble(shotRunOf(live, liveShot), identity.assembleFp, fileName);
       persistState({ ...live, runs: { ...live.runs, [shot.id]: stamped } });
-      triggerDownload(mp4, fileName);
-      message.success('Đã hoàn thiện cảnh.');
+      message.success('Đã hoàn thiện cảnh. Xem trên màn hình — không tải file.');
     } catch (e) {
-      message.error(e instanceof Error ? e.message : apiErrorMessage(e, 'Không ghép được cảnh.'));
+      message.error(apiErrorMessage(e, 'Không ghép được cảnh.'));
     } finally {
       setAssembleBusy(false);
       setOrchMixId(undefined);
@@ -5835,9 +7835,9 @@ export function ContentFamixaSeriesTab() {
         shotId,
         currentPictureRevision: after.pictureRevisionId,
         currentPictureHash: (after.kfSourceHash || '').slice(0, 24),
-        currentMotion: exec.currentArtifacts.motion?.validity ?? 'NONE',
-        visibleMotion: exec.visibleArtifacts.motion?.validity ?? 'NONE',
-        acceptedMotion: exec.acceptedArtifacts.motion?.validity ?? 'NONE',
+        currentMotion: exec?.currentArtifacts.motion?.validity ?? 'NONE',
+        visibleMotion: exec?.visibleArtifacts.motion?.validity ?? 'NONE',
+        acceptedMotion: exec?.acceptedArtifacts.motion?.validity ?? 'NONE',
         nextAction: snap.nextAction,
         remake: after.motionNeedsRemake,
         take44Class: take44?.resultClass || take44?.status,
@@ -5849,20 +7849,34 @@ export function ContentFamixaSeriesTab() {
     })();
   };
 
+  const openWatchClip = (title: string, blob: Blob) => {
+    const url = URL.createObjectURL(asPlayableVideoBlob(blob));
+    setWatchClip((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url);
+      return { title, url };
+    });
+  };
+
   const watchShot = (shotId: string) => {
     void (async () => {
-      const shot = episodeShots(stateRef.current).find((s) => s.id === shotId);
+      const pack = productionShorts(stateRef.current);
+      const shot = pack.find((s) => s.id === shotId) || episodeShots(stateRef.current).find((s) => s.id === shotId);
       const run = shot ? shotRunOf(stateRef.current, shot) : undefined;
       if (run?.motionNeedsRemake || run?.kfApproved === false) {
         message.warning('Video cũ không khớp ảnh mới. Bấm Tạo video → Confirm.');
         return;
       }
-      const blob = (await loadFinalBlob(shotId)) || undefined;
-      if (blob) {
-        window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+      if (!shot) {
+        message.warning('Chưa có bản hoàn thiện. Take và Lip-sync không phải Final.');
         return;
       }
-      if (run?.shotProduction?.assembleFp) {
+      const stored = await loadFinalArtifact(shotId);
+      const blob = playableCurrentFinalBlob(stored, finalArtifactIdentityOf(stateRef.current, shot));
+      if (blob) {
+        openWatchClip(studioShotCode(shot, pack), blob);
+        return;
+      }
+      if (run?.shotProduction?.assembleFp || stored.kind === 'legacy' || stored.kind === 'incomplete' || stored.kind === 'record') {
         message.warning('File hoàn thiện không còn trên máy này. Bấm Hoàn thiện để ghép lại. Không mở take/lipsync như Final.');
         return;
       }
@@ -5889,10 +7903,14 @@ export function ContentFamixaSeriesTab() {
     setProdView('shot');
   };
   const focusStudioShot = (id: string) => {
+    const pool = prodMode === 'director' ? deskShots : shots;
     const hit =
-      shots.find((s) => s.id === id) ||
-      shots.find((s) => sceneIdOfShot(s) === id || (s.sceneId || '') === id);
-    setStudioShotId(hit?.id || id);
+      pool.find((s) => s.id === id) ||
+      (!looksLikeProductionShotCode(id)
+        ? pool.find((s) => sceneIdOfShot(s) === id || (s.sceneId || '') === id)
+        : undefined);
+    const nextId = hit?.id || id;
+    setStudioShotId(nextId);
     setStudioFocusTick((n) => n + 1);
   };
   const openShotStudio = (id: string) => {
@@ -5901,6 +7919,27 @@ export function ContentFamixaSeriesTab() {
     focusStudioShot(id);
     if (prodMode === 'director') setDirectorBench(true);
   };
+
+  useEffect(() => {
+    const build = (searchParams.get('build') || '').trim();
+    const shot = (searchParams.get('shot') || '').trim();
+    const key = `${build}|${shot}`;
+    if (!build || !shot || deepLinkDone.current === key) return;
+    if (!resolveShotWorkspaceIdentity({ requestedBuildId: build, requestedShotId: shot }).ok) return;
+    deepLinkDone.current = key;
+    void openBuild(build).then(() => {
+      openShotStudio(shot);
+    });
+  }, [searchParams]);
+
+  useEffect(() => {
+    const build = (state.buildId || '').trim();
+    const shot = (studioShotId || '').trim();
+    if (!build || !shot) return;
+    if (!resolveShotWorkspaceIdentity({ requestedBuildId: build, requestedShotId: shot }).ok) return;
+    if ((searchParams.get('build') || '').trim() === build && (searchParams.get('shot') || '').trim() === shot) return;
+    setSearchParams({ build, shot }, { replace: true });
+  }, [state.buildId, studioShotId]);
   const proposeScenes = () => {
     receiveStaffPack();
   };
@@ -5974,21 +8013,11 @@ export function ContentFamixaSeriesTab() {
     label: workflow?.nextAction || (blockedCast ? `Hoàn thiện bộ ảnh chuẩn cho ${blockedCast.displayName || blockedCast.name}` : 'Hoàn thiện bộ ảnh chuẩn'),
     tab: 'characters' as const,
   };
-  const localImageApproved = shots.filter((s) => {
-    const run = runById(s.id);
-    return Boolean(run.keyframeDataUrl && (run.kfApproved || run.status === 'approved'));
-  }).length;
-  const localVideoMade = shots.filter((s) => {
-    const run = runById(s.id);
-    return Boolean(run.lipsyncUrl || run.previewUrl || run.takeUrl);
-  }).length;
-  const localVideoApproved = shots.filter((s) => {
-    const run = runById(s.id);
-    return Boolean((run.lipsyncUrl || run.previewUrl || run.takeUrl) && (run.videoApproved || run.status === 'approved'));
-  }).length;
   const shotTotal = Math.max(workflow?.shotCount ?? 0, units.shotCount, shots.length);
-  const imagesMade = Math.max(workflow?.imageProgress ?? 0, localImageApproved);
-  const videosMade = Math.max(workflow?.videoProgress ?? 0, localVideoMade);
+  const imagesMade = workflow?.imageProgress ?? 0;
+  const videosMade = workflow?.videoProgress ?? 0;
+  const imagesReviewed = workflow?.imageApprovalProgress ?? 0;
+  const videosReviewed = workflow?.videoApprovalProgress ?? 0;
   const seriesTrack = deriveSeriesTrack({
     scriptLocked: Boolean(state.scriptLocked),
     sceneCount: workflow?.sceneCount ?? units.sceneCount,
@@ -5999,17 +8028,13 @@ export function ContentFamixaSeriesTab() {
     prepDone: workflow?.sceneCount ?? units.sceneCount,
     shotTotal,
     imagesMade,
-    imagesReviewed: Math.max(workflow?.imageApprovalProgress ?? 0, localImageApproved),
+    imagesReviewed,
     videosMade,
-    videosReviewed: Math.max(workflow?.videoApprovalProgress ?? 0, localVideoApproved),
-    videosDone: Math.max(
-      workflow?.finalization === 'Chưa sẵn sàng' ? 0 : (workflow?.shotCount ?? 0),
-      localVideoApproved,
-    ),
+    videosReviewed,
+    videosDone: !workflow || workflow.finalization === 'Chưa sẵn sàng' ? 0 : (workflow.shotCount ?? 0),
     voiceReady: voiceReadyAll,
     finalReady: staffFinalize.allowed,
   });
-  const episodeDone = productionProgress.finishReady;
   const storyLine = workflow?.storyLine
     || episodeStoryLine({
       sceneCount: units.sceneCount,
@@ -6046,10 +8071,12 @@ export function ContentFamixaSeriesTab() {
     <div>
       {seriesDesk === 'list' ? (
         <ContentFamixaSeriesDesk
-          seriesTitle="Famixa – Video giáo dục"
+          seriesTitle={deskTitle}
           builds={builds}
           progressById={progressById}
           busy={buildBusy}
+          authRequired={catalogAuthRequired}
+          catalogSettled={catalogSettled}
           onOpen={(id) => void openBuild(id)}
           onCreate={createVideoFromDesk}
           onDelete={removeBuild}
@@ -6057,10 +8084,23 @@ export function ContentFamixaSeriesTab() {
       ) : (
       <>
       <ContentFamixaVisualModeBadge compact />
+      {filmLed ? (
+        <ContentFilmProductionDesk
+          key={state.buildId || catalog}
+          state={state}
+          steps={filmSteps}
+          episodeCode={epCode}
+          seriesCode={catalog}
+          onCommit={commitFilmGraph}
+        />
+      ) : null}
       <ContentFamixaSeriesWorkspace
+        showFamixaCastLock={famixaCharacters}
+        hideStoryForm={filmLed}
         episodeCode={epCode}
         episodeTitle={state.episode?.title || ''}
-        seriesTitle={state.episode?.seriesTitle || 'Famixa'}
+        seriesTitle={state.episode?.seriesTitle || episodeSeriesTitle}
+        pipelineLine={seriesLine}
         episodeDesc={state.episode?.premise || ''}
         onBack={() => {
           setSeriesDesk('list');
@@ -6107,11 +8147,11 @@ export function ContentFamixaSeriesTab() {
           characterLocked: characterReady,
           characterNeed: nextProd.label,
           sceneLabel: sceneViews[0]?.title || 'Cảnh',
-          imagesPending: shotTotal > 0 && localImageApproved < shotTotal,
+          imagesPending: shotTotal > 0 && imagesMade < shotTotal,
           videosPending: shotTotal > 0 && videosMade < shotTotal,
-          videosReviewPending: shotTotal > 0 && localVideoApproved < localVideoMade,
-          voicePending: shotTotal > 0 && localVideoApproved >= shotTotal && !voiceReadyAll,
-          lipsyncPending: shotTotal > 0 && localVideoApproved >= shotTotal && lipsyncPending,
+          videosReviewPending: shotTotal > 0 && videosReviewed < videosMade,
+          voicePending: shotTotal > 0 && videosReviewed >= shotTotal && !voiceReadyAll,
+          lipsyncPending: shotTotal > 0 && videosReviewed >= shotTotal && lipsyncPending,
           finishReady: staffFinalize.allowed,
           done: staffFinalize.allowed,
         })
@@ -6135,7 +8175,7 @@ export function ContentFamixaSeriesTab() {
           prodMode === 'director' ? (
             <ContentFamixaDirectorShortDesk
               title={`${epCode} · ${state.episode?.title?.trim() || 'Chưa đặt tên tập'}`}
-              rows={shots.map((shot, index) => {
+              rows={deskShots.map((shot, index) => {
                 const snap = snapshotOfShot(state, shot, ttsFiles, { hasVoiceFile });
                 const cmd = nextShotProductionCommand(snap);
                 const lanes = directorShotLaneMarks(snap);
@@ -6160,11 +8200,11 @@ export function ContentFamixaSeriesTab() {
                 };
               })}
               allFinal={staffFinalize.allowed}
-              readyCount={shots.filter((shot) => editorialSourceReady(shotRunOf(state, shot))).length}
-              allSourceReady={shots.length > 0 && shots.every((shot) => editorialSourceReady(shotRunOf(state, shot)))}
+              readyCount={deskShots.filter((shot) => editorialSourceReady(shotRunOf(state, shot))).length}
+              allSourceReady={deskShots.length > 0 && deskShots.every((shot) => editorialSourceReady(shotRunOf(state, shot)))}
               previewSec={estimateEditorialTotalSec(
                 state,
-                shots.filter((shot) => editorialSourceReady(shotRunOf(state, shot))),
+                deskShots.filter((shot) => editorialSourceReady(shotRunOf(state, shot))),
                 editorialCutOf(state),
                 (id) => Number(state.voiceAssets?.[id]?.duration || 0),
               )}
@@ -6173,7 +8213,7 @@ export function ContentFamixaSeriesTab() {
               benchOpen={directorBench}
               bench={
                 <ContentFamixaShotProductionPanel
-                  shots={shots}
+                  shots={deskShots}
                   state={state}
                   ttsFiles={ttsFiles}
                   busyShotId={stillBusy || turboBusy || lipsyncBusy}
@@ -6189,23 +8229,56 @@ export function ContentFamixaSeriesTab() {
                   onOpenVoice={() => setProdTab('characters')}
                   hasVoiceFile={hasVoiceFile}
                   readLive={() => ({ state: stateRef.current, ttsFiles: ttsFilesRef.current })}
-                  onEnsureVoice={(shotId) => ensureShotVoice(shotId)}
+                  onEnsureVoice={(shotId) => prepareOfficialVoice(shotId)}
                   onEnsurePicture={(shotId) => {
-                    const hold = directorPictureHold(shotId);
-                    if (!hold.allowed) {
-                      message.warning([hold.reason, hold.hint].filter(Boolean).join(' '));
-                      return;
-                    }
                     confirmCreateShotImage(shotId);
                   }}
                   onApprovePicture={approveShotPicture}
                   onApproveVideo={approveShotVideo}
                   onEnsureMotion={startShotMotion}
+                  osPreviewUrl={studioShotId ? osPreviewByShot[studioShotId] : undefined}
+                  osKeyframeUrl={studioShotId ? osKeyframeByShot[studioShotId] : undefined}
+                  osPictureBlock={studioShotId ? osPictureBlockByShot[studioShotId] : undefined}
+                  osPreviewIdentity={studioShotId ? osPreviewIdentityByShot[studioShotId] : undefined}
+                  osAuthoritativeVideo={studioShotId ? osAuthoritativeByShot[studioShotId] : undefined}
+                  osAuthoritativeVoice={studioShotId ? osVoiceByShot[studioShotId] : undefined}
+                  osLipsyncArtifactId={studioShotId ? osStateByShot[studioShotId]?.lipsyncArtifactId || undefined : undefined}
+                  osPaidStageLedger={studioShotId ? osStateByShot[studioShotId]?.paidStageLedger || undefined : undefined}
+                  osVoiceUrl={studioShotId ? osVoiceUrlByShot[studioShotId] : undefined}
+                  osActions={studioShotId ? osActionsByShot[studioShotId] : undefined}
+                  onExecuteOsAction={executeProductionOsAction}
+                  visualStill={studioShotId ? visualByShot[studioShotId] : undefined}
+                  onVisualApprove={approveVisualStill}
+                  onVisualVariant={requestVisualVariant}
+                  onVisualLibrary={requestVisualLibrary}
+                  onVisualPhoto={(shotId) => requestVisualLibrary(shotId, 'photo')}
+                  visualBrandChoices={filmBrandCode ? undefined : visualBrandChoices}
+                  visualBrandChoice={visualBrandChoice}
+                  onVisualBrandChoice={filmBrandCode ? undefined : setVisualBrandChoice}
+                  onPrepareOsVoice={prepareOfficialVoice}
                   onRetryCamera={retryMotionWithNewCamera}
-                  onEnsureLipsync={(shotId) => {
+                  onPickLipsyncSpeaker={applyLipsyncSpeakerPick}
+                  onEnsureLipsync={(shotId, send) => {
+                    if (shotId === OFFICIAL_SH02_SHOT_CODE) {
+                      void prepareOfficialLipsync(shotId);
+                      return;
+                    }
+                    if (send?.resume) {
+                      void startLipsync([shotId], { resumeOnly: true });
+                      return;
+                    }
+                    if (send?.forceNew) {
+                      void startLipsync([shotId], { forceNew: true, remake: true });
+                      return;
+                    }
                     const shot =
                       productionShorts(stateRef.current).find((s) => s.id === shotId) ||
                       (stateRef.current.episode?.shots ?? []).find((s) => s.id === shotId);
+                    const run = shotRunOf(stateRef.current, { id: shotId, status: 'story_locked' } as FamixaSeriesShot);
+                    if (shouldResumeLipsync(run) || lipsyncResumeTaskId(run, normalizeLipsyncModel(stateRef.current.lipsyncModel))) {
+                      void startLipsync([shotId], { resumeOnly: true });
+                      return;
+                    }
                     const opts = shot
                       ? studioLipsyncSendOpts(
                           snapshotOfShot(stateRef.current, shot, ttsFilesRef.current, {
@@ -6215,29 +8288,25 @@ export function ContentFamixaSeriesTab() {
                       : {};
                     void startLipsync([shotId], opts);
                   }}
-                  onAcceptExisting={(shotId) => {
-                    const run = shotRunOf(stateRef.current, { id: shotId, status: 'story_locked' } as FamixaSeriesShot);
-                    const patch = acceptExistingTake(run);
-                    if (!patch) return;
-                    patchRun(shotId, { ...patch, motionNeedsRemake: false });
-                  }}
+                  onAttachLipsync={attachLipsync}
+                  onAcceptExisting={acceptExistingOfficial}
+                  engine={engine}
+                  onEngine={persistEngine}
+                  engineKeys={keys}
+                  osVideoModel={studioShotId ? osVideoModelByShot[studioShotId] : undefined}
+                  osDirectorTiming={studioShotId ? osDirectorTimingByShot[studioShotId] : undefined}
+                  onDirectorTiming={persistDirectorTiming}
+                  directorTimingBusy={directorTimingBusy}
+                  directorSelectionBusy={directorSelectionBusy}
+                  lipsyncModel={normalizeLipsyncModel(state.lipsyncModel)}
+                  onLipsyncModel={(lipsyncModel) => persistState({ ...stateRef.current, lipsyncModel })}
                   onEnsureMix={(shotId) => void assembleOneShot(shotId)}
                   onWatch={watchShot}
                   onQa={(shotId, next) => {
                     const live = shotRunOf(stateRef.current, { id: shotId, status: 'story_locked' } as FamixaSeriesShot);
                     patchRun(shotId, { shotQa: mergeCanonicalShotQa(live.shotQa, next) });
                   }}
-                  onActingBeat={(shotId, actingBeat) => {
-                    const live = stateRef.current;
-                    if (!live.episode) return;
-                    persistState({
-                      ...live,
-                      episode: {
-                        ...live.episode,
-                        shots: live.episode.shots.map((s) => (s.id === shotId ? { ...s, actingBeat } : s)),
-                      },
-                    });
-                  }}
+                  onActingBeat={(shotId, actingBeat) => persistActingBeat(shotId, actingBeat)}
                 />
               }
               onOpenShot={(id) => {
@@ -6298,23 +8367,56 @@ export function ContentFamixaSeriesTab() {
               onOpenVoice={() => setProdTab('voice')}
               hasVoiceFile={hasVoiceFile}
               readLive={() => ({ state: stateRef.current, ttsFiles: ttsFilesRef.current })}
-              onEnsureVoice={(shotId) => ensureShotVoice(shotId)}
+              onEnsureVoice={(shotId) => prepareOfficialVoice(shotId)}
               onEnsurePicture={(shotId) => {
-                const hold = directorPictureHold(shotId);
-                if (!hold.allowed) {
-                  message.warning([hold.reason, hold.hint].filter(Boolean).join(' '));
-                  return;
-                }
                 confirmCreateShotImage(shotId);
               }}
               onApprovePicture={approveShotPicture}
               onApproveVideo={approveShotVideo}
               onEnsureMotion={startShotMotion}
+              osPreviewUrl={studioShotId ? osPreviewByShot[studioShotId] : undefined}
+              osKeyframeUrl={studioShotId ? osKeyframeByShot[studioShotId] : undefined}
+              osPictureBlock={studioShotId ? osPictureBlockByShot[studioShotId] : undefined}
+              osPreviewIdentity={studioShotId ? osPreviewIdentityByShot[studioShotId] : undefined}
+              osAuthoritativeVideo={studioShotId ? osAuthoritativeByShot[studioShotId] : undefined}
+              osAuthoritativeVoice={studioShotId ? osVoiceByShot[studioShotId] : undefined}
+              osLipsyncArtifactId={studioShotId ? osStateByShot[studioShotId]?.lipsyncArtifactId || undefined : undefined}
+              osPaidStageLedger={studioShotId ? osStateByShot[studioShotId]?.paidStageLedger || undefined : undefined}
+              osVoiceUrl={studioShotId ? osVoiceUrlByShot[studioShotId] : undefined}
+              osActions={studioShotId ? osActionsByShot[studioShotId] : undefined}
+              onExecuteOsAction={executeProductionOsAction}
+              visualStill={studioShotId ? visualByShot[studioShotId] : undefined}
+              onVisualApprove={approveVisualStill}
+              onVisualVariant={requestVisualVariant}
+              onVisualLibrary={requestVisualLibrary}
+              onVisualPhoto={(shotId) => requestVisualLibrary(shotId, 'photo')}
+              visualBrandChoices={filmBrandCode ? undefined : visualBrandChoices}
+              visualBrandChoice={visualBrandChoice}
+              onVisualBrandChoice={filmBrandCode ? undefined : setVisualBrandChoice}
+              onPrepareOsVoice={prepareOfficialVoice}
               onRetryCamera={retryMotionWithNewCamera}
-              onEnsureLipsync={(shotId) => {
+              onPickLipsyncSpeaker={applyLipsyncSpeakerPick}
+              onEnsureLipsync={(shotId, send) => {
+                if (shotId === OFFICIAL_SH02_SHOT_CODE) {
+                  void prepareOfficialLipsync(shotId);
+                  return;
+                }
+                if (send?.resume) {
+                  void startLipsync([shotId], { resumeOnly: true });
+                  return;
+                }
+                if (send?.forceNew) {
+                  void startLipsync([shotId], { forceNew: true, remake: true });
+                  return;
+                }
                 const shot =
                   productionShorts(stateRef.current).find((s) => s.id === shotId) ||
                   (stateRef.current.episode?.shots ?? []).find((s) => s.id === shotId);
+                const run = shotRunOf(stateRef.current, { id: shotId, status: 'story_locked' } as FamixaSeriesShot);
+                if (shouldResumeLipsync(run) || lipsyncResumeTaskId(run, normalizeLipsyncModel(stateRef.current.lipsyncModel))) {
+                  void startLipsync([shotId], { resumeOnly: true });
+                  return;
+                }
                 const opts = shot
                   ? studioLipsyncSendOpts(
                       snapshotOfShot(stateRef.current, shot, ttsFilesRef.current, {
@@ -6324,29 +8426,25 @@ export function ContentFamixaSeriesTab() {
                   : {};
                 void startLipsync([shotId], opts);
               }}
-              onAcceptExisting={(shotId) => {
-                const run = shotRunOf(stateRef.current, { id: shotId, status: 'story_locked' } as FamixaSeriesShot);
-                const patch = acceptExistingTake(run);
-                if (!patch) return;
-                patchRun(shotId, { ...patch, motionNeedsRemake: false });
-              }}
+              onAttachLipsync={attachLipsync}
+              onAcceptExisting={acceptExistingOfficial}
+              engine={engine}
+              onEngine={persistEngine}
+              engineKeys={keys}
+              osVideoModel={studioShotId ? osVideoModelByShot[studioShotId] : undefined}
+              osDirectorTiming={studioShotId ? osDirectorTimingByShot[studioShotId] : undefined}
+              onDirectorTiming={persistDirectorTiming}
+              directorTimingBusy={directorTimingBusy}
+              directorSelectionBusy={directorSelectionBusy}
+              lipsyncModel={normalizeLipsyncModel(state.lipsyncModel)}
+              onLipsyncModel={(lipsyncModel) => persistState({ ...stateRef.current, lipsyncModel })}
               onEnsureMix={(shotId) => void assembleOneShot(shotId)}
               onWatch={watchShot}
               onQa={(shotId, next) => {
                 const live = shotRunOf(stateRef.current, { id: shotId, status: 'story_locked' } as FamixaSeriesShot);
                 patchRun(shotId, { shotQa: mergeCanonicalShotQa(live.shotQa, next) });
               }}
-              onActingBeat={(shotId, actingBeat) => {
-                const live = stateRef.current;
-                if (!live.episode) return;
-                persistState({
-                  ...live,
-                  episode: {
-                    ...live.episode,
-                    shots: live.episode.shots.map((s) => (s.id === shotId ? { ...s, actingBeat } : s)),
-                  },
-                });
-              }}
+              onActingBeat={(shotId, actingBeat) => persistActingBeat(shotId, actingBeat)}
               onCoverage={(shotId, coverage) => {
                 const live = stateRef.current;
                 if (!live.episode) return;
@@ -6366,7 +8464,7 @@ export function ContentFamixaSeriesTab() {
                   episode: {
                     ...live.episode,
                     shots: live.episode.shots.map((s) =>
-                      s.id === shotId ? { ...s, timing: { ...(s.timing || {}), ...timing } } : s,
+                      s.id === shotId && s.timing ? { ...s, timing: { ...s.timing, ...timing } } : s,
                     ),
                   },
                 });
@@ -6377,7 +8475,7 @@ export function ContentFamixaSeriesTab() {
           )
         }
         script={
-          prodMode === 'director' ? (
+          filmLed ? null : prodMode === 'director' ? (
           <ContentFamixaDirectorStoryDesk
             shotOrder={shots.map((s, i) => ({
               id: s.id,
@@ -6386,7 +8484,7 @@ export function ContentFamixaSeriesTab() {
             aspect={assembleAspect === '9:16' ? '9:16' : '16:9'}
             onAspect={(next) => persistState({ ...stateRef.current, outputAspect: next })}
             storyAction={nextDirectorStoryAction({
-              body: state.packDraft || '',
+              body: state.packDraft || state.scriptDraft || '',
               sceneCount: state.scenes?.length ?? 0,
               shotCount: shots.length,
               storyReviewed: Boolean(state.storyReviewed),
@@ -6403,17 +8501,17 @@ export function ContentFamixaSeriesTab() {
             goal={state.episode?.premise || ''}
             moral={state.episode?.moral || ''}
             cta={state.episode?.ctaRule || ''}
-            body={state.packDraft || ''}
+            body={state.packDraft || state.scriptDraft || ''}
             dialogue={voiceScript.lines.map((l) => l.text).filter(Boolean).join('\n')}
             locked={Boolean(state.scriptLocked)}
             onTitle={(title) =>
               persistState({
-                ...state,
-                episode: state.episode
-                  ? { ...state.episode, title }
+                ...stateRef.current,
+                episode: stateRef.current.episode
+                  ? { ...stateRef.current.episode, title }
                   : {
-                      seriesCode: FAMIXA_SERIES_CODE,
-                      seriesTitle: 'Famixa',
+                      seriesCode: catalog,
+                      seriesTitle: episodeSeriesTitle,
                       episode: epCode,
                       title,
                       premise: '',
@@ -6425,12 +8523,12 @@ export function ContentFamixaSeriesTab() {
             }
             onGoal={(premise) =>
               persistState({
-                ...state,
-                episode: state.episode
-                  ? { ...state.episode, premise }
+                ...stateRef.current,
+                episode: stateRef.current.episode
+                  ? { ...stateRef.current.episode, premise }
                   : {
-                      seriesCode: FAMIXA_SERIES_CODE,
-                      seriesTitle: 'Famixa',
+                      seriesCode: catalog,
+                      seriesTitle: episodeSeriesTitle,
                       episode: epCode,
                       title: '',
                       premise,
@@ -6440,8 +8538,9 @@ export function ContentFamixaSeriesTab() {
                     },
               })
             }
-            onBody={(packDraft) => persistState({ ...state, packDraft })}
-            onSave={() => persistState(state)}
+            onBody={(packDraft) => persistState({ ...stateRef.current, packDraft, scriptDraft: packDraft })}
+            onBodyCommit={() => flushServerSaveRef.current()}
+            onSave={() => persistState(stateRef.current)}
             onConfirm={confirmStaffScript}
             onProposeScenes={proposeScenes}
             onReceivePack={receiveStaffPack}
@@ -6473,17 +8572,17 @@ export function ContentFamixaSeriesTab() {
             goal={state.episode?.premise || ''}
             moral={state.episode?.moral || ''}
             cta={state.episode?.ctaRule || ''}
-            body={state.packDraft || ''}
+            body={state.packDraft || state.scriptDraft || ''}
             dialogue={voiceScript.lines.map((l) => l.text).filter(Boolean).join('\n')}
             locked={Boolean(state.scriptLocked)}
             onTitle={(title) =>
               persistState({
-                ...state,
-                episode: state.episode
-                  ? { ...state.episode, title }
+                ...stateRef.current,
+                episode: stateRef.current.episode
+                  ? { ...stateRef.current.episode, title }
                   : {
-                      seriesCode: FAMIXA_SERIES_CODE,
-                      seriesTitle: 'Famixa',
+                      seriesCode: catalog,
+                      seriesTitle: episodeSeriesTitle,
                       episode: epCode,
                       title,
                       premise: '',
@@ -6495,12 +8594,12 @@ export function ContentFamixaSeriesTab() {
             }
             onGoal={(premise) =>
               persistState({
-                ...state,
-                episode: state.episode
-                  ? { ...state.episode, premise }
+                ...stateRef.current,
+                episode: stateRef.current.episode
+                  ? { ...stateRef.current.episode, premise }
                   : {
-                      seriesCode: FAMIXA_SERIES_CODE,
-                      seriesTitle: 'Famixa',
+                      seriesCode: catalog,
+                      seriesTitle: episodeSeriesTitle,
                       episode: epCode,
                       title: '',
                       premise,
@@ -6510,8 +8609,9 @@ export function ContentFamixaSeriesTab() {
                     },
               })
             }
-            onBody={(packDraft) => persistState({ ...state, packDraft })}
-            onSave={() => persistState(state)}
+            onBody={(packDraft) => persistState({ ...stateRef.current, packDraft, scriptDraft: packDraft })}
+            onBodyCommit={() => flushServerSaveRef.current()}
+            onSave={() => persistState(stateRef.current)}
             onConfirm={confirmStaffScript}
             onProposeScenes={proposeScenes}
             onReceivePack={receiveStaffPack}
@@ -6539,6 +8639,8 @@ export function ContentFamixaSeriesTab() {
         }
         scenes={
           <ContentFamixaBuildSceneList
+            useFamixaSet={famixaCharacters}
+            characterScope={characterScope}
             shots={shots}
             runOf={runById}
             scenes={state.scenes}
@@ -6552,7 +8654,9 @@ export function ContentFamixaSeriesTab() {
           />
         }
         characters={
+          famixaCharacters ? (
           <ContentFamixaCharacterBoard
+            scope={characterScope}
             mode={prodMode}
             shots={shots}
             onBuildEpisode={() => setProdTab('script')}
@@ -6578,6 +8682,14 @@ export function ContentFamixaSeriesTab() {
               persistState(setCharacterVoice(state, characterId, { voiceId, voiceName }));
             }}
           />
+          ) : (
+            <section className="fx-desk" data-character-desk={characterDesk}>
+              <h2>Người</h2>
+              <p className="fx-desk__lead">
+                {characterDesk === 'unavailable' ? 'Chưa khả dụng.' : 'Chưa cấu hình.'} Phim này không dùng Character Studio.
+              </p>
+            </section>
+          )
         }
         voice={
           <ContentFamixaBuildVoiceBoard
@@ -6737,6 +8849,7 @@ export function ContentFamixaSeriesTab() {
           ) : null
         }
         lookBuild={
+          famixaCharacters ? (
           <>
             <p className="fx-desk__note">Đường khóa mặt Minh. Đã LOCK. Không sửa Master / DNA / PRP từ đây.</p>
             <ContentKitVideoVisualSystemCard />
@@ -6746,13 +8859,20 @@ export function ContentFamixaSeriesTab() {
             <ContentKitVideoIdentityStressCard />
             <ContentKitVideoMasterReviewCard />
           </>
+          ) : (
+            <p className="fx-desk__note">Chưa cấu hình bộ nhân vật cho phim này.</p>
+          )
         }
         productionSystem={
           <>
           <ContentKitVideoEngineCard />
+          {famixaCharacters ? (
+            <>
           <ContentKitVideoCharacterDnaCard />
           <ContentKitVideoProductionReferencePackCard />
           <ContentKitVideoIdentityGovernanceCard />
+            </>
+          ) : null}
           <ContentKitVideoProductionShotCard />
           <ContentKitVideoProductionShotContractCard />
           <ContentKitVideoProductionPromptCompilerCard />
@@ -6788,6 +8908,11 @@ export function ContentFamixaSeriesTab() {
         engine={engine}
         onEngine={persistEngine}
         keys={keys}
+        osVideoModel={(studioShotId && osVideoModelByShot[studioShotId]) || (active?.id ? osVideoModelByShot[active.id] : undefined)}
+        osDirectorTiming={(studioShotId && osDirectorTimingByShot[studioShotId]) || (active?.id ? osDirectorTimingByShot[active.id] : undefined)}
+        onDirectorTiming={persistDirectorTiming}
+        directorTimingBusy={directorTimingBusy}
+        directorSelectionBusy={directorSelectionBusy}
         voiceProvider={voiceProvider}
         onVoiceProvider={persistVoice}
         statusOf={(s) => shotRunOf(state, s).status}
@@ -7280,6 +9405,29 @@ export function ContentFamixaSeriesTab() {
                               {si === kids.length - 1 ? '└─' : '├─'} {s.shot} — {s.story}
                               {s.splitReason ? ` · ${s.splitReason}` : ''}
                               {hold ? ' · HOLD' : ` · ${s.seconds || 5}s`}
+                              <NovixaShortStrategyDesk
+                                shot={s}
+                                accepted={strategyAcceptedByShot[s.id] === true}
+                                catalog={osActionsByShot[s.id]}
+                                onCommit={async (patch) => {
+                                  persistShotStrategy(s.id, patch);
+                                  const live = (stateRef.current.episode?.shots ?? []).find((row) => row.id === s.id) || {
+                                    ...s,
+                                    ...patch,
+                                  };
+                                  const buildId = stateRef.current.buildId;
+                                  if (!buildId) {
+                                    if (patch.strategyConfirmed) throw new Error('Chưa có build. Server chưa nhận xác nhận.');
+                                    return;
+                                  }
+                                  const actions = await getProductionShotActions(buildId, s.id, {
+                                    story: (live.story || '').trim() || undefined,
+                                    ...strategyClaim(live),
+                                  });
+                                  setOsActionsByShot((current) => ({ ...current, [s.id]: actions }));
+                                  noteStrategyCatalog(s.id, actions);
+                                }}
+                              />
                             </div>
                           );
                         })}
@@ -7326,7 +9474,9 @@ export function ContentFamixaSeriesTab() {
               {
                 key: 'cast',
                 label: `Vai & tập${state.roles.length ? ` · ${state.roles.length} vai` : ''}`,
-                children: (
+                children: !famixaCharacters ? (
+                  <p className="fx-desk__note">Chưa cấu hình bộ nhân vật cho phim này.</p>
+                ) : (
                   <>
       <ContentFamixaCharacterUniverseCard
         rows={universe}
@@ -7334,6 +9484,7 @@ export function ContentFamixaSeriesTab() {
         onRefresh={() => void loadUniverse()}
         onOpenWorkspace={(code) => setWorkspaceCode(code)}
         onCreate={async (input) => {
+          if (!famixaCharacters) return;
           const row = await createFamixaCharacter({
             name: input.name,
             role: input.role,
@@ -7354,6 +9505,7 @@ export function ContentFamixaSeriesTab() {
           message.success(`${row.characterCode} DRAFT. Mở workspace — chưa Canon.`);
         }}
         onApprove={(code) => {
+          if (!famixaCharacters) return;
           setUniverseBusy(code);
           void approveFamixaCharacter(code)
             .then((row) => {
@@ -7364,6 +9516,7 @@ export function ContentFamixaSeriesTab() {
             .finally(() => setUniverseBusy(undefined));
         }}
         onLock={(code) => {
+          if (!famixaCharacters) return;
           setUniverseBusy(code);
           void lockFamixaCharacter(code)
             .then((row) => {
@@ -7374,6 +9527,7 @@ export function ContentFamixaSeriesTab() {
             .finally(() => setUniverseBusy(undefined));
         }}
         onUnlock={(code) => {
+          if (!famixaCharacters) return;
           setUniverseBusy(code);
           void unlockFamixaCharacter(code)
             .then((row) => {
@@ -8479,6 +10633,29 @@ export function ContentFamixaSeriesTab() {
       </>
       )}
 
+      <Modal
+        title={watchClip?.title || 'Xem video'}
+        open={Boolean(watchClip)}
+        footer={null}
+        width={880}
+        destroyOnClose
+        onCancel={() => {
+          setWatchClip((prev) => {
+            if (prev?.url) URL.revokeObjectURL(prev.url);
+            return undefined;
+          });
+        }}
+      >
+        {watchClip ? (
+          <video
+            src={watchClip.url}
+            controls
+            autoPlay
+            playsInline
+            style={{ width: '100%', maxHeight: '70vh', background: '#111' }}
+          />
+        ) : null}
+      </Modal>
       <Drawer
         title="Continuity Memory"
         open={memOpen}

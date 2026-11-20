@@ -14,6 +14,7 @@ export function ContentFamixaScriptDesk({
   onTitle,
   onGoal,
   onBody,
+  onBodyCommit,
   onSave,
   onConfirm,
   onProposeScenes,
@@ -41,6 +42,7 @@ export function ContentFamixaScriptDesk({
   onTitle: (v: string) => void;
   onGoal: (v: string) => void;
   onBody: (v: string) => void;
+  onBodyCommit?: () => void;
   onSave: () => void;
   onConfirm: () => void;
   onProposeScenes: () => void;
@@ -104,7 +106,13 @@ export function ContentFamixaScriptDesk({
             children: (
               <label>
                 Nội dung
-                <Input.TextArea rows={6} value={body} disabled={locked} onChange={(e) => onBody(e.target.value)} />
+                <Input.TextArea
+                  rows={6}
+                  value={body}
+                  disabled={locked}
+                  onChange={(e) => onBody(e.target.value)}
+                  onBlur={() => onBodyCommit?.()}
+                />
               </label>
             ),
           },

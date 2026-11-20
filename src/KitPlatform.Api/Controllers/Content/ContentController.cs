@@ -206,6 +206,11 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    [HttpGet("ops/episodes-need-content")]
+    public async Task<ActionResult<IReadOnlyList<EpisodeNeedContentDto>>> GetEpisodesNeedContent(
+        CancellationToken cancellationToken) =>
+        Ok(await _ops.ListEpisodesNeedContentAsync(cancellationToken));
+
     [HttpGet("work")]
     public async Task<ActionResult<IReadOnlyList<ContentWorkJobDto>>> ListActiveWork(
         CancellationToken cancellationToken) =>
@@ -240,6 +245,7 @@ public sealed class ContentController : ControllerBase
     public async Task<ActionResult<ContentVideoTestResultDto>> TestVideo(CancellationToken cancellationToken) =>
         Ok(await _settings.TestVideoAsync(cancellationToken));
 
+    // AUTHORITY-STABILIZATION-01E-GAP-CLOSURE. LEGACY_EXECUTION. Does not submit a provider job.
     [HttpPost("series/turbo")]
     [RequestSizeLimit(16_000_000)]
     public async Task<ActionResult<ContentSeriesTurboTaskDto>> StartSeriesTurbo(
@@ -304,6 +310,7 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    // AUTHORITY-STABILIZATION-01E-GAP-CLOSURE. LEGACY_EXECUTION. Does not submit a provider job.
     [HttpPost("series/lipsync")]
     [RequestSizeLimit(16_000_000)]
     public async Task<ActionResult<ContentSeriesTurboTaskDto>> StartSeriesLipsync(
@@ -324,6 +331,7 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    // AUTHORITY-STABILIZATION-01F. EXPORT_ONLY. File response. No Production OS write.
     [HttpPost("series/assemble")]
     [RequestSizeLimit(40_000_000)]
     [RequestFormLimits(MultipartBodyLengthLimit = 40_000_000)]
@@ -344,6 +352,24 @@ public sealed class ContentController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("series/veo-video")]
+    public IActionResult GetSeriesVeoVideo([FromQuery] string? taskId)
+    {
+        var bytes = _seriesTake.ReadVeoTake(taskId);
+        if (bytes is null || bytes.Length < 32)
+            return NotFound(new { message = "Chưa có file Veo trên máy API. Tạo lại video — không gửi Runway / Wan." });
+        return File(bytes, "video/mp4");
+    }
+
+    [HttpGet("series/fal-video")]
+    public IActionResult GetSeriesFalVideo([FromQuery] string? taskId)
+    {
+        var bytes = _seriesTake.ReadFalTake(taskId);
+        if (bytes is null || bytes.Length < 32)
+            return NotFound(new { message = "Chưa có file Fal trên máy API. Hỏi lại môi · 0$ — đừng Confirm job mới." });
+        return File(bytes, "video/mp4");
     }
 
     [HttpPost("series/take-probe")]
@@ -420,12 +446,19 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpGet("series/builds")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<IReadOnlyList<ContentSeriesBuildSummaryDto>>> ListSeriesBuilds(
         [FromQuery] string? code,
+        [FromQuery] string? brandCode,
+        [FromQuery] Guid? brandId,
         CancellationToken cancellationToken)
     {
         try
         {
+            if (brandId is Guid id && id != Guid.Empty)
+                return Ok(await _seriesPilot.ListBuildsForBrandIdAsync(id, cancellationToken));
+            if (!string.IsNullOrWhiteSpace(brandCode))
+                return Ok(await _seriesPilot.ListBuildsForBrandAsync(brandCode, cancellationToken));
             return Ok(await _seriesPilot.ListBuildsAsync(code ?? "FAMIXA", cancellationToken));
         }
         catch (Exception ex)
@@ -435,6 +468,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpGet("series/builds/{id:guid}")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<ContentSeriesBuildDto>> GetSeriesBuild(
         Guid id,
         CancellationToken cancellationToken)
@@ -454,6 +488,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpPut("series/builds")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<ContentSeriesBuildDto>> PutSeriesBuild(
         [FromBody] UpsertContentSeriesBuildRequest request,
         CancellationToken cancellationToken)
@@ -472,7 +507,72 @@ public sealed class ContentController : ControllerBase
         }
     }
 
+    [HttpGet("series/builds/{id:guid}/novixa-motion")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
+    public ActionResult<NovixaMotionResult> ReadNovixaMotion(Guid id)
+    {
+        return Ok(NovixaStockMotionRunner.Read(id));
+    }
+
+    [HttpGet("series/builds/{id:guid}/novixa-motion/stills/{index:int}")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
+    public IActionResult ReadNovixaStill(Guid id, int index, [FromQuery] string? folder, [FromQuery] string? file)
+    {
+        var path = NovixaStockMotionRunner.StillFile(id, index, folder, file);
+        if (path == null) return NotFound();
+        var mime = path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ? "image/jpeg" : "image/png";
+        return PhysicalFile(path, mime);
+    }
+
+    [HttpGet("series/builds/{id:guid}/novixa-motion/video")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
+    public IActionResult ReadNovixaVideo(Guid id, [FromQuery] string? folder)
+    {
+        var path = NovixaStockMotionRunner.VideoFile(id, folder);
+        if (path == null) return NotFound();
+        return PhysicalFile(path, "video/mp4");
+    }
+
+    [HttpGet("series/builds/{id:guid}/novixa-motion/shorts")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
+    public ActionResult<NovixaMotionResult> ReadNovixaShorts(Guid id)
+    {
+        var found = NovixaStockMotionRunner.ReadShorts(id);
+        if (found == null) return NotFound();
+        return Ok(found);
+    }
+
+    [HttpGet("series/builds/{id:guid}/novixa-motion/shorts/{number:int}")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
+    public IActionResult ReadNovixaShort(Guid id, int number, [FromQuery] string? folder)
+    {
+        var path = NovixaStockMotionRunner.ShortFile(id, folder, number);
+        if (path == null) return NotFound();
+        return PhysicalFile(path, "video/mp4");
+    }
+
+    [HttpGet("series/builds/{id:guid}/novixa-motion/preview")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
+    public IActionResult ReadNovixaPreview(Guid id, [FromQuery] string? folder)
+    {
+        var path = NovixaStockMotionRunner.PreviewFile(id, folder);
+        if (path == null) return NotFound();
+        return PhysicalFile(path, "audio/mpeg");
+    }
+
+    [HttpPost("series/builds/{id:guid}/novixa-motion")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
+    public async Task<ActionResult<NovixaMotionResult>> RenderNovixaMotion(
+        Guid id,
+        [FromBody] NovixaMotionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var result = await NovixaStockMotionRunner.RunAsync(id, request ?? new NovixaMotionRequest(), cancellationToken);
+        return Ok(result);
+    }
+
     [HttpDelete("series/builds/{id:guid}")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<IActionResult> DeleteSeriesBuild(Guid id, CancellationToken cancellationToken)
     {
         try
@@ -492,6 +592,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return Ok(Array.Empty<FamixaCharacterDto>());
             return Ok(await _characters.ListAsync(cancellationToken));
         }
         catch (Exception ex)
@@ -1909,6 +2011,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return Ok(new CharacterLibraryListDto(Array.Empty<CharacterLibraryViewDto>(), 0, false));
             return Ok(await _characterLibrary.ListAsync(q, filter, sort, eraId, cancellationToken));
         }
         catch (InvalidOperationException ex)
@@ -1936,6 +2040,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpGet("video-engine/production-progress")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<ProductionProgressListDto>> ListProductionProgress(
         [FromQuery] string seriesCode = "FAMIXA",
         CancellationToken cancellationToken = default)
@@ -1951,6 +2056,7 @@ public sealed class ContentController : ControllerBase
     }
 
     [HttpGet("video-engine/series/builds/{id:guid}/production-progress")]
+    [ServiceFilter(typeof(ProductionTenantActionFilter))]
     public async Task<ActionResult<ProductionProgressDto>> GetProductionProgress(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -2483,11 +2589,38 @@ public sealed class ContentController : ControllerBase
         });
     }
 
+    private bool OwnsFamixaCharacterSet()
+    {
+        var seriesCode = Request.Query["seriesCode"].ToString();
+        var workflowKey = Request.Query["workflowKey"].ToString();
+        var filmTypeId = Request.Query["filmTypeId"].ToString();
+        if (!VideoPipelineRules.CharacterRequestScoped(seriesCode, workflowKey, filmTypeId))
+            return true;
+        return VideoPipelineRules.CharacterDesk(seriesCode, workflowKey, filmTypeId) == "famixa";
+    }
+
+    private string CharacterDeskOnRequest() =>
+        VideoPipelineRules.CharacterDesk(
+            Request.Query["seriesCode"].ToString(),
+            Request.Query["workflowKey"].ToString(),
+            Request.Query["filmTypeId"].ToString());
+
     [HttpGet("character-studio/characters")]
     public async Task<ActionResult<CharacterStudioListDto>> ListCharacterStudio(
         CancellationToken cancellationToken = default)
     {
-        try { return Ok(await _characterStudio.ListAsync(cancellationToken)); }
+        try
+        {
+            if (!OwnsFamixaCharacterSet())
+            {
+                return Ok(new CharacterStudioListDto(
+                    CharacterStudioV1Rules.DocumentId,
+                    Array.Empty<CharacterStudioCharacterDto>(),
+                    0,
+                    CharacterDeskOnRequest()));
+            }
+            return Ok(await _characterStudio.ListAsync(cancellationToken));
+        }
         catch (InvalidOperationException ex) { return CharacterReferenceGenerationError(ex); }
     }
 
@@ -2513,7 +2646,12 @@ public sealed class ContentController : ControllerBase
         [FromQuery] string eraId = "ERA-01",
         CancellationToken cancellationToken = default)
     {
-        try { return Ok(await _characterStudio.GetAsync(characterId, provider, eraId, cancellationToken)); }
+        try
+        {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
+            return Ok(await _characterStudio.GetAsync(characterId, provider, eraId, cancellationToken));
+        }
         catch (InvalidOperationException ex) { return CharacterReferenceGenerationError(ex); }
     }
 
@@ -2576,6 +2714,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.RequestMasterRevisionAsync(
                 characterId, request ?? new CharacterMasterRevisionRequestDto(),
                 User.Identity?.Name ?? "director", cancellationToken));
@@ -2593,6 +2733,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.ApproveMasterRevisionAsync(
                 characterId, User.Identity?.Name ?? "director",
                 (review ?? new CharacterMasterRevisionReviewRequestDto()) with
@@ -2614,6 +2756,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.RejectMasterRevisionAsync(
                 characterId, User.Identity?.Name ?? "director",
                 (review ?? new CharacterMasterRevisionReviewRequestDto()) with
@@ -2635,6 +2779,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.LockMasterRevisionAsync(
                 characterId, User.Identity?.Name ?? "director",
                 (review ?? new CharacterMasterRevisionReviewRequestDto()) with
@@ -3023,6 +3169,41 @@ public sealed class ContentController : ControllerBase
             providerCalled = false,
             autoApprove = false,
             autoLock = false,
+        });
+    }
+
+    [HttpGet("veo-frozen-credential/regression")]
+    public ActionResult<object> VeoFrozenCredentialRegression()
+    {
+        var fail = KitPlatform.Packs.Content.Production.FamixaVeoFrozenCredentialAuthenticatorV1Regression.Run();
+        return Ok(new
+        {
+            suite = KitPlatform.Packs.Content.Production.FamixaVeoFrozenCredentialAuthenticatorV1Regression.SuiteId,
+            status = fail.Count == 0 ? "PASS" : "FAIL",
+            fail = fail.Count,
+            failures = fail,
+            pass = fail.Count == 0,
+            generate = false,
+            vertexCalled = false,
+            providerCalled = false,
+        });
+    }
+
+    [HttpGet("sh02-approved-linh-still/regression")]
+    public ActionResult<object> Sh02ApprovedLinhStillRegression()
+    {
+        var fail = Sh02ApprovedLinhStillReferenceV1Regression.Run();
+        return Ok(new
+        {
+            suite = Sh02ApprovedLinhStillReferenceV1Regression.SuiteId,
+            status = fail.Count == 0 ? "PASS" : "FAIL",
+            fail = fail.Count,
+            failures = fail,
+            pass = fail.Count == 0,
+            generate = false,
+            geminiCalled = false,
+            providerCalled = false,
+            masterLocked = false,
         });
     }
 
@@ -3503,6 +3684,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.ReviewAgeConsistencyAsync(
                 characterId,
                 request ?? new CharacterAgeConsistencyReviewRequestDto(),
@@ -3520,6 +3703,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.ReviewAppearanceConsistencyAsync(
                 characterId,
                 request ?? new CharacterAppearanceConsistencyReviewRequestDto(),
@@ -3569,6 +3754,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.GenerateAsync(
                 characterId, request ?? new CharacterStudioActionRequestDto(),
                 User.Identity?.Name ?? "director", cancellationToken));
@@ -3614,6 +3801,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.ApproveAsync(
                 characterId, User.Identity?.Name ?? "director", eraId, cancellationToken));
         }
@@ -3628,6 +3817,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.RejectAsync(
                 characterId, request ?? new CharacterStudioActionRequestDto(),
                 User.Identity?.Name ?? "director", cancellationToken));
@@ -3642,6 +3833,8 @@ public sealed class ContentController : ControllerBase
     {
         try
         {
+            if (!OwnsFamixaCharacterSet())
+                return BadRequest(new { message = "Nhân vật Famixa không thuộc phim này.", scope = CharacterDeskOnRequest() });
             return Ok(await _characterStudio.LockAsync(
                 characterId, User.Identity?.Name ?? "director", eraId, cancellationToken));
         }
@@ -4726,6 +4919,7 @@ public sealed class ContentController : ControllerBase
         catch (InvalidOperationException ex) { return VideoGenerationError(ex); }
     }
 
+    // AUTHORITY-STABILIZATION-01E-GAP-CLOSURE. LEGACY_EXECUTION. Does not submit a provider job.
     [HttpPost("video-engine/shots/{id:guid}/video-generation-execution/execute")]
     [HttpPost("/api/production/shots/{id:guid}/video-generation-execution/execute")]
     public async Task<ActionResult<VideoGenerationExecutionDto>> ExecuteVideoGenerationExecution(
@@ -6335,18 +6529,54 @@ public sealed class ContentController : ControllerBase
     [AllowAnonymous]
     public IActionResult GetVideoMedia(Guid jobId, string fileName)
     {
-        if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains("..") || fileName.Contains('/') || fileName.Contains('\\'))
+        if (!ContentVideoMediaPaths.IsSafeFileName(fileName))
             return BadRequest();
-        var root = Path.GetFullPath(Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "App_Data",
-            "content-video",
-            jobId.ToString("N")));
-        var path = Path.GetFullPath(Path.Combine(root, fileName));
-        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
+        var path = _videos.ResolveLocalMediaPath(jobId, fileName);
+        if (path is null)
             return NotFound();
-        var contentType = fileName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ? "audio/mpeg" : "application/octet-stream";
+        var contentType = fileName.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase)
+            ? "audio/mpeg"
+            : fileName.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
+                ? "video/mp4"
+                : "application/octet-stream";
         return PhysicalFile(path, contentType);
+    }
+
+    [HttpPost("video/jobs/import")]
+    [RequestSizeLimit(300 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 300 * 1024 * 1024)]
+    public async Task<ActionResult<ContentVideoJobDto>> ImportFinishedVideo(
+        [FromForm] Guid brandId,
+        [FromForm] string? title,
+        [FromForm] string? scriptBody,
+        [FromForm] string? templateCode,
+        IFormFile? file,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            file ??= Request.Form.Files.GetFile("file") ?? Request.Form.Files.FirstOrDefault();
+            if (file is null || file.Length <= 0)
+                return BadRequest(new { message = "Chọn file MP4." });
+            if (!string.Equals(Path.GetExtension(file.FileName), ".mp4", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "Chỉ nhận file .mp4." });
+
+            await using var stream = file.OpenReadStream();
+            var row = await _videos.ImportFinishedAsync(
+                new ImportFinishedVideoRequest(
+                    brandId,
+                    title ?? Path.GetFileNameWithoutExtension(file.FileName),
+                    scriptBody,
+                    templateCode,
+                    Path.GetFileName(file.FileName)),
+                stream,
+                cancellationToken);
+            return Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("video/jobs/{id:guid}/refresh")]
@@ -6564,6 +6794,131 @@ public sealed class ContentController : ControllerBase
 
             var row = await _publish.RunJobAsync(id, media, cancellationToken);
             return row is null ? NotFound() : Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("media/text-to-image")]
+    public async Task<ActionResult<BtaTextToImageResponse>> BtaTextToImage(
+        [FromBody] BtaTextToImageCommand request,
+        [FromServices] IBtaKitMktMediaService media,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await media.CreateTextToImageAsync(request, User.Identity?.Name, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("media/tasks/{taskId}")]
+    public async Task<ActionResult<BtaMediaTaskResponse>> BtaMediaTask(
+        string taskId,
+        [FromServices] IBtaKitMktMediaService media,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await media.GetTaskAsync(taskId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("media/bta-images/plan")]
+    public async Task<ActionResult<BtaImagePlanResponse>> BtaImagePlan(
+        [FromBody] BtaImagePlanCommand request,
+        [FromServices] IBtaKitMktMediaService media,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await media.PlanImagesAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("media/bta-images/save")]
+    public async Task<ActionResult<BtaImageSaveResponse>> BtaImageSave(
+        [FromBody] BtaImageSaveCommand request,
+        [FromServices] IBtaKitMktMediaService media,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await media.SaveImageAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("media/bta-voice/plan")]
+    public async Task<ActionResult<BtaVoicePlanResponse>> BtaVoicePlan(
+        [FromBody] BtaVoicePlanCommand request,
+        [FromServices] IBtaKitMktMediaService media,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await media.PlanVoiceAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("media/bta-voice/cau-thu")]
+    public ActionResult<BtaVoiceProbePreview> BtaVoiceProbePreview([FromServices] IBtaKitMktMediaService media)
+    {
+        try
+        {
+            return Ok(media.ProbePreview());
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("media/bta-voice/cau-thu")]
+    public async Task<ActionResult<BtaVoiceTakeResponse>> BtaVoiceProbe(
+        [FromBody] BtaVoiceProbeCommand request,
+        [FromServices] IBtaKitMktMediaService media,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await media.SynthesizeProbeAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("media/bta-voice/phan")]
+    public async Task<ActionResult<BtaVoiceTakeResponse>> BtaVoicePart(
+        [FromBody] BtaVoiceTakeCommand request,
+        [FromServices] IBtaKitMktMediaService media,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await media.SynthesizePartAsync(request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {

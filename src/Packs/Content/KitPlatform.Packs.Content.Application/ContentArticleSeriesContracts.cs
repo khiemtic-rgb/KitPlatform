@@ -114,7 +114,8 @@ public sealed record UpsertContentArticleEpisodeRequest(
     string? KeyMessage = null,
     string? Status = null,
     DateTimeOffset? PlannedAt = null,
-    JsonElement? Continuity = null);
+    JsonElement? Continuity = null,
+    string? FactCard = null);
 
 public sealed record GenerateArticleSeriesBlueprintRequest(
     int? EpisodeCount = null,

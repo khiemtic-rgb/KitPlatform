@@ -35,7 +35,7 @@ internal static class ContentFacebookConfigParser
     internal const string DefaultRedirectUri = "http://localhost:5173/content/facebook/callback";
     internal const string GraphVersion = "v21.0";
     internal const string Scopes =
-        "pages_show_list,pages_manage_posts,pages_read_engagement,business_management";
+        "pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_engagement,business_management";
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {

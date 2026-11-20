@@ -1246,7 +1246,7 @@ export function ContentFamixaProdV2({
                       Kiểm tra KF shot lỗi
                     </Button>
                     <Button type="primary" loading={assembleBusy} onClick={() => onAssembleCut?.()}>
-                      Ghép tập hoàn chỉnh · {holdN ? `${takeN} take + ${holdN} HOLD` : `${takeN} take`} + thoại
+                      Xuất tương thích · {holdN ? `${takeN} take + ${holdN} HOLD` : `${takeN} take`} + thoại
                     </Button>
                   </Space>
                 </Space>
@@ -1718,8 +1718,8 @@ export function ContentFamixaProdV2({
             ) : null}
             <Button type="primary" disabled={!canCompleteCut} loading={assembleBusy} onClick={() => onAssembleCut?.()}>
               {holdN
-                ? `Ghép tập hoàn chỉnh · ${takeN} take + ${holdN} HOLD + thoại`
-                : `Ghép tập hoàn chỉnh · ${takeN} take${lipReady.length ? ` · ${lipReady.length} khớp môi` : ''} + thoại`}
+                ? `Xuất tương thích · ${takeN} take + ${holdN} HOLD + thoại`
+                : `Xuất tương thích · ${takeN} take${lipReady.length ? ` · ${lipReady.length} khớp môi` : ''} + thoại`}
             </Button>
           </Space>
           {logShotId ? (() => {
@@ -1968,10 +1968,10 @@ export function ContentFamixaProdV2({
               onClick={() => onAssembleCut?.()}
             >
               {takesOk && !fullEpisodeBlockReason(state, sel)
-                ? 'FINAL EPISODE · MP4'
+                ? 'Xuất tương thích · MP4'
                 : holdN
-                  ? `Ghép tập hoàn chỉnh · ${takeN} take + ${holdN} HOLD`
-                  : `Ghép tập hoàn chỉnh · ${takeN || sel.length} shot + thoại`}
+                  ? `Xuất tương thích · ${takeN} take + ${holdN} HOLD`
+                  : `Xuất tương thích · ${takeN || sel.length} shot + thoại`}
             </Button>
             <Button onClick={() => onApprovePreview?.()} disabled={state.previewApproved || !canCompleteCut}>
               {state.previewApproved ? 'Đã duyệt Preview' : 'Duyệt Preview dải này'}

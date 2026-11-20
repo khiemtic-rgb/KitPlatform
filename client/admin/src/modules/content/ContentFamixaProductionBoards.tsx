@@ -229,6 +229,7 @@ export function ContentFamixaCharacterBoard({
   voices,
   voiceById,
   onAssignVoice,
+  scope,
 }: {
   mode?: 'staff' | 'director';
   shots?: { characterIds?: string[]; characters?: string[] }[];
@@ -240,6 +241,7 @@ export function ContentFamixaCharacterBoard({
   voices?: { value: string; label: string; previewUrl?: string | null }[];
   voiceById?: Record<string, string>;
   onAssignVoice?: (characterId: string, voiceId: string, voiceName?: string) => void;
+  scope?: { seriesCode?: string | null; workflowKey?: string | null; filmTypeId?: string | null } | null;
 }) {
   const [bibleReady, setBibleReady] = useState(false);
   const director = mode === 'director';
@@ -293,6 +295,7 @@ export function ContentFamixaCharacterBoard({
         voices={voices}
         voiceById={voiceById}
         onAssignVoice={onAssignVoice}
+        scope={scope}
       />
       <p className="fx-desk__note">
         Bộ ảnh chuẩn đã khóa không bị ghi đè. Ảnh production Shot 01 vẫn chờ duyệt ở card bên dưới — Studio không tạo shot.

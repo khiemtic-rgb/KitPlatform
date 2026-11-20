@@ -134,24 +134,23 @@ ok(!studioMotionSendOpts(lipStaleSnap).remake, '04d lipsync stale does not remak
 const series = read('ContentFamixaSeriesTab.tsx');
 const workspace = read('ContentFamixaShotProduction/ShotProductionWorkspace.tsx');
 const card = read('ContentFamixaShotProduction/ShotProductionCard.tsx');
-const motionBlock = series.slice(series.indexOf('const startShotMotion'), series.indexOf('const rememberLineAudio'));
-const lipsyncBlock = series.slice(series.indexOf('onEnsureLipsync={(shotId) => {'), series.indexOf('onEnsureMix={(shotId)'));
+const motionBlock = series.slice(series.indexOf('const startShotMotion'), series.indexOf('const executeProductionOsAction'));
+const lipsyncBlock = series.slice(series.indexOf('onEnsureLipsync={(shotId'), series.indexOf('onEnsureMix={(shotId)'));
 const videoBoard = series.slice(series.indexOf('<ContentFamixaBuildVideoBoard'), series.indexOf('</ContentFamixaBuildVideoBoard>'));
 const overviewBind = series.slice(series.indexOf('onCreateSceneVideo='), series.indexOf('onCreateSceneVideo=') + 80);
 
-ok(motionBlock.includes('forceNew: true') && motionBlock.includes('sendTurbo'), '02b Studio motion Confirms a remake job');
 ok(
-  motionBlock.includes('beforeTask') &&
-    motionBlock.includes('newTask') &&
-    motionBlock.includes('Chưa gửi job mới') &&
-    !motionBlock.includes('Không gửi được:'),
-  '02c Confirm does not replay stale INTERNAL.BAD_OUTPUT',
+  !motionBlock.includes('createProductionVideo') &&
+    !motionBlock.includes('sendTurbo') &&
+    motionBlock.includes('LEGACY') &&
+    series.includes('executeProductionOsAction') &&
+    series.includes('mayExecuteProductionAction'),
+  '02b Studio Tạo video is Production OS CREATE_VIDEO via executeProductionOsAction',
 );
+ok(!motionBlock.includes('startContentSeriesTurbo') && !motionBlock.includes('/series/turbo'), '02c CREATE_VIDEO does not POST turbo');
 ok(
-  motionBlock.includes('runwayFailedOnCurrentKf') &&
-    motionBlock.includes('CONFIRM WAN') &&
-    motionBlock.includes('Không gửi Runway'),
-  '02d stop Runway after a real fail on this KF',
+  series.includes('LEGACY / NON-AUTHORITATIVE for CREATE_VIDEO') && series.includes('const sendTurbo'),
+  '02d sendTurbo remains LEGACY non-authoritative',
 );
 ok(
   !runwayFailedOnCurrentKf(
@@ -176,6 +175,19 @@ ok(
   '02f current-picture Runway FAIL still routes Wan',
 );
 ok(lipsyncBlock.includes('studioLipsyncSendOpts') && lipsyncBlock.includes('startLipsync([shotId], opts)'), '04e Studio lipsync wires remake opts');
+ok(
+  series.includes('resumeShots') &&
+    series.includes('pollExistingLipsync') &&
+    series.includes('Hỏi lại · 0$') &&
+    series.includes('resumeOnly') &&
+    series.includes('lipsyncResumeTaskId') &&
+    series.includes('if (opts?.forceNew) return false') &&
+    !series.includes('if (opts?.forceNew || opts?.remake) return false') &&
+    workspace.includes('onEnsureLipsync(current.id, { resume: true })') &&
+    workspace.includes('lipsyncActionOpts') &&
+    workspace.includes('{ forceNew: true }'),
+  '04g Hỏi lại resumes Fal task; dead job uses Khớp môi mới',
+);
 ok(!motionBlock.includes('ensureShotVoice') && !lipsyncBlock.includes('ensureShotVoice'), '05 Voice is not regenerated');
 ok(!motionBlock.includes('generateSceneKf') && !lipsyncBlock.includes('generateSceneKf'), '06 Keyframe is not regenerated');
 ok(!card.includes('startContentSeriesTurbo') && !card.includes('/api/content/series/turbo') && !card.includes('fal-ai/'), '07 helpers do not call providers');
@@ -185,7 +197,7 @@ ok(read('content-famixa-prod-v2.ts').includes('resolveTakeUrl(run) && !run.motio
 ok(videoBoard.includes('startSceneTurbo([shotId])') && !videoBoard.includes('studioMotionSendOpts'), '08b Video board still default I2V');
 ok(overviewBind.includes('onCreateSceneVideo={startSceneTurbo}'), '09 Overview workflow unchanged');
 ok(!card.includes('ContentKitVideoDirectorProductionWorkspace') && !motionBlock.includes('ContentKitVideoDirectorProductionWorkspace'), '10 Lane B unchanged');
-ok(series.includes('onEnsureVoice={(shotId) => ensureShotVoice(shotId)}'), '05b Voice remains its own CTA');
+ok(series.includes('onEnsureVoice={(shotId) => prepareOfficialVoice(shotId)}'), '05b Voice remains its own CTA');
 const voiceFn = series.slice(series.indexOf('const ensureShotVoice'), series.indexOf('const assembleOneShot'));
 ok(voiceFn.includes('hydrateSessionTts') && voiceFn.includes('resolveLineAudio'), '05c Tạo thoại hydrates IDB first');
 ok(

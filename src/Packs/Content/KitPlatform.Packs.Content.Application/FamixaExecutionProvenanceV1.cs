@@ -163,6 +163,7 @@ public static class FamixaExecutionProvenanceRules
             {
                 FamixaCostKind.Estimate => "ESTIMATE",
                 FamixaCostKind.FalBilledEstimate => "FAL_BILLED_ESTIMATE",
+                FamixaCostKind.Known => "KNOWN",
                 _ => "UNKNOWN",
             },
         };
