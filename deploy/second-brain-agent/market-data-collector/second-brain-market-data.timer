@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Second Brain public market data collector hourly and after boot
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1h
+AccuracySec=30s
+Persistent=true
+Unit=second-brain-market-data.service
+
+[Install]
+WantedBy=timers.target

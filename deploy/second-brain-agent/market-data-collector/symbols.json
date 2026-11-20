@@ -1,0 +1,29 @@
+{
+  "schema": "research-market-collector/v1",
+  "symbols": [
+    {
+      "symbol": "SOLUSDT",
+      "interval": "1h",
+      "history_start_ms": 1784800800000,
+      "source": "BINANCE_PUBLIC_REST"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "interval": "1h",
+      "history_start_ms": 1784800800000,
+      "source": "BINANCE_PUBLIC_REST"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "interval": "1h",
+      "history_start_ms": 1784800800000,
+      "source": "BINANCE_PUBLIC_REST"
+    },
+    {
+      "symbol": "PAXGUSDT",
+      "interval": "1h",
+      "history_start_ms": 1784800800000,
+      "source": "BINANCE_PUBLIC_REST"
+    }
+  ]
+}

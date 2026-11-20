@@ -1,0 +1,11 @@
+[Unit]
+Description=Mark the virtual SOL account ten minutes after each hour
+
+[Timer]
+OnCalendar=*-*-* *:10:00
+AccuracySec=30s
+Persistent=true
+Unit=second-brain-paper-account.service
+
+[Install]
+WantedBy=timers.target
