@@ -8,7 +8,7 @@
 
 > Chào anh/chị, em là [Tên] bên KIT Technology – đơn vị phát triển **Novixa** cho nhà thuốc.  
 >  
-> Bên em đang thực hiện chương trình **Pharmacy Health Check** — đánh giá nhanh 20–30 phút về vận hành, kho, khách hàng và chăm sóc sau bán.  
+> Bên em đang thực hiện chương trình **Pharmacy Health Check** — bài tự làm 31 câu, khoảng 7–10 phút, 6 nhóm (Khách hàng, Vận hành, Kho, Kinh doanh, Dữ liệu & Công nghệ, Phát triển).  
 >  
 > Sau buổi đánh giá, nhà thuốc nhận **báo cáo ngắn** (Kết quả tóm tắt): điểm mạnh + khoảng trống nên ưu tiên.  
 > Hiện chương trình **miễn phí** cho một số nhà thuốc tại [Thái Nguyên / khu vực].  
@@ -21,7 +21,7 @@
 
 ## 2. Khi khách trả lời “gửi đi” / “quan tâm”
 
-> Dạ. Buổi đánh giá khoảng 20–30 phút, làm trực tiếp hoặc online đều được.  
+> Dạ. Bài tự làm 31 câu, khoảng 7–10 phút. Cuộc gọi sau báo cáo, nếu anh/chị đồng ý, khoảng 10–15 phút.  
 > Em hỏi khoảng vài chục câu về cách nhà thuốc đang vận hành — **không cần chuẩn bị tài liệu**.  
 > Sau đó em gửi báo cáo riêng cho nhà thuốc.  
 > Anh/chị thuận tiện **[ngày/giờ]** nào để em sắp xếp ạ?

@@ -17,9 +17,9 @@
 
 > Em chào anh/chị, em là [Tên] bên KIT Technology — đơn vị phát triển Novixa cho nhà thuốc.  
 > Em gọi **không phải** để giới thiệu phần mềm ngay ạ.  
-> Hiện bên em đang thực hiện **Novixa Pharmacy Health Check**: khoảng 20–30 phút đánh giá vận hành, kho, khách hàng và chăm sóc sau bán.  
-> Sau đó em gửi báo cáo ngắn — anh/chị thấy nhà thuốc mạnh chỗ nào và còn khoảng trống chỗ nào.  
-> Chương trình hiện **không thu phí**. Anh/chị có thuận tiện [ngày/giờ] không ạ?
+> Hiện bên em đang thực hiện **Novixa Pharmacy Health Check**: bài tự làm 31 câu, khoảng 7–10 phút, 6 nhóm (Khách hàng, Vận hành, Kho, Kinh doanh, Dữ liệu & Công nghệ, Phát triển).  
+> Làm bài không cần đăng ký, xem kết quả sơ bộ ngay. Để lại số điện thoại thì xem báo cáo đầy đủ — mạnh chỗ nào, còn khoảng trống chỗ nào.  
+> Chương trình hiện **không thu phí**. Cuộc gọi sau báo cáo, nếu anh/chị đồng ý, khoảng 10–15 phút. Anh/chị có thuận tiện [ngày/giờ] không ạ?
 
 ### Nếu hỏi: “Có phải bán phần mềm không?”
 

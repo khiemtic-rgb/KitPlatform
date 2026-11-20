@@ -4,6 +4,7 @@
 **Mục tiêu:** Single entry point cho **hai lớp tài liệu** — Launch Pack (10 DOC) và Operations Pack (`docs/novixa/`).
 
 > **Bắt đầu tại đây** nếu bạn không chắc nên đọc file nào.  
+> Định hướng sản phẩm Novixa: [NOVIXA_PRODUCT_MASTER_PLAN.md](./02-product/NOVIXA_PRODUCT_MASTER_PLAN.md).  
 > Chi tiết ma trận NVX-*: [V1-DOCUMENTATION-PLAN.md](./V1-DOCUMENTATION-PLAN.md) · Hub vận hành: [README.md](./README.md)
 
 ---
@@ -216,6 +217,7 @@ Repo giữ **markdown canonical**; PDF/FIGMA export vào `launch/` hoặc Drive 
 | Template doc mới | [templates/doc-template-v1.md](./templates/doc-template-v1.md) |
 | Website handoff | `.cursor/handoff/novixa-website.md` |
 | Phase truth | `client/admin/PHASE_SCOPE.md` |
+| **KIT Work Index** | [../00-control/KIT-WORK-INDEX.md](../00-control/KIT-WORK-INDEX.md) — Navigation V1 control layer |
 
 ---
 

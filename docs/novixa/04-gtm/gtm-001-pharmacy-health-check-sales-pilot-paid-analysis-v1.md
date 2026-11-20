@@ -113,7 +113,7 @@ Lost reasons bắt buộc (enum): nhu cầu / hài lòng PM hiện tại / giá 
 ### Pack C — Product cut (tuỳ chọn sau 10–15 HC thật)
 
 - Template `PHARMACY_HC_SALES_V1` 20 câu **hoặc** chế độ “Sales interview 20” offline trên cùng Rulebook.  
-- Landing: CTA rõ “20–30 phút đánh giá” — thống nhất số câu.  
+- Landing: CTA rõ “31 câu, khoảng 7–10 phút” — thống nhất số câu.  
 - Evidence confidence trên report (Medium/High) theo PHC-012.
 
 ---
