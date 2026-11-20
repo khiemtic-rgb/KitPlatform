@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using Dapper;
 using KitPlatform.Application.Abstractions;
-using KitPlatform.Application.Core.Engines;
 using KitPlatform.Packs.Pharmacy.Sales;
 using KitPlatform.Packs.Pharmacy.Workflow;
 using KitPlatform.Infrastructure.Data;
@@ -15,9 +14,9 @@ internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWork
 
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
-    private readonly IAuditEngine _audit;
+    private readonly KitPlatform.Application.Core.Engines.IAuditEngine _audit;
 
-    public WorkflowEngine(IDbConnectionFactory db, ITenantContext tenant, IAuditEngine audit)
+    public WorkflowEngine(IDbConnectionFactory db, ITenantContext tenant, KitPlatform.Application.Core.Engines.IAuditEngine audit)
     {
         _db = db;
         _tenant = tenant;
