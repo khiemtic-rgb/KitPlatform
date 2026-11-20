@@ -43,12 +43,8 @@ export function LoyaltySettingsPage() {
   const [saving, setSaving] = useState(false);
   const programId = Form.useWatch(['program', 'id'], form);
   const pointsPerAmount = Form.useWatch(['program', 'pointsPerAmount'], form) ?? 10000;
-
-  useEffect(() => {
-    if (pointsPerAmount > 0) {
-      form.setFieldValue(['program', 'amountPerPoint'], pointsPerAmount);
-    }
-  }, [form, pointsPerAmount]);
+  const amountPerPoint = Form.useWatch(['program', 'amountPerPoint'], form) ?? 100;
+  const maxRedeemPercent = Form.useWatch(['program', 'maxRedeemPercent'], form) ?? 5;
 
   useEffect(() => {
     void (async () => {
@@ -76,7 +72,7 @@ export function LoyaltySettingsPage() {
         program: {
           ...values.program,
           status: values.loyaltyEnabled ? 1 : 0,
-          amountPerPoint: values.program.pointsPerAmount,
+          amountPerPoint: values.program.amountPerPoint,
           programCode: values.program.programCode.trim(),
           programName: values.program.programName.trim(),
           tiers: values.program.tiers.map((tier, index) => ({
@@ -99,9 +95,10 @@ export function LoyaltySettingsPage() {
     }
   };
 
-  const redeemExampleAmount = formatDisplayMoney(pointsPerAmount * 100);
+  const redeemExampleAmount = formatDisplayMoney((amountPerPoint > 0 ? amountPerPoint : 100) * 100);
   const redeemExampleOrder = formatDisplayMoney(50_000);
-  const redeemExampleMax = formatDisplayMoney(2_500);
+  const redeemPercent = maxRedeemPercent >= 0 && maxRedeemPercent <= 100 ? maxRedeemPercent : 5;
+  const redeemExampleMax = formatDisplayMoney(Math.round((50_000 * redeemPercent) / 100));
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -141,10 +138,6 @@ export function LoyaltySettingsPage() {
             </Form.Item>
           </Space>
 
-          <Form.Item name={['program', 'amountPerPoint']} hidden>
-            <InputNumber />
-          </Form.Item>
-
           <Space align="start" wrap style={{ width: '100%' }}>
             <Form.Item
               name={['program', 'pointsPerAmount']}
@@ -163,8 +156,23 @@ export function LoyaltySettingsPage() {
             </Form.Item>
           </Space>
 
+          <Form.Item
+            name={['program', 'amountPerPoint']}
+            label={t('amountPerPoint')}
+            rules={[{ required: true, type: 'number', min: 1, message: t('enterPointValue') }]}
+          >
+            <InputNumber
+              {...moneyInputNumberPropsAllowZeroSuffix}
+              min={1}
+              style={{ ...moneyInputNumberStyle, width: 200 }}
+            />
+          </Form.Item>
+
           <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
-            {t('earnRuleHint', { amount: formatDisplayMoney(pointsPerAmount) })}
+            {t('earnRuleHint', {
+              amount: formatDisplayMoney(pointsPerAmount),
+              pointValue: formatDisplayMoney(amountPerPoint > 0 ? amountPerPoint : 0),
+            })}
           </Typography.Paragraph>
 
           <Form.Item
@@ -183,7 +191,7 @@ export function LoyaltySettingsPage() {
             {t('redeemExampleHint', {
               pointsValue: redeemExampleAmount,
               orderAmount: redeemExampleOrder,
-              percent: 5,
+              percent: redeemPercent,
               maxDiscount: redeemExampleMax,
             })}
           </Typography.Paragraph>
@@ -310,10 +318,12 @@ export function LoyaltySettingsPage() {
 function normalizeProgramForForm(program: LoyaltyProgramAdmin): LoyaltyProgramAdmin {
   const pointsPerAmount =
     program.pointsPerAmount > 0 ? program.pointsPerAmount : DEFAULT_LOYALTY_PROGRAM.pointsPerAmount;
+  const amountPerPoint =
+    program.amountPerPoint > 0 ? program.amountPerPoint : DEFAULT_LOYALTY_PROGRAM.amountPerPoint;
   return {
     ...program,
     pointsPerAmount,
-    amountPerPoint: pointsPerAmount,
+    amountPerPoint,
     maxRedeemPercent:
       program.maxRedeemPercent >= 0 ? program.maxRedeemPercent : DEFAULT_LOYALTY_PROGRAM.maxRedeemPercent,
   };

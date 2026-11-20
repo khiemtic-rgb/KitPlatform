@@ -28,8 +28,10 @@ import {
   createCustomer,
   fetchCustomerDetail,
   fetchCustomerPilotOtp,
+  fetchStaffRepurchaseSuggestions,
   issueCounterPilotOtp,
   updateCustomerPhone,
+  type StaffRepurchaseSuggestion,
 } from '@/shared/api/customer.api';
 import type { CustomerDetail, CustomerPilotOtpStatus } from '@/shared/api/customer.types';
 import { searchCustomers } from '@/shared/api/sales.api';
@@ -261,6 +263,7 @@ export function CustomersPage() {
   const [selected, setSelected] = useState<CustomerListItem | null>(null);
   const [detail, setDetail] = useState<CustomerDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [repurchase, setRepurchase] = useState<StaffRepurchaseSuggestion[]>([]);
   const [creditOpen, setCreditOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -318,9 +321,14 @@ export function CustomersPage() {
   useEffect(() => {
     if (!selected) {
       setDetail(null);
+      setRepurchase([]);
       return;
     }
     setDetailLoading(true);
+    setRepurchase([]);
+    void fetchStaffRepurchaseSuggestions(selected.id)
+      .then((rows) => setRepurchase(rows))
+      .catch(() => setRepurchase([]));
     void fetchCustomerDetail(selected.id)
       .then((row) => {
         setDetail({
@@ -712,6 +720,20 @@ export function CustomersPage() {
                 <Tag>{pharmacyRelationLabel(selected.pharmacyRelation)}</Tag>
               ) : null}
             </div>
+
+            {repurchase.length > 0 ? (
+              <div style={{ marginBottom: 12 }}>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  Gợi ý mua lại
+                </Typography.Text>
+                {repurchase.map((item) => (
+                  <div key={item.id} style={{ fontSize: 13, marginTop: 4 }}>
+                    {item.orderLabel || item.orderNumber} · {item.status}
+                    {item.suggestedForDate ? ` · ${item.suggestedForDate}` : ''}
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             {selected.allowCredit && selected.creditLimit != null ? (
               <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 10, fontSize: 12 }}>

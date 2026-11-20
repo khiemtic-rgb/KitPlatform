@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "kit-video-ai-prep/1",
+  "projectId": "novixa-intro-film",
+  "approval": "PROPOSED",
+  "requestSent": false,
+  "provider": "runway",
+  "model": "gen4_turbo",
+  "mode": "image_to_video",
+  "cost": null,
+  "costNote": "Repo không có đơn giá Runway. Không ước một số tiền.",
+  "inputKeyframe": null,
+  "doNotUse": [
+    "keyframes/v2 semi-real",
+    "storyboard chưa duyệt",
+    "style proof hình học",
+    "ảnh dược sĩ đứng một tư thế để giả hành động"
+  ],
+  "scenes": [
+    {
+      "sceneId": "s01-day-opens",
+      "pictureSeconds": 16.9,
+      "pictureStatus": "PROPOSED",
+      "whyAi": "Cửa mở, khách và nhịp việc tăng. Code không tạo được chuyển động người từ ảnh đứng.",
+      "prompt": "Bright stylized 3D cartoon pharmacy at opening. Cool white light, mint and teal, no golden hour. The door opens, a pharmacist in a white coat turns to a customer, a scanner blinks. No readable letters or numbers on boxes. No photoreal face.",
+      "acceptance": ["Có nhịp việc, không phải ảnh đứng", "Không chữ liều lượng", "Đúng phong cách hoạt hình đã chọn"]
+    },
+    {
+      "sceneId": "s02-busy",
+      "pictureSeconds": 19.08,
+      "pictureStatus": "PROPOSED",
+      "whyAi": "Người xoay giữa nhiều việc rồi dừng. Không dùng zoom ảnh tĩnh.",
+      "prompt": "Same stylized pharmacist moving between a counter, a ringing phone and stacked blank boxes, then stopping still on the last beat. Cool white light. No readable package text. No photoreal face.",
+      "acceptance": ["Chuyển động rồi dừng", "Không danh sách tính năng trên hình", "Không giả cầm hộp bằng cách trượt ảnh"]
+    },
+    {
+      "sceneId": "s09-people",
+      "pictureSeconds": 14.86,
+      "pictureStatus": "PROPOSED",
+      "whyAi": "Dược sĩ lắng nghe khách. Người ở trước, đồ họa lùi.",
+      "prompt": "Same stylized pharmacist listening to a customer at the counter. Graphics recede. Warm but not golden-hour. No feature labels. No photoreal face.",
+      "acceptance": ["Người là chủ thể", "Không thành màn demo", "Không chữ thuốc"]
+    },
+    {
+      "sceneId": "s10-philosophy",
+      "pictureSeconds": 15.78,
+      "pictureStatus": "PROPOSED",
+      "whyAi": "Toàn cảnh nhà thuốc từ rối sang gọn. Chưa có keyframe toàn cảnh đã duyệt.",
+      "prompt": "Wide stylized 3D cartoon pharmacy becoming orderly. Shelves stay blank of letters. No growth charts and no miracle claim on screen.",
+      "acceptance": ["Không số tăng trưởng", "Không hiệu quả thần kỳ", "Không dùng UI mô phỏng"]
+    }
+  ]
+}

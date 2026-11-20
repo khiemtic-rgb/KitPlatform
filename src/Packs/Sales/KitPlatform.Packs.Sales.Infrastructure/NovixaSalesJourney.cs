@@ -61,8 +61,8 @@ internal static class NovixaSalesJourney
         var body = step switch
         {
             "phc_ask" =>
-                "Anh/chị làm giúp em Pharmacy Health Check được không ạ — khoảng 20–30 phút, hiện không thu phí. "
-                + "Xong em gửi báo cáo tóm tắt (mạnh chỗ nào, còn khoảng trống chỗ nào). "
+                "Anh/chị làm giúp em Pharmacy Health Check được không ạ — bài tự làm 31 câu, khoảng 7–10 phút, 6 nhóm, hiện không thu phí. "
+                + "Xong anh/chị xem kết quả sơ bộ ngay; báo cáo đầy đủ khi để lại số điện thoại. "
                 + PhcPlaceholder,
             "report_ask" =>
                 "Anh/chị đã xem phần Kết quả tóm tắt em gửi chưa ạ? "

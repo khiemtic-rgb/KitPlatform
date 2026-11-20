@@ -1,0 +1,12 @@
+{
+  "fixtureId": "TEST_KEYFRAME_V1",
+  "filename": "TEST_ONLY_keyframe_v1.png",
+  "sha256": "3db4d45fba5e2a8611a7777dd29c2f323462340ba4c0a1c2fc94ec132bf28a20",
+  "mime": "image/png",
+  "width": 160,
+  "height": 90,
+  "byteLength": 232,
+  "scopeKind": "TEST",
+  "purpose": "CREATE_VIDEO_E2E",
+  "testOnly": true
+}

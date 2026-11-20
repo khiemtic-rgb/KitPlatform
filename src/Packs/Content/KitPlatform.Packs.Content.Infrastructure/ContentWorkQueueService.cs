@@ -107,6 +107,7 @@ internal sealed class ContentWorkQueueService : IContentWorkQueueService
         RunVideoMvpPipelineRequest request,
         CancellationToken cancellationToken = default)
     {
+        await NovixaE2eIsolation.AssertAsync(_repo, _options.VideoAssetRoot, cancellationToken);
         var video = await _videos.GetJobAsync(videoJobId, cancellationToken)
                     ?? throw new InvalidOperationException("Video job not found");
         return await InsertOrReuseAsync(
@@ -126,6 +127,7 @@ internal sealed class ContentWorkQueueService : IContentWorkQueueService
         Guid videoJobId,
         CancellationToken cancellationToken = default)
     {
+        await NovixaE2eIsolation.AssertAsync(_repo, _options.VideoAssetRoot, cancellationToken);
         var video = await _videos.GetJobAsync(videoJobId, cancellationToken)
                     ?? throw new InvalidOperationException("Video job not found");
         return await InsertOrReuseAsync(
@@ -150,8 +152,8 @@ internal sealed class ContentWorkQueueService : IContentWorkQueueService
                       ?? throw new InvalidOperationException("Package not found");
         return await InsertOrReuseAsync(
             ContentWorkKinds.BrandAdapt,
-            package.BrandId,
-            package.TopicId,
+            ContentPackageScope.RequireBrand(package),
+            ContentPackageScope.RequireTopic(package),
             packageId,
             videoJobId: null,
             package.Title,
@@ -203,6 +205,7 @@ internal sealed class ContentWorkQueueService : IContentWorkQueueService
 
     public async Task<bool> ProcessNextAsync(CancellationToken cancellationToken = default)
     {
+        await NovixaE2eIsolation.AssertAsync(_repo, _options.VideoAssetRoot, cancellationToken);
         await _work.RequeueOrphanedRunningAsync(TimeSpan.FromMinutes(3), cancellationToken);
         var claimed = await _work.ClaimNextAsync(cancellationToken);
         if (claimed is null) return false;
@@ -233,12 +236,14 @@ internal sealed class ContentWorkQueueService : IContentWorkQueueService
 
     public async Task<int> ProcessDuePublishJobsAsync(int limit = 3, CancellationToken cancellationToken = default)
     {
+        await _work.FailStuckPublishJobsAsync(ContentScheduleApprovalRules.StuckRunningAfter, cancellationToken);
         var ids = await _work.ListDuePublishJobIdsAsync(limit, cancellationToken);
         var ran = 0;
         foreach (var id in ids)
         {
             try
             {
+                if (!await _work.TryClaimPublishJobAsync(id, cancellationToken)) continue;
                 await _publish.RunJobAsync(id, null, cancellationToken);
                 ran++;
             }
@@ -267,7 +272,7 @@ internal sealed class ContentWorkQueueService : IContentWorkQueueService
         {
             var package = await _repo.GetPackageAsync(pkgId, cancellationToken)
                           ?? throw new InvalidOperationException("Package not found");
-            brandId = package.BrandId;
+            brandId = ContentPackageScope.RequireBrand(package);
             title = package.Title;
             resolvedTopic = package.TopicId;
         }
@@ -416,6 +421,7 @@ internal sealed class ContentWorkQueueService : IContentWorkQueueService
                 {
                     jobCount = result.Jobs.Count,
                     succeeded = result.Jobs.Count(j => j.Status == "Succeeded"),
+                    warnings = result.Warnings ?? [],
                 }, JsonOpts);
             }
             case ContentWorkKinds.VideoMvp:

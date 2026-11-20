@@ -14,6 +14,13 @@ public static class PlatformVerticalCodes
     /// <summary>FamilyOS consumer household tenant.</summary>
     public const string Family = "family";
 
+    /// <summary>
+    /// Marketing Park / Video Studio. Stored in settings JSON.
+    /// <c>tenants.business_vertical</c> stays <see cref="Hybrid"/> because
+    /// <c>ck_tenants_business_vertical</c> does not list this value. KIT_MKT uses the same pair.
+    /// </summary>
+    public const string Marketing = "marketing";
+
     public static IReadOnlyList<string> All { get; } =
     [
         Pharmacy,
@@ -25,6 +32,7 @@ public static class PlatformVerticalCodes
         MedicalSpa,
         Hybrid,
         Family,
+        Marketing,
     ];
 
     /// <summary>
@@ -41,6 +49,9 @@ public static class PlatformVerticalCodes
         {
             return string.IsNullOrWhiteSpace(column) ? Hybrid : column;
         }
+
+        if (settings.Equals(Marketing, StringComparison.OrdinalIgnoreCase))
+            return Hybrid;
 
         return settings;
     }

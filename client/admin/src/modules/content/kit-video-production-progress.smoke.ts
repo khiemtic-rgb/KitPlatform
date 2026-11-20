@@ -65,7 +65,14 @@ ok(card.checks.find((c) => c.id === 'image')?.label.includes('0/11'), '05 image 
 ok(!card.checks.find((c) => c.id === 'image')?.done, '06 no checkmark from legacy still');
 ok(progressByBuildId([live])[live.buildId].shotCount === 11, '07 map by build');
 
-ok(!ts.includes('kfCount') && !ts.includes('videoCount') && !desk.includes('row.kfCount') && !desk.includes('row.videoCount'), '08 no legacy count math');
+const statusBody = desk.slice(desk.indexOf('export function videoCardStatus'), desk.indexOf('export function videoCardProgress'));
+const progressBody = desk.slice(desk.indexOf('export function videoCardProgress'), desk.indexOf('export function videoCardChecks'));
+const doneBody = desk.slice(desk.indexOf("filter === 'done'"), desk.indexOf("filter === 'paused'"));
+ok(!ts.includes('kfCount') && !ts.includes('videoCount'), '08 official progress view has no legacy counts');
+ok(!statusBody.includes('kfCount') && !statusBody.includes('videoCount'), '08b status ignores inventory counts');
+ok(!progressBody.includes('kfCount') && !progressBody.includes('videoCount'), '08c percent ignores inventory counts');
+ok(!doneBody.includes('kfCount') && !doneBody.includes('videoCount'), '08d done filter ignores inventory counts');
+ok(desk.includes("STUDIO_BUILD_COUNTS_AUTHORITY = 'INVENTORY'"), '08e build counts are inventory, not production progress');
 ok(ui.includes('studioCardFromProgress') && ui.includes('progressById'), '09 desk consumes SoT');
 ok(tab.includes('fetchProductionProgressList') && tab.includes('progressById'), '10 tab loads SoT');
 ok(overview.includes('bước') && !overview.includes('kfCount'), '11 overview stage line');

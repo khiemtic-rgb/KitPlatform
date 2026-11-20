@@ -38,6 +38,7 @@ export function KitSalesLayout() {
         path: '/kit-sales/intelligence',
         icon: <SolutionOutlined />,
       },
+      { key: 'queue', label: t('nav.queue'), path: '/kit-sales/queue', icon: <UnorderedListOutlined /> },
       { key: 'analytics', label: t('nav.analytics'), path: '/kit-sales/analytics', icon: <BarChartOutlined /> },
       { key: 'settings', label: t('nav.settings'), path: '/kit-sales/settings', icon: <SettingOutlined /> },
     ],

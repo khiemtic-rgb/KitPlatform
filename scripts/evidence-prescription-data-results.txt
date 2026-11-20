@@ -1,0 +1,72 @@
+                  id                  | tenant_code |    tenant_name     
+--------------------------------------+-------------+--------------------
+ 36cf73bc-9212-4f88-ae4c-6f0bfdb6ab3a | NT_XUANHOA  | Nhà thuốc Xuân Hoà
+(1 row)
+
+ status | count 
+--------+-------
+ signed |     6
+(1 row)
+
+ total_prescriptions | verified_prescriptions | signed_prescriptions | dispensed_prescriptions | partially_dispensed_prescriptions | unique_prescribers | unique_customers |     earliest_prescription     |      latest_prescription      | days_span 
+---------------------+------------------------+----------------------+-------------------------+-----------------------------------+--------------------+------------------+-------------------------------+-------------------------------+-----------
+                   6 |                      0 |                    6 |                       0 |                                 0 |                  1 |                2 | 2026-07-10 15:06:55.168214+07 | 2026-07-10 23:21:12.972539+07 |         0
+(1 row)
+
+ total_prescription_lines | avg_lines_per_prescription | median_lines_per_prescription | prescriptions_with_1_line | prescriptions_with_2plus_lines | prescriptions_with_3plus_lines | max_lines_per_prescription 
+--------------------------+----------------------------+-------------------------------+---------------------------+--------------------------------+--------------------------------+----------------------------
+                        6 |         1.1666666666666667 |                             1 |                         5 |                              1 |                              0 |                          2
+(1 row)
+
+ total_lines | lines_with_valid_product | lines_with_invalid_product | pct_valid_product 
+-------------+--------------------------+----------------------------+-------------------
+           7 |                        7 |                          0 |            100.00
+(1 row)
+
+ total_prescriptions | prescriptions_with_customer | prescriptions_without_customer | pct_with_customer 
+---------------------+-----------------------------+--------------------------------+-------------------
+                   6 |                           6 |                              0 |            100.00
+(1 row)
+
+ total_prescriptions | prescriptions_with_prescriber | pct_with_prescriber 
+---------------------+-------------------------------+---------------------
+                   6 |                             6 |              100.00
+(1 row)
+
+ total_prescriptions | prescriptions_linked_to_sales | pct_linked_to_sales 
+---------------------+-------------------------------+---------------------
+                   7 |                             2 |               28.57
+(1 row)
+
+ total_sales_orders | sales_with_prescription | pct_with_prescription 
+--------------------+-------------------------+-----------------------
+                 34 |                       0 |                  0.00
+(1 row)
+
+ product_a_code | product_a_name | product_b_code | product_b_name | co_prescription_count | total_prescriptions_with_a | pct_when_a_prescribed | earliest_date | latest_date 
+----------------+----------------+----------------+----------------+-----------------------+----------------------------+-----------------------+---------------+-------------
+(0 rows)
+
+ total_sales_orders | completed_orders | unique_customers |        earliest_order         |         latest_order          | days_span 
+--------------------+------------------+------------------+-------------------------------+-------------------------------+-----------
+                 37 |               34 |                3 | 2026-06-28 22:00:26.753696+07 | 2026-07-16 20:03:48.315192+07 |        17
+(1 row)
+
+ total_order_items | avg_items_per_order | median_items_per_order | orders_with_1_item | orders_with_2plus_items | orders_with_3plus_items 
+-------------------+---------------------+------------------------+--------------------+-------------------------+-------------------------
+                34 |  1.0882352941176471 |                      1 |                 32 |                       2 |                       1
+(1 row)
+
+ total_items | items_with_valid_product | items_with_invalid_product | pct_valid_product 
+-------------+--------------------------+----------------------------+-------------------
+          37 |                       37 |                          0 |            100.00
+(1 row)
+
+ product_a_code | product_a_name | product_b_code | product_b_name | co_purchase_count | total_orders_with_a | pct_when_a_purchased | earliest_date | latest_date 
+----------------+----------------+----------------+----------------+-------------------+---------------------+----------------------+---------------+-------------
+(0 rows)
+
+ product_a_id | product_a_code | product_a_name | product_b_id | product_b_code | product_b_name | co_prescription_count | co_purchase_count | pattern_type 
+--------------+----------------+----------------+--------------+----------------+----------------+-----------------------+-------------------+--------------
+(0 rows)
+

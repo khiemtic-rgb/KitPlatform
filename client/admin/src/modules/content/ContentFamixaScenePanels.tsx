@@ -57,11 +57,15 @@ export function SceneCharactersPanel({
   people,
   library,
   onSaveCharacters,
+  useFamixaSet = false,
+  characterScope,
 }: {
   scene: SceneView;
   people?: FamixaCharacter[];
   library?: CharacterLibraryViewRow[];
   onSaveCharacters?: (sceneId: string, characterIds: string[]) => void;
+  useFamixaSet?: boolean;
+  characterScope?: { seriesCode?: string | null; workflowKey?: string | null; filmTypeId?: string | null } | null;
 }) {
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>(scene.characterIds);
@@ -71,10 +75,14 @@ export function SceneCharactersPanel({
     setPicked(scene.characterIds);
   }, [scene.id, scene.characterIds.join('|')]);
   useEffect(() => {
-    void fetchCharacterStudioList()
+    if (!useFamixaSet) {
+      setStudio([]);
+      return;
+    }
+    void fetchCharacterStudioList(characterScope)
       .then((row) => setStudio(row.items ?? []))
       .catch(() => setStudio([]));
-  }, []);
+  }, [useFamixaSet, characterScope?.seriesCode, characterScope?.workflowKey]);
   const known = new Set((library ?? []).map((row) => row.characterId.toUpperCase()));
   const thumbs = useFrontThumbs(
     picked.map((id) => {

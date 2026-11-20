@@ -1,13 +1,23 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { authenticatedTenantCode, authenticatedTenantLabel } from '../../shared/auth/authenticated-tenant';
 import {
   SERIES_DESK_ID,
   filterStudioBuilds,
+  STUDIO_BUILD_COUNTS_AUTHORITY,
   studioBuildCounts,
   studioBuildLabel,
+  studioInventoryCounts,
+  studioOsVideoShotCodes,
+  studioOsVideoShotLabel,
+  studioOsVideoShotRoster,
+  studioProductionVideoLine,
   studioNextAction,
   suggestNextEpisodeCode,
+  seriesBuildReadOnly,
+  contentVideoCatalogLabel,
+  contentVideoCatalogState,
   videoCardProgress,
   videoCardStatus,
   videoPrimaryAction,
@@ -66,7 +76,7 @@ ok(tab.includes('ContentFamixaSeriesDesk') && tab.includes("seriesDesk === 'list
 ok(tab.includes('createVideoFromDesk') && tab.includes("setProdTab('script')"), '09 create goes to script');
 ok(shell.includes('← Video Studio') && shell.includes('Video Studio /'), '10 back + crumb');
 ok(shell.includes('data-episode-title') && shell.includes('Đang mở tập:'), '10b episode title stays above tabs');
-ok(desk.includes('studioBuildLabel') && desk.includes('studioBuildCounts'), '10c list card uses build counts');
+ok(desk.includes('studioBuildLabel') && desk.includes('studioInventoryCounts') && desk.includes('studioProductionVideoLine') && !desk.includes('studioBuildCounts('), '10c list card splits inventory and production video');
 const twins = [
   { id: 'a', episodeCode: 'EP01', title: 'Tập 01', shotCount: 6, kfCount: 2, videoCount: 1, voiceLines: 6 },
   { id: 'b', episodeCode: 'EP01', title: 'Tập 01', shotCount: 11, kfCount: 0, videoCount: 0, voiceLines: 11 },
@@ -74,9 +84,46 @@ const twins = [
 ] as never[];
 ok(studioBuildLabel(twins[0]!, twins) === 'EP01 · Tập 01 · 6 shot', '10d same title keeps shot count');
 ok(studioBuildLabel(twins[1]!, twins) === 'EP01 · Tập 01 · 11 shot', '10e 11-shot card differs');
-ok(studioBuildCounts(twins[0]!) === 'Thoại 6 · Hình 2/6 · Video 1/6', '10f counts from build row');
+ok(studioBuildCounts(twins[0]!) === 'Thoại 6 · Hình 2/6 · Video 1/6', '10f inventory line from build row');
+ok(
+  studioOsVideoShotCodes({
+    scenes: [{ shots: [{ shotId: 'EP01-SC01-SH01', videoMade: true }, { shotId: 'EP01-SC01-SH02', videoMade: true }, { shotId: 'EP01-SC01-SH03', videoMade: false }] }],
+  }).map(studioOsVideoShotLabel).join(' · ') === 'SH01 · SH02',
+  '10i OS video shots ignore graph inventory',
+);
+ok(studioProductionVideoLine({ videoProgress: 2, shotCount: 6 }) === 'Video 2/6', '10k production video count ignores inventory videoCount');
+ok(
+  studioOsVideoShotRoster({
+    scenes: [{ shots: [
+      { shotId: 'EP01-SC01-SH01', videoMade: true },
+      { shotId: 'EP01-SC01-SH02', videoMade: true },
+      { shotId: 'EP01-SC01-SH03', videoMade: false },
+    ] }],
+  }).map((shot) => `${shot.label}:${shot.videoMade ? 'video' : 'none'}`).join(',') === 'SH01:video,SH02:video,SH03:none',
+  '10l roster keeps shots that are not made',
+);
+ok(studioInventoryCounts(twins[0]!) === 'Thoại 6 · Hình 2/6', '10m image line stays inventory');
+ok(desk.includes('data-os-video-shots'), '10j desk prints OS shot codes');
+ok(desk.includes('data-studio-tenant') && desk.includes('authenticatedTenantLabel'), '10n studio names the authenticated tenant');
+const famixaJwt = `e30.${Buffer.from(JSON.stringify({ tenant_code: 'FAMIXA_PRODUCTION' })).toString('base64url')}.sig`;
+ok(authenticatedTenantCode({ tenantCode: 'kit_mkt' }, famixaJwt) === 'KIT_MKT', '10o session tenant code wins');
+ok(authenticatedTenantCode({ tenantCode: '' }, famixaJwt) === 'FAMIXA_PRODUCTION', '10p token claim when session code is empty');
+ok(authenticatedTenantLabel(null, null) === 'Tenant chưa xác định', '10q missing tenant stays neutral');
+const layout = readFileSync(join(root, '../../shared/components/AppLayout.tsx'), 'utf8');
+ok(!layout.includes("isMarketing ? 'KIT_MKT'") && layout.includes('authenticatedTenantCode'), '10r no marketing KIT_MKT label fallback');
+ok(STUDIO_BUILD_COUNTS_AUTHORITY === 'INVENTORY', '10g counts are inventory, not production progress');
+ok(videoCardStatus({ status: 'final', shotCount: 6, kfCount: 6, videoCount: 6 } as never).tone !== 'done', '10h full inventory counts do not complete');
+ok(videoCardProgress({ status: 'in_prod', shotCount: 6, kfCount: 6, videoCount: 6 } as never) === 0, '10i percent ignores inventory counts');
 ok(!tab.includes('AUTO APPROVE') && !desk.includes('GENERATE'), '11 no auto generate');
 ok(desk.includes('studioCardFromProgress') && !desk.includes('videoCardProgress('), '12 desk uses SoT card');
+ok(seriesBuildReadOnly({ ownership: 'unattributed' }) && !seriesBuildReadOnly({ ownership: 'tenant' }), '13 null-tenant build is read-only');
+ok(videoPrimaryAction({ status: 'in_prod', ownership: 'unattributed', shotCount: 6, kfCount: 6, videoCount: 6 } as never) === 'Xem bản dựng', '14 unattributed is not a finished product action');
+ok(contentVideoCatalogState({ status: 'Failed', outputUrl: '' }) === 'failed', '15 failed content video is not playable');
+ok(contentVideoCatalogState({ status: 'Ready', outputUrl: null }) === 'storyboard', '16 ready without a file is not a video');
+ok(contentVideoCatalogState({ status: 'Ready', outputUrl: 'https://cdn.example/a.mp4' }) === 'playable', '17 http video file is playable');
+ok(contentVideoCatalogLabel('failed').includes('không dùng'), '18 failed label stays out of the product path');
+ok(desk.includes('data-content-videos') && desk.includes('data-series-ownership') && desk.includes('data-series-readonly'), '19 desk separates content video and read-only builds');
+ok(desk.includes('!readOnly'), '20 delete stays off unattributed builds');
 
 if (fail.length) {
   console.error(`FAMIXA_SERIES_DESK_V1 FAIL=${fail.length}`);

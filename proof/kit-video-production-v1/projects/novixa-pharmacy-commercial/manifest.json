@@ -1,0 +1,93 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "novixa-pharmacy-commercial",
+  "projectName": "NOVIXA — quảng cáo nhà thuốc đầu tay",
+  "brand": {"id": "novixa", "name": "NOVIXA"},
+  "script": {
+    "version": "commercial-5",
+    "approvalStatus": "proposed",
+    "sourcePath": "script.md",
+    "notes": "Thông điệp đã chốt. Lời trong script.md là đề xuất, chưa thu và chưa duyệt."
+  },
+  "durationPolicy": {
+    "mode": "explicit_scenes",
+    "targetSeconds": null,
+    "notes": "Sáu cảnh cộng lại 25 giây, khớp durationHint của commercial.json. Hint không bị ép trong code."
+  },
+  "storyStructure": [
+    {"beatId": "open", "summary": "Nhà thuốc và câu tồn kho là vốn."},
+    {"beatId": "take", "summary": "Lấy một hộp ra khỏi kệ."},
+    {"beatId": "name", "summary": "Chỉ vào tên do graphics vẽ."},
+    {"beatId": "numbers", "summary": "Giờ, doanh thu và đơn, không cần nhân vật."},
+    {"beatId": "stock", "summary": "Bảng tồn khớp một nguồn số."},
+    {"beatId": "close", "summary": "Logo NOVIXA. Không phải cả phim."}
+  ],
+  "voice": {
+    "profileId": "unrecorded",
+    "language": "vi",
+    "pronunciationNotes": "Đọc Nô-vi-xa. Trên hình luôn viết NOVIXA. Chưa có file thu.",
+    "tracks": []
+  },
+  "assets": [
+    {"assetId": "character-v3", "kind": "character", "source": "generated", "path": "assets/pharmacist-nova-cartoon-v3.jpg", "pathBase": "project", "version": "v3", "usageRights": "project reference", "approval": "proposed", "role": "character", "label": "Chân dung một góc. Chưa duyệt."},
+    {"assetId": "pharmacy-plate-v3", "kind": "keyframe", "source": "generated", "path": "keyframes/v3/s01-pharmacy.jpg", "pathBase": "project", "version": "v3", "usageRights": "project reference", "approval": "proposed", "role": "environment", "label": "Tấm quầy chưa có chữ kiểm soát."},
+    {"assetId": "pharmacy-v7", "kind": "keyframe", "source": "generated", "path": "keyframes/v7/s01-pharmacy.jpg", "pathBase": "project", "version": "v7", "usageRights": "project reference", "approval": "proposed", "role": "keyframe", "label": "Cảnh mở đã ghép nhãn. Chưa duyệt."},
+    {"assetId": "operations-v7", "kind": "graphic", "source": "generated", "path": "keyframes/v7/s04-operations.jpg", "pathBase": "project", "version": "v7", "usageRights": "mockup from demoData", "approval": "proposed", "role": "graphic", "label": "Năm thẻ KPI. Mockup, không phải ảnh POS thật."},
+    {"assetId": "inventory-v7", "kind": "graphic", "source": "generated", "path": "keyframes/v7/s05-inventory.jpg", "pathBase": "project", "version": "v7", "usageRights": "mockup from demoData", "approval": "proposed", "role": "graphic", "label": "Bảng tồn. Mockup."},
+    {"assetId": "pkg-ampicillin-face", "kind": "label", "source": "generated", "path": "assets/labels/v5/pkg-ampicillin.png", "pathBase": "project", "version": "v5", "usageRights": "controlled type", "approval": "proposed", "role": "label", "label": "Mặt hộp AMPICILLIN, không có hàm lượng."},
+    {"assetId": "logo", "kind": "logo", "source": "user_supplied", "path": "docs/novixa/assets/brand/novixa-logo.png", "pathBase": "repo", "version": "brand", "usageRights": "brand file", "approval": "approved", "role": "logo", "label": "Logo gốc. Không vẽ lại."},
+    {"assetId": "pose-profile-v2", "kind": "pose", "source": "placeholder", "path": null, "pathBase": "project", "version": "none", "usageRights": "not created", "approval": "missing", "role": "pose", "label": "Nghiêng thật. Chưa có file."},
+    {"assetId": "pose-reach-v2", "kind": "pose", "source": "placeholder", "path": null, "pathBase": "project", "version": "none", "usageRights": "not created", "approval": "missing", "role": "pose", "label": "Đưa tay trước khi chạm. Chưa có file."},
+    {"assetId": "pose-grasp-v2", "kind": "pose", "source": "placeholder", "path": null, "pathBase": "project", "version": "none", "usageRights": "not created", "approval": "missing", "role": "pose", "label": "Nắm hộp trên kệ. Chưa có file."},
+    {"assetId": "pose-point-v2", "kind": "pose", "source": "placeholder", "path": null, "pathBase": "project", "version": "none", "usageRights": "not created", "approval": "missing", "role": "pose", "label": "Chỉ vào vùng tên. Chưa có file."}
+  ],
+  "visualStyle": {
+    "profileId": "novixa-cartoon-v3",
+    "palette": {
+      "background": [247, 249, 247],
+      "ink": [0, 32, 96],
+      "accent": [22, 140, 136],
+      "paper": [247, 249, 247],
+      "muted": [191, 231, 216],
+      "accentAlt": [245, 166, 91]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.06, "right": 0.06, "bottom": 0.08, "left": 0.06}
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.35,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 0.4
+  },
+  "format": {"aspectRatio": "16:9", "width": 1280, "height": 720, "frameRate": 30},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "medium",
+    "allowPlaceholders": false,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "proposed", "notes": "Thông điệp đã chốt. Brief chưa approved."},
+    {"stage": "script_analysis", "automation": "assisted", "status": "proposed", "notes": "script.md viết từ thông điệp đã có. Chưa duyệt lời."},
+    {"stage": "story_structure", "automation": "manual", "status": "proposed", "notes": "Sáu beat. Hai beat số liệu không có nhân vật."},
+    {"stage": "shot_plan", "automation": "assisted", "status": "proposed", "notes": "shot-plan.proposed.json. Mọi cảnh proposed. template custom nên render hình học không dựng được phim này."},
+    {"stage": "asset_plan", "automation": "assisted", "status": "proposed", "notes": "Bốn tư thế V2 đang missing. Keyframe v7 chưa duyệt."},
+    {"stage": "asset_creation", "automation": "manual", "status": "blocked", "notes": "Không có công cụ tạo góc mặt và tư thế trong pipeline."},
+    {"stage": "voiceover", "automation": "manual", "status": "blocked", "notes": "Chưa thu. Chưa có nhạc được cấp quyền."},
+    {"stage": "animation", "automation": "manual", "status": "blocked", "notes": "Cảnh nhân vật chờ image-to-video. Chưa có phép gửi provider."},
+    {"stage": "audio_mix", "automation": "assisted", "status": "not_started", "notes": "Chưa có lời và nhạc để trộn."},
+    {"stage": "render", "automation": "automated", "status": "blocked", "notes": "Chưa có clip. Không ghép thẻ chữ thành phim."},
+    {"stage": "qa", "automation": "assisted", "status": "not_started", "notes": "Chưa có video để xem."},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Không phát hành."}
+  ],
+  "shotPlan": "shot-plan.proposed.json",
+  "outputs": []
+}

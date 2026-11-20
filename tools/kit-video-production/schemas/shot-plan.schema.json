@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "kit-video-shot-plan/1",
+  "title": "KIT video shot plan",
+  "type": "object",
+  "required": ["schemaVersion", "projectId", "approvalStatus", "scenes"],
+  "properties": {
+    "schemaVersion": {"const": "kit-video-shot-plan/1"},
+    "projectId": {"type": "string"},
+    "approvalStatus": {"enum": ["draft", "proposed", "approved"]},
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "sceneId", "approvalStatus", "storyGoal", "durationSeconds", "dialogue",
+          "action", "visualMetaphor", "onScreenText", "templateId", "params",
+          "assets", "audio", "acceptance"
+        ],
+        "properties": {
+          "approvalStatus": {"enum": ["proposed", "approved", "style_proof"]},
+          "durationSeconds": {"type": "number", "exclusiveMinimum": 0},
+          "durationSource": {"enum": ["fixed", "voice_track"]},
+          "visualMetaphor": {"type": ["string", "null"]}
+        }
+      }
+    }
+  },
+  "description": "Contract document. kit_video.validate is the check that runs. The array length is not fixed."
+}

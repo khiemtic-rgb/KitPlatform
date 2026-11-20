@@ -105,16 +105,143 @@ public sealed class RuntimeHttpTests : IClassFixture<PiValidationDatabase>, IAsy
     }
 
     [Fact]
-    public async Task Trading_loop_is_not_mapped_on_the_safe_host()
+    public async Task Real_http_runtime_enforces_auth_module_risk_and_retry()
     {
-        var anonymousGet = await Client.GetAsync("/api/personal-intelligence/trading/loops");
-        Assert.Equal(HttpStatusCode.NotFound, anonymousGet.StatusCode);
-
         var anonymous = await Client.PostAsJsonAsync("/api/personal-intelligence/trading/loops", Sample("http-anon"));
-        Assert.Equal(HttpStatusCode.NotFound, anonymous.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
 
-        var authorized = await Client.SendAsync(Request(Sample("http-auth"), Token(_db.UserA, _db.TenantA)));
-        Assert.Equal(HttpStatusCode.NotFound, authorized.StatusCode);
+        var deniedUser = Guid.Parse("a9999999-9999-9999-9999-999999999999");
+        await using (var conn = await _db.OpenAsync())
+        {
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO public.users (id, tenant_id, username, email, password_hash)
+                VALUES (@Id, @TenantId, 'pi-a-noperm', 'pi-a-noperm@validation.local', 'not-a-secret')
+                ON CONFLICT (id) DO NOTHING
+                """,
+                new { Id = deniedUser, TenantId = _db.TenantA });
+        }
+
+        var forbidden = await Client.SendAsync(Request(Sample("http-forbidden"), Token(deniedUser, _db.TenantA)));
+        var forbiddenBody = await forbidden.Content.ReadAsStringAsync();
+        Assert.True(forbidden.StatusCode == HttpStatusCode.Forbidden, forbiddenBody);
+
+        var moduleOff = await Client.SendAsync(Request(Sample("http-module"), Token(_db.UserB, _db.TenantB)));
+        var moduleText = await moduleOff.Content.ReadAsStringAsync();
+        Assert.True(moduleOff.StatusCode == HttpStatusCode.Forbidden, moduleText);
+        Assert.Contains("Module is not enabled for this tenant.", moduleText, StringComparison.Ordinal);
+
+        await using var setup = await _db.OpenAsync();
+        var previous = await setup.ExecuteScalarAsync<string>(
+            "SELECT settings::text FROM public.tenants WHERE id = @TenantId",
+            new { TenantId = _db.TenantB });
+        await setup.ExecuteAsync(
+            """
+            UPDATE public.tenants
+            SET settings = settings || '{"platform":{"enabled_modules":["personal_intelligence"]}}'::jsonb
+            WHERE id = @TenantId
+            """,
+            new { TenantId = _db.TenantB });
+        await setup.DisposeAsync();
+
+        var switched = Sample("http-switch");
+        switched.RequestedTenantId = _db.TenantA;
+        try
+        {
+            var switchResponse = await Client.SendAsync(Request(switched, Token(_db.UserB, _db.TenantB)));
+            var switchText = await switchResponse.Content.ReadAsStringAsync();
+            Assert.True(switchResponse.StatusCode == HttpStatusCode.Forbidden, switchText);
+            Assert.Contains("cannot switch", switchText, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await using var restore = await _db.OpenAsync();
+            await restore.ExecuteAsync(
+                "UPDATE public.tenants SET settings = @Settings::jsonb WHERE id = @TenantId",
+                new { TenantId = _db.TenantB, Settings = previous });
+        }
+
+        var body = Sample("http-ok");
+        var created = await Read(await Client.SendAsync(Request(body, Token(_db.UserA, _db.TenantA))));
+        var replay = await Read(await Client.SendAsync(Request(body, Token(_db.UserA, _db.TenantA))));
+        var decisionId = created.GetProperty("decisionId").GetGuid();
+        Assert.Equal(decisionId, replay.GetProperty("decisionId").GetGuid());
+        Assert.Equal("PAPER", created.GetProperty("executionMode").GetString());
+        Assert.Equal("Fixture", created.GetProperty("evidenceBasis").GetString());
+        Assert.Equal("proposed", created.GetProperty("policyStatus").GetString());
+        Assert.Equal("recommend_only", created.GetProperty("autonomy").GetString());
+        Assert.Contains("PolicyProposed", created.GetProperty("eventTypes").EnumerateArray().Select(item => item.GetString()));
+        Assert.DoesNotContain("PolicyApproved", created.GetProperty("eventTypes").EnumerateArray().Select(item => item.GetString()));
+
+        await using var check = await _db.OpenAsync();
+        var stored = await check.QuerySingleAsync<(string Mode, string Source, int Decisions, int Events, int Evidence, string PolicyStatus)>(
+            """
+            SELECT
+                e.mode AS Mode,
+                t.source AS Source,
+                (SELECT COUNT(*) FROM pack_personal_intelligence.pi_decision d WHERE d.thesis = @Thesis AND d.tenant_id = @TenantId) AS Decisions,
+                (SELECT COUNT(*) FROM pack_personal_intelligence.pi_events ev WHERE ev.correlation_id = @DecisionId AND ev.event_type = 'DecisionMade' AND ev.tenant_id = @TenantId) AS Events,
+                (SELECT COUNT(*) FROM pack_personal_intelligence.pi_evidence ev
+                    JOIN pack_personal_intelligence.pi_decision d ON d.context_id = ev.context_id AND d.tenant_id = ev.tenant_id
+                    WHERE d.decision_id = @DecisionId AND d.tenant_id = @TenantId) AS Evidence,
+                (SELECT p.status FROM pack_personal_intelligence.pi_policy p
+                    JOIN pack_personal_intelligence.pi_events ev ON ev.correlation_id = p.policy_id AND ev.tenant_id = p.tenant_id
+                    WHERE ev.event_type = 'PolicyProposed' AND p.tenant_id = @TenantId
+                    ORDER BY ev.occurred_at DESC LIMIT 1) AS PolicyStatus
+            FROM pack_personal_intelligence.trading_execution e
+            JOIN pack_personal_intelligence.trading_order o ON o.order_id = e.order_id AND o.tenant_id = e.tenant_id
+            JOIN pack_personal_intelligence.trade t ON t.tenant_id = o.tenant_id AND t.external_trade_id LIKE @Prefix
+            WHERE o.decision_id = @DecisionId AND o.tenant_id = @TenantId
+            LIMIT 1
+            """,
+            new { DecisionId = decisionId, TenantId = _db.TenantA, body.Thesis, Prefix = body.OperationKey + "%" });
+        Assert.Equal("PAPER", stored.Mode);
+        Assert.Equal("FIXTURE", stored.Source);
+        Assert.Equal(1, stored.Decisions);
+        Assert.Equal(1, stored.Events);
+        Assert.True(stored.Evidence >= 1);
+        Assert.Equal("proposed", stored.PolicyStatus);
+
+        var switchedDecisions = await check.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM pack_personal_intelligence.pi_decision WHERE thesis = @Thesis",
+            new { switched.Thesis });
+        Assert.Equal(0, switchedDecisions);
+
+        body.Thesis += "-changed";
+        var conflict = await Client.SendAsync(Request(body, Token(_db.UserA, _db.TenantA)));
+        Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
+        var conflictDecisions = await check.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM pack_personal_intelligence.pi_decision WHERE decision_id = @DecisionId",
+            new { DecisionId = decisionId });
+        Assert.Equal(1, conflictDecisions);
+
+        var fresh = Sample("http-new");
+        var second = await Read(await Client.SendAsync(Request(fresh, Token(_db.UserA, _db.TenantA))));
+        Assert.NotEqual(decisionId, second.GetProperty("decisionId").GetGuid());
+
+        var veto = Sample("http-veto");
+        veto.Quantity = 10m;
+        veto.Price = 500m;
+        var vetoDoc = await Read(await Client.SendAsync(Request(veto, Token(_db.UserA, _db.TenantA))));
+        Assert.False(vetoDoc.GetProperty("riskAllowed").GetBoolean());
+        Assert.False(vetoDoc.GetProperty("paperExecuted").GetBoolean());
+        var vetoExecutions = await check.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(*) FROM pack_personal_intelligence.trading_execution e
+            JOIN pack_personal_intelligence.trading_order o ON o.order_id = e.order_id
+            WHERE o.decision_id = @DecisionId
+            """,
+            new { DecisionId = vetoDoc.GetProperty("decisionId").GetGuid() });
+        Assert.Equal(0, vetoExecutions);
+
+        var live = Sample("http-live");
+        live.Live = true;
+        var liveResponse = await Client.SendAsync(Request(live, Token(_db.UserA, _db.TenantA)));
+        Assert.Equal(HttpStatusCode.BadRequest, liveResponse.StatusCode);
+        var liveDecisions = await check.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM pack_personal_intelligence.pi_decision WHERE thesis = @Thesis",
+            new { live.Thesis });
+        Assert.Equal(0, liveDecisions);
     }
 
     [Fact]
@@ -160,7 +287,9 @@ public sealed class RuntimeHttpTests : IClassFixture<PiValidationDatabase>, IAsy
 
             var blocked = SampleFor(_db.PersonB, accountB, "http-b-off");
             var blockedResponse = await Client.SendAsync(Request(blocked, Token(_db.UserB, _db.TenantB)));
-            Assert.Equal(HttpStatusCode.NotFound, blockedResponse.StatusCode);
+            var blockedText = await blockedResponse.Content.ReadAsStringAsync();
+            Assert.True(blockedResponse.StatusCode == HttpStatusCode.Forbidden, blockedText);
+            Assert.Contains("Module is not enabled for this tenant.", blockedText, StringComparison.Ordinal);
 
             var enabled = await Read(await Client.SendAsync(Entitlement(
                 _db.TenantB,
@@ -178,10 +307,22 @@ public sealed class RuntimeHttpTests : IClassFixture<PiValidationDatabase>, IAsy
                 settings.GetProperty("enabledModules").EnumerateArray().Select(item => item.GetString()));
 
             var opened = SampleFor(_db.PersonB, accountB, "http-b-on");
-            var created = await Client.SendAsync(Request(opened, Token(_db.UserB, _db.TenantB)));
-            Assert.Equal(HttpStatusCode.NotFound, created.StatusCode);
+            var created = await Read(await Client.SendAsync(Request(opened, Token(_db.UserB, _db.TenantB))));
+            var decisionId = created.GetProperty("decisionId").GetGuid();
+            Assert.Equal("PAPER", created.GetProperty("executionMode").GetString());
+            Assert.Equal("recommend_only", created.GetProperty("autonomy").GetString());
 
             await using var check = await _db.OpenAsync();
+            var stored = await check.ExecuteScalarAsync<int>(
+                """
+                SELECT COUNT(*)
+                FROM pack_personal_intelligence.pi_decision d
+                JOIN pack_personal_intelligence.trading_order o ON o.decision_id = d.decision_id AND o.tenant_id = d.tenant_id
+                JOIN pack_personal_intelligence.trading_execution e ON e.order_id = o.order_id AND e.tenant_id = o.tenant_id
+                WHERE d.decision_id = @DecisionId AND d.tenant_id = @TenantId AND e.mode = 'PAPER'
+                """,
+                new { DecisionId = decisionId, TenantId = _db.TenantB });
+            Assert.Equal(1, stored);
 
             var closed = await Read(await Client.SendAsync(Entitlement(_db.TenantB, baseline.ToArray(), _platformKey)));
             Assert.DoesNotContain(
@@ -190,7 +331,9 @@ public sealed class RuntimeHttpTests : IClassFixture<PiValidationDatabase>, IAsy
 
             var after = SampleFor(_db.PersonB, accountB, "http-b-again");
             var rejected = await Client.SendAsync(Request(after, Token(_db.UserB, _db.TenantB)));
-            Assert.Equal(HttpStatusCode.NotFound, rejected.StatusCode);
+            var rejectedText = await rejected.Content.ReadAsStringAsync();
+            Assert.True(rejected.StatusCode == HttpStatusCode.Forbidden, rejectedText);
+            Assert.Contains("Module is not enabled for this tenant.", rejectedText, StringComparison.Ordinal);
             var leaked = await check.ExecuteScalarAsync<int>(
                 "SELECT COUNT(*) FROM pack_personal_intelligence.pi_decision WHERE tenant_id = @TenantId AND thesis = @Thesis",
                 new { TenantId = _db.TenantB, after.Thesis });
@@ -215,13 +358,57 @@ public sealed class RuntimeHttpTests : IClassFixture<PiValidationDatabase>, IAsy
     }
 
     [Fact]
-    public async Task Trading_summary_is_not_mapped_on_the_safe_host()
+    public async Task Desk_reads_postgres_and_paper_approval_is_a_separate_permission()
     {
         var summary = await Client.GetAsync("/api/personal-intelligence/trading/summary");
-        Assert.Equal(HttpStatusCode.NotFound, summary.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, summary.StatusCode);
 
         var authorized = await Client.SendAsync(AuthorizedGet("/api/personal-intelligence/trading/summary", Token(_db.UserA, _db.TenantA)));
-        Assert.Equal(HttpStatusCode.NotFound, authorized.StatusCode);
+        var summaryDoc = await Read(authorized);
+        Assert.True(summaryDoc.GetProperty("tradeCount").GetInt32() >= 0);
+
+        var analysis = Sample("desk-analysis");
+        analysis.ApprovedBy = null;
+        var created = await Read(await Client.SendAsync(Request(analysis, Token(_db.UserA, _db.TenantA))));
+        Assert.False(created.GetProperty("paperExecuted").GetBoolean());
+        var decisionId = created.GetProperty("decisionId").GetGuid();
+
+        var runOnly = Guid.Parse("a1212121-1212-1212-1212-121212121212");
+        await using (var conn = await _db.OpenAsync())
+        {
+            await conn.ExecuteAsync(
+                """
+                INSERT INTO public.users (id, tenant_id, username, email, password_hash)
+                VALUES (@Id, @TenantId, 'pi-a-runonly', 'pi-a-runonly@validation.local', 'not-a-secret')
+                ON CONFLICT (id) DO NOTHING;
+                INSERT INTO public.user_roles (user_id, role_id)
+                SELECT @Id, r.id FROM public.roles r
+                WHERE r.tenant_id = @TenantId AND r.role_code = 'PI_TRADING'
+                ON CONFLICT DO NOTHING;
+                """,
+                new { Id = runOnly, TenantId = _db.TenantA });
+        }
+
+        var denied = await Client.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/personal-intelligence/trading/decisions/{decisionId}/paper")
+        {
+            Headers = { Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token(runOnly, _db.TenantA)) },
+        });
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+
+        var approved = await Read(await Client.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/personal-intelligence/trading/decisions/{decisionId}/paper")
+        {
+            Headers = { Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token(_db.UserA, _db.TenantA)) },
+        }));
+        Assert.Equal("PAPER", approved.GetProperty("mode").GetString());
+        await using var check = await _db.OpenAsync();
+        var stored = await check.ExecuteScalarAsync<int>(
+            """
+            SELECT COUNT(*) FROM pack_personal_intelligence.trading_execution e
+            JOIN pack_personal_intelligence.trading_order o ON o.order_id = e.order_id AND o.tenant_id = e.tenant_id
+            WHERE o.decision_id = @DecisionId AND o.tenant_id = @TenantId AND e.mode = 'PAPER'
+            """,
+            new { DecisionId = decisionId, TenantId = _db.TenantA });
+        Assert.Equal(1, stored);
     }
 
     private HttpClient Client => _client ?? throw new InvalidOperationException("The validation API client is not open.");

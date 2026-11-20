@@ -1,0 +1,35 @@
+{
+  "fps": 30,
+  "durationSec": 15.0,
+  "voiceSec": 12.180145833333333,
+  "logoAtSec": 13.7,
+  "lines": {
+    "close_a": {
+      "start": 0.4,
+      "end": 1.2868125
+    },
+    "close_b": {
+      "start": 1.9868125,
+      "end": 3.2658750000000003
+    },
+    "gap_a": {
+      "start": 4.165875,
+      "end": 6.8657708333333325
+    },
+    "gap_b": {
+      "start": 7.315770833333334,
+      "end": 8.65775
+    },
+    "see": {
+      "start": 9.20775,
+      "end": 11.980145833333335
+    }
+  },
+  "motion": {
+    "scene1": "simulated slow push-in on a still",
+    "scene2": "simulated downward pan on a still",
+    "scene3": "simulated rise from the box toward the face on a still",
+    "scene4": "hard cut, real dashboard hold, then hard cut to logo",
+    "characterAnimation": false
+  }
+}

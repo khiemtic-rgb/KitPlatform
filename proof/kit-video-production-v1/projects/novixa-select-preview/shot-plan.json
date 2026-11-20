@@ -1,0 +1,283 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "novixa-select-preview",
+  "approvalStatus": "approved",
+  "source": "script-analysis",
+  "warnings": [],
+  "scenes": [
+    {
+      "sceneId": "s1-pack",
+      "approvalStatus": "approved",
+      "storyGoal": "Vỉ thuốc tham chiếu",
+      "durationSeconds": 5.0,
+      "durationSource": "fixed",
+      "dialogue": "Đây là vỉ thuốc tham chiếu.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [],
+      "templateId": "annotated_plate",
+      "params": {
+        "assetId": "ref-blister-foil",
+        "preset": "hold",
+        "amount": 0,
+        "caption": "Vỉ thuốc tham chiếu",
+        "note": "CC BY-SA 4.0. Ảnh tham chiếu."
+      },
+      "assets": [
+        "ref-blister-foil"
+      ],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5.0,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.08
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s2-hands",
+      "approvalStatus": "approved",
+      "storyGoal": "Người kiểm vỉ thuốc",
+      "durationSeconds": 5.0,
+      "durationSource": "fixed",
+      "dialogue": "Người đang kiểm một vỉ trên bàn.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [],
+      "templateId": "annotated_plate",
+      "params": {
+        "assetId": "ref-hands-blister",
+        "preset": "hold",
+        "amount": 0,
+        "caption": "Người kiểm vỉ thuốc",
+        "note": "CC BY 2.0. Ảnh tham chiếu."
+      },
+      "assets": [
+        "ref-hands-blister"
+      ],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5.0,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.46
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s3-floor",
+      "approvalStatus": "approved",
+      "storyGoal": "Không gian nhà thuốc bán lẻ",
+      "durationSeconds": 5.0,
+      "durationSource": "fixed",
+      "dialogue": "Không gian tủ thuốc của nhà thuốc bán lẻ.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [],
+      "templateId": "annotated_plate",
+      "params": {
+        "assetId": "ref-pharmacy-floor",
+        "preset": "hold",
+        "amount": 0,
+        "caption": "Không gian nhà thuốc bán lẻ",
+        "note": "CC BY-SA 3.0. Ảnh tham chiếu."
+      },
+      "assets": [
+        "ref-pharmacy-floor"
+      ],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5.0,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 3.15
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s4-stock",
+      "approvalStatus": "approved",
+      "storyGoal": "Màn tồn kho",
+      "durationSeconds": 5.0,
+      "durationSource": "fixed",
+      "dialogue": "Tồn kho và hạn dùng được nhìn trên màn hình.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [],
+      "templateId": "annotated_plate",
+      "params": {
+        "assetId": "nvx-doc008-stock",
+        "preset": "hold",
+        "amount": 0,
+        "caption": "Màn tồn kho",
+        "note": "Số trên hình là dữ liệu demo."
+      },
+      "assets": [
+        "nvx-doc008-stock"
+      ],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5.0,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 3.38
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s5-join",
+      "approvalStatus": "approved",
+      "storyGoal": "Ghép giao diện với ảnh vỉ",
+      "durationSeconds": 5.0,
+      "durationSource": "fixed",
+      "dialogue": "Giữ vỉ này cạnh màn tồn kho để đối chiếu.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [],
+      "templateId": "layered_plate",
+      "params": {
+        "assetId": "nvx-doc008-stock",
+        "insetId": "ref-blister-foil",
+        "preset": "hold",
+        "amount": 0,
+        "caption": "Đối chiếu vỉ với màn tồn",
+        "note": "Hai nguồn riêng. Không phải một cảnh chụp.",
+        "continuity": true
+      },
+      "assets": [
+        "nvx-doc008-stock",
+        "ref-blister-foil"
+      ],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5.0,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 3.15
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ],
+      "continuity": true
+    }
+  ]
+}

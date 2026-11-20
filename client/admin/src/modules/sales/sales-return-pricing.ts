@@ -1,5 +1,16 @@
 import type { SalesOrderDetail } from '@/shared/api/sales.types';
 
+type OrderLevelDiscounts = {
+  discountAmount: number;
+  voucherDiscountAmount?: number;
+  loyaltyDiscountAmount?: number;
+};
+
+/** CK đơn + voucher + điểm — cùng phân bổ theo dòng khi trả hàng (khớp backend). */
+export function orderLevelDiscount(order: OrderLevelDiscounts): number {
+  return order.discountAmount + (order.voucherDiscountAmount ?? 0) + (order.loyaltyDiscountAmount ?? 0);
+}
+
 export function computeLineRefundAmount(
   lineTotal: number,
   soldQuantity: number,
@@ -19,7 +30,7 @@ export function previewReturnRefund(
   quantities: Record<string, number>,
 ): { totalRefund: number; lines: { itemId: string; quantity: number; refundAmount: number }[] } {
   const merchandiseNet = order.items.reduce((sum, line) => sum + line.lineTotal, 0);
-  const orderDiscountAmount = order.discountAmount;
+  const orderDiscountAmount = orderLevelDiscount(order);
 
   const lines = order.items
     .map((line) => {
@@ -40,8 +51,7 @@ export function previewReturnRefund(
   return { totalRefund, lines };
 }
 
-export function computeOrderTotalRefunded(order: {
-  discountAmount: number;
+export function computeOrderTotalRefunded(order: OrderLevelDiscounts & {
   items: Pick<SalesOrderDetail['items'][number], 'lineTotal' | 'quantity' | 'returnedQuantity'>[];
 }): number {
   const merchandiseNet = order.items.reduce((sum, line) => sum + line.lineTotal, 0);
@@ -55,7 +65,7 @@ export function computeOrderTotalRefunded(order: {
         line.quantity,
         returnedQty,
         merchandiseNet,
-        order.discountAmount,
+        orderLevelDiscount(order),
       )
     );
   }, 0);
@@ -63,7 +73,7 @@ export function computeOrderTotalRefunded(order: {
 
 export function lineRefundAmount(
   line: Pick<SalesOrderDetail['items'][number], 'lineTotal' | 'quantity' | 'returnedQuantity'>,
-  order: { discountAmount: number; items: Pick<SalesOrderDetail['items'][number], 'lineTotal'>[] },
+  order: OrderLevelDiscounts & { items: Pick<SalesOrderDetail['items'][number], 'lineTotal'>[] },
 ): number {
   const returnedQty = line.returnedQuantity ?? 0;
   if (returnedQty <= 0) return 0;
@@ -73,13 +83,13 @@ export function lineRefundAmount(
     line.quantity,
     returnedQty,
     merchandiseNet,
-    order.discountAmount,
+    orderLevelDiscount(order),
   );
 }
 
 export function remainingLineNet(
   line: Pick<SalesOrderDetail['items'][number], 'lineTotal' | 'quantity' | 'returnedQuantity'>,
-  order: { discountAmount: number; items: Pick<SalesOrderDetail['items'][number], 'lineTotal'>[] },
+  order: OrderLevelDiscounts & { items: Pick<SalesOrderDetail['items'][number], 'lineTotal'>[] },
 ): number {
   return line.lineTotal - lineRefundAmount(line, order);
 }

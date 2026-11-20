@@ -10,17 +10,23 @@ internal sealed class ContentOpsService : IContentOpsService
     private readonly ContentRepository _repo;
     private readonly IContentPackageService _packages;
     private readonly ContentFacebookClient _facebook;
+    private readonly ContentArticleSeriesRepository _stories;
+    private readonly ContentPlatformPostStore _platform;
 
     public ContentOpsService(
         ContentWorkRepository work,
         ContentRepository repo,
         IContentPackageService packages,
-        ContentFacebookClient facebook)
+        ContentFacebookClient facebook,
+        ContentArticleSeriesRepository stories,
+        ContentPlatformPostStore platform)
     {
         _work = work;
         _repo = repo;
         _packages = packages;
         _facebook = facebook;
+        _stories = stories;
+        _platform = platform;
     }
 
     public async Task<ContentOpsSnapshotDto> GetSnapshotAsync(CancellationToken cancellationToken = default)
@@ -95,9 +101,37 @@ internal sealed class ContentOpsService : IContentOpsService
             toUtc = fromUtc.AddDays(62);
 
         var rows = await _work.ListCalendarAsync(fromUtc, toUtc, brandId, cancellationToken);
-        return rows.Select(r => new ContentCalendarItemDto(
+        var items = rows.Select(r => new ContentCalendarItemDto(
             r.At, r.Kind, r.PackageId, r.TopicId, r.PublishJobId,
             r.BrandId, r.BrandCode, r.BrandName, r.Title, r.Channel, r.Status)).ToList();
+        try
+        {
+            var platform = await _platform.ListCalendarAsync(fromUtc, toUtc, brandId, cancellationToken);
+            items.AddRange(platform);
+        }
+        catch (Exception ex) when (ContentPlatformPostStore.IsMissingTable(ex))
+        {
+            // Bảng chưa có: lịch job vẫn hiện.
+        }
+        return items.OrderBy(i => i.At).ThenBy(i => i.Title).ToList();
+    }
+
+    public async Task<IReadOnlyList<EpisodeNeedContentDto>> ListEpisodesNeedContentAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _stories.ListEpisodesNeedContentAsync(cancellationToken);
+        return rows.Select(r => new EpisodeNeedContentDto(
+            r.EpisodeId,
+            r.EpisodeNo,
+            r.EpisodeTitle,
+            r.EpisodeObjective,
+            r.SeriesId,
+            r.SeriesCode,
+            r.SeriesName,
+            r.BrandId,
+            r.BrandCode,
+            r.BrandName,
+            r.EpisodeStatus)).ToList();
     }
 
     private static DateTimeOffset StartOfLocalDay(DateTimeOffset utc)

@@ -1,0 +1,973 @@
+[
+  {
+    "name": "A Minh Châu (hết hàng bán chạy)",
+    "submissionId": "25ad3848-45e4-434e-833b-9453aa21ca91",
+    "input": {
+      "answers": {
+        "P2": "SITES_1",
+        "P3": "PAIN_INVENTORY",
+        "P5": "AOV_80_150",
+        "C1": "REG_6_8",
+        "C2": "OPT3",
+        "C3": "OPT2",
+        "C4": "OPT2",
+        "C5": "OPT2",
+        "I1": "OPT2",
+        "I2": "EXP_LT1M",
+        "I3": "OPT2",
+        "I4": "OPT2",
+        "I5": "OPT3",
+        "I6": "OPT2",
+        "I7": "NEAR_PUSH",
+        "O1": "OPT3",
+        "O2": "OPT3",
+        "O3": "OPT2",
+        "O4": "OPT3",
+        "O5": "OPT3",
+        "B1": "OPT3",
+        "B2": "OPT2",
+        "B3": "OPT2",
+        "B4": "OPT2",
+        "T1": "OPT3",
+        "T2": "OPT3",
+        "T3": "OPT3",
+        "T4": "OPT2",
+        "G1": "OPT2",
+        "G2": "UNKNOWN",
+        "G5": "PRI_STOCK"
+      },
+      "categoryScores": [
+        {
+          "code": "CUSTOMER",
+          "scorePct": 41.7,
+          "insufficientData": false
+        },
+        {
+          "code": "INVENTORY",
+          "scorePct": 40,
+          "insufficientData": false
+        },
+        {
+          "code": "OPERATIONS",
+          "scorePct": 60,
+          "insufficientData": false
+        },
+        {
+          "code": "BUSINESS",
+          "scorePct": 41.7,
+          "insufficientData": false
+        },
+        {
+          "code": "TECH",
+          "scorePct": 58.3,
+          "insufficientData": false
+        },
+        {
+          "code": "GROWTH",
+          "scorePct": 0,
+          "insufficientData": true
+        }
+      ],
+      "overallPct": 48.3
+    },
+    "expected": {
+      "headline": "Nhà thuốc của anh/chị đạt 48/100. 6–8 trong 10 khách là khách quen, nhưng đang mất đơn vì hết hàng.",
+      "leaks": [
+        {
+          "code": "STOCKOUT",
+          "amount": 60,
+          "title": "Hết hàng: có thể mất tới 60 triệu tiền bán mỗi năm",
+          "said": "Anh/chị cho biết tuần trước có khoảng 6–15 lần khách hỏi mà quầy không có thuốc, mỗi đơn trung bình 80.000–150.000đ.",
+          "body": "Nếu mỗi lần như vậy khách sang chỗ khác mua, một năm nhà thuốc có thể mất tới khoảng 60 triệu tiền bán. Thực tế thấp hơn vì có khách chịu chờ hoặc đổi thuốc khác."
+        }
+      ],
+      "concern": {
+        "label": "Hàng tồn, cận hạn, hết hàng",
+        "text": "Anh/chị đã giảm giá và ưu tiên bán trước hàng cận hạn, đó là cách đúng. Việc còn lại là thấy sớm hơn, và nhập vừa đủ để ít hàng rơi vào cận hạn."
+      },
+      "actions": [
+        {
+          "code": "I3",
+          "area": "INVENTORY",
+          "finding": "Hết hàng khi khách hỏi mua",
+          "said": "Anh/chị trả lời là tuần trước có khoảng 6–15 lần khách hỏi mua mà nhà thuốc không có.",
+          "why": "Mỗi lần như vậy là một đơn có thể mất. Khách quen gặp vài lần sẽ quen mua chỗ khác.",
+          "title": "Ghi lại mỗi lần khách hỏi mà không có thuốc",
+          "steps": [
+            "Để một tờ giấy ở quầy. Khách hỏi mà không có thì ghi tên thuốc.",
+            "Cuối tuần, thuốc nào bị ghi từ 2 lần trở lên thì nhập thêm."
+          ],
+          "who": "Người đứng quầy",
+          "time": "Vài giây mỗi lần, 10 phút cuối tuần",
+          "check": "Số lần khách hỏi mà không có thuốc mỗi tuần đã giảm.",
+          "tool": "Xem phần mềm có báo thuốc sắp hết không. Có thì bật cho các thuốc bán chạy."
+        },
+        {
+          "code": "I1",
+          "area": "INVENTORY",
+          "finding": "Hàng cận hạn được phát hiện muộn",
+          "said": "Anh/chị trả lời là lần gần nhất anh/chị thấy một lô sắp hết hạn là lúc kiểm kê.",
+          "why": "Kiểm kê vài tháng mới làm một lần, nên nhiều lô tới lúc thấy thì đã quá gần ngày hết hạn.",
+          "title": "Rà hàng cận hạn mỗi sáng thứ Hai",
+          "steps": [
+            "Sáng thứ Hai, rà các lô hết hạn trong 3 tháng tới. Mỗi tuần rà vài kệ cho nhẹ việc.",
+            "Dán nhãn màu lên hộp, xếp ra trước để bán trước. Lô khó bán thì hỏi nhà cung cấp đổi trả sớm."
+          ],
+          "who": "Chủ nhà thuốc hoặc người giữ kho",
+          "time": "15–20 phút mỗi tuần",
+          "check": "Tiền hàng phải hủy hoặc trả lại giảm so với tháng này.",
+          "tool": "Nếu phần mềm có nhập hạn dùng theo lô, mở danh sách lô hết hạn trong 90 ngày thay cho việc rà kệ."
+        },
+        {
+          "code": "C3",
+          "area": "CUSTOMER",
+          "finding": "Khách dùng thuốc lâu dài chưa được nhắc",
+          "said": "Anh/chị trả lời là khách dùng thuốc huyết áp, tiểu đường sắp hết thuốc thì nhà thuốc chỉ nhắc khi khách nhờ.",
+          "why": "Đây là nhóm khách mua đều đặn mỗi tháng. Không được nhắc, lúc hết thuốc họ dễ mua luôn ở chỗ gần nhất.",
+          "title": "Nhắn Zalo cho khách sắp hết thuốc huyết áp, tiểu đường",
+          "steps": [
+            "Lập danh sách khách mua thuốc huyết áp, tiểu đường, mỡ máu trong tháng: tên, số điện thoại, ngày mua, thuốc dùng được bao nhiêu ngày.",
+            "Mỗi sáng xem danh sách, nhắn Zalo cho khách sẽ hết thuốc trong 3 ngày tới."
+          ],
+          "who": "Người đứng quầy ca sáng",
+          "time": "10 phút mỗi sáng",
+          "check": "Trong số khách được nhắc, bao nhiêu người quay lại mua.",
+          "tool": "Lọc trên phần mềm những khách mua thuốc huyết áp, tiểu đường trong 30 ngày qua để lập danh sách cho nhanh."
+        }
+      ],
+      "strengths": [
+        "6–8 trong 10 khách là khách quen",
+        "Hàng cận hạn được giảm giá, bán trước",
+        "Tra được khách quen đã mua gì"
+      ],
+      "watch": [],
+      "areas": [
+        {
+          "code": "CUSTOMER",
+          "name": "Khách hàng",
+          "pct": 42,
+          "note": null
+        },
+        {
+          "code": "INVENTORY",
+          "name": "Kho và hạn dùng",
+          "pct": 40,
+          "note": null
+        },
+        {
+          "code": "OPERATIONS",
+          "name": "Vận hành, nhân viên",
+          "pct": 60,
+          "note": null
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Lãi lỗ",
+          "pct": 42,
+          "note": null
+        },
+        {
+          "code": "TECH",
+          "name": "Ghi chép, phần mềm",
+          "pct": 58,
+          "note": null
+        },
+        {
+          "code": "GROWTH",
+          "name": "Sẵn sàng mở rộng",
+          "pct": null,
+          "note": "Chưa áp dụng: anh/chị chưa có ý định mở thêm"
+        }
+      ],
+      "hasSoftware": true,
+      "preview": [
+        {
+          "title": "Hết hàng: có thể mất tới 60 triệu tiền bán mỗi năm",
+          "body": "Anh/chị cho biết tuần trước có khoảng 6–15 lần khách hỏi mà quầy không có thuốc, mỗi đơn trung bình 80.000–150.000đ. Nếu mỗi lần như vậy khách sang chỗ khác mua, một năm nhà thuốc có thể mất tới khoảng 60 triệu tiền bán. Thực tế thấp hơn vì có khách chịu chờ hoặc đổi thuốc khác."
+        },
+        {
+          "title": "Hàng cận hạn được phát hiện muộn",
+          "body": "Anh/chị trả lời là lần gần nhất anh/chị thấy một lô sắp hết hạn là lúc kiểm kê. Kiểm kê vài tháng mới làm một lần, nên nhiều lô tới lúc thấy thì đã quá gần ngày hết hạn."
+        }
+      ]
+    }
+  },
+  {
+    "name": "B Phúc An (2 cơ sở, muốn mở thứ 3)",
+    "submissionId": "1faa94d6-fe1f-4a4d-8d7b-32efdb7fb4ca",
+    "input": {
+      "answers": {
+        "P2": "SITES_2_3",
+        "P3": "PAIN_GROWTH",
+        "P5": "AOV_150_300",
+        "C1": "REG_3_5",
+        "C2": "OPT4",
+        "C3": "OPT3",
+        "C4": "OPT3",
+        "C5": "OPT4",
+        "I1": "OPT4",
+        "I2": "EXP_1_3M",
+        "I3": "OPT3",
+        "I4": "OPT3",
+        "I5": "OPT3",
+        "I6": "OPT4",
+        "O1": "OPT2",
+        "O2": "OPT2",
+        "O3": "OPT1",
+        "O4": "OPT2",
+        "O5": "OPT3",
+        "B1": "OPT3",
+        "B2": "OPT3",
+        "B3": "OPT3",
+        "B4": "OPT3",
+        "T1": "OPT4",
+        "T2": "OPT4",
+        "T3": "OPT4",
+        "T4": "OPT4",
+        "G1": "OPT3",
+        "G2": "OPT2",
+        "G3": "OPEN_6M",
+        "G5": "PRI_STAFF"
+      },
+      "categoryScores": [
+        {
+          "code": "CUSTOMER",
+          "scorePct": 83.3,
+          "insufficientData": false
+        },
+        {
+          "code": "INVENTORY",
+          "scorePct": 80,
+          "insufficientData": false
+        },
+        {
+          "code": "OPERATIONS",
+          "scorePct": 33.3,
+          "insufficientData": false
+        },
+        {
+          "code": "BUSINESS",
+          "scorePct": 66.7,
+          "insufficientData": false
+        },
+        {
+          "code": "TECH",
+          "scorePct": 100,
+          "insufficientData": false
+        },
+        {
+          "code": "GROWTH",
+          "scorePct": 50,
+          "insufficientData": false
+        }
+      ],
+      "overallPct": 68.9
+    },
+    "expected": {
+      "headline": "Nhà thuốc của anh/chị đạt 69/100. Gõ số điện thoại là thấy khách quen đã mua gì, nhưng nhà thuốc còn phụ thuộc vào anh/chị.",
+      "leaks": [
+        {
+          "code": "STOCKOUT",
+          "amount": 40,
+          "title": "Hết hàng: có thể mất tới 40 triệu tiền bán mỗi năm",
+          "said": "Anh/chị cho biết tuần trước có khoảng 2–5 lần khách hỏi mà quầy không có thuốc, mỗi đơn trung bình 150.000–300.000đ.",
+          "body": "Nếu mỗi lần như vậy khách sang chỗ khác mua, một năm nhà thuốc có thể mất tới khoảng 40 triệu tiền bán. Thực tế thấp hơn vì có khách chịu chờ hoặc đổi thuốc khác."
+        },
+        {
+          "code": "EXPIRED",
+          "amount": 25,
+          "title": "Hàng hết hạn: khoảng 25 triệu mỗi năm",
+          "said": "Anh/chị cho biết tháng trước hàng hết hạn phải hủy hoặc trả lại khoảng 1–3 triệu.",
+          "body": "Nhân lên 12 tháng là khoảng 25 triệu mỗi năm. Phần trả lại được nhà cung cấp chưa trừ ra, nhưng phần phải hủy là tiền mất hẳn."
+        }
+      ],
+      "concern": {
+        "label": "Muốn mở thêm nhưng chưa sẵn sàng",
+        "text": "Anh/chị định mở thêm trong 6 tháng tới. Trước khi mở nên có đủ ba thứ: 3 quy trình chính viết ra giấy, một người làm được việc của anh/chị ở cơ sở cũ, và cách xem số bán của cả hai nơi mà không phải có mặt."
+      },
+      "actions": [
+        {
+          "code": "O1",
+          "area": "OPERATIONS",
+          "finding": "Nhà thuốc còn phụ thuộc vào anh/chị",
+          "said": "Anh/chị trả lời là nếu anh/chị nghỉ 3 ngày thì nhà thuốc vẫn mở nhưng nhân viên gọi hỏi liên tục.",
+          "why": "Nhà thuốc chạy được hay không đang dựa vào anh/chị, nên anh/chị khó nghỉ, khó đi lấy hàng hay lo việc khác.",
+          "title": "Viết sẵn 10 câu nhân viên hay hỏi, kèm câu trả lời",
+          "steps": [
+            "Trong 1 tuần, mỗi lần nhân viên gọi hoặc hỏi anh/chị, ghi lại câu hỏi.",
+            "Viết câu trả lời cho 10 câu hay gặp nhất, để ở quầy."
+          ],
+          "who": "Chủ nhà thuốc",
+          "time": "1 tuần ghi lại, 1 buổi viết",
+          "check": "Số lần nhân viên phải gọi hỏi anh/chị đã giảm.",
+          "tool": "Cho nhân viên tự tra giá và tồn kho trên phần mềm thay vì hỏi anh/chị."
+        },
+        {
+          "code": "O3",
+          "area": "OPERATIONS",
+          "finding": "Mỗi nhân viên tư vấn một kiểu",
+          "said": "Anh/chị trả lời là cùng một bệnh như cảm cúm, mỗi nhân viên tư vấn một kiểu.",
+          "why": "Khách quay lại gặp người khác mà được bán khác thì dễ mất tin. Tư vấn theo trí nhớ cũng dễ sót câu hỏi quan trọng.",
+          "title": "Thống nhất cách tư vấn 5 bệnh hay gặp",
+          "steps": [
+            "Chọn 5 bệnh hay gặp nhất, ví dụ: cảm cúm, ho, đau dạ dày, tiêu chảy, dị ứng.",
+            "Mỗi bệnh viết 1 trang: câu cần hỏi khách, thuốc nên dùng, khi nào khuyên đi khám. Để ở quầy."
+          ],
+          "who": "Dược sĩ phụ trách chuyên môn",
+          "time": "2–3 buổi",
+          "check": "Hỏi thử từng nhân viên cùng một bệnh, mọi người tư vấn giống nhau.",
+          "tool": null
+        },
+        {
+          "code": "G2",
+          "area": "GROWTH",
+          "finding": "Cách làm còn phụ thuộc vào người",
+          "said": "Anh/chị trả lời là nếu mở thêm cơ sở, cách làm hiện nay chỉ áp dụng được một phần vì còn phụ thuộc vào người.",
+          "why": "Cách làm còn nằm trong đầu người cũ thì cơ sở mới dễ lặp lại lỗi cũ, và anh/chị phải chạy qua lại cả hai nơi.",
+          "title": "Viết ra 3 quy trình chính",
+          "steps": [
+            "Chọn 3 việc quan trọng nhất: nhập hàng, bán và tư vấn, chốt tiền cuối ngày.",
+            "Mỗi việc viết thành các bước ngắn. Nhờ một nhân viên làm thử đúng theo giấy để sửa chỗ còn thiếu."
+          ],
+          "who": "Chủ nhà thuốc",
+          "time": "3 buổi",
+          "check": "Một nhân viên làm đúng 3 việc này chỉ cần nhìn giấy, không phải hỏi.",
+          "tool": "Nếu mở thêm cơ sở, hỏi bên bán phần mềm có dùng chung cho nhiều cơ sở được không."
+        }
+      ],
+      "strengths": [
+        "Gõ số điện thoại là thấy khách quen đã mua gì",
+        "Biết ngay tháng này bao nhiêu khách mới, khách quay lại",
+        "Phần mềm báo trước hàng cận hạn"
+      ],
+      "watch": [],
+      "areas": [
+        {
+          "code": "CUSTOMER",
+          "name": "Khách hàng",
+          "pct": 83,
+          "note": null
+        },
+        {
+          "code": "INVENTORY",
+          "name": "Kho và hạn dùng",
+          "pct": 80,
+          "note": null
+        },
+        {
+          "code": "OPERATIONS",
+          "name": "Vận hành, nhân viên",
+          "pct": 33,
+          "note": null
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Lãi lỗ",
+          "pct": 67,
+          "note": null
+        },
+        {
+          "code": "TECH",
+          "name": "Ghi chép, phần mềm",
+          "pct": 100,
+          "note": null
+        },
+        {
+          "code": "GROWTH",
+          "name": "Sẵn sàng mở rộng",
+          "pct": 50,
+          "note": null
+        }
+      ],
+      "hasSoftware": true,
+      "preview": [
+        {
+          "title": "Nhà thuốc còn phụ thuộc vào anh/chị",
+          "body": "Anh/chị trả lời là nếu anh/chị nghỉ 3 ngày thì nhà thuốc vẫn mở nhưng nhân viên gọi hỏi liên tục. Nhà thuốc chạy được hay không đang dựa vào anh/chị, nên anh/chị khó nghỉ, khó đi lấy hàng hay lo việc khác."
+        },
+        {
+          "title": "Hết hàng: có thể mất tới 40 triệu tiền bán mỗi năm",
+          "body": "Anh/chị cho biết tuần trước có khoảng 2–5 lần khách hỏi mà quầy không có thuốc, mỗi đơn trung bình 150.000–300.000đ. Nếu mỗi lần như vậy khách sang chỗ khác mua, một năm nhà thuốc có thể mất tới khoảng 40 triệu tiền bán. Thực tế thấp hơn vì có khách chịu chờ hoặc đổi thuốc khác."
+        }
+      ]
+    }
+  },
+  {
+    "name": "C Thanh Tâm (dược sĩ đứng quầy một mình)",
+    "submissionId": "448e10a7-e02f-4752-8472-5a7feed94c65",
+    "input": {
+      "answers": {
+        "P2": "SITES_1",
+        "P3": "PAIN_COMPLIANCE",
+        "P5": "AOV_LT80",
+        "C1": "REG_6_8",
+        "C2": "OPT2",
+        "C3": "OPT3",
+        "C4": "OPT2",
+        "C5": "OPT2",
+        "I1": "OPT1",
+        "I2": "EXP_LT1M",
+        "I3": "OPT3",
+        "I4": "OPT2",
+        "I5": "OPT2",
+        "I6": "OPT2",
+        "O1": "OPT1",
+        "O2": "UNKNOWN",
+        "O3": "UNKNOWN",
+        "O4": "OPT4",
+        "O5": "OPT2",
+        "O6": "INSP_STORAGE",
+        "B1": "OPT2",
+        "B2": "OPT2",
+        "B3": "UNKNOWN",
+        "B4": "OPT1",
+        "T1": "OPT3",
+        "T2": "OPT1",
+        "T3": "OPT2",
+        "T4": "OPT3",
+        "G1": "OPT1",
+        "G2": "UNKNOWN",
+        "G5": "PRI_COMPLIANCE"
+      },
+      "categoryScores": [
+        {
+          "code": "CUSTOMER",
+          "scorePct": 41.7,
+          "insufficientData": false
+        },
+        {
+          "code": "INVENTORY",
+          "scorePct": 33.3,
+          "insufficientData": false
+        },
+        {
+          "code": "OPERATIONS",
+          "scorePct": 44.4,
+          "insufficientData": false
+        },
+        {
+          "code": "BUSINESS",
+          "scorePct": 22.2,
+          "insufficientData": false
+        },
+        {
+          "code": "TECH",
+          "scorePct": 41.7,
+          "insufficientData": false
+        },
+        {
+          "code": "GROWTH",
+          "scorePct": 0,
+          "insufficientData": true
+        }
+      ],
+      "overallPct": 36.7
+    },
+    "expected": {
+      "headline": "Nhà thuốc của anh/chị đạt 37/100. 6–8 trong 10 khách là khách quen, nhưng sổ sách định kỳ chưa ghi đều.",
+      "leaks": [
+        {
+          "code": "STOCKOUT",
+          "amount": 10,
+          "title": "Hết hàng: có thể mất tới 10 triệu tiền bán mỗi năm",
+          "said": "Anh/chị cho biết tuần trước có khoảng 2–5 lần khách hỏi mà quầy không có thuốc, mỗi đơn trung bình dưới 80.000đ.",
+          "body": "Nếu mỗi lần như vậy khách sang chỗ khác mua, một năm nhà thuốc có thể mất tới khoảng 10 triệu tiền bán. Thực tế thấp hơn vì có khách chịu chờ hoặc đổi thuốc khác."
+        }
+      ],
+      "concern": {
+        "label": "Sổ sách, lo khi có kiểm tra",
+        "text": "Lần trước nhà thuốc bị nhắc về bảo quản, sắp xếp thuốc. Nên xem lại ba chỗ: nhiệt độ, độ ẩm có ghi đủ 2 lần mỗi ngày không; thuốc có xếp theo nhóm, tránh nắng trực tiếp không; hàng cận hạn và hàng chờ hủy có để riêng không. Liên thông dữ liệu bán thuốc đang phải nhập tay nhiều: hỏi bên bán phần mềm xem có gửi dữ liệu tự động được không."
+      },
+      "actions": [
+        {
+          "code": "O5",
+          "area": "OPERATIONS",
+          "finding": "Sổ sách định kỳ chưa ghi đều",
+          "said": "Anh/chị trả lời là các việc định kỳ như ghi nhiệt độ, độ ẩm, vệ sinh, sổ sách chỉ làm khi sắp có kiểm tra.",
+          "why": "Đây là phần hay bị nhắc khi có kiểm tra. Làm dồn trước đợt kiểm tra vừa mệt vừa dễ sót.",
+          "title": "Đặt giờ cố định cho từng sổ",
+          "steps": [
+            "Viết ra các sổ phải ghi hằng ngày, hằng tuần: nhiệt độ, độ ẩm, vệ sinh, sổ thuốc kê đơn…",
+            "Gắn mỗi sổ với một giờ cố định, ví dụ ghi nhiệt độ, độ ẩm lúc mở cửa và trước khi đóng cửa. Dán bảng giờ cạnh nhiệt ẩm kế."
+          ],
+          "who": "Anh/chị",
+          "time": "5–10 phút mỗi ngày",
+          "check": "Các sổ không còn ngày bỏ trống.",
+          "tool": null
+        },
+        {
+          "code": "O1",
+          "area": "OPERATIONS",
+          "finding": "Anh/chị nghỉ là nhà thuốc phải đóng cửa",
+          "said": "Anh/chị trả lời là nếu anh/chị nghỉ 3 ngày thì nhà thuốc phải đóng cửa hoặc bán rất hạn chế.",
+          "why": "Nhà thuốc chỉ có anh/chị đứng quầy, nên ốm hay có việc là mất cả ngày bán.",
+          "title": "Chuẩn bị để có người đứng thay 1–2 ngày",
+          "steps": [
+            "Ghi sẵn: giá 50 thuốc bán chạy, số điện thoại nhà cung cấp, cách mở phần mềm hoặc sổ bán hàng.",
+            "Tìm một dược sĩ quen có thể đứng thay khi anh/chị bận, mời đứng cùng 1 buổi cho quen."
+          ],
+          "who": "Chủ nhà thuốc",
+          "time": "2–3 buổi",
+          "check": "Có người đứng thay được 1 ngày mà không phải gọi anh/chị.",
+          "tool": "Viết sẵn vài dòng cách tra giá, tồn kho trên phần mềm để người đứng thay tự làm được."
+        },
+        {
+          "code": "I1",
+          "area": "INVENTORY",
+          "finding": "Hàng cận hạn được phát hiện muộn",
+          "said": "Anh/chị trả lời là lần gần nhất anh/chị thấy một lô sắp hết hạn là tình cờ, lúc lấy hàng cho khách.",
+          "why": "Thấy tình cờ thì thường đã quá gần ngày hết hạn, khó bán kịp hay trả lại.",
+          "title": "Rà hàng cận hạn mỗi sáng thứ Hai",
+          "steps": [
+            "Sáng thứ Hai, rà các lô hết hạn trong 3 tháng tới. Mỗi tuần rà vài kệ cho nhẹ việc.",
+            "Dán nhãn màu lên hộp, xếp ra trước để bán trước. Lô khó bán thì hỏi nhà cung cấp đổi trả sớm."
+          ],
+          "who": "Chủ nhà thuốc hoặc người giữ kho",
+          "time": "15–20 phút mỗi tuần",
+          "check": "Tiền hàng phải hủy hoặc trả lại giảm so với tháng này.",
+          "tool": "Nếu phần mềm có nhập hạn dùng theo lô, mở danh sách lô hết hạn trong 90 ngày thay cho việc rà kệ."
+        }
+      ],
+      "strengths": [
+        "6–8 trong 10 khách là khách quen",
+        "Tiền cuối ngày khớp, có đối chiếu hằng ngày",
+        "Có nhắc khách quen dùng thuốc lâu dài"
+      ],
+      "watch": [],
+      "areas": [
+        {
+          "code": "CUSTOMER",
+          "name": "Khách hàng",
+          "pct": 42,
+          "note": null
+        },
+        {
+          "code": "INVENTORY",
+          "name": "Kho và hạn dùng",
+          "pct": 33,
+          "note": null
+        },
+        {
+          "code": "OPERATIONS",
+          "name": "Vận hành, nhân viên",
+          "pct": 44,
+          "note": null
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Lãi lỗ",
+          "pct": 22,
+          "note": null
+        },
+        {
+          "code": "TECH",
+          "name": "Ghi chép, phần mềm",
+          "pct": 42,
+          "note": null
+        },
+        {
+          "code": "GROWTH",
+          "name": "Sẵn sàng mở rộng",
+          "pct": null,
+          "note": "Chưa áp dụng: anh/chị chưa có ý định mở thêm"
+        }
+      ],
+      "hasSoftware": true,
+      "preview": [
+        {
+          "title": "Sổ sách định kỳ chưa ghi đều",
+          "body": "Anh/chị trả lời là các việc định kỳ như ghi nhiệt độ, độ ẩm, vệ sinh, sổ sách chỉ làm khi sắp có kiểm tra. Đây là phần hay bị nhắc khi có kiểm tra. Làm dồn trước đợt kiểm tra vừa mệt vừa dễ sót."
+        },
+        {
+          "title": "Anh/chị nghỉ là nhà thuốc phải đóng cửa",
+          "body": "Anh/chị trả lời là nếu anh/chị nghỉ 3 ngày thì nhà thuốc phải đóng cửa hoặc bán rất hạn chế. Nhà thuốc chỉ có anh/chị đứng quầy, nên ốm hay có việc là mất cả ngày bán."
+        }
+      ]
+    }
+  },
+  {
+    "name": "D Hồng Nhung (có dữ liệu khách nhưng không dùng)",
+    "submissionId": "c086b505-59aa-414e-83a5-5e64792d3d88",
+    "input": {
+      "answers": {
+        "P2": "SITES_1",
+        "P3": "PAIN_CUSTOMER",
+        "P5": "AOV_80_150",
+        "C1": "REG_3_5",
+        "C2": "OPT4",
+        "C3": "OPT1",
+        "C4": "OPT1",
+        "C5": "OPT3",
+        "C6": "WHY_PRICE",
+        "I1": "OPT4",
+        "I2": "EXP_LT1M",
+        "I3": "OPT4",
+        "I4": "OPT3",
+        "I5": "OPT4",
+        "I6": "OPT3",
+        "O1": "OPT3",
+        "O2": "OPT3",
+        "O3": "OPT3",
+        "O4": "OPT3",
+        "O5": "OPT4",
+        "B1": "OPT4",
+        "B2": "OPT2",
+        "B3": "OPT2",
+        "B4": "OPT2",
+        "T1": "OPT4",
+        "T2": "OPT4",
+        "T3": "OPT3",
+        "T4": "OPT4",
+        "G1": "OPT2",
+        "G2": "UNKNOWN",
+        "G5": "PRI_RETENTION"
+      },
+      "categoryScores": [
+        {
+          "code": "CUSTOMER",
+          "scorePct": 41.7,
+          "insufficientData": false
+        },
+        {
+          "code": "INVENTORY",
+          "scorePct": 86.7,
+          "insufficientData": false
+        },
+        {
+          "code": "OPERATIONS",
+          "scorePct": 73.3,
+          "insufficientData": false
+        },
+        {
+          "code": "BUSINESS",
+          "scorePct": 50,
+          "insufficientData": false
+        },
+        {
+          "code": "TECH",
+          "scorePct": 91.7,
+          "insufficientData": false
+        },
+        {
+          "code": "GROWTH",
+          "scorePct": 0,
+          "insufficientData": true
+        }
+      ],
+      "overallPct": 68.7
+    },
+    "expected": {
+      "headline": "Nhà thuốc của anh/chị đạt 69/100. Gõ số điện thoại là thấy khách quen đã mua gì, nhưng khách dùng thuốc lâu dài chưa được nhắc mua lại.",
+      "leaks": [],
+      "concern": {
+        "label": "Khách ít quay lại",
+        "text": "Anh/chị nghĩ khách đi vì giá cao hơn chỗ khác. Khách thường chỉ so giá ở vài chục thuốc quen. Thử so giá 20 thuốc bán chạy nhất với 2 nhà thuốc gần nhất: chênh nhiều thì chỉnh riêng những thuốc đó. Nếu chênh ít, lý do chính thường là khách không được nhớ và không được nhắc, việc này làm được ngay mà không phải giảm giá."
+      },
+      "actions": [
+        {
+          "code": "C3",
+          "area": "CUSTOMER",
+          "finding": "Khách dùng thuốc lâu dài chưa được nhắc",
+          "said": "Anh/chị trả lời là khách dùng thuốc huyết áp, tiểu đường sắp hết thuốc thì nhà thuốc không nhắc.",
+          "why": "Đây là nhóm khách mua đều đặn mỗi tháng. Không được nhắc, lúc hết thuốc họ dễ mua luôn ở chỗ gần nhất.",
+          "title": "Nhắn Zalo cho khách sắp hết thuốc huyết áp, tiểu đường",
+          "steps": [
+            "Lập danh sách khách mua thuốc huyết áp, tiểu đường, mỡ máu trong tháng: tên, số điện thoại, ngày mua, thuốc dùng được bao nhiêu ngày.",
+            "Mỗi sáng xem danh sách, nhắn Zalo cho khách sẽ hết thuốc trong 3 ngày tới."
+          ],
+          "who": "Người đứng quầy ca sáng",
+          "time": "10 phút mỗi sáng",
+          "check": "Trong số khách được nhắc, bao nhiêu người quay lại mua.",
+          "tool": "Lọc trên phần mềm những khách mua thuốc huyết áp, tiểu đường trong 30 ngày qua để lập danh sách cho nhanh."
+        },
+        {
+          "code": "C4",
+          "area": "CUSTOMER",
+          "finding": "Chưa hỏi thăm khách sau khi bán",
+          "said": "Anh/chị trả lời là tháng trước nhà thuốc không hỏi thăm lại khách nào sau khi bán.",
+          "why": "Một tin nhắn hỏi thuốc có đỡ không giúp khách nhớ tới nhà thuốc, và là lý do để họ quay lại lần sau.",
+          "title": "Hỏi thăm 3 khách mỗi ngày",
+          "steps": [
+            "Mỗi ngày chọn 3 khách đã mua thuốc cảm, đau dạ dày hoặc thuốc cho trẻ từ 2–3 ngày trước.",
+            "Nhắn Zalo hỏi thuốc có đỡ không, có cần dặn thêm gì không."
+          ],
+          "who": "Người đứng quầy",
+          "time": "5 phút mỗi ngày",
+          "check": "Khoảng 60 khách đã được hỏi thăm, bao nhiêu người quay lại.",
+          "tool": "Xem trên phần mềm các đơn 2–3 ngày trước có số điện thoại để chọn khách hỏi thăm."
+        },
+        {
+          "code": "B2",
+          "area": "BUSINESS",
+          "finding": "Chưa biết nhóm hàng nào lãi nhất",
+          "said": "Anh/chị trả lời là chỉ đoán được nhóm hàng nào lãi nhiều nhất.",
+          "why": "Thuốc bán nhiều chưa chắc lãi nhiều. Không biết nhóm nào lãi thì khó quyết nhập gì, giảm giá gì.",
+          "title": "Xếp 20 thuốc bán chạy nhất theo tiền lãi",
+          "steps": [
+            "Lấy 20 thuốc bán chạy nhất tháng trước, ghi giá bán và giá nhập.",
+            "Tiền lãi mỗi thuốc = (giá bán − giá nhập) × số đã bán. Xếp từ cao xuống thấp."
+          ],
+          "who": "Chủ nhà thuốc",
+          "time": "1 buổi",
+          "check": "Biết 5 thuốc mang lại nhiều tiền lãi nhất, và không để chúng hết hàng.",
+          "tool": "Nếu phần mềm có báo cáo lãi theo mặt hàng, dùng luôn, không cần tính tay."
+        }
+      ],
+      "strengths": [
+        "Gõ số điện thoại là thấy khách quen đã mua gì",
+        "Phần mềm báo trước hàng cận hạn",
+        "Ít khi hết hàng lúc khách hỏi"
+      ],
+      "watch": [],
+      "areas": [
+        {
+          "code": "CUSTOMER",
+          "name": "Khách hàng",
+          "pct": 42,
+          "note": null
+        },
+        {
+          "code": "INVENTORY",
+          "name": "Kho và hạn dùng",
+          "pct": 87,
+          "note": null
+        },
+        {
+          "code": "OPERATIONS",
+          "name": "Vận hành, nhân viên",
+          "pct": 73,
+          "note": null
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Lãi lỗ",
+          "pct": 50,
+          "note": null
+        },
+        {
+          "code": "TECH",
+          "name": "Ghi chép, phần mềm",
+          "pct": 92,
+          "note": null
+        },
+        {
+          "code": "GROWTH",
+          "name": "Sẵn sàng mở rộng",
+          "pct": null,
+          "note": "Chưa áp dụng: anh/chị chưa có ý định mở thêm"
+        }
+      ],
+      "hasSoftware": true,
+      "preview": [
+        {
+          "title": "Khách dùng thuốc lâu dài chưa được nhắc",
+          "body": "Anh/chị trả lời là khách dùng thuốc huyết áp, tiểu đường sắp hết thuốc thì nhà thuốc không nhắc. Đây là nhóm khách mua đều đặn mỗi tháng. Không được nhắc, lúc hết thuốc họ dễ mua luôn ở chỗ gần nhất."
+        },
+        {
+          "title": "Chưa hỏi thăm khách sau khi bán",
+          "body": "Anh/chị trả lời là tháng trước nhà thuốc không hỏi thăm lại khách nào sau khi bán. Một tin nhắn hỏi thuốc có đỡ không giúp khách nhớ tới nhà thuốc, và là lý do để họ quay lại lần sau."
+        }
+      ]
+    }
+  },
+  {
+    "name": "E Gia Hưng (dùng Excel, không rõ lãi)",
+    "submissionId": "227bc585-55ce-4836-a288-ea96232977b5",
+    "input": {
+      "answers": {
+        "P2": "SITES_1",
+        "P3": "PAIN_NUMBERS",
+        "P5": "AOV_150_300",
+        "C1": "REG_6_8",
+        "C2": "OPT2",
+        "C3": "OPT2",
+        "C4": "UNKNOWN",
+        "C5": "OPT2",
+        "I1": "OPT2",
+        "I2": "EXP_3_7M",
+        "I3": "OPT3",
+        "I4": "OPT2",
+        "I5": "OPT2",
+        "I6": "OPT2",
+        "O1": "OPT2",
+        "O2": "OPT1",
+        "O3": "OPT1",
+        "O4": "OPT2",
+        "O5": "OPT2",
+        "B1": "OPT2",
+        "B2": "OPT1",
+        "B3": "OPT1",
+        "B4": "OPT2",
+        "B5": "NUM_STAFF",
+        "T1": "OPT2",
+        "T2": "OPT3",
+        "T3": "OPT2",
+        "T4": "OPT1",
+        "G1": "OPT2",
+        "G2": "OPT1",
+        "G5": "PRI_PROFIT"
+      },
+      "categoryScores": [
+        {
+          "code": "CUSTOMER",
+          "scorePct": 33.3,
+          "insufficientData": false
+        },
+        {
+          "code": "INVENTORY",
+          "scorePct": 40,
+          "insufficientData": false
+        },
+        {
+          "code": "OPERATIONS",
+          "scorePct": 20,
+          "insufficientData": false
+        },
+        {
+          "code": "BUSINESS",
+          "scorePct": 16.7,
+          "insufficientData": false
+        },
+        {
+          "code": "TECH",
+          "scorePct": 33.3,
+          "insufficientData": false
+        },
+        {
+          "code": "GROWTH",
+          "scorePct": 16.7,
+          "insufficientData": false
+        }
+      ],
+      "overallPct": 26.7
+    },
+    "expected": {
+      "headline": "Nhà thuốc của anh/chị đạt 27/100. 6–8 trong 10 khách là khách quen, nhưng chưa biết nhóm hàng nào lãi nhất.",
+      "leaks": [
+        {
+          "code": "EXPIRED",
+          "amount": 60,
+          "title": "Hàng hết hạn: khoảng 60 triệu mỗi năm",
+          "said": "Anh/chị cho biết tháng trước hàng hết hạn phải hủy hoặc trả lại khoảng 3–7 triệu.",
+          "body": "Nhân lên 12 tháng là khoảng 60 triệu mỗi năm. Phần trả lại được nhà cung cấp chưa trừ ra, nhưng phần phải hủy là tiền mất hẳn."
+        },
+        {
+          "code": "STOCKOUT",
+          "amount": 40,
+          "title": "Hết hàng: có thể mất tới 40 triệu tiền bán mỗi năm",
+          "said": "Anh/chị cho biết tuần trước có khoảng 2–5 lần khách hỏi mà quầy không có thuốc, mỗi đơn trung bình 150.000–300.000đ.",
+          "body": "Nếu mỗi lần như vậy khách sang chỗ khác mua, một năm nhà thuốc có thể mất tới khoảng 40 triệu tiền bán. Thực tế thấp hơn vì có khách chịu chờ hoặc đổi thuốc khác."
+        }
+      ],
+      "concern": {
+        "label": "Không nắm rõ lãi lỗ",
+        "text": "Anh/chị muốn thấy kết quả của từng nhân viên. Bước đầu là mỗi ca ghi rõ ai đứng quầy và tiền bán của ca đó, cuối tuần so giữa các ca."
+      },
+      "actions": [
+        {
+          "code": "B2",
+          "area": "BUSINESS",
+          "finding": "Chưa biết nhóm hàng nào lãi nhất",
+          "said": "Anh/chị trả lời là chưa biết nhóm hàng nào lãi nhiều nhất.",
+          "why": "Thuốc bán nhiều chưa chắc lãi nhiều. Không biết nhóm nào lãi thì khó quyết nhập gì, giảm giá gì.",
+          "title": "Xếp 20 thuốc bán chạy nhất theo tiền lãi",
+          "steps": [
+            "Lấy 20 thuốc bán chạy nhất tháng trước, ghi giá bán và giá nhập.",
+            "Tiền lãi mỗi thuốc = (giá bán − giá nhập) × số đã bán. Xếp từ cao xuống thấp."
+          ],
+          "who": "Chủ nhà thuốc",
+          "time": "1 buổi",
+          "check": "Biết 5 thuốc mang lại nhiều tiền lãi nhất, và không để chúng hết hàng.",
+          "tool": "Khi muốn làm tự động: lãi theo từng mặt hàng và nhóm hàng (Novixa có sẵn)."
+        },
+        {
+          "code": "B1",
+          "area": "BUSINESS",
+          "finding": "Chưa biết rõ mỗi tháng lãi bao nhiêu",
+          "said": "Anh/chị trả lời là đoán lãi theo tiền còn trong két.",
+          "why": "Tiền trong két chưa trừ tiền hàng còn nợ, lương, mặt bằng, hàng hủy, nên dễ tưởng có lãi mà thực ra không.",
+          "title": "Tính con số lãi của tháng này",
+          "steps": [
+            "Cuối tháng ghi 4 con số: tiền bán, tiền vốn của hàng đã bán, chi phí (lương, mặt bằng, điện nước), tiền hàng hủy.",
+            "Lãi = tiền bán − tiền vốn − chi phí − hàng hủy. Làm 3 tháng liền để so."
+          ],
+          "who": "Chủ nhà thuốc",
+          "time": "1–2 giờ cuối tháng",
+          "check": "Có con số lãi của tháng này, tháng sau so được.",
+          "tool": "Khi muốn làm tự động: báo cáo lãi theo ngày và theo tháng (Novixa có sẵn)."
+        },
+        {
+          "code": "I1",
+          "area": "INVENTORY",
+          "finding": "Hàng cận hạn được phát hiện muộn",
+          "said": "Anh/chị trả lời là lần gần nhất anh/chị thấy một lô sắp hết hạn là lúc kiểm kê.",
+          "why": "Kiểm kê vài tháng mới làm một lần, nên nhiều lô tới lúc thấy thì đã quá gần ngày hết hạn.",
+          "title": "Rà hàng cận hạn mỗi sáng thứ Hai",
+          "steps": [
+            "Sáng thứ Hai, rà các lô hết hạn trong 3 tháng tới. Mỗi tuần rà vài kệ cho nhẹ việc.",
+            "Dán nhãn màu lên hộp, xếp ra trước để bán trước. Lô khó bán thì hỏi nhà cung cấp đổi trả sớm."
+          ],
+          "who": "Chủ nhà thuốc hoặc người giữ kho",
+          "time": "15–20 phút mỗi tuần",
+          "check": "Tiền hàng phải hủy hoặc trả lại giảm so với tháng này.",
+          "tool": "Khi muốn làm tự động: báo trước lô sắp hết hạn (Novixa có sẵn)."
+        }
+      ],
+      "strengths": [
+        "6–8 trong 10 khách là khách quen"
+      ],
+      "watch": [
+        "Chưa theo dõi việc hỏi thăm khách sau khi bán: ghi lại mỗi lần nhắn hỏi thăm."
+      ],
+      "areas": [
+        {
+          "code": "CUSTOMER",
+          "name": "Khách hàng",
+          "pct": 33,
+          "note": null
+        },
+        {
+          "code": "INVENTORY",
+          "name": "Kho và hạn dùng",
+          "pct": 40,
+          "note": null
+        },
+        {
+          "code": "OPERATIONS",
+          "name": "Vận hành, nhân viên",
+          "pct": 20,
+          "note": null
+        },
+        {
+          "code": "BUSINESS",
+          "name": "Lãi lỗ",
+          "pct": 17,
+          "note": null
+        },
+        {
+          "code": "TECH",
+          "name": "Ghi chép, phần mềm",
+          "pct": 33,
+          "note": null
+        },
+        {
+          "code": "GROWTH",
+          "name": "Sẵn sàng mở rộng",
+          "pct": 17,
+          "note": null
+        }
+      ],
+      "hasSoftware": false,
+      "preview": [
+        {
+          "title": "Chưa biết nhóm hàng nào lãi nhất",
+          "body": "Anh/chị trả lời là chưa biết nhóm hàng nào lãi nhiều nhất. Thuốc bán nhiều chưa chắc lãi nhiều. Không biết nhóm nào lãi thì khó quyết nhập gì, giảm giá gì."
+        },
+        {
+          "title": "Hàng hết hạn: khoảng 60 triệu mỗi năm",
+          "body": "Anh/chị cho biết tháng trước hàng hết hạn phải hủy hoặc trả lại khoảng 3–7 triệu. Nhân lên 12 tháng là khoảng 60 triệu mỗi năm. Phần trả lại được nhà cung cấp chưa trừ ra, nhưng phần phải hủy là tiền mất hẳn."
+        }
+      ]
+    }
+  }
+]

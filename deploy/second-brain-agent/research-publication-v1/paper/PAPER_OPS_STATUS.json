@@ -1,0 +1,36 @@
+{
+  "runner_status": "SUCCEEDED",
+  "cycle_outcome": "PAPER_SIMULATED",
+  "last_run_at": "2026-10-30T04:04:02.086108+00:00",
+  "last_processed_open_time": 1793329200000,
+  "last_error": null,
+  "data_gaps": [],
+  "rejected": [],
+  "strategy_errors": {},
+  "extension_count": 211,
+  "extension_sha256": "f97dbfef9eb7262a261fb5d1426f636ed3320ceafb17167ea44f9c454993703b",
+  "journal_added": {
+    "EXP-TREND-SMA-10-30-V1": 1,
+    "EXP-BREAKOUT-DONCHIAN-20-V1": 1,
+    "EXP-REVERSION-RANGE-20-V1": 1
+  },
+  "experiments": [
+    "EXP-TREND-SMA-10-30-V1",
+    "EXP-BREAKOUT-DONCHIAN-20-V1",
+    "EXP-REVERSION-RANGE-20-V1"
+  ],
+  "capital_usd": "100",
+  "risk_limits_approval": "PROPOSED_NOT_APPROVED",
+  "fee_status": "ASSUMPTION_NOT_ACCOUNT_SCHEDULE",
+  "assumed_fee_rate": "0.0005",
+  "slippage_status": "ASSUMPTION",
+  "assumed_slippage_rate": "0.0001",
+  "fill_model": "NEXT_OPEN_AND_COMPLETED_BAR_STOP",
+  "exchange_orders_sent": 0,
+  "live_orders": false,
+  "effective_live_mode": "LIVE_DISABLED",
+  "continuous_schedule": "NOT_OBSERVED",
+  "frozen_snapshot_sha256": "126a733bc6b709fcc1f511e4fb01aff61bd47694bb3328918f8f32dad6ccb2c3",
+  "strategy_code_sha256": "d8ed62c644ac9d4c27d21513d1e9cf8a2c6b3f3323dea553526d164ae491c714",
+  "mode": "ONCE"
+}

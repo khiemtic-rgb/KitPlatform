@@ -1,8 +1,8 @@
 ﻿import { useEffect, useState } from "react";
-import { App, Button, DatePicker, Form, Input, Modal, Select, Space, Table, Tag, Typography } from "antd";
+import { App, Button, DatePicker, Form, Input, Modal, Select, Space, Tag, Typography } from "antd";
 import type { Dayjs } from "dayjs";
 import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiErrorMessage } from "@/shared/api/api-error";
 import {
   createContentArticleSeries,
@@ -14,11 +14,11 @@ import {
   type ContentPackage,
 } from "@/shared/api/content.api";
 import {
-  ContentLineageTrail,
   seriesBrandAngle,
   seriesProgressLabel,
   seriesTerritory,
 } from "@/modules/content/content-lineage";
+import { useContentBrand } from "./content-brand-context";
 
 const STATUSES = ["DRAFT", "PLANNED", "ACTIVE", "PAUSED", "COMPLETED", "CANCELLED"];
 
@@ -32,7 +32,9 @@ export function ContentArticleSeriesPage() {
   const [packages, setPackages] = useState<ContentPackage[]>([]);
   const [cores, setCores] = useState<ContentPackage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [brandId, setBrandId] = useState<string>();
+  const workspace = useContentBrand();
+  const brandId = workspace.brandId;
+  const setBrandId = (value?: string) => workspace.setBrand(value ?? "all");
   const [status, setStatus] = useState<string>();
   const [corePackageId, setCorePackageId] = useState<string>();
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
@@ -80,21 +82,9 @@ export function ContentArticleSeriesPage() {
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
       <Space wrap style={{ justifyContent: "space-between", width: "100%" }}>
-        <div>
-          <Typography.Title level={3} style={{ margin: 0 }}>
-            Series
-          </Typography.Title>
-          <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            Series là câu chuyện dài hạn. Episode là từng bước. Bài viết là output — không phải 100 bài rời.
-          </Typography.Paragraph>
-          <ContentLineageTrail
-            items={[
-              { label: "Idea Pool", to: "/content/pool" },
-              { label: "Góc brand", to: "/content/packages" },
-              { label: "Series" },
-            ]}
-          />
-        </div>
+        <Typography.Text type="secondary">
+          Mỗi series là một câu chuyện kể qua nhiều tập; mỗi tập sinh ra các bài viết.
+        </Typography.Text>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             Tải lại
@@ -103,8 +93,12 @@ export function ContentArticleSeriesPage() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={async () => {
-              const packs = await fetchContentPackages({ coresOnly: false });
-              setPackages(packs);
+              if (!workspace.canWrite || !workspace.brandId) {
+                message.warning("Chọn một thương hiệu trước khi tạo series.");
+                return;
+              }
+              const packs = await fetchContentPackages({ brandId: workspace.brandId, coresOnly: false });
+              setPackages((packs ?? []).filter((p) => p.sourcePackageId));
               setOpen(true);
             }}
           >
@@ -141,44 +135,105 @@ export function ContentArticleSeriesPage() {
         />
         <DatePicker.RangePicker value={range} onChange={setRange} />
       </Space>
-      <Table
-        rowKey="id"
-        loading={loading}
-        dataSource={rows}
-        onRow={(row) => ({ onClick: () => navigate(`/content/article-series/${row.id}`) })}
-        columns={[
-          { title: "Brand", dataIndex: "brandName", width: 110 },
-          { title: "Code", dataIndex: "code", width: 140 },
-          {
-            title: "Series",
-            dataIndex: "name",
-            render: (v, r) => <Link to={`/content/article-series/${r.id}`}>{v}</Link>,
-          },
-          { title: "Core Idea", dataIndex: "coreIdeaTitle", ellipsis: true },
-          {
-            title: "Brand Angle",
-            ellipsis: true,
-            render: (_, r) => seriesBrandAngle(r) || "Chưa có",
-          },
-          {
-            title: "Territory",
-            width: 180,
-            ellipsis: true,
-            render: (_, r) => seriesTerritory(r) || "Chưa có",
-          },
-          { title: "Status", dataIndex: "status", width: 110, render: (v) => <Tag>{v}</Tag> },
-          {
-            title: "Episodes",
-            width: 100,
-            render: (_, r) => `${r.plannedEpisodeRows}/${r.episodeCount}`,
-          },
-          {
-            title: "Progress",
-            width: 180,
-            render: (_, r) => seriesProgressLabel(r),
-          },
-        ]}
-      />
+      
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 48 }}>
+          <Typography.Text type="secondary">Đang tải...</Typography.Text>
+        </div>
+      ) : rows.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 48 }}>
+          <Typography.Text type="secondary">Chưa có Series</Typography.Text>
+        </div>
+      ) : (
+        <Space direction="vertical" size={16} style={{ width: "100%" }}>
+          {rows.map((series) => {
+            const brandAngle = seriesBrandAngle(series);
+            const territory = seriesTerritory(series);
+            const progress = seriesProgressLabel(series);
+            
+            return (
+              <div
+                key={series.id}
+                onClick={() => navigate(`/content/article-series/${series.id}`)}
+                style={{
+                  border: "1px solid #f0f0f0",
+                  borderRadius: 8,
+                  padding: "16px 20px",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  background: "#fff",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#1677ff";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#f0f0f0";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                {/* Brand */}
+                <Typography.Text type="secondary" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
+                  {series.brandName}
+                </Typography.Text>
+                
+                {/* Series Name - Visual Anchor */}
+                <Typography.Title level={4} style={{ margin: "0 0 8px", fontSize: 18 }}>
+                  {series.name}
+                </Typography.Title>
+                
+                {/* Story Premise / Objective */}
+                {series.objective && (
+                  <Typography.Paragraph 
+                    type="secondary" 
+                    style={{ margin: "0 0 12px", fontSize: 13, lineHeight: 1.5 }}
+                    ellipsis={{ rows: 2 }}
+                  >
+                    {series.objective}
+                  </Typography.Paragraph>
+                )}
+                
+                <Space split={<span style={{ color: "#d9d9d9" }}>·</span>} wrap>
+                  {/* Episode Progress */}
+                  <Typography.Text strong style={{ color: "#1677ff" }}>
+                    {series.plannedEpisodeRows}/{series.episodeCount} Episodes
+                  </Typography.Text>
+                  
+                  {/* Production State */}
+                  {progress && (
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {progress}
+                    </Typography.Text>
+                  )}
+                  
+                  {/* Status */}
+                  <Tag color={series.status === "ACTIVE" ? "green" : series.status === "DRAFT" ? "default" : "blue"}>
+                    {series.status}
+                  </Tag>
+                </Space>
+                
+                {/* Context: Brand Angle & Territory (Secondary) */}
+                {(brandAngle || territory) && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #f5f5f5" }}>
+                    <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                      {brandAngle && (
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <span style={{ color: "#8c8c8c" }}>Brand Angle:</span> {brandAngle}
+                        </Typography.Text>
+                      )}
+                      {territory && (
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          <span style={{ color: "#8c8c8c" }}>Territory:</span> {territory}
+                        </Typography.Text>
+                      )}
+                    </Space>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </Space>
+      )}
       <Modal
         title="Tạo Series từ Brand Adaptation"
         open={open}

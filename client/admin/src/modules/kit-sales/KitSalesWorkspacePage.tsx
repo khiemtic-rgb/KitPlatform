@@ -6,10 +6,14 @@ import { PlusOutlined } from '@ant-design/icons';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import {
   fetchKitSalesAssist,
+  fetchKitSalesDeskKpi,
+  fetchKitSalesDiscoverySummary,
   fetchKitSalesJourneyDue,
   fetchKitSalesLeads,
   fetchKitSalesPipelineSummary,
   type KitSalesAssist,
+  type KitSalesDeskKpi,
+  type KitSalesDiscoverySummary,
   type KitSalesJourneyPlan,
   type KitSalesLead,
   type KitSalesPipelineSummary,
@@ -28,6 +32,9 @@ export function KitSalesWorkspacePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [assist, setAssist] = useState<KitSalesAssist | null>(null);
   const [query, setQuery] = useState('');
+  const [desk, setDesk] = useState<KitSalesDeskKpi | null>(null);
+  const [deskNote, setDeskNote] = useState<string | null>(null);
+  const [discovery, setDiscovery] = useState<KitSalesDiscoverySummary | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,6 +49,18 @@ export function KitSalesWorkspacePage() {
         setDueJourneys(await fetchKitSalesJourneyDue(20));
       } catch {
         setDueJourneys([]);
+      }
+      try {
+        setDesk(await fetchKitSalesDeskKpi());
+        setDeskNote(null);
+      } catch (error) {
+        setDesk(null);
+        setDeskNote(apiErrorMessage(error, 'Chưa đọc được hàng số.'));
+      }
+      try {
+        setDiscovery(await fetchKitSalesDiscoverySummary());
+      } catch {
+        setDiscovery(null);
       }
     } catch (error) {
       message.error(apiErrorMessage(error, t('create.failed')));
@@ -115,6 +134,23 @@ export function KitSalesWorkspacePage() {
           </Space>
         </Col>
       </Row>
+
+      {deskNote && <Typography.Text type="danger">Hàng số: {deskNote}</Typography.Text>}
+      {desk && (
+        <Typography.Text>
+          Việc đến hạn {desk.tasksDueToday} · Draft chờ duyệt {desk.draftsWaiting} · Chưa quyết định {desk.leadsWithoutDecision} · Pursue PHC chưa gắn {desk.phcPending} · Khung giờ kế tiếp {desk.nextQuietWindow}
+        </Typography.Text>
+      )}
+      {desk && desk.outboundUnknownOpen > 0 && (
+        <Typography.Text type="danger">
+          Tin Facebook không rõ đã gửi chưa: {desk.outboundUnknownOpen}. Kiểm hộp thư Page rồi xác nhận trên từng lead; hệ thống không tự gửi lại.
+        </Typography.Text>
+      )}
+      {discovery && (
+        <Typography.Paragraph>
+          Khám phá OSM: {discovery.prospects} prospect · fact {discovery.factSignals} · nhu cầu unknown {discovery.unknownNeeds} · lần chạy {discovery.lastRunAt ?? 'chưa có'} · chi phí AI {discovery.aiCost}. Không gửi tin.
+        </Typography.Paragraph>
+      )}
 
       <Typography.Text type="secondary">
         {t('workspace.strip', {

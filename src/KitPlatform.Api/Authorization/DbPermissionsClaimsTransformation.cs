@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Caching.Memory;
 using KitPlatform.Application.Auth;
+using KitPlatform.Application.Core;
 
 namespace KitPlatform.Api.Authorization;
 
@@ -27,33 +28,52 @@ public sealed class DbPermissionsClaimsTransformation : IClaimsTransformation
         if (!AdminTokenRules.IsAdminPrincipal(principal))
             return principal;
 
-        var userIdClaim = principal.FindFirst("sub")?.Value
-            ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!Guid.TryParse(userIdClaim, out var userId))
-            return principal;
-
-        var user = await _cache.GetOrCreateAsync($"auth-user-claims:{userId}", entry =>
+        if (!CoreAuthority.TryResolveCaller(principal, out var caller))
         {
-            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
-            return _auth.GetUserAsync(userId);
-        });
+            var userIdClaim = principal.FindFirst(CoreAuthority.SubjectClaim)?.Value
+                ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdClaim, out _))
+                return principal;
+
+            return StripPermissions(principal);
+        }
+
+        var user = await _cache.GetOrCreateAsync(
+            $"auth-user-claims:{caller.TenantId:N}:{caller.UserId:N}",
+            entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+                return _auth.GetUserAsync(caller.UserId, caller.TenantId);
+            });
 
         var identity = (ClaimsIdentity)principal.Identity!;
         var refreshed = identity.Clone();
         var roleClaimType = refreshed.RoleClaimType;
 
-        foreach (var stale in refreshed.Claims.Where(c => c.Type == "permission" || c.Type == roleClaimType).ToList())
+        foreach (var stale in refreshed.Claims.Where(c => c.Type == CoreAuthority.PermissionClaim || c.Type == roleClaimType).ToList())
             refreshed.RemoveClaim(stale);
 
-        // User bị xóa/vô hiệu hóa: bỏ hết role/permission → các policy sẽ từ chối.
-        if (user is not null)
+        // Missing, inactive, or cross-tenant: leave roles and permissions stripped.
+        if (user is not null
+            && user.Status == 1
+            && CoreAuthority.AllowsSameTenant(caller.TenantId, user.TenantId))
         {
             foreach (var role in user.Roles)
                 refreshed.AddClaim(new Claim(roleClaimType, role));
             foreach (var permission in user.Permissions)
-                refreshed.AddClaim(new Claim("permission", permission));
+                refreshed.AddClaim(new Claim(CoreAuthority.PermissionClaim, permission));
         }
 
+        return new ClaimsPrincipal(refreshed);
+    }
+
+    private static ClaimsPrincipal StripPermissions(ClaimsPrincipal principal)
+    {
+        var identity = (ClaimsIdentity)principal.Identity!;
+        var refreshed = identity.Clone();
+        var roleClaimType = refreshed.RoleClaimType;
+        foreach (var stale in refreshed.Claims.Where(c => c.Type == CoreAuthority.PermissionClaim || c.Type == roleClaimType).ToList())
+            refreshed.RemoveClaim(stale);
         return new ClaimsPrincipal(refreshed);
     }
 }

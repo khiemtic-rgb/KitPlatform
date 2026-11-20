@@ -6,6 +6,9 @@ public static class KitSalesPolicies
 {
     public const string Read = "KitSalesRead";
     public const string Write = "KitSalesWrite";
+    public const string ApproveOutbound = "KitSalesApproveOutbound";
+    public const string ReleaseOffer = "KitSalesReleaseOffer";
+    public const string AutonomyGrant = "KitSalesAutonomyGrant";
 }
 
 public static class KitSalesAuthorizationExtensions
@@ -22,6 +25,21 @@ public static class KitSalesAuthorizationExtensions
             policy.RequireAssertion(ctx =>
                 AdminTokenRules.IsAdminPrincipal(ctx.User)
                 && (ctx.User.IsInRole("ADMIN") || HasPermission(ctx, "kit_sales.write"))));
+
+        options.AddPolicy(KitSalesPolicies.ApproveOutbound, policy =>
+            policy.RequireAssertion(ctx =>
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && HasPermission(ctx, "kit_sales.approve_outbound")));
+
+        options.AddPolicy(KitSalesPolicies.ReleaseOffer, policy =>
+            policy.RequireAssertion(ctx =>
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && HasPermission(ctx, "kit_sales.release_offer")));
+
+        options.AddPolicy(KitSalesPolicies.AutonomyGrant, policy =>
+            policy.RequireAssertion(ctx =>
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && HasPermission(ctx, "kit_sales.autonomy_grant")));
     }
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>

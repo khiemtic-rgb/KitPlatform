@@ -272,7 +272,16 @@ const freshTake = runOf({
   lipsynced: true,
   lipsyncUrl: 'https://fal/lip.mp4',
   finalSource: 'FAL',
-  shotQa: { action: true, continuity: true, voiceFace: true, lipsyncQuality: true, finalAv: true },
+  shotQa: {
+    action: true,
+    continuity: true,
+    motion: true,
+    voiceFace: true,
+    lipsyncQuality: true,
+    finalAv: true,
+    decision: 'ACCEPT',
+    reviewedPlaybackId: 'lipsync:https://fal/lip.mp4',
+  },
   runwayAttempts: [successAttempt(1, PROMPT_A, TAKE_2)],
   acceptedTake: { n: 1, url: TAKE_2, promptHash: PROMPT_A, kfHash: KF_HASH },
 });
@@ -326,7 +335,7 @@ ok(directorPrimaryCta(firstGen).label === 'Tạo video' || nextShotProductionCom
 
 const acceptedRec = directorRecoveryOf(snap3b);
 ok(
-  acceptedRec.actions.some((a) => a.label === 'Lồng tiếng' || a.label === 'Kiểm tra video') ||
+  acceptedRec.actions.some((a) => a.label === 'Khớp môi' || a.label === 'Lồng tiếng' || a.label === 'Kiểm tra video') ||
     ['CONFIRM_LIPSYNC', 'LIPSYNC_QA_REQUIRED'].includes(nextShotProductionCommand(snap3b).type),
   'UX 5 accepted continues to QA/lipsync',
 );
@@ -408,7 +417,12 @@ ok(!card.includes('sameFailedInput') && !card.includes('INTERNAL.BAD_OUTPUT'), '
 
 const series = read('ContentFamixaSeriesTab.tsx');
 const lipsyncFn = series.slice(series.indexOf('const startLipsync'), series.indexOf('const attachLipsync'));
-ok(lipsyncFn.includes('lastSuccessMotionTaskId') && lipsyncFn.includes('takeTaskId'), 'lipsync sends SUCCESS task id');
+ok(
+  lipsyncFn.includes('submitLipSyncFrozenExecution') &&
+    lipsyncFn.includes('takeTaskId') &&
+    !lipsyncFn.includes('lastSuccessMotionTaskId'),
+  'lipsync sends frozen takeTaskId — not lastSuccessMotionTaskId',
+);
 ok(lipsyncFn.includes('getContentSeriesTurbo(takeTaskId)'), 'lipsync refreshes take URL · 0 cr');
 ok(!lipsyncFn.includes('startContentSeriesTurbo'), 'lipsync does not create I2V');
 ok(lipsyncFn.includes('Hỏi lại task cũ') && lipsyncFn.includes('Không tạo video chuyển động mới'), 'lipsync expired-link copy');

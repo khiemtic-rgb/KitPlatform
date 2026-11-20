@@ -20,6 +20,11 @@ public sealed record CustomerRepurchaseSuggestionDto(
 
 public sealed record CustomerRepurchaseSuggestionListResult(IReadOnlyList<CustomerRepurchaseSuggestionDto> Items);
 
+public static class StaffRepurchaseQuery
+{
+    public const string ByCustomer = "rs.tenant_id = @TenantId AND rs.customer_id = @CustomerId";
+}
+
 public sealed record SnoozeRepurchaseSuggestionRequest(DateTimeOffset SnoozedUntil);
 
 public sealed record AcceptRepurchaseSuggestionRequest(
@@ -38,6 +43,11 @@ public interface ICustomerRepurchaseService
         Guid tenantId,
         Guid customerId,
         Guid accountId,
+        CancellationToken cancellationToken = default);
+
+    Task<CustomerRepurchaseSuggestionListResult> ListForStaffAsync(
+        Guid tenantId,
+        Guid customerId,
         CancellationToken cancellationToken = default);
 
     Task<CustomerRepurchaseSuggestionDto?> AcceptAsync(

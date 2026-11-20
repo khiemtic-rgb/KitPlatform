@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using KitPlatform.Packs.Content;
+using KitPlatform.Packs.Content.Production;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
@@ -64,18 +65,55 @@ internal sealed class ContentRunwayClient
         return (false, $"Runway {(int)res.StatusCode}: {Truncate(body)}");
     }
 
+    public Task<string> CreateProductionImageToVideoAsync(
+        string promptImage,
+        string promptText,
+        int durationSec,
+        string ratio,
+        CancellationToken cancellationToken,
+        string authorizedKey,
+        string? lastImage = null)
+    {
+        var key = RequireProductionKey(authorizedKey);
+        return CreateImageToVideoAsync(
+            promptImage, promptText, durationSec, ratio, cancellationToken, lastImage, key);
+    }
+
+    public Task<(string Status, string? VideoUrl, string? Error, string? FailureCode)> GetProductionTaskAsync(
+        string taskId,
+        CancellationToken cancellationToken,
+        string authorizedKey)
+    {
+        var key = RequireProductionKey(authorizedKey);
+        return GetTaskAsync(taskId, cancellationToken, key);
+    }
+
+    static string RequireProductionKey(string? authorizedKey)
+    {
+        if (string.IsNullOrWhiteSpace(authorizedKey))
+            throw new InvalidOperationException(ProductionCredentialResolver.Unresolved);
+        return authorizedKey.Trim();
+    }
+
     public async Task<string> CreateImageToVideoAsync(
         string promptImage,
         string promptText,
         int durationSec,
         string ratio,
         CancellationToken cancellationToken,
-        string? lastImage = null)
+        string? lastImage = null,
+        string? authorizedKey = null)
     {
-        var resolved = await ResolveAsync(cancellationToken);
-        var key = resolved.RunwayApiKey
+        string key;
+        if (!string.IsNullOrWhiteSpace(authorizedKey))
+            key = authorizedKey.Trim();
+        else
+        {
+            var resolved = await ResolveAsync(cancellationToken);
+            key = resolved.RunwayApiKey
                   ?? throw new InvalidOperationException(
                       "Chưa cấu hình RunwayApiKey — Model AI → Video hoặc env RUNWAY_API_KEY.");
+        }
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "v1/image_to_video");
         ApplyAuth(req, key);
@@ -105,13 +143,61 @@ internal sealed class ContentRunwayClient
         return id;
     }
 
+    public async Task<string> CreateTextToImageAsync(
+        string promptText,
+        string ratio,
+        string model,
+        int? seed,
+        CancellationToken cancellationToken,
+        string? authorizedKey = null)
+    {
+        NovixaE2eIsolation.ThrowIfExternalCall("Runway");
+        var built = BtaRunwayTextToImage.Build(promptText, ratio, model, seed);
+        string key;
+        if (!string.IsNullOrWhiteSpace(authorizedKey))
+            key = authorizedKey.Trim();
+        else
+        {
+            var resolved = await ResolveAsync(cancellationToken);
+            key = resolved.RunwayApiKey
+                  ?? throw new InvalidOperationException(
+                      "Chưa cấu hình RunwayApiKey — Model AI → Video hoặc env RUNWAY_API_KEY.");
+        }
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, "v1/text_to_image");
+        ApplyAuth(req, key);
+        object payload = built.Seed is int s
+            ? new { model = built.Model, promptText = built.PromptText, ratio = built.Ratio, seed = s }
+            : new { model = built.Model, promptText = built.PromptText, ratio = built.Ratio };
+        req.Content = JsonContent.Create(payload, options: JsonOpts);
+
+        using var res = await _http.SendAsync(req, cancellationToken);
+        var body = await res.Content.ReadAsStringAsync(cancellationToken);
+        EnsureOk(res, body);
+
+        using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+        if (!doc.RootElement.TryGetProperty("id", out var idEl))
+            throw new InvalidOperationException("Runway không trả task id.");
+        var id = idEl.GetString();
+        if (string.IsNullOrWhiteSpace(id))
+            throw new InvalidOperationException("Runway task id trống.");
+        return id;
+    }
+
     public async Task<(string Status, string? VideoUrl, string? Error, string? FailureCode)> GetTaskAsync(
         string taskId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? authorizedKey = null)
     {
-        var resolved = await ResolveAsync(cancellationToken);
-        var key = resolved.RunwayApiKey
+        string key;
+        if (!string.IsNullOrWhiteSpace(authorizedKey))
+            key = authorizedKey.Trim();
+        else
+        {
+            var resolved = await ResolveAsync(cancellationToken);
+            key = resolved.RunwayApiKey
                   ?? throw new InvalidOperationException("Chưa cấu hình RunwayApiKey.");
+        }
 
         using var req = new HttpRequestMessage(HttpMethod.Get, $"v1/tasks/{Uri.EscapeDataString(taskId)}");
         ApplyAuth(req, key);
@@ -120,33 +206,33 @@ internal sealed class ContentRunwayClient
         EnsureOk(res, body);
 
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
-        var root = doc.RootElement;
-        var statusRaw = root.TryGetProperty("status", out var st) ? st.GetString() ?? "UNKNOWN" : "UNKNOWN";
-        var status = statusRaw.Trim().ToUpperInvariant() switch
-        {
-            "SUCCESS" => "SUCCEEDED",
-            "COMPLETE" or "COMPLETED" => "SUCCEEDED",
-            var s => s,
-        };
-        var video = ReadVideoUrl(root);
-        string? error = null;
-        var failureCode = root.TryGetProperty("failureCode", out var code) && code.ValueKind == JsonValueKind.String
-            ? code.GetString()
-            : null;
-        if (root.TryGetProperty("failure", out var fail) && fail.ValueKind == JsonValueKind.String)
-            error = fail.GetString();
-        if (string.IsNullOrWhiteSpace(error) && root.TryGetProperty("error", out var err))
-            error = err.ValueKind == JsonValueKind.String ? err.GetString() : Truncate(err.GetRawText());
-        if (!string.IsNullOrWhiteSpace(failureCode))
-            error = string.IsNullOrWhiteSpace(error) ? failureCode : $"{failureCode}: {error}";
-        if (status is "FAILED" or "CANCELLED" && string.IsNullOrWhiteSpace(error))
-            error = Truncate(body);
-        if (status == "SUCCEEDED" && string.IsNullOrWhiteSpace(video))
+        var read = RunwayTaskResponse.Read(body);
+        var video = ReadVideoUrl(doc.RootElement);
+        var error = read.Reason;
+        if (read.Status is "FAILED" or "CANCELLED" && string.IsNullOrWhiteSpace(error))
+            error = Truncate(read.DiagnosticJson);
+        if (read.Status == "SUCCEEDED" && string.IsNullOrWhiteSpace(video))
             error = string.IsNullOrWhiteSpace(error)
-                ? $"SUCCEEDED nhưng không đọc được output URL. {Truncate(body)}"
+                ? "SUCCEEDED nhưng không đọc được output URL."
                 : error;
 
-        return (status, video, error, failureCode);
+        return (read.Status, video, error, read.ProviderFailureCode);
+    }
+
+    public async Task<byte[]> DownloadOutputAsync(string videoUrl, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(videoUrl)
+            || (!videoUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                && !videoUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidOperationException(ProductionFailureReasons.UrlAuthorityForbidden);
+        using var req = new HttpRequestMessage(HttpMethod.Get, videoUrl);
+        using var res = await _http.SendAsync(req, cancellationToken);
+        var bytes = await res.Content.ReadAsByteArrayAsync(cancellationToken);
+        if (!res.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Runway download {(int)res.StatusCode}.");
+        if (bytes is null || bytes.Length < 32)
+            throw new InvalidOperationException(ProductionFailureReasons.FailedIdentity);
+        return bytes;
     }
 
     private static string? ReadVideoUrl(JsonElement root)

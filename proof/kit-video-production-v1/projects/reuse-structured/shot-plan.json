@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "reuse-structured-south",
+  "approvalStatus": "approved",
+  "scenes": [
+    {
+      "sceneId": "s1-enter",
+      "approvalStatus": "approved",
+      "storyGoal": "Người bước vào và với tới một hộp.",
+      "durationSeconds": 4.5,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Nhân vật đi từ ngoài khung vào và tay với tới hộp.",
+      "visualMetaphor": null,
+      "subjects": ["nhân vật", "hộp"],
+      "onScreenText": ["Bước vào"],
+      "templateId": "character_entrance",
+      "params": {"pipelineTestLabel": "DỰ ÁN KIỂM THỬ", "caption": "Bước vào", "toX": 0.34, "enterEnd": 1.6, "propX": 0.62},
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [{"assetId": "sfx-thud", "atSeconds": 1.5, "gain": 0.5}],
+        "intentionalSilences": [{"start": 0, "end": 4.5, "reason": "Dự án kiểm thử không có lời thoại."}],
+        "syncNotes": "Một tiếng ngắn lúc người dừng."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang lịch."},
+      "acceptance": ["Nhân vật đổi vị trí.", "Có chữ Bước vào."],
+      "previewFractions": [0.2, 0.7]
+    },
+    {
+      "sceneId": "s2-days",
+      "approvalStatus": "approved",
+      "storyGoal": "Thời gian trôi bằng lịch lật, không dùng chữ ngày thật.",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Ba lần lật trang.",
+      "visualMetaphor": "Trang lịch là thời gian đang đi.",
+      "subjects": ["lịch"],
+      "onScreenText": ["Ngày vẫn đi"],
+      "templateId": "calendar_flip",
+      "params": {"pipelineTestLabel": "DỰ ÁN KIỂM THỬ", "caption": "Ngày vẫn đi", "flips": [0.8, 2.1, 3.4]},
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [
+          {"assetId": "sfx-paper", "atSeconds": 0.8, "gain": 0.8},
+          {"assetId": "sfx-paper", "atSeconds": 2.1, "gain": 0.8},
+          {"assetId": "sfx-paper", "atSeconds": 3.4, "gain": 0.8}
+        ],
+        "intentionalSilences": [{"start": 0, "end": 5, "reason": "Dự án kiểm thử không có lời thoại."}],
+        "syncNotes": "Tiếng giấy mỗi lần lật."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang sơ đồ."},
+      "acceptance": ["Lịch lật hơn một lần.", "SFX giấy trùng các mốc lật."],
+      "previewFractions": [0.25, 0.7]
+    },
+    {
+      "sceneId": "s3-link",
+      "approvalStatus": "approved",
+      "storyGoal": "Ba việc rời được nối bằng đường.",
+      "durationSeconds": 5.5,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Ba nút hiện rồi hai đường nối mọc ra.",
+      "visualMetaphor": "Đường nối là dữ liệu được gom lại.",
+      "subjects": ["ba nút"],
+      "onScreenText": ["Nối lại"],
+      "templateId": "data_connection",
+      "params": {
+        "pipelineTestLabel": "DỰ ÁN KIỂM THỬ",
+        "caption": "Nối lại",
+        "nodes": [
+          {"id": "a", "label": "Việc A", "at": [0.5, 0.28], "start": 0.3},
+          {"id": "b", "label": "Việc B", "at": [0.28, 0.48], "start": 0.7},
+          {"id": "c", "label": "Việc C", "at": [0.72, 0.48], "start": 1.1}
+        ],
+        "links": [
+          {"from": "a", "to": "b", "start": 2.0, "end": 3.1},
+          {"from": "a", "to": "c", "start": 3.2, "end": 4.3}
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [{"assetId": "sfx-thud", "atSeconds": 2.0, "gain": 0.4}],
+        "intentionalSilences": [{"start": 0, "end": 5.5, "reason": "Dự án kiểm thử không có lời thoại."}],
+        "syncNotes": "Một nhịp khi đường đầu bắt đầu mọc."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang biến hình."},
+      "acceptance": ["Đủ ba nhãn.", "Đường nối không có sẵn từ đầu."],
+      "previewFractions": [0.2, 0.75]
+    },
+    {
+      "sceneId": "s4-change",
+      "approvalStatus": "approved",
+      "storyGoal": "Một vật đổi hình, không cắt sang ảnh khác.",
+      "durationSeconds": 4,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Khối giấy nặng dần và hạ xuống.",
+      "visualMetaphor": "Vật nhẹ thành khối nặng.",
+      "subjects": ["khối"],
+      "onScreenText": ["Đổi khối"],
+      "templateId": "object_transform",
+      "params": {"pipelineTestLabel": "DỰ ÁN KIỂM THỬ", "caption": "Đổi khối", "beats": {"transform": [0.6, 2.6]}},
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [{"assetId": "sfx-thud", "atSeconds": 2.5, "gain": 0.8}],
+        "intentionalSilences": [{"start": 0, "end": 4, "reason": "Dự án kiểm thử không có lời thoại."}],
+        "syncNotes": "Thud lúc khối đã hạ."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang tên."},
+      "acceptance": ["Hình khối đổi trong cùng cảnh."],
+      "previewFractions": [0.15, 0.8]
+    },
+    {
+      "sceneId": "s5-mark",
+      "approvalStatus": "approved",
+      "storyGoal": "Hiện tên dự án thử, không dùng logo NOVIXA.",
+      "durationSeconds": 6,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Chữ SOUTH và một dòng phụ hiện.",
+      "visualMetaphor": null,
+      "subjects": ["tên"],
+      "onScreenText": ["SOUTH", "Năm cảnh, khung dọc"],
+      "templateId": "brand_reveal",
+      "params": {"pipelineTestLabel": "DỰ ÁN KIỂM THỬ", "wordmark": "SOUTH", "line": "Năm cảnh, khung dọc"},
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 6, "reason": "Dự án kiểm thử không có lời thoại và cảnh này không có SFX."}],
+        "syncNotes": "Im có chủ đích."
+      },
+      "transitionOut": null,
+      "acceptance": ["Có chữ SOUTH.", "Không có URL và không có logo NOVIXA."],
+      "previewFractions": [0.3, 0.8]
+    }
+  ]
+}

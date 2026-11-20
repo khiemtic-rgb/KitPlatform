@@ -49,12 +49,61 @@ export function studioBuildLabel(
   return `${name} · ${Number(row.shotCount) || 0} shot`;
 }
 
-export function studioBuildCounts(row: ContentSeriesBuildSummary) {
+/** Series-build summary columns. Not official Production Progress. videoCardStatus, videoCardProgress, and the done filter must not read these counts. */
+export const STUDIO_BUILD_COUNTS_AUTHORITY = 'INVENTORY' as const;
+
+export function studioInventoryCounts(row: ContentSeriesBuildSummary) {
   const shots = Number(row.shotCount) || 0;
   const kf = Number(row.kfCount) || 0;
-  const video = Number(row.videoCount) || 0;
   const voice = Number(row.voiceLines) || 0;
-  return `Thoại ${voice} · Hình ${kf}/${shots} · Video ${video}/${shots}`;
+  return `Thoại ${voice} · Hình ${kf}/${shots}`;
+}
+
+export function studioBuildCounts(row: ContentSeriesBuildSummary) {
+  const shots = Number(row.shotCount) || 0;
+  const video = Number(row.videoCount) || 0;
+  return `${studioInventoryCounts(row)} · Video ${video}/${shots}`;
+}
+
+/** Official video count. Reads production-progress.videoProgress, never series_build.video_count. */
+export function studioProductionVideoLine(progress?: { videoProgress?: number; shotCount?: number } | null) {
+  const shots = Number(progress?.shotCount) || 0;
+  const video = Number(progress?.videoProgress) || 0;
+  return `Video ${video}/${shots}`;
+}
+
+/** Shot codes whose Production OS progress says video exists. Does not read graph URLs or video_count. */
+export function studioOsVideoShotCodes(progress?: {
+  scenes?: { shots?: { shotId?: string; videoMade?: boolean }[] }[];
+} | null) {
+  const codes: string[] = [];
+  for (const scene of progress?.scenes ?? []) {
+    for (const shot of scene.shots ?? []) {
+      const id = (shot.shotId || '').trim();
+      if (shot.videoMade && id && !codes.includes(id)) codes.push(id);
+    }
+  }
+  return codes;
+}
+
+export function studioOsVideoShotLabel(code: string) {
+  const tail = (code.split('-').pop() || code).toUpperCase();
+  return /^SH\d+$/.test(tail) ? tail : code;
+}
+
+/** Every shot on the production-progress payload, including shots that do not have video yet. */
+export function studioOsVideoShotRoster(progress?: {
+  scenes?: { shots?: { shotId?: string; videoMade?: boolean }[] }[];
+} | null) {
+  const rows: { id: string; label: string; videoMade: boolean }[] = [];
+  for (const scene of progress?.scenes ?? []) {
+    for (const shot of scene.shots ?? []) {
+      const id = (shot.shotId || '').trim();
+      if (!id || rows.some((row) => row.id === id)) continue;
+      rows.push({ id, label: studioOsVideoShotLabel(id), videoMade: Boolean(shot.videoMade) });
+    }
+  }
+  return rows;
 }
 
 export function suggestNextEpisodeCode(rows: { episodeCode?: string }[]) {
@@ -63,11 +112,38 @@ export function suggestNextEpisodeCode(rows: { episodeCode?: string }[]) {
   return `EP${String(next).padStart(2, '0')}`;
 }
 
+export function seriesBuildReadOnly(row: { ownership?: string }) {
+  return row.ownership === 'unattributed';
+}
+
 export function videoPrimaryAction(row: ContentSeriesBuildSummary, progress?: ProductionProgressView | null) {
+  if (seriesBuildReadOnly(row)) return 'Xem bản dựng';
   const st = videoCardStatus(row, progress);
   if (st.tone === 'done') return 'Xem video';
   if (st.tone === 'wait' && !progress) return 'Bắt đầu';
   return 'Tiếp tục →';
+}
+
+/** Content video job on KIT_MKT. A storyboard without a file is not a finished video. A failed render is not a product. */
+export type ContentVideoCatalogState = 'playable' | 'storyboard' | 'failed' | 'working';
+
+export function contentVideoCatalogState(job: { status?: string; outputUrl?: string | null }): ContentVideoCatalogState {
+  const url = (job.outputUrl || '').trim();
+  const playable =
+    (/^https?:\/\//i.test(url) || url.toLowerCase().startsWith('data:video'))
+    && !/\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url);
+  if (playable) return 'playable';
+  const status = (job.status || '').trim().toLowerCase();
+  if (status === 'failed') return 'failed';
+  if (status === 'ready' || status === 'approved') return 'storyboard';
+  return 'working';
+}
+
+export function contentVideoCatalogLabel(state: ContentVideoCatalogState) {
+  if (state === 'playable') return 'Có file video';
+  if (state === 'failed') return 'Lỗi render · không dùng làm sản phẩm';
+  if (state === 'storyboard') return 'Storyboard · chưa có file video';
+  return 'Đang làm';
 }
 
 export function studioNextAction(_row: ContentSeriesBuildSummary, progress?: ProductionProgressView | null) {

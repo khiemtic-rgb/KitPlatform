@@ -3,8 +3,11 @@ import { Alert, Button, Card, Descriptions, Drawer, Space, Table, Tag, Typograph
 import { researchApi, loadResearch } from './research.api';
 import {
   classifyResearchError,
+  evaluationComparisonModel,
+  evaluationMetricNote,
   researchPanelModel,
   sanitizeExperiment,
+  type EvaluationComparisonModel,
   type ResearchExperimentView,
   type ResearchLoadResult,
 } from './research-view';
@@ -32,10 +35,14 @@ function boolText(value: boolean | null): string {
 
 export function ResearchPanel() {
   const [result, setResult] = useState<ResearchLoadResult>({ kind: 'loading' });
+  const [comparison, setComparison] = useState<EvaluationComparisonModel | null>(null);
   const [detail, setDetail] = useState<DetailState>({ kind: 'closed' });
   useEffect(() => {
     let cancelled = false;
     loadResearch().then((value) => { if (!cancelled) setResult(value); });
+    researchApi.evaluations()
+      .then((body) => { if (!cancelled) setComparison(evaluationComparisonModel(body)); })
+      .catch(() => { if (!cancelled) setComparison(evaluationComparisonModel(null)); });
     return () => { cancelled = true; };
   }, []);
   const model = researchPanelModel(result);
@@ -91,6 +98,37 @@ export function ResearchPanel() {
                 { title: '', render: (_, row) => <Button type="link" onClick={() => open(row.experimentId)}>Xem</Button> },
               ]}
             />
+            <Typography.Text strong>So sánh evaluation</Typography.Text>
+            <Alert
+              type="warning"
+              showIcon
+              message={comparison?.title ?? 'Đang đọc evaluation'}
+              description={comparison?.detail ?? 'Đang đọc bản so sánh publication.'}
+            />
+            {comparison?.showRows && (
+              <>
+                <Typography.Text type="secondary">
+                  Cùng snapshot {comparison.snapshot ?? 'không hiển thị'}. {evaluationMetricNote()}
+                </Typography.Text>
+                <Table
+                  size="small"
+                  rowKey="experimentId"
+                  pagination={false}
+                  dataSource={comparison.rows}
+                  locale={{ emptyText: 'Không có experiment để so sánh.' }}
+                  columns={[
+                    { title: 'Experiment', dataIndex: 'experimentId' },
+                    { title: 'Kết luận', dataIndex: 'verdict' },
+                    { title: 'Tuyên bố nguồn', dataIndex: 'claim' },
+                    { title: 'Bằng chứng', dataIndex: 'evidence' },
+                    { title: 'Lệnh trong mẫu', dataIndex: 'developmentTrades' },
+                    { title: 'Lệnh ngoài mẫu', dataIndex: 'outOfSampleTrades' },
+                    { title: 'PnL nguồn', dataIndex: 'sourceNetPnl' },
+                    { title: 'Cảnh báo', dataIndex: 'warnings' },
+                  ]}
+                />
+              </>
+            )}
             <Typography.Text strong>Paper Ops</Typography.Text>
             <Descriptions size="small" column={1}>
               {model.statusLines.map((line) => <Descriptions.Item key={line.label} label={line.label}>{line.value}</Descriptions.Item>)}

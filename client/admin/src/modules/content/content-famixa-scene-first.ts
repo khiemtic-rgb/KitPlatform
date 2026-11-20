@@ -12,7 +12,7 @@ import {
 import { linesForShot } from './content-famixa-dialogue-map';
 import { displayCanonName, isOffFrameCanon } from './content-famixa-char-canon';
 import { isMetaSpeakerName } from './content-famixa-story-parse';
-import { estimateSpokenSec, deriveVoiceScript } from './content-famixa-voice-script';
+import { deriveVoiceScript } from './content-famixa-voice-script';
 import { applyTimingToShot, buildV3ShotTiming, shotHasMeasuredVoice } from './famixa-shot-production-timing';
 import type { AssembleTimeline } from './content-famixa-assemble';
 import { finalSourceBlockReason, resolveFinalSource } from './content-famixa-final-source';

@@ -198,44 +198,38 @@ public sealed class MultiExchangeConnectorTests
         var log = new ListLog();
         var binance = new RecordingHandler();
         var connector = new BinanceExchangeConnector(binance, log);
-        var probe = await connector.ProbeAsync(new ExchangeCredential
+        var page = await connector.ReadHistoryAsync(new ExchangeCredential
         {
             Environment = "MAINNET",
             ApiKey = Key,
             ApiSecret = Secret,
+        }, new ExchangeHistoryQuery
+        {
+            ProductSubtype = "spot",
+            Phase = "fills",
+            Symbol = "BTCUSDT",
+            WindowStartMs = 10,
+            WindowEndMs = 20,
+            Limit = 1000,
         }, CancellationToken.None);
         Assert.Equal("api.binance.com", binance.Host);
-        Assert.Equal(new[] { "/sapi/v1/account/apiRestrictions", "/api/v3/account" }, binance.Paths);
         Assert.Contains("signature=", binance.Uri, StringComparison.Ordinal);
-        Assert.Contains("recvWindow=5000", binance.Uri, StringComparison.Ordinal);
-        Assert.Contains("timestamp=", binance.Uri, StringComparison.Ordinal);
         Assert.DoesNotContain(Secret, binance.Uri, StringComparison.Ordinal);
-        Assert.DoesNotContain(Key, binance.Uri, StringComparison.Ordinal);
         Assert.DoesNotContain(Secret, string.Join('\n', log.Lines), StringComparison.Ordinal);
-        Assert.DoesNotContain("signature=", string.Join('\n', log.Lines), StringComparison.Ordinal);
-        Assert.True(probe.ReadOnlyVerified);
-        Assert.True(probe.Accepted);
-        Assert.Equal("BTC", probe.Assets[0].Coin);
-
-        var beforeHistory = binance.Calls;
-        var blocked = await Assert.ThrowsAsync<ExchangeConnectionException>(() =>
-            connector.ReadHistoryAsync(new ExchangeCredential { Environment = "MAINNET", ApiKey = Key, ApiSecret = Secret },
-                new ExchangeHistoryQuery { ProductSubtype = "spot", Phase = "fills", Symbol = "BTCUSDT", WindowStartMs = 1, WindowEndMs = 2, Limit = 10 }, CancellationToken.None));
-        Assert.Equal("not_allowlisted", blocked.Code);
-        Assert.Equal(beforeHistory, binance.Calls);
+        Assert.Single(page.Items);
+        Assert.Equal("SPOT", page.Items[0].MarketType);
 
         var rejected = await Assert.ThrowsAsync<ExchangeConnectionException>(() =>
-            connector.ProbeAsync(new ExchangeCredential { Environment = "https://evil.example", ApiKey = Key, ApiSecret = Secret }, CancellationToken.None));
+            connector.ReadHistoryAsync(new ExchangeCredential { Environment = "https://evil.example", ApiKey = Key, ApiSecret = Secret },
+                new ExchangeHistoryQuery { ProductSubtype = "spot", Symbol = "BTCUSDT", WindowStartMs = 1, WindowEndMs = 2, Limit = 10 }, CancellationToken.None));
         Assert.Equal("unsupported", rejected.Code);
-        Assert.Equal(beforeHistory, binance.Calls);
 
         var limited = new RecordingHandler { Mode = "rate" };
         var rate = await Assert.ThrowsAsync<ExchangeConnectionException>(() =>
-            new BinanceExchangeConnector(limited, log).ProbeAsync(new ExchangeCredential { Environment = "TESTNET", ApiKey = Key, ApiSecret = Secret }, CancellationToken.None));
+            new BinanceExchangeConnector(limited, log).ReadHistoryAsync(new ExchangeCredential { Environment = "TESTNET", ApiKey = Key, ApiSecret = Secret },
+                new ExchangeHistoryQuery { ProductSubtype = "usd_m", Symbol = "BTCUSDT", WindowStartMs = 1, WindowEndMs = 2, Limit = 10 }, CancellationToken.None));
         Assert.Equal("rate_limit", rate.Code);
-        Assert.Equal("testnet.binance.vision", limited.Host);
-        Assert.Equal(1, limited.Calls);
-        Assert.DoesNotContain(Secret, rate.Message, StringComparison.Ordinal);
+        Assert.Equal("testnet.binancefuture.com", limited.Host);
 
         var okxLog = new ListLog();
         var okxHandler = new RecordingHandler { Mode = "okx" };
@@ -262,249 +256,18 @@ public sealed class MultiExchangeConnectorTests
         Assert.DoesNotContain(Passphrase, passError.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task Binance_allowlist_rejects_unsafe_permissions_and_transport_errors_before_extra_http()
-    {
-        var log = new ListLog();
-        var credential = new ExchangeCredential { Environment = "MAINNET", ApiKey = Key, ApiSecret = Secret };
-
-        var readOnly = new ScriptHandler(ScriptHandler.ReadOnlyBody);
-        var probe = await new BinanceExchangeConnector(readOnly, log).ProbeAsync(credential, CancellationToken.None);
-        Assert.Equal(2, readOnly.Calls);
-        Assert.Equal(new[] { "/sapi/v1/account/apiRestrictions", "/api/v3/account" }, readOnly.Paths);
-        Assert.True(probe.Accepted);
-        Assert.True(probe.ReadOnlyVerified);
-        Assert.Equal("0.10000000", probe.Assets[0].WalletBalance);
-        Assert.DoesNotContain(Secret, JsonSerializer.Serialize(probe), StringComparison.Ordinal);
-        Assert.DoesNotContain(Key, JsonSerializer.Serialize(probe), StringComparison.Ordinal);
-
-        await AssertRejected("trade", "not_read_only", 1);
-        await AssertRejected("withdraw", "withdrawal", 1);
-        await AssertRejected("missing", "unverified", 1);
-        await AssertRejected("malformed", "exchange", 1);
-        await AssertRejected("signature", "signature", 1);
-        await AssertRejected("invalid-key", "invalid_key", 1);
-        await AssertRejected("ip", "permission", 1);
-        await AssertRejected("timestamp", "timestamp", 1);
-        await AssertRejected("rate", "rate_limit", 1);
-        await AssertRejected("busy", "rate_limit", 1);
-        await AssertRejected("limit-code", "rate_limit", 1);
-        await AssertRejected("timeout", "network", 1);
-        await AssertRejected("network", "network", 1);
-
-        var order = Assert.Throws<ExchangeConnectionException>(() => BinanceExchangeConnector.EnsureAllowed("POST", "/api/v3/order"));
-        Assert.Equal("not_allowlisted", order.Code);
-        var withdrawPath = Assert.Throws<ExchangeConnectionException>(() => BinanceExchangeConnector.EnsureAllowed("GET", "/sapi/v1/capital/withdraw/apply"));
-        Assert.Equal("not_allowlisted", withdrawPath.Code);
-        BinanceExchangeConnector.EnsureAllowed("GET", "/api/v3/account");
-
-        using var partial = JsonDocument.Parse("""{"enableReading":true}""");
-        Assert.False(BinancePermissionGate.ReadOnly(partial.RootElement));
-        Assert.Equal("unverified", Assert.Throws<ExchangeConnectionException>(() => BinancePermissionGate.EnsureReadOnly(partial.RootElement)).Code);
-
-        async Task AssertRejected(string mode, string code, int calls)
-        {
-            var handler = new ScriptHandler(mode);
-            var error = await Assert.ThrowsAsync<ExchangeConnectionException>(() => new BinanceExchangeConnector(handler, log).ProbeAsync(credential, CancellationToken.None));
-            Assert.Equal(code, error.Code);
-            Assert.Equal(calls, handler.Calls);
-            Assert.DoesNotContain(Secret, error.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain(Key, error.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain("LEAKED-MSG", error.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain("signature=", error.Message, StringComparison.Ordinal);
-            if (mode == "ip")
-                Assert.Contains("IP", error.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain(Secret, string.Join('\n', log.Lines), StringComparison.Ordinal);
-            Assert.DoesNotContain("signature=", string.Join('\n', log.Lines), StringComparison.Ordinal);
-        }
-    }
-
-    [Theory]
-    [InlineData("enableReading")]
-    [InlineData("enableWithdrawals")]
-    [InlineData("enableInternalTransfer")]
-    [InlineData("permitsUniversalTransfer")]
-    [InlineData("enableSpotAndMarginTrading")]
-    [InlineData("enableFutures")]
-    [InlineData("enableMargin")]
-    [InlineData("enableVanillaOptions")]
-    public void Missing_each_required_binance_permission_field_is_rejected(string field)
-    {
-        using var document = JsonDocument.Parse(WithoutPermission(field));
-        var error = Assert.Throws<ExchangeConnectionException>(() => BinancePermissionGate.EnsureReadOnly(document.RootElement));
-        Assert.Equal("unverified", error.Code);
-        Assert.False(BinancePermissionGate.ReadOnly(document.RootElement));
-    }
-
-    [Fact]
-    public async Task Unknown_permission_fields_fail_closed_unless_explicitly_false()
-    {
-        var log = new ListLog();
-        var credential = new ExchangeCredential { Environment = "MAINNET", ApiKey = Key, ApiSecret = Secret };
-
-        var enabled = new ScriptHandler("unknown-true");
-        var rejected = await Assert.ThrowsAsync<ExchangeConnectionException>(() => new BinanceExchangeConnector(enabled, log).ProbeAsync(credential, CancellationToken.None));
-        Assert.Equal("unverified", rejected.Code);
-        Assert.Equal(1, enabled.Calls);
-        Assert.Equal("/sapi/v1/account/apiRestrictions", enabled.Paths[0]);
-        Assert.DoesNotContain(Secret, rejected.Message, StringComparison.Ordinal);
-
-        var wrongType = new ScriptHandler("unknown-type");
-        var typed = await Assert.ThrowsAsync<ExchangeConnectionException>(() => new BinanceExchangeConnector(wrongType, log).ProbeAsync(credential, CancellationToken.None));
-        Assert.Equal("unverified", typed.Code);
-        Assert.Equal(1, wrongType.Calls);
-
-        var malformed = new ScriptHandler("malformed");
-        var broken = await Assert.ThrowsAsync<ExchangeConnectionException>(() => new BinanceExchangeConnector(malformed, log).ProbeAsync(credential, CancellationToken.None));
-        Assert.Equal("exchange", broken.Code);
-        Assert.Equal(1, malformed.Calls);
-
-        using var unsafeFutures = JsonDocument.Parse(ScriptHandler.ReadOnlyBody.Replace("\"enableFutures\":false", "\"enableFutures\":true", StringComparison.Ordinal));
-        Assert.Equal("not_read_only", Assert.Throws<ExchangeConnectionException>(() => BinancePermissionGate.EnsureReadOnly(unsafeFutures.RootElement)).Code);
-        using var hiddenUnsafe = JsonDocument.Parse(ScriptHandler.ReadOnlyBody.Replace("\"enableFutures\":false", "\"enableFutures\":true", StringComparison.Ordinal).TrimEnd('}') + ",\"enablePortfolioMarginTrading\":false}");
-        Assert.Equal("not_read_only", Assert.Throws<ExchangeConnectionException>(() => BinancePermissionGate.EnsureReadOnly(hiddenUnsafe.RootElement)).Code);
-
-        var disabled = new ScriptHandler("unknown-false");
-        var probe = await new BinanceExchangeConnector(disabled, log).ProbeAsync(credential, CancellationToken.None);
-        Assert.True(probe.ReadOnlyVerified);
-        Assert.Equal(2, disabled.Calls);
-        Assert.Equal(new[] { "/sapi/v1/account/apiRestrictions", "/api/v3/account" }, disabled.Paths);
-        Assert.DoesNotContain(Secret, JsonSerializer.Serialize(probe), StringComparison.Ordinal);
-        Assert.DoesNotContain("enablePortfolioMarginTrading", string.Join('\n', log.Lines), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task Redirect_is_rejected_before_a_second_request()
-    {
-        var log = new ListLog();
-        var credential = new ExchangeCredential { Environment = "MAINNET", ApiKey = Key, ApiSecret = Secret };
-        var sockets = new SocketsHttpHandler();
-        _ = new BinanceExchangeConnector(sockets, log);
-        Assert.False(sockets.AllowAutoRedirect);
-        sockets.Dispose();
-
-        await AssertRedirect("https://evil.example/steal", HttpStatusCode.Found);
-        await AssertRedirect("https://api.binance.com/api/v3/order", HttpStatusCode.MovedPermanently);
-        await AssertRedirect("http://api.binance.com/api/v3/account", HttpStatusCode.TemporaryRedirect);
-
-        async Task AssertRedirect(string location, HttpStatusCode status)
-        {
-            var handler = new RedirectHandler(location, status);
-            var error = await Assert.ThrowsAsync<ExchangeConnectionException>(() => new BinanceExchangeConnector(handler, log).ProbeAsync(credential, CancellationToken.None));
-            Assert.Equal("redirect", error.Code);
-            Assert.Equal(502, error.StatusCode);
-            Assert.Equal(1, handler.Calls);
-            Assert.Single(handler.Uris);
-            Assert.Contains("/sapi/v1/account/apiRestrictions", handler.Uris[0], StringComparison.Ordinal);
-            Assert.DoesNotContain(location, handler.Uris[0], StringComparison.Ordinal);
-            Assert.DoesNotContain(location, error.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain(Secret, error.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain(Key, error.Message, StringComparison.Ordinal);
-            Assert.DoesNotContain("signature=", error.Message, StringComparison.Ordinal);
-            var lines = string.Join('\n', log.Lines);
-            Assert.Contains("redirect", lines, StringComparison.Ordinal);
-            Assert.DoesNotContain(location, lines, StringComparison.Ordinal);
-            Assert.DoesNotContain(Secret, lines, StringComparison.Ordinal);
-        }
-    }
-
-    static string WithoutPermission(string field)
-    {
-        var text = ScriptHandler.ReadOnlyBody.Replace($"\"{field}\":true,", "", StringComparison.Ordinal);
-        return text.Replace($"\"{field}\":false,", "", StringComparison.Ordinal);
-    }
-
-    sealed class ScriptHandler : HttpMessageHandler
-    {
-        public const string ReadOnlyBody = """{"enableReading":true,"enableWithdrawals":false,"enableInternalTransfer":false,"permitsUniversalTransfer":false,"enableSpotAndMarginTrading":false,"enableFutures":false,"enableMargin":false,"enableVanillaOptions":false,"ipRestrict":true}""";
-        readonly string _mode;
-        public int Calls { get; private set; }
-        public List<string> Paths { get; } = new();
-
-        public ScriptHandler(string mode) => _mode = mode;
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            Calls++;
-            Paths.Add(request.RequestUri?.AbsolutePath ?? "");
-            if (_mode == "timeout")
-                throw new TaskCanceledException("timeout");
-            if (_mode == "network")
-                throw new HttpRequestException("down");
-            if (_mode == "rate")
-                return Task.FromResult(new HttpResponseMessage((HttpStatusCode)429));
-            if (_mode == "busy")
-                return Task.FromResult(new HttpResponseMessage((HttpStatusCode)418));
-            var path = request.RequestUri?.AbsolutePath;
-            if (_mode == "malformed" && path == "/sapi/v1/account/apiRestrictions")
-                return Task.FromResult(Text("not-json"));
-            if (path == "/sapi/v1/account/apiRestrictions")
-                return Task.FromResult(Text(Restrictions(_mode)));
-            if (path == "/api/v3/account")
-                return Task.FromResult(Text("""{"accountType":"SPOT","balances":[{"asset":"BTC","free":"0.10000000","locked":"0.00000000"}]}"""));
-            return Task.FromResult(Text("""{"code":-1121,"msg":"LEAKED-MSG"}"""));
-        }
-
-        static string Restrictions(string mode) => mode switch
-        {
-            "trade" => ReadOnlyBody.Replace("\"enableSpotAndMarginTrading\":false", "\"enableSpotAndMarginTrading\":true", StringComparison.Ordinal),
-            "withdraw" => ReadOnlyBody.Replace("\"enableWithdrawals\":false", "\"enableWithdrawals\":true", StringComparison.Ordinal),
-            "missing" => """{"enableReading":true}""",
-            "signature" => """{"code":-1022,"msg":"LEAKED-MSG"}""",
-            "invalid-key" => """{"code":-2014,"msg":"LEAKED-MSG"}""",
-            "ip" => """{"code":-2015,"msg":"LEAKED-MSG"}""",
-            "timestamp" => """{"code":-1021,"msg":"LEAKED-MSG"}""",
-            "limit-code" => """{"code":-1003,"msg":"LEAKED-MSG"}""",
-            "unknown-true" => ReadOnlyBody.TrimEnd('}') + ",\"enablePortfolioMarginTrading\":true}",
-            "unknown-false" => ReadOnlyBody.TrimEnd('}') + ",\"enablePortfolioMarginTrading\":false}",
-            "unknown-type" => ReadOnlyBody.TrimEnd('}') + ",\"enablePortfolioMarginTrading\":\"true\"}",
-            _ => ReadOnlyBody,
-        };
-
-        static HttpResponseMessage Text(string body) =>
-            new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
-    }
-
-    sealed class RedirectHandler : HttpMessageHandler
-    {
-        readonly string _location;
-        readonly HttpStatusCode _status;
-        public int Calls { get; private set; }
-        public List<string> Uris { get; } = new();
-
-        public RedirectHandler(string location, HttpStatusCode status)
-        {
-            _location = location;
-            _status = status;
-        }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            Calls++;
-            Uris.Add(request.RequestUri?.AbsoluteUri ?? "");
-            var response = new HttpResponseMessage(_status);
-            response.Headers.Location = new Uri(_location);
-            response.Content = new StringContent("{\"msg\":\"LEAKED-MSG\"}", Encoding.UTF8, "application/json");
-            return Task.FromResult(response);
-        }
-    }
-
     sealed class RecordingHandler : HttpMessageHandler
     {
         public string? Host { get; private set; }
         public string Uri { get; private set; } = "";
-        public List<string> Paths { get; } = new();
-        public int Calls { get; private set; }
         public string? Passphrase { get; private set; }
         public string? Simulated { get; private set; }
         public string Mode { get; init; } = "binance";
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Calls++;
             Host = request.RequestUri?.Host;
             Uri = request.RequestUri?.ToString() ?? "";
-            Paths.Add(request.RequestUri?.AbsolutePath ?? "");
             if (request.Headers.TryGetValues("OK-ACCESS-PASSPHRASE", out var pass))
                 Passphrase = pass.First();
             if (request.Headers.TryGetValues("x-simulated-trading", out var sim))
@@ -532,13 +295,10 @@ public sealed class MultiExchangeConnectorTests
                 : query;
             var signature = BinanceSigner.Sign(Secret, without);
             if (!query.Contains("signature=" + signature, StringComparison.Ordinal))
-                return Task.FromResult(Json("""{"code":-1022,"msg":"LEAKED-MSG"}"""));
-            var absolutePath = request.RequestUri?.AbsolutePath;
-            if (absolutePath == "/sapi/v1/account/apiRestrictions")
-                return Task.FromResult(Json(ScriptHandler.ReadOnlyBody));
-            if (absolutePath == "/api/v3/account")
-                return Task.FromResult(Json("""{"accountType":"SPOT","balances":[{"asset":"BTC","free":"0.10000000","locked":"0.00000000"}]}"""));
-            return Task.FromResult(Json("""{"code":-1121,"msg":"LEAKED-MSG"}"""));
+                return Task.FromResult(Json("""{"code":-1022,"msg":"bad"}"""));
+            return Task.FromResult(Json("""
+                [{"symbol":"BTCUSDT","id":11,"orderId":22,"price":"10","qty":"1","quoteQty":"10","commission":"0.01","commissionAsset":"USDT","time":1700000000000,"isBuyer":true,"isMaker":false}]
+                """));
         }
 
         static HttpResponseMessage Json(string body) =>

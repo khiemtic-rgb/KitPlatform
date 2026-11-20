@@ -297,6 +297,16 @@ for (const id of fixtureIds) {
   ok(productionDurationOf(st, row) === 5 && falInputDurationOf(st, row) === 5, `${id} fixture default 5`);
 }
 
+const lateClock = shot({ id: 'SYN-LATE' });
+const lateState = stateOf(lateClock, 0.64, run({
+  runwayAttempts: [
+    { n: 55, at: '', status: 'SUCCEEDED', duration: 5, resultClass: 'CURRENT', outputUrl: 'https://take/55.mp4' },
+    { n: 56, at: '', status: 'SUCCEEDED', duration: 6, resultClass: 'LATE_RESULT', outputUrl: 'https://take/56.mp4' },
+  ],
+}));
+ok(performanceDurationOf(lateState, lateClock) === 5, 'LATE_RESULT duration is not the clock');
+ok(productionDurationOf(lateState, lateClock) === 5, 'LATE_RESULT does not move production');
+
 ok(!timingSrc.includes('startContentSeriesTurbo') && !timingSrc.includes('elevenlabs'), 'no provider in timing');
 ok(!timingSrc.includes('persistState'), 'no persist in timing');
 

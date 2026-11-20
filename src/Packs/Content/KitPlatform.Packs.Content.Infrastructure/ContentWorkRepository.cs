@@ -347,51 +347,27 @@ internal sealed class ContentWorkRepository
         CancellationToken ct)
     {
         const string sql = """
-            SELECT * FROM (
-                SELECT
-                    COALESCE(t.display_at, t.updated_at) AS At,
-                    'topic' AS Kind,
-                    p.id AS PackageId,
-                    t.id AS TopicId,
-                    CAST(NULL AS uuid) AS PublishJobId,
-                    t.brand_id AS BrandId,
-                    b.code AS BrandCode,
-                    b.name AS BrandName,
-                    t.title AS Title,
-                    CAST(NULL AS text) AS Channel,
-                    t.status AS Status
-                FROM pack_content.topic t
-                INNER JOIN pack_content.brand b ON b.id = t.brand_id
-                LEFT JOIN pack_content.content_package p ON p.topic_id = t.id
-                WHERE COALESCE(t.display_at, t.updated_at) >= @FromUtc
-                  AND COALESCE(t.display_at, t.updated_at) < @ToUtc
-                  AND (@BrandId IS NULL OR t.brand_id = @BrandId)
-                  AND t.status NOT IN ('Draft', 'Generating', 'Rejected', 'BudgetBlocked')
-                  AND (p.id IS NULL OR p.source_package_id IS NOT NULL)
-
-                UNION ALL
-
-                SELECT
-                    COALESCE(pj.publish_at, pj.created_at) AS At,
-                    'publish' AS Kind,
-                    p.id AS PackageId,
-                    pj.topic_id AS TopicId,
-                    pj.id AS PublishJobId,
-                    pj.brand_id AS BrandId,
-                    b.code AS BrandCode,
-                    b.name AS BrandName,
-                    t.title AS Title,
-                    pj.connector_type AS Channel,
-                    pj.status AS Status
-                FROM pack_content.publish_job pj
-                INNER JOIN pack_content.brand b ON b.id = pj.brand_id
-                INNER JOIN pack_content.topic t ON t.id = pj.topic_id
-                LEFT JOIN pack_content.content_package p ON p.topic_id = t.id
-                WHERE COALESCE(pj.publish_at, pj.created_at) >= @FromUtc
-                  AND COALESCE(pj.publish_at, pj.created_at) < @ToUtc
-                  AND (@BrandId IS NULL OR pj.brand_id = @BrandId)
-            ) x
-            ORDER BY At, BrandName, Title
+            SELECT
+                pj.publish_at AS At,
+                'publish' AS Kind,
+                p.id AS PackageId,
+                pj.topic_id AS TopicId,
+                pj.id AS PublishJobId,
+                pj.brand_id AS BrandId,
+                b.code AS BrandCode,
+                b.name AS BrandName,
+                t.title AS Title,
+                pj.connector_type AS Channel,
+                pj.status AS Status
+            FROM pack_content.publish_job pj
+            INNER JOIN pack_content.brand b ON b.id = pj.brand_id
+            INNER JOIN pack_content.topic t ON t.id = pj.topic_id
+            LEFT JOIN pack_content.content_package p ON p.topic_id = t.id
+            WHERE pj.publish_at IS NOT NULL
+              AND pj.publish_at >= @FromUtc
+              AND pj.publish_at < @ToUtc
+              AND (@BrandId IS NULL OR pj.brand_id = @BrandId)
+            ORDER BY pj.publish_at, b.name, t.title
             LIMIT 800
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
@@ -403,6 +379,39 @@ internal sealed class ContentWorkRepository
         })).ToList();
     }
 
+    /// <summary>
+    /// Giành một job đăng đang chờ (Queued -> Running) trước khi chạy, để hai vòng quét hay hai tiến trình
+    /// không cùng đăng một bài.
+    /// </summary>
+    public async Task<bool> TryClaimPublishJobAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.publish_job
+            SET status = 'Running', last_error = NULL, updated_at = NOW()
+            WHERE id = @Id AND status = 'Queued'
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteAsync(sql, new { Id = id }) == 1;
+    }
+
+    /// <summary>
+    /// Job đăng nằm ở Running quá lâu: máy tắt hoặc API khởi động lại giữa chừng. Không tự đăng lại (bài có thể đã
+    /// lên một phần); chuyển sang Failed kèm hướng dẫn để người dùng kiểm tra kênh rồi bấm Đăng lại.
+    /// </summary>
+    public async Task<int> FailStuckPublishJobsAsync(TimeSpan olderThan, CancellationToken ct)
+    {
+        const string sql = """
+            UPDATE pack_content.publish_job
+            SET status = 'Failed',
+                last_error = 'Máy tắt hoặc API khởi động lại khi đang đăng. Kiểm tra kênh xem bài đã lên chưa; chưa lên thì bấm Đăng lại.',
+                updated_at = NOW()
+            WHERE status = 'Running'
+              AND updated_at < NOW() - (@Seconds * INTERVAL '1 second')
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(ct);
+        return await conn.ExecuteAsync(sql, new { Seconds = Math.Max(300, (int)olderThan.TotalSeconds) });
+    }
+
     public async Task<IReadOnlyList<Guid>> ListDuePublishJobIdsAsync(int limit, CancellationToken ct)
     {
         const string sql = """
@@ -410,11 +419,33 @@ internal sealed class ContentWorkRepository
             FROM pack_content.publish_job
             WHERE status = 'Queued'
               AND (publish_at IS NULL OR publish_at <= NOW())
-            ORDER BY created_at
+              AND NOT COALESCE(brand_id = ANY(@Paused), false)
+            ORDER BY publish_at NULLS FIRST, created_at
             LIMIT @Limit
             """;
         await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        return (await conn.QueryAsync<Guid>(sql, new { Limit = limit })).ToList();
+        var paused = await ListPublishPausedBrandIdsAsync(conn);
+        return (await conn.QueryAsync<Guid>(sql, new { Limit = limit, Paused = paused })).ToList();
+    }
+
+    /// <summary>
+    /// Thương hiệu đang "Tạm dừng đăng" (Lịch đăng &amp; Agent → Cài đặt lịch Agent): bài của họ đứng chờ, không đăng.
+    /// Máy chưa có bảng cài đặt (migration 421) thì coi như không thương hiệu nào dừng.
+    /// </summary>
+    private static async Task<Guid[]> ListPublishPausedBrandIdsAsync(System.Data.IDbConnection conn)
+    {
+        try
+        {
+            return (await conn.QueryAsync<Guid>(
+                """
+                SELECT brand_id FROM pack_content.brand_schedule_setting
+                WHERE (settings_json ->> 'publishPaused') = 'true'
+                """)).ToArray();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException && ex.Message.Contains("brand_schedule_setting", StringComparison.Ordinal))
+        {
+            return [];
+        }
     }
 
     private const string WorkSelect = """

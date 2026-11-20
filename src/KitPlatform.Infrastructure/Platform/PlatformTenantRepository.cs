@@ -2,6 +2,7 @@
 using Dapper;
 using KitPlatform.Application.Configuration;
 using KitPlatform.Application.Core;
+using KitPlatform.Application.Identity;
 using KitPlatform.Application.Platform;
 using KitPlatform.Infrastructure.Data;
 
@@ -238,9 +239,10 @@ internal sealed class PlatformTenantRepository
         else
         {
             await conn.ExecuteAsync(
-                """
+                $"""
                 INSERT INTO role_permissions (role_id, permission_id)
                 SELECT @RoleId, p.id FROM permissions p
+                WHERE {ReservedPermissions.TenantAssignableSql}
                 ON CONFLICT DO NOTHING
                 """,
                 new { RoleId = roleId },

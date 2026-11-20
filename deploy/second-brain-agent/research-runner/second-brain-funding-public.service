@@ -1,0 +1,20 @@
+[Unit]
+Description=Second Brain public funding history
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=sbagent
+Group=sbagent
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /opt/second-brain-research-runner/funding_public.py sync --archive /var/lib/second-brain-research/market-data --output /var/lib/second-brain-research/funding
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/second-brain-research /var/log/second-brain-market-data
+UMask=0027
+StandardOutput=append:/var/log/second-brain-market-data/funding-public.log
+StandardError=append:/var/log/second-brain-market-data/funding-public.log

@@ -58,8 +58,7 @@ import { useApiHealth, useRetryWhenApiOnline } from '@/shared/api/useApiHealth';
 import { isPushSupported, requestNotificationPermission, subscribePush, unsubscribePush } from '@/shared/push/push-client';
 import { useCustomerNotificationCount } from '@/shared/hooks/useCustomerNotificationCount';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
-import { withCustomerUploadAuth } from '@/shared/utils/upload-url';
-import { apiPath } from '@/shared/api/api-base';
+import { CustomerUploadImage } from '@/shared/utils/upload-image';
 import { usePwaInstallContext } from '@/shared/pwa/PwaInstallProvider';
 import './ProfilePage.css';
 import '@/shared/components/PharmacyLinkSheet.css';
@@ -613,11 +612,7 @@ export function ProfilePage() {
               onClick={() => avatarInputRef.current?.click()}
             >
               {profile?.avatarUrl ? (
-                <img
-                  className="profile-hub-avatar-img"
-                  src={apiPath(withCustomerUploadAuth(profile.avatarUrl) || profile.avatarUrl)}
-                  alt=""
-                />
+                <CustomerUploadImage className="profile-hub-avatar-img" url={profile.avatarUrl} />
               ) : (
                 <UserOutlined />
               )}

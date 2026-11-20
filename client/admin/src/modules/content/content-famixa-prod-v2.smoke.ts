@@ -12,6 +12,7 @@ import {
   lipsyncNeedIds,
   lipsyncInFlight,
   shouldResumeLipsync,
+  lipsyncFalHasNoOutput,
   parseFalJobIdFromError,
   lipsyncVideoUrl,
   takeVideoUrl,
@@ -178,6 +179,12 @@ if (
   fail.push('parse Fal job id from timeout');
 }
 if (
+  parseFalJobIdFromError('Fal chưa trả take. Task lipsync_v3_01a09617-d14e-77d3-abd2-31400caa566c.') !==
+  '01a09617-d14e-77d3-abd2-31400caa566c'
+) {
+  fail.push('parse Task lipsync_v3_ from desk error');
+}
+if (
   !shouldResumeLipsync({
     lipsyncStatus: 'FAILED',
     lipsyncError: 'Fal job 01a02e1d-d082-70e1-b906-23d7c5c08940 quá 3 phút. Có thể đã trừ.',
@@ -197,6 +204,63 @@ if (normalizeLipsyncModel('ls') !== 'ls' || lipsyncTierOf('v3').title !== 'Chu�
 }
 if (shouldResumeLipsync({ lipsyncTaskId: 'x', lipsyncStatus: 'PENDING' }) !== true) {
   fail.push('pending lipsync may resume');
+}
+if (
+  !shouldResumeLipsync({
+    lipsyncTaskId: 'lipsync_v3_abc',
+    lipsynced: true,
+    lipsyncStatus: 'SUCCEEDED',
+    lipsyncFileMissing: true,
+  })
+) {
+  fail.push('missing local Fal file must Hỏi lại · 0$');
+}
+if (
+  !shouldResumeLipsync({
+    lipsyncTaskId: 'lipsync_v3_01a09617-d14e-77d3-abd2-3140caa566c4',
+    lipsynced: true,
+    lipsyncStatus: 'SUCCEEDED',
+    lipsyncError: 'Chưa có file môi trên máy. Đang xem take Veo (câm). Gắn Fal · 0$ từ Usage — đừng Khớp môi.',
+  })
+) {
+  fail.push('desk missing-file copy must Hỏi lại · 0$, not paid Confirm');
+}
+if (
+  !shouldResumeLipsync({
+    lipsyncTaskId: 'lipsync_v3_01a09617-d14e-77d3-abd2-3140caa566c4',
+    lipsynced: true,
+    lipsyncStatus: 'SUCCEEDED',
+    lipsyncUrl: '/api/content/series/fal-video?taskId=lipsync_v3_01a09617-d14e-77d3-abd2-3140caa566c4',
+  })
+) {
+  fail.push('bare fal-video pointer must Hỏi lại · 0$, not paid Confirm');
+}
+if (
+  !lipsyncFalHasNoOutput(
+    'Fal từ chối input (validation) — job không có mp4. Gắn Fal · 0$ nếu fal.ai có link. Hỏi lại sẽ không ra file.',
+  )
+) {
+  fail.push('validation job must be marked no-output');
+}
+if (
+  shouldResumeLipsync({
+    lipsyncTaskId: 'lipsync_v3_01a09617-d14e-77d3-abd2-3140caa566c4',
+    lipsynced: true,
+    lipsyncStatus: 'FAILED',
+    lipsyncError:
+      'Fal Usage có job này — không có video.url. Job không tạo được file môi. Gắn Fal · 0$ nếu fal.ai có link. Hỏi lại sẽ không ra file.',
+  })
+) {
+  fail.push('Usage no-mp4 job must not Hỏi lại');
+}
+if (
+  !shouldResumeLipsync({
+    lipsyncTaskId: 'lipsync_v3_abc',
+    lipsyncStatus: 'RETRY',
+    lipsyncError: 'Fal chưa trả take khớp môi. Hỏi lại sau — 0 cr Runway.',
+  })
+) {
+  fail.push('desk timeout must Hỏi lại · 0$');
 }
 if (lipsyncVideoUrl({ lipsynced: true, previewUrl: 'https://fal.example/a.mp4' }) !== 'https://fal.example/a.mp4') {
   fail.push('lipsynced preview is the download url');

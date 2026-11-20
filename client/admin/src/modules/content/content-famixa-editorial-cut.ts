@@ -3,6 +3,7 @@
 import { resolveTakeUrl, type FinalSourceRun } from './content-famixa-final-source';
 import { clampShortSeconds } from './content-famixa-prod-v2';
 import type { FamixaSeriesShot, SeriesPilotState } from './content-famixa-series';
+import { isFalLipsyncTaskId, isFalPlaybackSrc } from './famixa-fal-lipsync-playback';
 import { performanceDurationOf, roundCentisecond, speechCutPlayableSec } from './famixa-shot-production-timing';
 
 export const EDITORIAL_CUT_ID = 'FAMIXA_FILM_EDITING_ENGINE_V1';
@@ -90,10 +91,13 @@ function looksEditorialHttpUrl(url?: string) {
 }
 
 /** Assemble source only. Does not read finalReady / KF pixels / IndexedDB. */
-export function editorialSourceOf(run?: FinalSourceRun & { motionNeedsRemake?: boolean; kfApproved?: boolean }) {
+export function editorialSourceOf(
+  run?: FinalSourceRun & { motionNeedsRemake?: boolean; kfApproved?: boolean; lipsyncTaskId?: string },
+) {
   if (run?.motionNeedsRemake || run?.kfApproved === false) return '';
   const lip = run?.lipsyncUrl?.trim();
   if (looksEditorialHttpUrl(lip)) return lip;
+  if ((run?.lipsynced || isFalLipsyncTaskId(run?.lipsyncTaskId)) && isFalPlaybackSrc(lip)) return lip;
   return resolveTakeUrl(run) || '';
 }
 

@@ -5,7 +5,6 @@ import {
   Alert,
   App,
   AutoComplete,
-  Avatar,
   Button,
   Card,
   Col,
@@ -37,7 +36,7 @@ import type { LookupItem, ProductDetail, ProductListFilter, ProductListItem } fr
 import { useCatalogEnums } from '@/shared/i18n/use-catalog-enums';
 import { formatDisplayMoney } from '@/shared/utils/money';
 import { isProductFeatureEnabled } from '@/shared/product/product-phases';
-import { withUploadAuth } from '@/shared/utils/upload-url';
+import { AuthedUploadAvatar } from '@/shared/utils/upload-image';
 import { fetchNationalDrugConnectionStatus } from '@/shared/api/national-drug.api';
 import { useCanCatalogMerge } from '@/shared/auth/usePermission';
 import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
@@ -309,16 +308,7 @@ export function ProductListPage() {
         title: t('columns.image'),
         dataIndex: 'primaryImageUrl',
         width: 56,
-        render: (url?: string) => {
-          const src = withUploadAuth(url);
-          return src ? (
-            <Avatar shape="square" size={40} src={src} alt="" />
-          ) : (
-            <Avatar shape="square" size={40}>
-              —
-            </Avatar>
-          );
-        },
+        render: (url?: string) => <AuthedUploadAvatar url={url} size={40} />,
       },
       {
         title: t('columns.barcode'),

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { NOVIXA_VOICE_MODELS } from './film-production-orchestrator';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   App,
   Button,
   Card,
+  Checkbox,
   Collapse,
   Modal,
   Col,
@@ -107,6 +109,8 @@ const EMPTY_BRAIN: ContentBrandKnowledge = {
   competitors: [],
   goodExamples: [],
   badExamples: [],
+  knowledgeUnits: [],
+  voice: null,
 };
 
 function knowledgeFromRow(row?: ContentBrand | null): ContentBrandKnowledge {
@@ -132,6 +136,8 @@ function knowledgeFromRow(row?: ContentBrand | null): ContentBrandKnowledge {
     competitors: k?.competitors ?? [],
     goodExamples: k?.goodExamples ?? [],
     badExamples: k?.badExamples ?? [],
+    knowledgeUnits: k?.knowledgeUnits ?? [],
+    voice: k?.voice ?? null,
   };
 }
 
@@ -290,6 +296,12 @@ function buildConfigJson(kind: string, v: Record<string, unknown>): string {
       typeof v.groupUrl === 'string' ? v.groupUrl : typeof v.externalId === 'string' ? v.externalId : '',
     );
     if (parsed) base.url = parsed.url;
+  }
+  if (kind === 'channel:facebook_page') {
+    const picked = Array.isArray(v.accepts)
+      ? v.accepts.filter((x): x is string => x === 'video' || x === 'post')
+      : ['video', 'post'];
+    base.accepts = picked.length > 0 ? picked : ['video', 'post'];
   }
   return JSON.stringify(base);
 }
@@ -545,7 +557,7 @@ export function ContentBrandsPage() {
 
   const resetDestForm = (kind: DestKind = 'site:manual') => {
     destForm.resetFields();
-    destForm.setFieldsValue({ kind, configJson: '{}', secret: '' });
+    destForm.setFieldsValue({ kind, configJson: '{}', secret: '', accepts: ['video', 'post'] });
     setSecretConfigured(false);
   };
 
@@ -617,6 +629,9 @@ export function ContentBrandsPage() {
       const groupParsed = parseFbGroupRef(
         (typeof cfg.url === 'string' ? cfg.url : '') || c.externalId,
       );
+      const accepts = Array.isArray(cfg.accepts)
+        ? cfg.accepts.filter((x): x is string => x === 'video' || x === 'post')
+        : ['video', 'post'];
       destForm.setFieldsValue({
         kind: `channel:${c.channelType}`,
         code: c.code,
@@ -627,6 +642,7 @@ export function ContentBrandsPage() {
         secretRef: c.secretRef ?? undefined,
         secret: '',
         configJson: c.configJson || '{}',
+        accepts: accepts.length > 0 ? accepts : ['video', 'post'],
       });
     }
   };
@@ -678,6 +694,12 @@ export function ContentBrandsPage() {
           competitors: knowledge.competitors,
           goodExamples: knowledge.goodExamples,
           badExamples: knowledge.badExamples,
+          knowledgeUnits: (knowledge.knowledgeUnits ?? [])
+            .map((unit) => String(unit ?? '').trim())
+            .filter((unit) => unit.length > 0),
+          voice: (knowledge.voice?.voiceId || '').trim()
+            ? { ...knowledge.voice, voiceId: String(knowledge.voice?.voiceId).trim() }
+            : null,
         },
       };
       if (editing) {
@@ -831,7 +853,7 @@ export function ContentBrandsPage() {
       const r = await startFacebookOAuth(editing.id);
       window.location.href = r.url;
     } catch (e) {
-      message.error(apiErrorMessage(e, 'Chưa mở được Facebook Login. Cấu hình App ở Model AI → Facebook.'));
+      message.error(apiErrorMessage(e, 'Chưa mở được Facebook Login. Cấu hình App ở Marketing AI → Facebook.'));
       setFbBusy(false);
     }
   };
@@ -870,15 +892,10 @@ export function ContentBrandsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            Thương hiệu & nơi đăng
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            Bước 1 — thương hiệu + Brief, rồi danh sách nơi đăng (web, fanpage, nhóm FB, LinkedIn, Zalo…).
-          </Typography.Text>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: 'wrap' }}>
+        <Typography.Text type="secondary">
+          Thông tin, brief và giọng của từng thương hiệu, kèm danh sách nơi đăng (website, Fanpage, nhóm Facebook…).
+        </Typography.Text>
         <Space wrap>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             Tải lại
@@ -1301,6 +1318,63 @@ export function ContentBrandsPage() {
                     <Form.Item name={['knowledge', 'competitors']} label="Đối thủ / ngữ cảnh">
                       <Select mode="tags" placeholder="Excel, phần mềm kế toán generic…" tokenSeparators={[',']} />
                     </Form.Item>
+                    <Divider style={{ margin: '8px 0 16px' }}>Kho tri thức thương hiệu</Divider>
+                    <Form.Item
+                      name={['knowledge', 'knowledgeUnits']}
+                      label="Kho tri thức (mỗi dòng một đơn vị)"
+                      extra="Bản đồ chủ đề, công thức đã kiểm tra, lỗi cần tránh, quy trình. Mỗi dòng là một đơn vị độc lập; nên mở đầu bằng mã (vd «B2 Định cỡ vị thế: …»). Khi tạo nội dung, hệ thống tự chọn các dòng liên quan đến chủ đề — không giới hạn số dòng lưu. Dòng đặt trên cùng được ưu tiên khi không có chủ đề."
+                      getValueProps={(value?: string[] | null) => ({ value: (value ?? []).join('\n') })}
+                      normalize={(value: string) => String(value ?? '').split('\n')}
+                    >
+                      <Input.TextArea
+                        autoSize={{ minRows: 6, maxRows: 24 }}
+                        placeholder={'B2 Định cỡ vị thế: Lot = (vốn × % rủi ro) ÷ (SL pip × giá trị pip)\nLỖI CẦN TRÁNH: R:R 1:2 không tự có lãi'}
+                      />
+                    </Form.Item>
+                    <Divider style={{ margin: '8px 0 16px' }}>Giọng đọc video</Divider>
+                    <Typography.Paragraph type="secondary" style={{ marginTop: -8 }}>
+                      Giọng ElevenLabs cố định cho mọi video của thương hiệu. Video Studio dùng giọng và thông số này làm mặc định.
+                      Độ ổn định cao giữ giọng không trượt vùng miền; tốc độ dưới 1 là đọc chậm.
+                      Model và ngắt nghỉ để trống thì kênh giữ cách đọc hiện tại.
+                    </Typography.Paragraph>
+                    <Space wrap align="start">
+                      <Form.Item name={['knowledge', 'voice', 'voiceId']} label="Voice ID">
+                        <Input style={{ width: 240 }} placeholder="vd 3VnrjnYrskPMDsapTr8X" allowClear />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'voiceName']} label="Tên giọng">
+                        <Input style={{ width: 240 }} placeholder="vd Tung Dang" allowClear />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'stability']} label="Độ ổn định (0–1)">
+                        <InputNumber min={0} max={1} step={0.05} style={{ width: 120 }} placeholder="0.5" />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'similarityBoost']} label="Độ giống (0–1)">
+                        <InputNumber min={0} max={1} step={0.05} style={{ width: 120 }} placeholder="0.85" />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'style']} label="Diễn cảm (0–1)">
+                        <InputNumber min={0} max={1} step={0.05} style={{ width: 120 }} placeholder="0" />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'speed']} label="Tốc độ (0.7–1.2)">
+                        <InputNumber min={0.7} max={1.2} step={0.05} style={{ width: 120 }} placeholder="1" />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'model']} label="Model giọng">
+                        <Select
+                          style={{ width: 280 }}
+                          allowClear
+                          placeholder="Mặc định kênh (v3)"
+                          options={NOVIXA_VOICE_MODELS.map((item) => ({ value: item.value, label: item.label }))}
+                        />
+                      </Form.Item>
+                      <Form.Item name={['knowledge', 'voice', 'spokenBreaks']} label="Ngắt nghỉ theo dấu câu" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item noStyle shouldUpdate>
+                        {() => (
+                          <Form.Item name={['knowledge', 'voice', 'commaBreaks']} label="Ngắt sau dấu phẩy" valuePropName="checked">
+                            <Switch disabled={!form.getFieldValue(['knowledge', 'voice', 'spokenBreaks'])} />
+                          </Form.Item>
+                        )}
+                      </Form.Item>
+                    </Space>
                     <Divider style={{ margin: '8px 0 16px' }}>Ví dụ nội dung</Divider>
                     <Form.Item
                       name={['knowledge', 'goodExamples']}
@@ -1575,6 +1649,12 @@ export function ContentBrandsPage() {
                           placeholder="Chọn loại…"
                           size="large"
                           onChange={(v) => {
+                            if (v === 'channel:facebook_page') {
+                              const cur = destForm.getFieldValue('accepts') as unknown;
+                              if (!Array.isArray(cur) || cur.length === 0) {
+                                destForm.setFieldsValue({ accepts: ['video', 'post'] });
+                              }
+                            }
                             if (v !== 'site:local_os') return;
                             const cur = destForm.getFieldsValue();
                             destForm.setFieldsValue({
@@ -1879,6 +1959,22 @@ export function ContentBrandsPage() {
                       ) : null}
 
                       {isFbPage ? (
+                        <Form.Item
+                          name="accepts"
+                          label="Nhận nội dung"
+                          rules={[{ required: true, type: 'array', min: 1, message: 'Chọn Video hoặc Bài viết' }]}
+                          extra="Bỏ tick Video nếu trang này không đăng phim. Không chọn gì thì không lưu được."
+                        >
+                          <Checkbox.Group
+                            options={[
+                              { label: 'Video', value: 'video' },
+                              { label: 'Bài viết', value: 'post' },
+                            ]}
+                          />
+                        </Form.Item>
+                      ) : null}
+
+                      {isFbPage ? (
                         <Card type="inner" size="small" title="Facebook Connection" style={{ marginBottom: 16 }}>
                           <Space direction="vertical" size={8} style={{ width: '100%' }}>
                             <div>
@@ -1895,7 +1991,7 @@ export function ContentBrandsPage() {
                             ) : null}
                             <Typography.Paragraph type="secondary" style={{ margin: 0, fontSize: 12 }}>
                               Operator không dán token. Cần App Meta ở{' '}
-                              <Link to="/content/ai#facebook">Model AI → Facebook</Link>.
+                              <Link to="/content/marketing-ai#facebook">Marketing AI → Facebook</Link>.
                             </Typography.Paragraph>
                             <Space wrap>
                               <Button type="primary" loading={fbBusy} onClick={() => void connectFacebook()}>

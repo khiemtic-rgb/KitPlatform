@@ -23,14 +23,49 @@ public sealed class FileResearchPublicationReader : IResearchPublicationReader
         _options = options.Value;
 
     public Task<ResearchPublicationRead> ReadAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult(Read());
+        ReadAsync(publicationId: null, cancellationToken);
 
-    ResearchPublicationRead Read()
+    public Task<ResearchPublicationRead> ReadAsync(string? publicationId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Read(publicationId));
+
+    public Task<ResearchPublicationIndex> ListAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(List());
+
+    ResearchPublicationRead Read(string? publicationId)
     {
+        var requested = string.IsNullOrWhiteSpace(publicationId) ? null : publicationId.Trim();
+        if (requested is not null && !ResearchPublicationIds.IsPublicationId(requested))
+            return Fail(ResearchAvailability.Unreadable, "UNREADABLE", "Publication id is invalid.");
+
         var root = (_options.Root ?? "").Trim();
         if (root.Length == 0 || !Directory.Exists(root))
             return Fail(ResearchAvailability.Missing, "MISSING", "Publication is missing.");
 
+        var latestPath = Path.Combine(root, "latest.json");
+        if (!File.Exists(latestPath))
+        {
+            if (requested is null)
+                return ReadDirectory(root);
+            var direct = ReadDirectory(root);
+            if (string.Equals(direct.PublicationId, requested, StringComparison.Ordinal))
+                return direct;
+            return ReadHistory(requested) ?? Fail(ResearchAvailability.Missing, "MISSING", "Publication is missing.");
+        }
+
+        if (!TryPointer(latestPath, out var latestId))
+            return Fail(ResearchAvailability.Unreadable, "UNREADABLE", "Publication pointer is invalid.");
+
+        var selected = requested ?? latestId;
+        var fromCatalog = ReadCatalog(root, selected);
+        if (fromCatalog is not null)
+            return fromCatalog;
+        if (requested is not null)
+            return ReadHistory(requested) ?? Fail(ResearchAvailability.Missing, "MISSING", "Publication is missing.", publicationId: requested);
+        return Fail(ResearchAvailability.Missing, "MISSING", "Publication is missing.", publicationId: latestId);
+    }
+
+    ResearchPublicationRead ReadDirectory(string root)
+    {
         var manifestPath = FixedPath(root, "manifest.json");
         if (manifestPath is null || !File.Exists(manifestPath))
             return Fail(ResearchAvailability.Missing, "MISSING", "Publication manifest is missing.");
@@ -285,6 +320,152 @@ public sealed class FileResearchPublicationReader : IResearchPublicationReader
             [],
             null,
             null);
+
+    ResearchPublicationRead? ReadCatalog(string root, string publicationId)
+    {
+        if (!TryChildDirectory(root, publicationId, out var directory))
+            return null;
+        var read = ReadDirectory(directory);
+        if (read.PublicationId is null)
+            return read;
+        if (!string.Equals(read.PublicationId, publicationId, StringComparison.Ordinal))
+            return Fail(
+                ResearchAvailability.Inconsistent,
+                "INCONSISTENT",
+                "Publication id does not match its directory.",
+                read.SchemaVersion,
+                publicationId,
+                read.PublishedAt,
+                read.Publisher);
+        return read;
+    }
+
+    ResearchPublicationRead? ReadHistory(string publicationId)
+    {
+        foreach (var directory in HistoryDirectories())
+        {
+            if (IsReparse(directory))
+                continue;
+            var read = ReadDirectory(directory);
+            if (string.Equals(read.PublicationId, publicationId, StringComparison.Ordinal))
+                return read;
+        }
+
+        return null;
+    }
+
+    ResearchPublicationIndex List()
+    {
+        var root = (_options.Root ?? "").Trim();
+        string? latest = null;
+        if (root.Length > 0 && Directory.Exists(root) && File.Exists(Path.Combine(root, "latest.json")) && TryPointer(Path.Combine(root, "latest.json"), out var latestId))
+            latest = latestId;
+
+        var entries = new List<ResearchPublicationIndexEntry>();
+        if (root.Length > 0 && Directory.Exists(root))
+        {
+            foreach (var directory in Directory.EnumerateDirectories(root).OrderBy(path => path, StringComparer.Ordinal))
+            {
+                var name = Path.GetFileName(directory);
+                if (!ResearchPublicationIds.IsPublicationId(name) || IsReparse(directory))
+                    continue;
+                if (!string.Equals(ManifestId(directory), name, StringComparison.Ordinal))
+                    continue;
+                entries.Add(new ResearchPublicationIndexEntry(
+                    name,
+                    string.Equals(name, latest, StringComparison.Ordinal) ? "latest" : "retained"));
+            }
+        }
+
+        foreach (var directory in HistoryDirectories())
+        {
+            if (IsReparse(directory))
+                continue;
+            var id = ManifestId(directory);
+            if (!ResearchPublicationIds.IsPublicationId(id) || entries.Any(entry => entry.PublicationId == id))
+                continue;
+            entries.Add(new ResearchPublicationIndexEntry(id!, "archive"));
+        }
+
+        return new ResearchPublicationIndex(latest, entries);
+    }
+
+    IEnumerable<string> HistoryDirectories()
+    {
+        var catalog = (_options.Root ?? "").Trim();
+        var catalogFull = catalog.Length > 0 && Directory.Exists(catalog) ? Path.GetFullPath(catalog) : null;
+        foreach (var raw in (_options.HistoryRoots ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!Directory.Exists(raw))
+                continue;
+            var full = Path.GetFullPath(raw);
+            if (catalogFull is not null && string.Equals(full, catalogFull, StringComparison.OrdinalIgnoreCase))
+                continue;
+            yield return full;
+        }
+    }
+
+    static bool TryPointer(string path, out string publicationId)
+    {
+        publicationId = "";
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllBytes(path));
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+                return false;
+            if (!root.TryGetProperty("kind", out var kind) || kind.ValueKind != JsonValueKind.String || kind.GetString() != "POINTER_NOT_A_PUBLICATION")
+                return false;
+            if (root.TryGetProperty("live_orders", out var live) && live.ValueKind != JsonValueKind.False)
+                return false;
+            if (!root.TryGetProperty("publicationId", out var idNode) || idNode.ValueKind != JsonValueKind.String)
+                return false;
+            var id = idNode.GetString();
+            if (!ResearchPublicationIds.IsPublicationId(id))
+                return false;
+            publicationId = id!;
+            return true;
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    static bool TryChildDirectory(string root, string publicationId, out string directory)
+    {
+        directory = "";
+        if (!ResearchPublicationIds.IsPublicationId(publicationId))
+            return false;
+        var rootFull = Path.GetFullPath(root);
+        var full = Path.GetFullPath(Path.Combine(rootFull, publicationId));
+        var prefix = rootFull.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (!full.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(full) || IsReparse(full))
+            return false;
+        directory = full;
+        return true;
+    }
+
+    static string? ManifestId(string directory)
+    {
+        var path = Path.Combine(directory, "manifest.json");
+        if (!File.Exists(path))
+            return null;
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllBytes(path));
+            if (!document.RootElement.TryGetProperty("publicationId", out var node) || node.ValueKind != JsonValueKind.String)
+                return null;
+            return node.GetString();
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    static bool IsReparse(string path) =>
+        new DirectoryInfo(path).Attributes.HasFlag(FileAttributes.ReparsePoint);
 
     static string? FixedPath(string root, string relative)
     {

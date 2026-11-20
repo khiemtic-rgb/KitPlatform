@@ -9,7 +9,16 @@
     "campaigns": "Campaigns",
     "intelligence": "AI Intelligence",
     "analytics": "Analytics",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "queue": "Hàng đợi"
+  },
+  "queue": {
+    "title": "Hàng đợi",
+    "empty": "Không có việc đang chờ.",
+    "loadError": "Không tải được hàng đợi.",
+    "type": "Loại",
+    "status": "Trạng thái",
+    "created": "Tạo lúc"
   },
   "workspace": {
     "title": "Việc hôm nay",
@@ -48,8 +57,20 @@
   },
   "leadWorkspace": {
     "back": "Việc hôm nay",
+    "archivedReadOnly": "Lead đã lưu trữ. Lịch sử vẫn giữ ở đây; không nhận thao tác mới.",
     "aiSummary": "AI tóm tắt",
     "composeQuestion": "Soạn câu hỏi"
+  },
+  "outbound": {
+    "unknown": "Không rõ đã gửi",
+    "markDelivered": "Đã đi",
+    "markNotDelivered": "Chưa đi",
+    "confirm": "Xác nhận",
+    "deliveredHint": "Bạn đã kiểm hộp thư Page và thấy tin. Ghi lại điều đã thấy. Thao tác này không gửi gì.",
+    "notDeliveredHint": "Tin không có trong hộp thư Page. Tin quay về nháp và phải duyệt lại mới gửi được.",
+    "notePlaceholder": "Điều bạn thấy trong hộp thư Page",
+    "resolved": "Đã lưu",
+    "resolveFailed": "Không lưu được"
   },
   "pipeline": {
     "title": "Pipeline",
@@ -84,8 +105,9 @@
     "actions": "Thao tác",
     "edit": "Sửa",
     "delete": "Xóa",
-    "deleteConfirm": "Xóa lead «{{name}}»?",
+    "deleteConfirm": "Xóa lead «{{name}}»? Lead đã có lịch sử sẽ được lưu trữ, không bị xóa.",
     "deleteSuccess": "Đã xóa lead",
+    "archiveSuccess": "Lead có lịch sử nên đã được lưu trữ",
     "deleteFailed": "Không xóa được lead",
     "editTitle": "Sửa lead",
     "editSuccess": "Đã cập nhật lead",
@@ -154,7 +176,8 @@
     "demo": "Demo",
     "pilot": "Pilot",
     "paid": "Trả phí",
-    "lost": "Mất"
+    "lost": "Mất",
+    "archived": "Đã lưu trữ"
   },
   "temperature": {
     "cold": "🔵 Lạnh",
@@ -181,7 +204,7 @@
   },
   "chat": {
     "title": "Trợ lý Chat Facebook",
-    "blurb": "Khi nhà thuốc trả lời — dán tin vào đây, hệ thống tự soạn và tự gửi (có Page token thì Messenger; chưa có thì copy để dán).",
+    "blurb": "Khi nhà thuốc trả lời — dán tin vào đây. Hệ thống chỉ tạo bản nháp. Duyệt và gửi là hai bước. Không có Page token thì không gửi được.",
     "placeholder": "Dán tin nhắn khách vào đây…",
     "inboundLabel": "Phản hồi của khách",
     "preview": "Soạn lại",
@@ -216,11 +239,11 @@
     "escalate": "Ngoài SoT — cần người",
     "sources": "Nguồn",
     "live": "Webhook sẵn sàng gửi",
-    "previewOnly": "Chưa gắn Page token — Gửi sẽ ghi interaction + copy"
+    "previewOnly": "Chưa gắn Page token — gửi vẫn đóng cho đến khi bản nháp được duyệt"
   },
   "journey": {
     "title": "Lộ trình chat",
-    "blurb": "Hỏi nỗi đau đã chọn. Chưa mời Health Check nếu nhà thuốc chưa trả lời. Gửi từ Messenger cá nhân — nút Gửi copy tin và mở hộp thư của bạn.",
+    "blurb": "Hỏi nỗi đau đã chọn. Chưa mời Health Check nếu nhà thuốc chưa trả lời. Nút Lưu nháp không gửi Facebook.",
     "stepHook": "1. Mở đầu (nỗi đau)",
     "stepPhc": "2. Mời Health Check",
     "stepReport": "3. Hỏi báo cáo",
@@ -228,9 +251,9 @@
     "schedule": "Hẹn khung vắng khách",
     "rewrite": "Viết lại cho tự nhiên",
     "rewritten": "Đã viết lại giọng ngoài đời — đọc rồi mới copy gửi",
-    "send": "Gửi",
+    "send": "Lưu nháp",
     "openPharmacy": "Xem Facebook nhà thuốc",
-    "sentStaffInbox": "Đã copy lời chào và mở Messenger của bạn — dán tin, gửi từ tài khoản cá nhân",
+    "sentStaffInbox": "Đã lưu bản nháp. Hệ thống không gửi Facebook. Lời chào đã được copy để bạn tự dán nếu muốn.",
     "scheduled": "Đã hẹn khung vắng khách",
     "logged": "Đã ghi bước lộ trình",
     "sentOutbound": "Đã copy câu tiếp cận và mở Facebook nhà thuốc — dán tin, gửi từ tài khoản của mình",
@@ -308,6 +331,8 @@
     "psidFailed": "Không gắn/gỡ được PSID",
     "geminiTitle": "Gemini — viết lại giọng",
     "geminiHint": "Chỉ sửa giọng tin nhắn. Không bịa tính năng, giá, PHC. Key lưu trên KIT Sales — không dùng màn Nội dung.",
+    "geminiBudget": "Đã dùng {{used}} / {{budget}} token trong 7 ngày.",
+    "geminiBudgetOff": "AI đang tắt: trần token tuần = 0 (cấu hình KitSales:Ai:WeeklyTokenBudget).",
     "geminiKey": "Gemini API key",
     "geminiPlaceholder": "Dán key mới — để trống nếu giữ key cũ",
     "geminiEmpty": "Chưa có key — nút Viết lại cho tự nhiên sẽ lỗi",

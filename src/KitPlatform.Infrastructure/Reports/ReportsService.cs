@@ -1,4 +1,5 @@
 using KitPlatform.Application.Abstractions;
+using KitPlatform.Packs.Pharmacy.Inventory;
 using KitPlatform.Packs.Pharmacy.Procurement;
 using KitPlatform.Application.Reports;
 
@@ -626,9 +627,11 @@ internal sealed class ReportsService : IReportsService
         CancellationToken cancellationToken = default)
     {
         if (expiryDays < 1) expiryDays = 30;
-        var cutoff = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).AddDays(expiryDays);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+        var cutoff = today.AddDays(expiryDays);
         var (scopedWarehouseId, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
-        var rows = await _repository.GetInventoryNearExpiryAsync(scopedWarehouseId, allowed, cutoff, cancellationToken);
+        var rows = await _repository.GetInventoryNearExpiryAsync(
+            scopedWarehouseId, allowed, today, cutoff, cancellationToken);
         var columns = new List<ReportColumnDto>
         {
             Col("productCode", "Mã SP", ReportColumnFormats.Text, "left"),
@@ -673,10 +676,12 @@ internal sealed class ReportsService : IReportsService
             Col("openingQty", "Tồn đầu", ReportColumnFormats.Qty, "right"),
             Col("inQty", "Nhập", ReportColumnFormats.Qty, "right"),
             Col("outQty", "Xuất", ReportColumnFormats.Qty, "right"),
+            Col("adjustmentInQty", "Kiểm kê tăng", ReportColumnFormats.Qty, "right"),
+            Col("adjustmentOutQty", "Kiểm kê giảm", ReportColumnFormats.Qty, "right"),
             Col("closingQty", "Tồn cuối", ReportColumnFormats.Qty, "right"),
         };
         var filters = FilterLabels(from, to, null, warehouseId);
-        filters["Ghi chú"] = "Tồn cuối = Tồn đầu + Nhập − Xuất (theo stock_movements)";
+        filters["Ghi chú"] = "Tồn cuối = Tồn đầu + Nhập − Xuất theo stock_movements. Kiểm kê tăng đã nằm trong Nhập, kiểm kê giảm đã nằm trong Xuất.";
         if (!string.IsNullOrWhiteSpace(search)) filters["Tìm kiếm"] = search.Trim();
 
         return BuildTable(
@@ -685,7 +690,53 @@ internal sealed class ReportsService : IReportsService
             filters,
             columns,
             rows,
-            SumTotals(rows, "openingQty", "inQty", "outQty", "closingQty"));
+            SumTotals(rows, "openingQty", "inQty", "outQty", "adjustmentInQty", "adjustmentOutQty", "closingQty"));
+    }
+
+    public async Task<ReportTableResultDto> RunInventoryMovementLinesAsync(
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        Guid productId,
+        Guid warehouseId,
+        string direction,
+        CancellationToken cancellationToken = default)
+    {
+        if (productId == Guid.Empty || warehouseId == Guid.Empty)
+            throw new InvalidOperationException("Cần sản phẩm và kho để xem chi tiết biến động.");
+
+        var movementType = (direction ?? "").Trim().ToLowerInvariant() switch
+        {
+            "in" => StockMovementTypes.In,
+            "out" => StockMovementTypes.Out,
+            _ => throw new InvalidOperationException("Chiều biến động phải là nhập hoặc xuất."),
+        };
+
+        var (from, to) = ReportsDateHelper.ResolveRangeUtc(fromUtc, toUtc, DateTime.UtcNow);
+        var (scopedWarehouseId, _) = await _branchAccess.ResolveWarehouseQueryAsync(warehouseId, cancellationToken);
+        if (scopedWarehouseId != warehouseId)
+            throw new UnauthorizedAccessException("Bạn không có quyền xem dữ liệu kho này.");
+
+        var rows = await _repository.GetInventoryMovementLinesAsync(
+            from, to, productId, warehouseId, movementType, cancellationToken);
+        var columns = new List<ReportColumnDto>
+        {
+            Col("movementAt", "Ngày giờ", ReportColumnFormats.Text, "left"),
+            Col("productName", "Sản phẩm", ReportColumnFormats.Text, "left"),
+            Col("movementKind", "Loại biến động", ReportColumnFormats.Text, "left"),
+            Col("referenceCode", "Mã chứng từ", ReportColumnFormats.Text, "left"),
+            Col("warehouseName", "Kho", ReportColumnFormats.Text, "left"),
+            Col("quantity", "Số lượng", ReportColumnFormats.Qty, "right"),
+        };
+        var filters = FilterLabels(from, to, null, warehouseId);
+        filters["Chiều"] = movementType == StockMovementTypes.In ? "Nhập" : "Xuất";
+
+        return BuildTable(
+            ReportCodes.InventoryMovementSummary,
+            movementType == StockMovementTypes.In ? "Chi tiết nhập" : "Chi tiết xuất",
+            filters,
+            columns,
+            rows,
+            SumTotals(rows, "quantity"));
     }
 
     private static string NormalizePeriodGroupBy(string groupBy) =>

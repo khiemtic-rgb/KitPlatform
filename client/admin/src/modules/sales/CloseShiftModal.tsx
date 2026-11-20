@@ -48,7 +48,6 @@ export function CloseShiftModal({ open, loading, shift, onCancel, onConfirm }: P
             form={form}
             layout="vertical"
             style={{ marginTop: 16 }}
-            initialValues={{ closingCash: expectedCash }}
           >
             <Form.Item
               name="closingCash"

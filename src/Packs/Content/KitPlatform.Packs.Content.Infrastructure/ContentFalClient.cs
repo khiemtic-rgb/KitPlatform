@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using KitPlatform.Packs.Content;
+using KitPlatform.Packs.Content.Production;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
@@ -28,17 +29,20 @@ internal sealed class ContentFalClient
     private readonly ContentRepository _repo;
     private readonly IOptions<ContentOptions> _options;
     private readonly IConfiguration _configuration;
+    private readonly KitVideoVideoStore _videos;
 
     public ContentFalClient(
         HttpClient http,
         ContentRepository repo,
         IOptions<ContentOptions> options,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        KitVideoVideoStore videos)
     {
         _http = http;
         _repo = repo;
         _options = options;
         _configuration = configuration;
+        _videos = videos;
         if (_http.BaseAddress is null)
             _http.BaseAddress = new Uri("https://queue.fal.run/");
     }
@@ -117,13 +121,20 @@ internal sealed class ContentFalClient
         byte[] bytes,
         string contentType,
         string fileName,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? authorizedKey = null)
     {
         if (bytes.Length is < 32 or > 12_000_000)
             throw new InvalidOperationException($"File Fal upload {bytes.Length} byte — cần 32B–12MB.");
-        var resolved = await ResolveAsync(cancellationToken);
-        var key = resolved.FalApiKey
+        string key;
+        if (!string.IsNullOrWhiteSpace(authorizedKey))
+            key = authorizedKey.Trim();
+        else
+        {
+            var resolved = await ResolveAsync(cancellationToken);
+            key = resolved.FalApiKey
                   ?? throw new InvalidOperationException("Chưa cấu hình FalApiKey.");
+        }
         var mime = string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType.Trim();
         var name = string.IsNullOrWhiteSpace(fileName) ? "asset.bin" : fileName.Trim();
 
@@ -157,17 +168,129 @@ internal sealed class ContentFalClient
         return fileUrl;
     }
 
+    public async Task<(string ProviderJobId, byte[] Bytes, string MimeType)> ExecuteProductionLipsyncOnceAsync(
+        byte[] videoBytes,
+        byte[] audioBytes,
+        double speakerX,
+        double speakerY,
+        int speakerWidth,
+        int speakerHeight,
+        int speakerFrame,
+        double videoDurationSec,
+        CancellationToken cancellationToken,
+        string? syncMode = null,
+        int[]? faceBoxXyxy = null,
+        string? authorizedKey = null)
+    {
+        authorizedKey = RequireProductionKey(authorizedKey);
+        var videoUrl = await UploadAsync(videoBytes, "video/mp4", "take.mp4", cancellationToken, authorizedKey);
+        var audioUrl = await UploadAsync(audioBytes, "audio/mpeg", "voice.mp3", cancellationToken, authorizedKey);
+        var frameCount = FamixaFalLipsyncSpeakerPinV1.FrameCountFromTake(videoBytes, videoDurationSec);
+        var created = await CreateLipsyncAsync(
+            videoUrl, audioUrl, string.IsNullOrWhiteSpace(syncMode) ? "silence" : syncMode, "v3", cancellationToken,
+            speakerX, speakerY, speakerWidth, speakerHeight, speakerFrame, videoDurationSec, frameCount, faceBoxXyxy, authorizedKey);
+        var bytes = TryReadStoredFalBytes(created.TaskId);
+        if (bytes is null && !string.IsNullOrWhiteSpace(created.VideoUrl))
+            bytes = await TryDownloadOutputAsync(created.VideoUrl, cancellationToken);
+        if (bytes is null && !string.IsNullOrWhiteSpace(created.TaskId))
+        {
+            var polled = await GetTaskAsync(created.TaskId, cancellationToken, authorizedKey);
+            bytes = TryReadStoredFalBytes(created.TaskId);
+            if (bytes is null && !string.IsNullOrWhiteSpace(polled.VideoUrl))
+                bytes = await TryDownloadOutputAsync(polled.VideoUrl, cancellationToken);
+            if (bytes is null
+                && string.Equals(polled.Status, "FAILED", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(polled.Error ?? "FAILED_IDENTITY");
+        }
+        if (bytes is not { Length: >= 32 })
+            throw new InvalidOperationException("FAILED_IDENTITY");
+        return (created.TaskId, bytes, "video/mp4");
+    }
+
+    public async Task<(string Status, string ProviderJobId, byte[]? Bytes, string MimeType, string? Error)>
+        RecoverProductionLipsyncOutputAsync(string providerJobId, CancellationToken cancellationToken, string? authorizedKey = null)
+    {
+        authorizedKey = RequireProductionKey(authorizedKey);
+        var original = (providerJobId ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(original))
+            return ("FAILED", original, null, "video/mp4", ProductionFailureReasons.RecoveryFailed);
+        var pollId = NormalizeLipsyncRecoverTaskId(original);
+        string? lastError = null;
+        for (var i = 0; i < 30; i++)
+        {
+            try
+            {
+                var polled = await GetTaskAsync(pollId, cancellationToken, authorizedKey);
+                lastError = polled.Error;
+                var bytes = TryReadStoredFalBytes(pollId);
+                if (bytes is null && !string.IsNullOrWhiteSpace(polled.VideoUrl))
+                    bytes = await TryDownloadOutputAsync(polled.VideoUrl, cancellationToken);
+                if (bytes is { Length: >= 32 })
+                    return ("SUCCEEDED", original, bytes, "video/mp4", null);
+                var status = string.IsNullOrWhiteSpace(polled.Status) ? "PENDING" : polled.Status.Trim().ToUpperInvariant();
+                if (status is "FAILED" or "ERROR" or "NOT_FOUND" or "EXPIRED" or "UNAVAILABLE")
+                    return (status, original, null, "video/mp4", polled.Error ?? ProductionFailureReasons.RecoveryFailed);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                lastError = ex.Message;
+                var upper = lastError.ToUpperInvariant();
+                if (upper.Contains("NOT_FOUND") || upper.Contains("404") || upper.Contains("EXPIRED") || upper.Contains("UNAVAILABLE"))
+                    return ("FAILED", original, null, "video/mp4", lastError);
+            }
+            await Task.Delay(4000, cancellationToken);
+        }
+        return ("UNAVAILABLE", original, null, "video/mp4", lastError ?? ProductionFailureReasons.RecoveryFailed);
+    }
+
+    static string RequireProductionKey(string? authorizedKey)
+    {
+        if (string.IsNullOrWhiteSpace(authorizedKey))
+            throw new InvalidOperationException(ProductionCredentialResolver.Unresolved);
+        return authorizedKey.Trim();
+    }
+
+    public static string NormalizeLipsyncRecoverTaskId(string providerJobId)
+    {
+        var t = (providerJobId ?? "").Trim();
+        if (t.Length == 0 || IsLipsyncTask(t)) return t;
+        return Guid.TryParse(t, out var id) ? "lipsync_v3_" + id.ToString("D") : t;
+    }
+
+    byte[]? TryReadStoredFalBytes(string taskId)
+    {
+        if (string.IsNullOrWhiteSpace(taskId)) return null;
+        var fileId = FamixaFalLipsyncPlaybackV1.FileId(taskId);
+        var bytes = _videos.TryReadNamed("fal", fileId);
+        return bytes is { Length: >= 32 } ? bytes : null;
+    }
+
     public async Task<(string TaskId, string Status, string? VideoUrl, string Model)> CreateLipsyncAsync(
         string videoUrl,
         string audioUrl,
         string? syncMode,
         string? modelKind,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        double? speakerX = null,
+        double? speakerY = null,
+        int? speakerVideoWidth = null,
+        int? speakerVideoHeight = null,
+        int? speakerFrameNumber = null,
+        double? speakerDurationSec = null,
+        int? speakerFrameCount = null,
+        int[]? faceBoxXyxy = null,
+        string? authorizedKey = null)
     {
-        var resolved = await ResolveAsync(cancellationToken);
-        var key = resolved.FalApiKey
+        string key;
+        if (!string.IsNullOrWhiteSpace(authorizedKey))
+            key = authorizedKey.Trim();
+        else
+        {
+            var resolved = await ResolveAsync(cancellationToken);
+            key = resolved.FalApiKey
                   ?? throw new InvalidOperationException(
                       "Chưa cấu hình FalApiKey — Model AI → Video, hoặc env FAL_KEY.");
+        }
 
         var kind = NormalizeLipsyncKind(modelKind);
         var endpoint = kind switch
@@ -196,7 +319,7 @@ internal sealed class ContentFalClient
         // Never retry 504 / never fan-out to another model — each 200 is a paid Fal job.
         using var queueReq = new HttpRequestMessage(HttpMethod.Post, endpoint);
         ApplyAuth(queueReq, key);
-        queueReq.Content = LipsyncPayload(kind, clipUrl, audio, mode);
+        queueReq.Content = LipsyncPayload(kind, clipUrl, audio, mode, speakerX, speakerY, speakerVideoWidth, speakerVideoHeight, speakerFrameNumber, speakerDurationSec, speakerFrameCount, faceBoxXyxy);
         using var queueRes = await _http.SendAsync(queueReq, cancellationToken);
         var queueBody = await queueRes.Content.ReadAsStringAsync(cancellationToken);
         var queueCode = (int)queueRes.StatusCode;
@@ -209,7 +332,7 @@ internal sealed class ContentFalClient
 
         using var syncReq = new HttpRequestMessage(HttpMethod.Post, $"https://fal.run/{endpoint}");
         ApplyAuth(syncReq, key);
-        syncReq.Content = LipsyncPayload(kind, clipUrl, audio, mode);
+        syncReq.Content = LipsyncPayload(kind, clipUrl, audio, mode, speakerX, speakerY, speakerVideoWidth, speakerVideoHeight, speakerFrameNumber, speakerDurationSec, speakerFrameCount, faceBoxXyxy);
         using var syncRes = await _http.SendAsync(syncReq, cancellationToken);
         var syncBody = await syncRes.Content.ReadAsStringAsync(cancellationToken);
         var syncCode = (int)syncRes.StatusCode;
@@ -229,10 +352,13 @@ internal sealed class ContentFalClient
         CancellationToken cancellationToken)
     {
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
-        var video = ReadVideoUrl(doc.RootElement);
+        var video = FamixaFalLipsyncResultV1.ReadVideoUrl(doc.RootElement);
         var id = ReadRequestId(doc.RootElement);
         if (!string.IsNullOrWhiteSpace(video))
-            return (prefix + (string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N") : id), "SUCCEEDED", video, modelLabel);
+        {
+            var taskId = prefix + (string.IsNullOrWhiteSpace(id) ? Guid.NewGuid().ToString("N") : id);
+            return (taskId, "SUCCEEDED", await PersistFalOutputAsync(taskId, video, cancellationToken), modelLabel);
+        }
         if (string.IsNullOrWhiteSpace(id))
             throw new InvalidOperationException("Fal lipsync không trả request id. Kiểm tra fal.ai → Usage trước khi gửi job mới.");
         var waited = await WaitLipsyncAsync(
@@ -242,9 +368,9 @@ internal sealed class ContentFalClient
             ReadString(doc.RootElement, "status_url") ?? ReadString(doc.RootElement, "statusUrl"),
             ReadString(doc.RootElement, "response_url") ?? ReadString(doc.RootElement, "responseUrl"),
             cancellationToken,
-            75);
+            240);
         if (!string.IsNullOrWhiteSpace(waited.VideoUrl))
-            return (prefix + id, "SUCCEEDED", waited.VideoUrl, modelLabel);
+            return (prefix + id, "SUCCEEDED", await PersistFalOutputAsync(prefix + id, waited.VideoUrl, cancellationToken), modelLabel);
         if (waited.Status == "FAILED"
             && !string.IsNullOrWhiteSpace(waited.Error)
             && !waited.Error.Contains("405", StringComparison.OrdinalIgnoreCase)
@@ -264,6 +390,21 @@ internal sealed class ContentFalClient
         return new InvalidOperationException($"Fal lipsync {code}: {Truncate(body)}");
     }
 
+    private async Task<(int StatusCode, string Body)> FalGetAsync(
+        string key,
+        string url,
+        CancellationToken cancellationToken)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(6));
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        ApplyAuth(req, key);
+        req.Headers.Accept.ParseAdd("application/json");
+        using var res = await _http.SendAsync(req, cts.Token);
+        var body = await res.Content.ReadAsStringAsync(cts.Token);
+        return ((int)res.StatusCode, body);
+    }
+
     private async Task<(string Status, string? VideoUrl, string? Error)> PeekLipsyncAsync(
         string key,
         string requestId,
@@ -272,78 +413,129 @@ internal sealed class ContentFalClient
         string? resultUrl,
         CancellationToken cancellationToken)
     {
-        // Only queue.fal.run (+ Fal's own status_url). GET fal.run/.../requests/... = 405 and looks like "failed".
-        var statusCandidates = new[]
-        {
+        var urls = FamixaFalLipsyncPollV1.PeekPaths(
+            FamixaFalLipsyncPollV1.QueueApp(endpoint),
+            requestId,
             statusUrl,
-            $"https://queue.fal.run/{endpoint}/requests/{Uri.EscapeDataString(requestId)}/status",
-        }.Where(u => !string.IsNullOrWhiteSpace(u)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        var resultCandidates = new[]
-        {
-            resultUrl,
-            $"https://queue.fal.run/{endpoint}/requests/{Uri.EscapeDataString(requestId)}",
-        }.Where(u => !string.IsNullOrWhiteSpace(u)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            resultUrl);
 
-        foreach (var result in resultCandidates)
+        var hits = await Task.WhenAll(urls.Select(async url =>
         {
-            using var peek = new HttpRequestMessage(HttpMethod.Get, result);
-            ApplyAuth(peek, key);
-            using var peekRes = await _http.SendAsync(peek, cancellationToken);
-            var peekBody = await peekRes.Content.ReadAsStringAsync(cancellationToken);
-            if (!peekRes.IsSuccessStatusCode) continue;
-            using var peekDoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(peekBody) ? "{}" : peekBody);
-            var ready = ReadVideoUrl(peekDoc.RootElement);
-            if (!string.IsNullOrWhiteSpace(ready))
-                return ("SUCCEEDED", ready, null);
-        }
+            try
+            {
+                return await FalGetAsync(key, url!, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return (StatusCode: 0, Body: "");
+            }
+            catch (HttpRequestException)
+            {
+                return (StatusCode: 0, Body: "");
+            }
+        }));
 
         string? last = null;
-        foreach (var url in statusCandidates)
+        string? resultKeys = null;
+        foreach (var hit in hits)
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, url);
-            ApplyAuth(req, key);
-            using var res = await _http.SendAsync(req, cancellationToken);
-            var body = await res.Content.ReadAsStringAsync(cancellationToken);
-            if ((int)res.StatusCode is 404 or 405)
+            if (hit.StatusCode is 0) continue;
+            if (hit.StatusCode is 404 or 405)
             {
-                last = $"Fal đã nhận job {requestId} (có thể đã trừ). KIT hỏi sai URL (405). Mở fal.ai → Usage — đừng gửi job mới.";
+                last = $"Fal đã nhận job {requestId} (có thể đã trừ). KIT hỏi sai URL ({hit.StatusCode}). Gắn Fal · 0$ từ Usage.";
                 continue;
             }
-            if (!res.IsSuccessStatusCode)
+            if (hit.StatusCode is < 200 or >= 300)
             {
-                last = $"Fal {(int)res.StatusCode}: {Truncate(body)}";
+                last = $"Fal {hit.StatusCode}: {Truncate(hit.Body)}";
                 continue;
             }
-            using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
-            var raw = doc.RootElement.TryGetProperty("status", out var st) ? st.GetString() ?? "" : "";
-            var status = raw.Trim().ToUpperInvariant() switch
+            var video = FamixaFalLipsyncResultV1.ReadVideoUrl(hit.Body);
+            if (!string.IsNullOrWhiteSpace(video))
+                return ("SUCCEEDED", video, null);
+            resultKeys ??= FamixaFalLipsyncResultV1.DescribeKeys(hit.Body);
+            try
             {
-                "COMPLETED" or "COMPLETE" or "SUCCESS" => "SUCCEEDED",
-                "IN_QUEUE" or "IN_PROGRESS" or "QUEUED" => "PENDING",
-                "FAILED" or "ERROR" => "FAILED",
-                var s => string.IsNullOrWhiteSpace(s) ? "PENDING" : s,
-            };
-            if (status == "FAILED")
-                return ("FAILED", null, ReadString(doc.RootElement, "error") ?? Truncate(body));
-            if (status != "SUCCEEDED")
-                return ("PENDING", null, null);
-            foreach (var result in resultCandidates)
-            {
-                using var rreq = new HttpRequestMessage(HttpMethod.Get, result);
-                ApplyAuth(rreq, key);
-                using var rres = await _http.SendAsync(rreq, cancellationToken);
-                var rbody = await rres.Content.ReadAsStringAsync(cancellationToken);
-                if (!rres.IsSuccessStatusCode) continue;
-                using var rdoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(rbody) ? "{}" : rbody);
-                var video = ReadVideoUrl(rdoc.RootElement);
-                if (!string.IsNullOrWhiteSpace(video))
-                    return ("SUCCEEDED", video, null);
+                using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(hit.Body) ? "{}" : hit.Body);
+                var raw = doc.RootElement.TryGetProperty("status", out var st) ? st.GetString() ?? "" : "";
+                var status = raw.Trim().ToUpperInvariant() switch
+                {
+                    "COMPLETED" or "COMPLETE" or "SUCCESS" => "SUCCEEDED",
+                    "IN_QUEUE" or "IN_PROGRESS" or "QUEUED" => "PENDING",
+                    "FAILED" or "ERROR" => "FAILED",
+                    var s => string.IsNullOrWhiteSpace(s) ? "" : s,
+                };
+                if (status == "FAILED")
+                    return ("FAILED", null, ReadString(doc.RootElement, "error") ?? Truncate(hit.Body));
+                if (status == "PENDING")
+                    return ("PENDING", null, null);
+                var responseUrl = ReadString(doc.RootElement, "response_url")
+                                  ?? ReadString(doc.RootElement, "responseUrl");
+                foreach (var follow in FamixaFalLipsyncPollV1.FollowPaths(endpoint, requestId, responseUrl))
+                {
+                    try
+                    {
+                        var followed = await FalGetAsync(key, follow, cancellationToken);
+                        var followedVideo = FamixaFalLipsyncResultV1.ReadVideoUrl(followed.Body);
+                        if (!string.IsNullOrWhiteSpace(followedVideo))
+                            return ("SUCCEEDED", followedVideo, null);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        /* keep scanning */
+                    }
+                }
             }
-            return ("PENDING", null, "Fal báo xong — KIT chưa thấy URL. Hỏi lại · 0$.");
+            catch (JsonException)
+            {
+                /* not a status body */
+            }
         }
 
-        if (last is not null && last.Contains("405", StringComparison.Ordinal))
+        if (!string.IsNullOrWhiteSpace(resultKeys))
+            return ("PENDING", null, $"Fal xong — KIT chưa lấy file (keys: {resultKeys}). Gắn Fal · 0$ từ Usage.");
+        if (last is not null && (last.Contains("405", StringComparison.Ordinal) || last.Contains("404", StringComparison.Ordinal)))
             return ("FAILED", null, last);
+        return ("PENDING", null, last);
+    }
+
+    private async Task<(string Status, string? VideoUrl, string? Error)> TryPlatformUsageAsync(
+        string key,
+        string requestId,
+        string endpoint,
+        CancellationToken cancellationToken)
+    {
+        string? last = null;
+        foreach (var url in FamixaFalLipsyncUsageV1.PeekUrls(requestId, endpoint))
+        {
+            try
+            {
+                var hit = await FalGetAsync(key, url, cancellationToken);
+                if (hit.StatusCode is < 200 or >= 300)
+                {
+                    last = $"Fal Usage {hit.StatusCode}: {Truncate(hit.Body)}";
+                    continue;
+                }
+
+                TryWriteUsagePeek(url, hit.StatusCode, hit.Body, requestId);
+                var video = FamixaFalLipsyncResultV1.ReadPlatformVideoUrl(hit.Body, requestId);
+                if (!string.IsNullOrWhiteSpace(video))
+                    return ("SUCCEEDED", video, null);
+                var dead = FamixaFalLipsyncResultV1.ReadPlatformNoVideoReason(hit.Body, requestId);
+                if (!string.IsNullOrWhiteSpace(dead))
+                    return ("FAILED", null, dead);
+                last = $"Fal Usage không có file ({FamixaFalLipsyncResultV1.DescribePlatformPeek(hit.Body, requestId)}). Gắn Fal · 0$.";
+            }
+            catch (OperationCanceledException)
+            {
+                last = "Fal Usage quá chậm. Gắn Fal · 0$ từ Usage.";
+            }
+            catch (HttpRequestException)
+            {
+                last = "Fal Usage không gọi được. Gắn Fal · 0$ từ Usage.";
+            }
+        }
+
         return ("PENDING", null, last);
     }
 
@@ -370,6 +562,15 @@ internal sealed class ContentFalClient
                 return peek;
             if (peek.Status == "FAILED")
                 return peek;
+            if (peek.Error is not null
+                && (peek.Error.Contains("chưa lấy file", StringComparison.OrdinalIgnoreCase)
+                    || peek.Error.Contains("chưa thấy URL", StringComparison.OrdinalIgnoreCase)))
+            {
+                var usage = await TryPlatformUsageAsync(key, requestId, endpoint, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(usage.VideoUrl))
+                    return usage;
+                return peek;
+            }
             last = peek.Error;
             await Task.Delay(4000, cancellationToken);
         }
@@ -378,11 +579,24 @@ internal sealed class ContentFalClient
 
     public async Task<(string Status, string? VideoUrl, string? Error)> GetTaskAsync(
         string taskId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? authorizedKey = null)
     {
-        var resolved = await ResolveAsync(cancellationToken);
-        var key = resolved.FalApiKey
+        if (IsLipsyncTask(taskId))
+        {
+            var cached = TryReadStoredFal(taskId);
+            if (cached is not null)
+                return cached.Value;
+        }
+        string key;
+        if (!string.IsNullOrWhiteSpace(authorizedKey))
+            key = authorizedKey.Trim();
+        else
+        {
+            var resolved = await ResolveAsync(cancellationToken);
+            key = resolved.FalApiKey
                   ?? throw new InvalidOperationException("Chưa cấu hình FalApiKey.");
+        }
         var id = StripPrefix(taskId);
         var endpoint = LipsyncPollEndpoint(taskId);
         if (IsLipsyncTask(taskId))
@@ -392,15 +606,26 @@ internal sealed class ContentFalClient
             {
                 var peeked = await PeekLipsyncAsync(key, id, ep, null, null, cancellationToken);
                 if (!string.IsNullOrWhiteSpace(peeked.VideoUrl))
-                    return (peeked.Status, peeked.VideoUrl, peeked.Error);
+                    return ("SUCCEEDED", await PersistFalOutputAsync(taskId, peeked.VideoUrl, cancellationToken), null);
                 last = peeked.Error;
                 if (peeked.Status == "FAILED"
                     && peeked.Error is not null
-                    && peeked.Error.Contains("405", StringComparison.OrdinalIgnoreCase))
+                    && (peeked.Error.Contains("405", StringComparison.OrdinalIgnoreCase)
+                        || peeked.Error.Contains("404", StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                if (peeked.Status == "PENDING"
+                    && peeked.Error is not null
+                    && (peeked.Error.Contains("chưa thấy URL", StringComparison.OrdinalIgnoreCase)
+                        || peeked.Error.Contains("chưa lấy file", StringComparison.OrdinalIgnoreCase)))
                     continue;
                 return (string.IsNullOrWhiteSpace(peeked.Status) ? "PENDING" : peeked.Status, peeked.VideoUrl, peeked.Error);
             }
-            return ("PENDING", null, last);
+            var usage = await TryPlatformUsageAsync(key, id, endpoint, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(usage.VideoUrl))
+                return ("SUCCEEDED", await PersistFalOutputAsync(taskId, usage.VideoUrl, cancellationToken), null);
+            if (string.Equals(usage.Status, "FAILED", StringComparison.OrdinalIgnoreCase))
+                return usage;
+            return ("PENDING", null, usage.Error ?? last);
         }
 
         using var statusReq = new HttpRequestMessage(HttpMethod.Get, $"{endpoint}/requests/{Uri.EscapeDataString(id)}/status");
@@ -438,8 +663,7 @@ internal sealed class ContentFalClient
         if (!resultRes.IsSuccessStatusCode)
             throw new InvalidOperationException($"Fal result {(int)resultRes.StatusCode}: {Truncate(resultBody)}");
 
-        using var resultDoc = JsonDocument.Parse(string.IsNullOrWhiteSpace(resultBody) ? "{}" : resultBody);
-        var video = ReadVideoUrl(resultDoc.RootElement);
+        var video = FamixaFalLipsyncResultV1.ReadVideoUrl(resultBody);
         if (string.IsNullOrWhiteSpace(video))
             return ("FAILED", null, "Fal xong nhưng không có URL video.");
         return ("SUCCEEDED", video, null);
@@ -471,12 +695,10 @@ internal sealed class ContentFalClient
 
     private static string[] LipsyncRecoverEndpoints(string taskId)
     {
-        var ep = LipsyncPollEndpoint(taskId);
-        if (ep.Equals("fal-ai/sync-lipsync/v3", StringComparison.OrdinalIgnoreCase))
-            return new[] { ep };
-        if (ep.Equals(LipsyncEndpoint, StringComparison.OrdinalIgnoreCase))
-            return new[] { LipsyncEndpoint, "fal-ai/sync-lipsync/v3" };
-        return new[] { ep };
+        var app = FamixaFalLipsyncPollV1.QueueApp(LipsyncPollEndpoint(taskId));
+        return app.Equals(LipsyncEndpoint, StringComparison.OrdinalIgnoreCase)
+            ? new[] { app }
+            : new[] { app, LipsyncEndpoint };
     }
 
     private static string StripPrefix(string taskId)
@@ -506,23 +728,6 @@ internal sealed class ContentFalClient
         return null;
     }
 
-    private static string? ReadVideoUrl(JsonElement root)
-    {
-        if (root.TryGetProperty("video", out var video))
-        {
-            if (video.ValueKind == JsonValueKind.String) return video.GetString();
-            if (video.ValueKind == JsonValueKind.Object
-                && video.TryGetProperty("url", out var u)
-                && u.ValueKind == JsonValueKind.String)
-                return u.GetString();
-        }
-        if (root.TryGetProperty("video_url", out var vu) && vu.ValueKind == JsonValueKind.String)
-            return vu.GetString();
-        if (root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object)
-            return ReadVideoUrl(data);
-        return null;
-    }
-
     private static string NormalizeLipsyncKind(string? raw)
     {
         var m = (raw ?? "").Trim().ToLowerInvariant();
@@ -531,7 +736,19 @@ internal sealed class ContentFalClient
         return "1.9";
     }
 
-    private static JsonContent LipsyncPayload(string kind, string videoUrl, string audioUrl, string mode)
+    private static JsonContent LipsyncPayload(
+        string kind,
+        string videoUrl,
+        string audioUrl,
+        string mode,
+        double? speakerX = null,
+        double? speakerY = null,
+        int? speakerVideoWidth = null,
+        int? speakerVideoHeight = null,
+        int? speakerFrameNumber = null,
+        double? speakerDurationSec = null,
+        int? speakerFrameCount = null,
+        int[]? faceBoxXyxy = null)
     {
         if (kind == "ls")
         {
@@ -541,7 +758,60 @@ internal sealed class ContentFalClient
                 : JsonContent.Create(new { video_url = videoUrl, audio_url = audioUrl, loop_mode = loop }, options: JsonOpts);
         }
         if (kind == "v3")
-            return JsonContent.Create(new { video_url = videoUrl, audio_url = audioUrl, sync_mode = mode }, options: JsonOpts);
+        {
+            var explicitBox = faceBoxXyxy is { Length: 4 } && faceBoxXyxy[2] > faceBoxXyxy[0] && faceBoxXyxy[3] > faceBoxXyxy[1]
+                ? faceBoxXyxy
+                : null;
+            if (explicitBox is not null
+                || FamixaFalLipsyncSpeakerPinV1.TryActiveSpeakerDetection(
+                    speakerX,
+                    speakerY,
+                    speakerVideoWidth,
+                    speakerVideoHeight,
+                    speakerFrameNumber,
+                    out _,
+                    out _))
+            {
+                var box = explicitBox
+                    ?? FamixaFalLipsyncSpeakerPinV1.FaceBoundingBox(
+                        speakerX!.Value,
+                        speakerY!.Value,
+                        speakerVideoWidth,
+                        speakerVideoHeight);
+                var frames = speakerFrameCount is > 0
+                    ? Math.Clamp(speakerFrameCount.Value, 1, 400)
+                    : FamixaFalLipsyncSpeakerPinV1.FrameCountOf(speakerDurationSec);
+                var boxes = FamixaFalLipsyncSpeakerPinV1.RepeatFaceBox(box, frames);
+                return JsonContent.Create(
+                    new
+                    {
+                        video_url = videoUrl,
+                        audio_url = audioUrl,
+                        sync_mode = mode,
+                        options = new
+                        {
+                            active_speaker_detection = new
+                            {
+                                auto_detect = false,
+                                bounding_boxes = boxes,
+                            },
+                        },
+                    },
+                    options: JsonOpts);
+            }
+            return JsonContent.Create(
+                new
+                {
+                    video_url = videoUrl,
+                    audio_url = audioUrl,
+                    sync_mode = mode,
+                    options = new
+                    {
+                        active_speaker_detection = new { auto_detect = true },
+                    },
+                },
+                options: JsonOpts);
+        }
         return JsonContent.Create(
             new { video_url = videoUrl, audio_url = audioUrl, sync_mode = mode, model = LipsyncVariant },
             options: JsonOpts);
@@ -551,6 +821,70 @@ internal sealed class ContentFalClient
     {
         var m = (raw ?? "silence").Trim().ToLowerInvariant();
         return m is "cut_off" or "loop" or "bounce" or "silence" or "remap" ? m : "silence";
+    }
+
+    private (string Status, string? VideoUrl, string? Error)? TryReadStoredFal(string taskId)
+    {
+        var fileId = FamixaFalLipsyncPlaybackV1.FileId(taskId);
+        var bytes = _videos.TryReadNamed("fal", fileId);
+        if (bytes is not { Length: >= 800 }) return null;
+        return ("SUCCEEDED", FamixaFalLipsyncPlaybackV1.PublicPath(taskId), null);
+    }
+
+    private async Task<string> PersistFalOutputAsync(string taskId, string videoUrl, CancellationToken cancellationToken)
+    {
+        var cached = TryReadStoredFal(taskId);
+        if (cached?.VideoUrl is { Length: > 0 } path)
+            return path;
+        var localReadable = false;
+        try
+        {
+            var bytes = await TryDownloadOutputAsync(videoUrl, cancellationToken);
+            if (bytes is { Length: >= 800 })
+            {
+                var fileId = FamixaFalLipsyncPlaybackV1.FileId(taskId);
+                _videos.PersistNamed("fal", fileId, bytes);
+                localReadable = _videos.TryReadNamed("fal", fileId) is { Length: >= 800 };
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            /* CDN chậm — giữ video.url Fal */
+        }
+        catch (HttpRequestException)
+        {
+            /* giữ URL Fal */
+        }
+
+        return FamixaFalLipsyncPlaybackV1.CanonicalPlayableUrl(videoUrl, localReadable, taskId);
+    }
+
+    private async Task<byte[]?> TryDownloadOutputAsync(string videoUrl, CancellationToken cancellationToken)
+    {
+        if (!FamixaFalLipsyncResultV1.LooksLikeFalOutputVideo(videoUrl)) return null;
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(45));
+        using var req = new HttpRequestMessage(HttpMethod.Get, videoUrl);
+        using var res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+        if (!res.IsSuccessStatusCode) return null;
+        var bytes = await res.Content.ReadAsByteArrayAsync(cts.Token);
+        return bytes.Length >= 800 ? bytes : null;
+    }
+
+    private static void TryWriteUsagePeek(string url, int status, string body, string requestId)
+    {
+        try
+        {
+            var dest = Path.GetFullPath(Path.Combine(
+                AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".dev", "fal-usage-peek.txt"));
+            Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+            var peek = FamixaFalLipsyncResultV1.DescribePlatformPeek(body, requestId);
+            File.AppendAllText(dest, $"{DateTime.UtcNow:o} {status} {url} {peek} bytes={body?.Length ?? 0}{Environment.NewLine}");
+        }
+        catch
+        {
+            /* local peek only */
+        }
     }
 
     private static void ApplyAuth(HttpRequestMessage req, string key)

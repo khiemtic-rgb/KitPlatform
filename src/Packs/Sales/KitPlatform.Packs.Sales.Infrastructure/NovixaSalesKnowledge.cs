@@ -14,6 +14,20 @@ internal static class NovixaSalesKnowledge
 
     public sealed record Match(string Intent, string Reply, bool Escalate, IReadOnlyList<string> Citations);
 
+    internal static IReadOnlyList<(string Intent, string Reply, string Citation, bool Escalate)> Rows(string phcUrl)
+    {
+        var rows = new List<(string, string, string, bool)>
+        {
+            (Unknown.Intent, Fill(Unknown, phcUrl).Reply, Unknown.Citations[0], true),
+        };
+        rows.AddRange(Rules.Select(rule =>
+        {
+            var filled = Fill(rule, phcUrl);
+            return (rule.Intent, filled.Reply, rule.Citations[0], rule.Escalate);
+        }));
+        return rows;
+    }
+
     public static Match Resolve(string raw, string phcUrl)
     {
         var text = Fold(raw);
@@ -84,8 +98,10 @@ internal static class NovixaSalesKnowledge
         new(
             "phc",
             ["health check", "phc", "danh gia", "kiem tra nha thuoc", "bao cao"],
-            "Novixa Pharmacy Health Check: khoảng 20–30 phút đánh giá vận hành, kho, khách hàng và chăm sóc sau bán. "
-            + "Chương trình hiện không thu phí. Sau đó gửi báo cáo ngắn — mạnh chỗ nào, còn khoảng trống chỗ nào. "
+            "Novixa Pharmacy Health Check: bài tự làm 31 câu, khoảng 7–10 phút, 6 nhóm "
+            + "(Khách hàng, Vận hành, Kho, Kinh doanh, Dữ liệu & Công nghệ, Phát triển). "
+            + "Không thu phí. Làm bài không cần đăng ký, xem kết quả sơ bộ ngay; để lại số điện thoại thì xem báo cáo đầy đủ. "
+            + "Cuộc gọi sau báo cáo, nếu đồng ý, khoảng 10–15 phút. "
             + "Link: " + PhcPlaceholder,
             false,
             ["nvx-sales-004 §2", "novixa.vn/vi/health-check"]),
@@ -123,8 +139,9 @@ internal static class NovixaSalesKnowledge
             "greeting",
             ["xin chao", "chao anh", "chao chi", "hello", "alo em", "alo"],
             "Em chào anh/chị, em là Novixa — phần mềm vận hành nhà thuốc (POS, kho lô, khách). "
-            + "Em không chào phần mềm ngay. Hiện có Pharmacy Health Check khoảng 20–30 phút, không thu phí, "
-            + "sau đó gửi báo cáo ngắn. Anh/chị làm tại " + PhcPlaceholder + " hoặc hỏi em đúng phạm vi Novixa đã công bố.",
+            + "Em không chào phần mềm ngay. Hiện có Pharmacy Health Check: bài tự làm 31 câu, khoảng 7–10 phút, "
+            + "6 nhóm, không thu phí. Xem kết quả sơ bộ ngay; báo cáo đầy đủ khi để lại số điện thoại. "
+            + "Cuộc gọi sau báo cáo 10–15 phút nếu anh/chị đồng ý. Làm tại " + PhcPlaceholder + " hoặc hỏi em đúng phạm vi Novixa đã công bố.",
             false,
             ["nvx-sales-004 §2"]),
         new(

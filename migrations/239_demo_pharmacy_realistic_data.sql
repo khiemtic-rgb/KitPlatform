@@ -333,7 +333,7 @@ INSERT INTO public.loyalty_programs (id, tenant_id, program_code, program_name, 
 VALUES (
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb01',
   '11111111-1111-1111-1111-111111111101',
-  'LOYALTY_DEFAULT', 'Tich diem Demo Tham dinh', 10000, 10000, 1
+  'LOYALTY_DEFAULT', 'Tich diem Demo Tham dinh', 10000, 100, 1
 )
 ON CONFLICT (tenant_id, program_code) DO UPDATE SET
   program_name = EXCLUDED.program_name,

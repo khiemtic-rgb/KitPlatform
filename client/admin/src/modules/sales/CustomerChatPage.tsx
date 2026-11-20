@@ -119,8 +119,8 @@ export function CustomerChatPage() {
 
   useEffect(() => {
     if (!accessToken) return;
-    const url = buildAdminChatEventsUrl(accessToken);
-    return subscribeChatSse(url, () => {
+    const url = buildAdminChatEventsUrl();
+    return subscribeChatSse(url, accessToken, () => {
       void loadThreadsRef.current(true);
       const sid = selectedIdRef.current;
       if (sid) void loadMessagesRef.current(sid, true);

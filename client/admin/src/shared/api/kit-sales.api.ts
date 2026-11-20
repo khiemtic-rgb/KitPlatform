@@ -79,6 +79,11 @@ export interface UpdateKitSalesLeadBody {
   nextActionAt?: string | null;
   clearNextAction?: boolean;
   facebookKind?: string;
+  lostReasonCode?: string;
+  lostNote?: string;
+  assessmentSubmissionId?: string;
+  linkAssessment?: boolean;
+  paidFactCode?: string;
 }
 
 export interface KitSalesInteraction {
@@ -97,6 +102,18 @@ export interface KitSalesInteraction {
   classification?: string | null;
   sentByName?: string | null;
   approvedByName?: string | null;
+  outboundState?: string | null;
+}
+
+export async function resolveKitSalesOutbound(
+  interactionId: string,
+  body: { delivered: boolean; note?: string },
+): Promise<KitSalesInteraction> {
+  const { data } = await http.post<KitSalesInteraction>(
+    `/kit-sales/chat/drafts/${interactionId}/outbound-resolution`,
+    body,
+  );
+  return data;
 }
 
 export interface CreateKitSalesInteractionBody {
@@ -200,8 +217,11 @@ export async function updateKitSalesLead(
   return data;
 }
 
-export async function deleteKitSalesLead(leadId: string): Promise<void> {
-  await http.delete(`/kit-sales/leads/${leadId}`);
+export type KitSalesLeadRemoval = 'archived' | 'deleted';
+
+export async function deleteKitSalesLead(leadId: string): Promise<KitSalesLeadRemoval> {
+  const { data } = await http.delete<{ outcome: KitSalesLeadRemoval }>(`/kit-sales/leads/${leadId}`);
+  return data.outcome;
 }
 
 export async function fetchKitSalesLeadDetail(leadId: string): Promise<KitSalesLeadDetail> {
@@ -606,6 +626,8 @@ export interface KitSalesGeminiSettings {
   textModel?: string | null;
   ready: boolean;
   source: string;
+  weeklyTokenBudget: number;
+  usedTokens7d: number;
 }
 
 export interface SaveKitSalesGeminiSettingsBody {
@@ -634,5 +656,130 @@ export async function saveKitSalesGeminiSettings(
 
 export async function testKitSalesGeminiSettings(): Promise<KitSalesGeminiTest> {
   const { data } = await http.post<KitSalesGeminiTest>('/kit-sales/settings/gemini/test');
+  return data;
+}
+
+export interface KitSalesQualification {
+  agentRunId: string;
+  agentTaskId?: string | null;
+  productCode: string;
+  decision: string;
+  scored: boolean;
+  fit?: number | null;
+  pain?: number | null;
+  intent?: number | null;
+  engagement?: number | null;
+  total?: number | null;
+  formula: string;
+  nextActionCode?: string | null;
+  draft?: string | null;
+  citations: string[];
+  missing: string[];
+  taskStatus: string;
+}
+
+export interface KitSalesAgentTaskResult {
+  agentTaskId: string;
+  status: string;
+  decision?: string | null;
+}
+
+export interface KitSalesStageRate {
+  fromStatus: string;
+  toStatus: string;
+  cohort: number;
+  reached: number;
+  rate?: number | null;
+  label: string;
+  flowCohort: number;
+  flowReached: number;
+  flowRate?: number | null;
+  flowLabel: string;
+}
+
+export interface KitSalesOwnerKpi {
+  asOf: string;
+  periodStart: string;
+  eligible: number;
+  notYetMature: number;
+  qualificationDecisionRate?: number | null;
+  closureRate?: number | null;
+  lostDispositions: number;
+  pursuePhcRate?: number | null;
+  acceptanceRate?: number | null;
+  humanPaid: number;
+  revenueRecognized: number;
+  revenueLabel: string;
+  unapprovedSends: number;
+  outboundBlocked: number;
+  waivers: number;
+  stageRates: KitSalesStageRate[];
+  dwellClosed: { status: string; closedHours: number; leads: number }[];
+  openDwellLeads: number;
+  aiCost: number;
+  outboundSent: number;
+  outboundUnknown: number;
+  outboundFailed: number;
+}
+
+export interface KitSalesDeskKpi {
+  tasksDueToday: number;
+  draftsWaiting: number;
+  leadsWithoutDecision: number;
+  phcPending: number;
+  nextQuietWindow: string;
+  outboundUnknownOpen: number;
+}
+
+export async function qualifyKitSalesLead(leadId: string): Promise<KitSalesQualification> {
+  const { data } = await http.post<KitSalesQualification>(`/kit-sales/agent/leads/${leadId}/qualify`);
+  return data;
+}
+
+export async function acceptKitSalesAgentTask(taskId: string): Promise<KitSalesAgentTaskResult> {
+  const { data } = await http.post<KitSalesAgentTaskResult>(`/kit-sales/agent/tasks/${taskId}/accept`);
+  return data;
+}
+
+export async function dismissKitSalesAgentTask(taskId: string): Promise<KitSalesAgentTaskResult> {
+  const { data } = await http.post<KitSalesAgentTaskResult>(`/kit-sales/agent/tasks/${taskId}/dismiss`);
+  return data;
+}
+
+export async function fetchKitSalesOwnerKpi(): Promise<KitSalesOwnerKpi> {
+  const { data } = await http.get<KitSalesOwnerKpi>('/kit-sales/kpi/owner');
+  return data;
+}
+
+export async function fetchKitSalesDeskKpi(): Promise<KitSalesDeskKpi> {
+  const { data } = await http.get<KitSalesDeskKpi>('/kit-sales/kpi/desk');
+  return data;
+}
+
+export interface KitSalesDiscoverySummary {
+  prospects: number;
+  factSignals: number;
+  unknownNeeds: number;
+  lastRunAt?: string | null;
+  lastStatus?: string | null;
+  aiCost: number;
+}
+
+export async function fetchKitSalesDiscoverySummary(): Promise<KitSalesDiscoverySummary> {
+  const { data } = await http.get<KitSalesDiscoverySummary>('/kit-sales/discovery/summary');
+  return data;
+}
+
+export interface KitSalesReview {
+  id: string;
+  taskType: string;
+  status: string;
+  businessId?: string | null;
+  payload: string;
+  createdAt: string;
+}
+
+export async function listKitSalesReviews(status = 'pending'): Promise<KitSalesReview[]> {
+  const { data } = await http.get<KitSalesReview[]>('/kit-sales/reviews', { params: { status } });
   return data;
 }

@@ -286,6 +286,22 @@ public static class KitVideoMotionRules
         return bytes[4] == (byte)'f' && bytes[5] == (byte)'t' && bytes[6] == (byte)'y' && bytes[7] == (byte)'p';
     }
 
+    /** Video-track stsz sample count. Fal v3 bounding_boxes must match this, not the shot clock. */
+    public static int ReadMp4VideoSampleCount(byte[] bytes)
+    {
+        var cap = Math.Min(bytes.Length, 2_000_000);
+        for (var i = 0; i + 8 < cap;)
+        {
+            var size = ReadBe32(bytes, i);
+            if (size < 8) break;
+            if (bytes[i + 4] == (byte)'m' && bytes[i + 5] == (byte)'o'
+                && bytes[i + 6] == (byte)'o' && bytes[i + 7] == (byte)'v')
+                return ReadMoovVideoSamples(bytes, i + 8, Math.Min(i + size, cap));
+            i += size;
+        }
+        return 0;
+    }
+
     public static double ReadMp4DurationSec(byte[] bytes)
     {
         for (var i = 0; i + 8 < bytes.Length && i < Math.Min(bytes.Length, 2_000_000);)
@@ -298,6 +314,50 @@ public static class KitVideoMotionRules
                 return ReadMvhd(bytes, i + 8, i + size);
             }
             i += size;
+        }
+        return 0;
+    }
+
+    private static int ReadMoovVideoSamples(byte[] b, int start, int end)
+    {
+        for (var i = start; i + 8 < end;)
+        {
+            var size = ReadBe32(b, i);
+            if (size < 8) break;
+            var next = i + size;
+            if (next > end) break;
+            if (b[i + 4] == (byte)'t' && b[i + 5] == (byte)'r'
+                && b[i + 6] == (byte)'a' && b[i + 7] == (byte)'k'
+                && TrackIsVideo(b, i + 8, next))
+            {
+                var n = ReadStszCount(b, i + 8, next);
+                if (n > 0) return n;
+            }
+            i = next;
+        }
+        return 0;
+    }
+
+    private static bool TrackIsVideo(byte[] b, int start, int end)
+    {
+        for (var i = start; i + 16 < end; i++)
+        {
+            if (b[i] != (byte)'h' || b[i + 1] != (byte)'d' || b[i + 2] != (byte)'l' || b[i + 3] != (byte)'r')
+                continue;
+            if (b[i + 12] == (byte)'v' && b[i + 13] == (byte)'i' && b[i + 14] == (byte)'d' && b[i + 15] == (byte)'e')
+                return true;
+        }
+        return false;
+    }
+
+    private static int ReadStszCount(byte[] b, int start, int end)
+    {
+        for (var i = start; i + 16 < end; i++)
+        {
+            if (b[i] != (byte)'s' || b[i + 1] != (byte)'t' || b[i + 2] != (byte)'s' || b[i + 3] != (byte)'z')
+                continue;
+            var n = ReadBe32(b, i + 12);
+            if (n is > 0 and <= 400) return n;
         }
         return 0;
     }

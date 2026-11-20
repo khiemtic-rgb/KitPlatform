@@ -294,6 +294,12 @@ public sealed record InventoryBarcodeResolveDto(
     Guid? SuggestedBatchId,
     string? SuggestedBatchNumber);
 
+public sealed record PagedLowStockProductsResult(
+    IReadOnlyList<LowStockProductDto> Items,
+    int Total,
+    int Page,
+    int PageSize);
+
 public sealed record LowStockProductDto(
     Guid ProductId,
     string ProductCode,

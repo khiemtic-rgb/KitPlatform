@@ -307,6 +307,7 @@
       "phonePrefix": "ĐT",
       "orderNo": "Số",
       "date": "Ngày",
+      "saleTime": "Giờ bán",
       "shift": "Ca",
       "customer": "Khách",
       "walkIn": "Khách lẻ",
@@ -388,7 +389,10 @@
       "reload": "Tải lại",
       "documentPlaceholder": "Số đơn",
       "dateFrom": "Từ ngày",
-      "dateTo": "Đến ngày"
+      "dateTo": "Đến ngày",
+      "warehouse": "Kho",
+      "employee": "Nhân viên",
+      "shift": "Ca"
     },
     "paginationTotal": "{{count}} đơn",
     "columns": {
@@ -1248,7 +1252,9 @@
     "pointsPerAmount": "Số tiền mua để được",
     "pointsEarned": "Điểm nhận được",
     "onePoint": "1 điểm",
-    "earnRuleHint": "Ví dụ: {{amount}} → 1 điểm — tích điểm và đổi điểm trên POS dùng cùng quy tắc (mua {{amount}} được +1 điểm; đổi 1 điểm giảm {{amount}}).",
+    "amountPerPoint": "1 điểm bằng",
+    "enterPointValue": "Nhập số tiền của 1 điểm",
+    "earnRuleHint": "Ví dụ: mua {{amount}} được +1 điểm. Đổi 1 điểm giảm {{pointValue}}.",
     "maxRedeemPercent": "Trừ tối đa trên một đơn bán (%)",
     "redeemExampleHint": "Ví dụ: khách có 100 điểm (= {{pointsValue}}) nhưng đơn {{orderAmount}} với giới hạn {{percent}}% thì chỉ được giảm tối đa {{maxDiscount}} bằng điểm, không trừ hết giá trị đơn.",
     "tiersSection": "Hạng thành viên",

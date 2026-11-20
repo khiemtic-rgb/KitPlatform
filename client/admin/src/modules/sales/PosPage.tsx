@@ -19,7 +19,7 @@ import { DeleteOutlined, CreditCardOutlined, ClockCircleOutlined, MedicineBoxOut
 import { fetchWarehouses, fetchActiveCountingSession } from '@/shared/api/inventory.api';
 import type { Warehouse, AdjustmentListItem } from '@/shared/api/inventory.types';
 import { fetchCustomer, markCustomerPharmacyMember } from '@/shared/api/customer-admin.api';
-import { createSale, completeDraftSale, fetchBatchModeSettings, fetchPosCustomerLoyalty, fetchPosCustomerVouchers, fetchPosStockBulk, fetchRxSettings, fetchSalesOrder, lookupPosProduct, openSalesShift, previewPosAllocation, reportRxPosBlock, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue, type TenantRxSettings } from '@/shared/api/sales.api';
+import { createSale, completeDraftSale, fetchBatchModeSettings, fetchPosCustomerLoyalty, fetchPosCustomerVouchers, fetchPosStockBulk, fetchRxSettings, fetchSalesOrder, findSaleByClientSaleId, lookupPosProduct, openSalesShift, previewPosAllocation, reportRxPosBlock, searchCustomers, searchPosProducts, updateDraftSale, type TenantBatchModeValue, type TenantRxSettings } from '@/shared/api/sales.api';
 import {
   isShiftAlreadyOpenError,
   loadOpenShiftForWarehouse,
@@ -44,6 +44,17 @@ import {
 import { applyBatchLabelScan } from '@/modules/sales/pos-batch-scan';
 import { capQuantityToStock, outOfStockWarningText, stockCapWarningText } from '@/modules/sales/pos-stock-messages';
 import { buildCreateSalePayload, buildDraftCompletePayload, buildDraftUpdatePayload } from '@/modules/sales/pos-sale-payload';
+import {
+  decideSaleAttempt,
+  isDefiniteSaleRejection,
+  markAttemptSent,
+  outcomeAfterLookup,
+  readSaleAttempt,
+  retainSaleAttemptOnCancel,
+  salePayloadFingerprint,
+  writeSaleAttempt,
+  type StoredSaleAttempt,
+} from '@/modules/sales/pos-sale-attempt';
 import {
   formatPosCustomerOptionLabel,
   upsertPosCustomers,
@@ -102,6 +113,7 @@ import type { CustomerDetail } from '@/shared/api/customer-admin.types';
 import { CustomerDraftOrderStatusBar } from '@/modules/sales/CustomerDraftOrderStatusBar';
 import { PosConsultationModal } from '@/modules/sales/PosConsultationModal';
 import { PosConsultationSessionChip } from '@/modules/sales/PosConsultationSessionChip';
+import { PosCustomerContextPanel } from '@/modules/sales/PosCustomerContextPanel';
 import {
   confirmConsultation,
   linkConsultationOrder,
@@ -171,6 +183,7 @@ export function PosPage() {
   const [saving, setSaving] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [consultationOpen, setConsultationOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [activeConsultationSessionId, setActiveConsultationSessionId] = useState<string>();
   const [activeConsultationSafetyLevel, setActiveConsultationSafetyLevel] = useState('none');
   const [lastCompletedOrder, setLastCompletedOrder] = useState<SalesOrderDetail | null>(null);
@@ -186,6 +199,57 @@ export function PosPage() {
   const [customerAppDraftMode, setCustomerAppDraftMode] = useState(false);
   const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
   const pendingAutoCheckoutRef = useRef(false);
+  const saleAttemptRef = useRef<{
+    key: string;
+    inflight: Promise<void> | null;
+    stored: StoredSaleAttempt;
+  } | null>(null);
+  const sameTabCheckoutRef = useRef<Promise<void> | null>(null);
+  const [unresolvedAttempt, setUnresolvedAttempt] = useState<StoredSaleAttempt | null>(null);
+
+  const rememberUnresolved = (stored: StoredSaleAttempt | null) => {
+    setUnresolvedAttempt(stored?.state === 'unknown' ? stored : null);
+  };
+
+  const clearSaleAttempt = () => {
+    writeSaleAttempt(window.localStorage, null);
+    saleAttemptRef.current = null;
+    setUnresolvedAttempt(null);
+  };
+
+  const inspectStoredAttempt = useCallback(async (stored: StoredSaleAttempt) => {
+    try {
+      const order = await findSaleByClientSaleId(stored.key);
+      const outcome = outcomeAfterLookup({
+        found: order != null,
+        sentAt: stored.sentAt,
+        now: Date.now(),
+        lookupFailed: false,
+      });
+      if (outcome === 'still-unknown') {
+        rememberUnresolved(stored);
+        return 'keep' as const;
+      }
+      clearSaleAttempt();
+      if (order) {
+        setLastCompletedOrder(order);
+        message.success(`Đã tìm thấy đơn ${order.orderNumber} của lần thanh toán trước. Có thể bán đơn mới.`);
+        return 'found' as const;
+      }
+      message.info('Lần thanh toán trước chưa được ghi. Có thể bán đơn mới.');
+      return 'absent' as const;
+    } catch {
+      rememberUnresolved(stored);
+      message.warning('Chưa kiểm tra được kết quả lần thanh toán trước. Chưa tạo giao dịch mới.');
+      return 'keep' as const;
+    }
+  }, [message]);
+
+  useEffect(() => {
+    const stored = readSaleAttempt(window.localStorage);
+    if (!stored || stored.state !== 'unknown') return;
+    void inspectStoredAttempt(stored);
+  }, [inspectStoredAttempt]);
   const [autoCheckoutTick, setAutoCheckoutTick] = useState(0);
   const [activeCountSession, setActiveCountSession] = useState<AdjustmentListItem | null>(null);
 
@@ -1270,14 +1334,144 @@ export function PosPage() {
     }
   };
 
-  const confirmCheckout = async ({
+  const confirmCheckout = (confirm: PosCheckoutConfirm) => {
+    if (sameTabCheckoutRef.current) return sameTabCheckoutRef.current;
+    let resolveWork: () => void = () => undefined;
+    let rejectWork: (error: unknown) => void = () => undefined;
+    const work = new Promise<void>((resolve, reject) => {
+      resolveWork = resolve;
+      rejectWork = reject;
+    });
+    sameTabCheckoutRef.current = work;
+    void work.finally(() => {
+      if (sameTabCheckoutRef.current === work) sameTabCheckoutRef.current = null;
+    });
+
+    const fingerprint = salePayloadFingerprint({
+      draftId: editingDraftId ?? null,
+      payload: editingDraftId
+        ? buildDraftCompletePayload(
+            customerId,
+            cart,
+            orderDiscount,
+            undefined,
+            confirm.loyaltyDiscountAmount,
+            confirm.customerVoucherId,
+            confirm.orderReminderDaysSupply != null && confirm.orderReminderDaysSupply >= 1
+              ? { label: confirm.orderReminderLabel, daysSupply: confirm.orderReminderDaysSupply }
+              : undefined,
+            loadedPrescriptionId,
+            loadedConnectHandoffId,
+          )
+        : buildCreateSalePayload(
+            warehouseId ?? '',
+            customerId,
+            cart,
+            orderDiscount,
+            false,
+            confirm.payments,
+            confirm.loyaltyDiscountAmount,
+            confirm.customerVoucherId,
+            confirm.orderReminderDaysSupply != null && confirm.orderReminderDaysSupply >= 1
+              ? { label: confirm.orderReminderLabel, daysSupply: confirm.orderReminderDaysSupply }
+              : undefined,
+            loadedPrescriptionId,
+            loadedConnectHandoffId,
+          ),
+    });
+
+    const runSend = (
+      stored: StoredSaleAttempt,
+      reusedUnknown: boolean,
+    ) => {
+      writeSaleAttempt(window.localStorage, stored);
+      const attempt = {
+        key: stored.key,
+        inflight: null as Promise<void> | null,
+        stored,
+      };
+      saleAttemptRef.current = attempt;
+      let requestSent = false;
+      const run = performCheckout(confirm, attempt.key, () => {
+        requestSent = true;
+        const sent = markAttemptSent(stored, Date.now());
+        writeSaleAttempt(window.localStorage, sent);
+        if (saleAttemptRef.current?.key === attempt.key) saleAttemptRef.current.stored = sent;
+        rememberUnresolved(sent);
+      }).then(
+        () => {
+          if (saleAttemptRef.current?.inflight === run) clearSaleAttempt();
+        },
+        (error: unknown) => {
+          if (saleAttemptRef.current?.inflight === run) {
+            const status = (error as { response?: { status?: number } })?.response?.status;
+            if (!requestSent) {
+              if (!reusedUnknown) clearSaleAttempt();
+            } else if (isDefiniteSaleRejection(status)) {
+              clearSaleAttempt();
+            } else {
+              const unknown = markAttemptSent(stored, Date.now());
+              saleAttemptRef.current = { key: stored.key, inflight: null, stored: unknown };
+              writeSaleAttempt(window.localStorage, unknown);
+              rememberUnresolved(unknown);
+            }
+          }
+          throw error;
+        },
+      );
+      attempt.inflight = run;
+      return run;
+    };
+
+    let run: Promise<void> | undefined;
+    const claim = async () => {
+      let stored = readSaleAttempt(window.localStorage);
+      let decision = decideSaleAttempt(
+        { inflight: saleAttemptRef.current?.inflight != null, stored, now: Date.now() },
+        fingerprint,
+        () => crypto.randomUUID(),
+      );
+      if (decision.action === 'join') {
+        run = saleAttemptRef.current!.inflight ?? undefined;
+        return;
+      }
+      if (decision.action === 'lookup') {
+        const outcome = await inspectStoredAttempt(decision.stored);
+        if (outcome !== 'absent') return;
+        stored = null;
+        decision = decideSaleAttempt(
+          { inflight: false, stored: null, now: Date.now() },
+          fingerprint,
+          () => crypto.randomUUID(),
+        );
+      }
+      if (decision.action === 'block') {
+        rememberUnresolved(decision.stored.state === 'unknown' ? decision.stored : null);
+        message.warning(
+          'Một tab khác đang giữ lần thanh toán này. Chưa tạo giao dịch mới.',
+        );
+        return;
+      }
+      if (decision.action !== 'send') return;
+      run = runSend(decision.stored, stored?.state === 'unknown' && stored.key === decision.key);
+    };
+    const locked = navigator.locks
+      ? navigator.locks.request('kitplatform-pos-sale', claim)
+      : claim();
+    void locked.then(() => run ?? Promise.resolve()).then(resolveWork, (error: unknown) => {
+      rejectWork(error);
+    });
+    return work;
+  };
+
+  const performCheckout = async ({
     payments,
     loyaltyDiscountAmount,
     customerVoucherId,
     orderReminderLabel,
     orderReminderDaysSupply,
     symptomCodes,
-  }: PosCheckoutConfirm) => {
+  }: PosCheckoutConfirm, clientSaleId: string, markRequestSent: () => void) => {
     if (!warehouseId) {
       message.warning(t('pos.messages.selectWarehouseFirst'));
       throw new Error('missing-warehouse');
@@ -1300,6 +1494,7 @@ export function PosPage() {
         orderReminderDaysSupply != null && orderReminderDaysSupply >= 1
           ? { label: orderReminderLabel, daysSupply: orderReminderDaysSupply }
           : undefined;
+      markRequestSent();
       if (editingDraftId) {
         order = await completeDraftSale(editingDraftId, {
           payments,
@@ -1329,6 +1524,7 @@ export function PosPage() {
             orderReminder,
             loadedPrescriptionId,
             loadedConnectHandoffId,
+            clientSaleId,
           ),
         );
       }
@@ -1889,8 +2085,8 @@ export function PosPage() {
                 }))}
               />
               {canWrite && !editingDraftId ? (
-                <Tooltip title="Tư vấn triệu chứng (MVP 1)">
-                  <Button icon={<MedicineBoxOutlined />} onClick={() => setConsultationOpen(true)} />
+                <Tooltip title="Hỗ trợ tư vấn">
+                  <Button icon={<MedicineBoxOutlined />} onClick={() => setSupportOpen(true)} />
                 </Tooltip>
               ) : null}
               {canWrite && !editingDraftId ? (
@@ -1920,7 +2116,7 @@ export function PosPage() {
           {activeConsultationSessionId && !consultationOpen ? (
             <PosConsultationSessionChip
               safetyLevel={activeConsultationSafetyLevel}
-              onReopen={() => setConsultationOpen(true)}
+              onReopen={() => setSupportOpen(true)}
               onUnlink={() => {
                 setActiveConsultationSessionId(undefined);
                 setActiveConsultationSafetyLevel('none');
@@ -1962,6 +2158,18 @@ export function PosPage() {
               >
                 Bán theo đơn phòng khám
               </Button>
+            ) : null}
+            {unresolvedAttempt ? (
+              <Alert
+                type="warning"
+                showIcon
+                message="Một lần thanh toán chưa rõ kết quả."
+                action={(
+                  <Button size="small" onClick={() => void inspectStoredAttempt(unresolvedAttempt)}>
+                    Kiểm tra kết quả
+                  </Button>
+                )}
+              />
             ) : null}
             <Button
               block
@@ -2024,6 +2232,12 @@ export function PosPage() {
         <aside className="pos-page__aside">
           {customerAppDraftMode && activeCustomerDraft && customerId && !editingDraftId ? (
             <CustomerDraftOrderStatusBar draft={activeCustomerDraft} />
+          ) : null}
+
+          {!customerAppDraftMode ? (
+            <Button block icon={<MedicineBoxOutlined />} onClick={() => setSupportOpen(true)}>
+              Hỗ trợ tư vấn
+            </Button>
           ) : null}
 
           <div className="pos-page__aside-panel">
@@ -2094,7 +2308,19 @@ export function PosPage() {
         customerVouchers={customerVouchers}
         cartLines={cart.map((line) => ({ productName: line.productName }))}
         symptomCaptureEnabled={!activeConsultationSessionId}
-        onCancel={() => setCheckoutOpen(false)}
+        onCancel={() => {
+          const current = saleAttemptRef.current;
+          const stored = current?.stored ?? readSaleAttempt(window.localStorage);
+          if (retainSaleAttemptOnCancel({
+            inflight: current?.inflight != null,
+            stored,
+          })) {
+            message.warning('Lần thanh toán chưa rõ kết quả vẫn được giữ. Chưa tạo giao dịch mới.');
+          } else {
+            clearSaleAttempt();
+          }
+          setCheckoutOpen(false);
+        }}
         onConfirm={(result) => confirmCheckout(result)}
       />
 
@@ -2150,9 +2376,30 @@ export function PosPage() {
         variant="quick"
         initialPhone={quickCreatePrefill.phone}
         initialName={quickCreatePrefill.name}
-        drawerZIndex={consultationOpen ? 1150 : undefined}
+        drawerZIndex={supportOpen || consultationOpen ? 1150 : undefined}
         onClose={() => setQuickCustomerOpen(false)}
         onSaved={handleQuickCustomerSaved}
+      />
+
+      <PosCustomerContextPanel
+        open={supportOpen}
+        onClose={() => setSupportOpen(false)}
+        customerId={customerId}
+        warehouseId={warehouseId}
+        onEditProfile={() => setQuickCustomerOpen(true)}
+        onAddProduct={(code) => addByBarcode(code)}
+        customers={customers.map((customer) => ({
+          id: customer.id,
+          label: formatPosCustomerOptionLabel(customer),
+        }))}
+        customerSearchLoading={customerSearchLoading}
+        onCustomerSearch={handleCustomerSearch}
+        onCustomerChange={(id) => setCustomerId(id)}
+        onConsultationSaved={(sessionId, safetyLevel) => {
+          setActiveConsultationSessionId(sessionId);
+          setActiveConsultationSafetyLevel(safetyLevel);
+          message.success('Đã lưu tư vấn — tiếp tục bán và chốt đơn để liên kết.');
+        }}
       />
 
       <PosConsultationModal

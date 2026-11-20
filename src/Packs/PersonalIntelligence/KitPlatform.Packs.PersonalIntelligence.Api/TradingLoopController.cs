@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using KitPlatform.Api.Authorization;
-using KitPlatform.Application.Core;
 using KitPlatform.Packs.PersonalIntelligence.Trading;
 
 namespace KitPlatform.Api.Controllers.PersonalIntelligence;
@@ -24,21 +23,9 @@ public sealed class TradingLoopController : ControllerBase
     {
         try
         {
-            if (!string.IsNullOrWhiteSpace(request.ApprovedBy))
-            {
-                var allowed = User.IsInRole("ADMIN")
-                    || CoreAuthority.HasPermission(User, PersonalIntelligencePolicies.ApprovePermission);
-                if (!allowed)
-                {
-                    return StatusCode(StatusCodes.Status403Forbidden, new
-                    {
-                        message = "Paper approval requires the personal_intelligence.trading.approve permission.",
-                    });
-                }
-
-                request.ApprovedBy = CoreAuthority.RequireUserId(User).ToString("D");
-            }
-
+            if (request.Live)
+                return BadRequest(new { message = "Live execution is not available." });
+            request.ApprovedBy = null;
             return Ok(await _loop.RunFixtureAsync(request, cancellationToken));
         }
         catch (TradingOperationConflictException ex)

@@ -219,6 +219,13 @@ export function KitSalesSettingsPage() {
         }
       >
         <Typography.Paragraph type="secondary">{t('settings.geminiHint')}</Typography.Paragraph>
+        {gemini && (
+          <Typography.Paragraph type={gemini.weeklyTokenBudget > 0 ? 'secondary' : 'warning'}>
+            {gemini.weeklyTokenBudget > 0
+              ? t('settings.geminiBudget', { used: gemini.usedTokens7d, budget: gemini.weeklyTokenBudget })
+              : t('settings.geminiBudgetOff')}
+          </Typography.Paragraph>
+        )}
         <Form form={geminiForm} layout="vertical">
           <Form.Item
             name="geminiApiKey"

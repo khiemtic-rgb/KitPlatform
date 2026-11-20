@@ -1,0 +1,12 @@
+{
+ "_ghi_chu": "Tập 3 cảnh 8, bản mô hình 3D: Bố đứng nói 4 câu (thoại ElevenLabs), mặt 3D chớp mắt, khẩu hình theo thoại, lông mày lo lắng / nghẹn theo câu.",
+ "loai": "than", "ma": "tap03_c08_bo_3d", "ra": "tap03/c08_bo_3d", "khung": "can_mat", "goc_may_do": 12,
+ "thoai": {"file": "thoai/tap03_c08_bo_eleven.wav", "bat_dau": 0.4,
+   "loi": ["Cầm lấy mà tiêu. Tiền ăn tuần này.", "Vay thì phải trả. Thế là phải.",
+           "Chuyện ấy để bố biết thôi, không phải nói với dì. Cầm lấy.",
+           "Đi đi con. Đường xa, đi sớm cho kịp lên đến nơi trước khi trời tối."]},
+ "dien_vien": [{"nhan_vat": "Bo", "vi_tri": [0, 0], "huong_do": 0, "noi": true,
+   "chuyen_dong": [{"ten": "dung_tho", "giay": 15.0}],
+   "bieu_cam": [{"cau": 1, "bieu_cam": "lo", "chuyen": 0.5, "lech": 0.15},
+                {"cau": 4, "bieu_cam": "nghen", "chuyen": 0.8, "lech": -0.2}]}]
+}

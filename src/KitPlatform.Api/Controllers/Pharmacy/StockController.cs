@@ -74,11 +74,13 @@ public sealed class StockController : ControllerBase
 
     [HttpGet("low-stock")]
     [Authorize(Policy = InventoryPolicies.Read)]
-    public async Task<ActionResult<IReadOnlyList<LowStockProductDto>>> LowStock(
+    public async Task<ActionResult<PagedLowStockProductsResult>> LowStock(
         [FromQuery] Guid? warehouseId,
         [FromQuery] decimal defaultThreshold = 10,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default) =>
-        Ok(await _inventory.GetLowStockProductsAsync(warehouseId, defaultThreshold, cancellationToken));
+        Ok(await _inventory.GetLowStockProductsAsync(warehouseId, defaultThreshold, page, pageSize, cancellationToken));
 
     [HttpPatch("batches/{id:guid}/unit-cost")]
     [Authorize(Policy = InventoryPolicies.Write)]

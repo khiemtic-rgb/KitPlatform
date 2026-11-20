@@ -17,96 +17,15 @@ public static class BinancePermissionGate
             throw new ExchangeConnectionException(403, "permission", "API key Binance chưa bật quyền đọc.");
     }
 
-    public static readonly string[] RequiredBooleanFields =
-    [
-        "enableReading",
-        "enableWithdrawals",
-        "enableInternalTransfer",
-        "permitsUniversalTransfer",
-        "enableSpotAndMarginTrading",
-        "enableFutures",
-        "enableMargin",
-        "enableVanillaOptions",
-    ];
-
-    public static bool ReadOnly(JsonElement root)
-    {
-        try
-        {
-            EnsureReadOnly(root);
-            return true;
-        }
-        catch (ExchangeConnectionException)
-        {
-            return false;
-        }
-    }
-
-    public static void EnsureReadOnly(JsonElement root)
-    {
-        if (root.ValueKind != JsonValueKind.Object || !RequiredBooleans(root))
-            throw new ExchangeConnectionException(400, "unverified", "apiRestrictions thiếu field hoặc không phải boolean. Không kích hoạt kết nối.");
-        RejectUnknownFields(root);
-        if (Flag(root, "enableWithdrawals"))
-            throw new ExchangeConnectionException(400, "withdrawal", "API key Binance đang bật quyền rút tiền. Không lưu key này.");
-        if (Flag(root, "enableInternalTransfer") || Flag(root, "permitsUniversalTransfer"))
-            throw new ExchangeConnectionException(400, "transfer", "API key Binance đang bật quyền chuyển tiền. Không lưu key này.");
-        if (Flag(root, "enableSpotAndMarginTrading") || Flag(root, "enableFutures") || Flag(root, "enableMargin") || Flag(root, "enableVanillaOptions"))
-            throw new ExchangeConnectionException(400, "not_read_only", "API key Binance đang bật quyền giao dịch. Không kích hoạt kết nối.");
-        if (!Flag(root, "enableReading"))
-            throw new ExchangeConnectionException(403, "permission", "API key Binance chưa bật quyền đọc.");
-    }
-
-    static void RejectUnknownFields(JsonElement root)
-    {
-        foreach (var property in root.EnumerateObject())
-        {
-            if (IsRequired(property.Name))
-                continue;
-            if (property.NameEquals("ipRestrict"))
-            {
-                if (property.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-                    throw new ExchangeConnectionException(400, "unverified", "apiRestrictions có field chưa được nhận diện. Không kích hoạt kết nối.");
-                continue;
-            }
-
-            if (property.NameEquals("createTime") || property.NameEquals("tradingAuthorityExpirationTime"))
-            {
-                if (property.Value.ValueKind != JsonValueKind.Number)
-                    throw new ExchangeConnectionException(400, "unverified", "apiRestrictions có field chưa được nhận diện. Không kích hoạt kết nối.");
-                continue;
-            }
-
-            // An unrecognized boolean false grants no capability. The eight required flags still decide read-only.
-            if (property.Value.ValueKind == JsonValueKind.False)
-                continue;
-            throw new ExchangeConnectionException(400, "unverified", "apiRestrictions có field chưa được nhận diện. Không kích hoạt kết nối.");
-        }
-    }
-
-    static bool IsRequired(string name)
-    {
-        foreach (var field in RequiredBooleanFields)
-        {
-            if (field == name)
-                return true;
-        }
-
-        return false;
-    }
-
-    static bool RequiredBooleans(JsonElement root)
-    {
-        foreach (var field in RequiredBooleanFields)
-        {
-            if (!root.TryGetProperty(field, out var value))
-                return false;
-            if (value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-                return false;
-        }
-
-        return true;
-    }
+    public static bool ReadOnly(JsonElement root) =>
+        Flag(root, "enableReading")
+        && !Flag(root, "enableWithdrawals")
+        && !Flag(root, "enableInternalTransfer")
+        && !Flag(root, "permitsUniversalTransfer")
+        && !Flag(root, "enableSpotAndMarginTrading")
+        && !Flag(root, "enableFutures")
+        && !Flag(root, "enableMargin")
+        && !Flag(root, "enableVanillaOptions");
 
     public static bool FuturesEnabled(JsonElement root) => Flag(root, "enableFutures");
 
@@ -162,33 +81,17 @@ public sealed class BinanceExchangeConnector : IExchangeAdapter
 {
     public const string SpotMainnet = "https://api.binance.com";
     public const string SpotTestnet = "https://testnet.binance.vision";
-    public const string RestrictionsPath = "/sapi/v1/account/apiRestrictions";
-    public const string AccountPath = "/api/v3/account";
+    public const string UsdMainnet = "https://fapi.binance.com";
+    public const string CoinMainnet = "https://dapi.binance.com";
+    public const string FuturesTestnet = "https://testnet.binancefuture.com";
 
     readonly HttpClient _http;
     readonly IExchangeConnectorLog _log;
 
     public BinanceExchangeConnector(HttpMessageHandler handler, IExchangeConnectorLog log)
     {
-        DisableRedirects(handler);
         _http = new HttpClient(handler, disposeHandler: false) { Timeout = TimeSpan.FromSeconds(15) };
         _log = log;
-    }
-
-    public static void DisableRedirects(HttpMessageHandler handler)
-    {
-        for (var current = handler; current is not null; current = current is DelegatingHandler delegating ? delegating.InnerHandler : null)
-        {
-            switch (current)
-            {
-                case SocketsHttpHandler sockets:
-                    sockets.AllowAutoRedirect = false;
-                    return;
-                case HttpClientHandler http:
-                    http.AllowAutoRedirect = false;
-                    return;
-            }
-        }
     }
 
     public string ExchangeCode => "BINANCE";
@@ -201,24 +104,46 @@ public sealed class BinanceExchangeConnector : IExchangeAdapter
         _ => throw new ExchangeConnectionException(400, "unsupported", "Môi trường không được hỗ trợ. Chỉ MAINNET hoặc TESTNET."),
     };
 
-    public static void EnsureAllowed(string method, string path)
+    public static Uri FuturesRoot(string environment, string subtype) => environment switch
     {
-        if (!string.Equals(method, "GET", StringComparison.Ordinal)
-            || path is not (RestrictionsPath or AccountPath))
-            throw new ExchangeConnectionException(400, "not_allowlisted", "Endpoint Binance không nằm trong allowlist chỉ đọc.");
-    }
+        "MAINNET" => new Uri(subtype == "coin_m" ? CoinMainnet : UsdMainnet),
+        "TESTNET" => new Uri(FuturesTestnet),
+        _ => throw new ExchangeConnectionException(400, "unsupported", "Môi trường không được hỗ trợ. Chỉ MAINNET hoặc TESTNET."),
+    };
 
     public async Task<ExchangeProbeDto> ProbeAsync(ExchangeCredential credential, CancellationToken cancellationToken)
     {
         var root = SpotRoot(credential.Environment);
-        using var restrictions = await SendAsync(root, credential, RestrictionsPath, "", cancellationToken);
-        BinancePermissionGate.EnsureReadOnly(restrictions.RootElement);
-        var names = BinancePermissionGate.Names(restrictions.RootElement);
-        names.Add("futures-blocked");
-        names.Add("spot-read");
-        var message = BinancePermissionGate.Describe(restrictions.RootElement, true);
+        var endpoints = "GET /api/v3/account";
+        bool readOnly;
+        string message;
+        var names = new List<string>();
+        var futures = false;
+        try
+        {
+            using var restrictions = await SendAsync(root, credential, "/sapi/v1/account/apiRestrictions", "", cancellationToken);
+            BinancePermissionGate.EnsureNotTransfer(restrictions.RootElement);
+            readOnly = BinancePermissionGate.ReadOnly(restrictions.RootElement);
+            futures = BinancePermissionGate.FuturesEnabled(restrictions.RootElement);
+            endpoints = "GET /sapi/v1/account/apiRestrictions; GET /api/v3/account";
+            names = BinancePermissionGate.Names(restrictions.RootElement);
+            names.Add("futures-blocked");
+            if (futures)
+                names.Add("futures-unsafe");
+            if (BinancePermissionGate.SpotTradeEnabled(restrictions.RootElement))
+                names.Add("spot-trade");
+            else if (names.Contains("reading"))
+                names.Add("spot-read");
+            message = BinancePermissionGate.Describe(restrictions.RootElement, readOnly);
+        }
+        catch (ExchangeConnectionException ex) when (ex.Code == "exchange")
+        {
+            readOnly = false;
+            names = ["restrictions-unverified"];
+            message = "Không đọc được apiRestrictions. Quyền chưa xác minh. Không đồng bộ lịch sử và không suy ra quyền chỉ đọc từ số dư.";
+        }
 
-        using var account = await SendAsync(root, credential, AccountPath, "", cancellationToken);
+        using var account = await SendAsync(root, credential, "/api/v3/account", "", cancellationToken);
         var assets = new List<ExchangeAssetDto>();
         if (account.RootElement.TryGetProperty("balances", out var balances) && balances.ValueKind == JsonValueKind.Array)
         {
@@ -241,30 +166,87 @@ public sealed class BinanceExchangeConnector : IExchangeAdapter
             ExchangeCode = ExchangeCode,
             Environment = credential.Environment,
             Message = message,
-            ReadOnlyVerified = true,
+            ReadOnlyVerified = readOnly,
             PermissionNames = names,
             ExternalUserId = ExchangeParse.Text(account.RootElement, "uid"),
             AccountType = "SPOT",
             BalanceError = "Không gọi ví futures. Enable Futures cho phép đặt lệnh, và Binance không có quyền chỉ đọc futures tách biệt.",
-            SourceEndpoints = "GET /sapi/v1/account/apiRestrictions; GET /api/v3/account",
+            SourceEndpoints = endpoints,
             Assets = assets,
             CheckedAt = DateTimeOffset.UtcNow,
         };
     }
 
-    public Task<ExchangeHistoryPage> ReadHistoryAsync(ExchangeCredential credential, ExchangeHistoryQuery query, CancellationToken cancellationToken)
+    public async Task<ExchangeHistoryPage> ReadHistoryAsync(ExchangeCredential credential, ExchangeHistoryQuery query, CancellationToken cancellationToken)
     {
-        _ = credential;
-        _ = query;
-        _ = cancellationToken;
-        throw new ExchangeConnectionException(400, "not_allowlisted", "Binance phase 2 chỉ cho phép GET /sapi/v1/account/apiRestrictions và GET /api/v3/account.");
+        if (query.Phase == "discover" && query.ProductSubtype == "spot")
+        {
+            using var account = await SendAsync(SpotRoot(credential.Environment), credential, "/api/v3/account", "", cancellationToken);
+            return new ExchangeHistoryPage { DiscoveredSymbols = BinanceExecutionMapper.SymbolsFromBalances(account.RootElement) };
+        }
+
+        if (query.Phase == "discover")
+        {
+            var incomeRoot = FuturesRoot(credential.Environment, query.ProductSubtype);
+            var path = query.ProductSubtype == "coin_m" ? "/dapi/v1/income" : "/fapi/v1/income";
+            var incomeQuery = FormattableString.Invariant($"startTime={query.WindowStartMs}&endTime={query.WindowEndMs}&limit=1000");
+            using var income = await SendAsync(incomeRoot, credential, path, incomeQuery, cancellationToken);
+            var symbols = BinanceExecutionMapper.SymbolsFromIncome(income.RootElement);
+            string? next = null;
+            if (income.RootElement.ValueKind == JsonValueKind.Array && income.RootElement.GetArrayLength() >= 1000)
+            {
+                long last = 0;
+                foreach (var row in income.RootElement.EnumerateArray())
+                {
+                    var when = ExchangeParse.UnixMs(row, "time");
+                    if (when is not null && when.Value.ToUnixTimeMilliseconds() > last)
+                        last = when.Value.ToUnixTimeMilliseconds();
+                }
+
+                if (last > query.WindowStartMs)
+                    next = (last + 1).ToString(CultureInfo.InvariantCulture);
+            }
+
+            return new ExchangeHistoryPage { DiscoveredSymbols = symbols, NextCursor = next, PageFull = next is not null };
+        }
+
+        var signed = SignedTrades(credential.Environment, query);
+        using var document = await SendAsync(signed.Root, credential, signed.Path, signed.Query, cancellationToken);
+        var page = new ExchangeHistoryPage();
+        if (document.RootElement.ValueKind != JsonValueKind.Array)
+            throw new ExchangeConnectionException(502, "exchange", "Binance không trả danh sách khớp lệnh.");
+        foreach (var item in document.RootElement.EnumerateArray())
+        {
+            var mapped = query.ProductSubtype == "spot"
+                ? BinanceExecutionMapper.MapSpot(item, credential.Environment)
+                : BinanceExecutionMapper.MapFutures(item, credential.Environment, query.ProductSubtype, signed.Endpoint);
+            page.Items.Add(mapped);
+            if (mapped.ExecutedAt is DateTimeOffset when)
+            {
+                var ms = when.ToUnixTimeMilliseconds();
+                if (page.OldestMs is null || ms < page.OldestMs)
+                    page.OldestMs = ms;
+            }
+        }
+
+        page.PageFull = page.Items.Count >= query.Limit;
+        return page;
+    }
+
+    static (Uri Root, string Path, string Query, string Endpoint) SignedTrades(string environment, ExchangeHistoryQuery query)
+    {
+        var common = FormattableString.Invariant($"symbol={Uri.EscapeDataString(query.Symbol ?? "")}&startTime={query.WindowStartMs}&endTime={query.WindowEndMs}&limit={query.Limit}");
+        return query.ProductSubtype switch
+        {
+            "spot" => (SpotRoot(environment), "/api/v3/myTrades", common, "GET /api/v3/myTrades"),
+            "usd_m" => (FuturesRoot(environment, "usd_m"), "/fapi/v1/userTrades", common, "GET /fapi/v1/userTrades"),
+            "coin_m" => (FuturesRoot(environment, "coin_m"), "/dapi/v1/userTrades", common, "GET /dapi/v1/userTrades"),
+            _ => throw new ExchangeConnectionException(400, "unsupported_category", $"Binance chưa hỗ trợ subtype {query.ProductSubtype}."),
+        };
     }
 
     async Task<JsonDocument> SendAsync(Uri root, ExchangeCredential credential, string path, string queryWithoutSign, CancellationToken cancellationToken)
     {
-        EnsureAllowed("GET", path);
-        if (root.Host is not ("api.binance.com" or "testnet.binance.vision"))
-            throw new ExchangeConnectionException(400, "unsupported", "Host Binance không được phép.");
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
         var payload = string.IsNullOrEmpty(queryWithoutSign)
             ? FormattableString.Invariant($"recvWindow={BinanceSigner.RecvWindow}&timestamp={timestamp}")
@@ -286,12 +268,6 @@ public sealed class BinanceExchangeConnector : IExchangeAdapter
 
         using (response)
         {
-            if ((int)response.StatusCode is >= 300 and <= 399)
-            {
-                _log.Info($"Binance {credential.Environment} {path} redirect");
-                throw new ExchangeConnectionException(502, "redirect", "Binance trả redirect. Không theo redirect và không gửi credential tới URL khác.");
-            }
-
             if ((int)response.StatusCode is 429 or 418)
             {
                 _log.Info($"Binance {credential.Environment} {path} rate_limit");

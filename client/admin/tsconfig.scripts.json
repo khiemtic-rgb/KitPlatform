@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": [
+    "src/modules/content/kit-video-phase05.golden.ts",
+    "src/modules/content/kit-video-phase05.integrity.ts",
+    "src/modules/content/kit-video-phase05.reanalyze.ts",
+    "src/modules/content/kit-video-phase05.verify.ts",
+    "src/modules/content/kit-video-phase06.golden.ts",
+    "src/modules/content/kit-video-phase06.preflight.ts",
+    "src/modules/content/famixa-voice-physical-file-store.ts",
+    "src/modules/content/famixa-shared-performance-contract.ts"
+  ]
+}

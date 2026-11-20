@@ -4,6 +4,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ApiOutlined,
   AuditOutlined,
+  FormOutlined,
   SafetyCertificateOutlined,
   TableOutlined,
   ThunderboltOutlined,
@@ -11,10 +12,11 @@ import {
 import { useRegisterSimpleModuleSubnav } from '@/shared/components/module-subnav.context';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { secondBrainAccess } from './intent-workspace';
 
-const tabs = [
-  { key: 'workspace', label: 'Yêu cầu', path: '/second-brain/workspace', icon: <ThunderboltOutlined /> },
-  { key: 'agent', label: 'Trading Agent', path: '/second-brain/agent', icon: <ThunderboltOutlined /> },
+const workspaceTab = { key: 'workspace', label: 'Yêu cầu', path: '/second-brain/workspace', icon: <FormOutlined /> };
+
+const tradingTabs = [
   { key: 'session', label: 'Phiên làm việc', path: '/second-brain/session', icon: <ThunderboltOutlined /> },
   { key: 'overview', label: 'Tình hình', path: '/second-brain/overview', icon: <TableOutlined /> },
   { key: 'ledger', label: 'Sổ giao dịch', path: '/second-brain/ledger', icon: <TableOutlined /> },
@@ -32,26 +34,34 @@ export function TradingLayout() {
   const permissions = useAuthStore((s) => s.user?.permissions ?? []);
   const platformLoaded = useTenantPlatformStore((s) => s.loaded);
   const moduleOn = useTenantPlatformStore((s) => s.isModuleEnabled('personal_intelligence'));
-  const allowed = roles.includes('ADMIN')
-    || permissions.includes('personal_intelligence.trading.run')
-    || permissions.includes('personal_intelligence.exchange.connect')
-    || permissions.includes('personal_intelligence.exchange.read');
-  const activeKey = location.pathname.startsWith('/second-brain/account')
-    ? 'exchange'
-    : tabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'session';
-  const items = useMemo(() => tabs, []);
+  const access = secondBrainAccess(roles, permissions);
+  const items = useMemo(() => [
+    ...(access.canIntent ? [workspaceTab] : []),
+    ...(access.canTrading ? tradingTabs : []),
+  ], [access.canIntent, access.canTrading]);
+  const activeKey = location.pathname.startsWith('/second-brain/workspace')
+    ? 'workspace'
+    : location.pathname.startsWith('/second-brain/account')
+      ? 'exchange'
+      : tradingTabs.find((tab) => location.pathname.startsWith(tab.path))?.key ?? 'workspace';
   useRegisterSimpleModuleSubnav(items, activeKey, (path) => navigate(path));
 
   useEffect(() => {
-    if (location.pathname === '/second-brain' || location.pathname === '/second-brain/') {
-      navigate('/second-brain/agent', { replace: true });
+    if (!access.canIntent) return;
+    const atRoot = location.pathname === '/second-brain' || location.pathname === '/second-brain/';
+    if (atRoot) {
+      navigate(access.canTrading ? '/second-brain/session' : '/second-brain/workspace', { replace: true });
+      return;
     }
-  }, [location.pathname, navigate]);
+    if (!access.canTrading && !location.pathname.startsWith('/second-brain/workspace')) {
+      navigate('/second-brain/workspace', { replace: true });
+    }
+  }, [access.canIntent, access.canTrading, location.pathname, navigate]);
 
   if (platformLoaded && !moduleOn) {
     return <Alert type="warning" showIcon message="Module personal_intelligence chưa được bật cho tenant này." />;
   }
-  if (!allowed) {
+  if (!access.canIntent) {
     return <Alert type="error" showIcon message="Bạn chưa có quyền dùng Second Brain trên tenant này." />;
   }
   return <Outlet />;

@@ -1,0 +1,14 @@
+{
+  "generator": "novixa_props.py",
+  "createdUtc": "2026-10-29T09:08:58+00:00",
+  "pillow": "12.3.0",
+  "fontRegular": "/usr/share/fonts/opentype/inter/Inter-Medium.otf",
+  "fontBold": "/usr/share/fonts/opentype/inter/Inter-Bold.otf",
+  "fontBoldSha256": "00fd6f4691ee8884a33b46bf45851b341927c37c30064f558e1befb242971c49",
+  "supersample": 2,
+  "pairwiseHamming": {
+    "novixa-ill-box-001 / novixa-ill-bottle-001": 18,
+    "novixa-ill-box-001 / novixa-ill-blister-001": 28,
+    "novixa-ill-bottle-001 / novixa-ill-blister-001": 34
+  }
+}

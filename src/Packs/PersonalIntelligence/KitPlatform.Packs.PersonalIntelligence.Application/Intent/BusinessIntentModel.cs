@@ -179,11 +179,33 @@ public sealed class BusinessIntentModelOptions
 
     public string Model { get; set; } = "";
 
+    public int MaxOutputTokens { get; set; } = 512;
+
+    public int MaxCallsPerProcess { get; set; } = 32;
+
+    public int RequestTimeoutSeconds { get; set; } = 20;
+
+    public bool LimitsAreValid =>
+        MaxOutputTokens is >= 1 and <= 1024
+        && MaxCallsPerProcess is >= 1 and <= 64
+        && RequestTimeoutSeconds is >= 5 and <= 45;
+
     public bool IsConfigured =>
         Enabled
         && !string.IsNullOrWhiteSpace(BaseUrl)
         && !string.IsNullOrWhiteSpace(ApiKey)
-        && !string.IsNullOrWhiteSpace(Model);
+        && !string.IsNullOrWhiteSpace(Model)
+        && LimitsAreValid;
+
+    public void EnsureStartupSafe()
+    {
+        if (!Enabled)
+            return;
+        if (string.IsNullOrWhiteSpace(BaseUrl) || string.IsNullOrWhiteSpace(ApiKey) || string.IsNullOrWhiteSpace(Model))
+            throw new InvalidOperationException("PersonalIntelligence:BusinessIntent is enabled but BaseUrl, ApiKey, or Model is missing.");
+        if (!LimitsAreValid)
+            throw new InvalidOperationException("PersonalIntelligence:BusinessIntent limits must set MaxOutputTokens 1-1024, MaxCallsPerProcess 1-64, and RequestTimeoutSeconds 5-45.");
+    }
 }
 
 public static class BusinessIntentJson

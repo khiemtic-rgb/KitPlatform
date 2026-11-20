@@ -80,6 +80,7 @@ import {
   type ConsultationCustomerProfileSnapshot,
 } from '@/modules/sales/consultation-customer-profile';
 import { QUICK_SYMPTOM_CODES, QUICK_SYMPTOM_ICONS } from '@/modules/sales/consultation-quick-symptoms';
+import { screeningQuestions } from '@/modules/sales/consultation-screening';
 import {
   suggestRelatedSymptomCodes,
   SYMPTOM_CATEGORY_ICONS,
@@ -1100,6 +1101,21 @@ export function PosConsultationModal({
             <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 10 }}>
               Sản phẩm phù hợp ({suggestResult.suggestions.length}) — tham khảo, dược sĩ quyết định cuối
             </Typography.Text>
+            {screeningQuestions(suggestResult).length > 0 ? (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 10 }}
+                message="Hỏi khách trước khi bán"
+                description={
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {screeningQuestions(suggestResult).map((question) => (
+                      <li key={question}>{question}</li>
+                    ))}
+                  </ul>
+                }
+              />
+            ) : null}
             <div className="pc-product-grid">{suggestResult.suggestions.map(renderProductCard)}</div>
             <div className="pc-product-footer">
               <Checkbox

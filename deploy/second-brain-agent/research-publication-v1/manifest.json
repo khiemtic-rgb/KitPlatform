@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "research-publication/v1",
+  "publicationId": "pub-e65b6912e02a168d",
+  "publishedAt": "2026-10-30T04:30:00+00:00",
+  "publisher": "research-lab-v1",
+  "labResultSha256": "8f19e6e010999637fe2b1b793106ea2c22b5def60e06fbb8b06dcb6267d5714b",
+  "paperStatusSha256": "0cdecbb0e7b2a5f8430cd32d713aaf5be447096272a273cb72e62b0f32bc84b5",
+  "paperReportSha256": "84b67af769b13ff13eae823f07446de682334f03fff2b7643a6069f2b83f549f",
+  "paperHealthSha256": "d4e557a3510047b127cd9ff1b714a63dd9030b115e0a25399fa27d26b4fab6ab"
+}

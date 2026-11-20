@@ -1,6 +1,6 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using KitPlatform.Application.Abstractions;
+using KitPlatform.Application.Core;
 
 namespace KitPlatform.Infrastructure.Security;
 
@@ -13,11 +13,9 @@ public sealed class TenantContext : ITenantContext
 
     public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true;
 
-    public Guid UserId => ParseGuid(
-        GetClaim(ClaimTypes.NameIdentifier) ?? GetClaim("sub"),
-        "User id claim missing.");
+    public Guid UserId => CoreAuthority.RequireUserId(Principal);
 
-    public Guid TenantId => ParseGuid(GetClaim("tenant_id"), "Tenant id claim missing.");
+    public Guid TenantId => CoreAuthority.RequireTenantId(Principal);
 
     public Guid? WorkspaceId =>
         _httpContextAccessor.HttpContext?.Items.TryGetValue(
@@ -27,9 +25,6 @@ public sealed class TenantContext : ITenantContext
             ? id
             : null;
 
-    private string? GetClaim(string type) =>
-        _httpContextAccessor.HttpContext?.User.FindFirst(type)?.Value;
-
-    private static Guid ParseGuid(string? value, string error) =>
-        Guid.TryParse(value, out var id) ? id : throw new UnauthorizedAccessException(error);
+    private System.Security.Claims.ClaimsPrincipal? Principal =>
+        _httpContextAccessor.HttpContext?.User;
 }

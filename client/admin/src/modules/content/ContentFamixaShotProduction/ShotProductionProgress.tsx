@@ -1,5 +1,8 @@
 import type { ShotProductionSnapshot } from './ShotProductionState';
 
+/** Desk checklist beside the shot. Not official Production Progress. Not an input to the series track or the production-progress card. */
+export const SHOT_PROGRESS_ROWS_AUTHORITY = 'EDITORIAL' as const;
+
 function mark(done: boolean, wait?: boolean, stale?: boolean) {
   if (stale) return '!';
   if (done) return '✓';
@@ -44,7 +47,7 @@ export function shotProgressRows(snap: ShotProductionSnapshot) {
 
 export function ShotProductionProgress({ snap }: { snap: ShotProductionSnapshot }) {
   return (
-    <ul className="fx-finish__check">
+    <ul className="fx-finish__check" data-progress-authority={SHOT_PROGRESS_ROWS_AUTHORITY}>
       {shotProgressRows(snap).map((row) => (
         <li key={row.id}>
           {row.label} {row.mark}

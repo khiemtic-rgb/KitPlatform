@@ -25,7 +25,7 @@ internal static class NovixaSalesAssist
 
         var goal = journey.Step switch
         {
-            "phc_ask" => "Mời khách thực hiện Pharmacy Health Check (20–30 phút, không thu phí).",
+            "phc_ask" => "Mời khách làm Pharmacy Health Check (bài tự làm 31 câu, khoảng 7–10 phút, 6 nhóm, không thu phí).",
             "report_ask" => "Hỏi khách đã xem báo cáo Health Check chưa — chỗ nào thấy đúng.",
             "pilot_ask" => "Mời Pilot 30 ngày tại một cơ sở, 1–2 mục tiêu trên báo cáo.",
             _ => $"Mở đầu theo nỗi đau: {pain.Label.ToLowerInvariant()} — không chào phần mềm ngay.",
@@ -128,7 +128,7 @@ internal static class NovixaSalesAssist
             return "Nhắc nhẹ Health Check khi quầy vắng — đã có thời gian xem chưa?";
         return step switch
         {
-            "phc_ask" => "Giải thích thêm về PHC (20–30 phút, không thu phí).",
+            "phc_ask" => "Giải thích thêm về PHC (bài tự làm 31 câu, khoảng 7–10 phút, 6 nhóm, không thu phí).",
             "report_ask" => "Hỏi phần nào trên báo cáo thấy đúng nhất.",
             "pilot_ask" => "Mời Pilot 30 ngày, không chuyển toàn bộ ngay.",
             _ => "Giữ một nỗi đau — một câu mở, không dump tính năng.",

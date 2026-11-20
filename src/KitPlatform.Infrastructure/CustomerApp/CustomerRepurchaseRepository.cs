@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using KitPlatform.Application.CustomerApp;
 using KitPlatform.Infrastructure.Data;
 
 namespace KitPlatform.Infrastructure.CustomerApp;
@@ -50,6 +51,25 @@ internal sealed class CustomerRepurchaseRepository
             TenantId = tenantId,
             CustomerId = customerId,
             AccountId = accountId,
+        })).ToList();
+    }
+
+    public async Task<IReadOnlyList<CustomerRepurchaseSuggestionRow>> ListForStaffAsync(
+        Guid tenantId,
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        var sql = SuggestionSelect + """
+            WHERE 
+            """ + StaffRepurchaseQuery.ByCustomer + """
+            ORDER BY rs.suggested_for_date NULLS LAST, rs.created_at DESC
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return (await conn.QueryAsync<CustomerRepurchaseSuggestionRow>(sql, new
+        {
+            TenantId = tenantId,
+            CustomerId = customerId,
         })).ToList();
     }
 

@@ -1,0 +1,1109 @@
+{
+  "schemaVersion": "novixa-intro-production/1",
+  "projectId": "novixa-intro-film",
+  "script": "script.md",
+  "shotPlan": "shot-plan.proposed.json",
+  "approval": "proposed",
+  "durationLocked": false,
+  "hintSeconds": 180,
+  "hintNote": "script.md và manifest gốc nói 180 giây chỉ là gợi ý. Không ép lời và không chia lại cảnh cho đủ 180.",
+  "estimatedSeconds": 250.68,
+  "estimateStatus": "ESTIMATED",
+  "finalVideo": null,
+  "voice": {
+    "selected": "vi-VN-NamMinhNeural",
+    "fullRead": {
+      "status": "MEASURED",
+      "approval": "APPROVED",
+      "provider": "edge-tts 7.3.1",
+      "endpoint": "Microsoft Edge online neural TTS, no API key",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "+0%",
+      "cost": 0,
+      "folder": "outputs/novixa-intro-film/20261023T084726Z-voice-read",
+      "path": "outputs/novixa-intro-film/20261023T084726Z-voice-read/full-read.wav",
+      "fileSeconds": 198.145,
+      "spokenSeconds": 183.44,
+      "speechEndSumSeconds": 187.38,
+      "boundary": "SentenceBoundary",
+      "note": "Người dùng duyệt giọng V3. Hình phim chưa duyệt. durationLocked vẫn false."
+    },
+    "fullReadStatus": "MEASURED",
+    "sample": {
+      "status": "MEASURED",
+      "path": "assets/voice/style-s03.wav",
+      "sceneId": "s03-stock-cash",
+      "coverage": "Hai câu cuối của đoạn 3, không phải cả đoạn.",
+      "fileSeconds": 9.936,
+      "speechEndSeconds": 9.088,
+      "pauseBetweenSentencesSeconds": 0.838,
+      "tailSilenceSeconds": 0.848
+    },
+    "v2": {
+      "status": "GENERATED",
+      "approval": "PROPOSED",
+      "folder": "outputs/novixa-intro-film/20261023T071930Z-voice-read",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "brandTts": "Nô vi xa",
+      "brandVerification": "SUPERSEDED"
+    },
+    "previousFullRead": {
+      "status": "MEASURED",
+      "approval": "PROPOSED",
+      "provider": "edge-tts 7.3.1",
+      "endpoint": "Microsoft Edge online neural TTS, no API key",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "+0%",
+      "cost": 0,
+      "folder": "outputs/novixa-intro-film/20261023T071930Z-voice-read",
+      "path": "outputs/novixa-intro-film/20261023T071930Z-voice-read/full-read.wav",
+      "fileSeconds": 198.049,
+      "spokenSeconds": 183.38,
+      "speechEndSumSeconds": 187.28,
+      "boundary": "SentenceBoundary",
+      "note": "Bản đọc áp dụng Nô vi xa và nghỉ s04. File ghép vẫn gồm lặng kỹ thuật. Cả bản đọc chưa duyệt."
+    },
+    "decisions": {
+      "pronunciation": {
+        "approval": "APPROVED",
+        "reference": "outputs/novixa-intro-film/20261023T083501Z-pronunciation-probe-v2/novixa-closed.wav",
+        "tts": "Nôvixa",
+        "approvedTtsText": "Và đó cũng là lý do Nôvixa ra đời.",
+        "supersededTts": "Nô vi xa"
+      },
+      "s04Pause": {
+        "approval": "APPROVED",
+        "reference": "outputs/novixa-intro-film/20261023T070505Z-voice-probes/s04-rest-clean.wav",
+        "appliesTo": [
+          "s04-expiry"
+        ]
+      },
+      "urlReading": {
+        "approval": "APPROVED",
+        "reference": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s12-cta.wav",
+        "spoken": "novixa chấm vn",
+        "display": "novixa.vn"
+      }
+    },
+    "earlierFullRead": {
+      "status": "MEASURED",
+      "approval": "PROPOSED",
+      "provider": "edge-tts 7.3.1",
+      "endpoint": "Microsoft Edge online neural TTS, no API key",
+      "voice": "vi-VN-NamMinhNeural",
+      "rate": "+0%",
+      "cost": 0,
+      "folder": "outputs/novixa-intro-film/20261023T064424Z-voice-read",
+      "path": "outputs/novixa-intro-film/20261023T064424Z-voice-read/full-read.wav",
+      "fileSeconds": 199.536,
+      "speechEndSumSeconds": 189.1,
+      "boundary": "SentenceBoundary",
+      "note": "File ghép gồm lặng đầu và lặng cuối của từng đoạn. Những khoảng đó là của cách tạo file, không phải khoảng giữ cảnh."
+    },
+    "v3": {
+      "status": "GENERATED",
+      "approval": "APPROVED",
+      "folder": "outputs/novixa-intro-film/20261023T084726Z-voice-read",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "brandTts": "Nôvixa",
+      "brandReference": "outputs/novixa-intro-film/20261023T083501Z-pronunciation-probe-v2/novixa-closed.wav"
+    }
+  },
+  "graphicsPlates": {
+    "s05-s11": "outputs/novixa-intro-film/20261023T063730Z-logo-plates/s05-s11-logo.png",
+    "s12": "outputs/novixa-intro-film/20261023T063730Z-logo-plates/s12-cta.png",
+    "timing": "PROPOSED",
+    "note": "Tấm hình, chưa phải cảnh đã khóa thời lượng."
+  },
+  "aiRequestsSent": 0,
+  "aiCost": 0,
+  "scenes": [
+    {
+      "sceneId": "s01-day-opens",
+      "seconds": 20.15,
+      "purpose": "Một ngày nhà thuốc bắt đầu.",
+      "dialogueSource": "script.md#s01-day-opens",
+      "picture": "Cửa, khách, quầy, nhịp việc tăng.",
+      "method": "blocked",
+      "status": "blocked",
+      "have": [
+        "keyframes/v3/s01-pharmacy.jpg"
+      ],
+      "missing": [
+        "Footage chuyển động đã duyệt"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "fileSeconds": 17.784,
+      "leadSilenceSeconds": 0.4,
+      "speechEndSeconds": 16.88,
+      "tailSilenceSeconds": 0.904,
+      "sentenceRests": [
+        {
+          "start": 1.26,
+          "seconds": 1.12,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 3.52,
+          "seconds": 1.08,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 7.98,
+          "seconds": 1.16,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 10.38,
+          "seconds": 1.08,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 2.74,
+          "seconds": 0.42,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 5.18,
+          "seconds": 0.36,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 6.2,
+          "seconds": 0.4,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 12.62,
+          "seconds": 0.22,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 14.26,
+          "seconds": 0.4,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 15.36,
+          "seconds": 0.26,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 16.88,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Hình đi cùng lời. Không cộng khoảng lặng cuối file.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s01-day-opens.wav",
+      "productionLane": "character-motion",
+      "aiVideo": "prepare-only",
+      "previousSpeechEndSeconds": 16.88,
+      "previousFileSeconds": 17.784,
+      "spokenSeconds": 16.48,
+      "pictureReadiness": "NO_MOTION_FOOTAGE"
+    },
+    {
+      "sceneId": "s02-busy",
+      "seconds": 23.76,
+      "purpose": "Bận không có nghĩa là đang kiểm soát.",
+      "dialogueSource": "script.md#s02-busy",
+      "picture": "Hóa đơn, hộp chồng, nhiều việc rồi dừng ở câu hỏi.",
+      "method": "blocked",
+      "status": "blocked",
+      "have": [],
+      "missing": [
+        "Keyframe đã duyệt"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "fileSeconds": 19.944,
+      "leadSilenceSeconds": 0.3,
+      "speechEndSeconds": 19.02,
+      "tailSilenceSeconds": 0.924,
+      "sentenceRests": [
+        {
+          "start": 1.74,
+          "seconds": 1.06,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 4.12,
+          "seconds": 1.06,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 7.84,
+          "seconds": 1.12,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 11.28,
+          "seconds": 1.14,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 6.2,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 9.94,
+          "seconds": 0.34,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 13.04,
+          "seconds": 0.32,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 14.24,
+          "seconds": 0.4,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 16.82,
+          "seconds": 0.44,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 19.02,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Trước câu hỏi có nghỉ khoảng 1,1 giây, cùng cỡ các dấu chấm khác. Chưa chèn thêm.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s02-busy.wav",
+      "productionLane": "character-motion",
+      "aiVideo": "prepare-only",
+      "previousSpeechEndSeconds": 19.02,
+      "previousFileSeconds": 19.944,
+      "spokenSeconds": 18.72,
+      "pictureReadiness": "NO_MOTION_FOOTAGE"
+    },
+    {
+      "sceneId": "s03-stock-cash",
+      "seconds": 17.92,
+      "purpose": "Hàng nằm yên là vốn bị khóa.",
+      "dialogueSource": "script.md#s03-stock-cash",
+      "picture": "Hộp, két, lịch.",
+      "method": "code-style-proof-only",
+      "status": "needs-review",
+      "have": [
+        "outputs/novixa-style-proof/20261023T021435Z-style-proof/video.mp4"
+      ],
+      "missing": [
+        "Cảnh đầy đủ theo lời",
+        "Nhân vật hoạt hình 3D"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "measuredExcerptSeconds": 9.936,
+      "fileSeconds": 14.784,
+      "leadSilenceSeconds": 0.26,
+      "speechEndSeconds": 13.9,
+      "tailSilenceSeconds": 0.884,
+      "sentenceRests": [
+        {
+          "start": 1.62,
+          "seconds": 1.06,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 4.06,
+          "seconds": 1.06,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 9.84,
+          "seconds": 1.06,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 6.34,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 11.86,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 13.9,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Nghỉ ở dấu ba chấm đo được khoảng 0,36 giây, ngắn hơn mẫu style-s03.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s03-stock-cash.wav",
+      "productionLane": "code-graphics",
+      "aiVideo": "no",
+      "plate": "outputs/novixa-intro-film/20261023T070441Z-graphics/s03-caption.png",
+      "previousSpeechEndSeconds": 13.9,
+      "previousFileSeconds": 14.784,
+      "spokenSeconds": 13.64,
+      "pictureReadiness": "PREVIEW_TYPE_ONLY"
+    },
+    {
+      "sceneId": "s04-expiry",
+      "seconds": 18.53,
+      "purpose": "Hạn dùng không chờ trí nhớ.",
+      "dialogueSource": "script.md#s04-expiry",
+      "picture": "Lịch lật, nhóm hộp cần kiểm tra.",
+      "method": "code",
+      "status": "blocked",
+      "have": [],
+      "missing": [
+        "Duyệt cảnh",
+        "Không bịa số lô"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "fileSeconds": 13.417,
+      "leadSilenceSeconds": 0.32,
+      "speechEndSeconds": 12.52,
+      "tailSilenceSeconds": 0.897,
+      "sentenceRests": [
+        {
+          "start": 1.48,
+          "seconds": 1.08,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 3.56,
+          "seconds": 0.44,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 5.12,
+          "seconds": 0.36,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 8.44,
+          "seconds": 0.28,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 11.52,
+          "seconds": 0.66,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 12.52,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Không đo được nghỉ dài trước câu hỏi cuối. Cần người nghe.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s04-expiry.wav",
+      "productionLane": "code-graphics",
+      "aiVideo": "no",
+      "plate": "outputs/novixa-intro-film/20261023T070441Z-graphics/s04-caption.png",
+      "previousSpeechEndSeconds": 12.52,
+      "previousFileSeconds": 13.417,
+      "spokenSeconds": 12.2,
+      "pauseTreatment": {
+        "decision": "APPROVED",
+        "audioApproval": "PROPOSED",
+        "measuredPauseSeconds": 0.66,
+        "insertedSeconds": 0.6,
+        "removedSeconds": 0.335
+      },
+      "pictureReadiness": "PREVIEW_TYPE_ONLY"
+    },
+    {
+      "sceneId": "s05-introduce",
+      "seconds": 20.68,
+      "purpose": "NOVIXA ra đời để việc rõ hơn.",
+      "dialogueSource": "script.md#s05-introduce",
+      "picture": "Logo nguyên vẹn. UI chỉ khi đã xác minh.",
+      "method": "code",
+      "status": "blocked",
+      "have": [
+        "docs/novixa/assets/brand/novixa-logo.png"
+      ],
+      "missing": [
+        "UI POS đã xác minh"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "plate": "outputs/novixa-intro-film/20261023T063730Z-logo-plates/s05-s11-logo.png",
+      "fileSeconds": 15.288,
+      "leadSilenceSeconds": 0.32,
+      "speechEndSeconds": 14.38,
+      "tailSilenceSeconds": 0.908,
+      "sentenceRests": [
+        {
+          "start": 2.46,
+          "seconds": 1.12,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 6.8,
+          "seconds": 1.16,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 10.46,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 15.58,
+      "pictureHoldSeconds": 1.2,
+      "pictureReason": "Đề xuất thêm 1,2 giây logo trước lời. Không có trong file đọc.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s05-introduce.wav",
+      "productionLane": "code-logo",
+      "aiVideo": "no",
+      "previousSpeechEndSeconds": 14.34,
+      "previousFileSeconds": 15.24,
+      "spokenSeconds": 14.06,
+      "pictureReadiness": "PREVIEW_LOGO_ONLY"
+    },
+    {
+      "sceneId": "s06-selling",
+      "seconds": 20.53,
+      "purpose": "Bán hàng tại quầy bằng UI thật.",
+      "dialogueSource": "script.md#s06-selling",
+      "picture": "Màn POS đã xác minh.",
+      "method": "blocked",
+      "status": "blocked",
+      "have": [],
+      "missing": [
+        "Ảnh hoặc bản ghi POS đã xác minh"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "fileSeconds": 15.504,
+      "leadSilenceSeconds": 0.26,
+      "speechEndSeconds": 14.6,
+      "tailSilenceSeconds": 0.904,
+      "sentenceRests": [
+        {
+          "start": 5.12,
+          "seconds": 1.08,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 9.94,
+          "seconds": 1.22,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 1.76,
+          "seconds": 0.42,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 2.56,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 4.58,
+          "seconds": 0.22,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 6.72,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 14.6,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Hình đi cùng lời. Chưa có UI đã xác minh.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s06-selling.wav",
+      "productionLane": "verified-ui",
+      "aiVideo": "no",
+      "previousSpeechEndSeconds": 14.6,
+      "previousFileSeconds": 15.504,
+      "spokenSeconds": 14.34,
+      "pictureReadiness": "UI_NOT_APPROVED_FOR_FILM"
+    },
+    {
+      "sceneId": "s07-inventory",
+      "seconds": 20.07,
+      "purpose": "Tồn, hạn và giá trị hàng bằng UI thật.",
+      "dialogueSource": "script.md#s07-inventory",
+      "picture": "Màn tồn kho đã xác minh.",
+      "method": "blocked",
+      "status": "blocked",
+      "have": [],
+      "missing": [
+        "UI tồn kho đã xác minh",
+        "Không bịa giá trị hàng"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "fileSeconds": 17.784,
+      "leadSilenceSeconds": 0.32,
+      "speechEndSeconds": 16.88,
+      "tailSilenceSeconds": 0.904,
+      "sentenceRests": [
+        {
+          "start": 3.32,
+          "seconds": 1.06,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 5.58,
+          "seconds": 1.14,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 8.8,
+          "seconds": 1.18,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 11.44,
+          "seconds": 1.14,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 0.88,
+          "seconds": 0.4,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 14.1,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 16.24,
+          "seconds": 0.4,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 16.88,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Các câu hỏi đã có nghỉ khoảng 1,0 đến 1,1 giây trong lời.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s07-inventory.wav",
+      "productionLane": "verified-ui",
+      "aiVideo": "no",
+      "previousSpeechEndSeconds": 16.88,
+      "previousFileSeconds": 17.784,
+      "spokenSeconds": 16.56,
+      "pictureReadiness": "UI_NOT_APPROVED_FOR_FILM"
+    },
+    {
+      "sceneId": "s08-connected-data",
+      "seconds": 21.84,
+      "purpose": "Dữ liệu nối lại, phần mềm không quyết định thay người.",
+      "dialogueSource": "script.md#s08-connected-data",
+      "picture": "Sơ đồ rồi màn báo cáo đã xác minh.",
+      "method": "code",
+      "status": "blocked",
+      "have": [],
+      "missing": [
+        "Màn báo cáo đã xác minh"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "fileSeconds": 16.824,
+      "leadSilenceSeconds": 0.34,
+      "speechEndSeconds": 15.92,
+      "tailSilenceSeconds": 0.904,
+      "sentenceRests": [
+        {
+          "start": 7.5,
+          "seconds": 1.1,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 11.4,
+          "seconds": 1.08,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 1.56,
+          "seconds": 0.36,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 3.62,
+          "seconds": 0.42,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 6.22,
+          "seconds": 0.34,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 8.98,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 13.66,
+          "seconds": 0.38,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 15.92,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Hình đi cùng lời.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s08-connected-data.wav",
+      "productionLane": "code-graphics",
+      "aiVideo": "no",
+      "plate": "outputs/novixa-intro-film/20261023T070441Z-graphics/s08-flow.png",
+      "previousSpeechEndSeconds": 15.92,
+      "previousFileSeconds": 16.824,
+      "spokenSeconds": 15.58,
+      "pictureReadiness": "PREVIEW_DIAGRAM_ONLY"
+    },
+    {
+      "sceneId": "s09-people",
+      "seconds": 20.61,
+      "purpose": "Người ở trước, đồ họa lùi.",
+      "dialogueSource": "script.md#s09-people",
+      "picture": "Dược sĩ và khách.",
+      "method": "external-video",
+      "status": "blocked",
+      "have": [
+        "assets/pharmacist-nova-cartoon-v3.jpg"
+      ],
+      "missing": [
+        "Keyframe người và khách đã duyệt",
+        "Phép gửi provider"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "fileSeconds": 14.928,
+      "leadSilenceSeconds": 0.28,
+      "speechEndSeconds": 14.06,
+      "tailSilenceSeconds": 0.868,
+      "sentenceRests": [
+        {
+          "start": 3.3,
+          "seconds": 1.02,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 9.88,
+          "seconds": 1.08,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 6.32,
+          "seconds": 0.34,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 7.92,
+          "seconds": 0.34,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 14.86,
+      "pictureHoldSeconds": 0.8,
+      "pictureReason": "Đề xuất thêm 0,8 giây sau lời để người ở lại khung hình.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s09-people.wav",
+      "productionLane": "character-motion",
+      "aiVideo": "prepare-only",
+      "previousSpeechEndSeconds": 14.06,
+      "previousFileSeconds": 14.928,
+      "spokenSeconds": 13.78,
+      "pictureReadiness": "NO_MOTION_FOOTAGE"
+    },
+    {
+      "sceneId": "s10-philosophy",
+      "seconds": 21.68,
+      "purpose": "Rõ, chủ động, có hệ thống. Không hứa số tăng trưởng.",
+      "dialogueSource": "script.md#s10-philosophy",
+      "picture": "Nhà thuốc được xếp gọn hơn.",
+      "method": "blocked",
+      "status": "blocked",
+      "have": [],
+      "missing": [
+        "Keyframe đã duyệt"
+      ],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "fileSeconds": 16.104,
+      "leadSilenceSeconds": 0.38,
+      "speechEndSeconds": 15.22,
+      "tailSilenceSeconds": 0.884,
+      "sentenceRests": [
+        {
+          "start": 2.94,
+          "seconds": 1.04,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 8.3,
+          "seconds": 1.18,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 1.56,
+          "seconds": 0.2,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 5.3,
+          "seconds": 0.4,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 13.04,
+          "seconds": 0.44,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 15.22,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Hình đi cùng lời.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s10-philosophy.wav",
+      "productionLane": "character-motion",
+      "aiVideo": "prepare-only",
+      "previousSpeechEndSeconds": 15.24,
+      "previousFileSeconds": 16.128,
+      "spokenSeconds": 14.84,
+      "pictureReadiness": "NO_MOTION_FOOTAGE"
+    },
+    {
+      "sceneId": "s11-positioning",
+      "seconds": 21.53,
+      "purpose": "Định vị nền tảng vận hành nhà thuốc thông minh.",
+      "dialogueSource": "script.md#s11-positioning",
+      "picture": "Logo và câu định vị.",
+      "method": "code",
+      "status": "blocked",
+      "have": [
+        "docs/novixa/assets/brand/novixa-logo.png"
+      ],
+      "missing": [],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "plate": "outputs/novixa-intro-film/20261023T063730Z-logo-plates/s05-s11-logo.png",
+      "fileSeconds": 15.912,
+      "leadSilenceSeconds": 0.32,
+      "speechEndSeconds": 15.04,
+      "tailSilenceSeconds": 0.872,
+      "sentenceRests": [
+        {
+          "start": 2.94,
+          "seconds": 1.06,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 9.72,
+          "seconds": 1.16,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 0.84,
+          "seconds": 0.46,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 4.42,
+          "seconds": 0.2,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 6.82,
+          "seconds": 0.44,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 11.4,
+          "seconds": 0.4,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 12.84,
+          "seconds": 0.42,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 13.82,
+          "seconds": 0.22,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 15.04,
+      "pictureHoldSeconds": 0.0,
+      "pictureReason": "Logo ở khung từ đầu câu định vị.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s11-positioning.wav",
+      "productionLane": "code-logo",
+      "aiVideo": "no",
+      "previousSpeechEndSeconds": 15.04,
+      "previousFileSeconds": 15.912,
+      "spokenSeconds": 14.72,
+      "pictureReadiness": "PREVIEW_LOGO_ONLY"
+    },
+    {
+      "sceneId": "s12-cta",
+      "seconds": 23.38,
+      "purpose": "Mời tìm hiểu tại novixa.vn.",
+      "dialogueSource": "script.md#s12-cta",
+      "picture": "Logo, câu định vị, novixa.vn.",
+      "method": "code",
+      "status": "blocked",
+      "have": [
+        "docs/novixa/assets/brand/novixa-logo.png"
+      ],
+      "missing": [],
+      "output": null,
+      "readStatus": "MEASURED",
+      "pictureStatus": "PROPOSED",
+      "approval": "PROPOSED",
+      "plate": "outputs/novixa-intro-film/20261023T063730Z-logo-plates/s12-cta.png",
+      "fileSeconds": 19.872,
+      "leadSilenceSeconds": 0.44,
+      "speechEndSeconds": 18.96,
+      "tailSilenceSeconds": 0.912,
+      "sentenceRests": [
+        {
+          "start": 5.76,
+          "seconds": 1.1,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 11.38,
+          "seconds": 1.1,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 13.08,
+          "seconds": 1.22,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 16.02,
+          "seconds": 1.04,
+          "kind": "speech-pause"
+        }
+      ],
+      "clauseBreaths": [
+        {
+          "start": 3.48,
+          "seconds": 0.42,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 7.14,
+          "seconds": 0.34,
+          "kind": "speech-pause"
+        },
+        {
+          "start": 9.7,
+          "seconds": 0.26,
+          "kind": "speech-pause"
+        }
+      ],
+      "pictureProposedSeconds": 21.96,
+      "pictureHoldSeconds": 3.0,
+      "pictureReason": "Đề xuất giữ khung cuối 3 giây sau khi lời hết. 0,88 giây cuối file là lặng của bộ mã hóa.",
+      "audio": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s12-cta.wav",
+      "productionLane": "code-logo",
+      "aiVideo": "no",
+      "previousSpeechEndSeconds": 18.88,
+      "previousFileSeconds": 19.8,
+      "spokenSeconds": 18.52,
+      "pictureReadiness": "PREVIEW_END_CARD"
+    }
+  ],
+  "measuredFileSeconds": 198.145,
+  "measuredSpeechEndSeconds": 187.38,
+  "proposedPictureSeconds": 192.38,
+  "proposedPictureStatus": "PROPOSED",
+  "voiceDirection": "voice-direction-sheet.json",
+  "voiceStandard": "docs/kit-video-production/voice-direction-standard-v1.json",
+  "voiceProbes": "outputs/novixa-intro-film/20261023T070505Z-voice-probes",
+  "aiVideoPrep": "ai-video-prep.json",
+  "measuredSpokenSeconds": 183.44,
+  "filmPictureStatus": "AWAITING_REVIEW",
+  "visualPlan": "docs/kit-video-production/novixa-intro-film-visual-production-plan-v1.md",
+  "partialGraphicsPreview": {
+    "status": "PARTIAL_PREVIEW",
+    "approval": "PROPOSED",
+    "path": "outputs/novixa-intro-film/20261023T091740Z-partial-graphics-preview/preview.mp4",
+    "folder": "outputs/novixa-intro-film/20261023T091740Z-partial-graphics-preview",
+    "seconds": 80.809,
+    "scenes": [
+      "s03-stock-cash",
+      "s04-expiry",
+      "s08-connected-data",
+      "s11-positioning",
+      "s12-cta"
+    ],
+    "finalVideo": false
+  },
+  "integratedReviewCut": {
+    "status": "REVIEW_CUT",
+    "approval": "PROPOSED",
+    "finalVideo": false,
+    "path": "outputs/novixa-intro-film/20261023T094110Z-integrated-v2/integrated.mp4",
+    "folder": "outputs/novixa-intro-film/20261023T094110Z-integrated-v2",
+    "seconds": 198.145,
+    "scenes": [
+      "s01-day-opens",
+      "s02-busy",
+      "s03-stock-cash",
+      "s04-expiry",
+      "s05-introduce",
+      "s06-selling",
+      "s07-inventory",
+      "s08-connected-data",
+      "s09-people",
+      "s10-philosophy",
+      "s11-positioning",
+      "s12-cta"
+    ]
+  },
+  "visualPreviewV3": {
+    "status": "VISUAL_PREVIEW",
+    "approval": "PROPOSED",
+    "finalVideo": false,
+    "path": "outputs/novixa-intro-film/20261023T100048Z-visual-preview-v3/preview.mp4",
+    "folder": "outputs/novixa-intro-film/20261023T100048Z-visual-preview-v3",
+    "seconds": 198.145,
+    "scenes": [
+      "s01-day-opens",
+      "s02-busy",
+      "s03-stock-cash",
+      "s04-expiry",
+      "s05-introduce",
+      "s06-selling",
+      "s07-inventory",
+      "s08-connected-data",
+      "s09-people",
+      "s10-philosophy",
+      "s11-positioning",
+      "s12-cta"
+    ]
+  },
+  "visualPreviewV4": {
+    "status": "VISUAL_PREVIEW",
+    "approval": "PROPOSED",
+    "finalVideo": false,
+    "path": "outputs/novixa-intro-film/20261023T101237Z-visual-preview-v4/preview.mp4",
+    "folder": "outputs/novixa-intro-film/20261023T101237Z-visual-preview-v4",
+    "seconds": 198.145,
+    "scenes": [
+      "s01-day-opens",
+      "s02-busy",
+      "s03-stock-cash",
+      "s04-expiry",
+      "s05-introduce",
+      "s06-selling",
+      "s07-inventory",
+      "s08-connected-data",
+      "s09-people",
+      "s10-philosophy",
+      "s11-positioning",
+      "s12-cta"
+    ]
+  },
+  "visualDirectionRecovery": {
+    "status": "VISUAL_DIRECTION_RECOVERY",
+    "approval": "PROPOSED",
+    "finalVideo": false,
+    "path": "outputs/novixa-intro-film/20261023T131329Z-visual-direction-recovery/preview.mp4",
+    "folder": "outputs/novixa-intro-film/20261023T131329Z-visual-direction-recovery",
+    "seconds": 198.145,
+    "scenes": [
+      "s01-day-opens",
+      "s02-busy",
+      "s03-stock-cash",
+      "s04-expiry",
+      "s05-introduce",
+      "s06-selling",
+      "s07-inventory",
+      "s08-connected-data",
+      "s09-people",
+      "s10-philosophy",
+      "s11-positioning",
+      "s12-cta"
+    ],
+    "characterApproval": "AWAITING_REVIEW"
+  },
+  "characterShotProductionV1": {
+    "status": "BLOCKED",
+    "approval": "PROPOSED",
+    "finalVideo": false,
+    "sampleShot": null,
+    "reason": "Hai ảnh đã duyệt cho intro. Một clip gen4_turbo 5 giây được phép và đã có đơn giá, nhưng RUNWAY_API_KEY trống nên chưa gửi.",
+    "report": "docs/kit-video-production/novixa-intro-film-character-shot-v1.md"
+  },
+  "executionAuthorizationV1": {
+    "status": "STOPPED",
+    "stoppedAt": "credential",
+    "strategy": "docs/kit-video-production/novixa-intro-film-production-strategy-v1.md",
+    "executionAuthorized": true,
+    "characterApprovedForIntro": true,
+    "characterApproval": "APPROVED",
+    "paidCallAuthorized": true,
+    "expectedCostConfirmed": true,
+    "sampleShot": null,
+    "finalVideo": false,
+    "report": "docs/kit-video-production/novixa-intro-film-execution-gate-v1.md"
+  },
+  "introFilmBlenderV1": {
+    "status": "CANDIDATE",
+    "approval": "PROPOSED",
+    "finalVideo": false,
+    "path": "outputs/novixa-intro-film/20261024T004800Z-visual-correction/intro-film.mp4",
+    "folder": "outputs/novixa-intro-film/20261024T004800Z-visual-correction",
+    "seconds": 198.145,
+    "scenes": [
+      "s01-day-opens",
+      "s02-busy",
+      "s03-stock-cash",
+      "s04-expiry",
+      "s05-introduce",
+      "s06-selling",
+      "s07-inventory",
+      "s08-connected-data",
+      "s09-people",
+      "s10-philosophy",
+      "s11-positioning",
+      "s12-cta"
+    ],
+    "paidCalls": 0
+  }
+}

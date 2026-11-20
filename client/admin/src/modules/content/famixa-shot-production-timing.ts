@@ -1,6 +1,7 @@
 /** FAMIXA_SHOT_TIMING_CONTRACT_V3 — performance-first, editorial-trim-last. */
 
 import { shotRunOf, type FamixaSeriesShot, type SeriesPilotState } from './content-famixa-series';
+import { isLateMotionAttempt, lipsyncBoundDurationSec } from './famixa-lipsync-motion-authority';
 
 export const DOCUMENT_ID = 'FAMIXA_SHOT_TIMING_CONTRACT_V3';
 /** Same constants as famixa-video-audio-lipsync-pipeline. Do not invent new defaults. */
@@ -156,9 +157,13 @@ export function isDirectorEditorial(shot: FamixaSeriesShot) {
 }
 
 function successTakeDurationSec(state: SeriesPilotState, shot: FamixaSeriesShot) {
-  const attempts = shotRunOf(state, shot).runwayAttempts ?? [];
+  const run = shotRunOf(state, shot);
+  const bound = lipsyncBoundDurationSec(run, shot.id);
+  if (bound > 0) return bound;
+  const attempts = run.runwayAttempts ?? [];
   for (let i = attempts.length - 1; i >= 0; i--) {
     const row = attempts[i];
+    if (isLateMotionAttempt(row)) continue;
     const status = (row?.status || '').toUpperCase();
     const dur = Number(row?.duration) || Number(row?.exactRequest?.duration);
     if ((status === 'SUCCEEDED' || status === 'SUCCESS') && dur > 0) return roundCentisecond(dur);

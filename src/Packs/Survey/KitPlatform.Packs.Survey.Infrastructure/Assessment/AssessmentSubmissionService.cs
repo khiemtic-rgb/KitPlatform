@@ -22,7 +22,6 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
     private readonly IDbConnectionFactory _db;
     private readonly AssessmentSettings _settings;
     private readonly ILogger<AssessmentSubmissionService> _logger;
-    private readonly IAssessmentTemplateService _templates;
 
     public AssessmentSubmissionService(
         AssessmentRepository repo,
@@ -31,8 +30,7 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         AssessmentAnalysisPipeline pipeline,
         IDbConnectionFactory db,
         IOptions<AssessmentSettings> settings,
-        ILogger<AssessmentSubmissionService> logger,
-        IAssessmentTemplateService templates)
+        ILogger<AssessmentSubmissionService> logger)
     {
         _repo = repo;
         _partners = partners;
@@ -41,7 +39,6 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         _db = db;
         _settings = settings.Value;
         _logger = logger;
-        _templates = templates;
     }
 
     public async Task<CreateAssessmentSubmissionResult> CreateAsync(
@@ -448,8 +445,8 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         var submission = await RequireSubmissionAsync(submissionId, sessionToken, cancellationToken);
         EnsureReportUnlocked(submission);
 
-        var fileName = PdfFileName(submission, kind, forAdmin: false);
-        if (TryReadCachedPdf(fileName, out var cachedBytes))
+        var fileName = BuildPdfFileName(submissionId, kind);
+        if (TryReadCachedPdf(submissionId, kind, out var cachedBytes))
         {
             _logger.LogInformation("KAP PDF cache hit for submission {SubmissionId}", submissionId);
             return (cachedBytes, fileName, "application/pdf");
@@ -461,7 +458,7 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
             ?? submission.RespondentName?.Trim()
             ?? submission.Id.ToString();
 
-        return await GenerateAndStorePdfAsync(submission, report, orgName, kind, fileName, forAdmin: false, cancellationToken);
+        return await GenerateAndStorePdfAsync(submissionId, report, orgName, kind, cancellationToken);
     }
 
     public async Task<AssessmentFullReportDto> GetReportForAdminAsync(
@@ -485,8 +482,8 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
 
         EnsureReportUnlocked(submission);
 
-        var fileName = PdfFileName(submission, kind, forAdmin: true);
-        if (TryReadCachedPdf(fileName, out var cachedBytes))
+        var fileName = BuildPdfFileName(submissionId, kind);
+        if (TryReadCachedPdf(submissionId, kind, out var cachedBytes))
             return (cachedBytes, fileName, "application/pdf");
 
         var report = await BuildFullReportAsync(submission, cancellationToken);
@@ -494,25 +491,20 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
             ?? submission.RespondentName?.Trim()
             ?? submission.Id.ToString();
 
-        return await GenerateAndStorePdfAsync(submission, report, orgName, kind, fileName, forAdmin: true, cancellationToken);
+        return await GenerateAndStorePdfAsync(submissionId, report, orgName, kind, cancellationToken);
     }
 
     private async Task<(byte[] Content, string FileName, string ContentType)> GenerateAndStorePdfAsync(
-        AssessmentSubmissionRow submission,
+        Guid submissionId,
         AssessmentFullReportDto report,
         string orgName,
         KapReportPdfKind kind,
-        string fileName,
-        bool forAdmin,
         CancellationToken cancellationToken)
     {
-        var submissionId = submission.Id;
         byte[] pdfBytes;
         try
         {
-            pdfBytes = submission.TemplateCode == "PHARMACY_V2"
-                ? await BuildPharmacyV2PdfAsync(submission, orgName, forAdmin, cancellationToken)
-                : AssessmentReportPdfGenerator.Generate(report, orgName, kind);
+            pdfBytes = AssessmentReportPdfGenerator.Generate(report, orgName, kind);
         }
         catch (Exception ex)
         {
@@ -525,6 +517,7 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
 
         var reportsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "assessment-reports");
         Directory.CreateDirectory(reportsDir);
+        var fileName = BuildPdfFileName(submissionId, kind);
         var filePath = Path.Combine(reportsDir, fileName);
         await File.WriteAllBytesAsync(filePath, pdfBytes, cancellationToken);
 
@@ -536,74 +529,10 @@ internal sealed class AssessmentSubmissionService : IAssessmentSubmissionService
         return (pdfBytes, fileName, "application/pdf");
     }
 
-    private async Task<byte[]> BuildPharmacyV2PdfAsync(
-        AssessmentSubmissionRow submission,
-        string orgName,
-        bool forAdmin,
-        CancellationToken cancellationToken)
-    {
-        var template = await _templates.GetByCodeAsync(submission.TemplateCode, submission.TemplateVersion, cancellationToken)
-            ?? throw new AssessmentException(AssessmentErrorCodes.NotFound, "Không tìm thấy bài PHARMACY_V2.", 404);
-        var index = KapV2TemplateIndex.FromTemplate(template);
-        var responses = await _repo.GetResponsesAsync(submission.Id, cancellationToken);
-        var answers = responses
-            .Where(r => !string.IsNullOrWhiteSpace(r.OptionCode))
-            .GroupBy(r => r.QuestionCode)
-            .ToDictionary(g => g.Key, g => g.First().OptionCode!);
-        var scores = await _repo.GetCategoryScoresAsync(submission.Id, cancellationToken);
-        var categories = scores.Select(s => new KapV2CategoryInput(
-            s.Code,
-            (double)s.ScorePct,
-            index.CategoryInsufficient(s.Code, answers))).ToList();
-        var owner = KapV2OwnerReportBuilder.Build(
-            answers,
-            categories,
-            (double)(submission.OverallPct ?? 0m),
-            index);
-        KapV2PdfAdmin? admin = null;
-        if (forAdmin)
-        {
-            string? Answer(string code) => index.Label(code, answers.TryGetValue(code, out var opt) ? opt : null);
-            admin = new KapV2PdfAdmin(
-                submission.RespondentName,
-                submission.RespondentPhone,
-                FormatUtm(submission.Metadata),
-                submission.ConsentMarketing,
-                [("C6", Answer("C6")), ("I7", Answer("I7")), ("O6", Answer("O6")), ("O7", Answer("O7")), ("B5", Answer("B5")), ("G3", Answer("G3"))]);
-        }
-        return KapV2OwnerReportPdf.Generate(owner, orgName, submission.CompletedAt, admin);
-    }
-
-    private static string? FormatUtm(string? metadata)
-    {
-        if (string.IsNullOrWhiteSpace(metadata)) return null;
-        try
-        {
-            using var doc = JsonDocument.Parse(metadata);
-            if (!doc.RootElement.TryGetProperty("utm", out var utm) || utm.ValueKind != JsonValueKind.Object)
-                return null;
-            var parts = utm.EnumerateObject()
-                .Select(p => p.Value.ValueKind == JsonValueKind.String ? $"{p.Name}={p.Value.GetString()}" : null)
-                .Where(p => p is not null);
-            var text = string.Join(", ", parts);
-            return text.Length == 0 ? null : text;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private static string PdfFileName(AssessmentSubmissionRow submission, KapReportPdfKind kind, bool forAdmin)
-    {
-        if (submission.TemplateCode == "PHARMACY_V2")
-            return forAdmin ? $"kap-v2-admin-{submission.Id:N}.pdf" : $"kap-v2-owner-{submission.Id:N}.pdf";
-        return BuildPdfFileName(submission.Id, kind);
-    }
-
-    private static bool TryReadCachedPdf(string fileName, out byte[] content)
+    private static bool TryReadCachedPdf(Guid submissionId, KapReportPdfKind kind, out byte[] content)
     {
         content = [];
+        var fileName = BuildPdfFileName(submissionId, kind);
         var filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "assessment-reports", fileName);
         if (!File.Exists(filePath))
             return false;

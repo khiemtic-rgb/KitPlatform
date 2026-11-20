@@ -336,6 +336,7 @@ export async function suggestConsultation(payload: {
   confirmedFacts: ConsultationFacts;
   warehouseId: string;
   limit?: number;
+  keepOrderWithReferral?: boolean;
 }): Promise<ConsultationSuggestResult> {
   const { data } = await http.post<Record<string, unknown>>('/sales/pos/consultation/suggest', payload);
   return normalizeSuggest(data ?? {});

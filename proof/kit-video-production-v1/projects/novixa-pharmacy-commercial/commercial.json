@@ -1,0 +1,378 @@
+{
+  "schemaVersion": "kit-video-commercial/1",
+  "projectId": "novixa-pharmacy-commercial",
+  "shotPlan": "shot-plan.proposed.json",
+  "brief": {
+    "version": "commercial-5",
+    "message": "Hàng tồn kho cũng là vốn.",
+    "audience": "Chủ nhà thuốc",
+    "durationHintSeconds": 25,
+    "aspectRatio": "16:9",
+    "approval": "proposed"
+  },
+  "reference": {
+    "video": "docs/kit-video-production/references/novixa-gemini-reference.mp4",
+    "role": "quality_target",
+    "required": true,
+    "note": "File này không có trong repository. Mục tiêu hình là visual bible, không phải video logo."
+  },
+  "palette": {
+    "ink": [0, 32, 96],
+    "accent": [0, 144, 224],
+    "paper": [247, 249, 247],
+    "ivory": [247, 249, 247],
+    "mint": [191, 231, 216],
+    "teal": [22, 140, 136],
+    "paleBlue": [220, 235, 250],
+    "orange": [245, 166, 91]
+  },
+  "visualBible": {
+    "characterId": "pharmacist-nova",
+    "version": "bible-4",
+    "style": "expressive stylized 3D cartoon",
+    "look": "Đầu, mắt và mặt cách điệu rõ. Mắt lớn, sáng, có catchlight. Lông mày nhướng. Nụ cười mở, má nâng, đọc được khi thu nhỏ. Tóc là khối hoạt hình. Da mịn, không lỗ chân lông, không sợi tóc mô phỏng. Áo blouse trắng trung tính, áo trong mint, thẻ tên trống. Không sao chép một phim.",
+    "reject": "Không nhận mặt bán hiện thực, mắt mệt, nụ cười mím, da hoặc tóc giống ảnh người thật, ánh sáng vàng giờ vàng, hoặc độ sâu trường ảnh làm mất kệ thuốc. bible-2 và v2 bị giữ làm lịch sử vì ngả vàng và biểu cảm yếu.",
+    "environment": "Nhà thuốc sáng, kệ còn đủ thông tin. Nhân vật giữ cartoon của bible-3. Danh mục kệ, tên bao bì và màn hình lấy từ demoData, do lớp đồ họa vẽ rồi ghép theo mặt phẳng. Vật ở xa dùng màu và hình khối. Cam chỉ là một điểm nhấn.",
+    "lighting": "Ánh sáng trắng dịu, cân bằng. Không phủ vàng lên da, áo, kệ hay nền. Bóng mềm nhưng còn chiều sâu.",
+    "colors": {
+      "ivory": "#F7F9F7",
+      "mint": "#BFE7D8",
+      "teal": "#168C88",
+      "paleBlue": "#DCEBFA",
+      "orangeAccent": "#F5A65B"
+    },
+    "materials": "Chất liệu 3D sạch, cách điệu. Áo blouse giữ trắng trung tính. Mint và teal phải tách được bằng mắt.",
+    "dataGraphics": "Giờ, doanh thu, đơn, tồn, tên sản phẩm và hạn dùng chỉ lấy từ demoData. Nhãn đúng là Dữ liệu minh họa. Tên AMPICILLIN, HOẠT HUYẾT và VITAMIN C là đạo cụ mockup, không phải nhãn thương mại và không kèm liều dùng.",
+    "ui": "Chưa có ảnh POS thật với đúng bộ số này. Màn hình trong cảnh mẫu và bảng demo-board là mockup do code vẽ, không phải ảnh chụp sản phẩm.",
+    "props": "Nhãn kệ dùng đúng năm danh mục đã khai. Mỗi sản phẩm có mã, nhóm, tên, màu, template, nhãn MOCKUP và tồn. Tổng tồn bằng inventoryOnShelf.",
+    "approval": "AWAITING_REVIEW",
+    "reviewScope": "Preview v7 và bộ chuẩn visual-standard-v1 đang chờ duyệt. Chưa có video chuyển động.",
+    "standard": "visual-standard-v1.json"
+  },
+  "assetGroups": [
+    {
+      "id": "character-environment",
+      "kind": "stylized_3d",
+      "covers": ["character", "pharmacy", "counter", "shelf", "box", "bottle", "blister", "camera", "light"]
+    },
+    {
+      "id": "motion-graphics",
+      "kind": "controlled_type",
+      "assetId": "demo-board",
+      "covers": ["clock", "open-hours", "kpi", "bar-chart", "line-chart", "percent"]
+    },
+    {
+      "id": "product-ui",
+      "kind": "mockup",
+      "assetId": "demo-board",
+      "note": "Mockup, không phải ảnh chụp sản phẩm."
+    }
+  ],
+  "demoData": {
+    "declared": true,
+    "label": "Dữ liệu minh họa",
+    "caption": "Dữ liệu mô phỏng",
+    "source": "mockup",
+    "presentedAs": "mockup",
+    "open": "07:00",
+    "close": "22:00",
+    "revenueVndPerDay": 12500000,
+    "orders": 86,
+    "inventoryOnShelf": 214,
+    "orderSeries": [
+      {"day": "T2", "orders": 64},
+      {"day": "T3", "orders": 71},
+      {"day": "T4", "orders": 58},
+      {"day": "T5", "orders": 80},
+      {"day": "T6", "orders": 75},
+      {"day": "T7", "orders": 69},
+      {"day": "CN", "orders": 86}
+    ],
+    "note": "Số giả định cho hình. Không phải số liệu nhà thuốc. 214 là tổng tồn của ba sản phẩm mockup. 17% là phần của CN trong tổng đơn tuần, tính từ orderSeries. Không có liều dùng hay chỉ định.",
+    "products": [
+      {
+        "assetId": "pkg-ampicillin",
+        "group": "rx",
+        "name": "AMPICILLIN",
+        "color": [22, 140, 136],
+        "template": "box-upright",
+        "badge": "MOCKUP",
+        "status": "mockup",
+        "stock": 48,
+        "expiry": "08/2027"
+      },
+      {
+        "assetId": "pkg-hoat-huyet",
+        "group": "otc",
+        "name": "HOẠT HUYẾT",
+        "color": [245, 166, 91],
+        "template": "bottle",
+        "badge": "MOCKUP",
+        "status": "mockup",
+        "stock": 72,
+        "expiry": "03/2027"
+      },
+      {
+        "assetId": "pkg-vitamin-c",
+        "group": "supplement",
+        "name": "VITAMIN C",
+        "color": [120, 176, 160],
+        "template": "box-upright",
+        "badge": "MOCKUP",
+        "status": "mockup",
+        "stock": 94,
+        "expiry": "11/2027"
+      }
+    ]
+  },
+  "shelfCategories": [
+    {"id": "rx", "label": "THUỐC KÊ ĐƠN", "short": "Kê đơn"},
+    {"id": "otc", "label": "THUỐC KHÔNG KÊ ĐƠN", "short": "Không kê đơn"},
+    {"id": "supplement", "label": "THỰC PHẨM BẢO VỆ SỨC KHỎE", "short": "Bảo vệ sức khỏe"},
+    {"id": "device", "label": "THIẾT BỊ Y TẾ", "short": "Thiết bị y tế"},
+    {"id": "cosmetic", "label": "DƯỢC MỸ PHẨM", "short": "Dược mỹ phẩm"}
+  ],
+  "sampleScene": {
+    "sceneId": "s01-pharmacy",
+    "version": 7,
+    "approval": "AWAITING_REVIEW",
+    "plate": "keyframes/v3/s01-pharmacy.jpg",
+    "output": "keyframes/v7/s01-pharmacy.jpg",
+    "phone": "keyframes/v7/s01-pharmacy-phone.jpg",
+    "operations": "keyframes/v7/s04-operations.jpg",
+    "inventory": "keyframes/v7/s05-inventory.jpg",
+    "transition": "keyframes/v7/s00-transition.jpg",
+    "contactSheet": "keyframes/v7/contact-sheet.jpg",
+    "placements": [
+      {"kind": "shelf", "categoryId": "rx", "quad": [[70, 124], [270, 128], [270, 148], [70, 146]]},
+      {"kind": "shelf", "categoryId": "otc", "quad": [[36, 328], [316, 334], [316, 354], [36, 350]]},
+      {"kind": "shelf", "categoryId": "supplement", "quad": [[900, 398], [1236, 404], [1236, 424], [900, 420]]},
+      {
+        "kind": "package",
+        "assetId": "pkg-ampicillin",
+        "front": [[22, 36], [138, 32], [142, 114], [18, 118]],
+        "side": [[142, 32], [168, 36], [172, 110], [142, 114]],
+        "top": [[28, 22], [144, 18], [138, 32], [22, 36]]
+      },
+      {"kind": "package", "assetId": "pkg-hoat-huyet", "quad": [[20, 198], [118, 192], [122, 308], [16, 314]]},
+      {
+        "kind": "package",
+        "assetId": "pkg-ampicillin",
+        "front": [[188, 44], [308, 40], [312, 112], [184, 116]],
+        "side": [[312, 40], [338, 44], [342, 108], [312, 112]],
+        "top": [[196, 30], [316, 26], [312, 40], [188, 44]]
+      },
+      {
+        "kind": "package",
+        "assetId": "pkg-hoat-huyet",
+        "template": "box-upright",
+        "front": [[214, 214], [318, 208], [322, 308], [210, 314]],
+        "side": [[322, 208], [348, 214], [352, 304], [322, 308]],
+        "top": [[222, 198], [326, 192], [322, 208], [214, 214]]
+      },
+      {
+        "kind": "package",
+        "assetId": "pkg-vitamin-c",
+        "front": [[1072, 270], [1184, 264], [1188, 368], [1068, 374]],
+        "side": [[1188, 264], [1216, 270], [1220, 364], [1188, 368]],
+        "top": [[1080, 254], [1192, 248], [1188, 264], [1072, 270]]
+      },
+      {
+        "kind": "package",
+        "assetId": "pkg-vitamin-c",
+        "front": [[860, 286], [1008, 278], [1014, 386], [854, 394]],
+        "side": [[1014, 278], [1056, 286], [1062, 380], [1014, 386]],
+        "top": [[872, 262], [1020, 254], [1014, 278], [860, 286]]
+      }
+    ]
+  },
+  "provider": {
+    "id": "runway",
+    "model": "gen4_turbo",
+    "mode": "image_to_video",
+    "ratio": "1280:720",
+    "durationSeconds": 5
+  },
+  "firstVideo": {
+    "status": "BLOCKED",
+    "stoppedAt": "shot-plan-proposed",
+    "finalVideo": null,
+    "motionClip": null,
+    "reason": "Đã có shot plan 25 giây, mọi cảnh proposed. Chưa có tư thế tay để gửi. Keyframe chưa duyệt. RUNWAY_API_KEY trống. Không có video hoàn chỉnh."
+  },
+  "audio": {
+    "voice": null,
+    "music": null,
+    "note": "Chưa có lời và chưa có nhạc được cấp quyền. Chữ và số do hậu kỳ vẽ."
+  },
+  "output": {
+    "width": 1280,
+    "height": 720,
+    "frameRate": 30,
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "outputRoot": "../../outputs"
+  },
+  "assets": [
+    {
+      "assetId": "character-style-v2",
+      "role": "character_style_previous",
+      "source": "generated",
+      "approval": "proposed",
+      "path": "assets/pharmacist-nova-style.jpg",
+      "note": "bible-2. Giữ lịch sử. Không dùng làm chuẩn hiện tại."
+    },
+    {
+      "assetId": "character-style-v3",
+      "role": "character_style",
+      "source": "generated",
+      "approval": "proposed",
+      "path": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "note": "Chân dung bible-3 trên nền ngà. AWAITING_REVIEW."
+    },
+    {
+      "assetId": "demo-board",
+      "role": "demo_mockup",
+      "source": "generated",
+      "approval": "proposed",
+      "path": "graphics/demo-board.png",
+      "note": "Mockup vẽ từ demoData. Không phải ảnh chụp sản phẩm."
+    },
+    {
+      "assetId": "logo",
+      "role": "logo",
+      "source": "brand_file",
+      "approval": "approved",
+      "path": "docs/novixa/assets/brand/novixa-logo.png"
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "s01-pharmacy",
+      "order": 1,
+      "kind": "generate",
+      "goal": "Mở nhà thuốc và giới thiệu dược sĩ.",
+      "action": "Cô đứng sau quầy, mắt sáng, mỉm cười mở, nhìn sang một bên.",
+      "camera": "Trung cảnh rộng, kệ còn rõ, ánh sáng trắng.",
+      "prompt": "Keep the bright 3D cartoon character. Shelf labels, package names, and the POS are composited from demoData. Do not let the model rewrite those words.",
+      "keyframe": {
+        "path": "keyframes/v7/s01-pharmacy.jpg",
+        "version": 7,
+        "approval": "AWAITING_REVIEW",
+        "source": "composite",
+        "plate": "keyframes/v3/s01-pharmacy.jpg",
+        "replaces": "keyframes/v6/s01-pharmacy.jpg",
+        "phone": "keyframes/v7/s01-pharmacy-phone.jpg"
+      }
+    },
+    {
+      "sceneId": "s02-take-box",
+      "order": 2,
+      "kind": "generate",
+      "goal": "Cô lấy hộp từ kệ.",
+      "action": "Tay chạm hộp trơn còn nằm trên kệ, mắt nhìn hộp.",
+      "camera": "Giữ máy, thấy mặt, tay, hộp và kệ.",
+      "prompt": "Same stylized character with large eyes and a friendly expression. She closes her hand on the plain white box and lifts it off the shelf. The box stays rigid and blank. Bottles stay put. Do not add letters.",
+      "keyframe": {
+        "path": "keyframes/v2/s02-take-box.jpg",
+        "version": 2,
+        "approval": "AWAITING_REVIEW",
+        "source": "generated",
+        "replaces": "keyframes/s02-take-box.jpg",
+        "hold": "Keyframe v2 thuộc kiểu bán hiện thực đã loại. Không gửi. Chưa có tư thế của nhân vật v3."
+      }
+    },
+    {
+      "sceneId": "s03-show-pack",
+      "order": 3,
+      "kind": "generate",
+      "goal": "Cô chỉ mặt trước hộp.",
+      "action": "Một tay giữ hộp, tay kia chỉ mặt hộp trống, mắt và lông mày hướng vào hộp.",
+      "camera": "Gần hơn, thấy mặt, tay và hộp.",
+      "prompt": "Same stylized character. She points at the blank front of the same box. Her large eyes stay on the box and her brows stay expressive. Do not add letters to the box.",
+      "keyframe": {
+        "path": "keyframes/v2/s03-show-pack.jpg",
+        "version": 2,
+        "approval": "AWAITING_REVIEW",
+        "source": "generated",
+        "replaces": "keyframes/s03-show-pack.jpg",
+        "hold": "Keyframe v2 thuộc kiểu bán hiện thực đã loại. Không gửi. Chưa có tư thế của nhân vật v3."
+      }
+    },
+    {
+      "sceneId": "s04-advise",
+      "order": 4,
+      "kind": "generate",
+      "goal": "Cô tư vấn người xem.",
+      "action": "Nhìn thẳng, cười rõ, hộp hạ thấp.",
+      "camera": "Trung cảnh, ánh mắt về phía khách.",
+      "prompt": "Same stylized character looks toward the viewer with a clear friendly smile, large glossy eyes and raised brows. The plain box stays in her lowered hand. Do not add letters and do not shift toward a photograph.",
+      "keyframe": {
+        "path": "keyframes/v2/s04-advise.jpg",
+        "version": 2,
+        "approval": "AWAITING_REVIEW",
+        "source": "generated",
+        "replaces": "keyframes/s04-advise.jpg",
+        "hold": "Keyframe v2 thuộc kiểu bán hiện thực đã loại. Không gửi. Chưa có tư thế của nhân vật v3."
+      }
+    },
+    {
+      "sceneId": "s05-message",
+      "order": 5,
+      "kind": "post",
+      "goal": "Hiện câu đã chốt.",
+      "action": "Chèn chữ bằng hậu kỳ.",
+      "camera": "Thẻ chữ, không phải cảnh nhân vật.",
+      "text": "Hàng tồn kho cũng là vốn."
+    },
+    {
+      "sceneId": "s06-logo",
+      "order": 6,
+      "kind": "post",
+      "goal": "Kết bằng logo NOVIXA.",
+      "action": "Dùng file logo đã có, không vẽ lại logo.",
+      "camera": "Thẻ kết.",
+      "logoAssetId": "logo"
+    }
+  ],
+  "endCard": {
+    "lines": ["NOVIXA", "Hàng tồn kho cũng là vốn."],
+    "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+    "fontBold": "C:/Windows/Fonts/segoeuib.ttf",
+    "seconds": 3
+  },
+  "revision": [
+    {
+      "attempt": 2,
+      "note": "Bốn keyframe v1 chờ duyệt rồi bị loại vì bán hiện thực và biểu cảm yếu. File v1 vẫn nằm ở keyframes/."
+    },
+    {
+      "attempt": 3,
+      "note": "bible-2 và keyframe v2 ở keyframes/v2, trạng thái AWAITING_REVIEW. Kệ có dải màu, không dùng làm chữ hay số. Bảng demo-board vẽ từ demoData, là mockup. Chưa gửi provider."
+    },
+    {
+      "attempt": 4,
+      "note": "bible-3. Chỉ thêm chân dung cartoon v3 và s01 ở keyframes/v3. Cả hai AWAITING_REVIEW. s02–s04 giữ v2, chưa áp phong cách mới. Chưa gửi provider."
+    },
+    {
+      "attempt": 5,
+      "note": "bible-4. Cảnh mẫu s01 v4 ghép nhãn kệ, bao bì MOCKUP và POS từ demoData lên tấm v3. AWAITING_REVIEW. s02–s04 chưa làm. Chưa gửi provider."
+    },
+    {
+      "attempt": 6,
+      "note": "s01 v5: biển mỏng gắn mép kệ, mặt hộp có tên và dòng phân loại, KPI chỉ còn nhãn minh họa, doanh thu, giờ và số đơn. Danh sách tồn nằm ở graphics/inventory-list-v5.png. AWAITING_REVIEW. v4 giữ nguyên."
+    },
+    {
+      "attempt": 7,
+      "note": "v6: cảnh mở không còn KPI. Biển kệ ngắn hơn. Hộp không in MOCKUP lớn. Màn vận hành và bảng tồn là hai khung riêng. Chú thích nhỏ là Dữ liệu mô phỏng. Chưa có video. AWAITING_REVIEW."
+    },
+    {
+      "attempt": 8,
+      "note": "v7: hộp vùng nhìn chính dùng lại đúng ba tên đã khóa. Thẻ vận hành cùng hàng đơn vị, thẻ doanh thu rộng hơn. Bảng tồn có nền xen kẽ. Dàn cảnh chuyển tiếp là ảnh tĩnh, chưa phải video. AWAITING_REVIEW."
+    },
+    {
+      "attempt": 9,
+      "note": "Nhiệm vụ video đầu tay dừng trước khi gửi provider. Chưa có clip chuyển động. firstVideo.status là BLOCKED. s02–s04 vẫn là keyframe v2 đã loại, không được gửi."
+    }
+  ]
+}

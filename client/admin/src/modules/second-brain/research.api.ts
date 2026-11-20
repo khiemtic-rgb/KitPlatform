@@ -3,6 +3,7 @@ import {
   classifyResearchError,
   type ResearchExperiment,
   type ResearchLoadResult,
+  type ResearchEvaluationComparison,
   type ResearchPaperReport,
   type ResearchPaperStatus,
   type ResearchPublication,
@@ -16,6 +17,7 @@ export const researchApi = {
   experiment: (id: string) => http.get<{ availability: string; experiment: ResearchExperiment | null }>(`${base}/experiments/${encodeURIComponent(id)}`).then((r) => r.data),
   paperStatus: () => http.get<{ availability: string; status: ResearchPaperStatus | null }>(`${base}/paper/status`).then((r) => r.data),
   paperReport: () => http.get<{ availability: string; report: ResearchPaperReport | null }>(`${base}/paper/report`).then((r) => r.data),
+  evaluations: () => http.get<ResearchEvaluationComparison>(`${base}/evaluations`).then((r) => r.data),
 };
 
 const rank: Record<string, number> = {

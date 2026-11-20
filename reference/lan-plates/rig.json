@@ -1,0 +1,147 @@
+{
+  "source": "lan-stand.jpg",
+  "width": 864,
+  "height": 1152,
+  "skin": [
+    243,
+    165,
+    122
+  ],
+  "rest": {
+    "Lsh": 7,
+    "Lel": 8,
+    "Rsh": 7,
+    "Rel": 8
+  },
+  "pivots": {
+    "L": {
+      "S": [
+        342,
+        274
+      ],
+      "E": [
+        324,
+        425
+      ],
+      "W": [
+        309,
+        556
+      ],
+      "hingeY": 284
+    },
+    "R": {
+      "S": [
+        528,
+        274
+      ],
+      "E": [
+        537,
+        425
+      ],
+      "W": [
+        546,
+        556
+      ],
+      "hingeY": 284
+    }
+  },
+  "draw": [
+    "legL",
+    "legR",
+    "torso",
+    "head",
+    "hdL",
+    "foL",
+    "upL",
+    "capEL",
+    "capSL",
+    "hdR",
+    "foR",
+    "upR",
+    "capER",
+    "capSR"
+  ],
+  "plates": {
+    "upL": {
+      "file": "upL.png",
+      "x": 294,
+      "y": 257
+    },
+    "foL": {
+      "file": "foL.png",
+      "x": 284,
+      "y": 411
+    },
+    "hdL": {
+      "file": "hdL.png",
+      "x": 288,
+      "y": 548
+    },
+    "upR": {
+      "file": "upR.png",
+      "x": 509,
+      "y": 256
+    },
+    "foR": {
+      "file": "foR.png",
+      "x": 509,
+      "y": 411
+    },
+    "hdR": {
+      "file": "hdR.png",
+      "x": 525,
+      "y": 548
+    },
+    "torso": {
+      "file": "torso.png",
+      "x": 291,
+      "y": 215
+    },
+    "head": {
+      "file": "head.png",
+      "x": 320,
+      "y": 50
+    },
+    "legL": {
+      "file": "legL.png",
+      "x": 325,
+      "y": 444
+    },
+    "legR": {
+      "file": "legR.png",
+      "x": 431,
+      "y": 444
+    },
+    "capSL": {
+      "file": "capSL.png",
+      "x": 326,
+      "y": 268
+    },
+    "capSR": {
+      "file": "capSR.png",
+      "x": 512,
+      "y": 268
+    },
+    "capEL": {
+      "file": "capEL.png",
+      "x": 302,
+      "y": 403
+    },
+    "capER": {
+      "file": "capER.png",
+      "x": 515,
+      "y": 403
+    }
+  },
+  "arm": {
+    "kind": "three-rigid-pieces",
+    "parts": [
+      "hd",
+      "fo",
+      "up",
+      "capE",
+      "capS"
+    ],
+    "note": "Ham arm() thu hai trong lan-rig-v4.html xoay 3 manh quanh S, E, W. Khong co 45 lat trong file nay."
+  }
+}

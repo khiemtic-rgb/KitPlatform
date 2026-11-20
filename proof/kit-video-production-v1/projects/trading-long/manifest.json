@@ -1,0 +1,290 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "trading-long",
+  "projectName": "Agent Trading — video dài",
+  "brand": {
+    "id": "agent-trading",
+    "name": "Agent Trading — video dài"
+  },
+  "script": {
+    "version": "v2",
+    "approvalStatus": "approved",
+    "sourcePath": "script.md",
+    "notes": "Đọc lịch sử giá công khai. Không phải khuyến nghị và không phải lợi nhuận chiến lược."
+  },
+  "durationPolicy": {
+    "mode": "target",
+    "targetSeconds": 180,
+    "notes": "Tổng các cảnh khóa ở ba phút."
+  },
+  "storyStructure": [
+    {
+      "beatId": "s1-open",
+      "summary": "Đọc giá trước khi nói về lệnh."
+    },
+    {
+      "beatId": "s2-up",
+      "summary": "BTCUSDT tăng 7,4% · khung 1 giờ"
+    },
+    {
+      "beatId": "s3-pull",
+      "summary": "BTCUSDT có nhịp hồi trong đoạn tăng"
+    },
+    {
+      "beatId": "s4-down",
+      "summary": "BTCUSDT giảm 3,5% · khung 1 giờ"
+    },
+    {
+      "beatId": "s5-range",
+      "summary": "ETHUSDT biên hẹp · RSI 14"
+    },
+    {
+      "beatId": "s6-macd",
+      "summary": "BTCUSDT · MACD âm cuối cửa sổ"
+    },
+    {
+      "beatId": "s7-agent",
+      "summary": "Một nhịp của agent"
+    },
+    {
+      "beatId": "s8-risk",
+      "summary": "Agent Trading"
+    },
+    {
+      "beatId": "s9-close",
+      "summary": "Lịch sử giá. Không phải khuyến nghị."
+    }
+  ],
+  "voice": {
+    "profileId": "vi-VN-NamMinhNeural",
+    "language": "vi",
+    "pronunciationNotes": "Không tăng tốc giọng.",
+    "tracks": [
+      {
+        "trackId": "vo-s1-open",
+        "approval": "proposed",
+        "text": "Đọc giá trước khi nói về lệnh.",
+        "path": "assets/voice/s1-open.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s2-up",
+        "approval": "proposed",
+        "text": "Bitcoin khung một giờ, đoạn này tăng 7,4 phần trăm. Đường trung bình được tính từ giá đóng cửa.",
+        "path": "assets/voice/s2-up.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s3-pull",
+        "approval": "proposed",
+        "text": "Trong đoạn tăng có một nhịp hồi. Nhịp này lấy từ chính các nến, không phải hình vẽ thêm.",
+        "path": "assets/voice/s3-pull.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s4-down",
+        "approval": "proposed",
+        "text": "Cùng mã, một đoạn khác giảm 3,5 phần trăm. Vùng tô là mức giảm của giá, không phải lợi nhuận chiến lược.",
+        "path": "assets/voice/s4-down.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s5-range",
+        "approval": "proposed",
+        "text": "Ethereum khung một giờ nằm trong biên hẹp. RSI được tính từ giá đóng cửa.",
+        "path": "assets/voice/s5-range.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s6-macd",
+        "approval": "proposed",
+        "text": "MACD của một đoạn Bitcoin khác, tính từ giá đóng cửa. Không phải tín hiệu vào lệnh.",
+        "path": "assets/voice/s6-macd.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s7-agent",
+        "approval": "proposed",
+        "text": "Agent đọc dữ liệu, xét điều kiện, rồi mới nói tới rủi ro.",
+        "path": "assets/voice/s7-agent.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s8-risk",
+        "approval": "proposed",
+        "text": "Quan sát. Đánh giá. Đứng ngoài khi chưa đủ.",
+        "path": "assets/voice/s8-risk.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s9-close",
+        "approval": "proposed",
+        "text": "Lịch sử giá. Không phải khuyến nghị.",
+        "path": "assets/voice/s9-close.wav",
+        "pathBase": "project"
+      }
+    ]
+  },
+  "assets": [],
+  "visualStyle": {
+    "profileId": "agent-trading-v2",
+    "artDirection": {
+      "audience": "người xem giải thích sản phẩm",
+      "objective": "Đọc lịch sử giá công khai. Không phải khuyến nghị và không phải lợi nhuận chiến lược.",
+      "language": "tiếng Việt",
+      "imagery": "market-data",
+      "motion": "camera-and-chart",
+      "light": "cool-paper",
+      "material": "paper",
+      "depth": "flat",
+      "principles": [
+        "exact-copy"
+      ]
+    },
+    "palette": {
+      "background": [
+        232,
+        236,
+        242
+      ],
+      "ink": [
+        16,
+        28,
+        48
+      ],
+      "accent": [
+        18,
+        122,
+        82
+      ],
+      "paper": [
+        255,
+        252,
+        246
+      ],
+      "muted": [
+        84,
+        94,
+        110
+      ],
+      "accentAlt": [
+        164,
+        72,
+        64
+      ],
+      "weight": [
+        28,
+        36,
+        52
+      ]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {
+      "top": 0.06,
+      "right": 0.06,
+      "bottom": 0.06,
+      "left": 0.06
+    }
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.35,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {
+    "aspectRatio": "16:9",
+    "width": 1280,
+    "height": 720,
+    "frameRate": 24
+  },
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": false,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {
+      "stage": "brief",
+      "automation": "manual",
+      "status": "approved",
+      "notes": "Đọc lịch sử giá công khai. Không phải khuyến nghị và không phải lợi nhuận chiến lược."
+    },
+    {
+      "stage": "script_analysis",
+      "automation": "assisted",
+      "status": "done",
+      "notes": "propose_shot_plan từ script.md."
+    },
+    {
+      "stage": "story_structure",
+      "automation": "manual",
+      "status": "approved",
+      "notes": "Các cảnh khóa đủ ba phút."
+    },
+    {
+      "stage": "shot_plan",
+      "automation": "assisted",
+      "status": "approved",
+      "notes": "Ảnh chọn bằng library.choose_asset. Biểu đồ từ file nến."
+    },
+    {
+      "stage": "asset_plan",
+      "automation": "automated",
+      "status": "done",
+      "notes": "Thiếu ảnh thì ghi gap, không thế ảnh khác."
+    },
+    {
+      "stage": "asset_creation",
+      "automation": "manual",
+      "status": "done",
+      "notes": "Không tạo ảnh stock. Dùng ảnh tài liệu và nến công khai."
+    },
+    {
+      "stage": "voiceover",
+      "automation": "automated",
+      "status": "done",
+      "notes": "edge-tts, tốc độ +0%. Track còn proposed cho đến khi có người nghe."
+    },
+    {
+      "stage": "animation",
+      "automation": "automated",
+      "status": "done",
+      "notes": "Máy quay nhẹ, nến và chỉ báo tính từ dữ liệu."
+    },
+    {
+      "stage": "audio_mix",
+      "automation": "automated",
+      "status": "not_started",
+      "notes": ""
+    },
+    {
+      "stage": "render",
+      "automation": "automated",
+      "status": "in_progress",
+      "notes": ""
+    },
+    {
+      "stage": "qa",
+      "automation": "automated",
+      "status": "not_started",
+      "notes": ""
+    },
+    {
+      "stage": "delivery",
+      "automation": "manual",
+      "status": "not_started",
+      "notes": "Không phát hành."
+    }
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

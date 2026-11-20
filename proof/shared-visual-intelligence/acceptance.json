@@ -1,0 +1,88 @@
+{
+  "test1": {
+    "character": "CHAR-VIS-LAN",
+    "scenes": 4,
+    "hair": 7027242,
+    "outfit": 3366026
+  },
+  "library": {
+    "views": 4,
+    "expressions": 8,
+    "garments": 6,
+    "actions": 8
+  },
+  "test2": {
+    "reused": "nx-counter-consult",
+    "generated": "gen-film-fx-shoes"
+  },
+  "test3": {
+    "chosen": "good",
+    "refused": "NO_FIT"
+  },
+  "test4": {
+    "photo": "GENERATION_REQUIRED",
+    "illustrated": "kit-illustrated-v1",
+    "code": "kit-code-graphic-v1"
+  },
+  "test5": [
+    {
+      "Motif": "home-threshold",
+      "LineWeight": 3,
+      "StructureCode": "famixa/work-counter:home-threshold,low-table,plant,window,simplified-figure"
+    },
+    {
+      "Motif": "counter-grid",
+      "LineWeight": 2,
+      "StructureCode": "novixa/work-counter:counter-grid,counter,shelf,blank-pack,simplified-figure"
+    },
+    {
+      "Motif": "candle-axis",
+      "LineWeight": 1,
+      "StructureCode": "trade/work-counter:candle-axis,axis,candles,monitor,no-face"
+    },
+    {
+      "Motif": "tea-terrace",
+      "LineWeight": 4,
+      "StructureCode": "riverside-tea/work-counter:tea-terrace,terrace,cup,round-table,simplified-figure"
+    }
+  ],
+  "test6": {
+    "dozen": 12,
+    "episode": 100,
+    "uniqueHashes": 100,
+    "uniqueCoarse": 100,
+    "uniqueStructures": 12,
+    "busiest": 1
+  },
+  "test7": {
+    "approved": "gen-film-keep-keep",
+    "variant": "gen-film-keep-keep-1",
+    "sha": "958ebf92073c39187a2b06257baa2b85bad4141846f90e6fd5114d6f64d882db"
+  },
+  "test8": {
+    "overlay": "Amlodipine 5mg",
+    "rejected": 1
+  },
+  "vietnameseDiacritics": {
+    "supported": true,
+    "sample": "Thu\u1ED1c h\u1EA1 huy\u1EBFt \u00E1p",
+    "undrawable": "",
+    "above": 19,
+    "below": 1,
+    "scope": "Controlled captions in kit-illustrated-v1 and kit-code-graphic-v1. Tone marks, horn, and \u0111 are drawn. Narration still cannot become a package label."
+  },
+  "test9": {
+    "paidProviderCalls": 0,
+    "costUsd": 0,
+    "priorFailures": 0
+  },
+  "suite": "SHARED_VISUAL_INTELLIGENCE_V1",
+  "fail": 0,
+  "failures": [],
+  "paidProviderCalls": 0,
+  "costUsd": 0,
+  "photoProvider": "gemini-3.1-flash-image",
+  "photoInvoked": false,
+  "illustratedRenderer": "kit-illustrated-v1",
+  "codeRenderer": "kit-code-graphic-v1"
+}

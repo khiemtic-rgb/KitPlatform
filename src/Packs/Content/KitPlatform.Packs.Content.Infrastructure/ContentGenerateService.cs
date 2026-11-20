@@ -122,6 +122,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
             throw new InvalidOperationException(
                 "Gemini API key missing — vào Nội dung → Cấu hình AI (Secret ref / key), hoặc env GEMINI_API_KEY");
 
+        var factLockedPass = false;
         if (!request.ImagesOnly)
         {
             var knowledgeGate = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
@@ -154,13 +155,30 @@ internal sealed class ContentGenerateService : IContentGenerateService
                     .ToList();
 
                 var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
-                var brandContext = ContentBrandKnowledge.FormatForPrompt(knowledge, brand.OperationalBrief);
+                var episodeForFacts = await _repo.FindEpisodeForTopicAsync(topicId, cancellationToken);
+                string? factCard = episodeForFacts is null
+                    ? null
+                    : ContentFactGate.ReadCard(episodeForFacts.ContinuityJson);
+                if (episodeForFacts is not null && !ContentFactGate.HasCard(factCard))
+                    throw new InvalidOperationException(
+                        "Tập chưa có phiếu sự thật — điền Phiếu sự thật trên tập trước khi viết.");
+                var recentTheses = factCard is null
+                    ? []
+                    : await _repo.ListRecentWebThesesAsync(brand.Id, topicId, 3, cancellationToken);
+                var factBlock = factCard is null ? null : ContentFactGate.PromptBlock(factCard, recentTheses);
                 var packageId = await _repo.GetPackageIdByTopicAsync(topicId, cancellationToken);
                 var package = packageId is Guid pid ? await _repo.GetPackageAsync(pid, cancellationToken) : null;
                 var (core, fits) = ContentPackageExtra.Parse(package?.ExtraJson);
                 var ownFit = fits.FirstOrDefault(f => f.BrandId == brand.Id);
                 var brief = ContentPackageExtra.ParseBrief(package?.ExtraJson);
-                var briefBlock = ContentCreativeBriefDto.FormatForPrompt(brief);
+                ContentGenerationContract.EnsureBrief(brief);
+                var narrative = new ContentNarrativeSelection(
+                    ownFit?.Territory,
+                    ownFit?.TerritoryId,
+                    ownFit?.BrandAngle ?? package?.Angle,
+                    ownFit?.NarrativeFit);
+                var dna = BrandNarrativeFit.Parse(brand.NarrativeJson);
+                var (seriesContext, episodeContext) = await EpisodeContextsAsync(topicId, cancellationToken);
                 var ctaUrl = ContentCtaRouter.Resolve(
                     brand.Code,
                     package?.Title ?? topic.Title,
@@ -175,21 +193,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 var parsed = new GeminiPackResponse();
                 if (packKinds.Count > 0)
                 {
-                    var system =
-                        "You are a Vietnamese multi-channel content writer for KIT Marketing Park.\n" +
-                        "Return valid JSON only. No markdown fences.\n" +
-                        "You MUST follow the FULL Brand Brain: voice, claims allowed/forbidden, proof, good/bad examples.\n" +
-                        "Do not invent competitor prices, medical claims, salaries, or guarantees not in the brief or evidence.\n" +
-                        "If factOrOpinion=fact and source is missing, do not invent numbers — write qualitatively.\n" +
-                        "Never write in another brand's voice. Use this brand's angle only.\n" +
-                        "Adapt length to each variant kind.\n" +
-                        "Kind guides: seo_meta=title+description; " +
-                        "fb_page=PLAIN TEXT 120–220 words, ONE thesis (same as Angle), 3 concrete beats, 1 CTA/question — no **bold**; " +
-                        "fb_short=hook+CTA plain text; tiktok_script=timed beats HOOK/PROBLEM/INSIGHT/SOLUTION/CTA 45–60s; " +
-                        "social_caption=short post + hashtags line (plain text); linkedin/instagram=native tone.\n" +
-                        "Do NOT write web_long or group_suggested here.\n" +
-                        "ONLY generate the variant kinds listed — do not invent extra channels.\n" +
-                        "Ban filler: «trong thời đại», «không thể phủ nhận», «hãy cùng tìm hiểu», «điều này cho thấy».";
+                    var system = ContentGenerationContract.PackSystem();
                     if (string.Equals(ctaUrl, ContentCtaRouter.NovixaHealthCheck, StringComparison.OrdinalIgnoreCase)
                         || string.Equals(ctaUrl, ContentCtaRouter.NovixaSpaHealthCheck, StringComparison.OrdinalIgnoreCase))
                     {
@@ -198,32 +202,28 @@ internal sealed class ContentGenerateService : IContentGenerateService
                             " — never homepage novixa.vn or survey.novixa.vn.";
                     }
 
-                    var user =
-                        "Brand: " + brand.Name + " (" + brand.Code + ")\n" +
-                        brandContext + "\n\n" +
-                        "CORE IDEA / ANGLE\n" +
-                        "Title: " + (package?.Title ?? topic.Title) + "\n" +
-                        "Angle: " + (package?.Angle ?? "") + "\n" +
-                        "Audience: " + (package?.Audience ?? "") + "\n" +
-                        "Insight: " + (core.Insight ?? "") + "\n" +
-                        "Problem: " + (core.Problem ?? "") + "\n" +
-                        "Core message: " + (core.CoreMessage ?? "") + "\n" +
-                        "Source: " + (core.Source ?? "") + "\n" +
-                        "Source URL: " + (core.SourceUrl ?? "") + "\n" +
-                        "Evidence: " + (core.Evidence ?? "") + "\n" +
-                        "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n" +
-                        (string.IsNullOrWhiteSpace(briefBlock) ? "" : "CREATIVE BRIEF\n" + briefBlock + "\n") +
-                        "\nPublish destinations configured: " + destPlan.Summary + "\n" +
-                        "Topic title: " + topic.Title + "\n" +
-                        "Pillar: " + (topic.Pillar ?? "") + "\n" +
-                        "Goal: " + topic.Goal + "\n" +
-                        "CTA URL: " + (ctaUrl ?? "") + "\n" +
-                        "Article outline (optional): " + (topic.BodyOutline ?? "") + "\n" +
-                        "Variant kinds required (ONLY these): " + string.Join(", ", packKinds) + "\n\n" +
+                    var user = ContentGenerationContract.Compose(
+                        brand.Name,
+                        brand.Code,
+                        knowledge,
+                        brand.OperationalBrief,
+                        dna,
+                        narrative,
+                        package?.Angle,
+                        package?.Audience,
+                        brief,
+                        ctaUrl,
+                        packKinds,
+                        ContentFacts(package, core, topic, destPlan.Summary, includeOutline: episodeContext is null),
+                        "Variant kinds required (ONLY these): " + string.Join(", ", packKinds) + "\n" +
                         "Return JSON object with keys variants (array of {kind,title,bodyMarkdown,meta}) " +
-                        "and imagePrompt (English visual only: scene, light, people, mood from brand brief. "
-                        + "NEVER ask to paint headlines, slogans, brand names, or any letters).\n" +
-                        "Include exactly one entry per variant kind listed — no more, no less.";
+                        "and imagePrompt (English visual only: scene, light, people, mood. " +
+                        "NEVER ask to paint headlines, slogans, brand names, or any letters).\n" +
+                        "Include exactly one entry per variant kind listed — no more, no less.",
+                        seriesContext,
+                        episodeContext);
+                    if (factBlock is not null)
+                        user += "\n\n" + factBlock;
 
                     var raw = await _gemini.GenerateJsonAsync(system, user, cancellationToken);
                     parsed = JsonSerializer.Deserialize<GeminiPackResponse>(raw, JsonOpts)
@@ -250,17 +250,38 @@ internal sealed class ContentGenerateService : IContentGenerateService
 
                 if (wantWeb)
                 {
+                    var webUser = ContentGenerationContract.Compose(
+                        brand.Name,
+                        brand.Code,
+                        knowledge,
+                        brand.OperationalBrief,
+                        dna,
+                        narrative,
+                        package?.Angle,
+                        package?.Audience,
+                        brief,
+                        ctaUrl,
+                        ["web_long"],
+                        ContentFacts(package, core, topic, destPlan.Summary, includeOutline: episodeContext is null),
+                        "Write the article now. title = published headline. bodyMarkdown = full article.",
+                        seriesContext,
+                        episodeContext);
+                    var framework = ContentChannelFramework.Extract(topic.BodyOutline);
+                    if (framework is not null)
+                    {
+                        webUser += "\n\n" + framework +
+                                   "\nFollow KHUNG BÀI TỪ KÊNH for the website article. Do not invent view counts. Do not copy a Fanpage caption.";
+                    }
+                    if (factBlock is not null)
+                        webUser += "\n\n" + factBlock;
+
                     await WriteWebLongAsync(
                         topicId,
                         brand,
-                        brandContext,
-                        package,
-                        core,
-                        topic,
-                        destPlan.Summary,
+                        webUser,
                         ctaUrl,
-                        briefBlock,
-                        cancellationToken);
+                        cancellationToken,
+                        factLocked: factCard is not null);
                 }
 
                 if (wantGroup)
@@ -273,6 +294,22 @@ internal sealed class ContentGenerateService : IContentGenerateService
                         core,
                         topic,
                         cancellationToken);
+                }
+
+                if (episodeForFacts is not null)
+                {
+                    var fact = await ContentFactCheck.EvaluateAsync(_repo, topicId, cancellationToken);
+                    if (!fact.Passed)
+                    {
+                        await _repo.UpdateTopicStatusAsync(topicId, "Draft", cancellationToken);
+                        return await BuildResultAsync(
+                            topicId,
+                            textEstimate,
+                            budgetBlocked: false,
+                            ContentFactGate.Refuse(fact.Issues),
+                            cancellationToken);
+                    }
+                    factLockedPass = true;
                 }
 
                 await _repo.InsertUsageAsync(
@@ -297,6 +334,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 if (package is not null)
                 {
                     var written = await _repo.ListVariantsAsync(topicId, cancellationToken);
+                    var (territory, narrativeFit) = ContentPackageExtra.OwnNarrative(package.ExtraJson, ContentPackageScope.RequireBrand(package));
                     var gate = ContentQualityGate.Evaluate(
                         knowledge,
                         core,
@@ -304,8 +342,8 @@ internal sealed class ContentGenerateService : IContentGenerateService
                         written.Select(v => (v.Kind, v.BodyMarkdown)).ToList(),
                         brand.Name,
                         brief,
-                        ownFit?.Territory,
-                        ownFit?.NarrativeFit);
+                        territory,
+                        narrativeFit);
                     await _repo.UpdatePackageExtraJsonAsync(
                         package.Id,
                         ContentPackageExtra.MergeGate(package.ExtraJson, gate),
@@ -411,7 +449,7 @@ internal sealed class ContentGenerateService : IContentGenerateService
                 }
             }
 
-            await _repo.UpdateTopicStatusAsync(topicId, "Review", cancellationToken);
+            await _repo.UpdateTopicStatusAsync(topicId, factLockedPass ? "Approved" : "Review", cancellationToken);
             string msg;
             if (request.ImagesOnly)
             {
@@ -452,40 +490,47 @@ internal sealed class ContentGenerateService : IContentGenerateService
         }
     }
 
-    private async Task WriteWebLongAsync(
-        Guid topicId,
-        ContentRepository.BrandRow brand,
-        string brandContext,
+    private async Task<(string? Series, string? Episode)> EpisodeContextsAsync(Guid topicId, CancellationToken ct)
+    {
+        var row = await _repo.FindEpisodeForTopicAsync(topicId, ct);
+        if (row is null) return (null, null);
+        var blueprint = ContentArticleSeriesRules.ParseBlueprint(row.BlueprintJson);
+        var continuity = ContentArticleSeriesRules.ParseContinuity(row.ContinuityJson);
+        var beat = blueprint.NarrativeArc.FirstOrDefault(b => b.EpisodeNo == row.EpisodeNo);
+        var currentBeat = beat is null
+            ? null
+            : beat.EpisodeNo + ". " + (beat.Title ?? "") + " — " + (beat.Beat ?? beat.Objective ?? "");
+        var series = ContentGenerationContract.FormatSeriesContext(
+            row.SeriesName,
+            row.SeriesObjective,
+            row.SeriesDescription,
+            row.SeriesCoreMessage,
+            currentBeat,
+            blueprint.CtaStrategy,
+            blueprint.SeriesCta);
+        var episode = ContentGenerationContract.FormatEpisodeContext(
+            row.EpisodeNo,
+            row.Title,
+            row.Objective,
+            row.KeyMessage,
+            continuity.PreviousSummary,
+            continuity.PreviousKeyPoints,
+            continuity.MustContinueFrom,
+            continuity.MustNotRepeat,
+            continuity.OpenLoops,
+            continuity.NextEpisodeDirection);
+        return (series, episode);
+    }
+
+    private static string ContentFacts(
         ContentRepository.PackageRow? package,
         ContentCoreIdeaDto core,
         ContentRepository.TopicRow topic,
         string destSummary,
-        string? ctaUrl,
-        string? briefBlock,
-        CancellationToken cancellationToken)
+        bool includeOutline = true)
     {
-        var thesis = FirstNonEmpty(package?.Angle, core.CoreMessage, core.Insight, topic.Title);
-        var system =
-            "You are a senior Vietnamese brand editor for KIT Marketing Park.\n" +
-            "Return valid JSON only: {\"title\":\"...\",\"bodyMarkdown\":\"...\"}. No markdown fences.\n" +
-            "Write ONE flagship article (web_long). Not a multi-channel pack.\n" +
-            "ONE thesis only — the Angle. Every H2 must prove that thesis. Do not survey the topic.\n" +
-            "Structure:\n" +
-            "- Lead (80–120 words): one scene + the problem. No «trong thời đại», «hãy cùng tìm hiểu».\n" +
-            "- Exactly 3 ## headings. Each: one argument + one concrete example from Brand Brain (problems/proof).\n" +
-            "- Close: one takeaway + CTA URL if provided (plain markdown link).\n" +
-            "900–1400 words Vietnamese. Markdown OK (##, lists). No invented numbers, medical claims, or other-brand voice.\n" +
-            "If evidence/source is empty, stay qualitative — do not fabricate stats.\n" +
-            (string.Equals(brand.Code, "tnlife", StringComparison.OrdinalIgnoreCase)
-                ? "Brand tnlife: every public URL must be https://thainguyenlife.vn (paths /viec /tro /tin OK). Never thainguyen.life. No Novixa/Famixa/PHC CTA. No trailing hashtag dump.\n"
-                : "");
-
-        var user =
-            "Brand: " + brand.Name + " (" + brand.Code + ")\n" +
-            brandContext + "\n\n" +
-            "THESIS (must be the spine): " + thesis + "\n" +
-            "Title hint: " + (package?.Title ?? topic.Title) + "\n" +
-            "Audience: " + (package?.Audience ?? "") + "\n" +
+        return
+            "Title: " + (package?.Title ?? topic.Title) + "\n" +
             "Insight: " + (core.Insight ?? "") + "\n" +
             "Problem: " + (core.Problem ?? "") + "\n" +
             "Core message: " + (core.CoreMessage ?? "") + "\n" +
@@ -493,36 +538,49 @@ internal sealed class ContentGenerateService : IContentGenerateService
             "Source URL: " + (core.SourceUrl ?? "") + "\n" +
             "Evidence: " + (core.Evidence ?? "") + "\n" +
             "Fact or opinion: " + (core.FactOrOpinion ?? "") + "\n" +
-            (string.IsNullOrWhiteSpace(briefBlock) ? "" : "CREATIVE BRIEF\n" + briefBlock + "\n") +
             "Pillar: " + (topic.Pillar ?? "") + "\n" +
             "Goal: " + topic.Goal + "\n" +
-            "CTA URL: " + (ctaUrl ?? "") + "\n" +
-            "Outline (optional): " + (topic.BodyOutline ?? "") + "\n" +
-            "Destinations (context only): " + destSummary + "\n\n" +
-            "Write the article now. title = published headline. bodyMarkdown = full article.";
+            (includeOutline ? "Outline: " + (topic.BodyOutline ?? "") + "\n" : "") +
+            "Destinations: " + destSummary;
+    }
 
+    private async Task WriteWebLongAsync(
+        Guid topicId,
+        ContentRepository.BrandRow brand,
+        string user,
+        string? ctaUrl,
+        CancellationToken cancellationToken,
+        bool factLocked = false)
+    {
+        var topic = await _repo.GetTopicAsync(topicId, cancellationToken)
+                    ?? throw new InvalidOperationException("Topic not found");
+        var system = ContentGenerationContract.WebSystem(brand.Code);
+        if (factLocked)
+            system += "\nThe fact card is the only source. Do not add numbers, prices, doses, or cure claims to reach a word count.";
         string? title = null;
         string? body = null;
-        for (var attempt = 0; attempt < 2; attempt++)
+        string? reject = "web_long: quá mỏng — cần bài một luận điểm, khoảng 800–1400 từ";
+        var attempts = factLocked ? 1 : 2;
+        for (var attempt = 0; attempt < attempts; attempt++)
         {
             var prompt = attempt == 0
                 ? user
-                : user + "\n\nBài trước quá mỏng hoặc loãng. Viết LẠI: đúng 3 mục ##, mỗi mục một luận điểm + ví dụ hiện trường, 900–1400 từ.";
+                : user + "\n\nBài trước không đạt FORMAT CONTRACT web_long. Viết LẠI long-form: một luận điểm, đủ 800–1400 từ, ít nhất 2200 ký tự, đúng 3 mục ##. Không viết thành short post.";
             var raw = await _gemini.GenerateJsonAsync(system, prompt, cancellationToken, maxOutputTokens: 8192);
             var parsed = JsonSerializer.Deserialize<GeminiGroupShareResponse>(raw, JsonOpts);
             var nextTitle = (parsed?.Title ?? "").Trim();
             var nextBody = ContentCtaRouter.RewriteBody(brand.Code, parsed?.BodyMarkdown?.Trim() ?? "", ctaUrl);
-            if (nextBody.Length < 400) continue;
+            if (!factLocked)
+                nextBody = ContentWebLongRepair.EnsureHeadings(nextBody);
+            if (nextBody.Length < (factLocked ? 180 : 400)) continue;
             title = nextTitle;
             body = nextBody;
-            var h2 = ContentQualityGate.CountMarkdownH2(nextBody);
-            if (nextBody.Length >= 2200 && h2 >= 2) break;
+            reject = factLocked ? null : ContentGenerationContract.RejectWebLong(nextBody);
+            if (reject is null) break;
         }
 
-        if (string.IsNullOrWhiteSpace(body) || body.Length < 400)
-            throw new InvalidOperationException("Bài web quá mỏng — Generate lại.");
-
-        body = ContentWebLongRepair.EnsureHeadings(body);
+        if (reject is not null || string.IsNullOrWhiteSpace(body))
+            throw new InvalidOperationException(reject ?? "Bài web quá mỏng — Generate lại.");
 
         await _repo.UpsertVariantAsync(
             topicId,
@@ -531,16 +589,6 @@ internal sealed class ContentGenerateService : IContentGenerateService
             body,
             "{}",
             cancellationToken);
-    }
-
-    private static string FirstNonEmpty(params string?[] values)
-    {
-        foreach (var v in values)
-        {
-            if (!string.IsNullOrWhiteSpace(v)) return v.Trim();
-        }
-
-        return "";
     }
 
     private async Task WriteGroupShareAsync(

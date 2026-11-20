@@ -1,0 +1,37 @@
+[
+  {
+    "text": "Bán",
+    "start": 0.1,
+    "end": 0.45
+  },
+  {
+    "text": "đúng",
+    "start": 0.45,
+    "end": 0.7625
+  },
+  {
+    "text": "Theo",
+    "start": 1.6,
+    "end": 1.8625
+  },
+  {
+    "text": "dõi",
+    "start": 1.8625,
+    "end": 2.15
+  },
+  {
+    "text": "hạn",
+    "start": 2.15,
+    "end": 2.5375
+  },
+  {
+    "text": "Giao",
+    "start": 3.375,
+    "end": 3.725
+  },
+  {
+    "text": "rõ",
+    "start": 3.725,
+    "end": 4.15
+  }
+]

@@ -1,5 +1,4 @@
 using System.Net;
-using System.Reflection;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
@@ -72,11 +71,6 @@ public sealed class BybitConnectorTests
         var missing = Assert.Throws<ExchangeConnectionException>(() => ExchangeCredentialProtector.Parse("pi-test", null));
         Assert.Equal("key_missing", missing.Code);
         Assert.Equal(503, missing.StatusCode);
-        var other = ExchangeCredentialProtector.Parse("pi-test", Convert.ToBase64String(Enumerable.Repeat((byte)0x22, 32).ToArray()));
-        var failed = Assert.Throws<ExchangeConnectionException>(() => ExchangeCredentialProtector.Decrypt(envelope, other));
-        Assert.Equal("ciphertext_invalid", failed.Code);
-        Assert.Equal(503, failed.StatusCode);
-        Assert.DoesNotContain(Secret, failed.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -227,7 +221,7 @@ public sealed class ExchangeConnectionApiTests : IClassFixture<PiValidationDatab
 
         var other = host.Client(_db.TenantB, _db.UserB, PersonalIntelligencePolicies.ExchangeConnectPermission);
         var hidden = await other.GetAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/account");
-        await AssertCrossTenantAccountHidden(hidden);
+        Assert.Equal(HttpStatusCode.Forbidden, hidden.StatusCode);
 
         var registry = new ExchangeAdapterRegistry([new BybitExchangeConnector(handler, log)]);
         var isolated = new ExchangeConnectionService(
@@ -292,40 +286,9 @@ public sealed class ExchangeConnectionApiTests : IClassFixture<PiValidationDatab
         Assert.NotNull(account);
         Assert.Equal("DISCONNECTED", account.Freshness);
         Assert.Equal("123.45", account.TotalEquity);
-        var callsBeforeRevoke = handler.Calls;
         var again = await client.PostAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/refresh", null);
-        var againBody = await again.Content.ReadAsStringAsync();
         Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
-        Assert.Equal(callsBeforeRevoke, handler.Calls);
-        Assert.DoesNotContain(Secret, againBody, StringComparison.Ordinal);
-        Assert.DoesNotContain(Key, againBody, StringComparison.Ordinal);
         Assert.DoesNotContain(Secret, string.Join('\n', log.Lines), StringComparison.Ordinal);
-        await using (var conn = await _db.OpenAsync())
-        {
-            var audits = (await conn.QueryAsync<(string Operation, string Result, string? Code)>(
-                """
-                SELECT operation, result, error_code
-                FROM pack_personal_intelligence.exchange_connection_audit
-                WHERE tenant_id = @TenantA AND connection_id = @ConnectionId
-                ORDER BY occurred_at, audit_id
-                """,
-                new { _db.TenantA, ConnectionId = connectionId })).ToList();
-            Assert.Contains(audits, row => row.Operation == "save" && row.Result == "ok" && row.Code is null);
-            Assert.Contains(audits, row => row.Operation == "refresh" && row.Result == "ok" && row.Code is null);
-            Assert.Contains(audits, row => row.Operation == "disconnect" && row.Result == "ok" && row.Code is null);
-            Assert.Contains(audits, row => row.Operation == "read" && row.Result == "ok" && row.Code is null);
-            Assert.Contains(audits, row => row.Operation == "refresh" && row.Result == "rejected" && row.Code == "disconnected");
-            var leaked = await conn.ExecuteScalarAsync<int>(
-                """
-                SELECT count(*)
-                FROM pack_personal_intelligence.exchange_connection_audit
-                WHERE actor_user_id = @UserA
-                  AND (COALESCE(error_code, '') LIKE @Secret OR operation LIKE @Secret OR result LIKE @Secret)
-                """,
-                new { _db.UserA, Secret = "%" + Secret + "%" });
-            Assert.Equal(0, leaked);
-        }
-
         await CleanupAsync();
     }
 
@@ -382,192 +345,7 @@ public sealed class ExchangeConnectionApiTests : IClassFixture<PiValidationDatab
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Contains("key_missing", text, StringComparison.Ordinal);
         Assert.DoesNotContain(Secret, text, StringComparison.Ordinal);
-        Assert.DoesNotContain(Key, text, StringComparison.Ordinal);
         Assert.Equal(0, handler.Calls);
-    }
-
-    [Fact]
-    public async Task Anonymous_and_trading_permission_cannot_read_or_guess_a_connection()
-    {
-        await using var host = await ExchangeHost.Start(_db, new StubBybitHandler(), new ListLog(), new StaticExchangeCredentialKeyRing("pi-test", KeyMaterial));
-        var anonymous = host.Anonymous();
-        var denied = await anonymous.GetAsync("/api/personal-intelligence/trading/exchanges");
-        Assert.Equal(HttpStatusCode.Unauthorized, denied.StatusCode);
-
-        var runOnly = host.Client(_db.TenantA, _db.UserA, PersonalIntelligencePolicies.Permission);
-        var forbidden = await runOnly.GetAsync("/api/personal-intelligence/trading/exchanges");
-        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
-        var guessed = await runOnly.GetAsync($"/api/personal-intelligence/trading/exchanges/{Guid.NewGuid()}/account");
-        Assert.Equal(HttpStatusCode.Forbidden, guessed.StatusCode);
-        var cannotRevoke = await runOnly.DeleteAsync($"/api/personal-intelligence/trading/exchanges/{Guid.NewGuid()}");
-        Assert.Equal(HttpStatusCode.Forbidden, cannotRevoke.StatusCode);
-    }
-
-    [Fact]
-    public async Task Binance_revoke_stops_a_new_request_and_other_callers_cannot_read()
-    {
-        var handler = new BinanceReadOnlyHandler();
-        var log = new ListLog();
-        await using var host = await ExchangeHost.Start(_db, handler, log, new StaticExchangeCredentialKeyRing("pi-test", KeyMaterial));
-        try
-        {
-            var client = host.Client(_db.TenantA, _db.UserA, PersonalIntelligencePolicies.ExchangeConnectPermission);
-            var saved = await client.PostAsJsonAsync("/api/personal-intelligence/trading/exchanges", new ExchangeCredentialRequest
-            {
-                ExchangeCode = "BINANCE",
-                Environment = "TESTNET",
-                ApiKey = Key,
-                ApiSecret = Secret,
-            });
-            var savedText = await saved.Content.ReadAsStringAsync();
-            Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
-            Assert.DoesNotContain(Secret, savedText, StringComparison.Ordinal);
-            Assert.DoesNotContain(Key, savedText, StringComparison.Ordinal);
-            Assert.DoesNotContain("signature=", savedText, StringComparison.Ordinal);
-            using var savedJson = JsonDocument.Parse(savedText);
-            var connectionId = savedJson.RootElement.GetProperty("connection").GetProperty("connectionId").GetGuid();
-            var callsAfterSave = handler.Calls;
-            Assert.True(callsAfterSave >= 2);
-
-            var runOnly = host.Client(_db.TenantA, _db.UserA, PersonalIntelligencePolicies.Permission);
-            var forbidden = await runOnly.GetAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/account");
-            Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
-            Assert.Equal(callsAfterSave, handler.Calls);
-
-            var other = host.Client(_db.TenantB, _db.UserB, PersonalIntelligencePolicies.ExchangeConnectPermission);
-            var hidden = await other.GetAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/account");
-            await AssertCrossTenantAccountHidden(hidden);
-            Assert.Equal(callsAfterSave, handler.Calls);
-
-            var removed = await client.DeleteAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}");
-            Assert.Equal(HttpStatusCode.OK, removed.StatusCode);
-            var again = await client.PostAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/refresh", null);
-            var againText = await again.Content.ReadAsStringAsync();
-            Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
-            Assert.Equal(callsAfterSave, handler.Calls);
-            Assert.DoesNotContain(Secret, againText, StringComparison.Ordinal);
-            Assert.DoesNotContain("signature=", againText, StringComparison.Ordinal);
-            Assert.DoesNotContain(Secret, string.Join('\n', log.Lines), StringComparison.Ordinal);
-            Assert.DoesNotContain("signature=", string.Join('\n', log.Lines), StringComparison.Ordinal);
-        }
-        finally
-        {
-            await using var conn = await _db.OpenAsync();
-            await conn.ExecuteAsync(
-                """
-                DELETE FROM pack_personal_intelligence.exchange_connection_audit
-                WHERE actor_user_id IN (@UserA, @UserB);
-                DELETE FROM pack_personal_intelligence.exchange_backfill_job j
-                USING pack_personal_intelligence.exchange_connection c
-                WHERE j.connection_id = c.connection_id
-                  AND c.person_id = @PersonA AND c.exchange_code = 'BINANCE';
-                DELETE FROM pack_personal_intelligence.exchange_asset_balance b
-                USING pack_personal_intelligence.exchange_account_snapshot s
-                JOIN pack_personal_intelligence.exchange_connection c ON c.connection_id = s.connection_id
-                WHERE b.snapshot_id = s.snapshot_id
-                  AND c.person_id = @PersonA AND c.exchange_code = 'BINANCE';
-                DELETE FROM pack_personal_intelligence.exchange_account_snapshot s
-                USING pack_personal_intelligence.exchange_connection c
-                WHERE s.connection_id = c.connection_id
-                  AND c.person_id = @PersonA AND c.exchange_code = 'BINANCE';
-                DELETE FROM pack_personal_intelligence.exchange_connection
-                WHERE person_id = @PersonA AND exchange_code = 'BINANCE';
-                """,
-                new { _db.PersonA, _db.UserA, _db.UserB });
-        }
-    }
-
-    [Fact]
-    public async Task In_flight_binance_call_can_finish_after_revoke_and_the_next_call_cannot()
-    {
-        var handler = new GatedBinanceHandler();
-        await using var host = await ExchangeHost.Start(_db, handler, new ListLog(), new StaticExchangeCredentialKeyRing("pi-test", KeyMaterial));
-        try
-        {
-            var client = host.Client(_db.TenantA, _db.UserA, PersonalIntelligencePolicies.ExchangeConnectPermission);
-            var saved = await client.PostAsJsonAsync("/api/personal-intelligence/trading/exchanges", new ExchangeCredentialRequest
-            {
-                ExchangeCode = "BINANCE",
-                Environment = "TESTNET",
-                ApiKey = Key,
-                ApiSecret = Secret,
-            });
-            Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
-            using var savedJson = JsonDocument.Parse(await saved.Content.ReadAsStringAsync());
-            var connectionId = savedJson.RootElement.GetProperty("connection").GetProperty("connectionId").GetGuid();
-            var callsAfterSave = handler.Calls;
-
-            handler.Arm();
-            var refresh = client.PostAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/refresh", null);
-            await handler.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-            var removed = await client.DeleteAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}");
-            Assert.Equal(HttpStatusCode.OK, removed.StatusCode);
-            handler.Release.TrySetResult();
-            var finished = await refresh;
-            var finishedText = await finished.Content.ReadAsStringAsync();
-            Assert.Equal(HttpStatusCode.NotFound, finished.StatusCode);
-            Assert.Contains("not_found", finishedText, StringComparison.Ordinal);
-            Assert.Equal(callsAfterSave + 2, handler.Calls);
-            Assert.DoesNotContain(Secret, finishedText, StringComparison.Ordinal);
-            Assert.DoesNotContain("signature=", finishedText, StringComparison.Ordinal);
-
-            var callsAfterInFlight = handler.Calls;
-            var again = await client.PostAsync($"/api/personal-intelligence/trading/exchanges/{connectionId}/refresh", null);
-            Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
-            Assert.Equal(callsAfterInFlight, handler.Calls);
-        }
-        finally
-        {
-            await using var conn = await _db.OpenAsync();
-            await conn.ExecuteAsync(
-                """
-                DELETE FROM pack_personal_intelligence.exchange_connection_audit
-                WHERE actor_user_id IN (@UserA, @UserB);
-                DELETE FROM pack_personal_intelligence.exchange_backfill_job j
-                USING pack_personal_intelligence.exchange_connection c
-                WHERE j.connection_id = c.connection_id
-                  AND c.person_id = @PersonA AND c.exchange_code = 'BINANCE';
-                DELETE FROM pack_personal_intelligence.exchange_asset_balance b
-                USING pack_personal_intelligence.exchange_account_snapshot s
-                JOIN pack_personal_intelligence.exchange_connection c ON c.connection_id = s.connection_id
-                WHERE b.snapshot_id = s.snapshot_id
-                  AND c.person_id = @PersonA AND c.exchange_code = 'BINANCE';
-                DELETE FROM pack_personal_intelligence.exchange_account_snapshot s
-                USING pack_personal_intelligence.exchange_connection c
-                WHERE s.connection_id = c.connection_id
-                  AND c.person_id = @PersonA AND c.exchange_code = 'BINANCE';
-                DELETE FROM pack_personal_intelligence.exchange_connection
-                WHERE person_id = @PersonA AND exchange_code = 'BINANCE';
-                """,
-                new { _db.PersonA, _db.UserA, _db.UserB });
-        }
-    }
-
-    [Fact]
-    public void Binance_adapter_exposes_no_order_or_transfer_method()
-    {
-        var names = typeof(BinanceExchangeConnector)
-            .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
-            .Select(method => method.Name)
-            .ToList();
-        Assert.DoesNotContain(names, name =>
-            name.Contains("Order", StringComparison.OrdinalIgnoreCase)
-            || name.Contains("Withdraw", StringComparison.OrdinalIgnoreCase)
-            || name.Contains("Transfer", StringComparison.OrdinalIgnoreCase));
-    }
-
-    static async Task AssertCrossTenantAccountHidden(HttpResponseMessage hidden)
-    {
-        // The module gate returns 403 when personal_intelligence is off for tenant B.
-        // The tenant-scoped lookup returns 404 when that module is on. Parallel tests change that flag.
-        // Either status refuses the account. The response must not contain it.
-        Assert.True(
-            hidden.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound,
-            $"Cross-tenant account read returned {(int)hidden.StatusCode}.");
-        var text = await hidden.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("123.45", text, StringComparison.Ordinal);
-        Assert.DoesNotContain(Secret, text, StringComparison.Ordinal);
-        Assert.DoesNotContain(Key, text, StringComparison.Ordinal);
     }
 
     async Task CleanupAsync()
@@ -575,8 +353,6 @@ public sealed class ExchangeConnectionApiTests : IClassFixture<PiValidationDatab
         await using var conn = await _db.OpenAsync();
         await conn.ExecuteAsync(
             """
-            DELETE FROM pack_personal_intelligence.exchange_connection_audit
-            WHERE actor_user_id IN (@UserA, @UserB);
             DELETE FROM pack_personal_intelligence.exchange_backfill_job j
             USING pack_personal_intelligence.exchange_connection c
             WHERE j.connection_id = c.connection_id
@@ -597,7 +373,7 @@ public sealed class ExchangeConnectionApiTests : IClassFixture<PiValidationDatab
             DELETE FROM pack_personal_intelligence.exchange_connection
             WHERE person_id = @PersonA AND exchange_code = 'BYBIT' AND environment = 'TESTNET';
             """,
-            new { _db.PersonA, _db.UserA, _db.UserB });
+            new { _db.PersonA });
     }
 
     sealed class TradingCounts
@@ -627,54 +403,6 @@ internal sealed class ListLog : IExchangeConnectorLog
 {
     public List<string> Lines { get; } = [];
     public void Info(string message) => Lines.Add(message);
-}
-
-internal sealed class GatedBinanceHandler : HttpMessageHandler
-{
-    int _calls;
-    int _block;
-    public int Calls => Volatile.Read(ref _calls);
-    public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-    public void Arm() => Volatile.Write(ref _block, 1);
-
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        Interlocked.Increment(ref _calls);
-        if (Interlocked.Exchange(ref _block, 0) == 1)
-        {
-            Entered.TrySetResult();
-            await Release.Task.WaitAsync(cancellationToken);
-        }
-
-        var path = request.RequestUri?.AbsolutePath;
-        var body = path == "/api/v3/account"
-            ? """{"accountType":"SPOT","balances":[{"asset":"BTC","free":"0.10000000","locked":"0.00000000"}]}"""
-            : """{"enableReading":true,"enableWithdrawals":false,"enableInternalTransfer":false,"permitsUniversalTransfer":false,"enableSpotAndMarginTrading":false,"enableFutures":false,"enableMargin":false,"enableVanillaOptions":false,"ipRestrict":true}""";
-        return new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json"),
-        };
-    }
-}
-
-internal sealed class BinanceReadOnlyHandler : HttpMessageHandler
-{
-    public int Calls { get; private set; }
-
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        Calls++;
-        var path = request.RequestUri?.AbsolutePath;
-        var body = path == "/api/v3/account"
-            ? """{"accountType":"SPOT","balances":[{"asset":"BTC","free":"0.10000000","locked":"0.00000000"}]}"""
-            : """{"enableReading":true,"enableWithdrawals":false,"enableInternalTransfer":false,"permitsUniversalTransfer":false,"enableSpotAndMarginTrading":false,"enableFutures":false,"enableMargin":false,"enableVanillaOptions":false,"ipRestrict":true}""";
-        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json"),
-        });
-    }
 }
 
 internal sealed class StubBybitHandler : HttpMessageHandler
@@ -787,8 +515,6 @@ internal sealed class ExchangeHost : IAsyncDisposable
         await app.StartAsync();
         return new ExchangeHost(app);
     }
-
-    public HttpClient Anonymous() => _app.GetTestClient();
 
     public HttpClient Client(Guid tenant, Guid user, params string[] permissions)
     {

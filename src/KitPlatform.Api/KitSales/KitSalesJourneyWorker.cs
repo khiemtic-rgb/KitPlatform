@@ -1,5 +1,5 @@
 using KitPlatform.Packs.Sales;
-using KitPlatform.Packs.Sales.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KitPlatform.Api.KitSales;
 
@@ -18,19 +18,18 @@ public sealed class KitSalesJourneyWorker : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            using var scope = _scopes.CreateScope();
             try
             {
-                await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
-                using var scope = _scopes.CreateScope();
-                var settings = scope.ServiceProvider.GetRequiredService<KitSalesFacebookSettingsService>();
-                var options = await settings.GetEffectiveAsync(stoppingToken);
-                if (!options.Enabled || string.IsNullOrWhiteSpace(options.PageAccessToken))
-                    continue;
-
-                var chat = scope.ServiceProvider.GetRequiredService<IKitSalesChatService>();
-                var sent = await chat.ProcessDueJourneysAsync(stoppingToken);
-                if (sent > 0)
-                    _log.LogInformation("KIT Sales journey sent {Count} due Facebook messages", sent);
+                var discovery = scope.ServiceProvider.GetRequiredService<IKitSalesProspectDiscovery>();
+                var found = await discovery.DiscoverAsync(stoppingToken);
+                _log.LogInformation(
+                    "KIT Sales discovery {Source} {Status} created {Created}, skipped {Skipped}, rejected {Rejected}.",
+                    found.Source,
+                    found.Status,
+                    found.Created,
+                    found.SkippedDuplicate,
+                    found.Rejected);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -38,7 +37,36 @@ public sealed class KitSalesJourneyWorker : BackgroundService
             }
             catch (Exception ex)
             {
-                _log.LogWarning(ex, "KIT Sales journey worker tick failed");
+                _log.LogWarning(ex, "KIT Sales discovery failed; no outreach was sent");
+            }
+
+            try
+            {
+                var sweep = scope.ServiceProvider.GetRequiredService<IKitSalesAgentSweep>();
+                var result = await sweep.SweepAsync(stoppingToken);
+                _log.LogInformation(
+                    "KIT Sales agent sweep planned {Planned}, skipped {Skipped}, schema {SchemaReady}, outbound unknown {OutboundUnknown}. Outbound remains draft-only.",
+                    result.Planned,
+                    result.Skipped,
+                    result.SchemaReady,
+                    result.OutboundUnknown);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "KIT Sales agent sweep failed; no outbound was sent");
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
             }
         }
     }

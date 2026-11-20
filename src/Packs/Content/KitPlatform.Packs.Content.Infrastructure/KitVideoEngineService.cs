@@ -51,6 +51,20 @@ internal sealed class KitVideoEngineService : IKitVideoEngineService
         CancellationToken cancellationToken = default)
     {
         var project = await GetProjectAsync(request.ProjectCode, cancellationToken);
+        string? workflow = null;
+        Guid? filmBrand = null;
+        if (project.FilmTypeId is Guid filmTypeId)
+        {
+            var film = await _repo.GetFilmTypeAsync(filmTypeId, cancellationToken)
+                       ?? throw new InvalidOperationException("Film Type của project không còn tồn tại.");
+            filmBrand = film.BrandId;
+            workflow = film.WorkflowKey;
+        }
+        var refusal = KitMktWorkspaceRules.OpenProductionRefusal(project.BrandId, project.FilmTypeId, filmBrand);
+        if (refusal is not null)
+            throw new InvalidOperationException(refusal);
+        if (!KitMktWorkspaceRules.MayAttachSeriesBuild(workflow, request.SeriesBuildId))
+            throw new InvalidOperationException("series_build chỉ thuộc Film Type famixa_series.");
         var universe = project.Universes.FirstOrDefault(u =>
             string.Equals(u.UniverseCode, Norm(request.UniverseCode), StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"Universe {request.UniverseCode} không thuộc {project.ProjectCode}.");
@@ -69,6 +83,13 @@ internal sealed class KitVideoEngineService : IKitVideoEngineService
             (request.Title ?? "").Trim(),
             request.SeriesBuildId,
             cancellationToken);
+        if (request.ContentTopicId is Guid topicId)
+        {
+            if (!await _repo.HasColumnAsync("video_production", "content_topic_id", cancellationToken))
+                throw new InvalidOperationException("Migration 396 chưa được áp dụng.");
+            await _repo.LinkProductionContentAsync(row.Id, topicId, cancellationToken);
+            row = await _repo.GetVideoProductionAsync(row.Id, cancellationToken) ?? row;
+        }
         return await ToProduction(row, cancellationToken);
     }
 
@@ -135,7 +156,9 @@ internal sealed class KitVideoEngineService : IKitVideoEngineService
                 var extra = ParseExtra(s.ExtraJson);
                 return new KitVideoShotStateDto(s.ShotCode, s.State, s.Failed, extra.Provider, extra.Failure);
             }).ToList(),
-            row.UpdatedAt);
+            row.UpdatedAt,
+            row.ContentTopicId,
+            row.SelectedForPublish);
     }
 
     private static (string? Provider, string? Failure) ParseExtra(string json)
@@ -166,7 +189,9 @@ internal sealed class KitVideoEngineService : IKitVideoEngineService
             p.Status,
             Parse(p.VisualJson),
             Parse(p.RulesJson),
-            universes.Select(u => new KitVideoUniverseDto(u.Id, u.UniverseCode, u.Name, u.Status, Parse(u.WorldJson))).ToList());
+            universes.Select(u => new KitVideoUniverseDto(u.Id, u.UniverseCode, u.Name, u.Status, Parse(u.WorldJson))).ToList(),
+            p.BrandId,
+            p.FilmTypeId);
     }
 
     private static JsonElement Parse(string json)

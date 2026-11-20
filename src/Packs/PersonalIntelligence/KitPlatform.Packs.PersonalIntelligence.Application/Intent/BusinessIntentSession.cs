@@ -280,6 +280,8 @@ public sealed class BusinessIntentSession : IBusinessIntentSession
     {
         if (reason == "model_unreachable")
             return "Không gọi được mô hình trong thời gian chờ. Không có handler nào chạy.";
+        if (reason == "model_call_budget")
+            return "Đã đạt giới hạn số lần gọi mô hình của process. Không có handler nào chạy.";
         if (reason.StartsWith("model_http_status_", StringComparison.Ordinal))
             return "Mô hình trả lỗi HTTP. Không có handler nào chạy.";
         return "Mô hình không trả về JSON hợp lệ. Không có handler nào chạy.";

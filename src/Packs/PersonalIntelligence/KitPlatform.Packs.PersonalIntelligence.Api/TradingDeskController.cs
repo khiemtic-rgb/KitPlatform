@@ -8,7 +8,7 @@ namespace KitPlatform.Api.Controllers.PersonalIntelligence;
 
 [ApiController]
 [Route("api/personal-intelligence/trading")]
-[Authorize(Policy = PersonalIntelligencePolicies.Run)]
+[Authorize]
 [RequirePersonalIntelligenceModule]
 public sealed class TradingDeskController : ControllerBase
 {
@@ -16,14 +16,17 @@ public sealed class TradingDeskController : ControllerBase
 
     public TradingDeskController(ITradingDesk desk) => _desk = desk;
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("summary")]
     public async Task<ActionResult<TradingSummaryDto>> Summary(CancellationToken cancellationToken) =>
         Ok(await _desk.GetSummaryAsync(cancellationToken));
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("accounts")]
     public async Task<ActionResult<IReadOnlyList<TradingAccountDto>>> Accounts(CancellationToken cancellationToken) =>
         Ok(await _desk.ListAccountsAsync(cancellationToken));
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("trades")]
     public async Task<ActionResult<TradingPage<TradeRowDto>>> Trades(
         [FromQuery] int page = 1,
@@ -41,6 +44,7 @@ public sealed class TradingDeskController : ControllerBase
             new TradeListQuery(page, pageSize, tradingAccountId, symbol, side, source, from, to, marketType, productSubtype),
             cancellationToken));
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("trades/{tradeId:guid}")]
     public async Task<ActionResult<TradeRowDto>> Trade(Guid tradeId, CancellationToken cancellationToken)
     {
@@ -48,6 +52,7 @@ public sealed class TradingDeskController : ControllerBase
         return row is null ? NotFound() : Ok(row);
     }
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("decisions")]
     public async Task<ActionResult<TradingPage<DecisionRowDto>>> Decisions(
         [FromQuery] int page = 1,
@@ -56,6 +61,7 @@ public sealed class TradingDeskController : ControllerBase
         CancellationToken cancellationToken = default) =>
         Ok(await _desk.ListDecisionsAsync(page, pageSize, search, cancellationToken));
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("decisions/{decisionId:guid}")]
     public async Task<ActionResult<DecisionDetailDto>> Decision(Guid decisionId, CancellationToken cancellationToken)
     {
@@ -91,6 +97,7 @@ public sealed class TradingDeskController : ControllerBase
         }
     }
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("operations")]
     public async Task<ActionResult<TradingPage<OperationRowDto>>> Operations(
         [FromQuery] int page = 1,
@@ -98,6 +105,7 @@ public sealed class TradingDeskController : ControllerBase
         CancellationToken cancellationToken = default) =>
         Ok(await _desk.ListOperationsAsync(page, pageSize, cancellationToken));
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("operations/{operationKey}")]
     public async Task<ActionResult<OperationRowDto>> Operation(string operationKey, CancellationToken cancellationToken)
     {
@@ -105,6 +113,7 @@ public sealed class TradingDeskController : ControllerBase
         return row is null ? NotFound() : Ok(row);
     }
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpGet("paper-executions")]
     public async Task<ActionResult<TradingPage<PaperExecutionRowDto>>> Paper(
         [FromQuery] int page = 1,
@@ -112,6 +121,7 @@ public sealed class TradingDeskController : ControllerBase
         CancellationToken cancellationToken = default) =>
         Ok(await _desk.ListPaperExecutionsAsync(page, pageSize, cancellationToken));
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpPost("imports/preview")]
     public async Task<ActionResult<TradeImportPreviewDto>> Preview(
         [FromBody] TradeImportRequest request, CancellationToken cancellationToken)
@@ -126,6 +136,7 @@ public sealed class TradingDeskController : ControllerBase
         }
     }
 
+    [Authorize(Policy = PersonalIntelligencePolicies.Run)]
     [HttpPost("imports")]
     public async Task<ActionResult<TradeImportCommitDto>> Import(
         [FromBody] TradeImportRequest request, CancellationToken cancellationToken)

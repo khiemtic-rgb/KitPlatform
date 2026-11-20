@@ -122,7 +122,7 @@ public static class SalesPricing
             pricedLines);
     }
 
-    /// <summary>Tiền hoàn một dòng trả — phân bổ CK đơn theo tỷ lệ thành tiền dòng.</summary>
+    /// <summary>Tiền hoàn một dòng trả — phân bổ giảm giá cấp đơn (CK đơn + voucher + điểm) theo tỷ lệ thành tiền dòng.</summary>
     public static decimal ComputeLineRefundAmount(
         decimal lineTotal,
         decimal soldQuantity,

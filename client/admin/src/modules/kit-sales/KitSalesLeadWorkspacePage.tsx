@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  Alert,
   Button,
   Card,
   Col,
@@ -9,6 +10,7 @@ import {
   Form,
   Input,
   List,
+  Modal,
   Row,
   Select,
   Space,
@@ -26,6 +28,7 @@ import {
   createKitSalesTask,
   fetchKitSalesAssist,
   fetchKitSalesLeadDetail,
+  resolveKitSalesOutbound,
   updateKitSalesLead,
   type KitSalesAssist,
   type KitSalesInteraction,
@@ -33,6 +36,7 @@ import {
   type KitSalesTask,
 } from '@/shared/api/kit-sales.api';
 import { KitSalesFacebookChatCard } from './KitSalesFacebookChatCard';
+import { KitSalesQualifyCard } from './KitSalesQualifyCard';
 import { KitSalesJourneyCard } from './KitSalesJourneyCard';
 import { KitSalesPainCard } from './KitSalesPainCard';
 import { KitSalesPsidCard } from './KitSalesPsidCard';
@@ -57,8 +61,13 @@ export function KitSalesLeadWorkspacePage() {
   const [logging, setLogging] = useState(false);
   const [savingTask, setSavingTask] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [lostReason, setLostReason] = useState('no_response');
+  const [paidFact, setPaidFact] = useState('founding_month');
   const [detail, setDetail] = useState<KitSalesLeadDetail | null>(null);
   const [assist, setAssist] = useState<KitSalesAssist | null>(null);
+  const [resolving, setResolving] = useState<{ row: KitSalesInteraction; delivered: boolean } | null>(null);
+  const [resolveNote, setResolveNote] = useState('');
+  const [resolveBusy, setResolveBusy] = useState(false);
   const [logForm] = Form.useForm();
   const [taskForm] = Form.useForm();
 
@@ -96,6 +105,7 @@ export function KitSalesLeadWorkspacePage() {
   };
 
   const lead = detail?.lead ?? null;
+  const archived = lead?.leadStatus === 'archived';
   const nextStatus = lead ? nextPipelineStatus(lead.leadStatus) : null;
   const prevStatus = lead ? prevPipelineStatus(lead.leadStatus) : null;
 
@@ -103,7 +113,11 @@ export function KitSalesLeadWorkspacePage() {
     if (!lead) return;
     setAdvancing(true);
     try {
-      await updateKitSalesLead(lead.id, { leadStatus: status });
+      await updateKitSalesLead(lead.id, {
+        leadStatus: status,
+        lostReasonCode: status === 'lost' ? lostReason : undefined,
+        paidFactCode: status === 'paid' ? paidFact : undefined,
+      });
       message.success(t('detail.stageSuccess'));
       await refresh();
     } catch (error) {
@@ -179,6 +193,25 @@ export function KitSalesLeadWorkspacePage() {
     }
   };
 
+  const onResolve = async () => {
+    if (!resolving) return;
+    setResolveBusy(true);
+    try {
+      await resolveKitSalesOutbound(resolving.row.id, {
+        delivered: resolving.delivered,
+        note: resolveNote.trim() || undefined,
+      });
+      message.success(t('outbound.resolved'));
+      setResolving(null);
+      setResolveNote('');
+      await refresh();
+    } catch (error) {
+      message.error(apiErrorMessage(error, t('outbound.resolveFailed')));
+    } finally {
+      setResolveBusy(false);
+    }
+  };
+
   const openTasks = (detail?.tasks ?? []).filter((row) => row.status === 'open');
   const interactions = detail?.interactions ?? [];
 
@@ -214,6 +247,9 @@ export function KitSalesLeadWorkspacePage() {
             </Space>
           </div>
 
+          {archived && <Alert type="info" showIcon message={t('leadWorkspace.archivedReadOnly')} />}
+
+          {!archived && (
           <Row gutter={[16, 16]}>
             <Col xs={24} xl={16}>
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -225,6 +261,7 @@ export function KitSalesLeadWorkspacePage() {
                     </Typography.Paragraph>
                   </Card>
                 )}
+                <KitSalesQualifyCard leadId={lead.id} onChanged={() => void refresh()} />
                 <KitSalesPainCard leadId={lead.id} onChanged={() => void refresh()} />
                 <KitSalesJourneyCard leadId={lead.id} onChanged={() => void refresh()} />
                 <KitSalesPsidCard leadId={lead.id} />
@@ -267,6 +304,24 @@ export function KitSalesLeadWorkspacePage() {
                         {statusLabel('lost')}
                       </Button>
                     )}
+                    <Select
+                      style={{ minWidth: 160 }}
+                      value={lostReason}
+                      onChange={setLostReason}
+                      options={['no_response', 'not_interested', 'not_pharmacy', 'has_enough_pos', 'price', 'other'].map((code) => ({
+                        value: code,
+                        label: code,
+                      }))}
+                    />
+                    <Select
+                      style={{ minWidth: 160 }}
+                      value={paidFact}
+                      onChange={setPaidFact}
+                      options={['founding_month', 'pilot_30d', 'pilot_30d_app'].map((code) => ({
+                        value: code,
+                        label: code,
+                      }))}
+                    />
                   </Space>
                   <Select
                     style={{ width: '100%', marginTop: 8 }}
@@ -351,8 +406,10 @@ export function KitSalesLeadWorkspacePage() {
               </Space>
             </Col>
           </Row>
+          )}
 
           <Card size="small" title={t('log.title')}>
+            {!archived && (
             <Form
               form={logForm}
               layout="vertical"
@@ -384,6 +441,7 @@ export function KitSalesLeadWorkspacePage() {
                 {t('log.submit')}
               </Button>
             </Form>
+            )}
             {interactions.length === 0 ? (
               <Typography.Text type="secondary">{t('log.empty')}</Typography.Text>
             ) : (
@@ -413,6 +471,17 @@ export function KitSalesLeadWorkspacePage() {
                                 : t('chat.statusDraft')}
                           </Tag>
                         )}
+                        {row.outboundState === 'outbound_unknown' && row.reviewStatus !== 'sent' && (
+                          <>
+                            <Tag color="red">{t('outbound.unknown')}</Tag>
+                            <Button size="small" onClick={() => setResolving({ row, delivered: true })}>
+                              {t('outbound.markDelivered')}
+                            </Button>
+                            <Button size="small" onClick={() => setResolving({ row, delivered: false })}>
+                              {t('outbound.markNotDelivered')}
+                            </Button>
+                          </>
+                        )}
                       </Space>
                       <div>
                         <Typography.Text type="secondary">
@@ -426,6 +495,29 @@ export function KitSalesLeadWorkspacePage() {
               />
             )}
           </Card>
+          <Modal
+            open={resolving !== null}
+            title={resolving?.delivered ? t('outbound.markDelivered') : t('outbound.markNotDelivered')}
+            okText={t('outbound.confirm')}
+            confirmLoading={resolveBusy}
+            okButtonProps={{ disabled: resolving?.delivered === true && !resolveNote.trim() }}
+            onOk={() => void onResolve()}
+            onCancel={() => {
+              setResolving(null);
+              setResolveNote('');
+            }}
+          >
+            <Typography.Paragraph type="secondary">
+              {resolving?.delivered ? t('outbound.deliveredHint') : t('outbound.notDeliveredHint')}
+            </Typography.Paragraph>
+            <Input.TextArea
+              rows={3}
+              maxLength={500}
+              value={resolveNote}
+              onChange={(event) => setResolveNote(event.target.value)}
+              placeholder={t('outbound.notePlaceholder')}
+            />
+          </Modal>
         </>
       )}
     </Space>

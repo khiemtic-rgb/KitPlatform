@@ -78,7 +78,8 @@ public sealed record FamixaProviderConfiguredSnapshot(
     bool RunwayConfigured,
     bool FalConfigured,
     bool ElevenLabsConfigured,
-    bool GeminiConfigured);
+    bool GeminiConfigured,
+    bool VeoJoinConfigured = false);
 
 /// <summary>Policy as preference weights only. No numeric quality/speed scores.</summary>
 public sealed record FamixaProviderPolicyPreference(string CostPreference, string QualityPreference, string SpeedPreference);
@@ -133,6 +134,7 @@ public static class FamixaProviderAvailabilityRules
             FamixaProviderIds.Fal => snapshot.FalConfigured,
             FamixaProviderIds.ElevenLabs => snapshot.ElevenLabsConfigured,
             FamixaProviderIds.Gemini => snapshot.GeminiConfigured,
+            FamixaProviderIds.Google => snapshot.VeoJoinConfigured,
             _ => false,
         };
         if (!configured)
@@ -203,6 +205,40 @@ public static class FamixaProviderSelectionFoundation
                 FamixaProviderRouterOutcomes.Explicit,
                 decision,
                 new FamixaProviderRoutingDiagnostic(0, 0, null, []));
+        }
+
+        if (req.Capability == FamixaProviderCapability.Motion && FamixaProviderResolver.IsVeoEngine(req.Engine))
+        {
+            if (context?.Configured is not null)
+            {
+                var avail = FamixaProviderAvailabilityRules.Classify(
+                    FamixaProviderIds.Google, context.Configured, "veo-3.1");
+                if (avail.State == FamixaProviderAvailabilityState.NotConfigured
+                    || avail.Configuration == FamixaProviderAvailabilityState.NotConfigured)
+                {
+                    return new(
+                        FamixaProviderRouterOutcomes.NoProvider,
+                        null,
+                        new FamixaProviderRoutingDiagnostic(
+                            1,
+                            1,
+                            FamixaProviderRejectCodes.NotConfigured,
+                            []));
+                }
+            }
+
+            var decision = Decide(
+                req,
+                FamixaProviderIds.Google,
+                "veo-3.1",
+                policy,
+                FamixaProviderSelectionMode.Routed,
+                "engine veo pin — Google Veo 3. 0 fallback.",
+                FamixaProviderRouterOutcomes.Routed);
+            return new(
+                FamixaProviderRouterOutcomes.Routed,
+                decision,
+                new FamixaProviderRoutingDiagnostic(1, 0, null, []));
         }
 
         return FamixaProviderRouter.Route(req, context);

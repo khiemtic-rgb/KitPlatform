@@ -1,0 +1,36 @@
+{
+  "fps": 12,
+  "durationSec": 60,
+  "scenes": [
+    {
+      "beat": "HOOK",
+      "start": 0,
+      "end": 10,
+      "text": "Nhà thuốc bán được ba trăm triệu mỗi tháng. Đơn ra đều. Tiền vào đều. Cuối tháng, vẫn không biết mình thực sự còn lại bao nhiêu."
+    },
+    {
+      "beat": "PROBLEM",
+      "start": 10,
+      "end": 26,
+      "text": "Doanh thu chỉ cho biết khách đã trả bao nhiêu. Nó không cho biết hàng nào đang nằm trong kho, Hàng nằm đó là tiền đang bị giữ lại. lô nào sắp hết hạn, Lô cận hạn là hàng có thể không bán được nữa. hay ca bán có lệch quỹ hay không. Lệch quỹ là tiền trong ca không khớp với sổ."
+    },
+    {
+      "beat": "INSIGHT",
+      "start": 26,
+      "end": 38,
+      "text": "Muốn hết thấp thỏm, phải nhìn cùng một lúc: tiền bán ra, giá trị hàng đang giữ, và rủi ro ngay trên quầy. Không cần một con số lãi được hứa trước. Cần thấy các số này cạnh nhau."
+    },
+    {
+      "beat": "SOLUTION",
+      "start": 38,
+      "end": 51,
+      "text": "Nô vi xa để màn hình tổng quan hiện doanh thu hôm nay và hàng sắp hết hạn. Báo cáo tồn kho tính giá trị hàng đang giữ theo giá vốn từng lô. Lệch quỹ xem ở báo cáo ca làm việc. Đó là những màn hình đang có, không phải một lời hứa về lợi nhuận."
+    },
+    {
+      "beat": "CTA",
+      "start": 51,
+      "end": 60,
+      "text": "Ba trăm triệu là doanh thu. Phần còn lại, hãy mở số liệu ra mà xem."
+    }
+  ]
+}

@@ -34,6 +34,10 @@ internal sealed class ContentPublishService : IContentPublishService
     private readonly ContentOptions _options;
     private readonly IContentFacebookConnectionService _facebook;
     private readonly IContentLocalOsPublisher _localOs;
+    private readonly ContentFirstCommentStore _firstComments;
+    private readonly ContentPlatformPostStore _platformPosts;
+    private readonly ContentGeminiClient _gemini;
+    private readonly ContentArticleCoverService _covers;
     private readonly ILogger<ContentPublishService> _logger;
 
     // Per-request media for scoped publish (cleared in finally).
@@ -47,6 +51,10 @@ internal sealed class ContentPublishService : IContentPublishService
         IOptions<ContentOptions> options,
         IContentFacebookConnectionService facebook,
         IContentLocalOsPublisher localOs,
+        ContentFirstCommentStore firstComments,
+        ContentPlatformPostStore platformPosts,
+        ContentGeminiClient gemini,
+        ContentArticleCoverService covers,
         ILogger<ContentPublishService> logger)
     {
         _repo = repo;
@@ -56,6 +64,10 @@ internal sealed class ContentPublishService : IContentPublishService
         _options = options.Value;
         _facebook = facebook;
         _localOs = localOs;
+        _firstComments = firstComments;
+        _platformPosts = platformPosts;
+        _gemini = gemini;
+        _covers = covers;
         _logger = logger;
     }
 
@@ -134,6 +146,11 @@ internal sealed class ContentPublishService : IContentPublishService
                              ?? channels.Where(c => c.IsActive).Select(c => c.Id).ToHashSet();
 
             var jobs = new List<ContentPublishJobDto>();
+            var warnings = new List<string>();
+            var assetsForKind = await _repo.ListAssetsAsync(topicId, cancellationToken);
+            var contentKind = assetsForKind.Any(a => string.Equals(a.Kind, "video", StringComparison.OrdinalIgnoreCase))
+                ? ContentChannelAccepts.Video
+                : ContentChannelAccepts.Post;
 
             if (request.IncludeManualExport)
             {
@@ -170,13 +187,22 @@ internal sealed class ContentPublishService : IContentPublishService
             {
                 if (!IsAutoChannelConnector(ch.ChannelType))
                     continue;
+                if (string.Equals(ch.ChannelType, "facebook_page", StringComparison.OrdinalIgnoreCase)
+                    && !ContentChannelAccepts.Allows(ch.ConfigJson, contentKind))
+                {
+                    var label = string.IsNullOrWhiteSpace(ch.Name) ? ch.Code : ch.Name;
+                    var warning = ContentChannelAccepts.SkipWarning(label, contentKind);
+                    warnings.Add(warning);
+                    _logger.LogInformation("Content publish {TopicId}: {Warning}", topicId, warning);
+                    continue;
+                }
                 var id = await _repo.InsertPublishJobAsync(new ContentRepository.PublishJobRow
                 {
                     TopicId = topicId,
                     BrandId = topic.BrandId,
                     TargetKind = "channel",
                     ChannelTargetId = ch.Id,
-                    ConnectorType = "facebook_page",
+                    ConnectorType = ch.ChannelType,
                     Status = "Queued",
                     PublishAt = publishAt,
                 }, cancellationToken);
@@ -185,8 +211,12 @@ internal sealed class ContentPublishService : IContentPublishService
 
             if (jobs.Count == 0)
             {
+                var why = warnings.Count == 0
+                    ? ""
+                    : " " + string.Join(" ", warnings);
                 throw new InvalidOperationException(
-                    "Không có kênh đăng tự động. Chỉ Fanpage, Astro Git, WordPress, Thái Nguyên Life. Instagram / LinkedIn / group: copy tay ở Đăng tay.");
+                    "Không có kênh đăng tự động. Chỉ Fanpage, Astro Git, WordPress, Thái Nguyên Life. Instagram / LinkedIn / group: copy tay ở Đăng tay."
+                    + why);
             }
 
             if (request.RunImmediately)
@@ -210,7 +240,7 @@ internal sealed class ContentPublishService : IContentPublishService
                     cancellationToken);
             }
 
-            return new PublishContentResultDto(jobs);
+            return new PublishContentResultDto(jobs, warnings);
         }
         finally
         {
@@ -227,6 +257,11 @@ internal sealed class ContentPublishService : IContentPublishService
         if (ContentQualityGate.RequiresWebStructure(connectorType))
             await RepairWebLongHeadingsAsync(topicId, cancellationToken);
 
+        var fact = await ContentFactCheck.EvaluateAsync(_repo, topicId, cancellationToken);
+        if (fact.Applies && !fact.Passed)
+            throw new InvalidOperationException(ContentFactGate.Refuse(fact.Issues));
+        var ignoreWebStructure = fact.Applies && fact.Passed;
+
         var packageId = await _repo.GetPackageIdByTopicAsync(topicId, cancellationToken);
         if (packageId is Guid pid)
         {
@@ -234,7 +269,7 @@ internal sealed class ContentPublishService : IContentPublishService
             if (package is null) return;
             var gate = await ContentQualityRunner.EvaluateAsync(_repo, package, cancellationToken);
             await ContentQualityRunner.PersistAsync(_repo, package.Id, package.ExtraJson, gate, cancellationToken);
-            ContentQualityRunner.ThrowIfCannotPublish(gate, connectorType);
+            ContentQualityRunner.ThrowIfCannotPublish(gate, connectorType, ignoreWebStructure);
             return;
         }
 
@@ -248,7 +283,7 @@ internal sealed class ContentPublishService : IContentPublishService
             topic.Title,
             variants.Select(v => (v.Kind, v.BodyMarkdown)).ToList(),
             brand.Name);
-        ContentQualityRunner.ThrowIfCannotPublish(legacy, connectorType);
+        ContentQualityRunner.ThrowIfCannotPublish(legacy, connectorType, ignoreWebStructure);
     }
 
     private async Task RepairWebLongHeadingsAsync(Guid topicId, CancellationToken cancellationToken)
@@ -318,6 +353,9 @@ internal sealed class ContentPublishService : IContentPublishService
             }
         }
 
+        if (await CancelBecauseOnPlatformAsync(job, cancellationToken))
+            return await LoadJobAsync(jobId, cancellationToken);
+
         job.Status = "Running";
         job.LastError = null;
         await _repo.UpdatePublishJobAsync(job, cancellationToken);
@@ -331,17 +369,32 @@ internal sealed class ContentPublishService : IContentPublishService
                 await EnforceQualityGateAsync(job.TopicId, topic, cancellationToken, job.ConnectorType);
             var variants = await _repo.ListVariantsAsync(job.TopicId, cancellationToken);
             var assets = await _repo.ListAssetsAsync(job.TopicId, cancellationToken);
-            var selected = assets.FirstOrDefault(a => a.IsSelected) ?? assets.FirstOrDefault();
+            if (!assets.Any(a => a.Kind == "image"))
+            {
+                try
+                {
+                    if (await _covers.TryAttachAsync(topic, variants, cancellationToken))
+                        assets = await _repo.ListAssetsAsync(job.TopicId, cancellationToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogWarning(ex, "Ảnh bìa tại máy không tạo được cho topic {TopicId}.", topic.Id);
+                }
+            }
+            var imageAssets = assets.Where(a => a.Kind != "video").ToList();
+            var selected = imageAssets.FirstOrDefault(a => a.IsSelected) ?? imageAssets.FirstOrDefault();
 
             var result = job.ConnectorType switch
             {
                 "manual" => await RunManualAsync(topic, variants, selected, cancellationToken),
                 "wordpress_rest" => await RunWordPressAsync(job, topic, variants, selected, cancellationToken),
-                "facebook_page" => await RunFacebookAsync(job, topic, variants, selected, cancellationToken),
+                "facebook_page" => await RunFacebookAsync(job, topic, variants, selected, assets, cancellationToken),
+                "youtube_channel" => await RunYoutubeAsync(job, topic, variants, assets, cancellationToken),
+                "tiktok_channel" => await RunTiktokAsync(job, topic, variants, assets, cancellationToken),
                 "astro_git" => await RunAstroGitAsync(job, topic, variants, selected, cancellationToken),
                 "local_os" => await RunLocalOsAsync(job, topic, variants, selected, cancellationToken),
                 _ => throw new InvalidOperationException(
-                    $"Kênh «{job.ConnectorType}» không đăng tự động — copy tay ở Đăng tay. Chỉ auto: Fanpage, Astro, WordPress, Thái Nguyên Life."),
+                    $"Kênh «{job.ConnectorType}» không đăng tự động — copy tay ở Đăng tay. Chỉ auto: Fanpage, YouTube, TikTok (hộp nháp), Astro, WordPress, Thái Nguyên Life."),
             };
 
             job.Status = "Succeeded";
@@ -370,6 +423,31 @@ internal sealed class ContentPublishService : IContentPublishService
         }
 
         return await LoadJobAsync(jobId, cancellationToken);
+    }
+
+    /// <summary>Đọc lại platform_post trước khi gọi kênh. Topic đã có trên kênh thì huỷ, không đăng.</summary>
+    private async Task<bool> CancelBecauseOnPlatformAsync(ContentRepository.PublishJobRow job, CancellationToken ct)
+    {
+        if (!ContentPlatformRules.Applies(job.ConnectorType) || job.ChannelTargetId is not Guid channelId)
+            return false;
+        bool onPlatform;
+        try
+        {
+            onPlatform = await _platformPosts.TopicOnChannelAsync(job.TopicId, channelId, ct);
+        }
+        catch (Exception ex) when (ContentPlatformPostStore.IsMissingTable(ex))
+        {
+            _logger.LogWarning("Chưa có bảng platform_post (migration 442). Bỏ qua kiểm tra trùng nền tảng.");
+            return false;
+        }
+        if (!ContentPlatformRules.ShouldCancel(job.ConnectorType, channelId, onPlatform))
+            return false;
+
+        job.Status = "Cancelled";
+        job.LastError = ContentPlatformRules.CancelReason;
+        await _repo.UpdatePublishJobAsync(job, ct);
+        await _repo.InsertPublishLogAsync(job.Id, "info", ContentPlatformRules.CancelReason, "{}", ct);
+        return true;
     }
 
     public async Task<IReadOnlyList<ContentPublishJobDto>> ListJobsAsync(
@@ -810,6 +888,7 @@ internal sealed class ContentPublishService : IContentPublishService
         ContentRepository.TopicRow topic,
         IReadOnlyList<ContentRepository.VariantRow> variants,
         ContentRepository.AssetRow? selected,
+        IReadOnlyList<ContentRepository.AssetRow> assets,
         CancellationToken ct)
     {
         var channel = job.ChannelTargetId is { } cid
@@ -824,18 +903,36 @@ internal sealed class ContentPublishService : IContentPublishService
                     ?? throw new InvalidOperationException(
                         "Facebook token missing — dán Page Access Token vào form nơi đăng hoặc đặt env");
 
-        var fb = variants.FirstOrDefault(v => v.Kind is "fb_page" or "fb_short")
-                 ?? variants.FirstOrDefault(v => v.Kind is "social_caption");
+        var video = assets.Where(a => a.Kind == "video").OrderByDescending(a => a.IsSelected).ThenByDescending(a => a.CreatedAt)
+            .FirstOrDefault();
+        var fb = ContentFacebookCaption.Pick(variants, video is not null);
+        // Thân bài và bình luận đầu (nguồn, link) tách riêng: link trong thân bài làm Facebook giảm hiển thị.
+        var (postBody, firstComment) = ContentFacebookCaption.Split(fb?.BodyMarkdown ?? topic.Title);
         // Never post raw markdown (web_long) to Facebook — shows ** as draft-looking text.
         var ctaUrl = TopicCta(topic);
-        var message = MarkdownToPlainText(
-            ContentCtaRouter.RewriteBody(topic.BrandCode, fb?.BodyMarkdown ?? topic.Title, ctaUrl));
-        if (!string.IsNullOrWhiteSpace(ctaUrl) && !message.Contains(ctaUrl, StringComparison.OrdinalIgnoreCase))
-            message = $"{message.Trim()}\n\n{ctaUrl}";
+        var message = MarkdownToPlainText(ContentCtaRouter.RewriteBody(topic.BrandCode, postBody, ctaUrl));
+        var comment = string.IsNullOrWhiteSpace(firstComment) ? "" : MarkdownToPlainText(firstComment).Trim();
+        if (!string.IsNullOrWhiteSpace(ctaUrl) && !message.Contains(ctaUrl, StringComparison.OrdinalIgnoreCase)
+            && !comment.Contains(ctaUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            if (comment.Length > 0) comment = $"{comment}\n{ctaUrl}";
+            else message = $"{message.Trim()}\n\n{ctaUrl}";
+        }
 
         var publishAt = _ephemeral?.PublishAt ?? job.PublishAt ?? topic.DisplayAt;
         var isFuture = publishAt is { } at && at > DateTimeOffset.UtcNow.AddMinutes(10);
         var http = _httpFactory.CreateClient("content-publish");
+
+        // Bài từ Video Studio có video: đăng video lên Trang (Reels nếu dọc và 3–90 giây) kèm tiêu đề, ảnh bìa, bình luận đầu.
+        if (video is not null)
+        {
+            var title = MarkdownToPlainText(topic.Title, singleLine: true);
+            if (title.Length > 255) title = title[..255].TrimEnd();
+            return await PublishFacebookVideoAsync(
+                job.Id, channel.Id, pageId, token, message, title, comment,
+                ImageByRole(assets, "thumbnail"), ImageByRole(assets, "cover") ?? ImageByRole(assets, "thumbnail"),
+                video, isFuture ? publishAt : null, http, ct);
+        }
 
         var mediaOpt = await ResolvePublishImageBytesAsync(selected, ct);
         if (mediaOpt is { } media && media.Bytes.Length > 0)
@@ -867,9 +964,11 @@ internal sealed class ContentPublishService : IContentPublishService
             using var doc = JsonDocument.Parse(body);
             var postId = doc.RootElement.TryGetProperty("post_id", out var pid) ? pid.GetString()
                 : doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+            var photoComment = await FacebookFirstCommentAsync(
+                job.Id, channel.Id, http, token, postId, comment, isFuture, isFuture ? publishAt : null, ct);
             return new ConnectorResult(
                 postId,
-                ContentRepository.ToJson(new { facebook = "photo", scheduled = isFuture, publishAt, postId, imageKeptOnServer = false }));
+                ContentRepository.ToJson(new { facebook = "photo", scheduled = isFuture, publishAt, postId, imageKeptOnServer = false, firstComment = photoComment }));
         }
 
         var fields = new Dictionary<string, string>
@@ -893,9 +992,642 @@ internal sealed class ContentPublishService : IContentPublishService
 
         using var feedDoc = JsonDocument.Parse(feedBody);
         var feedId = feedDoc.RootElement.TryGetProperty("id", out var fid) ? fid.GetString() : null;
+        var feedComment = await FacebookFirstCommentAsync(
+            job.Id, channel.Id, http, token, feedId, comment, isFuture, isFuture ? publishAt : null, ct);
         return new ConnectorResult(
             feedId,
-            ContentRepository.ToJson(new { facebook = "feed", scheduled = isFuture, publishAt, feedId }));
+            ContentRepository.ToJson(new { facebook = "feed", scheduled = isFuture, publishAt, feedId, firstComment = feedComment }));
+    }
+
+    /// <summary>Ảnh bìa đã lưu ở bước 5 (asset ảnh có meta role thumbnail / cover), mới nhất trước.</summary>
+    private string? ImageByRole(IReadOnlyList<ContentRepository.AssetRow> assets, string role)
+    {
+        var pick = assets
+            .Where(a => a.Kind == "image" && a.ContentType is "image/jpeg" or "image/png"
+                        && a.MetaJson.Contains($"\"role\":\"{role}\"", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(a => a.CreatedAt)
+            .FirstOrDefault();
+        if (pick is null) return null;
+        var path = Path.Combine(ResolveAssetRoot(), pick.StoragePath.Replace('/', Path.DirectorySeparatorChar));
+        return File.Exists(path) ? path : null;
+    }
+
+    /// <summary>
+    /// Bình luận đầu dưới bài vừa đăng. Bài hẹn giờ chưa công khai thì vào hàng chờ, worker đăng sau khi lên sóng.
+    /// Lỗi bình luận không làm hỏng bài đã đăng.
+    /// </summary>
+    private async Task<string?> FacebookFirstCommentAsync(
+        Guid jobId, Guid channelId, HttpClient http, string token, string? objectId, string comment,
+        bool scheduled, DateTimeOffset? liveAt, CancellationToken ct)
+    {
+        var hasText = !string.IsNullOrWhiteSpace(comment);
+        var action = ContentFirstCommentRules.DecideFacebook(scheduled, hasText);
+        if (action == ContentFirstCommentRules.Action.Skip) return null;
+        if (string.IsNullOrWhiteSpace(objectId)) return "bỏ qua: Facebook không trả id bài";
+        if (action == ContentFirstCommentRules.Action.Queue)
+        {
+            return await EnqueueFirstCommentAsync(
+                jobId, channelId, ContentFirstCommentRules.Facebook, objectId, comment.Trim(),
+                liveAt ?? DateTimeOffset.UtcNow, null, ct);
+        }
+        try
+        {
+            using var form = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["message"] = comment,
+                ["access_token"] = token,
+            });
+            using var res = await http.PostAsync(
+                $"https://graph.facebook.com/{ContentFacebookConfigParser.GraphVersion}/{Uri.EscapeDataString(objectId)}/comments", form, ct);
+            var body = await res.Content.ReadAsStringAsync(ct);
+            if (res.IsSuccessStatusCode) return ContentFirstCommentRules.Posted;
+            _logger.LogWarning("Facebook bình luận đầu lỗi {Status}: {Body}", (int)res.StatusCode, Trim(body));
+            return ContentFirstCommentRules.FailedText(Trim(HumanizeFacebookError("comment", (int)res.StatusCode, body), 200));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            return ContentFirstCommentRules.FailedText("mạng: " + ex.Message);
+        }
+    }
+
+    private async Task<string> EnqueueFirstCommentAsync(
+        Guid jobId, Guid channelId, string connector, string externalId, string body,
+        DateTimeOffset liveAt, string? pinNote, CancellationToken ct)
+    {
+        try
+        {
+            await _firstComments.InsertAsync(new ContentFirstCommentRow
+            {
+                PublishJobId = jobId,
+                ChannelTargetId = channelId,
+                Connector = connector,
+                ExternalId = externalId,
+                Body = body,
+                LiveAt = liveAt,
+                PinNote = pinNote,
+            }, ct);
+            return ContentFirstCommentRules.Waiting;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex, "Không lưu được hàng chờ bình luận cho job {JobId}", jobId);
+            var why = ContentFirstCommentStore.IsMissingTable(ex)
+                ? "chưa có bảng hàng chờ bình luận (migration 441)."
+                : "không lưu được hàng chờ bình luận.";
+            return ContentFirstCommentRules.FailedText(why);
+        }
+    }
+
+    /// <summary>
+    /// Đăng video lên Trang Facebook. Dọc 3–90 giây: Reels Publishing API (bắt đầu, tải file, kết thúc).
+    /// Còn lại: video thường của Trang (graph-video /videos). Quyền cần: pages_manage_posts, pages_read_engagement.
+    /// </summary>
+    private async Task<ConnectorResult> PublishFacebookVideoAsync(
+        Guid jobId,
+        Guid channelId,
+        string pageId,
+        string token,
+        string message,
+        string title,
+        string comment,
+        string? thumbnailPath,
+        string? coverPath,
+        ContentRepository.AssetRow video,
+        DateTimeOffset? scheduleAt,
+        HttpClient http,
+        CancellationToken ct)
+    {
+        var path = Path.Combine(ResolveAssetRoot(), video.StoragePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(path))
+            throw new InvalidOperationException("Không tìm thấy file video trên máy chủ.");
+        var size = new FileInfo(path).Length;
+        var page = Uri.EscapeDataString(pageId);
+        var graph = $"https://graph.facebook.com/{ContentFacebookConfigParser.GraphVersion}";
+
+        if (await NovixaLocalRenderGate.FitsFacebookReelAsync(path, ct) == true)
+        {
+            // 1. Mở phiên tải lên.
+            using var startForm = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["upload_phase"] = "start",
+                ["access_token"] = token,
+            });
+            using var startRes = await http.PostAsync($"{graph}/{page}/video_reels", startForm, ct);
+            var startBody = await startRes.Content.ReadAsStringAsync(ct);
+            if (!startRes.IsSuccessStatusCode)
+                throw new InvalidOperationException(await FacebookFailAsync(channelId, "reel-start", (int)startRes.StatusCode, startBody, ct));
+            string videoId;
+            string uploadUrl;
+            using (var startDoc = JsonDocument.Parse(startBody))
+            {
+                videoId = startDoc.RootElement.TryGetProperty("video_id", out var vid) ? vid.GetString() ?? "" : "";
+                uploadUrl = startDoc.RootElement.TryGetProperty("upload_url", out var uu) ? uu.GetString() ?? "" : "";
+            }
+            if (string.IsNullOrWhiteSpace(videoId))
+                throw new InvalidOperationException("Facebook không trả video_id khi mở phiên Reels: " + startBody);
+            if (string.IsNullOrWhiteSpace(uploadUrl))
+                uploadUrl = $"https://rupload.facebook.com/video-upload/{ContentFacebookConfigParser.GraphVersion}/{videoId}";
+
+            // 2. Tải nguyên file (offset 0).
+            await using (var file = File.OpenRead(path))
+            using (var upload = new HttpRequestMessage(HttpMethod.Post, uploadUrl))
+            {
+                upload.Headers.TryAddWithoutValidation("Authorization", "OAuth " + token);
+                upload.Headers.TryAddWithoutValidation("offset", "0");
+                upload.Headers.TryAddWithoutValidation("file_size", size.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                upload.Content = new StreamContent(file);
+                upload.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                using var upRes = await http.SendAsync(upload, ct);
+                var upBody = await upRes.Content.ReadAsStringAsync(ct);
+                if (!upRes.IsSuccessStatusCode)
+                    throw new InvalidOperationException(await FacebookFailAsync(channelId, "reel-upload", (int)upRes.StatusCode, upBody, ct));
+            }
+
+            // 3. Kết thúc: đăng ngay hoặc hẹn giờ.
+            var finish = new Dictionary<string, string>
+            {
+                ["upload_phase"] = "finish",
+                ["access_token"] = token,
+                ["video_id"] = videoId,
+                ["description"] = message,
+                ["title"] = title,
+                ["video_state"] = scheduleAt is null ? "PUBLISHED" : "SCHEDULED",
+            };
+            if (scheduleAt is { } at)
+                finish["scheduled_publish_time"] = at.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            using var finishForm = new FormUrlEncodedContent(finish);
+            using var finishRes = await http.PostAsync($"{graph}/{page}/video_reels", finishForm, ct);
+            var finishBody = await finishRes.Content.ReadAsStringAsync(ct);
+            if (!finishRes.IsSuccessStatusCode)
+                throw new InvalidOperationException(await FacebookFailAsync(channelId, "reel-finish", (int)finishRes.StatusCode, finishBody, ct));
+            string? postId = null;
+            using (var finishDoc = JsonDocument.Parse(finishBody))
+                if (finishDoc.RootElement.TryGetProperty("post_id", out var pidEl)) postId = pidEl.ToString();
+
+            var reelCover = await FacebookVideoThumbnailAsync(http, token, videoId, coverPath, ct);
+            var reelComment = await FacebookFirstCommentAsync(
+                jobId, channelId, http, token, postId ?? videoId, comment, scheduleAt is not null, scheduleAt, ct);
+            return new ConnectorResult(
+                postId ?? videoId,
+                ContentRepository.ToJson(new
+                {
+                    facebook = "reel",
+                    videoId,
+                    postId,
+                    scheduled = scheduleAt is not null,
+                    publishAt = scheduleAt,
+                    url = $"https://www.facebook.com/reel/{videoId}",
+                    cover = reelCover,
+                    firstComment = reelComment,
+                }));
+        }
+
+        // Video ngang hoặc dài hơn 90 giây: video thường của Trang.
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(message), "description");
+        form.Add(new StringContent(title), "title");
+        form.Add(new StringContent(token), "access_token");
+        if (thumbnailPath is not null)
+        {
+            // Ảnh bìa video thường của Trang: trường "thumb" gửi kèm file video.
+            var thumb = new ByteArrayContent(await File.ReadAllBytesAsync(thumbnailPath, ct));
+            thumb.Headers.ContentType = new MediaTypeHeaderValue(thumbnailPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg");
+            form.Add(thumb, "thumb", Path.GetFileName(thumbnailPath));
+        }
+        if (scheduleAt is { } when)
+        {
+            form.Add(new StringContent("false"), "published");
+            form.Add(new StringContent(when.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture)), "scheduled_publish_time");
+        }
+        await using var stream = File.OpenRead(path);
+        var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrWhiteSpace(video.ContentType) ? "video/mp4" : video.ContentType);
+        form.Add(fileContent, "source", string.IsNullOrWhiteSpace(video.FileName) ? "video.mp4" : video.FileName);
+        using var res = await http.PostAsync($"https://graph-video.facebook.com/{ContentFacebookConfigParser.GraphVersion}/{page}/videos", form, ct);
+        var body = await res.Content.ReadAsStringAsync(ct);
+        if (!res.IsSuccessStatusCode)
+            throw new InvalidOperationException(await FacebookFailAsync(channelId, "video", (int)res.StatusCode, body, ct));
+        string? id;
+        using (var doc = JsonDocument.Parse(body))
+            id = doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+        var videoComment = await FacebookFirstCommentAsync(
+            jobId, channelId, http, token, id, comment, scheduleAt is not null, scheduleAt, ct);
+        return new ConnectorResult(
+            id,
+            ContentRepository.ToJson(new
+            {
+                facebook = "video",
+                videoId = id,
+                scheduled = scheduleAt is not null,
+                publishAt = scheduleAt,
+                url = id is null ? null : $"https://www.facebook.com/{pageId}/videos/{id}",
+                thumbnail = thumbnailPath is not null,
+                firstComment = videoComment,
+            }));
+    }
+
+    /// <summary>Ảnh bìa cho Reel đã đăng (POST /{video-id}/thumbnails). Lỗi chỉ ghi lại, Reel vẫn đã đăng.</summary>
+    private async Task<string?> FacebookVideoThumbnailAsync(
+        HttpClient http, string token, string videoId, string? imagePath, CancellationToken ct)
+    {
+        if (imagePath is null) return null;
+        try
+        {
+            using var form = new MultipartFormDataContent();
+            form.Add(new StringContent(token), "access_token");
+            form.Add(new StringContent("true"), "is_preferred");
+            var image = new ByteArrayContent(await File.ReadAllBytesAsync(imagePath, ct));
+            image.Headers.ContentType = new MediaTypeHeaderValue(imagePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg");
+            form.Add(image, "source", Path.GetFileName(imagePath));
+            using var res = await http.PostAsync(
+                $"https://graph.facebook.com/{ContentFacebookConfigParser.GraphVersion}/{Uri.EscapeDataString(videoId)}/thumbnails", form, ct);
+            var body = await res.Content.ReadAsStringAsync(ct);
+            if (res.IsSuccessStatusCode) return "đã đặt ảnh bìa";
+            _logger.LogWarning("Facebook ảnh bìa Reel lỗi {Status}: {Body}", (int)res.StatusCode, Trim(body));
+            return $"lỗi {(int)res.StatusCode}: {Trim(HumanizeFacebookError("thumbnail", (int)res.StatusCode, body), 200)}";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            return "lỗi mạng: " + ex.Message;
+        }
+    }
+
+    private async Task<ConnectorResult> RunYoutubeAsync(
+        ContentRepository.PublishJobRow job,
+        ContentRepository.TopicRow topic,
+        IReadOnlyList<ContentRepository.VariantRow> variants,
+        IReadOnlyList<ContentRepository.AssetRow> assets,
+        CancellationToken ct)
+    {
+        var channel = job.ChannelTargetId is { } cid ? await _repo.GetChannelAsync(cid, ct) : null;
+        if (channel is null)
+            throw new InvalidOperationException("Channel target missing for YouTube job");
+        var refresh = ContentTargetSecrets.ExtractStored(channel.ConfigJson)
+                      ?? throw new InvalidOperationException("Chưa kết nối YouTube — vào Thương hiệu → Nơi đăng → Kết nối YouTube.");
+
+        var video = assets.Where(a => a.Kind == "video").OrderByDescending(a => a.IsSelected).ThenByDescending(a => a.CreatedAt)
+                        .FirstOrDefault()
+                    ?? throw new InvalidOperationException("Bài chưa có video — đính video vào bài trước khi đăng YouTube.");
+        var path = Path.Combine(ResolveAssetRoot(), video.StoragePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(path))
+            throw new InvalidOperationException("Không tìm thấy file video trên máy chủ.");
+
+        var cfg = ParseConfig(channel.ConfigJson);
+        string? yt(string key) =>
+            cfg.TryGetValue("youtube", out var node) && node.ValueKind == JsonValueKind.Object
+            && node.TryGetProperty(key, out var v) ? v.ToString() : null;
+        var privacy = (yt("privacy") ?? "public").ToLowerInvariant();
+        if (privacy is not ("public" or "unlisted" or "private")) privacy = "public";
+        var shorts = !string.Equals(yt("shorts"), "false", StringComparison.OrdinalIgnoreCase);
+        // A landscape or long file is a normal video, never a Short, whatever the channel default says.
+        if (shorts && await NovixaLocalRenderGate.FitsYoutubeShortsAsync(path, ct) == false) shorts = false;
+
+        var body = variants.FirstOrDefault(v => v.Kind is "youtube" or "video_caption" or "social_caption" or "fb_short");
+        var plainBody = MarkdownToPlainText(body?.BodyMarkdown ?? topic.Title);
+        var topicExtra = await _repo.GetTopicExtraJsonAsync(topic.Id, ct);
+        var chapters = ContentYoutubeMetadata.ParseChapters(body?.MetaJson);
+        if (chapters.Count == 0) chapters = ContentYoutubeMetadata.ParseChapters(topicExtra);
+        var chapterBlock = chapters.Count == 0
+            ? null
+            : ContentYoutubeMetadata.ChapterBlock(chapters, await NovixaLocalRenderGate.DurationSecondsAsync(path, ct));
+        var warnings = new List<string>();
+        if (chapters.Count > 0 && chapterBlock is null)
+            warnings.Add("Mốc chương không hợp lệ (cần mốc đầu 0:00, ít nhất 3 mốc, mỗi đoạn từ 10 giây) nên không chèn.");
+        var description = ContentYoutubeMetadata.BuildDescription(plainBody, TopicCta(topic), shorts, chapterBlock);
+        var tags = ContentYoutubeMetadata.BuildTags(
+            ContentYoutubeMetadata.Hashtags(plainBody)
+                .Concat(variants.Where(v => v.Kind is "youtube" or "seo_meta")
+                    .SelectMany(v => ContentYoutubeMetadata.VariantKeywords(v.MetaJson))));
+        var synthetic = ContentYoutubeMetadata.SyntheticMedia(topicExtra, yt("containsSyntheticMedia"));
+        var title = MarkdownToPlainText(topic.Title, singleLine: true);
+        if (title.Length > 100) title = title[..100].TrimEnd();
+        // Thể loại (mặc định 27 Giáo dục) và ngôn ngữ (mặc định tiếng Việt) theo cấu hình kênh: youtube.categoryId, youtube.language.
+        var categoryId = yt("categoryId");
+        var language = string.IsNullOrWhiteSpace(yt("language")) ? "vi" : yt("language");
+        // Ô Danh sách phát có tên thì tìm đúng tên. Để trống thì chọn danh sách hợp chủ đề hoặc tạo mới.
+        var playlistName = PublishExtra(topicExtra, "youtubePlaylist");
+
+        var yc = new ContentYoutubeClient(_httpFactory, _configuration, _env);
+        string access;
+        try
+        {
+            access = await yc.AccessTokenAsync(refresh, ct);
+        }
+        catch (ContentYoutubeException ex) when (ex.IsInvalidGrant)
+        {
+            var message = "Kết nối YouTube hết hiệu lực — Kết nối lại. " + ex.Message;
+            _logger.LogWarning("YouTube refresh token bị từ chối (invalid_grant) cho kênh {ChannelId}; đánh dấu NEED_RECONNECT.", channel.Id);
+            try
+            {
+                channel.ConfigJson = ContentYoutubeConnectionService.ApplyLink(channel.ConfigJson, "NEED_RECONNECT", null, message);
+                await _repo.UpsertChannelAsync(channel.BrandId, channel, ct);
+            }
+            catch (Exception markEx)
+            {
+                _logger.LogWarning(markEx, "Không ghi được trạng thái NEED_RECONNECT cho kênh {ChannelId}", channel.Id);
+            }
+            throw new InvalidOperationException(message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException("Kết nối YouTube hết hiệu lực — Kết nối lại. " + ex.Message);
+        }
+
+        string videoId;
+        string? actual;
+        try
+        {
+            (videoId, actual) = await yc.UploadVideoAsync(access, path, video.ContentType, title, description, privacy,
+                tags, synthetic, ct, categoryId, language);
+        }
+        catch (ContentYoutubeException ex) when (ex.StatusCode == 400 && (tags.Count > 0 || synthetic is not null))
+        {
+            // Tags or the AI disclosure were refused; the video itself still goes up without them.
+            warnings.Add($"YouTube từ chối tags / nhãn nội dung AI, đã đăng không kèm: {ex.Message}");
+            (videoId, actual) = await yc.UploadVideoAsync(access, path, video.ContentType, title, description, privacy,
+                null, null, ct, categoryId, language);
+            tags = [];
+            synthetic = null;
+        }
+
+        var assetRoot = ResolveAssetRoot();
+        var extras = await ContentYoutubeExtras.RunAsync(
+            yc,
+            _repo,
+            new ContentYoutubeExtrasRequest(
+                access,
+                videoId,
+                channel.Id,
+                await _repo.FindSeriesForTopicAsync(topic.Id, ct),
+                ContentYoutubeSources.Captions(assets, assetRoot, path),
+                // Shorts dùng ảnh bìa dọc nếu có; video thường dùng ảnh bìa ngang.
+                (shorts && ImageByRole(assets, "cover") is { } coverPath
+                    ? new ContentYoutubeThumbnail(coverPath, coverPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg")
+                    : null)
+                ?? ContentYoutubeSources.Thumbnail(assets, assetRoot)),
+            _logger,
+            ct);
+        warnings.AddRange(extras.Warnings);
+
+        var explicitName = string.IsNullOrWhiteSpace(playlistName) ? null : playlistName.Trim();
+        var savedPlaylistId = explicitName is null ? PublishExtra(topicExtra, "youtubePlaylistId") : null;
+        if (savedPlaylistId is null && explicitName is null)
+        {
+            try { savedPlaylistId = await _repo.FindSeriesSavedPlaylistIdAsync(topic.Id, ct); }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                warnings.Add("Không đọc được danh sách phát của series: " + ex.Message);
+            }
+        }
+        var series = await _repo.FindSeriesForTopicAsync(topic.Id, ct);
+        var playlist = await ContentYoutubeAutoPlaylist.ResolveAsync(
+            new ContentYoutubePlaylistVideo(
+                title, plainBody, tags, series?.Name, series?.EpisodeNo, topic.BrandCode,
+                ContentYoutubeMetadata.Hashtags(plainBody).ToList()),
+            videoId,
+            explicitName,
+            savedPlaylistId,
+            null,
+            new YoutubeClientOps(yc, access),
+            new ContentYoutubePlaylistJudge(_gemini),
+            ct);
+        if (playlist.Warning is { } playlistWarning)
+            warnings.Add("Danh sách phát: " + playlistWarning);
+        else if (playlist.Id is { } chosenId)
+        {
+            try { await _repo.SaveTopicPlaylistIdAsync(topic.Id, chosenId, ct); }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                warnings.Add("Không lưu được mã danh sách phát: " + ex.Message);
+            }
+        }
+
+        string? ytFirst = null;
+        string? ytPin = null;
+        var ytRaw = ContentFirstCommentRules.Compose(body?.BodyMarkdown, TopicCta(topic), topic.BrandCode);
+        var ytText = string.IsNullOrWhiteSpace(ytRaw) ? null : MarkdownToPlainText(ytRaw).Trim();
+        var ytPrivacy = actual ?? privacy;
+        var ytAction = ContentFirstCommentRules.DecideYoutube(ytPrivacy, job.PublishAt, DateTimeOffset.UtcNow, ytText is not null);
+        if (ytAction == ContentFirstCommentRules.Action.Queue && ytText is not null)
+        {
+            ytPin = ContentFirstCommentRules.PinByHand;
+            ytFirst = await EnqueueFirstCommentAsync(
+                job.Id, channel.Id, ContentFirstCommentRules.Youtube, videoId, ytText,
+                job.PublishAt ?? DateTimeOffset.UtcNow, ytPin, ct);
+        }
+        else if (ytAction == ContentFirstCommentRules.Action.PostNow && ytText is not null)
+        {
+            ytFirst = await YoutubeCommentNowAsync(channel, refresh, videoId, ytText, ct);
+            if (ytFirst == ContentFirstCommentRules.Posted)
+                ytPin = ContentFirstCommentRules.PinByHand;
+        }
+
+        return new ConnectorResult(
+            videoId,
+            ContentRepository.ToJson(new
+            {
+                youtube = "video",
+                videoId,
+                url = shorts ? $"https://youtube.com/shorts/{videoId}" : $"https://youtu.be/{videoId}",
+                requestedPrivacy = privacy,
+                privacyStatus = actual,
+                tags = tags.Count,
+                chapters = chapterBlock is not null,
+                containsSyntheticMedia = synthetic,
+                playlistId = playlist.Id ?? extras.PlaylistId,
+                playlistCreated = playlist.Action == "created" || extras.PlaylistCreated,
+                playlistName = playlist.Title,
+                playlist = playlist.Id is null
+                    ? null
+                    : new { id = playlist.Id, title = playlist.Title, action = playlist.Action, reason = playlist.Reason },
+                categoryId = string.IsNullOrWhiteSpace(categoryId) ? "27" : categoryId,
+                language,
+                captions = extras.Captions,
+                thumbnail = extras.Thumbnail,
+                warnings,
+                firstComment = ytFirst,
+                firstCommentPin = ytPin,
+            }));
+    }
+
+    /// <summary>Bình luận ngay. Thiếu scope thì NEED_RECONNECT, không làm hỏng video đã đăng.</summary>
+    private async Task<string> YoutubeCommentNowAsync(
+        ContentRepository.ChannelRow channel, string refresh, string videoId, string text, CancellationToken ct)
+    {
+        try
+        {
+            var yc = new ContentYoutubeClient(_httpFactory, _configuration, _env);
+            var (access, scope) = await yc.AccessTokenWithScopeAsync(refresh, ct);
+            if (!ContentFirstCommentRules.ScopeAllowsComment(scope))
+            {
+                await MarkYoutubeCommentReconnectAsync(channel, ct);
+                return ContentFirstCommentRules.NeedReconnect;
+            }
+            await yc.InsertCommentAsync(access, videoId, text, ct);
+            return ContentFirstCommentRules.Posted;
+        }
+        catch (ContentYoutubeException ex) when (ContentFirstCommentRules.IsMissingCommentScope(ex.StatusCode, ex.Reason))
+        {
+            await MarkYoutubeCommentReconnectAsync(channel, ct);
+            return ContentFirstCommentRules.NeedReconnect;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex, "YouTube bình luận đầu lỗi, video vẫn đã đăng.");
+            return ContentFirstCommentRules.FailedText(ex.Message);
+        }
+    }
+
+    private async Task MarkYoutubeCommentReconnectAsync(ContentRepository.ChannelRow channel, CancellationToken ct)
+    {
+        try
+        {
+            channel.ConfigJson = ContentYoutubeConnectionService.ApplyLink(
+                channel.ConfigJson, "NEED_RECONNECT", null, ContentFirstCommentRules.NeedReconnect);
+            await _repo.UpsertChannelAsync(channel.BrandId, channel, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Không ghi được NEED_RECONNECT cho kênh YouTube {ChannelId}", channel.Id);
+        }
+    }
+
+    private async Task<ConnectorResult> RunTiktokAsync(
+        ContentRepository.PublishJobRow job,
+        ContentRepository.TopicRow topic,
+        IReadOnlyList<ContentRepository.VariantRow> variants,
+        IReadOnlyList<ContentRepository.AssetRow> assets,
+        CancellationToken ct)
+    {
+        var channel = job.ChannelTargetId is { } cid ? await _repo.GetChannelAsync(cid, ct) : null;
+        if (channel is null)
+            throw new InvalidOperationException("Channel target missing for TikTok job");
+        if (string.IsNullOrWhiteSpace(ContentTargetSecrets.ExtractStored(channel.ConfigJson)))
+            throw new InvalidOperationException("Chưa kết nối TikTok — vào Kênh TikTok → Kết nối TikTok.");
+
+        var video = assets.Where(a => a.Kind == "video").OrderByDescending(a => a.IsSelected).ThenByDescending(a => a.CreatedAt)
+                        .FirstOrDefault()
+                    ?? throw new InvalidOperationException("Bài chưa có video — đính video vào bài trước khi gửi TikTok.");
+        var path = Path.Combine(ResolveAssetRoot(), video.StoragePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(path))
+            throw new InvalidOperationException("Không tìm thấy file video trên máy chủ.");
+
+        var tc = new ContentTiktokClient(_httpFactory, _configuration);
+        ContentTiktokTokens tokens;
+        try
+        {
+            // Mỗi kênh đổi token từng lần một và ghi refresh token mới ngay (TikTok vô hiệu token cũ sau mỗi lần đổi).
+            (tokens, _) = await ContentTiktokTokenGate.RefreshAsync(channel.Id, _repo, tc, ct);
+        }
+        catch (ContentTiktokTransientException ex)
+        {
+            throw new InvalidOperationException("TikTok tạm thời chưa trả lời, chưa mất kết nối. Thử lại sau. " + ex.Message);
+        }
+        catch (ContentTiktokAuthException ex)
+        {
+            throw new InvalidOperationException("Kết nối TikTok hết hiệu lực — Kết nối lại. " + ex.Message);
+        }
+
+        // API hộp nháp TikTok không nhận chú thích. Lưu sẵn chú thích đã duyệt (Video Studio bước 5) vào kết quả job
+        // để trang Agent cho chép một chạm khi mở bản nháp trên điện thoại.
+        var captionVariant = variants.FirstOrDefault(v => v.Kind is "video_caption" or "tiktok")
+                             ?? variants.FirstOrDefault(v => v.Kind is "social_caption" or "fb_short");
+        var caption = MarkdownToPlainText(captionVariant?.BodyMarkdown ?? topic.Title).Trim();
+        if (caption.Length > 2200) caption = caption[..2200];
+
+        // Đăng thẳng kèm chú thích khi máy chủ bật Content:TiktokDirectPost và kênh không đặt tiktok.mode = inbox.
+        // TikTok từ chối (thiếu quyền video.publish, ứng dụng chưa duyệt) thì quay về hộp nháp như cũ.
+        var cfg = ParseConfig(channel.ConfigJson);
+        string? tk(string key) =>
+            cfg.TryGetValue("tiktok", out var node) && node.ValueKind == JsonValueKind.Object
+            && node.TryGetProperty(key, out var v) ? v.ToString() : null;
+        var directNote = (string?)null;
+        if (tc.DirectPostEnabled && !string.Equals(tk("mode"), "inbox", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var topicExtra = await _repo.GetTopicExtraJsonAsync(topic.Id, ct);
+                var creator = await tc.QueryCreatorInfoAsync(tokens.AccessToken, ct);
+                var seconds = await NovixaLocalRenderGate.DurationSecondsAsync(path, ct);
+                if (creator.MaxDurationSeconds is { } max && seconds is { } sec && sec > max)
+                    throw new ContentTiktokScopeException($"video dài {Math.Round(sec)} giây, tài khoản chỉ cho đăng thẳng tối đa {max} giây");
+                var wanted = (tk("privacy") ?? "PUBLIC_TO_EVERYONE").Trim().ToUpperInvariant();
+                var privacy = creator.PrivacyOptions.Contains(wanted) ? wanted
+                    : creator.PrivacyOptions.Contains("PUBLIC_TO_EVERYONE") ? "PUBLIC_TO_EVERYONE"
+                    : creator.PrivacyOptions.FirstOrDefault()
+                      ?? throw new ContentTiktokScopeException("TikTok không trả chế độ xem nào cho tài khoản này");
+                var coverMs = int.TryParse(PublishExtra(topicExtra, "coverTimestampMs") ?? tk("coverTimestampMs"), out var ms) ? ms : 1000;
+                var post = new ContentTiktokPostInfo(
+                    caption,
+                    privacy,
+                    DisableComment: creator.CommentDisabled,
+                    DisableDuet: creator.DuetDisabled || string.Equals(tk("disableDuet"), "true", StringComparison.OrdinalIgnoreCase),
+                    DisableStitch: creator.StitchDisabled || string.Equals(tk("disableStitch"), "true", StringComparison.OrdinalIgnoreCase),
+                    CoverTimestampMs: Math.Max(0, coverMs),
+                    // Video dựng bằng giọng/ảnh AI: gắn nhãn "Nội dung do AI tạo" trừ khi bài hoặc kênh ghi rõ không phải.
+                    IsAigc: ContentYoutubeMetadata.SyntheticMedia(topicExtra, tk("isAigc")) ?? true,
+                    BrandOrganic: string.Equals(tk("brandOrganic"), "true", StringComparison.OrdinalIgnoreCase));
+                var directId = await tc.DirectPostAsync(tokens.AccessToken, path, post, ct);
+                string directStatus;
+                string? directFail = null;
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(4), ct);
+                    (directStatus, directFail) = await tc.FetchStatusAsync(tokens.AccessToken, directId, ct);
+                }
+                catch (InvalidOperationException)
+                {
+                    directStatus = "UNKNOWN";
+                }
+                if (string.Equals(directStatus, "FAILED", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("TikTok báo lỗi khi đăng thẳng: " + (directFail ?? "không rõ lý do"));
+                return new ConnectorResult(
+                    directId,
+                    ContentRepository.ToJson(new
+                    {
+                        tiktok = "direct_post",
+                        publishId = directId,
+                        status = directStatus,
+                        caption,
+                        privacy,
+                        account = creator.Username,
+                        coverTimestampMs = post.CoverTimestampMs,
+                        isAigc = post.IsAigc,
+                    }));
+            }
+            catch (ContentTiktokScopeException ex)
+            {
+                _logger.LogWarning("TikTok chưa đăng thẳng được cho kênh {ChannelId}, gửi hộp nháp: {Error}", channel.Id, ex.Message);
+                directNote = "Chưa đăng thẳng được (" + ex.Message + "), đã gửi hộp nháp.";
+            }
+        }
+
+        var publishId = await tc.UploadInboxAsync(tokens.AccessToken, path, ct);
+        string status;
+        string? failReason = null;
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(4), ct);
+            (status, failReason) = await tc.FetchStatusAsync(tokens.AccessToken, publishId, ct);
+        }
+        catch (InvalidOperationException)
+        {
+            status = "UNKNOWN";
+        }
+
+        if (string.Equals(status, "FAILED", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("TikTok báo lỗi khi nhận video: " + (failReason ?? "không rõ lý do"));
+        return new ConnectorResult(
+            publishId,
+            ContentRepository.ToJson(new
+            {
+                tiktok = "inbox_draft",
+                publishId,
+                status,
+                caption,
+                directPost = directNote,
+                note = "Video đã gửi vào hộp nháp TikTok. Mở TikTok, dán chú thích (nút Chép chú thích ở trang Agent) rồi đăng.",
+            }));
     }
 
     private async Task<(byte[] Bytes, string FileName, string ContentType)?> ResolvePublishImageBytesAsync(
@@ -1358,6 +2090,31 @@ internal sealed class ContentPublishService : IContentPublishService
         }
     }
 
+    /// <summary>Đọc topic.extra_json.publish.{key} (Video Studio bước 5 lưu: youtubePlaylist, coverTimestampMs).</summary>
+    private static string? PublishExtra(string? topicExtraJson, string key)
+    {
+        if (string.IsNullOrWhiteSpace(topicExtraJson)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(topicExtraJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object
+                || !doc.RootElement.TryGetProperty("publish", out var pub) || pub.ValueKind != JsonValueKind.Object
+                || !pub.TryGetProperty(key, out var v))
+                return null;
+            var text = v.ValueKind switch
+            {
+                JsonValueKind.String => v.GetString(),
+                JsonValueKind.Number => v.GetRawText(),
+                _ => null,
+            };
+            return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private static string? GetConfigString(Dictionary<string, JsonElement> cfg, string key)
     {
         if (!cfg.TryGetValue(key, out var el)) return null;
@@ -1365,31 +2122,8 @@ internal sealed class ContentPublishService : IContentPublishService
     }
 
     /// <summary>Strip Markdown for Facebook captions (keep line breaks). Sites keep raw MD in body.</summary>
-    private static string MarkdownToPlainText(string markdown, bool singleLine = false)
-    {
-        if (string.IsNullOrWhiteSpace(markdown)) return "";
-        var s = markdown.Replace("\r\n", "\n", StringComparison.Ordinal);
-
-        s = Regex.Replace(s, @"```[\s\S]*?```", "");
-        s = Regex.Replace(s, @"!\[([^\]]*)\]\([^)]+\)", "$1");
-        s = Regex.Replace(s, @"\[([^\]]+)\]\(([^)]+)\)", "$1");
-        s = Regex.Replace(s, @"\*\*\*(.+?)\*\*\*", "$1");
-        s = Regex.Replace(s, @"\*\*(.+?)\*\*", "$1");
-        s = Regex.Replace(s, @"__(.+?)__", "$1");
-        s = Regex.Replace(s, @"(?<!\w)\*(?!\*)(.+?)(?<!\*)\*(?!\w)", "$1");
-        s = Regex.Replace(s, @"(?<!\w)_(?!_)(.+?)(?<!_)_(?!\w)", "$1");
-        s = Regex.Replace(s, @"^#{1,6}\s*", "", RegexOptions.Multiline);
-        s = Regex.Replace(s, @"^>\s?", "", RegexOptions.Multiline);
-        s = Regex.Replace(s, @"^\s*[-*+]\s+", "• ", RegexOptions.Multiline);
-        s = Regex.Replace(s, @"^\s*\d+\.\s+", "", RegexOptions.Multiline);
-        s = Regex.Replace(s, @"^---+\s*$", "", RegexOptions.Multiline);
-        s = s.Replace("`", "", StringComparison.Ordinal);
-        s = s.Replace("**", "", StringComparison.Ordinal);
-        s = Regex.Replace(s, @"\n{3,}", "\n\n");
-        if (singleLine)
-            s = Regex.Replace(s, @"\s+", " ");
-        return s.Trim();
-    }
+    private static string MarkdownToPlainText(string markdown, bool singleLine = false) =>
+        ContentPlainText.FromMarkdown(markdown, singleLine);
 
     private async Task<string> FacebookFailAsync(
         Guid channelId,
@@ -1606,7 +2340,7 @@ internal sealed class ContentPublishService : IContentPublishService
         type is "astro_git" or "wordpress_rest" or "local_os";
 
     private static bool IsAutoChannelConnector(string? type) =>
-        type == "facebook_page";
+        type is "facebook_page" or "youtube_channel" or "tiktok_channel";
 
     private static string? TopicCta(ContentRepository.TopicRow topic) =>
         ContentCtaRouter.Resolve(

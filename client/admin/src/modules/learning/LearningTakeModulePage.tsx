@@ -19,6 +19,7 @@ import {
   uploadLearningAckSelfie,
   type LearningModuleDetail,
   type LearningModuleProgress,
+  type LearningMyLearning,
 } from '@/shared/api/learning.api';
 import { fetchShiftChecklistToday, type ShiftChecklistToday } from '@/shared/api/success.api';
 import { useCanAccessSuccessModule } from '@/shared/auth/usePermission';
@@ -40,6 +41,12 @@ function checklistStatusVi(status: string) {
   if (s === 'in_progress' || s === 'active') return 'Đang làm';
   if (s === 'not_started' || s === 'pending') return 'Chưa làm';
   return status;
+}
+
+/** Bài thuộc lộ trình nào thì lấy tiến độ của lộ trình đó (không chỉ lộ trình đầu). */
+function modulesOfProgram(mine: LearningMyLearning, programId: string): LearningModuleProgress[] {
+  const match = mine.programs?.find((p) => p.program.id === programId);
+  return match ? match.modules : mine.modules;
 }
 
 function levelLabelVi(code: string) {
@@ -256,10 +263,11 @@ export function LearningTakeModulePage() {
     if (!id) return;
     const [mod, mine] = await Promise.all([fetchLearningModule(id), fetchMyLearning()]);
     setDetail(mod);
-    setProgress(mine.modules.find((m) => m.moduleId === id) ?? null);
+    const pathModules = modulesOfProgram(mine, mod.programId);
+    setProgress(pathModules.find((m) => m.moduleId === id) ?? null);
     setAnswers(Array(mod.questions.length).fill(-1));
     // Prefer next unfinished in path; else sequential next in program.
-    const nextUnfinished = mine.modules
+    const nextUnfinished = pathModules
       .filter((m) => m.moduleId !== id && m.status !== 'passed')
       .sort((a, b) => a.sortOrder - b.sortOrder)[0];
     if (nextUnfinished) {
@@ -370,7 +378,11 @@ export function LearningTakeModulePage() {
         practiceQuiz && shuffledQuestions
           ? mapPracticeAnswersToOriginal(detail.questions, shuffledQuestions, answers)
           : answers;
-      const result = await submitLearningQuiz(id, payloadAnswers, { practice: practiceQuiz });
+      const result = await submitLearningQuiz(id, payloadAnswers, {
+        practice: practiceQuiz,
+        questionIds: detail.questions.map((q) => q.id),
+        quizVariant: detail.quizVariant,
+      });
       if (result.passed) {
         setLastQuizFailed(false);
         if (practiceQuiz) {
@@ -381,9 +393,12 @@ export function LearningTakeModulePage() {
           setShowApply(true);
           message.success(`Đạt ${result.scorePct}% — bài này xong`);
         }
-        const mine = await fetchMyLearning();
-        setProgress(mine.modules.find((m) => m.moduleId === id) ?? null);
-        const next = mine.modules.find((m) => m.status !== 'passed');
+        const [mod, mine] = await Promise.all([fetchLearningModule(id), fetchMyLearning()]);
+        setDetail(mod);
+        setAnswers(Array(mod.questions.length).fill(-1));
+        const pathModules = modulesOfProgram(mine, mod.programId);
+        setProgress(pathModules.find((m) => m.moduleId === id) ?? null);
+        const next = pathModules.find((m) => m.status !== 'passed');
         if (next) {
           setNextModuleId(next.moduleId);
           setNextModuleTitle(next.title);

@@ -111,6 +111,72 @@ internal sealed class RunwayMotionProvider : IFamixaMotionProvider
     }
 }
 
+internal sealed class VeoMotionProvider : IFamixaMotionProvider
+{
+    private readonly ContentVeoClient _veo;
+
+    public VeoMotionProvider(ContentVeoClient veo) => _veo = veo;
+
+    public string ProviderId => FamixaProviderIds.Google;
+
+    public bool CanHandleTask(string? taskId) =>
+        FamixaProviderTaskIdentity.CanHandle(ProviderId, FamixaProviderCapability.Motion, taskId);
+
+    public async Task<FamixaProviderResult> StartAsync(
+        FamixaMotionStartRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var taskId = await _veo.CreateImageToVideoAsync(
+                request.ImageDataUrl,
+                request.Prompt,
+                request.Seconds,
+                request.Ratio,
+                cancellationToken);
+            var cost = FamixaProviderCostCatalog.Estimate(ProviderId, ContentVeoClient.CatalogModel, request.Seconds);
+            return new FamixaProviderResult(
+                ProviderId,
+                ContentVeoClient.CatalogModel,
+                FamixaProviderStatus.Pending,
+                ProviderRequestId: taskId,
+                CostKind: cost.Kind,
+                CostEstimate: cost.Amount,
+                CostUnit: cost.Unit);
+        }
+        catch (Exception ex)
+        {
+            throw FamixaProviderErrors.Wrap(ProviderId, ex);
+        }
+    }
+
+    public Task<FamixaProviderResult> GetAsync(string taskId, CancellationToken cancellationToken) =>
+        PollAsync(taskId, cancellationToken);
+
+    public Task<FamixaProviderResult> RecoverAsync(string taskId, CancellationToken cancellationToken) =>
+        PollAsync(taskId, cancellationToken);
+
+    private async Task<FamixaProviderResult> PollAsync(string taskId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var (status, video, error) = await _veo.GetTaskAsync(taskId, cancellationToken);
+            return new FamixaProviderResult(
+                ProviderId,
+                ContentVeoClient.CatalogModel,
+                FamixaProviderTaskIdentity.ToProviderStatus(status),
+                ProviderRequestId: taskId,
+                OutputUrl: video,
+                MimeType: string.IsNullOrWhiteSpace(video) ? null : "video/mp4",
+                Error: error);
+        }
+        catch (Exception ex)
+        {
+            throw FamixaProviderErrors.Wrap(ProviderId, ex);
+        }
+    }
+}
+
 internal sealed class WanMotionProvider : IFamixaMotionProvider
 {
     private readonly ContentFalClient _fal;
@@ -249,7 +315,14 @@ internal sealed class FalLipSyncProvider : IFamixaLipSyncProvider
                 request.AudioUrl,
                 request.SyncMode,
                 request.ModelKind,
-                cancellationToken);
+                cancellationToken,
+                request.SpeakerX,
+                request.SpeakerY,
+                request.SpeakerVideoWidth,
+                request.SpeakerVideoHeight,
+                request.SpeakerFrameNumber,
+                request.SpeakerDurationSec,
+                request.SpeakerFrameCount);
             var cost = FamixaProviderCostCatalog.Estimate(ProviderId, request.ModelKind, 5);
             return new FamixaProviderResult(
                 ProviderId,
@@ -299,6 +372,7 @@ internal sealed class FamixaProviderRegistry : IFamixaProviderRegistry
     private readonly IFamixaPictureProvider _gemini;
     private readonly IFamixaMotionProvider _runway;
     private readonly IFamixaMotionProvider _wan;
+    private readonly IFamixaMotionProvider _veo;
     private readonly IFamixaVoiceProvider _eleven;
     private readonly IFamixaLipSyncProvider _fal;
 
@@ -306,12 +380,14 @@ internal sealed class FamixaProviderRegistry : IFamixaProviderRegistry
         GeminiPictureProvider gemini,
         RunwayMotionProvider runway,
         WanMotionProvider wan,
+        VeoMotionProvider veo,
         ElevenLabsVoiceProvider eleven,
         FalLipSyncProvider fal)
     {
         _gemini = gemini;
         _runway = runway;
         _wan = wan;
+        _veo = veo;
         _eleven = eleven;
         _fal = fal;
     }
@@ -341,6 +417,7 @@ internal sealed class FamixaProviderRegistry : IFamixaProviderRegistry
     {
         if (Is(providerId, FamixaProviderIds.Runway)) return _runway;
         if (Is(providerId, FamixaProviderIds.Wan)) return _wan;
+        if (Is(providerId, FamixaProviderIds.Google)) return _veo;
         throw Missing(providerId, FamixaProviderCapability.Motion);
     }
 

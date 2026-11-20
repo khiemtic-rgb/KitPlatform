@@ -1,0 +1,159 @@
+{
+  "voice": "vi-VN-NamMinhNeural",
+  "lead": 0.36,
+  "duration": 56.87639583333333,
+  "lines": [
+    {
+      "id": "hook_a",
+      "text": "Nhà thuốc bán được ba trăm triệu mỗi tháng.",
+      "start": 0.36,
+      "end": 2.677,
+      "rate": "-8%",
+      "pitch": "-1Hz"
+    },
+    {
+      "id": "hook_b",
+      "text": "Đơn ra đều. Tiền vào đều.",
+      "start": 2.997,
+      "end": 5.599,
+      "rate": "-4%",
+      "pitch": "-1Hz"
+    },
+    {
+      "id": "hook_c",
+      "text": "Cuối tháng, vẫn không biết mình thực sự còn lại bao nhiêu.",
+      "start": 5.839,
+      "end": 9.123,
+      "rate": "-12%",
+      "pitch": "-2Hz"
+    },
+    {
+      "id": "problem_a",
+      "text": "Doanh thu chỉ cho biết khách đã trả bao nhiêu.",
+      "start": 9.603,
+      "end": 11.842,
+      "rate": "-2%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "problem_b1",
+      "text": "Nó không cho biết hàng nào đang nằm trong kho,",
+      "start": 12.122,
+      "end": 14.372,
+      "rate": "-2%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "problem_b1b",
+      "text": "Hàng nằm đó là tiền đang bị giữ lại.",
+      "start": 14.532,
+      "end": 16.568,
+      "rate": "-4%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "problem_b2",
+      "text": "lô nào sắp hết hạn,",
+      "start": 16.768,
+      "end": 18.07,
+      "rate": "-2%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "problem_b2b",
+      "text": "Lô cận hạn là hàng có thể không bán được nữa.",
+      "start": 18.21,
+      "end": 20.761,
+      "rate": "-4%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "problem_b3",
+      "text": "hay ca bán có lệch quỹ hay không.",
+      "start": 20.961,
+      "end": 22.662,
+      "rate": "-4%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "problem_b3b",
+      "text": "Lệch quỹ là tiền trong ca không khớp với sổ.",
+      "start": 22.822,
+      "end": 25.39,
+      "rate": "-4%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "insight_a",
+      "text": "Muốn hết thấp thỏm, phải nhìn cùng một lúc:",
+      "start": 25.79,
+      "end": 28.179,
+      "rate": "-6%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "insight_b",
+      "text": "tiền bán ra, giá trị hàng đang giữ, và rủi ro ngay trên quầy.",
+      "start": 28.439,
+      "end": 32.458,
+      "rate": "-6%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "insight_c",
+      "text": "Không cần một con số lãi được hứa trước. Cần thấy các số này cạnh nhau.",
+      "start": 32.738,
+      "end": 37.405,
+      "rate": "-6%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "solution_a",
+      "text": "Nô vi xa để màn hình tổng quan hiện doanh thu hôm nay và hàng sắp hết hạn.",
+      "start": 37.825,
+      "end": 41.581,
+      "rate": "+0%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "solution_b",
+      "text": "Báo cáo tồn kho tính giá trị hàng đang giữ theo giá vốn từng lô.",
+      "start": 41.861,
+      "end": 45.193,
+      "rate": "+0%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "solution_c",
+      "text": "Lệch quỹ xem ở báo cáo ca làm việc.",
+      "start": 45.433,
+      "end": 47.484,
+      "rate": "+0%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "solution_d",
+      "text": "Đó là những màn hình đang có, không phải một lời hứa về lợi nhuận.",
+      "start": 47.704,
+      "end": 51.079,
+      "rate": "+0%",
+      "pitch": "+0Hz"
+    },
+    {
+      "id": "cta_a",
+      "text": "Ba trăm triệu là doanh thu.",
+      "start": 51.479,
+      "end": 53.094,
+      "rate": "-10%",
+      "pitch": "-1Hz"
+    },
+    {
+      "id": "cta_b",
+      "text": "Phần còn lại, hãy mở số liệu ra mà xem.",
+      "start": 53.494,
+      "end": 56.076,
+      "rate": "-8%",
+      "pitch": "-1Hz"
+    }
+  ]
+}

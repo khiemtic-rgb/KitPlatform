@@ -5,6 +5,19 @@ export function formatThermalMoney(v: number): string {
   return `${new Intl.NumberFormat('vi-VN').format(Math.round(v))}đ`;
 }
 
+export function formatReceiptDate(iso?: string): string {
+  if (!iso) return '—';
+  const d = dayjs(iso);
+  if (d.isValid()) return d.format('DD/MM/YYYY');
+  return formatDisplayDate(iso);
+}
+
+export function formatReceiptSaleTime(iso?: string): string {
+  if (!iso) return '—';
+  const d = dayjs(iso);
+  return d.isValid() ? d.format('HH:mm') : '—';
+}
+
 export function formatReceiptDateTime(iso?: string): string {
   if (!iso) return '—';
   const d = dayjs(iso);

@@ -4,7 +4,7 @@ import {
   uploadFamilyMomentMedia,
   type FamilyMemoryEntry,
 } from '@/shared/api/family-os.api';
-import { withEvidenceAuth } from '@/shared/upload/evidence-url';
+import { EvidenceAudio } from '@/shared/upload/evidence-media';
 
 type Props = {
   familyId: string;
@@ -248,7 +248,7 @@ export function KidMomentSheet({
               <img src={previewUrl} alt="Xem trước khoảnh khắc" className="km-preview-img" />
             ) : null}
             {mode === 'voice' && previewUrl ? (
-              <audio controls src={withEvidenceAuth(previewUrl) || previewUrl} className="km-preview-audio" />
+              <EvidenceAudio url={previewUrl} className="km-preview-audio" />
             ) : null}
             <label className="ph-add-memory-field">
               <span>Lời chú thích (tuỳ chọn)</span>

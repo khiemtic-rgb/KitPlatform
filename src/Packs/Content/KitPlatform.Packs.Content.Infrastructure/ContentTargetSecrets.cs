@@ -43,8 +43,11 @@ internal static class ContentTargetSecrets
             node[StoredSecretKey] = writeOnlySecret.Trim();
         }
 
-        if (!node.ContainsKey("facebook") && existing.TryGetPropertyValue("facebook", out var fb) && fb is not null)
-            node["facebook"] = fb.DeepClone();
+        foreach (var key in new[] { "facebook", "youtube", "tiktok" })
+        {
+            if (!node.ContainsKey(key) && existing.TryGetPropertyValue(key, out var kept) && kept is not null)
+                node[key] = kept.DeepClone();
+        }
 
         return node.ToJsonString();
     }

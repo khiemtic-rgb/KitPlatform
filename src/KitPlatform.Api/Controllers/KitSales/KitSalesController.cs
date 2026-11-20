@@ -19,6 +19,11 @@ public sealed class KitSalesController : ControllerBase
     private readonly IKitSalesFacebookSettings _facebook;
     private readonly IKitSalesAiSettings _ai;
     private readonly IConfiguration _config;
+    private readonly IKitSalesAgentService _agent;
+    private readonly IKitSalesAgentSweep _sweep;
+    private readonly IKitSalesProspectDiscovery _discovery;
+    private readonly IFacebookOutboundGate _outbound;
+    private readonly IKitSalesReviewService _reviews;
 
     public KitSalesController(
         IKitSalesDeskService desk,
@@ -26,7 +31,12 @@ public sealed class KitSalesController : ControllerBase
         IKitSalesPainService pains,
         IKitSalesFacebookSettings facebook,
         IKitSalesAiSettings ai,
-        IConfiguration config)
+        IConfiguration config,
+        IKitSalesAgentService agent,
+        IKitSalesAgentSweep sweep,
+        IKitSalesProspectDiscovery discovery,
+        IFacebookOutboundGate outbound,
+        IKitSalesReviewService reviews)
     {
         _desk = desk;
         _chat = chat;
@@ -34,6 +44,11 @@ public sealed class KitSalesController : ControllerBase
         _facebook = facebook;
         _ai = ai;
         _config = config;
+        _agent = agent;
+        _sweep = sweep;
+        _discovery = discovery;
+        _outbound = outbound;
+        _reviews = reviews;
     }
 
     [HttpGet("health")]
@@ -184,14 +199,14 @@ public sealed class KitSalesController : ControllerBase
 
     [HttpDelete("leads/{leadId:guid}")]
     [Authorize(Policy = KitSalesPolicies.Write)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteLead(Guid leadId, CancellationToken cancellationToken)
     {
         try
         {
-            await _desk.DeleteLeadAsync(leadId, cancellationToken);
-            return NoContent();
+            var outcome = await _desk.DeleteLeadAsync(leadId, cancellationToken);
+            return Ok(new { outcome });
         }
         catch (InvalidOperationException ex)
         {
@@ -500,7 +515,7 @@ public sealed class KitSalesController : ControllerBase
     }
 
     [HttpPost("chat/drafts/{draftId:guid}/approve")]
-    [Authorize(Policy = KitSalesPolicies.Write)]
+    [Authorize(Policy = KitSalesPolicies.ApproveOutbound)]
     [ProducesResponseType(typeof(KitSalesInteractionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<KitSalesInteractionDto>> ApproveChatDraft(
@@ -510,10 +525,26 @@ public sealed class KitSalesController : ControllerBase
     {
         try
         {
-            return Ok(await _desk.ReviewInteractionAsync(
-                draftId,
-                new ReviewKitSalesInteractionRequest("approved", request.Content),
-                cancellationToken));
+            return Ok(await _outbound.ApproveAsync(draftId, request.Content, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("chat/drafts/{draftId:guid}/outbound-resolution")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    [ProducesResponseType(typeof(KitSalesInteractionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<KitSalesInteractionDto>> ResolveOutbound(
+        Guid draftId,
+        [FromBody] ResolveKitSalesOutboundRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _outbound.ResolveUnknownAsync(draftId, request, cancellationToken));
         }
         catch (InvalidOperationException ex)
         {
@@ -637,6 +668,186 @@ public sealed class KitSalesController : ControllerBase
         await _facebook.DetachPsidAsync(leadId, cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("agent/sweep")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<ActionResult<KitSalesSweepDto>> Sweep(CancellationToken cancellationToken)
+    {
+        return Ok(await _sweep.SweepAsync(cancellationToken));
+    }
+
+    [HttpPost("agent/discover")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<ActionResult<KitSalesDiscoveryRunDto>> Discover(CancellationToken cancellationToken)
+    {
+        return Ok(await _discovery.DiscoverAsync(cancellationToken));
+    }
+
+    [HttpGet("discovery/summary")]
+    [Authorize(Policy = KitSalesPolicies.Read)]
+    public async Task<ActionResult<KitSalesDiscoverySummaryDto>> DiscoverySummary(CancellationToken cancellationToken)
+    {
+        return Ok(await _discovery.SummaryAsync(cancellationToken));
+    }
+
+    [HttpPost("agent/leads/{leadId:guid}/qualify")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<ActionResult<KitSalesQualificationDto>> QualifyLead(Guid leadId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _agent.QualifyAsync(leadId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("agent/tasks/{taskId:guid}/accept")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<ActionResult<KitSalesAgentTaskDto>> AcceptAgentTask(Guid taskId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _agent.AcceptAsync(taskId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("agent/tasks/{taskId:guid}/dismiss")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<ActionResult<KitSalesAgentTaskDto>> DismissAgentTask(Guid taskId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _agent.DismissAsync(taskId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("leads/{leadId:guid}/phc/confirm")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<IActionResult> ConfirmPhc(Guid leadId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _agent.ConfirmPhcReportAsync(leadId, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("kpi/owner")]
+    [Authorize(Policy = KitSalesPolicies.Read)]
+    public async Task<ActionResult<KitSalesOwnerKpiDto>> OwnerKpi(
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? asOf,
+        [FromQuery] string? productCode,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _agent.OwnerKpiAsync(from, asOf, productCode ?? "novixa", cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("kpi/desk")]
+    [Authorize(Policy = KitSalesPolicies.Read)]
+    public async Task<ActionResult<KitSalesDeskKpiDto>> DeskKpi(CancellationToken cancellationToken) =>
+        Ok(await _agent.DeskKpiAsync(cancellationToken));
+
+    [HttpGet("reviews")]
+    [Authorize(Policy = KitSalesPolicies.Read)]
+    public async Task<ActionResult<IReadOnlyList<KitSalesReviewDto>>> Reviews(
+        [FromQuery] string? type,
+        [FromQuery] string? status,
+        CancellationToken cancellationToken) =>
+        Ok(await _reviews.ListAsync(type, status, cancellationToken));
+
+    [HttpPost("reviews/{taskId:guid}/resolve")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<ActionResult<KitSalesReviewDto>> ResolveReview(
+        Guid taskId,
+        [FromBody] ReviewResolutionRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _reviews.ResolveAsync(
+                taskId,
+                new SalesReviewResolution(request.Resolution, request.DocNumber, request.DocDate, request.SourceUrl, request.PdfPage),
+                cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("reviews/{taskId:guid}/dismiss")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<ActionResult<KitSalesReviewDto>> DismissReview(Guid taskId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _reviews.DismissAsync(taskId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("accounts/import")]
+    [Authorize(Policy = KitSalesPolicies.Write)]
+    public async Task<ActionResult<KitSalesAccountImportResult>> ImportAccounts(
+        [FromBody] IReadOnlyList<DirectoryAccount> rows,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _reviews.ImportAccountsAsync(rows, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("grants/{taskId:guid}/accept")]
+    [Authorize(Policy = KitSalesPolicies.AutonomyGrant)]
+    public async Task<ActionResult<KitSalesReviewDto>> AcceptGrant(Guid taskId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _reviews.AcceptGrantAsync(taskId, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    public sealed record ReviewResolutionRequest(
+        string Resolution,
+        string? DocNumber = null,
+        string? DocDate = null,
+        string? SourceUrl = null,
+        int? PdfPage = null);
 
     private string WebhookUrl()
     {

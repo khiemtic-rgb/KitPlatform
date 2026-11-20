@@ -42,7 +42,7 @@ internal sealed class LoyaltyAdminService : ILoyaltyAdminService
         ValidateRequest(request);
 
         var tenantId = _tenant.TenantId;
-        var programRequest = request.Program with { AmountPerPoint = request.Program.PointsPerAmount };
+        var programRequest = request.Program;
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);

@@ -1,0 +1,107 @@
+{
+ "count": 64,
+ "families": {
+  "pharmacy": 12,
+  "data": 6,
+  "contrast": 12,
+  "chart": 6,
+  "goods": 9,
+  "interface": 6,
+  "process": 13
+ },
+ "familyCount": 7,
+ "layoutCount": 22,
+ "maxFamily": 13,
+ "consecutiveRepeats": 0,
+ "layoutHistogram": [
+  [
+   "pharmacy_sleep",
+   3
+  ],
+  [
+   "pharmacy_group",
+   3
+  ],
+  [
+   "data_cash",
+   3
+  ],
+  [
+   "contrast_split",
+   3
+  ],
+  [
+   "chart_fall",
+   3
+  ],
+  [
+   "data_where",
+   3
+  ],
+  [
+   "chart_rank",
+   3
+  ],
+  [
+   "pharmacy_cabinet",
+   3
+  ],
+  [
+   "goods_macro",
+   3
+  ],
+  [
+   "contrast_aside",
+   3
+  ],
+  [
+   "contrast_dates",
+   3
+  ],
+  [
+   "contrast_stop",
+   3
+  ],
+  [
+   "pharmacy_quiet",
+   3
+  ],
+  [
+   "goods_lone",
+   3
+  ],
+  [
+   "goods_pile",
+   3
+  ],
+  [
+   "interface_expiry",
+   3
+  ],
+  [
+   "interface_hero",
+   3
+  ],
+  [
+   "process_act",
+   3
+  ],
+  [
+   "process_early",
+   3
+  ],
+  [
+   "process_late",
+   3
+  ],
+  [
+   "process_next",
+   2
+  ],
+  [
+   "process_queue",
+   2
+  ]
+ ],
+ "longestRunSameLayoutFamily": 0
+}

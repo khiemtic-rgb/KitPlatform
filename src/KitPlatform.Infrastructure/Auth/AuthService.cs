@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using KitPlatform.Application.Auth;
+using KitPlatform.Application.Core;
 
 namespace KitPlatform.Infrastructure.Auth;
 
@@ -137,11 +138,17 @@ internal sealed class AuthService : IAuthService
         return true;
     }
 
-    public async Task<AuthUserDto?> GetUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<AuthUserDto?> GetUserAsync(Guid userId, Guid callerTenantId, CancellationToken cancellationToken = default)
     {
         var user = await _repository.FindByIdAsync(userId, cancellationToken);
-        return user is null ? null : MapUser(user);
+        if (user is null || user.Status != ActiveStatus || !MayExposeUser(callerTenantId, user.TenantId))
+            return null;
+
+        return MapUser(user);
     }
+
+    internal static bool MayExposeUser(Guid callerTenantId, Guid userTenantId) =>
+        CoreAuthority.AllowsSameTenant(callerTenantId, userTenantId);
 
     private async Task<AuthLoginResult?> LoginByKitEmailAsync(
         string email,
@@ -195,7 +202,7 @@ internal sealed class AuthService : IAuthService
     }
 
     private static AuthUserDto MapUser(UserRecord user) =>
-        new(user.Id, user.TenantId, user.TenantCode, user.Username, user.Email, user.Roles, user.Permissions);
+        new(user.Id, user.TenantId, user.TenantCode, user.Username, user.Email, user.Roles, user.Permissions, user.Status);
 
     private string? ResolveTenantCode(string? requestTenantCode)
     {

@@ -1,0 +1,749 @@
+[
+  {
+    "index": 1,
+    "text": "Doanh thu cao… chưa chắc nhà thuốc đã kinh doanh hiệu quả.",
+    "bytes": 23904,
+    "words": [
+      {
+        "text": "Doanh",
+        "offset": 0.1,
+        "duration": 0.325
+      },
+      {
+        "text": "thu",
+        "offset": 0.425,
+        "duration": 0.1375
+      },
+      {
+        "text": "cao",
+        "offset": 0.5625,
+        "duration": 0.275
+      },
+      {
+        "text": "chưa",
+        "offset": 0.8375,
+        "duration": 0.4375
+      },
+      {
+        "text": "chắc",
+        "offset": 1.275,
+        "duration": 0.2375
+      },
+      {
+        "text": "nhà",
+        "offset": 1.5125,
+        "duration": 0.175
+      },
+      {
+        "text": "thuốc",
+        "offset": 1.6875,
+        "duration": 0.2375
+      },
+      {
+        "text": "đã",
+        "offset": 1.925,
+        "duration": 0.125
+      },
+      {
+        "text": "kinh",
+        "offset": 2.05,
+        "duration": 0.2375
+      },
+      {
+        "text": "doanh",
+        "offset": 2.2875,
+        "duration": 0.2125
+      },
+      {
+        "text": "hiệu",
+        "offset": 2.5,
+        "duration": 0.175
+      },
+      {
+        "text": "quả",
+        "offset": 2.675,
+        "duration": 0.45
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "text": "Bởi đằng sau những con số doanh thu là hàng tồn, giá vốn và vô số khoản chi cần được kiểm soát.",
+    "bytes": 35712,
+    "words": [
+      {
+        "text": "Bởi",
+        "offset": 0.1,
+        "duration": 0.225
+      },
+      {
+        "text": "đằng",
+        "offset": 0.325,
+        "duration": 0.2125
+      },
+      {
+        "text": "sau",
+        "offset": 0.5375,
+        "duration": 0.2125
+      },
+      {
+        "text": "những",
+        "offset": 0.75,
+        "duration": 0.225
+      },
+      {
+        "text": "con",
+        "offset": 0.975,
+        "duration": 0.175
+      },
+      {
+        "text": "số",
+        "offset": 1.15,
+        "duration": 0.2125
+      },
+      {
+        "text": "doanh",
+        "offset": 1.3625,
+        "duration": 0.2
+      },
+      {
+        "text": "thu",
+        "offset": 1.5625,
+        "duration": 0.2
+      },
+      {
+        "text": "là",
+        "offset": 1.7625,
+        "duration": 0.1125
+      },
+      {
+        "text": "hàng",
+        "offset": 1.875,
+        "duration": 0.225
+      },
+      {
+        "text": "tồn",
+        "offset": 2.1,
+        "duration": 0.3375
+      },
+      {
+        "text": "giá",
+        "offset": 2.6375,
+        "duration": 0.25
+      },
+      {
+        "text": "vốn",
+        "offset": 2.8875,
+        "duration": 0.3375
+      },
+      {
+        "text": "và",
+        "offset": 3.225,
+        "duration": 0.125
+      },
+      {
+        "text": "vô",
+        "offset": 3.35,
+        "duration": 0.175
+      },
+      {
+        "text": "số",
+        "offset": 3.525,
+        "duration": 0.2125
+      },
+      {
+        "text": "khoản",
+        "offset": 3.7375,
+        "duration": 0.2875
+      },
+      {
+        "text": "chi",
+        "offset": 4.025,
+        "duration": 0.2375
+      },
+      {
+        "text": "cần",
+        "offset": 4.2625,
+        "duration": 0.225
+      },
+      {
+        "text": "được",
+        "offset": 4.4875,
+        "duration": 0.1375
+      },
+      {
+        "text": "kiểm",
+        "offset": 4.625,
+        "duration": 0.2
+      },
+      {
+        "text": "soát",
+        "offset": 4.825,
+        "duration": 0.2875
+      }
+    ]
+  },
+  {
+    "index": 3,
+    "text": "Khi dữ liệu nằm rời rạc, việc điều hành dễ trở nên khó khăn. Điều bạn cần là một bức tranh vận hành rõ ràng hơn.",
+    "bytes": 47376,
+    "words": [
+      {
+        "text": "Khi",
+        "offset": 0.1,
+        "duration": 0.275
+      },
+      {
+        "text": "dữ",
+        "offset": 0.375,
+        "duration": 0.1875
+      },
+      {
+        "text": "liệu",
+        "offset": 0.5625,
+        "duration": 0.2375
+      },
+      {
+        "text": "nằm",
+        "offset": 0.8,
+        "duration": 0.2125
+      },
+      {
+        "text": "rời",
+        "offset": 1.0125,
+        "duration": 0.175
+      },
+      {
+        "text": "rạc",
+        "offset": 1.1875,
+        "duration": 0.275
+      },
+      {
+        "text": "việc",
+        "offset": 1.6625,
+        "duration": 0.2375
+      },
+      {
+        "text": "điều",
+        "offset": 1.9,
+        "duration": 0.2
+      },
+      {
+        "text": "hành",
+        "offset": 2.1,
+        "duration": 0.2125
+      },
+      {
+        "text": "dễ",
+        "offset": 2.3125,
+        "duration": 0.25
+      },
+      {
+        "text": "trở",
+        "offset": 2.5625,
+        "duration": 0.175
+      },
+      {
+        "text": "nên",
+        "offset": 2.7375,
+        "duration": 0.2125
+      },
+      {
+        "text": "khó",
+        "offset": 2.95,
+        "duration": 0.225
+      },
+      {
+        "text": "khăn",
+        "offset": 3.175,
+        "duration": 0.3375
+      },
+      {
+        "text": "Điều",
+        "offset": 4.35,
+        "duration": 0.2375
+      },
+      {
+        "text": "bạn",
+        "offset": 4.5875,
+        "duration": 0.25
+      },
+      {
+        "text": "cần",
+        "offset": 4.8375,
+        "duration": 0.275
+      },
+      {
+        "text": "là",
+        "offset": 5.1125,
+        "duration": 0.0875
+      },
+      {
+        "text": "một",
+        "offset": 5.2,
+        "duration": 0.1875
+      },
+      {
+        "text": "bức",
+        "offset": 5.3875,
+        "duration": 0.2
+      },
+      {
+        "text": "tranh",
+        "offset": 5.5875,
+        "duration": 0.2625
+      },
+      {
+        "text": "vận",
+        "offset": 5.85,
+        "duration": 0.2375
+      },
+      {
+        "text": "hành",
+        "offset": 6.0875,
+        "duration": 0.2375
+      },
+      {
+        "text": "rõ",
+        "offset": 6.325,
+        "duration": 0.2
+      },
+      {
+        "text": "ràng",
+        "offset": 6.525,
+        "duration": 0.2
+      },
+      {
+        "text": "hơn",
+        "offset": 6.725,
+        "duration": 0.3125
+      }
+    ]
+  },
+  {
+    "index": 4,
+    "text": "Đó là lý do Nôvixa kết hợp các công cụ vận hành nhà thuốc trên một nền tảng, từ bán hàng đến quản lý tồn kho và theo dõi dữ liệu hoạt động.",
+    "bytes": 50544,
+    "words": [
+      {
+        "text": "Đó",
+        "offset": 0.1,
+        "duration": 0.2375
+      },
+      {
+        "text": "là",
+        "offset": 0.3375,
+        "duration": 0.1
+      },
+      {
+        "text": "lý",
+        "offset": 0.4375,
+        "duration": 0.2375
+      },
+      {
+        "text": "do",
+        "offset": 0.675,
+        "duration": 0.2375
+      },
+      {
+        "text": "Nôvixa",
+        "offset": 0.9125,
+        "duration": 0.5625
+      },
+      {
+        "text": "kết",
+        "offset": 1.475,
+        "duration": 0.225
+      },
+      {
+        "text": "hợp",
+        "offset": 1.7,
+        "duration": 0.225
+      },
+      {
+        "text": "các",
+        "offset": 1.925,
+        "duration": 0.15
+      },
+      {
+        "text": "công",
+        "offset": 2.075,
+        "duration": 0.175
+      },
+      {
+        "text": "cụ",
+        "offset": 2.25,
+        "duration": 0.2125
+      },
+      {
+        "text": "vận",
+        "offset": 2.4625,
+        "duration": 0.2125
+      },
+      {
+        "text": "hành",
+        "offset": 2.675,
+        "duration": 0.175
+      },
+      {
+        "text": "nhà",
+        "offset": 2.85,
+        "duration": 0.1625
+      },
+      {
+        "text": "thuốc",
+        "offset": 3.0125,
+        "duration": 0.25
+      },
+      {
+        "text": "trên",
+        "offset": 3.2625,
+        "duration": 0.15
+      },
+      {
+        "text": "một",
+        "offset": 3.4125,
+        "duration": 0.1625
+      },
+      {
+        "text": "nền",
+        "offset": 3.575,
+        "duration": 0.2125
+      },
+      {
+        "text": "tảng",
+        "offset": 3.7875,
+        "duration": 0.4125
+      },
+      {
+        "text": "từ",
+        "offset": 4.3875,
+        "duration": 0.1875
+      },
+      {
+        "text": "bán",
+        "offset": 4.575,
+        "duration": 0.2125
+      },
+      {
+        "text": "hàng",
+        "offset": 4.7875,
+        "duration": 0.2125
+      },
+      {
+        "text": "đến",
+        "offset": 5.0,
+        "duration": 0.1625
+      },
+      {
+        "text": "quản",
+        "offset": 5.1625,
+        "duration": 0.2
+      },
+      {
+        "text": "lý",
+        "offset": 5.3625,
+        "duration": 0.1875
+      },
+      {
+        "text": "tồn",
+        "offset": 5.55,
+        "duration": 0.2375
+      },
+      {
+        "text": "kho",
+        "offset": 5.7875,
+        "duration": 0.3125
+      },
+      {
+        "text": "và",
+        "offset": 6.1,
+        "duration": 0.15
+      },
+      {
+        "text": "theo",
+        "offset": 6.25,
+        "duration": 0.175
+      },
+      {
+        "text": "dõi",
+        "offset": 6.425,
+        "duration": 0.2625
+      },
+      {
+        "text": "dữ",
+        "offset": 6.6875,
+        "duration": 0.175
+      },
+      {
+        "text": "liệu",
+        "offset": 6.8625,
+        "duration": 0.2125
+      },
+      {
+        "text": "hoạt",
+        "offset": 7.075,
+        "duration": 0.1875
+      },
+      {
+        "text": "động",
+        "offset": 7.2625,
+        "duration": 0.3125
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "text": "Khi thông tin được tổ chức rõ ràng, chủ nhà thuốc có thêm cơ sở để theo dõi tình hình, nhận biết những điểm cần chú ý và đưa ra quyết định.",
+    "bytes": 46944,
+    "words": [
+      {
+        "text": "Khi",
+        "offset": 0.1,
+        "duration": 0.25
+      },
+      {
+        "text": "thông",
+        "offset": 0.35,
+        "duration": 0.1875
+      },
+      {
+        "text": "tin",
+        "offset": 0.5375,
+        "duration": 0.1875
+      },
+      {
+        "text": "được",
+        "offset": 0.725,
+        "duration": 0.1375
+      },
+      {
+        "text": "tổ",
+        "offset": 0.8625,
+        "duration": 0.1625
+      },
+      {
+        "text": "chức",
+        "offset": 1.025,
+        "duration": 0.2
+      },
+      {
+        "text": "rõ",
+        "offset": 1.225,
+        "duration": 0.2125
+      },
+      {
+        "text": "ràng",
+        "offset": 1.4375,
+        "duration": 0.325
+      },
+      {
+        "text": "chủ",
+        "offset": 1.9125,
+        "duration": 0.175
+      },
+      {
+        "text": "nhà",
+        "offset": 2.0875,
+        "duration": 0.2
+      },
+      {
+        "text": "thuốc",
+        "offset": 2.2875,
+        "duration": 0.2125
+      },
+      {
+        "text": "có",
+        "offset": 2.5,
+        "duration": 0.1
+      },
+      {
+        "text": "thêm",
+        "offset": 2.6,
+        "duration": 0.2375
+      },
+      {
+        "text": "cơ",
+        "offset": 2.8375,
+        "duration": 0.15
+      },
+      {
+        "text": "sở",
+        "offset": 2.9875,
+        "duration": 0.2875
+      },
+      {
+        "text": "để",
+        "offset": 3.275,
+        "duration": 0.125
+      },
+      {
+        "text": "theo",
+        "offset": 3.4,
+        "duration": 0.1625
+      },
+      {
+        "text": "dõi",
+        "offset": 3.5625,
+        "duration": 0.2125
+      },
+      {
+        "text": "tình",
+        "offset": 3.775,
+        "duration": 0.2125
+      },
+      {
+        "text": "hình",
+        "offset": 3.9875,
+        "duration": 0.2625
+      },
+      {
+        "text": "nhận",
+        "offset": 4.4375,
+        "duration": 0.2625
+      },
+      {
+        "text": "biết",
+        "offset": 4.7,
+        "duration": 0.2125
+      },
+      {
+        "text": "những",
+        "offset": 4.9125,
+        "duration": 0.2
+      },
+      {
+        "text": "điểm",
+        "offset": 5.1125,
+        "duration": 0.225
+      },
+      {
+        "text": "cần",
+        "offset": 5.3375,
+        "duration": 0.2125
+      },
+      {
+        "text": "chú",
+        "offset": 5.55,
+        "duration": 0.2375
+      },
+      {
+        "text": "ý",
+        "offset": 5.7875,
+        "duration": 0.25
+      },
+      {
+        "text": "và",
+        "offset": 6.0375,
+        "duration": 0.1625
+      },
+      {
+        "text": "đưa",
+        "offset": 6.2,
+        "duration": 0.175
+      },
+      {
+        "text": "ra",
+        "offset": 6.375,
+        "duration": 0.1375
+      },
+      {
+        "text": "quyết",
+        "offset": 6.5125,
+        "duration": 0.1875
+      },
+      {
+        "text": "định",
+        "offset": 6.7,
+        "duration": 0.2875
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "text": "Nôvixa — nền tảng vận hành nhà thuốc thông minh. Khám phá Nôvixa tại Nôvixa chấm vn.",
+    "bytes": 44064,
+    "words": [
+      {
+        "text": "Nôvixa",
+        "offset": 0.1,
+        "duration": 0.85
+      },
+      {
+        "text": "nền",
+        "offset": 1.1125,
+        "duration": 0.3
+      },
+      {
+        "text": "tảng",
+        "offset": 1.4125,
+        "duration": 0.2625
+      },
+      {
+        "text": "vận",
+        "offset": 1.675,
+        "duration": 0.2125
+      },
+      {
+        "text": "hành",
+        "offset": 1.8875,
+        "duration": 0.2
+      },
+      {
+        "text": "nhà",
+        "offset": 2.0875,
+        "duration": 0.1875
+      },
+      {
+        "text": "thuốc",
+        "offset": 2.275,
+        "duration": 0.225
+      },
+      {
+        "text": "thông",
+        "offset": 2.5,
+        "duration": 0.2125
+      },
+      {
+        "text": "minh",
+        "offset": 2.7125,
+        "duration": 0.275
+      },
+      {
+        "text": "Khám",
+        "offset": 3.825,
+        "duration": 0.3125
+      },
+      {
+        "text": "phá",
+        "offset": 4.1375,
+        "duration": 0.25
+      },
+      {
+        "text": "Nôvixa",
+        "offset": 4.3875,
+        "duration": 0.5875
+      },
+      {
+        "text": "tại",
+        "offset": 4.975,
+        "duration": 0.2625
+      },
+      {
+        "text": "Nôvixa",
+        "offset": 5.2375,
+        "duration": 0.575
+      },
+      {
+        "text": "chấm",
+        "offset": 5.8125,
+        "duration": 0.2875
+      },
+      {
+        "text": "vn",
+        "offset": 6.1,
+        "duration": 0.4
+      }
+    ]
+  }
+]

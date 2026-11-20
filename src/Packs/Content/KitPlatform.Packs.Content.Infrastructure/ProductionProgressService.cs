@@ -2,32 +2,28 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using KitPlatform.Packs.Content;
+using KitPlatform.Packs.Content.Production;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
+/// <summary>
+/// AUTHORITY-STABILIZATION-01D. Script stages stay on graph_json.
+/// Image/video/finish flags are Production OS bindings only. VGE is not read here.
+/// </summary>
 internal sealed class ProductionProgressService : IProductionProgressService
 {
     private readonly ContentRepository _repo;
     private readonly ICharacterProductionLibraryService _library;
-    private readonly ImageGenerationExecutionRepository _stills;
-    private readonly ImageGenerationDirectorReviewRepository _reviews;
-    private readonly ProductionVideoContractRepository _videos;
-    private readonly VideoGenerationExecutionRepository _vge;
+    private readonly IProductionWorkStore _os;
 
     public ProductionProgressService(
         ContentRepository repo,
         ICharacterProductionLibraryService library,
-        ImageGenerationExecutionRepository stills,
-        ImageGenerationDirectorReviewRepository reviews,
-        ProductionVideoContractRepository videos,
-        VideoGenerationExecutionRepository vge)
+        IProductionWorkStore os)
     {
         _repo = repo;
         _library = library;
-        _stills = stills;
-        _reviews = reviews;
-        _videos = videos;
-        _vge = vge;
+        _os = os;
     }
 
     public IReadOnlyList<string> RunRegression() => ProductionProgressV1Regression.Run();
@@ -90,7 +86,7 @@ internal sealed class ProductionProgressService : IProductionProgressService
         {
             var resolvedShots = new List<ProductionProgressRules.ShotFact>();
             foreach (var shot in scene.Shots)
-                resolvedShots.Add(await BindShotAsync(shot, ct));
+                resolvedShots.Add(await BindShotAsync(row.Id, shot, ct));
             resolvedScenes.Add(scene with { Shots = resolvedShots });
         }
 
@@ -107,22 +103,19 @@ internal sealed class ProductionProgressService : IProductionProgressService
             published);
     }
 
-    private async Task<ProductionProgressRules.ShotFact> BindShotAsync(ProductionProgressRules.ShotFact shot, CancellationToken ct)
+    private async Task<ProductionProgressRules.ShotFact> BindShotAsync(Guid buildId, ProductionProgressRules.ShotFact shot, CancellationToken ct)
     {
-        if (!Guid.TryParse(shot.ShotId, out var productionId))
-            return shot;
-        var still = await _stills.GetLatestAsync(productionId, ct);
-        var review = await _reviews.GetLatestAsync(productionId, ct);
-        var contract = await _videos.GetLatestAsync(productionId, ct);
-        var video = await _vge.GetLatestAsync(productionId, ct);
-        return shot with
+        var code = (shot.ShotId ?? "").Trim();
+        if (code.Length == 0)
+            return ProductionProgressRules.ApplyOfficialOsProgress(shot, []);
+        var bindings = await _os.ListActiveBindingsAsync(buildId, code, ct);
+        var facts = new List<ProductionProgressRules.OsBindingFact>();
+        foreach (var binding in bindings)
         {
-            HasWorkflowImage = ProductionProgressRules.IsWorkflowImage(still?.ExecutionStatus, still?.ArtifactPath),
-            ImageDirectorApproved = ProductionProgressRules.IsImageDirectorApproved(review?.DirectorApproval),
-            VideoContractApproved = ProductionProgressRules.IsVideoContractApproved(contract?.ContractStatus),
-            HasWorkflowVideo = ProductionProgressRules.IsWorkflowVideo(video?.ExecutionStatus, video?.ArtifactPath),
-            VideoDirectorApproved = ProductionProgressRules.IsVideoDirectorApproved(video?.ExecutionStatus, video?.ApprovedAt),
-        };
+            var art = await _os.GetArtifactAsync(binding.ArtifactId, ct);
+            facts.Add(new ProductionProgressRules.OsBindingFact(binding.Role, art?.Role, art?.VerificationStatus));
+        }
+        return ProductionProgressRules.ApplyOfficialOsProgress(shot, facts);
     }
 
     private static List<ProductionProgressRules.SceneFact> ParseScenes(JsonArray? scenes, List<RawShot> shots)

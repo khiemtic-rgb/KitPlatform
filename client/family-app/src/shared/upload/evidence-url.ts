@@ -1,11 +1,10 @@
-import { useSessionStore } from '@/shared/auth/session.store';
+import { familyEvidenceRequest, stripAccessToken } from '@/shared/upload/bearer-transport';
 
-/** Resolve /uploads/... for <img src> (Bearer via query — img cannot set Authorization). */
+/** Resolve /uploads/family-os for display. Never appends a bearer token. */
 export function withEvidenceAuth(url: string | undefined | null): string | undefined {
   if (!url?.trim()) return undefined;
-  let trimmed = url.trim();
+  let trimmed = stripAccessToken(url.trim());
 
-  // Local absolute evidence URLs break when Vite proxies /api+/uploads to remote.
   try {
     if (/^https?:\/\//i.test(trimmed)) {
       const parsed = new URL(trimmed);
@@ -27,11 +26,10 @@ export function withEvidenceAuth(url: string | undefined | null): string | undef
       ? trimmed
       : `/${trimmed}`;
 
-  if (!absolute.includes('/uploads/family-os/')) return absolute;
-  if (/[?&]access_token=/.test(absolute)) return absolute;
+  return familyEvidenceRequest(absolute, null).url;
+}
 
-  const token = useSessionStore.getState().accessToken;
-  if (!token) return absolute;
-  const separator = absolute.includes('?') ? '&' : '?';
-  return `${absolute}${separator}access_token=${encodeURIComponent(token)}`;
+export function familyEvidenceFetchPlan(url: string, token: string | null) {
+  const absolute = withEvidenceAuth(url) ?? stripAccessToken(url);
+  return familyEvidenceRequest(absolute, token);
 }

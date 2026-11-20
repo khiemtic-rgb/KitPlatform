@@ -104,7 +104,8 @@ function PurchaseDetailPanel({ detail }: { detail: CustomerPurchaseDetail }) {
       </h2>
       <div className="orders-hub-panel-meta">
         <span className={`orders-hub-status orders-hub-status--${status.tone}`}>{status.label}</span>
-        <span className="orders-hub-panel-time">{dayjs(detail.orderDate).format('DD/MM/YYYY HH:mm')}</span>
+        <span className="orders-hub-panel-time">{dayjs(detail.orderDate).format('DD/MM/YYYY')}</span>
+        <span className="orders-hub-panel-time">{t('ordersDetail.saleTime')}: {dayjs(detail.orderDate).format('HH:mm')}</span>
       </div>
 
       <div className="orders-hub-lines">

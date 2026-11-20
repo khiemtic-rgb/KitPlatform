@@ -102,7 +102,7 @@ export function ChatListPage() {
 
   useEffect(() => {
     if (!accessToken) return;
-    return subscribeChatSse(buildChatEventsUrl(accessToken), () => void load('silent'));
+    return subscribeChatSse(buildChatEventsUrl(), accessToken, () => void load('silent'));
   }, [accessToken, load]);
 
   const unreadTotal = useMemo(() => sumUnreadThreads(threads), [threads]);

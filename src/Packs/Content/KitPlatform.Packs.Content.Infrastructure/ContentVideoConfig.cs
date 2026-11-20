@@ -42,6 +42,16 @@ internal sealed class ContentVideoConfigState
 
     [JsonPropertyName("falApiKey")]
     public string? FalApiKey { get; set; }
+
+    [JsonPropertyName("veoJoinSecretRef")]
+    public string? VeoJoinSecretRef { get; set; } = "VEO_JOIN_FILE";
+
+    /// <summary>Write-only Veo Join file body — never serialized into read DTOs.</summary>
+    [JsonPropertyName("veoJoinFile")]
+    public string? VeoJoinFile { get; set; }
+
+    [JsonPropertyName("veoJoinFileName")]
+    public string? VeoJoinFileName { get; set; }
 }
 
 internal sealed record ContentVideoResolved(
@@ -59,7 +69,11 @@ internal sealed record ContentVideoResolved(
     string? RunwayApiKeySecretRef,
     string? FalApiKey,
     bool FalConfigured,
-    string? FalApiKeySecretRef);
+    string? FalApiKeySecretRef,
+    string? VeoJoinFile,
+    bool VeoJoinConfigured,
+    string? VeoJoinSecretRef,
+    string? VeoJoinFileName);
 
 internal static class ContentVideoConfigParser
 {
@@ -102,7 +116,10 @@ internal static class ContentVideoConfigParser
             FirstNonEmpty(state.RunwayApiKeySecretRef) ?? resolved.RunwayApiKeySecretRef,
             resolved.RunwayConfigured,
             FirstNonEmpty(state.FalApiKeySecretRef) ?? resolved.FalApiKeySecretRef,
-            resolved.FalConfigured);
+            resolved.FalConfigured,
+            FirstNonEmpty(state.VeoJoinSecretRef) ?? resolved.VeoJoinSecretRef,
+            resolved.VeoJoinConfigured,
+            FirstNonEmpty(state.VeoJoinFileName) ?? resolved.VeoJoinFileName);
 
     public static ContentVideoResolved Resolve(
         ContentVideoConfigState state,
@@ -153,6 +170,14 @@ internal static class ContentVideoConfigParser
             ?? FirstNonEmpty(configuration["Content:FalApiKey"])
             ?? FirstNonEmpty(Environment.GetEnvironmentVariable("FAL_KEY"));
 
+        var veoJoinRaw =
+            FirstNonEmpty(state.VeoJoinFile)
+            ?? ResolveSecret(state.VeoJoinSecretRef, configuration)
+            ?? FirstNonEmpty(options.VeoJoinFile)
+            ?? FirstNonEmpty(configuration["Content:VeoJoinFile"])
+            ?? FirstNonEmpty(Environment.GetEnvironmentVariable("VEO_JOIN_FILE"));
+        var veoJoin = FamixaVeoJoinCredentialsV1.Accept(veoJoinRaw, state.VeoJoinFileName);
+
         return new ContentVideoResolved(
             creatomateKey,
             !string.IsNullOrWhiteSpace(creatomateKey),
@@ -168,7 +193,11 @@ internal static class ContentVideoConfigParser
             FirstNonEmpty(state.RunwayApiKeySecretRef),
             falKey,
             !string.IsNullOrWhiteSpace(falKey),
-            FirstNonEmpty(state.FalApiKeySecretRef));
+            FirstNonEmpty(state.FalApiKeySecretRef),
+            veoJoin.Ok ? veoJoin.NormalizedText : null,
+            veoJoin.Ok,
+            FirstNonEmpty(state.VeoJoinSecretRef),
+            veoJoin.Ok ? veoJoin.FileName : FirstNonEmpty(state.VeoJoinFileName));
     }
 
     private static string? ResolveSecret(string? secretRef, IConfiguration configuration)

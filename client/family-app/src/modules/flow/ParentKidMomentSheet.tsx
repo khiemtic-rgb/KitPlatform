@@ -5,6 +5,7 @@ import {
   type FamilyMemoryEntry,
 } from '@/shared/api/family-os.api';
 import { withEvidenceAuth } from '@/shared/upload/evidence-url';
+import { EvidenceAudio } from '@/shared/upload/evidence-media';
 import { SoftEvidenceImg } from '@/shared/ui/SoftEvidenceImg';
 import { isKidMomentAudio } from '@/modules/flow/kidMomentAck';
 import { shortMemberName } from '@/modules/flow/relationshipGraph';
@@ -124,8 +125,8 @@ export function ParentKidMomentSheet({
         </header>
         <p className="ph-sheet-lead">Không phải bài kiểm tra — chỉ cần nhìn thấy và trả lời ấm.</p>
 
-        {audio && mediaSrc ? (
-          <audio controls src={mediaSrc} className="km-preview-audio" />
+        {audio && memory.photoUrl ? (
+          <EvidenceAudio url={memory.photoUrl} className="km-preview-audio" />
         ) : memory?.photoUrl || mediaSrc ? (
           <SoftEvidenceImg
             url={memory?.photoUrl ?? mediaSrc}

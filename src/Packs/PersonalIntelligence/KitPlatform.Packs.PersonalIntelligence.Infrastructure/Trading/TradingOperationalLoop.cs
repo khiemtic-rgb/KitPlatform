@@ -218,7 +218,7 @@ internal sealed class TradingOperationalLoop : ITradingOperationalLoop
                 TenantId = _tenant.TenantId,
                 request.PersonId,
                 Summary = usingStoredTrades
-                    ? StoredTradeObservation.Statement
+                    ? "Các giao dịch đã lưu được chọn làm dữ liệu quan sát. Đây chưa phải một quyết định."
                     : "Fixture trading context",
                 EpistemicKind = EpistemicKindSql.ToDb(EpistemicKind.Observation),
                 Source = contextSource,
@@ -294,7 +294,9 @@ internal sealed class TradingOperationalLoop : ITradingOperationalLoop
 
             await EventAsync(conn, tx, request.PersonId, "ActionTaken", EpistemicKind.Observation, decisionId, eventTypes, plan.ActionStatus);
 
-            var stored = (await conn.QueryAsync<StoredTrade>(
+            var stored = evidence.Count == 0
+                ? []
+                : (await conn.QueryAsync<StoredTrade>(
                 """
                 SELECT external_trade_id AS ExternalTradeId, symbol AS Symbol, side AS Side,
                        quantity AS Quantity, price AS Price, executed_at AS ExecutedAt

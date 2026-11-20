@@ -1,0 +1,111 @@
+{
+  "voice": "elevenlabs",
+  "seconds": 46.08,
+  "endCardStart": 43.58,
+  "endCardSeconds": 2.5,
+  "strip": {
+    "text": "Nhà thuốc Xuân Hòa · P. Phan Đình Phùng, Thái Nguyên",
+    "font": 36,
+    "widthPx": 998.0,
+    "limitPx": 1080
+  },
+  "endCard": [
+    {
+      "text": "Nhà thuốc Xuân Hòa",
+      "font": 72,
+      "width": 751.0,
+      "height": 66
+    },
+    {
+      "text": "Phường Phan Đình Phùng - Thái Nguyên",
+      "font": 48,
+      "width": 972.0,
+      "height": 48
+    },
+    {
+      "text": "Mở cửa 06:30 – 22:00",
+      "font": 44,
+      "width": 487.0,
+      "height": 37
+    }
+  ],
+  "voicePeakDb": -0.36,
+  "voiceGainDb": -0.64,
+  "lines": [
+    {
+      "id": "l01",
+      "who": "kh",
+      "beat": "hook",
+      "text": "Chị ơi! Con em sốt, bán em gói hạ sốt nhanh!",
+      "start": 0.2,
+      "end": 3.439
+    },
+    {
+      "id": "l02",
+      "who": "ds",
+      "beat": "hook",
+      "text": "Bé nặng bao nhiêu cân?",
+      "start": 3.589,
+      "end": 4.895
+    },
+    {
+      "id": "l03",
+      "who": "kh",
+      "beat": "hook",
+      "text": "Dạ… chắc tầm mười lăm cân ạ?",
+      "tts": "Dạ... chắc tầm mười lăm cân ạ?",
+      "start": 5.045,
+      "end": 7.396
+    },
+    {
+      "id": "l04",
+      "who": "ds",
+      "beat": "hook",
+      "text": "Chắc tầm là chưa được em ơi.",
+      "start": 7.546,
+      "end": 9.27
+    },
+    {
+      "id": "l05",
+      "who": "ds",
+      "beat": "board",
+      "text": "Mua thuốc cho con, nhớ đúng ba chữ thôi: Cân, Uống, Ngày.",
+      "start": 9.57,
+      "end": 14.481
+    },
+    {
+      "id": "l06",
+      "who": "ds",
+      "beat": "can",
+      "text": "Cân: bé nặng bao nhiêu. Nhiều thuốc trẻ em tính liều theo cân, lệch cân là lệch liều.",
+      "start": 14.781,
+      "end": 21.051
+    },
+    {
+      "id": "l07",
+      "who": "ds",
+      "beat": "uong",
+      "text": "Uống: bé đang uống gì khác, kể cả xi-rô hay thuốc nam, để tránh uống trùng thuốc.",
+      "tts": "Uống: bé đang uống gì khác, kể cả xi rô hay thuốc nam, để tránh uống trùng thuốc.",
+      "start": 21.351,
+      "end": 27.699
+    },
+    {
+      "id": "l08",
+      "who": "ds",
+      "beat": "ngay",
+      "text": "Ngày: bé sốt từ bao giờ. Sốt kéo dài thì chị khuyên đi khám, chứ không bán thuốc cho qua.",
+      "start": 27.999,
+      "end": 35.235
+    },
+    {
+      "id": "l09",
+      "who": "ds",
+      "beat": "close",
+      "text": "Chụp màn hình lại, lần sau đưa ra là xong. Bé nhà bạn mấy tuổi? Comment để chị làm video tiếp nhé!",
+      "tts": "Chụp màn hình lại, lần sau đưa ra là xong. Bé nhà bạn mấy tuổi? Còm men để chị làm video tiếp nhé!",
+      "start": 35.535,
+      "end": 43.58
+    }
+  ]
+}

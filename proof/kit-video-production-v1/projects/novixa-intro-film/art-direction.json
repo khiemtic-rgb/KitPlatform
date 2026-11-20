@@ -1,0 +1,28 @@
+{
+  "projectId": "novixa-intro-film",
+  "status": "applied-in-engine-1.4.0",
+  "acceptance": "NOT ACCEPTED",
+  "finalVideo": null,
+  "durationLocked": false,
+  "profile": "visualStyle.artDirection: warm-paper, paper, layered, principle one-idea. Engine đọc các trường này khi vẽ.",
+  "families": {
+    "s01": "photographic — ảnh đã duyệt, chữ trên tấm giấy",
+    "s02": "spine — câu hỏi một phía, việc chạy dọc một trục",
+    "s03": "mass-contrast — khối hàng nằm yên và hai thẻ bán nhanh",
+    "s04": "foreground-row — dòng chú ý đứng trước sổ",
+    "s05": "mark-field — dấu hiệu trên mặt giấy",
+    "s06": "ticket — một tờ ghi nhận và một phiếu thanh toán",
+    "s07": "quantity — một mặt hàng cần xem, giá trị ghi minh họa",
+    "s08": "hub — ba nhóm nối về một mặt giấy",
+    "s09": "portrait-object — chân dung là vật thể trên cùng mặt giấy",
+    "s10": "sequence — ba câu dọc, câu đầu dẫn",
+    "s11": "anchored-line — câu định vị là chủ thể, dấu hiệu neo góc",
+    "s12": "lockup — dấu hiệu, câu, rồi novixa.vn"
+  },
+  "forbidden": [
+    "Người hình học",
+    "Ảnh UI chưa duyệt dán vào phim",
+    "Số lô, hạn dùng, doanh thu trình bày như số thật",
+    "Ba cảnh liên tiếp cùng một họ hình"
+  ]
+}

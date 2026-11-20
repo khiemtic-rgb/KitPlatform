@@ -61,6 +61,7 @@ internal sealed class ConnectPartnerCatalogService : IConnectPartnerCatalogServi
                     WHERE b.tenant_id = p.tenant_id
                       AND b.product_id = p.id
                       AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0)::numeric AS StockAvailableQty
             FROM products p
             LEFT JOIN LATERAL (
@@ -91,6 +92,7 @@ internal sealed class ConnectPartnerCatalogService : IConnectPartnerCatalogServi
                     WHERE b.tenant_id = p.tenant_id
                       AND b.product_id = p.id
                       AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) > 0 THEN 0 ELSE 1 END,
                 p.product_name
             LIMIT 30

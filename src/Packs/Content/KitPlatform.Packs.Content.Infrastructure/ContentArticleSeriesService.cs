@@ -72,18 +72,14 @@ internal sealed class ContentArticleSeriesService : IContentArticleSeriesService
                       ?? throw new InvalidOperationException("Source package missing — chọn Brand Adaptation / Content Package.");
         var (_, fits) = ContentPackageExtra.Parse(package.ExtraJson);
         var own = fits.FirstOrDefault(f => f.BrandId == package.BrandId);
-        var narrativeBlock = BrandNarrativeFit.SeriesEntryBlock(own);
-        if (narrativeBlock is not null)
-        {
-            throw new InvalidOperationException(
-                narrativeBlock == BrandNarrativeFit.NarrativeFitRequired
-                    ? "NarrativeFitRequired — package chưa có Territory. Không suy ra CORE từ score."
-                    : "OFF-BRAND — không đưa package này vào Series.");
-        }
+        var refusal = KitMktWorkspaceRules.SeriesCreateRefusal(
+            package.BrandId, BrandNarrativeFit.SeriesEntryBlock(own));
+        if (refusal is not null)
+            throw new InvalidOperationException(refusal);
 
         var episodeCount = ContentArticleSeriesRules.ClampEpisodeCount(request.EpisodeCount);
         var prefix = ContentArticleSeriesRules.NormalizeBrandCode(package.BrandCode);
-        var seq = await _stories.NextSeriesSequenceAsync(package.BrandId, prefix, cancellationToken);
+        var seq = await _stories.NextSeriesSequenceAsync(ContentPackageScope.RequireBrand(package), prefix, cancellationToken);
         var code = ContentArticleSeriesRules.SeriesCode(package.BrandCode, seq);
         var name = string.IsNullOrWhiteSpace(request.Name)
             ? package.Title.Trim() + " — Series"
@@ -93,7 +89,7 @@ internal sealed class ContentArticleSeriesService : IContentArticleSeriesService
             ContentArticleSeriesBlueprint.Empty with { EpisodeCount = episodeCount },
             package);
         var id = await _stories.InsertAsync(
-            package.BrandId,
+            ContentPackageScope.RequireBrand(package),
             package.Id,
             code,
             name,
@@ -327,7 +323,7 @@ internal sealed class ContentArticleSeriesService : IContentArticleSeriesService
             row.PublishedAt,
             row.PreviousEpisodeId,
             row.NextEpisodeId,
-            request.Continuity is { } c ? c.GetRawText() : row.ContinuityJson,
+            MergeFactCard(request, row.ContinuityJson),
             row.ContentTopicId,
             cancellationToken);
         await _stories.RelinkAsync(seriesId, cancellationToken);
@@ -422,7 +418,7 @@ internal sealed class ContentArticleSeriesService : IContentArticleSeriesService
             row.PlannedAt ?? DateTimeOffset.UtcNow,
             row.PublishedAt,
             row.PreviousEpisodeId, row.NextEpisodeId,
-            ContentArticleSeriesRules.SerializeContinuity(continuity),
+            ContentFactGate.PreserveCard(ContentArticleSeriesRules.SerializeContinuity(continuity), row.ContinuityJson),
             row.ContentTopicId,
             cancellationToken);
         await RefreshTopicOutlineAsync(seriesId, episodeId, cancellationToken);
@@ -453,6 +449,9 @@ internal sealed class ContentArticleSeriesService : IContentArticleSeriesService
         if (!ContentBrandKnowledge.HasEnoughForGenerate(brand.OperationalBrief, knowledge))
             throw new InvalidOperationException(
                 "Brand Brain missing — " + string.Join("; ", ContentBrandKnowledge.MissingBrain(brand.OperationalBrief, knowledge)));
+        if (!ContentFactGate.HasCard(ContentFactGate.ReadCard(episodeRow.ContinuityJson)))
+            throw new InvalidOperationException(
+                "Tập chưa có phiếu sự thật — điền Phiếu sự thật trên tập trước khi viết.");
 
         var topicId = episodeRow.ContentTopicId
                       ?? await CreateEpisodeTopicAsync(seriesRow, episodeRow, cancellationToken);
@@ -460,6 +459,7 @@ internal sealed class ContentArticleSeriesService : IContentArticleSeriesService
                      ?? throw new InvalidOperationException("Episode not found");
         await EnsureEpisodeBriefAsync(seriesRow, episodeRow, cancellationToken);
         await RefreshTopicOutlineAsync(seriesId, episodeId, cancellationToken);
+        await AttachArticleFrameworkAsync(topicId, request?.ArticleFramework, cancellationToken);
         await _stories.UpdateEpisodeAsync(
             episodeRow.Id, episodeRow.EpisodeNo, episodeRow.Code, episodeRow.Title,
             episodeRow.Objective, episodeRow.Angle, episodeRow.KeyMessage,
@@ -660,6 +660,18 @@ internal sealed class ContentArticleSeriesService : IContentArticleSeriesService
         if (topic is null) return;
         var outline = ContentArticleSeriesRules.BuildOutlineBlock(
             detail.Series, detail.Episode, detail.Previous, detail.Next, detail.ContinuityContext);
+        await _repo.UpdateTopicAsync(
+            topic.Id, topic.BrandId, topic.Title, topic.Pillar, topic.Goal, topic.CtaUrl,
+            topic.UtmCampaign, topic.Priority, topic.Status, outline, topic.DisplayAt, ct);
+    }
+
+    private async Task AttachArticleFrameworkAsync(Guid topicId, string? framework, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(framework)) return;
+        var topic = await _repo.GetTopicAsync(topicId, ct);
+        if (topic is null) return;
+        if (ContentChannelFramework.Extract(topic.BodyOutline) is not null) return;
+        var outline = ((topic.BodyOutline ?? "").TrimEnd() + "\n\n" + framework.Trim()).Trim();
         await _repo.UpdateTopicAsync(
             topic.Id, topic.BrandId, topic.Title, topic.Pillar, topic.Goal, topic.CtaUrl,
             topic.UtmCampaign, topic.Priority, topic.Status, outline, topic.DisplayAt, ct);
@@ -921,6 +933,12 @@ internal sealed class ContentArticleSeriesService : IContentArticleSeriesService
             return (int)f;
         var digits = new string((raw ?? "").Where(char.IsDigit).ToArray());
         return int.TryParse(digits, out var fromDigits) ? fromDigits : 0;
+    }
+
+    private static string MergeFactCard(UpsertContentArticleEpisodeRequest request, string existingJson)
+    {
+        var json = request.Continuity is { } continuity ? continuity.GetRawText() : existingJson;
+        return request.FactCard is null ? json : ContentFactGate.MergeCard(json, request.FactCard);
     }
 
     private static IReadOnlyList<string> ReadStrings(JsonElement parent, string name)

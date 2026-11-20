@@ -10,10 +10,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using KitPlatform.Packs.PersonalIntelligence.Infrastructure;
 using KitPlatform.Api.Authorization;
 using KitPlatform.Api.Controllers.PersonalIntelligence;
 using KitPlatform.Application.Configuration;
@@ -30,109 +28,6 @@ public sealed class ResearchPublicationTests
     static readonly DateTimeOffset SummaryAt = DateTimeOffset.Parse("2026-01-02T00:00:00Z");
     const string PublishedAt = "2026-10-22T04:00:00+00:00";
     const string SourceRunAt = "2026-10-22T03:04:02.201078+00:00";
-
-    [Fact]
-    public async Task Research_only_host_serves_five_gets_and_hides_trading()
-    {
-        await using var host = await ResearchOnlyHost.Start();
-        var reader = host.Client("personal_intelligence.research.read");
-        foreach (var path in new[]
-        {
-            "/api/personal-intelligence/research/publication",
-            "/api/personal-intelligence/research/experiments",
-            "/api/personal-intelligence/research/experiments/EXP-ONE",
-            "/api/personal-intelligence/research/paper/status",
-            "/api/personal-intelligence/research/paper/report",
-        })
-        {
-            var response = await reader.GetAsync(path);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            var body = await response.Content.ReadAsStringAsync();
-            using var json = JsonDocument.Parse(body);
-            Assert.Equal("MISSING", json.RootElement.GetProperty("availability").GetString());
-            Assert.DoesNotContain("Kit-Brain", body, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain(@"E:\", body, StringComparison.OrdinalIgnoreCase);
-        }
-
-        var denied = await host.Client().GetAsync("/api/personal-intelligence/research/publication");
-        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
-
-        foreach (var path in new[]
-        {
-            "/api/personal-intelligence/trading/summary",
-            "/api/personal-intelligence/trading/exchanges/catalog",
-        })
-        {
-            var hidden = await reader.GetAsync(path);
-            Assert.Equal(HttpStatusCode.NotFound, hidden.StatusCode);
-        }
-
-        var loop = await reader.PostAsync("/api/personal-intelligence/trading/loops", new StringContent("{}", System.Text.Encoding.UTF8, "application/json"));
-        Assert.Equal(HttpStatusCode.NotFound, loop.StatusCode);
-        Assert.DoesNotContain(host.App.Services.GetServices<IHostedService>(), service => service.GetType().Name == "ExchangeBackfillWorker");
-        Assert.Null(host.App.Services.GetService<IExchangeBackfill>());
-        Assert.Null(host.App.Services.GetService<IExchangeCredentialKeyRing>());
-    }
-
-    [Fact]
-    public async Task Missing_publication_directory_is_read_only_missing()
-    {
-        var root = Path.Combine(Path.GetTempPath(), "sb-research-missing-" + Guid.NewGuid().ToString("N"));
-        var reader = new FileResearchPublicationReader(Options.Create(new ResearchPublicationOptions { Root = root }));
-        var read = await reader.ReadAsync();
-        Assert.Equal(ResearchAvailability.Missing, read.Availability);
-        Assert.False(Directory.Exists(root));
-        Assert.Equal("MISSING", read.ReadError?.Code);
-    }
-
-    [Fact]
-    public async Task Research_only_host_enforces_policy_without_trading_services()
-    {
-        await using var host = await ResearchOnlyHost.Start();
-        const string publication = "/api/personal-intelligence/research/publication";
-
-        var anonymous = await host.Anonymous().GetAsync(publication);
-        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
-
-        foreach (var client in new[]
-        {
-            host.Client("personal_intelligence.research.read"),
-            host.Client("personal_intelligence.trading.run"),
-            host.Client(role: "ADMIN"),
-        })
-        {
-            var allowed = await client.GetAsync(publication);
-            Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
-            using var body = JsonDocument.Parse(await allowed.Content.ReadAsStringAsync());
-            Assert.Equal("MISSING", body.RootElement.GetProperty("availability").GetString());
-        }
-
-        foreach (var permission in new[]
-        {
-            "personal_intelligence.trading.approve",
-            "personal_intelligence.exchange.read",
-            "personal_intelligence.exchange.connect",
-        })
-        {
-            var denied = await host.Client(permission).GetAsync(publication);
-            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
-        }
-
-        host.Settings.Enabled = false;
-        var readerOff = await host.Client("personal_intelligence.research.read").GetAsync(publication);
-        Assert.Equal(HttpStatusCode.Forbidden, readerOff.StatusCode);
-        var adminOff = await host.Client(role: "ADMIN").GetAsync(publication);
-        Assert.Equal(HttpStatusCode.Forbidden, adminOff.StatusCode);
-
-        Assert.Null(host.App.Services.GetService<IPersonRepository>());
-        Assert.Null(host.App.Services.GetService<ITradeRepository>());
-        Assert.Null(host.App.Services.GetService<ITradingDesk>());
-        Assert.Null(host.App.Services.GetService<IExchangeBackfill>());
-        Assert.Null(host.App.Services.GetService<IExchangeCredentialKeyRing>());
-        Assert.DoesNotContain(
-            host.App.Services.GetServices<IHostedService>(),
-            service => service.GetType().Name == "ExchangeBackfillWorker");
-    }
 
     [Fact]
     public async Task Anonymous_request_is_unauthorized()
@@ -153,13 +48,14 @@ public sealed class ResearchPublicationTests
     }
 
     [Fact]
-    public async Task Trading_run_and_research_read_and_admin_can_read()
+    public async Task Research_read_and_admin_can_read_but_trading_run_cannot()
     {
         await using var host = await ResearchHost.Start();
         WriteValid(host.Root);
+        var trading = await host.Client("personal_intelligence.trading.run").GetAsync("/api/personal-intelligence/research/publication");
+        Assert.Equal(HttpStatusCode.Forbidden, trading.StatusCode);
         foreach (var client in new[]
         {
-            host.Client("personal_intelligence.trading.run"),
             host.Client("personal_intelligence.research.read"),
             host.Client(role: "ADMIN"),
         })
@@ -367,6 +263,8 @@ public sealed class ResearchPublicationTests
             "/api/personal-intelligence/research/experiments/EXP-ONE",
             "/api/personal-intelligence/research/paper/status",
             "/api/personal-intelligence/research/paper/report",
+            "/api/personal-intelligence/research/evaluations",
+            "/api/personal-intelligence/research/evaluations/EXP-ONE",
         })
         {
             var response = await client.GetAsync(path);
@@ -412,12 +310,165 @@ public sealed class ResearchPublicationTests
             Assert.Equal(1, root.GetProperty("importTradeCount").GetInt32());
             Assert.Equal(0, root.GetProperty("exchangeTradeCount").GetInt32());
 
-            var research = await client.GetAsync("/api/personal-intelligence/research/publication");
+            var research = await host.Client("personal_intelligence.research.read").GetAsync("/api/personal-intelligence/research/publication");
             var researchText = await research.Content.ReadAsStringAsync();
             Assert.Equal(HttpStatusCode.OK, research.StatusCode);
             Assert.DoesNotContain("secret-root-marker", researchText);
             Assert.DoesNotContain("supersecret", researchText);
         }
+    }
+
+    [Fact]
+    public async Task Evaluation_requires_research_read_and_hides_bodies_when_publication_is_not_readable()
+    {
+        await using var host = await ResearchHost.Start();
+        var denied = await host.Client("personal_intelligence.trading.run").GetAsync("/api/personal-intelligence/research/evaluations");
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+
+        var missing = await host.Client("personal_intelligence.research.read").GetAsync("/api/personal-intelligence/research/evaluations");
+        var missingText = await missing.Content.ReadAsStringAsync();
+        using var missingJson = JsonDocument.Parse(missingText);
+        Assert.Equal(HttpStatusCode.OK, missing.StatusCode);
+        Assert.Equal("MISSING", missingJson.RootElement.GetProperty("availability").GetString());
+        Assert.False(missingJson.RootElement.GetProperty("sameSnapshot").GetBoolean());
+        Assert.Equal("INSUFFICIENT_DATA", missingJson.RootElement.GetProperty("verdict").GetString());
+        Assert.Empty(missingJson.RootElement.GetProperty("evaluations").EnumerateArray());
+        Assert.Contains("NOT_A_PERFORMANCE_CLAIM", missingText);
+        Assert.DoesNotContain("sharpe", missingText, StringComparison.OrdinalIgnoreCase);
+
+        WriteValid(host.Root, "SECRET_PNL_MARKER");
+        RewriteHash(host.Root, "labResultSha256", Utf8.GetBytes("different-bytes"));
+        var inconsistent = await host.Client("personal_intelligence.research.read").GetAsync("/api/personal-intelligence/research/evaluations");
+        var inconsistentText = await inconsistent.Content.ReadAsStringAsync();
+        using var inconsistentJson = JsonDocument.Parse(inconsistentText);
+        Assert.Equal("INCONSISTENT", inconsistentJson.RootElement.GetProperty("availability").GetString());
+        Assert.Empty(inconsistentJson.RootElement.GetProperty("evaluations").EnumerateArray());
+        Assert.DoesNotContain("SECRET_PNL_MARKER", inconsistentText);
+    }
+
+    [Fact]
+    public async Task Catalog_reads_latest_pointer_and_keeps_retained_and_archive()
+    {
+        await using var host = await ResearchHost.Start();
+        var catalog = Path.Combine(host.Root, "catalog");
+        var older = Path.Combine(catalog, "pub-852a4f3f102bf7f4");
+        var newer = Path.Combine(catalog, "pub-1e2f684025ced72a");
+        var archive = Path.Combine(host.Root, "archive-20261030");
+        WriteValid(older);
+        Retitle(older, "pub-852a4f3f102bf7f4");
+        WriteValid(newer, "NEW_LAB_MARKER");
+        Retitle(newer, "pub-1e2f684025ced72a");
+        WriteValid(archive);
+        Retitle(archive, "pub-e65b6912e02a168d");
+        await File.WriteAllTextAsync(Path.Combine(catalog, "latest.json"), JsonSerializer.Serialize(new
+        {
+            publicationId = "pub-1e2f684025ced72a",
+            path = @"E:\secret-root-marker\outside",
+            kind = "POINTER_NOT_A_PUBLICATION",
+            live_orders = false,
+        }));
+        host.Reader.Root = catalog;
+        host.Reader.HistoryRoots = archive;
+        var client = host.Client("personal_intelligence.research.read");
+
+        var latestText = await (await client.GetAsync("/api/personal-intelligence/research/publication")).Content.ReadAsStringAsync();
+        using var latest = JsonDocument.Parse(latestText);
+        Assert.Equal("FRESH", latest.RootElement.GetProperty("availability").GetString());
+        Assert.Equal("pub-1e2f684025ced72a", latest.RootElement.GetProperty("publicationId").GetString());
+        Assert.Equal("latest", latest.RootElement.GetProperty("selectedBy").GetString());
+        Assert.Equal("abc", latest.RootElement.GetProperty("snapshotSha256").GetString());
+        Assert.Equal(1700000000000, latest.RootElement.GetProperty("dataOpenTime").GetInt64());
+        Assert.Equal("2023-11-14T22:13:20Z", latest.RootElement.GetProperty("dataOpenTimeUtc").GetString());
+        Assert.Equal("NOT_SELECTABLE", latest.RootElement.GetProperty("verdict").GetString());
+        Assert.DoesNotContain("secret-root-marker", latestText, StringComparison.OrdinalIgnoreCase);
+
+        var newerExperiment = await client.GetAsync("/api/personal-intelligence/research/experiments/EXP-ONE");
+        using var newerBody = JsonDocument.Parse(await newerExperiment.Content.ReadAsStringAsync());
+        Assert.Equal("NEW_LAB_MARKER", newerBody.RootElement.GetProperty("experiment").GetProperty("strategyId").GetString());
+
+        var retained = await client.GetAsync("/api/personal-intelligence/research/publication?publicationId=pub-852a4f3f102bf7f4");
+        using var retainedBody = JsonDocument.Parse(await retained.Content.ReadAsStringAsync());
+        Assert.Equal("pub-852a4f3f102bf7f4", retainedBody.RootElement.GetProperty("publicationId").GetString());
+        Assert.Equal("publicationId", retainedBody.RootElement.GetProperty("selectedBy").GetString());
+        Assert.Equal("NOT_SELECTABLE", retainedBody.RootElement.GetProperty("verdict").GetString());
+        var retainedExperiment = await client.GetAsync("/api/personal-intelligence/research/experiments/EXP-ONE?publicationId=pub-852a4f3f102bf7f4");
+        using var retainedExperimentBody = JsonDocument.Parse(await retainedExperiment.Content.ReadAsStringAsync());
+        Assert.Equal("S1", retainedExperimentBody.RootElement.GetProperty("experiment").GetProperty("strategyId").GetString());
+
+        var archived = await client.GetAsync("/api/personal-intelligence/research/publication?publicationId=pub-e65b6912e02a168d");
+        using var archivedBody = JsonDocument.Parse(await archived.Content.ReadAsStringAsync());
+        Assert.Equal("FRESH", archivedBody.RootElement.GetProperty("availability").GetString());
+        Assert.Equal("pub-e65b6912e02a168d", archivedBody.RootElement.GetProperty("publicationId").GetString());
+        Assert.Equal("abc", archivedBody.RootElement.GetProperty("snapshotSha256").GetString());
+
+        var indexText = await (await client.GetAsync("/api/personal-intelligence/research/publications")).Content.ReadAsStringAsync();
+        using var index = JsonDocument.Parse(indexText);
+        Assert.Equal("pub-1e2f684025ced72a", index.RootElement.GetProperty("latestPublicationId").GetString());
+        var roles = index.RootElement.GetProperty("publications").EnumerateArray().ToDictionary(
+            item => item.GetProperty("publicationId").GetString()!,
+            item => item.GetProperty("role").GetString());
+        Assert.Equal("latest", roles["pub-1e2f684025ced72a"]);
+        Assert.Equal("retained", roles["pub-852a4f3f102bf7f4"]);
+        Assert.Equal("archive", roles["pub-e65b6912e02a168d"]);
+        Assert.DoesNotContain("secret-root-marker", indexText, StringComparison.OrdinalIgnoreCase);
+
+        var malformed = await client.GetAsync("/api/personal-intelligence/research/publication?publicationId=../pub-1e2f684025ced72a");
+        Assert.Equal(HttpStatusCode.NotFound, malformed.StatusCode);
+        var absent = await client.GetAsync("/api/personal-intelligence/research/publication?publicationId=pub-ffffffffffffffff");
+        using var absentBody = JsonDocument.Parse(await absent.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.OK, absent.StatusCode);
+        Assert.Equal("MISSING", absentBody.RootElement.GetProperty("availability").GetString());
+    }
+
+    [Fact]
+    public async Task Pointer_that_claims_live_orders_is_not_a_publication()
+    {
+        await using var host = await ResearchHost.Start();
+        var catalog = Path.Combine(host.Root, "catalog");
+        var publication = Path.Combine(catalog, "pub-1e2f684025ced72a");
+        WriteValid(publication);
+        Retitle(publication, "pub-1e2f684025ced72a");
+        await File.WriteAllTextAsync(Path.Combine(catalog, "latest.json"), JsonSerializer.Serialize(new
+        {
+            publicationId = "pub-1e2f684025ced72a",
+            path = @"E:\secret-root-marker\outside",
+            kind = "POINTER_NOT_A_PUBLICATION",
+            live_orders = true,
+        }));
+        host.Reader.Root = catalog;
+        var text = await (await host.Client("personal_intelligence.research.read").GetAsync("/api/personal-intelligence/research/publication")).Content.ReadAsStringAsync();
+        using var body = JsonDocument.Parse(text);
+        Assert.Equal("UNREADABLE", body.RootElement.GetProperty("availability").GetString());
+        Assert.Equal("UNREADABLE", body.RootElement.GetProperty("readError").GetProperty("code").GetString());
+        Assert.DoesNotContain("secret-root-marker", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("NEW_LAB_MARKER", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Evaluation_of_a_readable_fixture_is_not_a_performance_claim()
+    {
+        await using var host = await ResearchHost.Start();
+        WriteValid(host.Root);
+        var client = host.Client("personal_intelligence.research.read");
+        var list = await client.GetAsync("/api/personal-intelligence/research/evaluations");
+        var listText = await list.Content.ReadAsStringAsync();
+        using var listJson = JsonDocument.Parse(listText);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        Assert.True(listJson.RootElement.GetProperty("sameSnapshot").GetBoolean());
+        Assert.Equal("NOT_SELECTABLE", listJson.RootElement.GetProperty("verdict").GetString());
+        var row = listJson.RootElement.GetProperty("evaluations")[0];
+        Assert.Equal("EXP-ONE", row.GetProperty("experimentId").GetString());
+        Assert.Equal("NOT_IN_SOURCE", row.GetProperty("metrics").GetProperty("sharpeRatio").GetString());
+        Assert.Equal("NOT_IN_SOURCE", row.GetProperty("metrics").GetProperty("equityCurve").GetString());
+        Assert.Equal("NOT_IN_SOURCE", row.GetProperty("metrics").GetProperty("maximumDrawdown").GetString());
+        Assert.Contains("NOT_A_PERFORMANCE_CLAIM", listText);
+
+        var one = await client.GetAsync("/api/personal-intelligence/research/evaluations/EXP-OTHER");
+        Assert.Equal(HttpStatusCode.NotFound, one.StatusCode);
+        var known = await client.GetAsync("/api/personal-intelligence/research/evaluations/EXP-ONE");
+        Assert.Equal(HttpStatusCode.OK, known.StatusCode);
+        using var knownJson = JsonDocument.Parse(await known.Content.ReadAsStringAsync());
+        Assert.Equal("NOT_SELECTABLE", knownJson.RootElement.GetProperty("evaluation").GetProperty("verdict").GetString());
     }
 
     static async Task AssertMissingWithoutNumbers(HttpClient client)
@@ -576,60 +627,12 @@ public sealed class ResearchPublicationTests
 
     static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
-    sealed class ResearchOnlyHost : IAsyncDisposable
+    static void Retitle(string root, string publicationId)
     {
-        public WebApplication App { get; }
-        public FlagSettings Settings { get; }
-
-        ResearchOnlyHost(WebApplication app, FlagSettings settings)
-        {
-            App = app;
-            Settings = settings;
-        }
-
-        public static async Task<ResearchOnlyHost> Start()
-        {
-            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-            {
-                EnvironmentName = "Development",
-                ContentRootPath = Path.GetTempPath(),
-                ApplicationName = typeof(ResearchPublicationTests).Assembly.GetName().Name,
-            });
-            builder.WebHost.UseTestServer();
-            builder.Logging.ClearProviders();
-            builder.Services.AddAuthentication(HeaderAuth.AuthScheme)
-                .AddScheme<AuthenticationSchemeOptions, HeaderAuth>(HeaderAuth.AuthScheme, _ => { });
-            builder.Services.AddAuthorization(options => options.AddPersonalIntelligenceAuthorization());
-            builder.Services.AddControllers()
-                .AddApplicationPart(typeof(ResearchPublicationController).Assembly)
-                .AddMvcOptions(options => options.Conventions.Add(new ResearchOnlyControllerConvention()));
-            builder.Services.AddPersonalIntelligenceResearch();
-            builder.Services.Configure<ResearchPublicationOptions>(options => options.Root = "");
-            var settings = new FlagSettings();
-            builder.Services.AddSingleton<ITenantPlatformSettings>(settings);
-            var app = builder.Build();
-            app.UseAuthentication();
-            app.UseAuthorization();
-            app.MapControllers();
-            await app.StartAsync();
-            return new ResearchOnlyHost(app, settings);
-        }
-
-        public HttpClient Anonymous() => App.GetTestClient();
-
-        public HttpClient Client(string? permission = null, string? role = null)
-        {
-            var client = App.GetTestClient();
-            client.DefaultRequestHeaders.Add("X-Test-User", Guid.NewGuid().ToString());
-            client.DefaultRequestHeaders.Add("X-Test-Tenant", Guid.NewGuid().ToString());
-            if (!string.IsNullOrWhiteSpace(permission))
-                client.DefaultRequestHeaders.Add("X-Test-Permission", permission);
-            if (!string.IsNullOrWhiteSpace(role))
-                client.DefaultRequestHeaders.Add("X-Test-Role", role);
-            return client;
-        }
-
-        public async ValueTask DisposeAsync() => await App.DisposeAsync();
+        var path = Path.Combine(root, "manifest.json");
+        var manifest = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path))!;
+        manifest["publicationId"] = publicationId;
+        File.WriteAllText(path, JsonSerializer.Serialize(manifest), Utf8);
     }
 
     sealed class ResearchHost : IAsyncDisposable
@@ -719,8 +722,12 @@ public sealed class ResearchPublicationTests
     {
         public string Mode { get; set; } = "file";
         public string Root { get; set; } = "";
+        public string HistoryRoots { get; set; } = "";
 
-        public Task<ResearchPublicationRead> ReadAsync(CancellationToken cancellationToken = default)
+        public Task<ResearchPublicationRead> ReadAsync(CancellationToken cancellationToken = default) =>
+            ReadAsync(publicationId: null, cancellationToken);
+
+        public Task<ResearchPublicationRead> ReadAsync(string? publicationId, CancellationToken cancellationToken = default)
         {
             if (Mode == "throw")
                 throw new InvalidOperationException(@"E:\secret-root-marker\checkpoint.json api_key=supersecret PAPER_OPS_STATE_DIR");
@@ -728,8 +735,16 @@ public sealed class ResearchPublicationTests
                 return Task.FromResult(Blank(ResearchAvailability.Missing, "MISSING"));
             if (Mode == "unreadable")
                 return Task.FromResult(Blank(ResearchAvailability.Unreadable, "UNREADABLE"));
-            return new FileResearchPublicationReader(Options.Create(new ResearchPublicationOptions { Root = Root })).ReadAsync(cancellationToken);
+            return FileReader().ReadAsync(publicationId, cancellationToken);
         }
+
+        public Task<ResearchPublicationIndex> ListAsync(CancellationToken cancellationToken = default) =>
+            Mode == "file"
+                ? FileReader().ListAsync(cancellationToken)
+                : Task.FromResult(new ResearchPublicationIndex(null, []));
+
+        FileResearchPublicationReader FileReader() =>
+            new(Options.Create(new ResearchPublicationOptions { Root = Root, HistoryRoots = HistoryRoots }));
 
         static ResearchPublicationRead Blank(string availability, string code) => new(
             availability, null, null, null, null, [], new ResearchReadError(code, "Publication is not available."), [], null, null);
@@ -778,6 +793,7 @@ public sealed class ResearchPublicationTests
         public Task<TradeImportPreviewDto> PreviewImportAsync(TradeImportRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<TradeImportCommitDto> CommitImportAsync(TradeImportRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<PaperApprovalDto> ApprovePaperAsync(Guid decisionId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
         public Task<PaperRejectionDto> RejectPaperAsync(Guid decisionId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

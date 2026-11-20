@@ -1,0 +1,19 @@
+{
+  "title": "Mua thuốc cho con: nhớ 3 chữ Cân – Uống – Ngày",
+  "status": "NHÁP — chờ dược sĩ duyệt",
+  "voices": {
+    "ds": {"role": "Dược sĩ", "elevenlabsVoiceId": "0ggMuQ1r9f9jqBu50nJn"},
+    "kh": {"role": "Khách", "elevenlabsVoiceId": "jpmnSYDOADVEpZksbLmc"}
+  },
+  "lines": [
+    {"id": "l01", "who": "kh", "beat": "hook", "text": "Chị ơi! Con em sốt, bán em gói hạ sốt nhanh!"},
+    {"id": "l02", "who": "ds", "beat": "hook", "text": "Bé nặng bao nhiêu cân?"},
+    {"id": "l03", "who": "kh", "beat": "hook", "text": "Dạ… chắc tầm mười lăm cân ạ?", "tts": "Dạ... chắc tầm mười lăm cân ạ?"},
+    {"id": "l04", "who": "ds", "beat": "hook", "text": "Chắc tầm là chưa được em ơi."},
+    {"id": "l05", "who": "ds", "beat": "board", "text": "Mua thuốc cho con, nhớ đúng ba chữ thôi: Cân, Uống, Ngày."},
+    {"id": "l06", "who": "ds", "beat": "can", "text": "Cân: bé nặng bao nhiêu. Nhiều thuốc trẻ em tính liều theo cân, lệch cân là lệch liều."},
+    {"id": "l07", "who": "ds", "beat": "uong", "text": "Uống: bé đang uống gì khác, kể cả xi-rô hay thuốc nam, để tránh uống trùng thuốc.", "tts": "Uống: bé đang uống gì khác, kể cả xi rô hay thuốc nam, để tránh uống trùng thuốc."},
+    {"id": "l08", "who": "ds", "beat": "ngay", "text": "Ngày: bé sốt từ bao giờ. Sốt kéo dài thì chị khuyên đi khám, chứ không bán thuốc cho qua."},
+    {"id": "l09", "who": "ds", "beat": "close", "text": "Chụp màn hình lại, lần sau đưa ra là xong. Bé nhà bạn mấy tuổi? Comment để chị làm video tiếp nhé!", "tts": "Chụp màn hình lại, lần sau đưa ra là xong. Bé nhà bạn mấy tuổi? Còm men để chị làm video tiếp nhé!"}
+  ]
+}

@@ -67,6 +67,7 @@ internal sealed class ContentCreatomateClient
         IReadOnlyDictionary<string, string> modifications,
         CancellationToken cancellationToken)
     {
+        NovixaE2eIsolation.ThrowIfExternalCall("Creatomate");
         var resolved = await ResolveAsync(cancellationToken);
         var key = resolved.CreatomateApiKey
                   ?? throw new InvalidOperationException("Chưa cấu hình CreatomateApiKey.");

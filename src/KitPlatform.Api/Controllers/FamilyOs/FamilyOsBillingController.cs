@@ -93,7 +93,7 @@ public sealed class FamilyOsBillingController : ControllerBase
     }
 
     /// <summary>Ops — all Family OS trial/interest signups across tenants (ledger, no tenant filter).</summary>
-    [Authorize]
+    [Authorize(Policy = PaymentPolicies.OpsRead)]
     [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
     [HttpGet("ops/trial-signups")]
     [ProducesResponseType(typeof(FamilyOsTrialSignupListDto), StatusCodes.Status200OK)]
@@ -139,7 +139,7 @@ public sealed class FamilyOsBillingController : ControllerBase
     }
 
     /// <summary>Ops — demo-house view totals (today / 7d / unique / dwell).</summary>
-    [Authorize]
+    [Authorize(Policy = PaymentPolicies.OpsRead)]
     [RequirePlatformModule(PlatformModuleCodes.FamilyOs)]
     [HttpGet("ops/demo-house-views")]
     [ProducesResponseType(typeof(FamilyOsDemoHouseViewsDto), StatusCodes.Status200OK)]

@@ -1,0 +1,335 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "trading-beat-proof",
+  "approvalStatus": "approved",
+  "source": "script-analysis",
+  "warnings": [
+    {
+      "code": "voice_exceeds_hint",
+      "sceneId": "s4-sma",
+      "message": "Ước lượng lời 6.7s dài hơn gợi ý 5.0s. Đề xuất nới cảnh. Không ép giọng đọc nhanh."
+    },
+    {
+      "code": "voice_exceeds_hint",
+      "sceneId": "s5-close",
+      "message": "Ước lượng lời 5.3s dài hơn gợi ý 5.0s. Đề xuất nới cảnh. Không ép giọng đọc nhanh."
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "s1-wide",
+      "approvalStatus": "approved",
+      "storyGoal": "BTCUSDT khung một giờ",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "Bitcoin khung một giờ, nhìn cả đoạn tăng.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "BTCUSDT khung một giờ",
+        "Không phải khuyến nghị"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "disclosure": "Không phải khuyến nghị",
+        "panBars": 0,
+        "start": 70,
+        "count": 48,
+        "headline": "BTCUSDT khung một giờ"
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 3.15
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s2-region",
+      "approvalStatus": "approved",
+      "storyGoal": "Vùng đang xét",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "Thu hẹp vào vùng có nến tăng mạnh.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Vùng đang xét",
+        "Không phải khuyến nghị"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "disclosure": "Không phải khuyến nghị",
+        "panBars": 0,
+        "start": 86,
+        "count": 16,
+        "headline": "Vùng đang xét"
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.62
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s3-highlight",
+      "approvalStatus": "approved",
+      "storyGoal": "Nến tăng trong vùng",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "Đánh dấu đúng nến tăng trong vùng đó.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Nến tăng trong vùng",
+        "Không phải khuyến nghị"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "disclosure": "Không phải khuyến nghị",
+        "panBars": 0,
+        "start": 86,
+        "count": 16,
+        "headline": "Nến tăng trong vùng",
+        "focus": {
+          "start": 6,
+          "end": 6,
+          "label": "Nến tăng"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.85
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s4-sma",
+      "approvalStatus": "approved",
+      "storyGoal": "SMA 20 từ giá đóng cửa",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "Đường trung bình dùng hai mươi giá đóng cửa, kể cả nến trước đoạn này.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "SMA 20 từ giá đóng cửa",
+        "Không phải khuyến nghị",
+        "SMA 20"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "disclosure": "Không phải khuyến nghị",
+        "panBars": 0,
+        "start": 70,
+        "count": 48,
+        "warmup": 19,
+        "indicators": [
+          "sma20"
+        ],
+        "headline": "SMA 20 từ giá đóng cửa"
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "exceeds_hint",
+        "spokenEstimateSeconds": 5.38
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s5-close",
+      "approvalStatus": "approved",
+      "storyGoal": "Kết luận đúng số đã tính",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "Đoạn này tăng 7,4 phần trăm. Không phải khuyến nghị.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [],
+      "templateId": "kinetic_type",
+      "params": {
+        "lines": [
+          {
+            "text": "Đoạn này tăng 7,4%",
+            "at": 0,
+            "scale": 0.055,
+            "bold": true
+          },
+          {
+            "text": "Không phải khuyến nghị.",
+            "at": 0.8,
+            "scale": 0.036,
+            "bold": false
+          }
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 5,
+            "reason": "Preview hình, chưa lồng tiếng."
+          }
+        ],
+        "syncNotes": "Chưa có lời đọc."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "exceeds_hint",
+        "spokenEstimateSeconds": 4.0
+      },
+      "voiceLeadSeconds": 0,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    }
+  ]
+}

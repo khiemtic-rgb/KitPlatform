@@ -193,8 +193,8 @@ export function ChatPage() {
 
   useEffect(() => {
     if (!accessToken) return;
-    const url = buildCustomerChatEventsUrl(accessToken);
-    return subscribeChatSse(url, () => void refetch());
+    const url = buildCustomerChatEventsUrl();
+    return subscribeChatSse(url, accessToken, () => void refetch());
   }, [accessToken, refetch]);
 
   useEffect(() => {

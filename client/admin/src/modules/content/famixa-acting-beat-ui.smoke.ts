@@ -197,10 +197,10 @@ ok(/Camera remains steady/i.test(afterPrompt), '13 camera remains steady');
 ok(!/Camera eases|Camera holds, then/i.test(afterPrompt), '13b no retry camera rotate');
 
 ok(orch.includes('export function nextShotProductionCommand') && orch.includes('CONFIRM_MOTION'), '14 orchestrator architecture present');
-ok(!orch.includes('actingBeat') && !orch.includes('ShotProductionActingBeat'), '14b orchestrator untouched');
+ok(orch.includes('actingBeatPendingMotion') && !orch.includes('ShotProductionActingBeat'), '14b beat-save remake gate, no acting UI');
 ok(!stamp.includes('actingBeat') && actions.includes('sameFailedInput'), '14c fingerprints / sameFailedInput not rewritten');
 ok(pipe.includes('export function promptHashOf') && pipe.includes('export function sameFailedInput'), '14d pipe hashes untouched');
-ok(series.includes('startShotMotion') && series.includes('forceNew: true'), '14e remake path unchanged');
+ok(series.includes('startShotMotion') && series.includes('createProductionVideo'), '14e remake path is Production OS CREATE_VIDEO');
 
 const ui = `${ws}\n${card}\n${helper}`;
 ok(

@@ -11,7 +11,7 @@ namespace KitPlatform.Api.Controllers.PersonalIntelligence;
 
 [ApiController]
 [Route("api/personal-intelligence/intent")]
-[Authorize(Policy = PersonalIntelligencePolicies.TaskCreate)]
+[Authorize(Policy = PersonalIntelligencePolicies.Intent)]
 [RequirePersonalIntelligenceModule]
 public sealed class BusinessIntentController : ControllerBase
 {

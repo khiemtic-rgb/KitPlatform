@@ -251,4 +251,6 @@ export interface CreateSalePayload {
   }[];
   payments?: { paymentMethod: number; amount: number }[];
   prescriptionId?: string;
+  /** Completed sales only. Drafts omit this so a saved draft is not an idempotency key. */
+  clientSaleId?: string;
 }

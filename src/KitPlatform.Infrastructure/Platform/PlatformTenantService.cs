@@ -4,6 +4,7 @@ using KitPlatform.Application.Auth;
 using KitPlatform.Application.Configuration;
 using KitPlatform.Application.Core;
 using KitPlatform.Application.Platform;
+using KitPlatform.Infrastructure.Configuration;
 using KitPlatform.Infrastructure.Kernel.Workspace;
 
 namespace KitPlatform.Infrastructure.Platform;
@@ -88,6 +89,7 @@ internal sealed class PlatformTenantService : IPlatformTenantService
         var enabled = request.SyncEnabledModules
             ? allowed.ToList()
             : TenantPlatformSettingsValidator.ClampEnabledToAllowed(current.EnabledModules, allowed);
+        LocalOsDedicatedOperators.RejectEntitlement(current.TenantCode, allowed, enabled);
 
         var updated = await _repository.UpdateTenantEntitlementAsync(
             tenantId,

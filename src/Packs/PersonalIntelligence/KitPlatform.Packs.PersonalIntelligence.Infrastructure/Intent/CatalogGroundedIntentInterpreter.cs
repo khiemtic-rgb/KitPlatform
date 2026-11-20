@@ -10,6 +10,7 @@ public sealed class CatalogGroundedIntentInterpreter : IBusinessIntentInterprete
 {
     readonly HttpClient _http;
     readonly BusinessIntentModelOptions _options;
+    int _calls;
 
     public CatalogGroundedIntentInterpreter(HttpClient http, IOptions<BusinessIntentModelOptions> options)
     {
@@ -25,12 +26,15 @@ public sealed class CatalogGroundedIntentInterpreter : IBusinessIntentInterprete
     {
         if (!_options.IsConfigured)
             return new InterpretationOutcome.Unavailable("Language model is not configured. No keyword fallback is used.");
+        if (Interlocked.Increment(ref _calls) > _options.MaxCallsPerProcess)
+            return new InterpretationOutcome.Unreadable("model_call_budget");
 
         var prompt = BusinessIntentPrompt.Build(catalog, context);
         var payload = JsonSerializer.Serialize(new
         {
             model = _options.Model.Trim(),
             temperature = 0,
+            max_tokens = _options.MaxOutputTokens,
             response_format = new { type = "json_object" },
             messages = new object[]
             {
@@ -43,10 +47,12 @@ public sealed class CatalogGroundedIntentInterpreter : IBusinessIntentInterprete
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey.Trim());
         request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(_options.RequestTimeoutSeconds));
         HttpResponseMessage response;
         try
         {
-            response = await _http.SendAsync(request, cancellationToken);
+            response = await _http.SendAsync(request, timeout.Token);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {

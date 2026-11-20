@@ -5,13 +5,25 @@ export function apiNetworkLabel(): string {
   return resolveApiOrigin() || 'http://localhost:5290';
 }
 
+export function isLocalApiOrigin(origin = resolveApiOrigin()): boolean {
+  if (!origin) return true;
+  try {
+    const host = new URL(origin).hostname.toLowerCase();
+    return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+  } catch {
+    return true;
+  }
+}
+
 export function isProductionApi(): boolean {
-  return Boolean(resolveApiOrigin());
+  const origin = resolveApiOrigin();
+  if (!origin) return false;
+  return !isLocalApiOrigin(origin);
 }
 
 export function apiOfflineMessage(): string {
   if (!isProductionApi()) {
-    return 'Không kết nối được API (localhost:5290). Chạy npm run dev hoặc .\\scripts\\restart-api.ps1.';
+    return 'Không kết nối được API (localhost:5290). Trong terminal Content: . .\\scripts\\api-dev.ps1 rồi Ensure-ApiDev. Không dùng restart-api.ps1.';
   }
   return `Không kết nối được ${apiNetworkLabel()}. Thử lại sau vài giây hoặc restart dịch vụ API trên VPS.`;
 }
@@ -25,7 +37,7 @@ export function apiHealthBannerMessage(): string {
 
 export function apiHealthBannerDescription(): string {
   if (!isProductionApi()) {
-    return 'API port 5290 chưa phản hồi. Chạy npm run dev (tự động bật API) hoặc .\\scripts\\restart-api.ps1.';
+    return 'API port 5290 chưa phản hồi. Chạy .\\scripts\\api-dev.ps1 → Ensure-ApiDev (Content). Không dùng restart-api.ps1.';
   }
   return 'API có thể đang khởi động lại sau deploy. Thử "Kiểm tra lại" hoặc trên VPS: systemctl restart kit-platform-api.';
 }

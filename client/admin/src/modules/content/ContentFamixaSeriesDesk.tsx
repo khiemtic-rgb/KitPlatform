@@ -1,14 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Modal } from 'antd';
-import type { ContentSeriesBuildSummary } from '@/shared/api/content.api';
+import { useAuthStore } from '@/shared/auth/auth.store';
+import { authenticatedTenantLabel } from '@/shared/auth/authenticated-tenant';
+import { fetchContentVideoJobs, type ContentSeriesBuildSummary, type ContentVideoJob } from '@/shared/api/content.api';
 import type { ProductionProgressView } from './kit-video-production-progress';
 import {
   STUDIO_PAGE_SIZE,
   filterStudioBuilds,
-  studioBuildCounts,
   studioBuildLabel,
+  studioInventoryCounts,
+  studioOsVideoShotRoster,
+  studioProductionVideoLine,
   studioNextAction,
   suggestNextEpisodeCode,
+  seriesBuildReadOnly,
+  contentVideoCatalogLabel,
+  contentVideoCatalogState,
   videoPrimaryAction,
   type StudioFilter,
 } from './content-famixa-series-desk';
@@ -26,6 +33,8 @@ export function ContentFamixaSeriesDesk({
   builds,
   progressById,
   busy,
+  authRequired,
+  catalogSettled,
   onOpen,
   onCreate,
   onDelete,
@@ -34,6 +43,8 @@ export function ContentFamixaSeriesDesk({
   builds: ContentSeriesBuildSummary[];
   progressById?: Record<string, ProductionProgressView>;
   busy?: boolean;
+  authRequired?: boolean;
+  catalogSettled?: boolean;
   onOpen: (id: string) => void;
   onCreate: (input: { title: string; premise: string; note: string; episode: string; script?: string }) => void;
   onDelete?: (id: string, title: string) => void;
@@ -47,7 +58,30 @@ export function ContentFamixaSeriesDesk({
   const [filter, setFilter] = useState<StudioFilter>('all');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
+  const [contentVideos, setContentVideos] = useState<ContentVideoJob[]>([]);
+  const [contentVideosSettled, setContentVideosSettled] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetchContentVideoJobs()
+      .then((rows) => {
+        if (!cancelled) setContentVideos(rows ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setContentVideos([]);
+      })
+      .finally(() => {
+        if (!cancelled) setContentVideosSettled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const tenantLabel = authenticatedTenantLabel(
+    useAuthStore((s) => s.user),
+    useAuthStore((s) => s.accessToken),
+  );
   const filtered = useMemo(
     () => filterStudioBuilds(builds, filter, query, progressById),
     [builds, filter, query, progressById],
@@ -61,6 +95,7 @@ export function ContentFamixaSeriesDesk({
         <div>
           <p className="fx-sw__brand">VIDEO STUDIO</p>
           <h1 className="fx-sw__title">{seriesTitle}</h1>
+          <p className="fx-desk__note" data-studio-tenant={tenantLabel}>Tenant: {tenantLabel}</p>
           <p className="fx-desk__lead">Quản lý và sản xuất các video giáo dục của Famixa.</p>
         </div>
         <Button type="primary" size="large" onClick={() => { setStep(1); setOpen(true); }}>
@@ -96,11 +131,55 @@ export function ContentFamixaSeriesDesk({
         <p className="fx-desk__note">Mới cập nhật</p>
       </div>
 
-      <p className="fx-prod__kicker">DANH SÁCH VIDEO · {filtered.length}</p>
-      {!builds.length ? (
-        <article className="fx-media-card">
-          <h3>Chưa có video</h3>
-          <p>Tạo tập mới để bắt đầu từ kịch bản. Máy không tự viết hay tạo hình.</p>
+      {authRequired ? (
+        <article className="fx-media-card" data-catalog-auth="required">
+          <p className="fx-prod__kicker">SESSION EXPIRED</p>
+          <h3>AUTHENTICATION REQUIRED</h3>
+          <p>Phiên đăng nhập không còn hiệu lực. Danh sách video không được tải.</p>
+          <Button type="primary" onClick={() => { window.location.assign('/login'); }}>
+            Đăng nhập
+          </Button>
+        </article>
+      ) : (
+        <>
+      {!catalogSettled ? (
+        <p className="fx-desk__note" data-catalog-auth="pending">Đang tải danh sách video</p>
+      ) : (
+        <p className="fx-prod__kicker">DANH SÁCH VIDEO · {filtered.length}</p>
+      )}
+      {contentVideosSettled ? (
+        <section data-content-videos="1">
+          <p className="fx-prod__kicker">
+            CONTENT VIDEO · {contentVideos.length}
+            {' · '}
+            có file {contentVideos.filter((job) => contentVideoCatalogState(job) === 'playable').length}
+          </p>
+          {contentVideos.length === 0 ? (
+            <p className="fx-desk__note">Tenant này chưa có Content video.</p>
+          ) : (
+            contentVideos.map((job) => {
+              const state = contentVideoCatalogState(job);
+              return (
+                <article key={job.id} className="fx-series-card" data-content-video-state={state}>
+                  <div>
+                    <p className="fx-prod__code">{job.brandName || job.brandCode || 'Content'}</p>
+                    <h3>{job.title}</h3>
+                    <p>{contentVideoCatalogLabel(state)}</p>
+                    <p className="fx-desk__note">{job.status}</p>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </section>
+      ) : null}
+      {catalogSettled && !builds.length ? (
+        <article className="fx-media-card" data-series-builds="empty">
+          <h3>Chưa có bản dựng Famixa</h3>
+          <p>
+            Tenant này không có bản dựng đang sở hữu. Bản dựng của tenant khác không được liệt kê.
+            Tạo tập mới chỉ tạo bản dựng của tenant hiện tại. Máy không tự viết hay tạo hình.
+          </p>
           <Button type="primary" onClick={() => setOpen(true)}>
             Tạo video mới
           </Button>
@@ -113,12 +192,31 @@ export function ContentFamixaSeriesDesk({
         const progress = progressById?.[row.id];
         const card = studioCardFromProgress(progress);
         const next = studioNextAction(row, progress);
+        const roster = studioOsVideoShotRoster(progress);
+        const readOnly = seriesBuildReadOnly(row);
         return (
-          <article key={row.id} className={`fx-series-card fx-series-card--${card.tone}`}>
+          <article
+            key={row.id}
+            className={`fx-series-card fx-series-card--${card.tone}`}
+            data-series-ownership={readOnly ? 'unattributed' : 'tenant'}
+          >
             <div>
               <p className="fx-prod__code">{row.episodeCode || 'Tập mới'}</p>
               <h3>{studioBuildLabel(row, builds)}</h3>
-              <p className="fx-series-card__facts">{studioBuildCounts(row)}</p>
+              {readOnly ? (
+                <p data-series-readonly="1">Official · chưa gán tenant · chỉ xem. Không phải sản phẩm của tenant này và không ghi đè.</p>
+              ) : null}
+              <p className="fx-series-card__facts" data-progress-authority="inventory">{studioInventoryCounts(row)}</p>
+              <p data-progress-authority="production-progress">{progress ? studioProductionVideoLine(progress) : 'Đang tải tiến độ'}</p>
+              {roster.length ? (
+                <ul data-os-video-shots="1">
+                  {roster.map((shot) => (
+                    <li key={shot.id} data-video-made={shot.videoMade ? 'true' : 'false'}>
+                      {shot.label} {shot.videoMade ? '✓ Video' : '○ Chưa tạo'}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               <p className="fx-prod__st">
                 {card.tone === 'done' ? '✓' : card.tone === 'work' ? '●' : '○'} {card.label}
               </p>
@@ -140,7 +238,7 @@ export function ContentFamixaSeriesDesk({
               <Button type="primary" disabled={busy} onClick={() => onOpen(row.id)}>
                 {videoPrimaryAction(row, progress)}
               </Button>
-              {onDelete ? (
+              {onDelete && !readOnly ? (
                 <Button danger disabled={busy} onClick={() => onDelete(row.id, row.title || row.episodeCode || '')}>
                   Xóa
                 </Button>
@@ -162,6 +260,8 @@ export function ContentFamixaSeriesDesk({
           </Button>
         </div>
       ) : null}
+        </>
+      )}
 
       <Modal
         title={step === 1 ? 'Bước 1 · Thông tin video' : step === 2 ? 'Bước 2 · Kịch bản' : 'Bước 3 · Xác nhận'}

@@ -1,0 +1,21 @@
+[Unit]
+Description=Second Brain virtual paper account
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=sbagent
+Group=sbagent
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /opt/second-brain-research-runner/forward_paper.py run --archive /var/lib/second-brain-research/market-data --account /var/lib/second-brain-research/paper-account --lab-root /opt/second-brain-research-runner/engine --frozen-snapshot /opt/second-brain-research-runner/frozen/SOLUSDT.json --funding-dir /var/lib/second-brain-research/funding
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateNetwork=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/second-brain-research/paper-account /var/log/second-brain-market-data
+TimeoutStartSec=300
+UMask=0027
+StandardOutput=append:/var/log/second-brain-market-data/paper-account.log
+StandardError=append:/var/log/second-brain-market-data/paper-account.log

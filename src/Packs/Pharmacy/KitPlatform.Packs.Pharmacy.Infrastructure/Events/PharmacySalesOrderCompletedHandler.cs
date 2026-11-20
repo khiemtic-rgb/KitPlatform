@@ -53,8 +53,8 @@ internal sealed class PharmacySalesOrderCompletedHandler : IPlatformEventHandler
         }
         catch (Exception ex)
         {
-            // Never fail platform event dispatch because of CSDL sync.
             _logger.LogError(ex, "CSDL stock-out sync threw for order {OrderId}", orderId);
+            throw;
         }
     }
 

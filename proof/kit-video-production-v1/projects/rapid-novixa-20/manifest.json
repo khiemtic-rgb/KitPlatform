@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "rapid-novixa-20",
+  "projectName": "Novixa — video nhanh 20 giây",
+  "brand": {"id": "novixa", "name": "Novixa"},
+  "script": {
+    "version": "rapid-1",
+    "approvalStatus": "approved",
+    "sourcePath": "script.md",
+    "notes": "Bản mẫu 20 giây. Số trên màn là dữ liệu mô phỏng, không phải số cửa hàng."
+  },
+  "durationPolicy": {
+    "mode": "target",
+    "targetSeconds": 20,
+    "notes": "Tổng bốn cảnh khóa ở 20 giây."
+  },
+  "storyStructure": [
+    {"beatId": "open", "summary": "Dấu Novixa và câu việc nhà thuốc."},
+    {"beatId": "day", "summary": "Quầy, kho và hạn dùng trên một nhịp."},
+    {"beatId": "desk", "summary": "Màn hình mô phỏng đơn, tồn và hạn."},
+    {"beatId": "close", "summary": "Ba việc cần nhớ."}
+  ],
+  "voice": {
+    "profileId": "vi-VN-NamMinhNeural",
+    "language": "vi",
+    "pronunciationNotes": "Đọc Novixa như tên riêng. Không tăng tốc giọng.",
+    "tracks": [
+      {"trackId": "vo-s1", "approval": "proposed", "text": "Nhà thuốc, một nhịp làm việc.", "path": "assets/voice/s1-open.wav", "pathBase": "project"},
+      {"trackId": "vo-s2", "approval": "proposed", "text": "Khách đến quầy, kho lấy đúng hộp, và hạn dùng được nhìn thấy.", "path": "assets/voice/s2-day.wav", "pathBase": "project"},
+      {"trackId": "vo-s3", "approval": "proposed", "text": "Đơn, tồn và hạn trên một màn. Số trên hình là dữ liệu mô phỏng.", "path": "assets/voice/s3-desk.wav", "pathBase": "project"},
+      {"trackId": "vo-s4", "approval": "proposed", "text": "Bán đúng. Theo dõi hạn. Giao rõ.", "path": "assets/voice/s4-close.wav", "pathBase": "project"}
+    ]
+  },
+  "assets": [
+    {
+      "assetId": "logo-novixa",
+      "kind": "logo",
+      "source": "library",
+      "path": "docs/novixa/assets/brand/novixa-logo.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "008501e96549b05af42af24b2b8e9e068ba8c031fa57920c61632a710b32e1f4",
+      "usageRights": "brand asset, use unmodified",
+      "approval": "approved",
+      "role": "brand_logo",
+      "label": "Logo NOVIXA gốc. Không sửa file."
+    }
+  ],
+  "visualStyle": {
+    "profileId": "novixa-rapid-20",
+    "artDirection": {
+      "audience": "dược sĩ và chủ nhà thuốc",
+      "objective": "giải thích một nhịp làm việc",
+      "language": "tiếng Việt",
+      "imagery": "motion-graphics",
+      "motion": "entrance-and-hold",
+      "light": "warm-paper",
+      "material": "paper",
+      "depth": "flat",
+      "principles": ["exact-copy"]
+    },
+    "palette": {
+      "background": [247, 249, 247],
+      "ink": [0, 32, 96],
+      "accent": [22, 140, 136],
+      "paper": [255, 255, 255],
+      "muted": [90, 104, 112],
+      "accentAlt": [176, 96, 42],
+      "weight": [24, 40, 72]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.06, "right": 0.06, "bottom": 0.06, "left": 0.06}
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.35,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {"aspectRatio": "16:9", "width": 1280, "height": 720, "frameRate": 24},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": false,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "approved", "notes": "Video Novixa 20 giây, 1280x720, 24fps."},
+    {"stage": "script_analysis", "automation": "assisted", "status": "done", "notes": "Bốn cảnh viết tay trên template đã có."},
+    {"stage": "story_structure", "automation": "manual", "status": "approved", "notes": "Mở, nhịp ngày, màn hình, kết."},
+    {"stage": "shot_plan", "automation": "assisted", "status": "approved", "notes": "Dùng designed_board."},
+    {"stage": "asset_plan", "automation": "automated", "status": "done", "notes": "Chỉ logo đã duyệt. Màn hình vẽ bằng code."},
+    {"stage": "asset_creation", "automation": "manual", "status": "done", "notes": "Không tạo asset mới. Không sửa logo."},
+    {"stage": "voiceover", "automation": "automated", "status": "done", "notes": "edge-tts vi-VN-NamMinhNeural, tốc độ +0%. Track còn proposed vì chưa có người nghe duyệt."},
+    {"stage": "animation", "automation": "automated", "status": "done", "notes": "Logo nở, việc trượt, cột mọc, cột rơi."},
+    {"stage": "audio_mix", "automation": "automated", "status": "not_started", "notes": "Chưa có lời."},
+    {"stage": "render", "automation": "automated", "status": "in_progress", "notes": "Preview trước, rồi render đủ."},
+    {"stage": "qa", "automation": "automated", "status": "not_started", "notes": ""},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Không phát hành."}
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

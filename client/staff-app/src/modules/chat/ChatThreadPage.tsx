@@ -96,7 +96,7 @@ export function ChatThreadPage() {
 
   useEffect(() => {
     if (!accessToken || !customerId) return;
-    return subscribeChatSse(buildChatEventsUrl(accessToken), () => void loadMessages(true));
+    return subscribeChatSse(buildChatEventsUrl(), accessToken, () => void loadMessages(true));
   }, [accessToken, customerId, loadMessages]);
 
   useEffect(() => {

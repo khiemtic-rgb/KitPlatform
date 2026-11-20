@@ -33,14 +33,6 @@ export default defineConfig({
     port: uiPort,
     strictPort: true,
     proxy: {
-      ...(process.env.SB_RESEARCH_DESK_URL
-        ? {
-          '/api/personal-intelligence/trading-research': {
-            target: process.env.SB_RESEARCH_DESK_URL,
-            changeOrigin: true,
-          },
-        }
-        : {}),
       '/api': {
         target: target.origin,
         changeOrigin: true,

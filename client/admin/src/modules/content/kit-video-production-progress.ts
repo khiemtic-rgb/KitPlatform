@@ -1,3 +1,4 @@
+/** Official card view of GET production progress. Script stages are graph. Production stages are OS bindings. VGE is not a fallback. */
 export const PRODUCTION_PROGRESS_SOT_ID = 'FAMIXA_PRODUCTION_PROGRESS_SOURCE_OF_TRUTH_V1';
 
 export type ProductionProgressStageView = { id: string; label: string; done: boolean; detail: string };
@@ -24,6 +25,7 @@ export type ProductionProgressView = {
   totalStages: number;
   tone: string;
   stages: ProductionProgressStageView[];
+  scenes?: { shots?: { shotId?: string; videoMade?: boolean }[] }[];
   generate?: boolean;
 };
 

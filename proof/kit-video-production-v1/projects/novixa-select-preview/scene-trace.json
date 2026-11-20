@@ -1,0 +1,619 @@
+[
+  {
+    "brief": {
+      "narration_segment": "Đây là vỉ thuốc tham chiếu.",
+      "time_range": [
+        0.0,
+        5.0
+      ],
+      "brand_scope": "NOVIXA",
+      "topic": "medicine.packaging",
+      "entities": [
+        "vỉ"
+      ],
+      "actions": [],
+      "key_message": "Đây là vỉ thuốc tham chiếu.",
+      "visual_intent": "show_product",
+      "required_asset_types": [
+        "photo"
+      ],
+      "required_categories": [
+        "medicine.packaging"
+      ],
+      "preferred_tags": [
+        "vỉ"
+      ],
+      "forbidden_tags": [],
+      "forbidden_categories": [
+        "software.dashboard",
+        "software.pos",
+        "inventory.stock"
+      ],
+      "visual_role": "hero",
+      "chart_requirements": null,
+      "desired_duration_range": [
+        3.75,
+        5.75
+      ],
+      "continuity_constraints": [],
+      "selected_assets": [
+        "ref-blister-foil"
+      ],
+      "selection_reasons": [
+        "ref-blister-foil khớp medicine.packaging (nghĩa 1.0, vai 1.0)."
+      ],
+      "briefId": "s1-pack"
+    },
+    "selected": {
+      "status": "chosen",
+      "assets": [
+        "ref-blister-foil"
+      ],
+      "reasons": [
+        "ref-blister-foil khớp medicine.packaging (nghĩa 1.0, vai 1.0)."
+      ]
+    },
+    "beats": [
+      {
+        "beatId": "s1-pack",
+        "start": 0.0,
+        "end": 5.0,
+        "emphasis": "Đây là vỉ thuốc tham chiếu.",
+        "layout": "product-plate",
+        "events": [
+          {
+            "at": 0.6,
+            "kind": "caption",
+            "text": "Đây là vỉ thuốc tham chiếu."
+          }
+        ],
+        "transition": "Cắt khi câu thoại kế tiếp đổi chủ đề.",
+        "new_information": "medicine.packaging",
+        "hold_reason": ""
+      }
+    ],
+    "chart": null,
+    "accepted": [
+      {
+        "assetId": "ref-blister-foil",
+        "score": 0.955,
+        "parts": {
+          "semantic_relevance": 1.0,
+          "scene_role_fit": 1.0,
+          "asset_quality": 1.0,
+          "composition_fit": 1.0,
+          "underuse_bonus": 0.7
+        },
+        "reason": "ref-blister-foil khớp medicine.packaging (nghĩa 1.0, vai 1.0)."
+      }
+    ],
+    "rejected": [
+      {
+        "assetId": "nvx-doc008-dashboard",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-catalog",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-grn",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-stock",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-pos",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-crm",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-draft",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-reports",
+        "reason": "Sai loại tài nguyên: cần photo."
+      }
+    ]
+  },
+  {
+    "brief": {
+      "narration_segment": "Người đang kiểm một vỉ trên bàn.",
+      "time_range": [
+        5.0,
+        10.0
+      ],
+      "brand_scope": "NOVIXA",
+      "topic": "people.handling",
+      "entities": [
+        "vỉ"
+      ],
+      "actions": [
+        "kiểm"
+      ],
+      "key_message": "Người đang kiểm một vỉ trên bàn.",
+      "visual_intent": "show_person",
+      "required_asset_types": [
+        "photo"
+      ],
+      "required_categories": [
+        "people.handling"
+      ],
+      "preferred_tags": [
+        "kiểm",
+        "vỉ"
+      ],
+      "forbidden_tags": [],
+      "forbidden_categories": [],
+      "visual_role": "hero",
+      "chart_requirements": null,
+      "desired_duration_range": [
+        3.75,
+        5.75
+      ],
+      "continuity_constraints": [],
+      "selected_assets": [
+        "ref-hands-blister"
+      ],
+      "selection_reasons": [
+        "ref-hands-blister khớp people.handling (nghĩa 0.65, vai 1.0)."
+      ],
+      "briefId": "s2-hands"
+    },
+    "selected": {
+      "status": "chosen",
+      "assets": [
+        "ref-hands-blister"
+      ],
+      "reasons": [
+        "ref-hands-blister khớp people.handling (nghĩa 0.65, vai 1.0)."
+      ]
+    },
+    "beats": [
+      {
+        "beatId": "s2-hands",
+        "start": 5.0,
+        "end": 10.0,
+        "emphasis": "Người đang kiểm một vỉ trên bàn.",
+        "layout": "person-plate",
+        "events": [
+          {
+            "at": 5.6,
+            "kind": "caption",
+            "text": "Người đang kiểm một vỉ trên bàn."
+          }
+        ],
+        "transition": "Cắt khi câu thoại kế tiếp đổi chủ đề.",
+        "new_information": "people.handling",
+        "hold_reason": ""
+      }
+    ],
+    "chart": null,
+    "accepted": [
+      {
+        "assetId": "ref-hands-blister",
+        "score": 0.8375,
+        "parts": {
+          "semantic_relevance": 0.65,
+          "scene_role_fit": 1.0,
+          "asset_quality": 1.0,
+          "composition_fit": 1.0,
+          "underuse_bonus": 0.85
+        },
+        "reason": "ref-hands-blister khớp people.handling (nghĩa 0.65, vai 1.0)."
+      }
+    ],
+    "rejected": [
+      {
+        "assetId": "nvx-doc008-dashboard",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-catalog",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-grn",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-stock",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-pos",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-crm",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-draft",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-reports",
+        "reason": "Sai loại tài nguyên: cần photo."
+      }
+    ]
+  },
+  {
+    "brief": {
+      "narration_segment": "Không gian tủ thuốc của nhà thuốc bán lẻ.",
+      "time_range": [
+        10.0,
+        15.0
+      ],
+      "brand_scope": "NOVIXA",
+      "topic": "environment.pharmacy",
+      "entities": [
+        "nhà thuốc"
+      ],
+      "actions": [
+        "bán"
+      ],
+      "key_message": "Không gian tủ thuốc của nhà thuốc bán lẻ.",
+      "visual_intent": "show_place",
+      "required_asset_types": [
+        "photo"
+      ],
+      "required_categories": [
+        "environment.pharmacy"
+      ],
+      "preferred_tags": [
+        "nhà thuốc",
+        "tủ"
+      ],
+      "forbidden_tags": [],
+      "forbidden_categories": [],
+      "visual_role": "hero",
+      "chart_requirements": null,
+      "desired_duration_range": [
+        3.75,
+        5.75
+      ],
+      "continuity_constraints": [],
+      "selected_assets": [
+        "ref-pharmacy-floor"
+      ],
+      "selection_reasons": [
+        "ref-pharmacy-floor khớp environment.pharmacy (nghĩa 1.0, vai 1.0)."
+      ],
+      "briefId": "s3-floor"
+    },
+    "selected": {
+      "status": "chosen",
+      "assets": [
+        "ref-pharmacy-floor"
+      ],
+      "reasons": [
+        "ref-pharmacy-floor khớp environment.pharmacy (nghĩa 1.0, vai 1.0)."
+      ]
+    },
+    "beats": [
+      {
+        "beatId": "s3-floor",
+        "start": 10.0,
+        "end": 15.0,
+        "emphasis": "Không gian tủ thuốc của nhà thuốc bán lẻ.",
+        "layout": "place-plate",
+        "events": [
+          {
+            "at": 10.6,
+            "kind": "caption",
+            "text": "Không gian tủ thuốc của nhà thuốc bán lẻ."
+          }
+        ],
+        "transition": "Cắt khi câu thoại kế tiếp đổi chủ đề.",
+        "new_information": "environment.pharmacy",
+        "hold_reason": ""
+      }
+    ],
+    "chart": null,
+    "accepted": [
+      {
+        "assetId": "ref-pharmacy-floor",
+        "score": 0.9775,
+        "parts": {
+          "semantic_relevance": 1.0,
+          "scene_role_fit": 1.0,
+          "asset_quality": 1.0,
+          "composition_fit": 1.0,
+          "underuse_bonus": 0.85
+        },
+        "reason": "ref-pharmacy-floor khớp environment.pharmacy (nghĩa 1.0, vai 1.0)."
+      }
+    ],
+    "rejected": [
+      {
+        "assetId": "nvx-doc008-dashboard",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-catalog",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-grn",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-stock",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-pos",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-crm",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-draft",
+        "reason": "Sai loại tài nguyên: cần photo."
+      },
+      {
+        "assetId": "nvx-doc008-reports",
+        "reason": "Sai loại tài nguyên: cần photo."
+      }
+    ]
+  },
+  {
+    "brief": {
+      "narration_segment": "Tồn kho và hạn dùng được nhìn trên màn hình.",
+      "time_range": [
+        15.0,
+        20.0
+      ],
+      "brand_scope": "NOVIXA",
+      "topic": "inventory.stock",
+      "entities": [
+        "tồn kho",
+        "hạn dùng"
+      ],
+      "actions": [],
+      "key_message": "Tồn kho và hạn dùng được nhìn trên màn hình.",
+      "visual_intent": "show_software",
+      "required_asset_types": [
+        "screenshot"
+      ],
+      "required_categories": [
+        "inventory.stock"
+      ],
+      "preferred_tags": [
+        "tồn",
+        "hạn"
+      ],
+      "forbidden_tags": [],
+      "forbidden_categories": [
+        "medicine.packaging"
+      ],
+      "visual_role": "hero",
+      "chart_requirements": null,
+      "desired_duration_range": [
+        3.75,
+        5.75
+      ],
+      "continuity_constraints": [],
+      "selected_assets": [
+        "nvx-doc008-stock"
+      ],
+      "selection_reasons": [
+        "nvx-doc008-stock khớp inventory.stock (nghĩa 1.0, vai 1.0)."
+      ],
+      "briefId": "s4-stock"
+    },
+    "selected": {
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-stock"
+      ],
+      "reasons": [
+        "nvx-doc008-stock khớp inventory.stock (nghĩa 1.0, vai 1.0)."
+      ]
+    },
+    "beats": [
+      {
+        "beatId": "s4-stock",
+        "start": 15.0,
+        "end": 20.0,
+        "emphasis": "Tồn kho và hạn dùng được nhìn trên màn hình.",
+        "layout": "ui-plate",
+        "events": [
+          {
+            "at": 15.6,
+            "kind": "caption",
+            "text": "Tồn kho và hạn dùng được nhìn trên màn hình."
+          }
+        ],
+        "transition": "Cắt khi câu thoại kế tiếp đổi chủ đề.",
+        "new_information": "inventory.stock",
+        "hold_reason": ""
+      }
+    ],
+    "chart": null,
+    "accepted": [
+      {
+        "assetId": "nvx-doc008-stock",
+        "score": 0.955,
+        "parts": {
+          "semantic_relevance": 1.0,
+          "scene_role_fit": 1.0,
+          "asset_quality": 1.0,
+          "composition_fit": 1.0,
+          "underuse_bonus": 0.7
+        },
+        "reason": "nvx-doc008-stock khớp inventory.stock (nghĩa 1.0, vai 1.0)."
+      }
+    ],
+    "rejected": [
+      {
+        "assetId": "nvx-doc008-dashboard",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-catalog",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-grn",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-pos",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-crm",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-draft",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-reports",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-app",
+        "reason": "Sai nhóm nội dung."
+      }
+    ]
+  },
+  {
+    "brief": {
+      "narration_segment": "Giữ vỉ này cạnh màn tồn kho để đối chiếu.",
+      "time_range": [
+        20.0,
+        25.0
+      ],
+      "brand_scope": "NOVIXA",
+      "topic": "inventory.stock+medicine.packaging",
+      "entities": [
+        "tồn kho",
+        "vỉ"
+      ],
+      "actions": [
+        "đối chiếu"
+      ],
+      "key_message": "Giữ vỉ này cạnh màn tồn kho để đối chiếu.",
+      "visual_intent": "composite",
+      "required_asset_types": [
+        "screenshot",
+        "photo"
+      ],
+      "required_categories": [
+        "inventory.stock",
+        "medicine.packaging"
+      ],
+      "preferred_tags": [
+        "tồn",
+        "vỉ"
+      ],
+      "forbidden_tags": [],
+      "forbidden_categories": [],
+      "visual_role": "hero",
+      "chart_requirements": null,
+      "desired_duration_range": [
+        3.75,
+        5.75
+      ],
+      "continuity_constraints": [
+        {
+          "reuse_categories": [
+            "medicine.packaging",
+            "inventory.stock"
+          ],
+          "reason": "Lời nói giữ vỉ và đặt cạnh màn tồn để đối chiếu."
+        }
+      ],
+      "selected_assets": [
+        "nvx-doc008-stock",
+        "ref-blister-foil"
+      ],
+      "selection_reasons": [
+        "Lời nói giữ vỉ và đặt cạnh màn tồn để đối chiếu.",
+        "Giữ ảnh vì ràng buộc liên tục, không phạt lặp.",
+        "Màn tồn là hình nền. Ảnh vỉ là ảnh tham chiếu, không thay cho giao diện."
+      ],
+      "briefId": "s5-join"
+    },
+    "selected": {
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-stock",
+        "ref-blister-foil"
+      ],
+      "reasons": [
+        "Lời nói giữ vỉ và đặt cạnh màn tồn để đối chiếu.",
+        "Giữ ảnh vì ràng buộc liên tục, không phạt lặp.",
+        "Màn tồn là hình nền. Ảnh vỉ là ảnh tham chiếu, không thay cho giao diện."
+      ]
+    },
+    "beats": [
+      {
+        "beatId": "s5-join",
+        "start": 20.0,
+        "end": 25.0,
+        "emphasis": "Giữ vỉ này cạnh màn tồn kho để đối chiếu.",
+        "layout": "composite-plate",
+        "events": [
+          {
+            "at": 21.25,
+            "kind": "inset",
+            "text": "Ảnh thứ hai xuất hiện cạnh hình nền."
+          }
+        ],
+        "transition": "Cắt khi câu thoại kế tiếp đổi chủ đề.",
+        "new_information": "inventory.stock+medicine.packaging",
+        "hold_reason": ""
+      }
+    ],
+    "chart": null,
+    "accepted": [],
+    "rejected": [
+      {
+        "assetId": "nvx-doc008-dashboard",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-catalog",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-grn",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-stock",
+        "reason": "Đúng bộ lọc cứng nhưng độ nghĩa dưới ngưỡng.",
+        "semantic_relevance": 0.35
+      },
+      {
+        "assetId": "nvx-doc008-pos",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-crm",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-draft",
+        "reason": "Sai nhóm nội dung."
+      },
+      {
+        "assetId": "nvx-doc008-reports",
+        "reason": "Sai nhóm nội dung."
+      }
+    ]
+  }
+]

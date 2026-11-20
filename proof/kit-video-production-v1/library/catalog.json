@@ -1,0 +1,1429 @@
+{
+  "assets": [
+    {
+      "assetId": "nvx-doc008-dashboard",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.dashboard",
+      "keywords": [
+        "tổng quan",
+        "dashboard",
+        "nvx-doc008-dashboard"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/01-dashboard.png",
+      "pathBase": "repo",
+      "sha256": "94c726755cdfaa2b38691e3c089e92a1d39eb98325f5d12ed222b39382e544e9",
+      "averageHash": 2522034534718713097,
+      "similarityGroup": "nvx-doc008-dashboard",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s2-dash"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Màn tổng quan Novixa",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-catalog",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.catalog",
+      "keywords": [
+        "danh mục",
+        "sản phẩm",
+        "nvx-doc008-catalog"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/02-catalog-products.png",
+      "pathBase": "repo",
+      "sha256": "4cdacdc58a73fd31d06ac5bcde19db0b0b60e2605f570f51fa5138317f19ad4e",
+      "averageHash": 4254536201025233442,
+      "similarityGroup": "nvx-doc008-catalog",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s5-catalog"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Danh mục sản phẩm trên phần mềm",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-grn",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "inventory.receiving",
+      "keywords": [
+        "nhập hàng",
+        "kho",
+        "nvx-doc008-grn"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/03-procurement-grn.png",
+      "pathBase": "repo",
+      "sha256": "4a4dc7975a1d6505e727514c9d9a88f7dc95a3bc3fe91efe28f01efaaa255aa4",
+      "averageHash": 2528494269063504932,
+      "similarityGroup": "nvx-doc008-grn",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s8-grn"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Màn nhập hàng",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-stock",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "inventory.stock",
+      "keywords": [
+        "tồn kho",
+        "hạn",
+        "nvx-doc008-stock"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/04-inventory-stock.png",
+      "pathBase": "repo",
+      "sha256": "572a90cb61cd8bc1b1de4ef726a9f6bc4c744564dfa7d56b35445bb475a6e6f2",
+      "averageHash": 2384963887642250509,
+      "similarityGroup": "nvx-doc008-stock",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s6-stock"
+        },
+        {
+          "video": "novixa-asset-proof",
+          "sceneId": "s4-ui"
+        },
+        {
+          "video": "novixa-asset-proof",
+          "sceneId": "s5-join"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Màn tồn kho",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-pos",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.pos",
+      "keywords": [
+        "bán hàng",
+        "pos",
+        "nvx-doc008-pos"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/05-sales-pos.png",
+      "pathBase": "repo",
+      "sha256": "8044bb9cd92c3567f54edfccacedc29fc21c69d5b1dff7815471b7e6214b81b3",
+      "averageHash": 2388082295792934944,
+      "similarityGroup": "nvx-doc008-pos",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s3-pos"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Màn bán hàng tại quầy",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-crm",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "customer.crm",
+      "keywords": [
+        "khách hàng",
+        "hồ sơ",
+        "nvx-doc008-crm"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/06-customer-crm.png",
+      "pathBase": "repo",
+      "sha256": "a48656e4f3de8e78ea95349a811ef931aa74ff8a700bf0f3dec6122b150e8646",
+      "averageHash": 2522896715192865298,
+      "similarityGroup": "nvx-doc008-crm",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s9-crm"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Hồ sơ khách hàng",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-draft",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.draft",
+      "keywords": [
+        "đơn nháp",
+        "nvx-doc008-draft"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/07-o2o-drafts.png",
+      "pathBase": "repo",
+      "sha256": "0adc840a8d7ef4acbb1774cf20eb655f225358fa8ce59410f6dcd96fc0eecd9c",
+      "averageHash": 2386943072845235460,
+      "similarityGroup": "nvx-doc008-draft",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Đơn nháp",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-reports",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.reports",
+      "keywords": [
+        "báo cáo",
+        "nvx-doc008-reports"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/08-reports-home.png",
+      "pathBase": "repo",
+      "sha256": "8b67dba78b22651d302ef23ef6c3c1ade5a24f0373bb0a6bf8015e9612290961",
+      "averageHash": 2526541467422359809,
+      "similarityGroup": "nvx-doc008-reports",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s10-report"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Màn báo cáo",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-app",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "customer.app",
+      "keywords": [
+        "ứng dụng khách",
+        "nvx-doc008-app"
+      ],
+      "style": "software-screenshot",
+      "width": 780,
+      "height": 1688,
+      "aspect": 0.4621,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/09-customer-app-home.png",
+      "pathBase": "repo",
+      "sha256": "b444ec56ef15894fb1d41d67a0d75a178d1b2099733a460b3a33188e298fc36e",
+      "averageHash": 31966658856537091,
+      "similarityGroup": "nvx-doc008-app",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s12-app"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Ứng dụng khách hàng",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-doc008-staff-pos",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.pos",
+      "keywords": [
+        "pos nhân viên",
+        "nvx-doc008-staff-pos"
+      ],
+      "style": "software-screenshot",
+      "width": 780,
+      "height": 1688,
+      "aspect": 0.4621,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/10-staff-pos.png",
+      "pathBase": "repo",
+      "sha256": "360d28e1ab42c07bf3d37f1d40bcf0feb5f1c02abcd6168a9db59200b6668af9",
+      "averageHash": 14087263016164787507,
+      "similarityGroup": "nvx-doc008-staff-pos",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Màn bán hàng của nhân viên",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-login",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.login",
+      "keywords": [
+        "đăng nhập",
+        "nvx-qld-login"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/01-login.png",
+      "pathBase": "repo",
+      "sha256": "524b75973505879dd26be93113c78dfcfa91275e801ce4b5df3742f24e91e7a9",
+      "averageHash": 291623529400372750,
+      "similarityGroup": "nvx-qld-login",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Màn đăng nhập liên thông",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-dashboard",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.dashboard",
+      "keywords": [
+        "tổng quan liên thông",
+        "nvx-qld-dashboard"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/02-dashboard.png",
+      "pathBase": "repo",
+      "sha256": "6d3faf0a0a5fdc24ebd6e905e31d5eac4a4dc70900ae683ef88373ac232f80b1",
+      "averageHash": 1378101559275822365,
+      "similarityGroup": "nvx-qld-dashboard",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Tổng quan liên thông",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-pos",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.pos",
+      "keywords": [
+        "bán hàng liên thông",
+        "nvx-qld-pos"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/03-pos.png",
+      "pathBase": "repo",
+      "sha256": "1db1643e5edad770a753b14c96041765777ff3f5cc86a5713aee35494c9a0419",
+      "averageHash": 2676312672210854688,
+      "similarityGroup": "nvx-qld-pos",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Bán hàng trong bộ liên thông",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-drug",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.catalog",
+      "keywords": [
+        "danh mục thuốc",
+        "nvx-qld-drug"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/04-drug-master.png",
+      "pathBase": "repo",
+      "sha256": "31ef649f4872829211bf8d566929db1e2ba6f1bd9e11cf16a660ffebce365692",
+      "averageHash": 3690462563967050788,
+      "similarityGroup": "nvx-qld-drug",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Danh mục thuốc trên phần mềm",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-stock",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "inventory.stock",
+      "keywords": [
+        "tồn liên thông",
+        "nvx-qld-stock"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "review",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/05-inventory.png",
+      "pathBase": "repo",
+      "sha256": "7654b08de17cc73e2b1fa7f8a5172d282f8c631cfd9640cde8617dc4c8b68276",
+      "averageHash": 2673194263793962253,
+      "similarityGroup": "nvx-doc008-stock",
+      "parentId": "nvx-doc008-stock",
+      "derived": true,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo.",
+        "Gần giống một ảnh đã có. Không tính là tài nguyên độc lập và không dùng làm ảnh thứ hai."
+      ],
+      "label": "Tồn kho liên thông",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-grn",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "inventory.receiving",
+      "keywords": [
+        "nhập liên thông",
+        "nvx-qld-grn"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/06-grn.png",
+      "pathBase": "repo",
+      "sha256": "a670a8e9405e138590c407b1da25ee7dd6915d55cf26f18481bc073a7dc648ff",
+      "averageHash": 2536128104674632748,
+      "similarityGroup": "nvx-qld-grn",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Nhập hàng liên thông",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-sale",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.sale",
+      "keywords": [
+        "hóa đơn",
+        "nvx-qld-sale"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/07-sale.png",
+      "pathBase": "repo",
+      "sha256": "63bc1a550c4046edda51083796e58fc66f6befabdf46381f1dd6a96414d107df",
+      "averageHash": 2963421374486030890,
+      "similarityGroup": "nvx-qld-sale",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Hóa đơn bán",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-nxt",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.reports",
+      "keywords": [
+        "xuất nhập tồn",
+        "nvx-qld-nxt"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/08-report-nxt.png",
+      "pathBase": "repo",
+      "sha256": "d15a4628a4b077d35a3e8531b8fcbde3a1dd9563bbfed8dbc8d9ac4c76333f80",
+      "averageHash": 3683950010466050080,
+      "similarityGroup": "nvx-qld-nxt",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s11-nxt"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Báo cáo xuất nhập tồn",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-revenue",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.reports",
+      "keywords": [
+        "doanh thu",
+        "nvx-qld-revenue"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/09-report-revenue.png",
+      "pathBase": "repo",
+      "sha256": "d8164e05a89ac17938f4e6b709c9444f4b2a90081444918cb56e4e157fd707d1",
+      "averageHash": 2380153503150641682,
+      "similarityGroup": "nvx-qld-revenue",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Báo cáo doanh thu",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-connect",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.compliance",
+      "keywords": [
+        "liên thông",
+        "nvx-qld-connect"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/10-drug-connectivity.png",
+      "pathBase": "repo",
+      "sha256": "8d8db1d553d74cb9ae63e1c5335718fe5534e7f285df6196a85f1f346c191349",
+      "averageHash": 2667826602965999648,
+      "similarityGroup": "nvx-qld-connect",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s13-link"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Liên thông dữ liệu thuốc",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-api",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.compliance",
+      "keywords": [
+        "cấu hình",
+        "nvx-qld-api"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/11-api-config.png",
+      "pathBase": "repo",
+      "sha256": "165fa09385e8af58d5f92ef3346c24e5d5c08567fdd50d22d60b2ed95e5e0095",
+      "averageHash": 2537841217680716860,
+      "similarityGroup": "nvx-qld-api",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo."
+      ],
+      "label": "Cấu hình kết nối",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "nvx-qld-sync",
+      "brand": "NOVIXA",
+      "kind": "screenshot",
+      "category": "software.compliance",
+      "keywords": [
+        "đồng bộ",
+        "nvx-qld-sync"
+      ],
+      "style": "software-screenshot",
+      "width": 2880,
+      "height": 1800,
+      "aspect": 1.6,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "review",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/12-sync-log.png",
+      "pathBase": "repo",
+      "sha256": "8d8db1d553d74cb9ae63e1c5335718fe5534e7f285df6196a85f1f346c191349",
+      "averageHash": 2667826602965999648,
+      "similarityGroup": "nvx-qld-connect",
+      "parentId": "nvx-qld-connect",
+      "derived": true,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Số trên màn là dữ liệu demo.",
+        "Gần giống một ảnh đã có. Không tính là tài nguyên độc lập và không dùng làm ảnh thứ hai."
+      ],
+      "label": "Nhật ký đồng bộ",
+      "role": "reference",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình."
+    },
+    {
+      "assetId": "logo-novixa",
+      "brand": "NOVIXA",
+      "kind": "logo",
+      "category": "brand.mark",
+      "keywords": [
+        "logo-novixa"
+      ],
+      "style": "brand-mark",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "approved",
+      "path": "docs/novixa/assets/brand/novixa-logo.png",
+      "pathBase": "repo",
+      "sha256": "008501e96549b05af42af24b2b8e9e068ba8c031fa57920c61632a710b32e1f4",
+      "averageHash": 1326425993858302977,
+      "similarityGroup": "logo-novixa",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-long",
+          "sceneId": "s1-open"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Giữ nguyên tệp, không sửa byte."
+      ],
+      "label": "Logo Novixa gốc",
+      "role": "brand_logo",
+      "visualSource": "",
+      "usageRights": "brand asset, use unmodified"
+    },
+    {
+      "assetId": "ref-blister-foil",
+      "brand": "NOVIXA",
+      "kind": "photo",
+      "category": "medicine.packaging",
+      "keywords": [
+        "vỉ thuốc",
+        "ref-blister-foil"
+      ],
+      "style": "reference-photo",
+      "width": 1920,
+      "height": 1497,
+      "aspect": 1.2826,
+      "source": "wikimedia-commons",
+      "license": "CC BY-SA 4.0",
+      "author": "Tarasna0922",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Blister_of_tablets.jpg",
+      "approval": "approved",
+      "path": "proof/kit-video-production-v1/library/stills/ref-blister-foil.jpg",
+      "pathBase": "repo",
+      "sha256": "3fdb061b5ae609cb7a34b7857ccf6f644a4ad3067c32b3d9169281839b2a2f29",
+      "averageHash": 8172178900301474161,
+      "similarityGroup": "ref-blister-foil",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-asset-proof",
+          "sceneId": "s1-pack"
+        },
+        {
+          "video": "novixa-asset-proof",
+          "sceneId": "s5-join"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Không phải sản phẩm Novixa.",
+        "Ghi công Tarasna0922, CC BY-SA 4.0.",
+        "Bản dựng lại có thể phải giữ điều khoản share-alike."
+      ],
+      "label": "Vỉ thuốc tham chiếu",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Wikimedia Commons File:Blister of tablets.jpg, Tarasna0922, CC BY-SA 4.0. Ảnh tham chiếu, không phải sản phẩm Novixa."
+    },
+    {
+      "assetId": "ref-pack-still",
+      "brand": "NOVIXA",
+      "kind": "photo",
+      "category": "medicine.packaging",
+      "keywords": [
+        "chai thuốc",
+        "lọ thuốc",
+        "ref-pack-still"
+      ],
+      "style": "reference-photo",
+      "width": 1920,
+      "height": 1406,
+      "aspect": 1.3656,
+      "source": "wikimedia-commons",
+      "license": "CC BY-SA 4.0",
+      "author": "BuhaM",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Pills_and_medicines_02.jpg",
+      "approval": "approved",
+      "path": "proof/kit-video-production-v1/library/stills/ref-pack-still.jpg",
+      "pathBase": "repo",
+      "sha256": "6fe80cb3bd5bb0cd65e8da0d1b106ccc0e42306c1a87431fbcf59595520989f6",
+      "averageHash": 799733598421291184,
+      "similarityGroup": "ref-pack-still",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Ảnh studio, không phải hộp bán lẻ.",
+        "Ghi công BuhaM, CC BY-SA 4.0."
+      ],
+      "label": "Vỉ, chai và lọ tham chiếu",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Wikimedia Commons File:Pills and medicines 02.jpg, BuhaM, CC BY-SA 4.0. Ảnh tham chiếu, không phải sản phẩm Novixa."
+    },
+    {
+      "assetId": "ref-pharmacy-floor",
+      "brand": "NOVIXA",
+      "kind": "photo",
+      "category": "environment.pharmacy",
+      "keywords": [
+        "nhà thuốc",
+        "tủ thuốc",
+        "ref-pharmacy-floor"
+      ],
+      "style": "reference-photo",
+      "width": 1920,
+      "height": 1280,
+      "aspect": 1.5,
+      "source": "wikimedia-commons",
+      "license": "CC BY-SA 3.0",
+      "author": "Mike1979 Russia",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Brest_Greenberg_Pharmacy_Interior_2024-09-20_3798.jpg",
+      "approval": "approved",
+      "path": "proof/kit-video-production-v1/library/stills/ref-pharmacy-floor.jpg",
+      "pathBase": "repo",
+      "sha256": "ed071eab6af8c101f59a73d70b499bc99f5a27394d7e72851bde91b61abd9c71",
+      "averageHash": 12810447167815793053,
+      "similarityGroup": "ref-pharmacy-floor",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-asset-proof",
+          "sceneId": "s3-place"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Không phải cửa hàng Novixa.",
+        "Ghi công Mike1979 Russia, CC BY-SA 3.0."
+      ],
+      "label": "Không gian nhà thuốc bán lẻ",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Wikimedia Commons File:Brest Greenberg Pharmacy Interior 2024-09-20 3798.jpg, Mike1979 Russia, CC BY-SA 3.0. Không phải cửa hàng Novixa."
+    },
+    {
+      "assetId": "ref-hands-blister",
+      "brand": "NOVIXA",
+      "kind": "photo",
+      "category": "people.handling",
+      "keywords": [
+        "kiểm vỉ",
+        "ref-hands-blister"
+      ],
+      "style": "reference-photo",
+      "width": 1920,
+      "height": 1280,
+      "aspect": 1.5,
+      "source": "wikimedia-commons",
+      "license": "CC BY 2.0",
+      "author": "Shixart1985",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Person_holds_a_blister_pack_of_pills_while_sitting_at_a_table.jpg",
+      "approval": "approved",
+      "path": "proof/kit-video-production-v1/library/stills/ref-hands-blister.jpg",
+      "pathBase": "repo",
+      "sha256": "50c50f49fc0ebc294ab34736e1faf152d2afd15f2cc5197d07bd9f089f28d0d8",
+      "averageHash": 12939715957194956573,
+      "similarityGroup": "ref-hands-blister",
+      "parentId": null,
+      "derived": false,
+      "usage": [
+        {
+          "video": "novixa-asset-proof",
+          "sceneId": "s2-action"
+        }
+      ],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Không phải dược sĩ Novixa.",
+        "Ghi công Shixart1985, CC BY 2.0."
+      ],
+      "label": "Người kiểm vỉ thuốc",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Wikimedia Commons File:Person holds a blister pack of pills while sitting at a table.jpg, Shixart1985, CC BY 2.0. Không phải dược sĩ tại quầy."
+    },
+    {
+      "assetId": "ref-pharmacy-wait",
+      "brand": "NOVIXA",
+      "kind": "photo",
+      "category": "environment.pharmacy.wait",
+      "keywords": [
+        "phòng chờ",
+        "ref-pharmacy-wait"
+      ],
+      "style": "reference-photo",
+      "width": 1920,
+      "height": 1440,
+      "aspect": 1.3333,
+      "source": "wikimedia-commons",
+      "license": "CC BY-SA 4.0",
+      "author": "YipshaiukOWL",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:HK_%E5%B1%AF%E9%96%80%E9%86%AB%E9%99%A2_Tuen_Mun_Hospital_ground_floor_Pharmacy_service_counter_window_n_waiting_room_plastic_seats_July_2016_DSC.jpg",
+      "approval": "approved",
+      "path": "proof/kit-video-production-v1/library/stills/ref-pharmacy-wait.jpg",
+      "pathBase": "repo",
+      "sha256": "5376c6eafd7bc616f369266206a9e67f7ea1f7fdd625c5c3994bf38474125bed",
+      "averageHash": 2228902100384789038,
+      "similarityGroup": "ref-pharmacy-wait",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Phòng chờ, quầy ở phía sau.",
+        "Ghi công YipshaiukOWL, CC BY-SA 4.0."
+      ],
+      "label": "Phòng chờ quầy thuốc bệnh viện",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Wikimedia Commons, YipshaiukOWL, CC BY-SA 4.0. Phòng chờ bệnh viện, không phải quầy bán lẻ Novixa."
+    },
+    {
+      "assetId": "pkg-vitamin-c",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "medicine.packaging",
+      "keywords": [
+        "pkg-vitamin-c"
+      ],
+      "style": "brand-mark",
+      "width": 480,
+      "height": 320,
+      "aspect": 1.5,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "rejected",
+      "path": "proof/kit-video-production-v1/projects/novixa-pharmacy-commercial/assets/labels/v5/pkg-vitamin-c.png",
+      "pathBase": "repo",
+      "sha256": "647e8aba3e11eb93300bfd1021a0e1683e1836fbb2759f590de46218486ee5c8",
+      "averageHash": 5846802993048675429,
+      "similarityGroup": "pkg-vitamin-c",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Thẻ vẽ phẳng, không phải ảnh hộp thuốc."
+      ],
+      "label": "pkg-vitamin-c.png",
+      "role": "brand_logo",
+      "visualSource": "",
+      "usageRights": "Không dùng. Thẻ vẽ phẳng, không phải ảnh hộp thuốc."
+    },
+    {
+      "assetId": "s01-pharmacy",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "environment.pharmacy",
+      "keywords": [
+        "s01-pharmacy"
+      ],
+      "style": "brand-mark",
+      "width": 1280,
+      "height": 720,
+      "aspect": 1.7778,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "rejected",
+      "path": "proof/kit-video-production-v1/projects/novixa-pharmacy-commercial/keyframes/v7/s01-pharmacy.jpg",
+      "pathBase": "repo",
+      "sha256": "c42a5f93e378a4f7e71db1c93649dc41fd1c3006a8a1c242095585f12d6b8e76",
+      "averageHash": 12011423609564595916,
+      "similarityGroup": "s01-pharmacy",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Minh họa hoạt hình, hộp hình khối, không dùng làm ảnh thật."
+      ],
+      "label": "s01-pharmacy.jpg",
+      "role": "brand_logo",
+      "visualSource": "",
+      "usageRights": "Không dùng. Minh họa hoạt hình, hộp hình khối, không dùng làm ảnh thật."
+    },
+    {
+      "assetId": "ref-branded-blisters",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "medicine.packaging",
+      "keywords": [
+        "ref-branded-blisters"
+      ],
+      "style": "brand-mark",
+      "width": 1920,
+      "height": 1280,
+      "aspect": 1.5,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "rejected",
+      "path": "proof/kit-video-production-v1/library/incoming/Pills-in-blister-pack-jpg.jpg",
+      "pathBase": "repo",
+      "sha256": "ca0a606c9714b8ada373519df0987e7be740aca47c54b90e70c0c8de43941733",
+      "averageHash": 11278352402072810296,
+      "similarityGroup": "ref-branded-blisters",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Tên thuốc thật chiếm khung. Không dùng làm ảnh sản phẩm."
+      ],
+      "label": "Pills-in-blister-pack-jpg.jpg",
+      "role": "brand_logo",
+      "visualSource": "",
+      "usageRights": "Không dùng. Tên thuốc thật chiếm khung. Không dùng làm ảnh sản phẩm."
+    },
+    {
+      "assetId": "ref-counter-credential",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "people.counter",
+      "keywords": [
+        "ref-counter-credential"
+      ],
+      "style": "brand-mark",
+      "width": 1920,
+      "height": 1280,
+      "aspect": 1.5,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "rejected",
+      "path": "proof/kit-video-production-v1/library/incoming/Pharmacy-counter-six--plus-Influx-of-volunteers-help-keep-Rader-pharmacy-at-full.jpg",
+      "pathBase": "repo",
+      "sha256": "cb73a55c785165175d97437ca79f3c3b3b332d677d5f960e81f637af74a70263",
+      "averageHash": 7016996884811169041,
+      "similarityGroup": "ref-counter-credential",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Nhãn trên màn hình có thông tin đăng nhập. Không dùng."
+      ],
+      "label": "Pharmacy-counter-six--plus-Influx-of-volunteers-help-keep-Rader-pharmacy-at-full.jpg",
+      "role": "brand_logo",
+      "visualSource": "",
+      "usageRights": "Không dùng. Nhãn trên màn hình có thông tin đăng nhập. Không dùng."
+    },
+    {
+      "assetId": "ref-pharmacy-brochure",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "people.consult",
+      "keywords": [
+        "ref-pharmacy-brochure"
+      ],
+      "style": "brand-mark",
+      "width": 1920,
+      "height": 1278,
+      "aspect": 1.5023,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "rejected",
+      "path": "proof/kit-video-production-v1/library/incoming/Nellis-satellite-pharmacy-121023-F-TT327-099-jpg.jpg",
+      "pathBase": "repo",
+      "sha256": "b7ee8412de643386f18950386b33b6a9956d18c78465fd0455ac8ffac03a828f",
+      "averageHash": 9843812426105919447,
+      "similarityGroup": "ref-pharmacy-brochure",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Tờ rơi, không phải thao tác tại quầy."
+      ],
+      "label": "Nellis-satellite-pharmacy-121023-F-TT327-099-jpg.jpg",
+      "role": "brand_logo",
+      "visualSource": "",
+      "usageRights": "Không dùng. Tờ rơi, không phải thao tác tại quầy."
+    },
+    {
+      "assetId": "ref-gaming-monitors",
+      "brand": "AgentTrading",
+      "kind": "image",
+      "category": "environment.desk",
+      "keywords": [
+        "ref-gaming-monitors"
+      ],
+      "style": "brand-mark",
+      "width": 1920,
+      "height": 1282,
+      "aspect": 1.4977,
+      "source": "first-party",
+      "license": "Tài liệu nội bộ Novixa trong repository. Không phải ảnh stock.",
+      "approval": "rejected",
+      "path": "proof/kit-video-production-v1/library/incoming/dual-monitors.jpg",
+      "pathBase": "repo",
+      "sha256": "79563454f8cda27d49b97fbb3a5ce988712c5808fb8a216efc8adc2b159c626b",
+      "averageHash": 6836142932863682342,
+      "similarityGroup": "ref-gaming-monitors",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hai màn hình tắt trong phòng máy. Không phải bàn giao dịch."
+      ],
+      "label": "dual-monitors.jpg",
+      "role": "brand_logo",
+      "visualSource": "",
+      "usageRights": "Không dùng. Hai màn hình tắt trong phòng máy. Không phải bàn giao dịch."
+    },
+    {
+      "assetId": "novixa-ill-box-001",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "medicine.packaging",
+      "keywords": [
+        "hộp thuốc",
+        "hộp",
+        "bao bì",
+        "minh họa",
+        "novixa"
+      ],
+      "style": "code-illustration",
+      "width": 1238,
+      "height": 1152,
+      "aspect": 1.0747,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp.",
+      "approval": "approved",
+      "path": "proof/kit-video-library/20261029T090851Z-novixa-samples/novixa-ill-box-001.png",
+      "pathBase": "repo",
+      "sha256": "d2b6b7a75b21ecc40de19fabcfc3d834938e46106817d438d2a9b66cbf07a857",
+      "averageHash": 2179318145017138963,
+      "similarityGroup": "novixa-ill-box",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ, sản phẩm hư cấu. Không phải ảnh chụp sản phẩm thật.",
+        "NOVIXA không phải nhà sản xuất thuốc. Không ghi hoạt chất, liều dùng hay công dụng.",
+        "Phải giữ dòng SẢN PHẨM MINH HỌA — KHÔNG PHẢI THUỐC THẬT trên bao bì khi dùng trong phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf.",
+        "Không dùng làm asset role product và không dùng để thay ảnh sản phẩm thật."
+      ],
+      "label": "Hộp thuốc minh họa NOVIXA",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Hộp thuốc minh họa NOVIXA: hình vẽ bằng code do dự án NOVIXA tự tạo, sản phẩm hư cấu, chỉ dùng minh họa trong video NOVIXA. Không phải ảnh sản phẩm thật. Đã được người phụ trách duyệt làm mẫu minh họa (chat 2026-10-29).",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    },
+    {
+      "assetId": "novixa-ill-bottle-001",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "medicine.packaging",
+      "keywords": [
+        "lọ thuốc",
+        "lọ",
+        "chai",
+        "bao bì",
+        "minh họa",
+        "novixa"
+      ],
+      "style": "code-illustration",
+      "width": 697,
+      "height": 1208,
+      "aspect": 0.577,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp.",
+      "approval": "approved",
+      "path": "proof/kit-video-library/20261029T090851Z-novixa-samples/novixa-ill-bottle-001.png",
+      "pathBase": "repo",
+      "sha256": "49ece8c94f40892085e20a09158af686780a528713249e7499b893c0d7e96003",
+      "averageHash": 4340412577931345691,
+      "similarityGroup": "novixa-ill-bottle",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ, sản phẩm hư cấu. Không phải ảnh chụp sản phẩm thật.",
+        "NOVIXA không phải nhà sản xuất thuốc. Không ghi hoạt chất, liều dùng hay công dụng.",
+        "Phải giữ dòng SẢN PHẨM MINH HỌA — KHÔNG PHẢI THUỐC THẬT trên bao bì khi dùng trong phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf.",
+        "Không dùng làm asset role product và không dùng để thay ảnh sản phẩm thật."
+      ],
+      "label": "Lọ thuốc minh họa NOVIXA",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Lọ thuốc minh họa NOVIXA: hình vẽ bằng code do dự án NOVIXA tự tạo, sản phẩm hư cấu, chỉ dùng minh họa trong video NOVIXA. Không phải ảnh sản phẩm thật. Đã được người phụ trách duyệt làm mẫu minh họa (chat 2026-10-29).",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    },
+    {
+      "assetId": "novixa-ill-blister-001",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "medicine.packaging",
+      "keywords": [
+        "vỉ thuốc",
+        "vỉ",
+        "viên nang",
+        "bao bì",
+        "minh họa",
+        "novixa"
+      ],
+      "style": "code-illustration",
+      "width": 1695,
+      "height": 1068,
+      "aspect": 1.5871,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp.",
+      "approval": "approved",
+      "path": "proof/kit-video-library/20261029T090851Z-novixa-samples/novixa-ill-blister-001.png",
+      "pathBase": "repo",
+      "sha256": "fa8e226b0d33a7bf87da5d3e02fc3670e610fe9adb98adaa1fcdd79c15421ecf",
+      "averageHash": 73035401081618272,
+      "similarityGroup": "novixa-ill-blister",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ, sản phẩm hư cấu. Không phải ảnh chụp sản phẩm thật.",
+        "NOVIXA không phải nhà sản xuất thuốc. Không ghi hoạt chất, liều dùng hay công dụng.",
+        "Phải giữ dòng SẢN PHẨM MINH HỌA — KHÔNG PHẢI THUỐC THẬT trên bao bì khi dùng trong phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf.",
+        "Không dùng làm asset role product và không dùng để thay ảnh sản phẩm thật."
+      ],
+      "label": "Vỉ thuốc minh họa NOVIXA",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Vỉ thuốc minh họa NOVIXA: hình vẽ bằng code do dự án NOVIXA tự tạo, sản phẩm hư cấu, chỉ dùng minh họa trong video NOVIXA. Không phải ảnh sản phẩm thật. Đã được người phụ trách duyệt làm mẫu minh họa (chat 2026-10-29).",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    }
+  ]
+}

@@ -113,7 +113,8 @@ export function useCustomerDraftOrderAlerts() {
     void poll();
     const timer = window.setInterval(() => void poll(), FALLBACK_POLL_MS);
     const unsubscribeSse = subscribeChatSse(
-      buildCustomerDraftOrderEventsUrl(accessToken),
+      buildCustomerDraftOrderEventsUrl(),
+      accessToken,
       () => void poll(),
     );
 

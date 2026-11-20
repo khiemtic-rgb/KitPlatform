@@ -45,9 +45,16 @@ public sealed class PaperDecisionRecorder : IPaperDecisionRecorder
             throw new InvalidOperationException("Tin cậy phải nằm trong khoảng 0 đến 1. Decision không được lưu.");
 
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var anchor = await conn.QuerySingleOrDefaultAsync<(Guid PersonId, Guid TradingAccountId)>(
+        var tenantCode = await conn.ExecuteScalarAsync<string?>(
+            "SELECT tenant_code FROM public.tenants WHERE id = @TenantId",
+            new { TenantId = caller.TenantId });
+        var rows = (await conn.QueryAsync<LedgerAccountRow>(
             """
-            SELECT p.person_id AS PersonId, a.trading_account_id AS TradingAccountId
+            SELECT t.tenant_code AS TenantCode,
+                   e.exchange_code AS ExchangeCode,
+                   a.external_account_id AS ExternalAccountId,
+                   p.person_id AS PersonId,
+                   a.trading_account_id AS TradingAccountId
             FROM pack_personal_intelligence.person p
             JOIN public.tenants t ON t.id = p.tenant_id
             JOIN pack_personal_intelligence.trading_account a
@@ -57,13 +64,16 @@ public sealed class PaperDecisionRecorder : IPaperDecisionRecorder
             WHERE p.user_id = @UserId
               AND p.tenant_id = @TenantId
               AND p.deleted_at IS NULL
-              AND t.tenant_code = 'KIT_MKT'
-              AND e.exchange_code = 'PAPER_LEDGER'
-              AND a.external_account_id = 'KIT_MKT-PAPER-LEDGER'
             """,
-            new { UserId = caller.UserId, TenantId = caller.TenantId });
-        if (anchor.PersonId == Guid.Empty)
-            throw new InvalidOperationException("Tenant này không có neo sổ paper nội bộ. Decision không được lưu.");
+            new { UserId = caller.UserId, TenantId = caller.TenantId })).ToArray();
+        var candidates = rows.Select(row => new PaperLedgerCandidate(
+            row.TenantCode,
+            row.ExchangeCode,
+            row.ExternalAccountId,
+            row.PersonId,
+            row.TradingAccountId)).ToArray();
+        if (!PaperLedgerSelection.TrySelect(tenantCode, candidates, out var anchor, out var anchorError))
+            throw new InvalidOperationException(anchorError);
 
         var key = OperationKey(caller.TenantId, symbol, side, quantity, price, leverage, confidence, maxNotional, maxLeverage, minConfidence);
         var result = await _loop.RunFixtureAsync(new TradingLoopRequest
@@ -137,5 +147,14 @@ public sealed class PaperDecisionRecorder : IPaperDecisionRecorder
         if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
             throw new InvalidOperationException("Không đọc được " + name + ". Decision không được lưu.");
         return value;
+    }
+
+    sealed class LedgerAccountRow
+    {
+        public string TenantCode { get; set; } = "";
+        public string ExchangeCode { get; set; } = "";
+        public string ExternalAccountId { get; set; } = "";
+        public Guid PersonId { get; set; }
+        public Guid TradingAccountId { get; set; }
     }
 }

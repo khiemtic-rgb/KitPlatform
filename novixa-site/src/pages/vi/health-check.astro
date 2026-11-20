@@ -32,7 +32,7 @@ const whyCards = [
   {
     icon: 'search',
     title: 'Nhìn rõ bức tranh thực tế',
-    desc: 'Thấy rõ điểm mạnh, điểm yếu trong vận hành.',
+    desc: 'Biết chính xác điểm mạnh, điểm yếu trong vận hành.',
   },
   {
     icon: 'warning',
@@ -95,53 +95,14 @@ const gaugePct = Math.round((score / 100) * 283); // circumference ~ 2πr with r
     <section class="hc-v2-hero">
       <div class="hc-container hc-v2-hero__grid">
         <div class="hc-v2-hero__copy">
-          <h1 class="hc-v2-hero__title">Nhà thuốc vẫn bán tốt — nhưng có đang để lọt tiền?</h1>
-          <p class="hc-v2-hero__sub">Doanh thu tốt không có nghĩa nhà thuốc đang vận hành tốt.</p>
+          <h1 class="hc-v2-hero__title">
+            Nhà thuốc vẫn bán tốt — nhưng bạn có chắc đang quản lý tốt?
+            <br class="hc-v2-br" />
+            Doanh thu tốt không có nghĩa nhà thuốc đang vận hành tốt.
+          </h1>
           <p class="hc-v2-hero__lead">
-            Miễn phí, không cần đăng ký. Xem kết quả sơ bộ ngay, để lại số điện thoại để xem báo cáo đầy đủ. Nếu đồng ý thì có cuộc gọi 10–15 phút.
+            <strong>31 câu, khoảng 7–10 phút</strong>, miễn phí. Làm bài không cần đăng ký, xem kết quả sơ bộ ngay, để lại số điện thoại để xem báo cáo đầy đủ. Nếu đồng ý thì có cuộc gọi 10–15 phút.
           </p>
-
-          <div class="hc-v2-hero__actions">
-            <a id="hc-cta-top" class="hc-v2-btn hc-v2-btn--primary" href={assessmentUrl}>
-              Nhận Health Check miễn phí ngay
-              <span aria-hidden="true">→</span>
-            </a>
-            <a class="hc-v2-link" href="#mau-ket-qua">Xem mẫu kết quả</a>
-          </div>
-          <div class="hc-v2-meta">
-            {
-              meta.map((item) => (
-                <span class="hc-v2-meta__chip">
-                  <span aria-hidden="true">
-                    {item.icon === 'list' && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <path d="M8 7h11M8 12h11M8 17h11M5 7h.01M5 12h.01M5 17h.01" stroke-linecap="round" />
-                      </svg>
-                    )}
-                    {item.icon === 'clock' && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <circle cx="12" cy="12" r="8" />
-                        <path d="M12 8v4l2.5 1.5" stroke-linecap="round" />
-                      </svg>
-                    )}
-                    {item.icon === 'flash' && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z" stroke-linejoin="round" />
-                      </svg>
-                    )}
-                    {item.icon === 'user' && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                        <circle cx="12" cy="8" r="3.5" />
-                        <path d="M5 19c1-3.2 3.6-5 7-5s6 1.8 7 5" stroke-linecap="round" />
-                      </svg>
-                    )}
-                  </span>
-                  {item.label}
-                </span>
-              ))
-            }
-          </div>
-
 
           <ul class="hc-v2-outcomes">
             {
@@ -191,7 +152,47 @@ const gaugePct = Math.round((score / 100) * 283); // circumference ~ 2πr with r
             }
           </ul>
 
+          <div class="hc-v2-meta">
+            {
+              meta.map((item) => (
+                <span class="hc-v2-meta__chip">
+                  <span aria-hidden="true">
+                    {item.icon === 'list' && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <path d="M8 7h11M8 12h11M8 17h11M5 7h.01M5 12h.01M5 17h.01" stroke-linecap="round" />
+                      </svg>
+                    )}
+                    {item.icon === 'clock' && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <circle cx="12" cy="12" r="8" />
+                        <path d="M12 8v4l2.5 1.5" stroke-linecap="round" />
+                      </svg>
+                    )}
+                    {item.icon === 'flash' && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z" stroke-linejoin="round" />
+                      </svg>
+                    )}
+                    {item.icon === 'user' && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <circle cx="12" cy="8" r="3.5" />
+                        <path d="M5 19c1-3.2 3.6-5 7-5s6 1.8 7 5" stroke-linecap="round" />
+                      </svg>
+                    )}
+                  </span>
+                  {item.label}
+                </span>
+              ))
+            }
+          </div>
 
+          <div class="hc-v2-hero__actions">
+            <a class="hc-v2-btn hc-v2-btn--primary" href={assessmentUrl}>
+              Nhận Health Check miễn phí ngay
+              <span aria-hidden="true">→</span>
+            </a>
+            <a class="hc-v2-link" href="#mau-ket-qua">Xem mẫu kết quả</a>
+          </div>
 
           <ul class="hc-v2-trust">
             <li>
@@ -391,63 +392,16 @@ const gaugePct = Math.round((score / 100) * 283); // circumference ~ 2πr with r
             </div>
           </div>
           <div class="hc-v2-cta__action">
-            <a id="hc-cta-bottom" class="hc-v2-btn hc-v2-btn--accent" href={assessmentUrl}>
+            <a class="hc-v2-btn hc-v2-btn--accent" href={assessmentUrl}>
               Nhận Health Check miễn phí ngay
               <span aria-hidden="true">→</span>
             </a>
+            <p class="hc-v2-cta__note">Đã có hơn 100+ nhà thuốc quan tâm trong tháng này</p>
           </div>
         </div>
       </div>
     </section>
   </div>
-
-  <div class="hc-v2-sticky" id="hc-sticky" hidden>
-    <a class="hc-v2-btn hc-v2-btn--primary" href={assessmentUrl}>
-      Làm Health Check miễn phí
-      <span aria-hidden="true">→</span>
-    </a>
-  </div>
-
-  <script>
-    // Chuyển tiếp mã theo dõi (utm_*, ref) từ URL trang sang mọi link tới bài khảo sát,
-    // để quảng cáo trỏ vào trang này không mất nguồn.
-    const KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'ref'];
-    const SAFE = /^[A-Za-z0-9_-]{1,100}$/;
-    const params = new URLSearchParams(window.location.search);
-    const carry = KEYS.filter((k) => SAFE.test(params.get(k) ?? ''));
-    if (carry.length) {
-      document.querySelectorAll<HTMLAnchorElement>('a[href^="https://survey.novixa.vn"]').forEach((a) => {
-        const url = new URL(a.href);
-        for (const k of carry) url.searchParams.set(k, params.get(k)!);
-        a.href = url.toString();
-      });
-    }
-
-    // Thanh nút cố định trên điện thoại: hiện khi nút đầu trang đã cuộn qua,
-    // ẩn khi nút cuối trang đang trong màn hình.
-    const sticky = document.getElementById('hc-sticky');
-    const top = document.getElementById('hc-cta-top');
-    const bottom = document.getElementById('hc-cta-bottom');
-    if (sticky && top && 'IntersectionObserver' in window) {
-      let topVisible = true;
-      let bottomVisible = false;
-      const update = () => {
-        const show = !topVisible && !bottomVisible;
-        sticky.hidden = !show;
-        document.body.classList.toggle('hc-has-sticky', show);
-      };
-      new IntersectionObserver(([e]) => {
-        topVisible = e.isIntersecting || e.boundingClientRect.top > 0;
-        update();
-      }).observe(top);
-      if (bottom) {
-        new IntersectionObserver(([e]) => {
-          bottomVisible = e.isIntersecting;
-          update();
-        }).observe(bottom);
-      }
-    }
-  </script>
 
   <Footer slot="footer" />
 </BaseLayout>

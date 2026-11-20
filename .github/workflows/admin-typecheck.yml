@@ -30,4 +30,4 @@ jobs:
         run: npm ci
 
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: npx tsc --noEmit && npx tsc -p tsconfig.scripts.json --noEmit

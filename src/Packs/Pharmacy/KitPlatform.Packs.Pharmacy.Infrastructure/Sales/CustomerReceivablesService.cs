@@ -20,8 +20,7 @@ internal sealed class CustomerReceivablesService : ICustomerReceivablesService
     {
         var warehouseScope = await ResolveWarehouseScopeAsync(warehouseId, cancellationToken);
         var rows = await _repository.GetSalesOrderReceivableSourceRowsAsync(warehouseScope, cancellationToken);
-        var credits = await _repository.GetUnlinkedCustomerPaymentTotalsAsync(warehouseScope, cancellationToken);
-        return BuildCustomerGroups(rows, credits)
+        return BuildCustomerGroups(rows)
             .Select(BuildSummaryRow)
             .Where(x => x.TotalReceivable > 0.009m || x.UnappliedCredit > 0.009m)
             .OrderByDescending(x => x.TotalReceivable)
@@ -36,8 +35,7 @@ internal sealed class CustomerReceivablesService : ICustomerReceivablesService
     {
         var warehouseScope = await ResolveWarehouseScopeAsync(warehouseId, cancellationToken);
         var rows = await _repository.GetSalesOrderReceivableSourceRowsAsync(warehouseScope, cancellationToken);
-        var credits = await _repository.GetUnlinkedCustomerPaymentTotalsAsync(warehouseScope, cancellationToken);
-        var group = BuildCustomerGroups(rows, credits)
+        var group = BuildCustomerGroups(rows)
             .FirstOrDefault(x => x.CustomerId == customerId);
         if (group is null)
         {
@@ -103,16 +101,16 @@ internal sealed class CustomerReceivablesService : ICustomerReceivablesService
             group.Lines.Count(x => x.Outstanding > 0.009m));
     }
 
+    // Posting an unlinked collection already settles orders oldest-first and rejects overpayment,
+    // so order outstanding is final and nothing is left to apply here.
     private static IReadOnlyList<CustomerReceivablesGroup> BuildCustomerGroups(
-        IReadOnlyList<SalesOrderReceivableSourceRow> rows,
-        IReadOnlyDictionary<Guid, decimal> credits)
+        IReadOnlyList<SalesOrderReceivableSourceRow> rows)
     {
         return rows
             .GroupBy(x => x.CustomerId)
             .Select(group =>
             {
                 var first = group.First();
-                var credit = credits.TryGetValue(group.Key, out var amount) ? amount : 0m;
                 var lines = group
                     .Select(row =>
                     {
@@ -129,33 +127,15 @@ internal sealed class CustomerReceivablesService : ICustomerReceivablesService
                     .OrderBy(x => x.OrderDate)
                     .ToList();
 
-                var remainingCredit = ApplyUnlinkedCredit(lines, credit);
-
                 return new CustomerReceivablesGroup(
                     group.Key,
                     first.CustomerCode,
                     first.CustomerName,
                     first.CustomerPhone,
-                    remainingCredit,
+                    0m,
                     lines);
             })
             .ToList();
-    }
-
-    private static decimal ApplyUnlinkedCredit(IList<CustomerReceivablesLine> lines, decimal credit)
-    {
-        var remaining = credit;
-        foreach (var line in lines)
-        {
-            if (remaining <= 0.009m || line.Outstanding <= 0.009m)
-                continue;
-
-            var applied = Math.Min(line.Outstanding, remaining);
-            line.Outstanding -= applied;
-            remaining -= applied;
-        }
-
-        return remaining;
     }
 
     private static CustomerReceivablesAgingBucketsDto BucketAging(IEnumerable<CustomerReceivablesLine> lines)

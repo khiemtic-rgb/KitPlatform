@@ -1,25 +1,13 @@
 using KitPlatform.Application.Configuration;
-using KitPlatform.Infrastructure.Configuration;
-using KitPlatform.Infrastructure.Data;
-using Microsoft.Extensions.Configuration;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure.Consultation;
 
 internal sealed class PharmacyConsultationAiConfigProvider
 {
     private readonly ITenantSettingsService _tenantSettings;
-    private readonly IConfiguration _configuration;
-    private readonly IDbConnectionFactory _db;
 
-    public PharmacyConsultationAiConfigProvider(
-        ITenantSettingsService tenantSettings,
-        IConfiguration configuration,
-        IDbConnectionFactory db)
-    {
+    public PharmacyConsultationAiConfigProvider(ITenantSettingsService tenantSettings) =>
         _tenantSettings = tenantSettings;
-        _configuration = configuration;
-        _db = db;
-    }
 
     public sealed record ResolvedConfig(
         string? ApiKey,
@@ -34,19 +22,11 @@ internal sealed class PharmacyConsultationAiConfigProvider
             ? "gemini-2.5-flash-lite"
             : row.TextModel.Trim();
 
+        // Customer health text never goes through the Content Park (marketing) key.
         var pharmacyKey = ResolvePharmacyKey(row.GeminiApiKey, row.GeminiApiKeySecretRef);
-        if (!string.IsNullOrWhiteSpace(pharmacyKey))
-            return new ResolvedConfig(pharmacyKey, pharmacyModel, true, false);
-
-        var content = await ContentParkGeminiKeyResolver.ResolveSettingsAsync(_db, _configuration, ct);
-        var contentModel = string.IsNullOrWhiteSpace(content.TextModel)
-            ? "gemini-3.6-flash"
-            : content.TextModel.Trim();
-        return new ResolvedConfig(
-            content.ApiKey,
-            contentModel,
-            !string.IsNullOrWhiteSpace(content.ApiKey),
-            !string.IsNullOrWhiteSpace(content.ApiKey));
+        return string.IsNullOrWhiteSpace(pharmacyKey)
+            ? new ResolvedConfig(null, pharmacyModel, false, false)
+            : new ResolvedConfig(pharmacyKey, pharmacyModel, true, false);
     }
 
     private static string? ResolvePharmacyKey(string? dbKey, string? secretRef)

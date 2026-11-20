@@ -1,0 +1,31 @@
+---
+description: Nguyên tắc phân công Cursor và Claude — đầu bài theo file, dừng khi sai kiến trúc, lỗi hoặc lỗ hổng
+alwaysApply: true
+---
+
+# Nguyên tắc làm việc Cursor và Claude
+
+Khi người dùng giao việc:
+
+1. Cursor rà soát phần liên quan, phân tích, và chia việc cụ thể nếu cần.
+2. Phần giao Claude phải ghi rõ việc cần làm và từng file cần đọc hoặc sửa. Claude mở các file đó rồi thực thi. Claude không rà soát lại thư mục và không phân tích lại yêu cầu.
+3. Người dùng copy báo cáo của Claude lại cho Cursor. Cursor làm tiếp từ báo cáo đó.
+4. Thấy sai kiến trúc, lỗi, hoặc lỗ hổng bảo mật thì dừng và báo cáo. Không sửa tiếp, không giao việc tiếp.
+
+Đầu bài Claude chỉ gồm việc cần làm, kết quả phải trả, việc không được làm, đường dẫn file kèm phần cần dùng, điều đã chốt, và định dạng báo cáo. Không nhét khảo sát cả repo. Không đưa secret, mật khẩu, hay credential.
+
+```
+Việc: điền templateId cho u09 trong shot plan thử.
+Đọc: tools/kit-video-production/kit_video/edu_scenes.py (edu_contrast)
+Sửa: .tmp/kit-video-validate-20261102/novixa-phim02-7c3f9803/shot-plan.json (scene u09)
+Đã chốt: một câu một ảnh; không render.
+Trả: sceneId, templateId, params, file đã sửa.
+```
+
+Báo cáo dừng nêu chỗ sai, file và đoạn làm bằng chứng, và việc đang dừng.
+
+## Giảm token
+
+- Đầu bài và báo cáo chỉ ghi đường dẫn, đoạn dòng, và kết quả. Không dán nội dung file.
+- File đã nêu trong đầu bài thì không đọc lại cả thư mục. Chỉ đọc lại khi báo cáo lệch file đó.
+- Trả lời người dùng bằng việc đã làm và việc tiếp theo. Không nhắc lại đầu bài.

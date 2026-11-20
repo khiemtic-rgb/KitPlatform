@@ -19,6 +19,7 @@ public sealed class CustomersController : ControllerBase
     private readonly ICustomerLoyaltyService _loyalty;
     private readonly ICustomerPilotOtpAdminService _pilotOtp;
     private readonly ICustomerAppLoginAdminService _appLogin;
+    private readonly ICustomerRepurchaseService _repurchase;
     private readonly ITenantContext _tenant;
 
     public CustomersController(
@@ -29,6 +30,7 @@ public sealed class CustomersController : ControllerBase
         ICustomerLoyaltyService loyalty,
         ICustomerPilotOtpAdminService pilotOtp,
         ICustomerAppLoginAdminService appLogin,
+        ICustomerRepurchaseService repurchase,
         ITenantContext tenant)
     {
         _consents = consents;
@@ -38,6 +40,7 @@ public sealed class CustomersController : ControllerBase
         _loyalty = loyalty;
         _pilotOtp = pilotOtp;
         _appLogin = appLogin;
+        _repurchase = repurchase;
         _tenant = tenant;
     }
 
@@ -318,6 +321,13 @@ public sealed class CustomersController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpGet("{customerId:guid}/repurchase-suggestions")]
+    [Authorize(Policy = SalesPolicies.Read)]
+    public async Task<ActionResult<CustomerRepurchaseSuggestionListResult>> RepurchaseSuggestions(
+        Guid customerId,
+        CancellationToken cancellationToken) =>
+        Ok(await _repurchase.ListForStaffAsync(_tenant.TenantId, customerId, cancellationToken));
 
     [HttpGet("{customerId:guid}/orders")]
     [Authorize(Policy = SalesPolicies.Read)]

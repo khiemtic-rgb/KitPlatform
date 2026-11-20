@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using KitPlatform.Infrastructure.Configuration;
 using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
@@ -26,6 +27,10 @@ internal sealed class ContentAiConfigState
     /// <summary>Write-only stored key — never serialized into read DTOs.</summary>
     [JsonPropertyName("geminiApiKey")]
     public string? GeminiApiKey { get; set; }
+
+    /// <summary>True only when the saved JSON contains a non-empty secret reference.</summary>
+    [JsonIgnore]
+    public bool SecretRefSpecified { get; set; }
 }
 
 internal sealed record ContentAiResolved(
@@ -35,7 +40,14 @@ internal sealed record ContentAiResolved(
     bool ImagesEnabled,
     string? ApiKeySecretRef,
     string? ApiKey,
-    bool ApiKeyConfigured);
+    bool ApiKeyConfigured,
+    string KeySource,
+    string? KeyFingerprint)
+{
+    public override string ToString() =>
+        FormattableString.Invariant(
+            $"ContentAiResolved source={KeySource} configured={ApiKeyConfigured} fingerprint={KeyFingerprint ?? "-"} ref={ApiKeySecretRef ?? "-"}");
+}
 
 internal static class ContentAiConfigParser
 {
@@ -48,15 +60,34 @@ internal static class ContentAiConfigParser
     public static ContentAiConfigState Parse(string? json)
     {
         if (string.IsNullOrWhiteSpace(json) || json.Trim() == "{}")
-            return new ContentAiConfigState();
+            return Unconfigured();
         try
         {
-            return JsonSerializer.Deserialize<ContentAiConfigState>(json, JsonOpts) ?? new ContentAiConfigState();
+            var state = JsonSerializer.Deserialize<ContentAiConfigState>(json, JsonOpts) ?? Unconfigured();
+            var specified = ContentGeminiKeyPrecedence.JsonSpecifiesSecretRef(json)
+                && !string.IsNullOrWhiteSpace(state.GeminiApiKeySecretRef);
+            if (!specified)
+            {
+                state.GeminiApiKeySecretRef = null;
+                state.SecretRefSpecified = false;
+            }
+            else
+            {
+                state.GeminiApiKeySecretRef = state.GeminiApiKeySecretRef!.Trim();
+                state.SecretRefSpecified = true;
+            }
+            return state;
         }
         catch
         {
-            return new ContentAiConfigState();
+            return Unconfigured();
         }
+    }
+
+    static ContentAiConfigState Unconfigured()
+    {
+        var state = new ContentAiConfigState { GeminiApiKeySecretRef = null, SecretRefSpecified = false };
+        return state;
     }
 
     public static string ToJson(ContentAiConfigState state) =>
@@ -76,13 +107,15 @@ internal static class ContentAiConfigParser
         ContentOptions options,
         IConfiguration configuration)
     {
-        var key =
-            FirstNonEmpty(state.GeminiApiKey)
-            ?? ResolveSecret(state.GeminiApiKeySecretRef, configuration)
-            ?? FirstNonEmpty(options.GeminiApiKey)
-            ?? FirstNonEmpty(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
-            ?? FirstNonEmpty(Environment.GetEnvironmentVariable("GOOGLE_API_KEY"))
-            ?? FirstNonEmpty(Environment.GetEnvironmentVariable("GOOGLE_GENERATIVE_AI_API_KEY"));
+        var decision = ContentGeminiKeyPrecedence.Resolve(
+            state.GeminiApiKey,
+            state.GeminiApiKeySecretRef,
+            state.SecretRefSpecified,
+            name => ResolveSecret(name, configuration),
+            options.GeminiApiKey,
+            Environment.GetEnvironmentVariable("GEMINI_API_KEY"),
+            Environment.GetEnvironmentVariable("GOOGLE_API_KEY"),
+            Environment.GetEnvironmentVariable("GOOGLE_GENERATIVE_AI_API_KEY"));
 
         var textModel = RewriteRetiredTextModel(
             FirstNonEmpty(state.TextModel)
@@ -96,8 +129,10 @@ internal static class ContentAiConfigParser
             imageModel,
             state.ImagesEnabled,
             FirstNonEmpty(state.GeminiApiKeySecretRef),
-            key,
-            !string.IsNullOrWhiteSpace(key));
+            decision.ApiKey,
+            decision.Configured,
+            decision.Source,
+            decision.Fingerprint);
     }
 
     private static string? ResolveSecret(string? secretRef, IConfiguration configuration)

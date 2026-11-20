@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   App,
   Alert,
@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   completeDraftSale,
   createSale,
+  findSaleByClientSaleId,
   fetchOpenShift,
   fetchPosCustomerLoyalty,
   fetchPosCustomerVouchers,
@@ -44,6 +45,12 @@ import { apiErrorMessage } from '@/shared/api/api-error';
 import { formatMoney } from '@/shared/utils/money';
 import { priceCart, roundMoney, lineNet } from '@/modules/sales/pos-pricing';
 import { buildCreateSalePayload, buildDraftCompletePayload } from '@/modules/sales/pos-sale-payload';
+import {
+  SaleAttemptBlockedError,
+  SaleAttemptPendingError,
+  salePayloadFingerprint,
+  settleCompletedSale,
+} from '@/modules/sales/pos-sale-attempt';
 import { defaultOrderReminderLabel } from '@/modules/sales/order-reminder-label';
 import { validateCartBatchLabels } from '@/modules/sales/pos-batch';
 import {
@@ -117,6 +124,7 @@ function SummaryRow({
 export function CheckoutPage() {
   const { message } = App.useApp();
   const navigate = useNavigate();
+  const checkoutLock = useRef<Promise<void> | null>(null);
   const {
     warehouseId,
     cart,
@@ -331,7 +339,7 @@ export function CheckoutPage() {
     });
   };
 
-  const submit = async () => {
+  const submitOnce = async () => {
     if (!warehouseId || cart.length === 0) return;
     if (!shiftReady) {
       message.warning('Mở ca trước khi thanh toán');
@@ -413,6 +421,10 @@ export function CheckoutPage() {
             payableTotal,
           );
 
+      const saleBody = {
+        ...payloadBase,
+        payments: apiPayments,
+      };
       const order = editingDraftId
         ? await completeDraftSale(editingDraftId, {
             payments: apiPayments,
@@ -426,10 +438,24 @@ export function CheckoutPage() {
               orderReminder,
             ),
           })
-        : await createSale({
-            ...payloadBase,
-            payments: apiPayments,
-          });
+        : await (async () => {
+            const settled = await settleCompletedSale({
+              storage: window.localStorage,
+              fingerprint: salePayloadFingerprint(saleBody),
+              now: () => Date.now(),
+              mintKey: () => crypto.randomUUID(),
+              lookup: findSaleByClientSaleId,
+              send: (clientSaleId) => createSale({ ...saleBody, clientSaleId }),
+            });
+            if (settled.kind === 'already-recorded') {
+              message.success(
+                `Đã tìm thấy đơn ${settled.order.orderNumber} của lần thanh toán trước. Giỏ hiện tại chưa bán.`,
+              );
+              return null;
+            }
+            return settled.order;
+          })();
+      if (!order) return;
 
       if (loadedReservationId) {
         try {
@@ -453,10 +479,25 @@ export function CheckoutPage() {
       clearPosDraftEdit();
       navigate('/receipt', { replace: true, state: { order, autoPrint: true } });
     } catch (error) {
-      message.error(apiErrorMessage(error, 'Không hoàn tất được thanh toán'));
+      if (error instanceof SaleAttemptPendingError) {
+        message.warning('Chưa kiểm tra được kết quả lần thanh toán trước. Chưa tạo giao dịch mới.');
+      } else if (error instanceof SaleAttemptBlockedError) {
+        message.warning('Một tab khác đang giữ lần thanh toán này. Chưa tạo giao dịch mới.');
+      } else {
+        message.error(apiErrorMessage(error, 'Không hoàn tất được thanh toán'));
+      }
     } finally {
       setSaving(false);
     }
+  };
+
+  const submit = () => {
+    if (checkoutLock.current) return checkoutLock.current;
+    const run = submitOnce();
+    checkoutLock.current = run;
+    return run.finally(() => {
+      if (checkoutLock.current === run) checkoutLock.current = null;
+    });
   };
 
   return (

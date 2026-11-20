@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "novixa-pharmacy-commercial",
+  "approvalStatus": "proposed",
+  "scenes": [
+    {
+      "sceneId": "s01-pharmacy",
+      "approvalStatus": "proposed",
+      "storyGoal": "Mở nhà thuốc và đặt tồn kho là vốn, trước khi nói về phần mềm.",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "Mỗi hộp trên kệ đều là vốn đang nằm chờ.",
+      "action": "Dược sĩ đứng trong quầy, nhìn về kệ. Máy giữ trung cảnh. Không có hành động cầm hộp.",
+      "visualMetaphor": null,
+      "onScreenText": [],
+      "templateId": "custom",
+      "params": {
+        "productionMethod": "image_to_video",
+        "subject": "character-and-pharmacy",
+        "keyframe": "keyframes/v7/s01-pharmacy.jpg",
+        "keyframeApproval": "AWAITING_REVIEW"
+      },
+      "assets": ["character-v3", "pharmacy-v7"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 5, "reason": "Chưa có file lời. Lời đã viết trong dialogue, chưa thu."}],
+        "syncNotes": "Lời vào khi nhà thuốc đã rõ."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang tay và hộp."},
+      "acceptance": ["Nhà thuốc và dược sĩ cùng trong khung.", "Phong cách hoạt hình 3D, không bán hiện thực.", "Chưa gửi provider khi cảnh còn proposed."]
+    },
+    {
+      "sceneId": "s02-take-box",
+      "approvalStatus": "proposed",
+      "storyGoal": "Cho thấy lấy một hộp cụ thể khỏi kệ, không dùng ảnh đứng để giả lập.",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Đưa tay tới hộp, ngón còn cách hộp, rồi nắm và nhấc hộp khỏi kệ.",
+      "visualMetaphor": null,
+      "onScreenText": [],
+      "templateId": "custom",
+      "params": {
+        "productionMethod": "image_to_video",
+        "subject": "character-action",
+        "blockedAssets": ["pose-reach-v2", "pose-grasp-v2", "pose-lift-v2"],
+        "rejectedKeyframe": "keyframes/v2/s02-take-box.jpg"
+      },
+      "assets": ["character-v3", "pharmacy-plate-v3"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 5, "reason": "Chưa có file lời và chưa có tiếng cầm hộp được cấp quyền."}],
+        "syncNotes": "Lời ngắn trong lúc tay tới hộp."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang mặt hộp."},
+      "acceptance": ["Có khoảng cách giữa ngón và hộp trước khi chạm.", "Hộp được nắm rồi rời kệ.", "Không dùng keyframe v2."]
+    },
+    {
+      "sceneId": "s03-label",
+      "approvalStatus": "proposed",
+      "storyGoal": "Tên sản phẩm đọc được vì lớp chữ vẽ ra, không vì model viết chữ.",
+      "durationSeconds": 4,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Một tay giữ hộp. Ngón trỏ chỉ vào vùng tên AMPICILLIN.",
+      "visualMetaphor": null,
+      "onScreenText": ["AMPICILLIN"],
+      "templateId": "custom",
+      "params": {
+        "productionMethod": "image_to_video_plus_graphics",
+        "subject": "product-label",
+        "labelAsset": "pkg-ampicillin-face",
+        "blockedAssets": ["pose-point-v2"],
+        "forbiddenOnPackage": ["500 mg", "liều dùng", "công dụng"]
+      },
+      "assets": ["character-v3", "pkg-ampicillin-face"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 4, "reason": "Chưa có file lời."}],
+        "syncNotes": "Tên hiện khi ngón đã chỉ đúng vùng nhãn."
+      },
+      "transitionOut": {"type": "cut", "note": "Rời nhân vật, sang số liệu."},
+      "acceptance": ["Ngón chỉ vào vùng tên.", "Không có hàm lượng trên hộp.", "Chữ AMPICILLIN do graphics vẽ."]
+    },
+    {
+      "sceneId": "s04-operations",
+      "approvalStatus": "proposed",
+      "storyGoal": "Cho chủ nhà thuốc thấy giờ, doanh thu và đơn. Cảnh này không cần nhân vật.",
+      "durationSeconds": 4,
+      "durationSource": "fixed",
+      "dialogue": "Nhà thuốc mở bảy giờ, đóng mười giờ tối. Doanh thu mười hai triệu rưỡi mỗi ngày. Tám mươi sáu đơn.",
+      "action": "Năm thẻ số hiện từ demoData. Không có dược sĩ trong khung.",
+      "visualMetaphor": null,
+      "onScreenText": ["07:00", "22:00", "12.500.000 VNĐ/ngày", "86 đơn", "214 mặt hàng", "Dữ liệu mô phỏng"],
+      "templateId": "custom",
+      "params": {
+        "productionMethod": "post_graphics",
+        "subject": "kpi",
+        "dataSource": "commercial.json#demoData"
+      },
+      "assets": ["operations-v7"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 4, "reason": "Chưa có file lời. Nhạc chưa có bản quyền."}],
+        "syncNotes": "Lời đọc giờ và số đơn khi thẻ đã hiện."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang bảng tồn."},
+      "acceptance": ["Năm số khớp demoData.", "Thẻ doanh thu không cắt chữ.", "Dữ liệu mô phỏng chỉ là chú thích nhỏ."]
+    },
+    {
+      "sceneId": "s05-inventory",
+      "approvalStatus": "proposed",
+      "storyGoal": "Chốt thông điệp bằng bảng tồn, không bằng một câu chữ treo một mình.",
+      "durationSeconds": 4,
+      "durationSource": "fixed",
+      "dialogue": "Hai trăm mười bốn mặt hàng. Hàng tồn kho cũng là vốn.",
+      "action": "Bảng ba cột. Không có dược sĩ trong khung.",
+      "visualMetaphor": null,
+      "onScreenText": ["AMPICILLIN", "48", "HOẠT HUYẾT", "72", "VITAMIN C", "94", "214", "Hàng tồn kho cũng là vốn."],
+      "templateId": "custom",
+      "params": {
+        "productionMethod": "post_graphics",
+        "subject": "inventory",
+        "dataSource": "commercial.json#demoData"
+      },
+      "assets": ["inventory-v7"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 4, "reason": "Chưa có file lời."}],
+        "syncNotes": "Câu thông điệp rơi khi tổng 214 đã hiện."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang logo."},
+      "acceptance": ["48 + 72 + 94 = 214.", "Tên có dấu HOẠT HUYẾT.", "Không thêm hàm lượng."]
+    },
+    {
+      "sceneId": "s06-logo",
+      "approvalStatus": "proposed",
+      "storyGoal": "Kết bằng NOVIXA và câu đã chốt. Thẻ này không phải cả phim.",
+      "durationSeconds": 3,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Logo và câu thông điệp. Không có nhân vật.",
+      "visualMetaphor": null,
+      "onScreenText": ["NOVIXA", "Hàng tồn kho cũng là vốn."],
+      "templateId": "custom",
+      "params": {
+        "productionMethod": "post_graphics",
+        "subject": "end-card"
+      },
+      "assets": ["logo"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 3, "reason": "Cảnh kết không có lời mới. Câu đã nói ở cảnh tồn kho."}],
+        "syncNotes": "Không thêm câu thoại mới."
+      },
+      "transitionOut": null,
+      "acceptance": ["Dùng file logo gốc.", "Không tính thẻ này là video hoàn chỉnh."]
+    }
+  ]
+}

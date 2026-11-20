@@ -49,6 +49,28 @@ export async function fetchCustomerList(search?: string, pageSize = 30): Promise
   };
 }
 
+export type StaffRepurchaseSuggestion = {
+  id: string;
+  orderNumber: string;
+  orderLabel: string;
+  status: string;
+  suggestedForDate: string | null;
+};
+
+export async function fetchStaffRepurchaseSuggestions(
+  customerId: string,
+): Promise<StaffRepurchaseSuggestion[]> {
+  const { data } = await http.get<Record<string, unknown>>(`/customers/${customerId}/repurchase-suggestions`);
+  const items = (data.items ?? data.Items ?? []) as Record<string, unknown>[];
+  return items.map((row) => ({
+    id: String(row.id ?? row.Id),
+    orderNumber: String(row.orderNumber ?? row.OrderNumber ?? ''),
+    orderLabel: String(row.orderLabel ?? row.OrderLabel ?? ''),
+    status: String(row.status ?? row.Status ?? ''),
+    suggestedForDate: (row.suggestedForDate ?? row.SuggestedForDate ?? null) as string | null,
+  }));
+}
+
 export async function fetchCustomerDetail(customerId: string): Promise<CustomerDetail> {
   const { data } = await http.get<Record<string, unknown>>(`/customers/${customerId}`);
   return mapCustomerDetail(data);

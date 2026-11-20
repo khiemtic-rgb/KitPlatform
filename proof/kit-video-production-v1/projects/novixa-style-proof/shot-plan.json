@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "novixa-style-proof",
+  "approvalStatus": "proposed",
+  "scenes": [
+    {
+      "sceneId": "s03-style",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Cho thấy hàng bán nhanh rời kệ, hàng nằm yên trở thành vốn bị khóa.",
+      "durationSeconds": 16,
+      "durationSource": "voice_track",
+      "voiceLeadSeconds": 3.2,
+      "voiceTailSeconds": 2.4,
+      "dialogue": "Có những mặt hàng bán vèo vèo, nhưng cũng có những hộp cứ nằm yên trên kệ hết ngày này sang ngày khác. Hàng thì vẫn ở đó… còn tiền thì đã đi trước một bước rồi.",
+      "action": "Hộp lớn thu vào kệ. Hai hộp bán nhanh trượt khỏi khung. Lịch lật. Ba hộp còn lại nặng lên và rơi xuống két. Một đồng không ghi số đi ra phía trước. Khóa két xoay.",
+      "visualMetaphor": "Hàng tồn là vốn nằm trong két. Tiền đi trước, hàng ở lại.",
+      "subjects": ["hộp thuốc", "người đứng quầy", "lịch", "két"],
+      "onScreenText": ["Hàng tồn kho cũng là vốn"],
+      "templateId": "metaphor_locked_capital",
+      "params": {
+        "boxCount": 5,
+        "fastCount": 2,
+        "headlineAt": 12.4,
+        "beats": {
+          "intro": [0.15, 2.7],
+          "fast": [4.0, 5.4],
+          "calendar": [6.9, 8.5],
+          "transform": [9.0, 10.4],
+          "drop": [10.6, 12.1],
+          "lock": [12.3, 14.2]
+        }
+      },
+      "assets": ["illustration-stock"],
+      "audio": {
+        "voiceTrackId": "vo-style-s03",
+        "musicAssetId": null,
+        "sfx": [
+          {"assetId": "sfx-whoosh", "atSeconds": 4.05, "gain": 0.9},
+          {"assetId": "sfx-paper", "atSeconds": 7.22, "gain": 0.7},
+          {"assetId": "sfx-paper", "atSeconds": 7.7, "gain": 0.7},
+          {"assetId": "sfx-paper", "atSeconds": 8.18, "gain": 0.7},
+          {"assetId": "sfx-thud", "atSeconds": 11.7, "gain": 1},
+          {"assetId": "sfx-lock", "atSeconds": 12.8, "gain": 0.8}
+        ],
+        "intentionalSilences": [
+          {"start": 0, "end": 3.5, "reason": "Mở hình trước lời: hộp chiếm khung rồi vào kệ."},
+          {"start": 8.1, "end": 9.3, "reason": "Nhịp nghỉ giữa hai câu trong lời đọc, không phải khoảng lặng thiếu tiếng."},
+          {"start": 12.1, "end": 17, "reason": "Giữ khóa két và câu chữ sau khi lời kết thúc. Không có nhạc nền."}
+        ],
+        "syncNotes": "Whoosh lúc 'vèo'. Giấy lúc lịch lật theo 'hết ngày này sang ngày khác'. Thud lúc khối chạm két, cùng đoạn 'tiền'. Khóa sau câu thoại."
+      },
+      "transitionOut": {"type": "lock_to_circle", "note": "Mặt khóa mở rộng thành vòng tròn để có thể nối sang lịch hạn dùng. Cảnh sau chưa được dựng."},
+      "acceptance": [
+        "Có chuyển động của hộp, không phải slideshow.",
+        "Ẩn dụ vốn khóa đọc được bằng hình.",
+        "Chữ trong vùng an toàn.",
+        "Không có số liệu doanh thu và không có UI giả.",
+        "SFX là placeholder và được ghi rõ."
+      ],
+      "previewFractions": [0.03, 0.18, 0.32, 0.48, 0.62, 0.74, 0.86, 0.96]
+    }
+  ]
+}

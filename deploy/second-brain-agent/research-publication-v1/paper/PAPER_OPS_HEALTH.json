@@ -1,0 +1,11 @@
+{
+  "health": "OK",
+  "runner_status": "SUCCEEDED",
+  "cycle_outcome": "PAPER_SIMULATED",
+  "last_run_at": "2026-10-30T04:04:02.086108+00:00",
+  "last_bar_age_ms": 242250,
+  "last_error": null,
+  "live_orders": false,
+  "exchange_orders_sent": 0,
+  "effective_live_mode": "LIVE_DISABLED"
+}

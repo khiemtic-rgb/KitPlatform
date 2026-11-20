@@ -59,7 +59,8 @@ import i18n from '@/shared/i18n';
 import { useCustomerLabels } from '@/shared/i18n/useCustomerLabels';
 import { useCustomerBranding } from '@/shared/config/BrandingProvider';
 import { BrandingLogo } from '@/shared/components/BrandingLogo';
-import { withCustomerUploadAuth } from '@/shared/utils/upload-url';
+import { useAuthStore } from '@/shared/auth/auth.store';
+import { openCustomerUpload, withCustomerUploadAuth } from '@/shared/utils/upload-url';
 import './HealthWalletPage.css';
 
 type HealthTab = 'vitals' | 'records' | 'care';
@@ -475,7 +476,18 @@ export function HealthWalletPage() {
               {item.attachments.map((att, index) => {
                 const href = att.url ? withCustomerUploadAuth(att.url) : att.dataUrl;
                 return href ? (
-                  <a key={`${item.id}-att-${index}`} href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+                  <a
+                    key={`${item.id}-att-${index}`}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 13 }}
+                    onClick={(event) => {
+                      if (!att.url) return;
+                      event.preventDefault();
+                      void openCustomerUpload(att.url, useAuthStore.getState().accessToken);
+                    }}
+                  >
                     📎 {att.fileName}
                   </a>
                 ) : (

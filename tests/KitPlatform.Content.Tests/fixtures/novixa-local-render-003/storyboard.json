@@ -1,0 +1,46 @@
+{
+  "aspectRatio": "9:16",
+  "voiceFile": "voice.mp3",
+  "scenes": [
+    {
+      "order": 1,
+      "beat": "HOOK",
+      "text": "Kệ thuốc còn hàng nhưng số đếm chưa khớp phiếu.",
+      "startSec": 0,
+      "endSec": 3,
+      "imageFile": "scene-01.png"
+    },
+    {
+      "order": 2,
+      "beat": "PROBLEM",
+      "text": "Thiếu một dòng kiểm thì ca sau không biết chỗ lệch.",
+      "startSec": 3,
+      "endSec": 6,
+      "imageFile": "scene-02.png"
+    },
+    {
+      "order": 3,
+      "beat": "PROOF",
+      "text": "Ảnh kệ và phiếu nhập cùng chỉ một mã lô.",
+      "startSec": 6,
+      "endSec": 9,
+      "imageFile": "scene-03.png"
+    },
+    {
+      "order": 4,
+      "beat": "OFFER",
+      "text": "Novixa giữ mốc kiểm tại quầy trước khi chốt ca.",
+      "startSec": 9,
+      "endSec": 12,
+      "imageFile": "scene-04.png"
+    },
+    {
+      "order": 5,
+      "beat": "CTA",
+      "text": "Mở phiếu hôm nay và đối chiếu đúng kệ này.",
+      "startSec": 12,
+      "endSec": 15,
+      "imageFile": "scene-05.png"
+    }
+  ]
+}

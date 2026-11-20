@@ -7,7 +7,8 @@ import { famixaGoldenContract } from './kit-video-pixel';
 const API = process.env.KIT_API_URL || 'http://localhost:5290/api';
 const TENANT = process.env.KIT_MKT_TENANT || 'KIT_MKT';
 const USER = process.env.KIT_MKT_USER || 'admin';
-const PASS = process.env.KIT_MKT_PASSWORD || process.env.KIT_ADMIN_PASSWORD || 'Admin@123';
+const PASS = process.env.KIT_MKT_PASSWORD || process.env.KIT_ADMIN_PASSWORD;
+if (!PASS) throw new Error('Set KIT_MKT_PASSWORD or KIT_ADMIN_PASSWORD. No default password.');
 
 const fail: string[] = [];
 const ok = (cond: boolean, name: string) => {

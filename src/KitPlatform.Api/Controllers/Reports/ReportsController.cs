@@ -187,4 +187,15 @@ public sealed class ReportsController : ControllerBase
         [FromQuery] string? search = null,
         CancellationToken cancellationToken = default) =>
         _reports.RunInventoryMovementSummaryAsync(from, to, warehouseId, search, cancellationToken);
+
+    [HttpGet("inventory/movement-lines")]
+    [Authorize(Policy = ReportsPolicies.Read)]
+    public Task<ReportTableResultDto> InventoryMovementLines(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] Guid productId,
+        [FromQuery] Guid warehouseId,
+        [FromQuery] string direction,
+        CancellationToken cancellationToken = default) =>
+        _reports.RunInventoryMovementLinesAsync(from, to, productId, warehouseId, direction, cancellationToken);
 }

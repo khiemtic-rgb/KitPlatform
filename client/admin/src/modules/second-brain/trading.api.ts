@@ -72,10 +72,10 @@ export type DecisionDetail = {
   reflectionNote: string | null;
   experienceStatement: string | null;
   experienceStatus: string | null;
-  paperExecutionCount?: number;
   policyStatus: string | null;
   policyRule: string | null;
   unknowns: string[];
+  paperExecutionCount?: number;
 };
 
 export type OperationRow = {
@@ -162,10 +162,10 @@ export const tradingApi = {
   runLoop: (body: Record<string, unknown>) => http.post<LoopResult>(`${base}/loops`, body).then((r) => r.data),
   approvePaper: (decisionId: string) =>
     http.post<{ decisionId: string; executionId: string; mode: string; alreadyRecorded: boolean }>(
-      `/personal-intelligence/paper-tasks/decisions/${decisionId}/paper`,
+      `${base}/decisions/${decisionId}/paper`,
     ).then((r) => r.data),
   rejectPaper: (decisionId: string) =>
     http.post<{ decisionId: string; status: string; executionCount: number; alreadyRejected: boolean }>(
-      `/personal-intelligence/paper-tasks/decisions/${decisionId}/reject`,
+      `${base}/decisions/${decisionId}/reject`,
     ).then((r) => r.data),
 };

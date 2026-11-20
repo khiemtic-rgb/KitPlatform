@@ -7,8 +7,40 @@ public static class SuccessPolicies
     /// <summary>Owner cockpit / loss prevention — store-wide KPIs, not cashier POS.</summary>
     public const string Owner = "SuccessOwner";
 
-    /// <summary>Shift checklist — cashiers with success.checklist may complete.</summary>
+    /// <summary>Shift checklist — xem. success.read chỉ xem, không tick.</summary>
     public const string Checklist = "SuccessChecklist";
+
+    /// <summary>Tick / hoàn thành checklist. Không gồm success.read hay sales.write.</summary>
+    public const string ChecklistMutate = "SuccessChecklistMutate";
+}
+
+public static class SuccessChecklistAccess
+{
+    public static bool CanView(bool isAdminRole, IEnumerable<string> permissions)
+    {
+        if (isAdminRole)
+            return true;
+        foreach (var permission in permissions)
+        {
+            if (permission is "success.read" or "success.checklist" or "success.write" or "sales.pos" or "sales.write")
+                return true;
+        }
+
+        return false;
+    }
+
+    public static bool CanMutate(bool isAdminRole, IEnumerable<string> permissions)
+    {
+        if (isAdminRole)
+            return true;
+        foreach (var permission in permissions)
+        {
+            if (permission is "success.checklist" or "success.write" or "sales.pos")
+                return true;
+        }
+
+        return false;
+    }
 }
 
 public static class SuccessAuthorizationExtensions
@@ -29,12 +61,16 @@ public static class SuccessAuthorizationExtensions
         options.AddPolicy(SuccessPolicies.Checklist, policy =>
             policy.RequireAssertion(ctx =>
                 AdminTokenRules.IsAdminPrincipal(ctx.User)
-                && (ctx.User.IsInRole("ADMIN")
-                    || HasPermission(ctx, "success.read")
-                    || HasPermission(ctx, "success.checklist")
-                    || HasPermission(ctx, "sales.pos")
-                    || HasPermission(ctx, "sales.write"))));
+                && SuccessChecklistAccess.CanView(ctx.User.IsInRole("ADMIN"), PermissionValues(ctx))));
+
+        options.AddPolicy(SuccessPolicies.ChecklistMutate, policy =>
+            policy.RequireAssertion(ctx =>
+                AdminTokenRules.IsAdminPrincipal(ctx.User)
+                && SuccessChecklistAccess.CanMutate(ctx.User.IsInRole("ADMIN"), PermissionValues(ctx))));
     }
+
+    private static IEnumerable<string> PermissionValues(AuthorizationHandlerContext ctx) =>
+        ctx.User.Claims.Where(c => c.Type == "permission").Select(c => c.Value);
 
     private static bool HasPermission(AuthorizationHandlerContext ctx, string permission) =>
         ctx.User.Claims.Any(c => c.Type == "permission" && c.Value == permission);

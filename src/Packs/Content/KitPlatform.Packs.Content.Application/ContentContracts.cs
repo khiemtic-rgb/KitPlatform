@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace KitPlatform.Packs.Content;
 
@@ -40,7 +41,10 @@ public sealed record ContentVideoConfigDto(
     string? RunwayApiKeySecretRef,
     bool RunwayConfigured,
     string? FalApiKeySecretRef,
-    bool FalConfigured);
+    bool FalConfigured,
+    string? VeoJoinSecretRef,
+    bool VeoJoinConfigured,
+    string? VeoJoinFileName);
 
 public sealed record UpdateContentOrgSettingsRequest(
     decimal? MonthlyCeilingUsd,
@@ -89,7 +93,10 @@ public sealed record UpdateContentVideoConfigRequest(
     string? RunwayApiKeySecretRef,
     string? RunwayApiKey,
     string? FalApiKeySecretRef,
-    string? FalApiKey);
+    string? FalApiKey,
+    string? VeoJoinSecretRef,
+    string? VeoJoinFile,
+    string? VeoJoinFileName);
 
 public sealed record ContentVideoTestResultDto(
     bool CreatomateOk,
@@ -104,7 +111,10 @@ public sealed record ContentVideoTestResultDto(
     bool RunwayConfigured,
     bool FalOk,
     string? FalMessage,
-    bool FalConfigured);
+    bool FalConfigured,
+    bool VeoJoinOk,
+    string? VeoJoinMessage,
+    bool VeoJoinConfigured);
 
 public sealed record ContentSeriesTurboStartRequest(
     string ClipId,
@@ -153,7 +163,12 @@ public sealed record ContentSeriesLipsyncStartRequest(
     IReadOnlyList<ContentSeriesLipsyncVoiceDto>? Voices = null,
     double? ProductionDurationSec = null,
     double? PerformanceDurationSec = null,
-    string? TakeTaskId = null);
+    string? TakeTaskId = null,
+    double? SpeakerX = null,
+    double? SpeakerY = null,
+    int? SpeakerVideoWidth = null,
+    int? SpeakerVideoHeight = null,
+    int? SpeakerFrameNumber = null);
 
 public sealed record ContentSeriesStillRefDto(
     string Name,
@@ -184,7 +199,10 @@ public sealed record ContentSeriesStillRequest(
     string? Emotion = null,
     string? IdentityBrief = null,
     string? PvsBuildPrompt = null,
-    string? RevisionIntent = null);
+    string? RevisionIntent = null,
+    Guid? BuildId = null,
+    string? ShotCode = null,
+    KitPlatform.Packs.Content.VisualIntelligence.ShotVisualDemand? VisualDemand = null);
 
 public sealed record ContentSeriesStillDto(
     string ImageDataUrl,
@@ -243,6 +261,22 @@ public sealed record UpsertContentSeriesPilotRequest(
     string SeriesCode,
     JsonElement Graph);
 
+/// <summary>
+/// Video Studio catalog visibility. Caller-owned rows are manageable.
+/// Rows with a null tenant stay visible and read-only. Another tenant's rows stay hidden.
+/// </summary>
+public static class SeriesBuildCatalogOwnership
+{
+    public const string Tenant = "tenant";
+    public const string Unattributed = "unattributed";
+
+    public static string FromTenant(Guid? tenantId) =>
+        tenantId is null || tenantId == Guid.Empty ? Unattributed : Tenant;
+
+    public static bool IsUnattributed(Guid? tenantId) =>
+        FromTenant(tenantId) == Unattributed;
+}
+
 public sealed record ContentSeriesBuildSummaryDto(
     Guid Id,
     string SeriesCode,
@@ -254,7 +288,16 @@ public sealed record ContentSeriesBuildSummaryDto(
     int KfCount,
     int VideoCount,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    string Ownership = SeriesBuildCatalogOwnership.Tenant,
+    Guid? BrandId = null,
+    Guid? FilmTypeId = null,
+    string? WorkflowKey = null,
+    string? PipelineName = null,
+    string? SeriesLabel = null,
+    string? Purpose = null,
+    string? Aspect = null,
+    string[]? Steps = null);
 
 public sealed record ContentSeriesBuildDto(
     Guid Id,
@@ -268,12 +311,23 @@ public sealed record ContentSeriesBuildDto(
     int VideoCount,
     JsonElement Graph,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    string Ownership = SeriesBuildCatalogOwnership.Tenant,
+    Guid? BrandId = null,
+    Guid? FilmTypeId = null,
+    string? WorkflowKey = null,
+    string? PipelineName = null,
+    string? SeriesLabel = null,
+    string? Purpose = null,
+    string? Aspect = null,
+    string[]? Steps = null);
 
 public sealed record UpsertContentSeriesBuildRequest(
     Guid? Id,
     string SeriesCode,
-    JsonElement Graph);
+    JsonElement Graph,
+    Guid? BrandId = null,
+    Guid? FilmTypeId = null);
 
 public sealed record ContentSeriesVoiceDto(
     string VoiceId,
@@ -326,6 +380,12 @@ public interface IContentSeriesPilotService
         string? accent = null);
     Task<IReadOnlyList<ContentSeriesBuildSummaryDto>> ListBuildsAsync(
         string seriesCode,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ContentSeriesBuildSummaryDto>> ListBuildsForBrandAsync(
+        string brandCode,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ContentSeriesBuildSummaryDto>> ListBuildsForBrandIdAsync(
+        Guid brandId,
         CancellationToken cancellationToken = default);
     Task<ContentSeriesBuildDto> GetBuildAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ContentSeriesBuildDto> UpsertBuildAsync(
@@ -496,7 +556,8 @@ public sealed record ContentTopicDto(
     DateTimeOffset UpdatedAt,
     int VariantCount = 0,
     Guid? CorePackageId = null,
-    string? CoreTitle = null);
+    string? CoreTitle = null,
+    string? ContentFormat = null);
 
 public sealed record ContentVariantDto(
     Guid Id,
@@ -548,7 +609,9 @@ public sealed record GenerateContentRequest(
     /// <summary>Only generate/replace images; keep existing text variants.</summary>
     bool ImagesOnly = false,
     /// <summary>When set, only these variant kinds (intersected with destination plan).</summary>
-    IReadOnlyList<string>? VariantKinds = null);
+    IReadOnlyList<string>? VariantKinds = null,
+    /// <summary>Khung bài website, dựng từ YouTube/Fanpage có lượt xem. Gắn vào dàn ý trước khi gọi AI.</summary>
+    string? ArticleFramework = null);
 
 public sealed record GenerateContentResultDto(
     ContentTopicDto Topic,
@@ -573,7 +636,8 @@ public sealed class PublishContentRequest
 }
 
 public sealed record PublishContentResultDto(
-    IReadOnlyList<ContentPublishJobDto> Jobs);
+    IReadOnlyList<ContentPublishJobDto> Jobs,
+    IReadOnlyList<string>? Warnings = null);
 
 public sealed record ContentCoreIdeaDto(
     string? Insight,
@@ -599,17 +663,19 @@ public sealed record ContentBrandFitDto(
     string? Cta,
     Guid? PackageId,
     string? Outline = null,
-    bool? NarrativeFit = null,
+    [property: JsonPropertyName("fit")] bool? NarrativeFit = null,
     string? Territory = null,
     string? TerritoryId = null,
-    string? BrandAngle = null);
+    string? BrandAngle = null,
+    double? Confidence = null,
+    IReadOnlyList<string>? BoundaryWarnings = null);
 
 public sealed record ContentPackageDto(
     Guid Id,
-    Guid BrandId,
+    Guid? BrandId,
     string BrandCode,
     string BrandName,
-    Guid TopicId,
+    Guid? TopicId,
     string Title,
     string? Angle,
     string? Audience,
@@ -860,6 +926,10 @@ public interface IContentSeriesTakeProxyService
     Task<ContentSeriesTakeProbeDto> ProbeAsync(
         string url,
         CancellationToken cancellationToken = default);
+
+    byte[]? ReadVeoTake(string? taskIdOrUrl);
+
+    byte[]? ReadFalTake(string? taskIdOrUrl);
 }
 
 public interface IContentSeriesStillService
@@ -1084,6 +1154,14 @@ public sealed record CreateVideoJobFromPackageRequest(
 
 public sealed record UpdateVideoJobScriptRequest(string ScriptBody);
 
+/// <summary>Nhập video thành phẩm (đã dựng ngoài hệ thống). File MP4 đi kèm riêng.</summary>
+public sealed record ImportFinishedVideoRequest(
+    Guid BrandId,
+    string Title,
+    string? ScriptBody = null,
+    string? TemplateCode = null,
+    string? SourceFileName = null);
+
 public sealed record RunVideoMvpPipelineRequest(
     bool GenerateImages = true,
     bool GenerateVoice = true,
@@ -1112,7 +1190,7 @@ public interface IContentVideoService
         UpdateVideoJobScriptRequest request,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Parse beats → storyboard_json; status Ready (local) hoặc giữ Draft nếu lỗi parse.</summary>
+    /// <summary>Parse beats into storyboard_json. NOVIXA tiktok_45s_hooks stays PreparingRender with no output URL. Other brands become Ready.</summary>
     Task<ContentVideoJobDto?> PrepareStoryboardAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -1123,7 +1201,7 @@ public interface IContentVideoService
         RunVideoMvpPipelineRequest? request = null,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Creatomate nếu có API key + template; không thì = PrepareStoryboard.</summary>
+    /// <summary>Creatomate when the key and template exist. NOVIXA tiktok_45s_hooks renders locally and becomes Ready only after the MP4 decodes. Other brands without Creatomate prepare a storyboard.</summary>
     Task<ContentVideoJobDto?> QueueRenderAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<ContentVideoJobDto?> RefreshRenderAsync(Guid id, CancellationToken cancellationToken = default);
@@ -1136,6 +1214,19 @@ public interface IContentVideoService
         CancellationToken cancellationToken = default);
 
     Task<ContentVideoJobDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Nhập một MP4 thành phẩm: tạo job (không gắn package/topic), chép file vào thư mục media của job,
+    /// kiểm tra giải mã (H.264, đúng khung của template, có tiếng) rồi mới đặt Ready. File lỗi thì job Failed.
+    /// Không gọi nhà cung cấp ngoài.
+    /// </summary>
+    Task<ContentVideoJobDto> ImportFinishedAsync(
+        ImportFinishedVideoRequest request,
+        Stream mp4,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>File served by GET video/media. Same directory the local renderer writes. Null when the name is unsafe or the file is absent.</summary>
+    string? ResolveLocalMediaPath(Guid jobId, string fileName);
 }
 
 public sealed class ContentOptions
@@ -1148,6 +1239,8 @@ public sealed class ContentOptions
     public string TextModel { get; set; } = "gemini-3.6-flash";
     public string? ImageModel { get; set; }
     public string AssetRoot { get; set; } = "App_Data/content-assets";
+    /// <summary>Shared visual library files. Not a database migration. Proposed pictures live here until a director approves them in the shot binding.</summary>
+    public string VisualIntelligenceRoot { get; set; } = "App_Data/visual-intelligence";
     /// <summary>Phase 05 image provider id. Env KIT_VIDEO_IMAGE_PROVIDER. Never a secret.</summary>
     public string KitVideoImageProvider { get; set; } = "gemini";
     /// <summary>Optional image model override. Env KIT_VIDEO_GEMINI_MODEL. Empty = Content:ImageModel / org AI config.</summary>
@@ -1169,6 +1262,12 @@ public sealed class ContentOptions
 
     /// <summary>Optional Fal API key (Wan 2.1 I2V). Falls back to env FAL_KEY.</summary>
     public string? FalApiKey { get; set; }
+
+    /// <summary>Optional Veo Join file body. Falls back to env VEO_JOIN_FILE. Never a Gemini API key.</summary>
+    public string? VeoJoinFile { get; set; }
+
+    /// <summary>Vertex location for Veo. Env Content:VeoLocation. Default us-central1.</summary>
+    public string VeoLocation { get; set; } = "us-central1";
 
     /// <summary>Optional ElevenLabs API key. Falls back to env ELEVENLABS_API_KEY.</summary>
     public string? ElevenLabsApiKey { get; set; }
@@ -1201,6 +1300,15 @@ public sealed class ContentOptions
 
     /// <summary>OAuth redirect — must match Valid OAuth Redirect URIs on the Meta app.</summary>
     public string? FacebookRedirectUri { get; set; }
+
+    /// <summary>
+    /// Máy chủ đăng bài mà Studio trên máy này đồng bộ thành phẩm lên (ví dụ https://famixa.157.10.53.182.sslip.io).
+    /// Chỉ đặt ở máy dựng phim (local). Trống = tắt nút "Đồng bộ lên máy chủ"; máy chủ B để trống.
+    /// </summary>
+    public string? RemotePublishBaseUrl { get; set; }
+
+    /// <summary>Bật việc dọn file video đã đăng (chạy mỗi 6 giờ cùng các worker Content). Mặc định bật.</summary>
+    public bool MediaCleanupEnabled { get; set; } = true;
 }
 
 public static class ContentWorkKinds
@@ -1297,6 +1405,20 @@ public sealed record ContentCalendarItemDto(
     string BrandName,
     string Title,
     string? Channel,
+    string Status,
+    string? SourceLabel = null);
+
+public sealed record EpisodeNeedContentDto(
+    Guid EpisodeId,
+    int EpisodeNo,
+    string Title,
+    string? Objective,
+    Guid SeriesId,
+    string SeriesCode,
+    string SeriesName,
+    Guid BrandId,
+    string BrandCode,
+    string BrandName,
     string Status);
 
 public interface IContentOpsService
@@ -1307,6 +1429,9 @@ public interface IContentOpsService
         DateTimeOffset fromUtc,
         DateTimeOffset toUtc,
         Guid? brandId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<EpisodeNeedContentDto>> ListEpisodesNeedContentAsync(
         CancellationToken cancellationToken = default);
 }
 
@@ -1513,7 +1638,9 @@ public sealed record KitVideoProjectDto(
     string Status,
     JsonElement Visual,
     JsonElement Rules,
-    IReadOnlyList<KitVideoUniverseDto> Universes);
+    IReadOnlyList<KitVideoUniverseDto> Universes,
+    Guid? BrandId = null,
+    Guid? FilmTypeId = null);
 
 public sealed record KitVideoShotStateDto(
     string ShotCode,
@@ -1532,7 +1659,9 @@ public sealed record KitVideoProductionDto(
     string RunStatus,
     Guid? SeriesBuildId,
     IReadOnlyList<KitVideoShotStateDto> Shots,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    Guid? ContentTopicId = null,
+    bool SelectedForPublish = false);
 
 public sealed record KitVideoProviderTaskDto(
     Guid Id,
@@ -1600,7 +1729,8 @@ public sealed record CreateKitVideoProductionRequest(
     string UniverseCode,
     string ProductionCode,
     string? Title = null,
-    Guid? SeriesBuildId = null);
+    Guid? SeriesBuildId = null,
+    Guid? ContentTopicId = null);
 
 public sealed record TransitionKitVideoProductionRequest(string ToState, string? Reason = null);
 
@@ -4323,7 +4453,8 @@ public sealed record CharacterStudioMasterRevisionCardDto(
 public sealed record CharacterStudioListDto(
     string DocumentId,
     IReadOnlyList<CharacterStudioCharacterDto> Items,
-    int Total);
+    int Total,
+    string Scope = "famixa");
 
 public sealed record CharacterStudioStyleListDto(
     string DocumentId,
@@ -4360,6 +4491,9 @@ public interface ICharacterStudioOrchestrator
         string characterId, string type, string eraId = "ERA-01",
         CancellationToken cancellationToken = default);
     Task<(byte[] Bytes, string Mime)?> ReadMasterAsync(
+        string characterId, string eraId = "ERA-01",
+        CancellationToken cancellationToken = default);
+    Task<(byte[] Bytes, string Mime, string Sha256)?> ReadOfficialLockedMasterAsync(
         string characterId, string eraId = "ERA-01",
         CancellationToken cancellationToken = default);
     CharacterStudioStyleListDto Styles();

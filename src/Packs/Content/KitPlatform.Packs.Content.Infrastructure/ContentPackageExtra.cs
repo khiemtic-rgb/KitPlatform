@@ -35,6 +35,13 @@ internal static class ContentPackageExtra
         return (own?.Territory, own?.NarrativeFit);
     }
 
+    public static string StampNarrative(string? existing, ContentBrandFitDto fit)
+    {
+        var (_, fits) = Parse(existing);
+        var next = fits.Where(f => f.BrandId != fit.BrandId).Append(fit).ToList();
+        return Merge(existing, null, next);
+    }
+
     public static string Merge(
         string? existing,
         ContentCoreIdeaDto? core,

@@ -27,98 +27,55 @@ public sealed class ExchangeConnectionService : IExchangeConnectionService
         _backfill = backfill;
     }
 
-    public async Task<ExchangeProbeDto> TestAsync(ExchangeCredentialRequest request, CancellationToken cancellationToken)
+    public Task<ExchangeProbeDto> TestAsync(ExchangeCredentialRequest request, CancellationToken cancellationToken)
     {
         var credential = Normalize(request);
-        try
-        {
-            var probe = await _adapters.Require(credential.ExchangeCode).ProbeAsync(ToCredential(credential), cancellationToken);
-            await _store.RecordAsync(null, "test", probe.Accepted ? "ok" : "rejected", probe.Accepted ? null : "rejected", cancellationToken);
-            return probe;
-        }
-        catch (ExchangeConnectionException ex)
-        {
-            await _store.RecordAsync(null, "test", "rejected", AuditCode(ex.Code), cancellationToken);
-            throw;
-        }
+        return _adapters.Require(credential.ExchangeCode).ProbeAsync(ToCredential(credential), cancellationToken);
     }
 
     public async Task<ExchangeAccountViewDto> SaveAsync(ExchangeCredentialRequest request, CancellationToken cancellationToken)
     {
         var credential = Normalize(request);
-        try
-        {
-            var key = _keys.RequireCurrent();
-            var probe = await _adapters.Require(credential.ExchangeCode).ProbeAsync(ToCredential(credential), cancellationToken);
-            if (!probe.Accepted)
-                throw new ExchangeConnectionException(400, "rejected", "Kiểm tra sàn chưa hợp lệ. Không lưu credential.");
-            if (!probe.ReadOnlyVerified && !request.AcknowledgeUnverifiedPermissions)
-                throw new ExchangeConnectionException(400, "unverified", probe.Message);
-            var envelope = ExchangeCredentialProtector.Encrypt(Pack(credential.ApiKey, credential.ApiSecret, credential.Passphrase), key);
-            var connectionId = await _store.SaveAsync(probe, ExchangeCredentialProtector.Mask(credential.ApiKey), ExchangeCredentialProtector.Fingerprint(credential.ApiKey), envelope, cancellationToken);
-            await _backfill.EnqueueInitialAsync(connectionId, cancellationToken);
-            return await _store.GetAccountAsync(connectionId, cancellationToken);
-        }
-        catch (ExchangeConnectionException ex) when (ex.Code is "key_missing" or "rejected" or "unverified" or "unsupported" or "invalid_key" or "passphrase_required" or "ciphertext_invalid")
-        {
-            await _store.RecordAsync(null, "save", "rejected", AuditCode(ex.Code), cancellationToken);
-            throw;
-        }
+        var key = _keys.RequireCurrent();
+        var probe = await _adapters.Require(credential.ExchangeCode).ProbeAsync(ToCredential(credential), cancellationToken);
+        if (!probe.Accepted)
+            throw new ExchangeConnectionException(400, "rejected", "Kiểm tra sàn chưa hợp lệ. Không lưu credential.");
+        if (!probe.ReadOnlyVerified && !request.AcknowledgeUnverifiedPermissions)
+            throw new ExchangeConnectionException(400, "unverified", probe.Message);
+        var envelope = ExchangeCredentialProtector.Encrypt(Pack(credential.ApiKey, credential.ApiSecret, credential.Passphrase), key);
+        var connectionId = await _store.SaveAsync(probe, ExchangeCredentialProtector.Mask(credential.ApiKey), ExchangeCredentialProtector.Fingerprint(credential.ApiKey), envelope, cancellationToken);
+        await _backfill.EnqueueInitialAsync(connectionId, cancellationToken);
+        return await _store.GetAccountAsync(connectionId, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ExchangeConnectionDto>> ListAsync(CancellationToken cancellationToken)
-    {
-        var rows = await _store.ListAsync(cancellationToken);
-        await _store.RecordAsync(null, "list", "ok", null, cancellationToken);
-        return rows;
-    }
+    public Task<IReadOnlyList<ExchangeConnectionDto>> ListAsync(CancellationToken cancellationToken) =>
+        _store.ListAsync(cancellationToken);
 
-    public async Task<ExchangeAccountViewDto> GetAccountAsync(Guid connectionId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var view = await _store.GetAccountAsync(connectionId, cancellationToken);
-            await _store.RecordAsync(connectionId, "read", "ok", null, cancellationToken);
-            return view;
-        }
-        catch (ExchangeConnectionException ex)
-        {
-            await _store.RecordAsync(connectionId, "read", "rejected", AuditCode(ex.Code), cancellationToken);
-            throw;
-        }
-    }
+    public Task<ExchangeAccountViewDto> GetAccountAsync(Guid connectionId, CancellationToken cancellationToken) =>
+        _store.GetAccountAsync(connectionId, cancellationToken);
 
     public async Task<ExchangeAccountViewDto> RefreshAsync(Guid connectionId, CancellationToken cancellationToken)
     {
+        var stored = await _store.RequireSecretAsync(connectionId, cancellationToken);
+        var unpacked = Unpack(ExchangeCredentialProtector.Decrypt(stored.Envelope, _keys.RequireCurrent()));
         try
         {
-            var stored = await _store.RequireSecretAsync(connectionId, cancellationToken);
-            var unpacked = Unpack(ExchangeCredentialProtector.Decrypt(stored.Envelope, _keys.RequireCurrent()));
-            try
+            var probe = await _adapters.Require(stored.ExchangeCode).ProbeAsync(new ExchangeCredential
             {
-                var probe = await _adapters.Require(stored.ExchangeCode).ProbeAsync(new ExchangeCredential
-                {
-                    Environment = stored.Environment,
-                    ApiKey = unpacked.ApiKey,
-                    ApiSecret = unpacked.ApiSecret,
-                    Passphrase = unpacked.Passphrase,
-                }, cancellationToken);
-                await _store.AppendSnapshotAsync(connectionId, probe, cancellationToken);
-            }
-            catch (ExchangeConnectionException ex)
-            {
-                await _store.MarkRejectedAsync(connectionId, ex.Message, cancellationToken);
-                throw;
-            }
-
-            await _store.RecordAsync(connectionId, "refresh", "ok", null, cancellationToken);
-            return await _store.GetAccountAsync(connectionId, cancellationToken);
+                Environment = stored.Environment,
+                ApiKey = unpacked.ApiKey,
+                ApiSecret = unpacked.ApiSecret,
+                Passphrase = unpacked.Passphrase,
+            }, cancellationToken);
+            await _store.AppendSnapshotAsync(connectionId, probe, cancellationToken);
         }
         catch (ExchangeConnectionException ex)
         {
-            await _store.RecordAsync(connectionId, "refresh", "rejected", AuditCode(ex.Code), cancellationToken);
+            await _store.MarkRejectedAsync(connectionId, ex.Message, cancellationToken);
             throw;
         }
+
+        return await _store.GetAccountAsync(connectionId, cancellationToken);
     }
 
     public async Task DisconnectAsync(Guid connectionId, CancellationToken cancellationToken)
@@ -174,19 +131,6 @@ public sealed class ExchangeConnectionService : IExchangeConnectionService
     }
 
     sealed record NormalizedCredential(string ExchangeCode, string Environment, string ApiKey, string ApiSecret, string? Passphrase);
-
-    static string AuditCode(string? code)
-    {
-        if (string.IsNullOrWhiteSpace(code) || code.Length > 64)
-            return "rejected";
-        foreach (var character in code)
-        {
-            if (character is not ((>= 'a' and <= 'z') or (>= '0' and <= '9') or '_'))
-                return "rejected";
-        }
-
-        return code;
-    }
 }
 
 sealed class ExchangeCredentialPayload
@@ -279,7 +223,6 @@ sealed class ExchangeConnectionStore
             },
             tx);
         await InsertSnapshotAsync(conn, tx, TenantId, connectionId, probe);
-        await InsertAuditAsync(conn, tx, connectionId, "save", "ok", null, cancellationToken);
         await tx.CommitAsync(cancellationToken);
         return connectionId;
     }
@@ -494,49 +437,7 @@ sealed class ExchangeConnectionStore
             """,
             new { ConnectionId = connectionId, TenantId, UserId });
         if (updated != 1)
-        {
-            await InsertAuditAsync(conn, null, connectionId, "disconnect", "rejected", "not_found", cancellationToken);
             throw new ExchangeConnectionException(404, "not_found", "Không tìm thấy kết nối còn hiệu lực của người dùng này.");
-        }
-
-        await InsertAuditAsync(conn, null, connectionId, "disconnect", "ok", null, cancellationToken);
-    }
-
-    public Task RecordAsync(Guid? connectionId, string operation, string result, string? errorCode, CancellationToken cancellationToken) =>
-        RecordCoreAsync(connectionId, operation, result, errorCode, cancellationToken);
-
-    async Task RecordCoreAsync(Guid? connectionId, string operation, string result, string? errorCode, CancellationToken cancellationToken)
-    {
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        await InsertAuditAsync(conn, null, connectionId, operation, result, errorCode, cancellationToken);
-    }
-
-    Task InsertAuditAsync(
-        System.Data.IDbConnection conn,
-        System.Data.IDbTransaction? tx,
-        Guid? connectionId,
-        string operation,
-        string result,
-        string? errorCode,
-        CancellationToken cancellationToken)
-    {
-        _ = cancellationToken;
-        return conn.ExecuteAsync(
-            """
-            INSERT INTO pack_personal_intelligence.exchange_connection_audit
-                (tenant_id, actor_user_id, connection_id, operation, result, error_code)
-            VALUES (@TenantId, @UserId, @ConnectionId, @Operation, @Result, @ErrorCode)
-            """,
-            new
-            {
-                TenantId,
-                UserId,
-                ConnectionId = connectionId,
-                Operation = operation,
-                Result = result,
-                ErrorCode = errorCode,
-            },
-            tx);
     }
 
     async Task<Guid> EnsurePersonAsync(IDbConnection conn, IDbTransaction tx, CancellationToken cancellationToken)

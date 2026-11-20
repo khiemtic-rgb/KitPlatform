@@ -62,7 +62,7 @@ const t7 = quoteFamixaProviderCost({ providerId: 'fal', modelId: 'ls', quantity:
 ok(t7.estimatedAmount === 0.2, 'T7 LatentSync <=40 → $0.20');
 
 const t8 = quoteFamixaProviderCost({ providerId: 'gemini' });
-ok(t8.costKind === 'UNKNOWN' && t8.kind === 'UNKNOWN' && t8.estimatedAmount == null, 'T8 Gemini UNKNOWN');
+ok(t8.modelId === 'gemini-3.1-flash-image' && t8.costKind === 'ESTIMATE' && t8.kind === 'ESTIMATE' && t8.estimatedAmount === 0.045, 'T8 Gemini 3.1 0.5K published-list estimate');
 
 const t9 = quoteFamixaProviderCost({ providerId: 'elevenlabs' });
 ok(t9.costKind === 'UNKNOWN' && t9.estimatedAmount == null, 'T9 ElevenLabs UNKNOWN');
@@ -100,7 +100,7 @@ const t16 = quoteFamixaProviderCost({ providerId: 'unknown-vendor', modelId: 'no
 ok(t16.costKind === 'UNKNOWN' && t16.kind === 'UNKNOWN', 'T16 unknown provider → UNKNOWN');
 ok(estimateFamixaProviderCost('unknown-vendor').kind === 'UNKNOWN', 'T16 wrapper UNKNOWN');
 
-ok(FAMIXA_PROVIDER_CATALOG.map((p) => p.providerId).join(',') === 'gemini,runway,wan,elevenlabs,fal', 'T17 registry catalog unchanged');
+ok(FAMIXA_PROVIDER_CATALOG.map((p) => p.providerId).join(',') === 'gemini,runway,wan,google,elevenlabs,fal', 'T17 registry catalog includes the picture, motion, voice, and lip-sync providers');
 ok(estimateFamixaProviderCost('wan').kind === 'FAL_BILLED_ESTIMATE', 'T17 Wan Phase 2 kind kept');
 
 ok(resolveFamixaProviderTask('wan_abc', undefined, 'MOTION').providerId === 'wan', 'T18 lifecycle task identity kept');

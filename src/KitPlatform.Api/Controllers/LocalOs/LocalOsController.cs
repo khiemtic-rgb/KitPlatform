@@ -12,6 +12,7 @@ namespace KitPlatform.Api.Controllers.LocalOs;
 [ApiController]
 [Authorize(Roles = "ADMIN")]
 [RequirePlatformModule(PlatformModuleCodes.LocalOs)]
+[RequireLocalOsOperator]
 [Route("api/local-os")]
 public sealed class LocalOsController : ControllerBase
 {

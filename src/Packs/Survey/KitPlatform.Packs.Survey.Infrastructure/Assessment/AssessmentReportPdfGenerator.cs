@@ -17,7 +17,7 @@ internal static class AssessmentReportPdfGenerator
 
     static AssessmentReportPdfGenerator()
     {
-        KapV2PdfFonts.EnsureRegistered();
+        QuestPDF.Settings.License = LicenseType.Community;
     }
 
     public static byte[] Generate(
@@ -488,7 +488,7 @@ internal static class AssessmentReportPdfGenerator
         {
             page.Size(PageSizes.A4);
             page.Margin(margin);
-            page.DefaultTextStyle(x => x.FontFamily(KapV2PdfFonts.Family).FontSize(fontSize).FontColor(Colors.Grey.Darken3));
+            page.DefaultTextStyle(x => x.FontSize(fontSize).FontColor(Colors.Grey.Darken3));
             page.Header().Element(c => RenderHeader(c, orgName, report, kind));
             page.Content().PaddingVertical(8).Column(content);
             page.Footer().AlignCenter().Text(t =>
@@ -1841,7 +1841,6 @@ internal static class AssessmentReportPdfGenerator
             {
                 page.Size(PageSizes.A4);
                 page.Margin(40);
-                page.DefaultTextStyle(x => x.FontFamily(KapV2PdfFonts.Family).FontSize(12).FontColor(Colors.Grey.Darken3));
                 page.Content().Column(col =>
                 {
                     col.Item().Text($"Báo cáo — {orgName}").Bold().FontSize(Fs(16));

@@ -29,6 +29,11 @@ public static class ProductionProgressRules
         bool Finalized = false,
         bool Published = false);
 
+    /// <summary>
+    /// One active Production OS binding. Verification is recorded and must not approve or complete.
+    /// </summary>
+    public sealed record OsBindingFact(string Role, string? ArtifactRole, string? VerificationStatus);
+
     public sealed record SceneFact(
         string SceneId,
         string SceneName,
@@ -131,6 +136,41 @@ public static class ProductionProgressRules
     public static bool IsVideoDirectorApproved(string? status, DateTimeOffset? approvedAt)
         => approvedAt.HasValue
            || (status ?? "").Trim().Equals("DIRECTOR_APPROVED", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// AUTHORITY-STABILIZATION-01D. Official image/video/finish flags come only from these bindings.
+    /// An empty list clears production flags. It does not read VGE or graph media.
+    /// Script lock and publication stay on the episode fact, outside this method.
+    /// Execution binding, accept binding, and verification stay distinct.
+    /// </summary>
+    public static ShotFact ApplyOfficialOsProgress(ShotFact shot, IReadOnlyList<OsBindingFact> os)
+    {
+        bool Counts(ProductionProgressRules.OsBindingFact b) =>
+            !string.Equals(b.VerificationStatus, Production.ProductionArtifactStatuses.FailedVerification, StringComparison.OrdinalIgnoreCase);
+        bool Has(string role) => os.Any(b => Counts(b) && string.Equals(b.Role, role, StringComparison.OrdinalIgnoreCase));
+        var keyframe = Has(Production.ProductionBindingRoles.CurrentFor(Production.ProductionArtifactRoles.Keyframe))
+            || Has(Production.ProductionBindingRoles.AcceptedFor(Production.ProductionArtifactRoles.Keyframe));
+        var keyframeAccepted = Has(Production.ProductionBindingRoles.AcceptedFor(Production.ProductionArtifactRoles.Keyframe));
+        var videoAccepted = Has(Production.ProductionBindingRoles.AcceptedFor(Production.ProductionArtifactRoles.VideoTake))
+            || os.Any(b =>
+                Counts(b)
+                && string.Equals(b.Role, Production.ProductionBindingRoles.Accepted, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(b.ArtifactRole, Production.ProductionArtifactRoles.VideoTake, StringComparison.OrdinalIgnoreCase));
+        var assembly = Has(Production.ProductionBindingRoles.CurrentFor(Production.ProductionArtifactRoles.Assembly))
+            || Has(Production.ProductionBindingRoles.VisibleFor(Production.ProductionArtifactRoles.Assembly));
+        var video = Has(Production.ProductionBindingRoles.CurrentFor(Production.ProductionArtifactRoles.VideoTake)) || videoAccepted || assembly;
+        var mix = Has(Production.ProductionBindingRoles.CurrentFor(Production.ProductionArtifactRoles.Mix))
+            || Has(Production.ProductionBindingRoles.AcceptedFor(Production.ProductionArtifactRoles.Mix));
+        return shot with
+        {
+            HasWorkflowImage = keyframe || video,
+            ImageDirectorApproved = keyframeAccepted || video,
+            VideoContractApproved = keyframe || video,
+            HasWorkflowVideo = video,
+            VideoDirectorApproved = videoAccepted,
+            Finalized = mix,
+        };
+    }
 
     public static (int SceneCount, int ShotCount) CountScenesAndShots(IEnumerable<SceneFact> scenes)
     {

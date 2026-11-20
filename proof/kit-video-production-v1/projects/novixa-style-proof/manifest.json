@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "novixa-style-proof",
+  "projectName": "NOVIXA style proof — hàng tồn là vốn",
+  "brand": {"id": "novixa", "name": "NOVIXA"},
+  "script": {
+    "version": "excerpt-s03-2026-10-23",
+    "approvalStatus": "proposed",
+    "sourcePath": "../novixa-intro-film/script.md",
+    "notes": "Đây là trích đoạn phân đoạn 3 để duyệt phong cách. Không thay kịch bản đầy đủ và không khóa phim."
+  },
+  "durationPolicy": {
+    "mode": "voice_driven",
+    "targetSeconds": null,
+    "notes": "Độ dài bằng lead hình + file lời đọc ở tốc độ +0% + đuôi hình. Không dùng atempo. Khoảng 15–20 giây là mục tiêu của lần duyệt này, đạt bằng khoảng mở và khoảng giữ, không bằng cách đọc nhanh."
+  },
+  "storyStructure": [
+    {"beatId": "box-in", "summary": "Một hộp chiếm khung rồi vào kệ."},
+    {"beatId": "fast-and-still", "summary": "Hàng bán nhanh rời đi, hàng nằm yên ở lại."},
+    {"beatId": "locked-capital", "summary": "Hộp thành khối nặng trên két, đồng tiền đi trước."}
+  ],
+  "voice": {
+    "profileId": "vi-VN-NamMinhNeural",
+    "language": "vi",
+    "pronunciationNotes": "Tốc độ +0%. Đoạn trích không chứa từ NOVIXA nên chưa kiểm được phát âm Nô-vi-xa. Chưa có người nghe duyệt.",
+    "tracks": [
+      {
+        "trackId": "vo-style-s03",
+        "path": "proof/kit-video-production-v1/projects/novixa-intro-film/assets/voice/style-s03.wav",
+        "pathBase": "repo",
+        "approval": "proposed",
+        "text": "Có những mặt hàng bán vèo vèo, nhưng cũng có những hộp cứ nằm yên trên kệ hết ngày này sang ngày khác. Hàng thì vẫn ở đó… còn tiền thì đã đi trước một bước rồi."
+      }
+    ]
+  },
+  "assets": [
+    {
+      "assetId": "illustration-stock",
+      "kind": "vector_generated",
+      "source": "generated",
+      "path": null,
+      "pathBase": "project",
+      "version": "1",
+      "usageRights": "drawn by the scene template",
+      "approval": "proposed",
+      "role": "illustration",
+      "label": "Hộp, két, lịch và người hình học. Mẫu để duyệt phong cách, chưa phải thiết kế nhân vật cuối."
+    },
+    {
+      "assetId": "sfx-whoosh",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/whoosh.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — whoosh tổng hợp"
+    },
+    {
+      "assetId": "sfx-paper",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/paper.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng giấy tổng hợp"
+    },
+    {
+      "assetId": "sfx-thud",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/thud.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng đặt tổng hợp"
+    },
+    {
+      "assetId": "sfx-lock",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/lock.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng khóa tổng hợp"
+    }
+  ],
+  "visualStyle": {
+    "profileId": "novixa-story-v1",
+    "palette": {
+      "background": [232, 226, 214],
+      "ink": [0, 32, 96],
+      "accent": [0, 144, 224],
+      "paper": [250, 247, 240],
+      "muted": [110, 102, 90],
+      "accentAlt": [176, 92, 62],
+      "weight": [24, 40, 72]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.06, "right": 0.06, "bottom": 0.06, "left": 0.06}
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.32,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {"aspectRatio": "16:9", "width": 1920, "height": 1080, "frameRate": 30},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": true,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "proposed", "notes": "Style proof của ẩn dụ tồn kho, chờ người xem."},
+    {"stage": "script_analysis", "automation": "automated", "status": "done", "notes": "Lời là trích phân đoạn 3, không sửa câu."},
+    {"stage": "story_structure", "automation": "assisted", "status": "proposed", "notes": "Ba nhịp trong một cảnh."},
+    {"stage": "shot_plan", "automation": "assisted", "status": "proposed", "notes": "Cảnh mang approval style_proof để được dựng riêng. Không phải khóa phim."},
+    {"stage": "asset_plan", "automation": "automated", "status": "done", "notes": "Hình do template vẽ. SFX là placeholder. Không dùng UI."},
+    {"stage": "asset_creation", "automation": "automated", "status": "proposed", "notes": "Nhân vật hình học chưa phải thiết kế cuối."},
+    {"stage": "voiceover", "automation": "automated", "status": "needs_human", "notes": "edge-tts vi-VN-NamMinhNeural, +0%. Chưa được nghe duyệt."},
+    {"stage": "animation", "automation": "automated", "status": "needs_human", "notes": "Template metaphor_locked_capital. Chờ duyệt phong cách."},
+    {"stage": "audio_mix", "automation": "automated", "status": "proposed", "notes": "Lời thật và SFX placeholder. Không nhạc."},
+    {"stage": "render", "automation": "automated", "status": "done", "notes": "File duyệt phong cách: outputs/novixa-style-proof/20261023T021435Z-style-proof/video.mp4. 15.533s, 1920x1080, 30fps."},
+    {"stage": "qa", "automation": "automated", "status": "needs_human", "notes": "QA kỹ thuật PASS. Phong cách, giọng và SFX vẫn NEEDS HUMAN REVIEW. Chưa nghe file."},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Không phát hành. Dừng để duyệt phong cách."}
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

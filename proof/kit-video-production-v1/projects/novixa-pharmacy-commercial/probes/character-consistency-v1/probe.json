@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "novixa-character-probe/1",
+  "approval": "AWAITING_REVIEW",
+  "identitySource": "assets/pharmacist-nova-cartoon-v3.jpg",
+  "identitySha256": "9f6bc1da98b24abd9adf3740667cb6b74f9b2c3d660cb690b3b89364729afb10",
+  "relatedSameAngle": "keyframes/v3/s01-pharmacy.jpg",
+  "tool": "Pillow chỉ chép nguyên file và ghép contact sheet. picture.py vẽ mặt hình học, không phải nhân vật này. Không có model ảnh cục bộ.",
+  "items": [
+    {
+      "id": "probe-bust-near-front",
+      "title": "Gần chính diện",
+      "status": "ASSET_EXISTS",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "byte-copy",
+      "source": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "path": "bust-near-front.jpg",
+      "blocker": null
+    },
+    {
+      "id": "probe-three-quarter-left",
+      "title": "3/4 trái",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "source": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "path": null,
+      "blocker": "Không có công cụ tạo góc mặt 3D. Không lật ảnh."
+    },
+    {
+      "id": "probe-three-quarter-right",
+      "title": "3/4 phải",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "source": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "path": null,
+      "blocker": "Không có công cụ tạo góc mặt 3D. Không lật ảnh."
+    },
+    {
+      "id": "probe-profile",
+      "title": "Nghiêng",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "source": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "path": null,
+      "blocker": "Không có công cụ tạo góc mặt 3D."
+    },
+    {
+      "id": "probe-reach",
+      "title": "Đưa tay tới hộp",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "source": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "path": null,
+      "blocker": "Chân dung không có bàn tay. Không có tư thế mới."
+    },
+    {
+      "id": "probe-grasp",
+      "title": "Nắm hộp",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "source": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "path": null,
+      "blocker": "Chưa thấy bàn tay và chưa thấy tay chạm hộp."
+    },
+    {
+      "id": "probe-lift",
+      "title": "Nhấc hộp",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "source": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "path": null,
+      "blocker": "Không có tư thế nhấc hộp."
+    },
+    {
+      "id": "probe-point",
+      "title": "Chỉ vào nhãn",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "source": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "path": null,
+      "blocker": "Không có tư thế chỉ nhãn."
+    }
+  ]
+}

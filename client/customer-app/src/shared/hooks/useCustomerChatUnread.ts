@@ -37,7 +37,7 @@ export function useCustomerChatUnread() {
 
     void poll();
     const timer = window.setInterval(() => void poll(), FALLBACK_POLL_MS);
-    const unsubscribeSse = subscribeChatSse(buildCustomerChatEventsUrl(accessToken), () => void poll());
+    const unsubscribeSse = subscribeChatSse(buildCustomerChatEventsUrl(), accessToken, () => void poll());
 
     return () => {
       cancelled = true;

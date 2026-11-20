@@ -1,0 +1,62 @@
+[
+  {
+    "text": "Novixa",
+    "start": 0.1,
+    "end": 0.8625
+  },
+  {
+    "text": "giữ",
+    "start": 0.8625,
+    "end": 1.0875
+  },
+  {
+    "text": "bán",
+    "start": 1.0875,
+    "end": 1.325
+  },
+  {
+    "text": "hàng",
+    "start": 1.325,
+    "end": 1.6625
+  },
+  {
+    "text": "tồn",
+    "start": 1.825,
+    "end": 2.0875
+  },
+  {
+    "text": "kho",
+    "start": 2.0875,
+    "end": 2.375
+  },
+  {
+    "text": "và",
+    "start": 2.375,
+    "end": 2.5
+  },
+  {
+    "text": "hạn",
+    "start": 2.5,
+    "end": 2.7375
+  },
+  {
+    "text": "dùng",
+    "start": 2.7375,
+    "end": 2.975
+  },
+  {
+    "text": "trên",
+    "start": 2.975,
+    "end": 3.1625
+  },
+  {
+    "text": "một",
+    "start": 3.1625,
+    "end": 3.35
+  },
+  {
+    "text": "nhịp",
+    "start": 3.35,
+    "end": 3.6
+  }
+]

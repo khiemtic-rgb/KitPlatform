@@ -113,6 +113,7 @@ export function mapPreviewCut(
     const durationIssue =
       !silent && voiceSec > i2v + 0.05 ? `VOICE ${voiceSec.toFixed(1)}s / I2V ${i2v.toFixed(1)}s` : undefined;
     const hasKf = Boolean(run.keyframeDataUrl);
+    // Editorial cut readiness. Not official Production media.
     const hasVideo = Boolean(run.takeUrl?.trim() || run.lipsyncUrl?.trim() || run.acceptedTake?.url?.trim() || run.previewUrl?.trim());
     let status: PreviewCutStatus = 'ready';
     let statusLabel = silent ? 'Voice: NONE' : 'Ready';

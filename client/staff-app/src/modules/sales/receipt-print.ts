@@ -48,7 +48,8 @@ export function buildReceiptHtml(order: SalesOrderDetail, store: ReceiptStoreSet
   <div class="rule">────────────────</div>
   <div class="center"><strong>HÓA ĐƠN BÁN HÀNG</strong></div>
   <div>Số: ${escapeHtml(order.orderNumber)}</div>
-  <div>Ngày: ${dayjs(order.orderDate).format('DD/MM/YYYY HH:mm')}</div>
+  <div>Ngày: ${dayjs(order.orderDate).format('DD/MM/YYYY')}</div>
+  <div>Giờ bán: ${dayjs(order.orderDate).format('HH:mm')}</div>
   ${order.customerName ? `<div>KH: ${escapeHtml(order.customerName)}</div>` : ''}
   <div class="rule">────────────────</div>
   ${lines}

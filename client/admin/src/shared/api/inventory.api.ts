@@ -14,6 +14,7 @@ import type {
   OpeningBalanceImportResult,
   PagedOpeningBalanceBatches,
   LowStockProduct,
+  PagedLowStockProducts,
   LowStockSettings,
   CategoryLowStockSetting,
   WarehouseLowStockSetting,
@@ -698,9 +699,11 @@ function normalizeLowStockProduct(row: Record<string, unknown>): LowStockProduct
 export async function fetchLowStockProducts(params?: {
   warehouseId?: string;
   defaultThreshold?: number;
-}): Promise<LowStockProduct[]> {
-  const { data } = await http.get<Record<string, unknown>[]>('/inventory/stock/low-stock', { params });
-  return data.map((row) => normalizeLowStockProduct(row));
+  page?: number;
+  pageSize?: number;
+}): Promise<PagedLowStockProducts> {
+  const { data } = await http.get<Record<string, unknown>>('/inventory/stock/low-stock', { params });
+  return normalizePaged(data, normalizeLowStockProduct);
 }
 
 const OPENING_BALANCE_IMPORT_BATCH_SIZE = 1500;

@@ -12,8 +12,8 @@ internal static class ReportsDateHelper
         var vn = utcNow.Add(VietnamOffset);
         var monthStartVn = new DateTime(vn.Year, vn.Month, 1, 0, 0, 0, DateTimeKind.Unspecified);
         var todayEndVn = new DateTime(vn.Year, vn.Month, vn.Day, 0, 0, 0, DateTimeKind.Unspecified).AddDays(1);
-        var from = fromUtc ?? monthStartVn - VietnamOffset;
-        var to = toUtc ?? todayEndVn - VietnamOffset;
+        var from = fromUtc ?? DateTime.SpecifyKind(monthStartVn - VietnamOffset, DateTimeKind.Utc);
+        var to = toUtc ?? DateTime.SpecifyKind(todayEndVn - VietnamOffset, DateTimeKind.Utc);
         if (to <= from)
             to = from.AddDays(1);
         return (from, to);

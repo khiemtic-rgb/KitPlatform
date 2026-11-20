@@ -39,6 +39,7 @@ FROM roles r
 CROSS JOIN permissions p
 WHERE r.role_code = 'ADMIN'
   AND p.permission_code LIKE 'content.%'
+  AND p.permission_code <> 'content.canon.administer'
   AND NOT EXISTS (
       SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_id = p.id
   );

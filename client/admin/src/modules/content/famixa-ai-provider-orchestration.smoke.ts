@@ -52,7 +52,7 @@ ok(FAMIXA_PROVIDER_ORCHESTRATION_ID === 'FAMIXA_AI_PROVIDER_ORCHESTRATION_CORE_V
 const registry = famixaProviderRegistryForTests();
 
 ok(registry.describe('gemini').providerId === 'gemini', 'T1 known provider');
-ok(FAMIXA_PROVIDER_CATALOG.length === 5, 'T1 catalog live set');
+ok(FAMIXA_PROVIDER_CATALOG.length === 6, 'T1 catalog live set');
 
 let unknown = false;
 try {
@@ -81,6 +81,7 @@ ok(mapFamixaProviderPolicy('MOTION', 'ECONOMY').providerId === 'wan', 'T5 ECONOM
 ok(mapFamixaProviderPolicy('LIPSYNC', 'ECONOMY').modelId === 'ls', 'T5 ECONOMY lipsync');
 ok(resolveFamixaProvider('MOTION', { engine: 'wan' }).providerId === 'wan', 'T5 engine wan');
 ok(resolveFamixaProvider('MOTION', { engine: 'turbo' }).providerId === 'runway', 'T5 engine turbo');
+ok(resolveFamixaProvider('MOTION', { engine: 'veo' }).providerId === 'google', 'T5 engine veo');
 
 let unavailable = false;
 try {
@@ -201,7 +202,7 @@ ok(validateMotionCallback({
 
 ok(estimateFamixaProviderCost('runway', 'gen4_turbo', 5).amount === 25, 'T16 known model estimate');
 ok(estimateFamixaProviderCost('fal', '1.9', 10).amount === 0.12, 'T16 fal 1.9');
-ok(estimateFamixaProviderCost('gemini').kind === 'UNKNOWN', 'T17 unknown price');
+ok(estimateFamixaProviderCost('gemini').kind === 'ESTIMATE' && estimateFamixaProviderCost('gemini').amount === 0.045, 'T17 Gemini 3.1 published-list estimate');
 ok(estimateFamixaProviderCost('wan').kind === 'FAL_BILLED_ESTIMATE', 'T17 wan not fake 0 USD');
 
 const execSrc = read('ContentFamixaShotProduction/ShotProductionExecution.ts');

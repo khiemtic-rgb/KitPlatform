@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Form, Input, InputNumber, Modal, Select, Space, Typography } from 'antd';
 import type { PosCheckoutPaymentLine, SalesOrderDetail } from '@/shared/api/sales.types';
@@ -23,6 +23,7 @@ type Props = {
     reason?: string;
     items: { salesOrderItemId: string; quantity: number }[];
     payments: PosCheckoutPaymentLine[];
+    clientReturnId: string;
   }) => void;
 };
 
@@ -42,6 +43,12 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
       ) ?? [],
     [order],
   );
+
+  // One id per opened return: a retried or double-clicked submit replays the same return server-side.
+  const clientReturnIdRef = useRef('');
+  useEffect(() => {
+    if (open) clientReturnIdRef.current = crypto.randomUUID();
+  }, [open, order?.id]);
 
   useEffect(() => {
     if (!open || !order) return;
@@ -78,7 +85,7 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
   const canSubmit = hasReturnQty;
 
   const handleOk = async () => {
-    if (!order || !canSubmit) return;
+    if (!order || !canSubmit || loading) return;
     const values = await form.validateFields();
     onConfirm({
       reason: values.reason,
@@ -87,6 +94,7 @@ export function SalesReturnModal({ open, loading, order, onCancel, onConfirm }: 
         quantity: line.quantity,
       })),
       payments: [{ paymentMethod: values.paymentMethod, amount: preview.totalRefund }],
+      clientReturnId: clientReturnIdRef.current,
     });
   };
 

@@ -20,7 +20,10 @@ internal sealed class ShiftChecklistService : IShiftChecklistService
         _tenant = tenant;
     }
 
-    public async Task<ShiftChecklistTodayDto> GetTodayAsync(Guid? branchId, CancellationToken cancellationToken = default)
+    public async Task<ShiftChecklistTodayDto> GetTodayAsync(
+        Guid? branchId,
+        Guid? salesShiftId = null,
+        CancellationToken cancellationToken = default)
     {
         await _repo.EnsureDefaultTemplatesAsync(cancellationToken);
         var scope = await _branchAccess.GetScopeAsync(cancellationToken);
@@ -37,9 +40,25 @@ internal sealed class ShiftChecklistService : IShiftChecklistService
         await _branchAccess.EnsureBranchAccessAsync(selected, cancellationToken);
 
         var businessDate = VietnamBusinessCalendar.Today(DateTime.UtcNow);
-        var open = await _repo.GetKindStatusAsync(selected, "open", businessDate, cancellationToken);
-        var close = await _repo.GetKindStatusAsync(selected, "close", businessDate, cancellationToken);
-        return new ShiftChecklistTodayDto(businessDate, selected, branches, open, close);
+        var openShifts = await _repo.ListOpenShiftsForBranchAsync(selected, cancellationToken);
+        var chosen = ShiftChecklistShiftSelection.Resolve(
+            openShifts.Select(s => s.Id).ToList(),
+            salesShiftId,
+            required: false);
+        ShiftChecklistKindStatusDto open;
+        ShiftChecklistKindStatusDto close;
+        if (chosen is Guid shiftId)
+        {
+            open = await _repo.GetKindStatusAsync(selected, "open", shiftId, cancellationToken);
+            close = await _repo.GetKindStatusAsync(selected, "close", shiftId, cancellationToken);
+        }
+        else
+        {
+            open = new ShiftChecklistKindStatusDto("open", "missing", null, 0, 0, 0, null);
+            close = open with { Kind = "close" };
+        }
+
+        return new ShiftChecklistTodayDto(businessDate, selected, branches, open, close, openShifts);
     }
 
     public async Task<ShiftChecklistRunDto> StartOrGetAsync(
@@ -51,7 +70,8 @@ internal sealed class ShiftChecklistService : IShiftChecklistService
         await _repo.EnsureDefaultTemplatesAsync(cancellationToken);
 
         var businessDate = VietnamBusinessCalendar.Today(DateTime.UtcNow);
-        var existing = await _repo.FindRunIdAsync(request.BranchId, kind, businessDate, cancellationToken);
+        var salesShiftId = await ResolveOpenShiftAsync(request, cancellationToken);
+        var existing = await _repo.FindRunIdByShiftAsync(salesShiftId, kind, cancellationToken);
         if (existing is Guid runId)
             return await RequireRunAsync(runId, cancellationToken);
 
@@ -67,6 +87,7 @@ internal sealed class ShiftChecklistService : IShiftChecklistService
         {
             runId = await _repo.CreateRunAsync(
                 request.BranchId,
+                salesShiftId,
                 templateId,
                 kind,
                 businessDate,
@@ -74,10 +95,10 @@ internal sealed class ShiftChecklistService : IShiftChecklistService
                 templateItems.Select(i => (i.Id, i.SortOrder, i.Label, i.IsRequired)).ToList(),
                 cancellationToken);
         }
-        catch (Exception ex) when (ex.Message.Contains("ux_success_shift_checklist_run_day", StringComparison.OrdinalIgnoreCase)
+        catch (Exception ex) when (ex.Message.Contains("ux_success_shift_checklist_run_shift_kind", StringComparison.OrdinalIgnoreCase)
                                    || ex.Message.Contains("unique", StringComparison.OrdinalIgnoreCase))
         {
-            var raced = await _repo.FindRunIdAsync(request.BranchId, kind, businessDate, cancellationToken);
+            var raced = await _repo.FindRunIdByShiftAsync(salesShiftId, kind, cancellationToken);
             if (raced is null) throw;
             runId = raced.Value;
         }
@@ -116,9 +137,34 @@ internal sealed class ShiftChecklistService : IShiftChecklistService
 
         var ok = await _repo.CompleteRunAsync(runId, _tenant.UserId, cancellationToken);
         if (!ok)
+        {
+            var current = await RequireRunAsync(runId, cancellationToken);
+            if (string.Equals(current.Status, "completed", StringComparison.OrdinalIgnoreCase))
+                return current;
             throw new InvalidOperationException("Không hoàn thành được checklist.");
+        }
 
         return await RequireRunAsync(runId, cancellationToken);
+    }
+
+    private async Task<Guid> ResolveOpenShiftAsync(
+        StartShiftChecklistRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.SalesShiftId is Guid requested)
+        {
+            var belongs = await _repo.OpenShiftBelongsToBranchAsync(requested, request.BranchId, cancellationToken);
+            if (!belongs)
+                throw new InvalidOperationException("Ca bán không đang mở tại chi nhánh này.");
+            return requested;
+        }
+
+        var open = await _repo.ListOpenShiftsForBranchAsync(request.BranchId, cancellationToken);
+        return ShiftChecklistShiftSelection.Resolve(
+            open.Select(s => s.Id).ToList(),
+            request.SalesShiftId,
+            required: true)
+            ?? throw new InvalidOperationException("Chi nhánh có nhiều ca đang mở. Chọn ca cụ thể.");
     }
 
     private async Task<ShiftChecklistRunDto> RequireRunAsync(Guid runId, CancellationToken cancellationToken)

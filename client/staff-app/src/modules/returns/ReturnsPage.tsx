@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   App,
   Alert,
@@ -65,6 +65,7 @@ export function ReturnsPage() {
   const [reason, setReason] = useState('');
   const [refundMethod, setRefundMethod] = useState<RefundMethod>(SALES_PAYMENT_CASH);
   const [saving, setSaving] = useState(false);
+  const returnAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
 
   const refreshShift = useCallback(async () => {
     if (!warehouseId) {
@@ -210,14 +211,23 @@ export function ReturnsPage() {
     if (!order || !canSubmit) return;
     setSaving(true);
     try {
+      const items = preview.lines.map((line) => ({
+        salesOrderItemId: line.itemId,
+        quantity: line.quantity,
+      }));
+      const payments = [{ paymentMethod: refundMethod, amount: preview.totalRefund }];
+      const fingerprint = JSON.stringify({ orderId: order.id, reason: reason.trim(), items, payments });
+      const attempt = returnAttempt.current?.fingerprint === fingerprint
+        ? returnAttempt.current
+        : { fingerprint, key: crypto.randomUUID() };
+      returnAttempt.current = attempt;
       const result = await createSaleReturn(order.id, {
         reason: reason.trim() || undefined,
-        items: preview.lines.map((line) => ({
-          salesOrderItemId: line.itemId,
-          quantity: line.quantity,
-        })),
-        payments: [{ paymentMethod: refundMethod, amount: preview.totalRefund }],
+        items,
+        payments,
+        clientReturnId: attempt.key,
       });
+      returnAttempt.current = null;
       message.success(`Đã trả · ${result.returnNumber} · hoàn ${formatMoney(result.totalRefund)}`);
       clearOrder();
     } catch (error) {

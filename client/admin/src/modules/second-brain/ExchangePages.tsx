@@ -13,7 +13,6 @@ function errorText(error: unknown): string {
   if (status === 403) return message || 'Không có quyền quản lý kết nối sàn.';
   if (status === 429) return message || 'Sàn đang giới hạn tần suất.';
   if (status === 503) return message || 'Chưa cấu hình khóa mã hóa. Không lưu credential.';
-  if (status === 404) return 'Route kết nối sàn chưa được mở trên API này. Không có dữ liệu tài khoản.';
   if (!err.response) return 'API không phản hồi. Không có dữ liệu tài khoản.';
   return message || 'Yêu cầu không thành công.';
 }
@@ -144,7 +143,7 @@ export function TradingExchangePage() {
       <Alert
         type="info"
         showIcon
-        message="Nguồn binance_account_readonly. Chỉ đọc Bybit, Binance và OKX. Không đặt lệnh, không chuyển tiền, không rút tiền. Số dư này không tính PnL paper research."
+        message="Chỉ đọc Bybit, Binance và OKX. Không đặt lệnh, không chuyển tiền, không rút tiền."
         description="Bybit chỉ lưu khi readOnly=1 và permissions không có Trade, Order, Transfer hoặc Withdraw. Binance từ chối rút và chuyển. Enable Futures hoặc giao dịch Spot khiến luồng đó bị chặn, không được bật để lấy lịch sử. OKX chỉ xác minh khi perm đúng read_only. Thiếu perm thì phải tự xác nhận và lịch sử không chạy. Sau khi lưu, secret và passphrase không hiện lại. Kết nối thành công chưa có nghĩa là lịch sử đã tải xong."
       />
       {error && <Alert type="error" showIcon message={error} />}

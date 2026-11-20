@@ -146,10 +146,49 @@ internal sealed class ShiftChecklistRepository
         return rows.AsList();
     }
 
-    public async Task<Guid?> FindRunIdAsync(
+    public async Task<IReadOnlyList<ShiftChecklistOpenShiftDto>> ListOpenShiftsForBranchAsync(
         Guid branchId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<ShiftChecklistOpenShiftDto>(
+            """
+            SELECT s.id AS Id, s.shift_number AS ShiftNumber, w.warehouse_name AS WarehouseName
+            FROM sales_shifts s
+            INNER JOIN warehouses w ON w.id = s.warehouse_id
+            WHERE s.tenant_id = @TenantId
+              AND w.branch_id = @BranchId
+              AND s.status = 1
+            ORDER BY s.opened_at
+            """,
+            new { TenantId, BranchId = branchId });
+        return rows.AsList();
+    }
+
+    public async Task<bool> OpenShiftBelongsToBranchAsync(
+        Guid salesShiftId,
+        Guid branchId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.ExecuteScalarAsync<bool>(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM sales_shifts s
+                INNER JOIN warehouses w ON w.id = s.warehouse_id
+                WHERE s.id = @ShiftId
+                  AND s.tenant_id = @TenantId
+                  AND w.branch_id = @BranchId
+                  AND s.status = 1
+            )
+            """,
+            new { TenantId, ShiftId = salesShiftId, BranchId = branchId });
+    }
+
+    public async Task<Guid?> FindRunIdByShiftAsync(
+        Guid salesShiftId,
         string kind,
-        DateOnly businessDate,
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -158,16 +197,16 @@ internal sealed class ShiftChecklistRepository
             SELECT id
             FROM success_shift_checklist_run
             WHERE tenant_id = @TenantId
-              AND branch_id = @BranchId
+              AND sales_shift_id = @SalesShiftId
               AND kind = @Kind
-              AND business_date = @BusinessDate
             LIMIT 1
             """,
-            new { TenantId, BranchId = branchId, Kind = kind, BusinessDate = businessDate });
+            new { TenantId, SalesShiftId = salesShiftId, Kind = kind });
     }
 
     public async Task<Guid> CreateRunAsync(
         Guid branchId,
+        Guid salesShiftId,
         Guid templateId,
         string kind,
         DateOnly businessDate,
@@ -181,10 +220,10 @@ internal sealed class ShiftChecklistRepository
         var runId = await conn.ExecuteScalarAsync<Guid>(
             """
             INSERT INTO success_shift_checklist_run (
-                tenant_id, branch_id, template_id, kind, business_date, status, started_by_user_id
+                tenant_id, branch_id, sales_shift_id, template_id, kind, business_date, status, started_by_user_id
             )
             VALUES (
-                @TenantId, @BranchId, @TemplateId, @Kind, @BusinessDate, 'in_progress', @UserId
+                @TenantId, @BranchId, @SalesShiftId, @TemplateId, @Kind, @BusinessDate, 'in_progress', @UserId
             )
             RETURNING id
             """,
@@ -192,6 +231,7 @@ internal sealed class ShiftChecklistRepository
             {
                 TenantId,
                 BranchId = branchId,
+                SalesShiftId = salesShiftId,
                 TemplateId = templateId,
                 Kind = kind,
                 BusinessDate = businessDate,
@@ -263,7 +303,8 @@ internal sealed class ShiftChecklistRepository
                 label AS Label,
                 is_required AS IsRequired,
                 is_checked AS IsChecked,
-                checked_at AS CheckedAt
+                checked_at AS CheckedAt,
+                checked_by_user_id AS CheckedByUserId
             FROM success_shift_checklist_run_item
             WHERE run_id = @RunId
             ORDER BY sort_order, label
@@ -344,7 +385,7 @@ internal sealed class ShiftChecklistRepository
     public async Task<ShiftChecklistKindStatusDto> GetKindStatusAsync(
         Guid branchId,
         string kind,
-        DateOnly businessDate,
+        Guid salesShiftId,
         CancellationToken cancellationToken)
     {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
@@ -376,13 +417,13 @@ internal sealed class ShiftChecklistRepository
             WHERE r.tenant_id = @TenantId
               AND r.branch_id = @BranchId
               AND r.kind = @Kind
-              AND r.business_date = @BusinessDate
+              AND r.sales_shift_id = @SalesShiftId
             """,
-            new { TenantId, BranchId = branchId, Kind = kind, BusinessDate = businessDate });
+            new { TenantId, BranchId = branchId, Kind = kind, SalesShiftId = salesShiftId });
 
         if (row.RunId is null)
         {
-            return new ShiftChecklistKindStatusDto(kind, "missing", null, 0, 0, 0, null);
+            return new ShiftChecklistKindStatusDto(kind, "missing", null, 0, 0, 0, null, salesShiftId);
         }
 
         return new ShiftChecklistKindStatusDto(
@@ -392,6 +433,7 @@ internal sealed class ShiftChecklistRepository
             row.CheckedCount,
             row.TotalCount,
             row.RequiredMissing,
-            row.CompletedAt);
+            row.CompletedAt,
+            salesShiftId);
     }
 }

@@ -1,0 +1,166 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "rapid-trading-20",
+  "approvalStatus": "approved",
+  "scenes": [
+    {
+      "sceneId": "s1-open",
+      "approvalStatus": "approved",
+      "storyGoal": "Mở bằng tên Agent Trading và một câu về việc đọc thị trường.",
+      "durationSeconds": 4,
+      "durationSource": "fixed",
+      "voiceLeadSeconds": 0.4,
+      "dialogue": "Đọc thị trường trước khi vào lệnh.",
+      "action": "Tên hiện trước, câu phụ hiện sau.",
+      "visualMetaphor": null,
+      "subjects": ["tên"],
+      "onScreenText": ["Agent Trading", "Đọc thị trường trước khi vào lệnh."],
+      "templateId": "brand_reveal",
+      "params": {
+        "wordmark": "Agent Trading",
+        "line": "Đọc thị trường trước khi vào lệnh."
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s1",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 2.05, "end": 4, "reason": "Câu mở hết lúc tên đã đứng. Giữ hình, không có nhạc."}],
+        "syncNotes": "Lời vào sau 0,4 giây và hết khoảng giây 2,2."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang phiên mẫu khi câu phụ đã đứng."},
+      "acceptance": ["Tên và câu phụ có dấu tiếng Việt.", "Không dùng logo Novixa."],
+      "previewFractions": [0.08, 0.35, 0.85]
+    },
+    {
+      "sceneId": "s2-session",
+      "approvalStatus": "approved",
+      "storyGoal": "Giá, khối lượng và xu hướng của một phiên mẫu đi trên cùng một nhịp.",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "voiceLeadSeconds": 0.25,
+      "dialogue": "Giá, khối lượng và xu hướng đi trên một phiên mẫu.",
+      "action": "Ba nhãn trượt dọc đường ray rồi dừng.",
+      "visualMetaphor": "Ba tín hiệu của một phiên là một nhịp, không phải ba biểu đồ rời.",
+      "subjects": ["giá", "khối lượng", "xu hướng"],
+      "onScreenText": ["Một phiên mẫu", "Dữ liệu mô phỏng", "Tăng", "Dày hơn", "Còn giữ"],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "lanes",
+        "title": "Một phiên mẫu",
+        "dataLabel": "Dữ liệu mô phỏng",
+        "lanes": [
+          {"label": "Giá", "events": [{"text": "Tăng", "at": 0.72}]},
+          {"label": "Khối", "events": [{"text": "Dày hơn", "at": 0.48}]},
+          {"label": "Xu hướng", "events": [{"text": "Còn giữ", "at": 0.3}]}
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s2",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {"start": 0, "end": 0.5, "reason": "Cắt cảnh xong mới vào lời."},
+          {"start": 3.2, "end": 5, "reason": "Lời phiên mẫu hết trước khi cắt sang biểu đồ."}
+        ],
+        "syncNotes": "Nhãn trượt trong nửa đầu. Lời hết khoảng giây 3,3."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang biểu đồ khi ba nhãn đã vào chỗ."},
+      "acceptance": ["Ba nhãn di chuyển rồi dừng.", "Có nhãn dữ liệu mô phỏng.", "Không có chữ nhà thuốc."],
+      "previewFractions": [0.12, 0.4, 0.92]
+    },
+    {
+      "sceneId": "s3-chart",
+      "approvalStatus": "approved",
+      "storyGoal": "Biểu đồ phiên mẫu, không phải số thị trường thật và không phải khuyến nghị.",
+      "durationSeconds": 6,
+      "durationSource": "fixed",
+      "voiceLeadSeconds": 0.4,
+      "dialogue": "Biểu đồ là phiên mẫu. Không phải khuyến nghị.",
+      "action": "Cột mọc từ đáy. Câu từ chối khuyến nghị đứng từ đầu.",
+      "visualMetaphor": null,
+      "subjects": ["biểu đồ mẫu"],
+      "onScreenText": ["Phiên mẫu", "Dữ liệu mô phỏng", "Không phải khuyến nghị giao dịch."],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "dashboard",
+        "title": "Phiên mẫu",
+        "subtitle": "Năm nhịp của một phiên giả định",
+        "dataLabel": "Dữ liệu mô phỏng",
+        "metrics": [
+          {"label": "Giá mẫu", "value": "102", "note": "điểm giả định"},
+          {"label": "Khối lượng", "value": "1,2", "note": "triệu, giả định"},
+          {"label": "Biên độ", "value": "4", "note": "nhịp, giả định"}
+        ],
+        "chart": {
+          "title": "Nhịp trong phiên",
+          "confirmed": true,
+          "bars": [
+            {"label": "N1", "amount": 0.42},
+            {"label": "N2", "amount": 0.7},
+            {"label": "N3", "amount": 0.55},
+            {"label": "N4", "amount": 0.78},
+            {"label": "N5", "amount": 0.48}
+          ]
+        },
+        "notes": [
+          {"label": "Đọc", "body": "Nhịp lên rồi hạ. Chưa đủ để vào lệnh."},
+          {"label": "Việc học", "body": "Dừng lại khi tín hiệu chưa rõ."}
+        ],
+        "callout": "Không phải khuyến nghị giao dịch."
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s3",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {"start": 0, "end": 0.85, "reason": "Cột bắt đầu mọc trước khi câu nói vào."},
+          {"start": 3.7, "end": 6, "reason": "Câu nói hết. Giữ biểu đồ đến hết cảnh, không có nhạc."}
+        ],
+        "syncNotes": "Cột mọc trong khoảng 0,6 đến 2,4 giây."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang ba bước khi biểu đồ đã đứng."},
+      "acceptance": ["Cột mọc có easing.", "Câu không phải khuyến nghị hiện rõ."],
+      "previewFractions": [0.08, 0.45, 0.92]
+    },
+    {
+      "sceneId": "s4-close",
+      "approvalStatus": "approved",
+      "storyGoal": "Kết bằng ba bước của người học: quan sát, đánh giá, đứng ngoài.",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "voiceLeadSeconds": 0.15,
+      "dialogue": "Quan sát. Đánh giá. Đứng ngoài.",
+      "action": "Ba cột lần lượt rơi vào chỗ.",
+      "visualMetaphor": null,
+      "subjects": ["ba bước"],
+      "onScreenText": ["Quan sát", "Agent Trading"],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "triptych",
+        "note": "Agent Trading",
+        "columns": [
+          {"index": "01", "title": "Quan sát", "body": "Nhìn nhịp trước khi quyết", "points": ["Giá"]},
+          {"index": "02", "title": "Đánh giá", "body": "Khối lượng có đi cùng không", "points": ["So nhịp"]},
+          {"index": "03", "title": "Đứng ngoài", "body": "Chưa rõ thì chưa vào lệnh", "points": ["Chờ"]}
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s4",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {"start": 0, "end": 0.4, "reason": "Cột đầu vào trước lời kết."},
+          {"start": 3.85, "end": 5, "reason": "Lời kết hết. Giữ ba cột, không có nhạc."}
+        ],
+        "syncNotes": "Cột sau vào trễ hơn cột trước."
+      },
+      "transitionOut": null,
+      "acceptance": ["Ba tiêu đề hiện lần lượt.", "Không có tài sản Novixa."],
+      "previewFractions": [0.08, 0.45, 0.92]
+    }
+  ]
+}

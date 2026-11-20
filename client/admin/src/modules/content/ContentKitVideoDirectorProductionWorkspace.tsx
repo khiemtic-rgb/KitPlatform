@@ -236,7 +236,7 @@ export function ContentKitVideoDirectorProductionWorkspace({
               <button
                 type="button"
                 className="fx-dir-ws__step-btn"
-                disabled={locked && step.id !== 'content' && step.id !== 'image'}
+                disabled={locked}
                 onClick={() => setScenePane(step.id)}
               >
                 <span className="fx-dir-ws__n">{step.label}</span>

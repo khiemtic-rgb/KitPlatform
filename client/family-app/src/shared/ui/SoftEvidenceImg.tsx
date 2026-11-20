@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { withEvidenceAuth } from '@/shared/upload/evidence-url';
+import { useEvidenceMediaUrl } from '@/shared/upload/evidence-media';
 
 /** Soft illustration when evidence / memory photo URL is missing or 404s. */
 export const MEMORY_PLACEHOLDER_SRC = '/mascot/family-moment-1.png';
@@ -21,7 +22,9 @@ export function SoftEvidenceImg(props: {
   auth?: (url?: string | null) => string | undefined;
 }) {
   const resolve = props.auth ?? withEvidenceAuth;
-  const src = props.url ? resolve(props.url) : undefined;
+  const resolved = props.url ? resolve(props.url) : undefined;
+  const media = useEvidenceMediaUrl(resolved);
+  const src = media.src;
   const [failed, setFailed] = useState(false);
   const [seenSrc, setSeenSrc] = useState(src);
   if (seenSrc !== src) {
@@ -30,6 +33,10 @@ export function SoftEvidenceImg(props: {
   }
 
   const imgClass = props.className ?? props.fallbackClassName;
+
+  if (media.pending) {
+    return <span className={props.className ?? props.fallbackClassName} aria-hidden />;
+  }
 
   if (!src || failed) {
     if (props.emojiFallback) {

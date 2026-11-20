@@ -107,6 +107,23 @@ public sealed class LowStockSettingsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpPut("notification-email")]
+    [Authorize(Policy = InventoryPolicies.Write)]
+    public async Task<IActionResult> UpdateNotificationEmail(
+        [FromBody] UpdateLowStockNotificationEmailRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _settings.UpdateNotificationEmailAsync(request, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
 
 public sealed class UpdateCategoryMinStockRequest

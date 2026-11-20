@@ -43,6 +43,12 @@ public interface IInventoryService
         CreateOpeningBalanceRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<bool> LotHasActiveOpeningBalanceAsync(
+        Guid warehouseId,
+        Guid productId,
+        string batchNumber,
+        CancellationToken cancellationToken = default);
+
     Task<PagedOpeningBalanceBatchesResult> GetOpeningBalanceBatchesAsync(
         Guid? warehouseId,
         Guid? productId,
@@ -98,9 +104,11 @@ public interface IInventoryService
         string barcode,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<LowStockProductDto>> GetLowStockProductsAsync(
+    Task<PagedLowStockProductsResult> GetLowStockProductsAsync(
         Guid? warehouseId,
         decimal defaultThreshold,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken = default);
 
     Task<RevalueBatchCostResult> RevalueBatchCostAsync(

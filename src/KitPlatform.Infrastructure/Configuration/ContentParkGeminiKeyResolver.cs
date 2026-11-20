@@ -59,13 +59,18 @@ public static class ContentParkGeminiKeyResolver
                 if (state is not null)
                 {
                     textModel = FirstNonEmpty(state.TextModel);
-                    var fromDb = FirstNonEmpty(state.GeminiApiKey);
-                    if (fromDb is not null)
-                        return new ResolvedSettings(fromDb, textModel);
-
-                    var fromRef = ResolveSecret(state.GeminiApiKeySecretRef, configuration);
-                    if (fromRef is not null)
-                        return new ResolvedSettings(fromRef, textModel);
+                    var specified = ContentGeminiKeyPrecedence.JsonSpecifiesSecretRef(aiConfigJson)
+                        && !string.IsNullOrWhiteSpace(state.GeminiApiKeySecretRef);
+                    var decision = ContentGeminiKeyPrecedence.Resolve(
+                        state.GeminiApiKey,
+                        specified ? state.GeminiApiKeySecretRef : null,
+                        specified,
+                        name => ResolveSecret(name, configuration),
+                        configuration["Content:GeminiApiKey"],
+                        Environment.GetEnvironmentVariable("GEMINI_API_KEY"),
+                        Environment.GetEnvironmentVariable("GOOGLE_API_KEY"),
+                        Environment.GetEnvironmentVariable("GOOGLE_GENERATIVE_AI_API_KEY"));
+                    return new ResolvedSettings(decision.ApiKey, textModel);
                 }
             }
             catch
@@ -74,13 +79,17 @@ public static class ContentParkGeminiKeyResolver
             }
         }
 
-        var key = FirstNonEmpty(
+        var fallback = ContentGeminiKeyPrecedence.Resolve(
+            null,
+            null,
+            false,
+            null,
             configuration["Content:GeminiApiKey"],
             Environment.GetEnvironmentVariable("GEMINI_API_KEY"),
             Environment.GetEnvironmentVariable("GOOGLE_API_KEY"),
             Environment.GetEnvironmentVariable("GOOGLE_GENERATIVE_AI_API_KEY"));
         textModel ??= FirstNonEmpty(configuration["Content:TextModel"]);
-        return new ResolvedSettings(key, textModel);
+        return new ResolvedSettings(fallback.ApiKey, textModel);
     }
 
     private static string? ResolveSecret(string? secretRef, IConfiguration configuration)

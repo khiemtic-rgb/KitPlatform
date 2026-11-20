@@ -141,7 +141,7 @@ if (Test-Path $manifestPath) {
 }
 
 Write-Host "=== KitPlatform PRODUCTION Migrations (no demo seed) ===" -ForegroundColor Cyan
-Write-Host "Database: $ConnectionString"
+Write-Host "Database: (connection string provided)"
 Write-Host "psql: $psql"
 
 if (-not $psql) {

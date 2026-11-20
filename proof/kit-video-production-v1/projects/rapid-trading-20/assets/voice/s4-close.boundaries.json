@@ -1,0 +1,32 @@
+[
+  {
+    "text": "Quan",
+    "start": 0.1,
+    "end": 0.4
+  },
+  {
+    "text": "sát",
+    "start": 0.4,
+    "end": 0.6875
+  },
+  {
+    "text": "Đánh",
+    "start": 1.525,
+    "end": 1.85
+  },
+  {
+    "text": "giá",
+    "start": 1.85,
+    "end": 2.275
+  },
+  {
+    "text": "Đứng",
+    "start": 3.1125,
+    "end": 3.45
+  },
+  {
+    "text": "ngoài",
+    "start": 3.45,
+    "end": 3.825
+  }
+]

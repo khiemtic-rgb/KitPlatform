@@ -247,17 +247,27 @@ function applyLotPickToLine(
   pick: GrnExistingBatchPick,
 ): Pick<GrnLineForm, 'manufactureDate' | 'expiryDate' | 'lotLocked' | 'lotConflict'> {
   if (pick.hasConflict) {
-    return { ...current, lotLocked: false, lotConflict: true };
+    return {
+      manufactureDate: current.manufactureDate,
+      expiryDate: current.expiryDate ?? '',
+      lotLocked: false,
+      lotConflict: true,
+    };
   }
   if (pick.exists) {
     return {
       manufactureDate: pick.manufactureDate ?? current.manufactureDate,
-      expiryDate: pick.expiryDate ?? current.expiryDate,
+      expiryDate: pick.expiryDate ?? current.expiryDate ?? '',
       lotLocked: true,
       lotConflict: false,
     };
   }
-  return { ...current, lotLocked: false, lotConflict: false };
+  return {
+    manufactureDate: current.manufactureDate,
+    expiryDate: current.expiryDate ?? '',
+    lotLocked: false,
+    lotConflict: false,
+  };
 }
 
 export function GoodsReceiptListPage() {
@@ -294,6 +304,7 @@ export function GoodsReceiptListPage() {
   const [detail, setDetail] = useState<GoodsReceiptDetail | null>(null);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [completingId, setCompletingId] = useState<string | null>(null);
   const [poEditOpen, setPoEditOpen] = useState(false);
   const [editingGrnId, setEditingGrnId] = useState<string | null>(null);
   const [editingGrnNumber, setEditingGrnNumber] = useState<string | null>(null);
@@ -727,6 +738,8 @@ export function GoodsReceiptListPage() {
   };
 
   const handleComplete = async (id: string) => {
+    if (completingId) return;
+    setCompletingId(id);
     try {
       const updated = await completeGoodsReceipt(id);
       message.success(t('messages.completed', { grnNumber: updated.grnNumber }));
@@ -734,6 +747,8 @@ export function GoodsReceiptListPage() {
       void loadReceipts(filters, searchInput, page, pageSize);
     } catch (error) {
       message.error(apiErrorMessage(error, t('messages.completeFailed')));
+    } finally {
+      setCompletingId(null);
     }
   };
 
@@ -964,6 +979,7 @@ export function GoodsReceiptListPage() {
                 {tShared('columns.unit')} <Typography.Text type="danger">*</Typography.Text>
               </Typography.Text>
               <ProductUnitSelect
+                baseUnitOnly
                 productId={draftProductId}
                 value={draftUnitId}
                 onChange={(value) => {
@@ -1247,6 +1263,7 @@ export function GoodsReceiptListPage() {
                       style={{ marginBottom: 0 }}
                     >
                       <ProductUnitSelect
+                        baseUnitOnly
                         productId={productId}
                         width={84}
                         onChange={() => setEditingManualCell(null)}
@@ -1627,9 +1644,17 @@ export function GoodsReceiptListPage() {
                 </Button>
               )}
               {detail.status === 1 && (
-                <Button type="primary" icon={<CheckOutlined />} onClick={() => handleComplete(detail.id)}>
-                  {t('complete')}
-                </Button>
+                <Popconfirm
+                  title={t('completeConfirm')}
+                  okText={t('complete')}
+                  cancelText={tCommon('close')}
+                  onConfirm={() => void handleComplete(detail.id)}
+                  disabled={completingId !== null}
+                >
+                  <Button type="primary" icon={<CheckOutlined />} loading={completingId === detail.id}>
+                    {t('complete')}
+                  </Button>
+                </Popconfirm>
               )}
               {detail.status === 1 && (
                 <Popconfirm

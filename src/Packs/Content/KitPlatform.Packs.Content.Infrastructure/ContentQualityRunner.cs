@@ -9,13 +9,13 @@ internal static class ContentQualityRunner
         ContentRepository.PackageRow package,
         CancellationToken cancellationToken)
     {
-        var brand = await repo.GetBrandAsync(package.BrandId, cancellationToken)
+        var brand = await repo.GetBrandAsync(ContentPackageScope.RequireBrand(package), cancellationToken)
                     ?? throw new InvalidOperationException("Brand not found");
         var knowledge = ContentBrandKnowledge.Parse(brand.ToneJson, brand.VisualKitJson);
         var (core, _) = ContentPackageExtra.Parse(package.ExtraJson);
         var brief = ContentPackageExtra.ParseBrief(package.ExtraJson);
-        var (territory, narrativeFit) = ContentPackageExtra.OwnNarrative(package.ExtraJson, package.BrandId);
-        var variants = await repo.ListVariantsAsync(package.TopicId, cancellationToken);
+        var (territory, narrativeFit) = ContentPackageExtra.OwnNarrative(package.ExtraJson, ContentPackageScope.RequireBrand(package));
+        var variants = await repo.ListVariantsAsync(ContentPackageScope.RequireTopic(package), cancellationToken);
         return ContentQualityGate.Evaluate(
             knowledge,
             core,
@@ -47,11 +47,16 @@ internal static class ContentQualityRunner
         throw new InvalidOperationException(ContentQualityGate.RefuseApprove(issues));
     }
 
-    public static void ThrowIfCannotPublish(ContentQualityGateDto gate, string? connectorType = null)
+    public static void ThrowIfCannotPublish(
+        ContentQualityGateDto gate,
+        string? connectorType = null,
+        bool ignoreWebStructure = false)
     {
         var issues = ContentQualityGate.SelectPublishBlocking(
             gate.BlockingIssues is { Count: > 0 } ? gate.BlockingIssues : gate.Issues,
             connectorType);
+        if (ignoreWebStructure)
+            issues = issues.Where(i => !ContentQualityGate.IsWebStructureIssue(i)).ToList();
         if (issues.Count == 0) return;
         throw new InvalidOperationException(ContentQualityGate.RefusePublish(issues));
     }

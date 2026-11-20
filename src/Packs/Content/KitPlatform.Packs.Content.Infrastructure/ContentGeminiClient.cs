@@ -35,9 +35,8 @@ internal sealed class ContentGeminiClient
     /// </summary>
     private static readonly string[] ImageModels =
     [
-        "gemini-2.5-flash-image",
-        "gemini-3.1-flash-lite-image",
         "gemini-3.1-flash-image",
+        "gemini-3.1-flash-lite-image",
         "gemini-2.0-flash-preview-image-generation",
     ];
 
@@ -51,26 +50,46 @@ internal sealed class ContentGeminiClient
     private readonly ContentOptions _options;
     private readonly IConfiguration _configuration;
     private readonly ILogger<ContentGeminiClient> _logger;
+    private readonly ContentTenantGeminiKeySource _tenantKey;
 
     public ContentGeminiClient(
         HttpClient http,
         ContentRepository repo,
         IOptions<ContentOptions> options,
         IConfiguration configuration,
-        ILogger<ContentGeminiClient> logger)
+        ILogger<ContentGeminiClient> logger,
+        ContentTenantGeminiKeySource tenantKey)
     {
         _http = http;
         _repo = repo;
         _options = options.Value;
         _configuration = configuration;
         _logger = logger;
+        _tenantKey = tenantKey;
     }
 
     public async Task<ContentAiResolved> ResolveConfigAsync(CancellationToken ct)
     {
         var row = await _repo.GetOrgSettingsAsync(ct);
         var state = ContentAiConfigParser.Parse(row.AiConfigJson);
-        return ContentAiConfigParser.Resolve(state, _options, _configuration);
+        var resolved = ContentAiConfigParser.Resolve(state, _options, _configuration);
+        if (!resolved.ApiKeyConfigured && await _tenantKey.TryGetAsync(ct) is { } fallback)
+        {
+            // Cấu hình AI viết bài chưa có khoá: dùng khoá Gemini đã lưu ở Cài đặt AI.
+            resolved = resolved with
+            {
+                ApiKey = fallback.Key,
+                ApiKeyConfigured = true,
+                KeySource = "ai-settings",
+                KeyFingerprint = fallback.Fingerprint,
+            };
+        }
+        _logger.LogInformation(
+            "Content Park Gemini key source {Source} configured {Configured} fingerprint {Fingerprint}",
+            resolved.KeySource,
+            resolved.ApiKeyConfigured,
+            resolved.KeyFingerprint ?? "-");
+        return resolved;
     }
 
     public async Task<string> GenerateJsonAsync(
@@ -309,7 +328,8 @@ internal sealed class ContentGeminiClient
         // Skip broken imagen / pollinations labels when iterating Gemini list.
         if (preferred is not null
             && (preferred.StartsWith("imagen", StringComparison.OrdinalIgnoreCase)
-                || preferred.StartsWith("pollinations", StringComparison.OrdinalIgnoreCase)))
+                || preferred.StartsWith("pollinations", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(preferred, "gemini-2.5-flash-image", StringComparison.OrdinalIgnoreCase)))
         {
             if (preferred.StartsWith("imagen", StringComparison.OrdinalIgnoreCase))
             {
@@ -412,7 +432,8 @@ internal sealed class ContentGeminiClient
         var preferred = string.IsNullOrWhiteSpace(resolved.ImageModel) ? null : resolved.ImageModel!.Trim();
         if (preferred is not null
             && (preferred.StartsWith("imagen", StringComparison.OrdinalIgnoreCase)
-                || preferred.StartsWith("pollinations", StringComparison.OrdinalIgnoreCase)))
+                || preferred.StartsWith("pollinations", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(preferred, "gemini-2.5-flash-image", StringComparison.OrdinalIgnoreCase)))
         {
             preferred = null;
         }
@@ -470,13 +491,19 @@ internal sealed class ContentGeminiClient
         string prompt,
         IReadOnlyList<(string Mime, string Base64, string Label)> references,
         string? aspectRatio,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? modelOverride = null)
     {
         var resolved = await ResolveConfigAsync(ct);
         if (!resolved.ApiKeyConfigured)
             return (false, null, null, null, "GEMINI_API_KEY_MISSING");
 
-        var model = FirstNonEmpty(_options.KitVideoGeminiModel, resolved.ImageModel, _options.ImageModel, "gemini-2.5-flash-image");
+        var model = string.IsNullOrWhiteSpace(modelOverride)
+            ? KitPlatform.Packs.Content.Production.ProductionImageCatalog.GeminiFlashImage
+            : modelOverride.Trim();
+        if (!string.IsNullOrWhiteSpace(modelOverride)
+            && !string.Equals(model, Sh02ApprovedLinhStillReferenceV1.ModelId, StringComparison.Ordinal))
+            return (false, null, null, model, "SH02_STILL_MODEL_NOT_APPROVED");
         if (model.Contains("runway", StringComparison.OrdinalIgnoreCase)
             || model.Contains("pollinations", StringComparison.OrdinalIgnoreCase)
             || model.StartsWith("imagen", StringComparison.OrdinalIgnoreCase))
@@ -540,6 +567,7 @@ internal sealed class ContentGeminiClient
         string? modelRef,
         CancellationToken ct)
     {
+        NovixaE2eIsolation.ThrowIfExternalCall("Pollinations");
         await PollinationsGate.WaitAsync(ct);
         try
         {

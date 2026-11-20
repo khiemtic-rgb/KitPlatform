@@ -14,6 +14,8 @@ interface ProductUnitSelectProps {
   width?: number;
   disabled?: boolean;
   status?: '' | 'warning' | 'error';
+  /** Phiếu nhập / PO chưa quy đổi đơn vị — backend chỉ nhận đơn vị hệ số 1. */
+  baseUnitOnly?: boolean;
 }
 
 export function ProductUnitSelect({
@@ -23,6 +25,7 @@ export function ProductUnitSelect({
   width = 130,
   disabled = false,
   status,
+  baseUnitOnly = false,
 }: ProductUnitSelectProps) {
   const { t } = useTranslation('procurement', { keyPrefix: 'shared.columns' });
   const [units, setUnits] = useState<ProductUnit[]>([]);
@@ -38,16 +41,19 @@ export function ProductUnitSelect({
       return;
     }
 
+    const visible = (list: ProductUnit[]) =>
+      baseUnitOnly ? list.filter((u) => u.conversionFactor === 1) : list;
+
     const applyDefault = (list: ProductUnit[]) => {
       if (lastProductId.current === productId) return;
-      const defaultId = pickDefaultProductUnitId(list);
+      const defaultId = pickDefaultProductUnitId(visible(list));
       if (defaultId) onChangeRef.current?.(defaultId);
       lastProductId.current = productId;
     };
 
     const cached = unitsCache.get(productId);
     if (cached) {
-      setUnits(cached);
+      setUnits(visible(cached));
       applyDefault(cached);
       return;
     }
@@ -58,7 +64,7 @@ export function ProductUnitSelect({
       .then((product) => {
         if (cancelled) return;
         unitsCache.set(productId, product.units);
-        setUnits(product.units);
+        setUnits(visible(product.units));
         applyDefault(product.units);
       })
       .catch(() => {
@@ -71,7 +77,7 @@ export function ProductUnitSelect({
     return () => {
       cancelled = true;
     };
-  }, [productId]);
+  }, [productId, baseUnitOnly]);
 
   return (
     <Select

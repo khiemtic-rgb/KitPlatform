@@ -20,12 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Assessment\KapV2OwnerCopy.json" LogicalName="KapV2OwnerCopy.json" />
-    <EmbeddedResource Include="Assessment\Fonts\BeVietnamPro-Regular.ttf" LogicalName="BeVietnamPro-Regular.ttf" />
-    <EmbeddedResource Include="Assessment\Fonts\BeVietnamPro-Bold.ttf" LogicalName="BeVietnamPro-Bold.ttf" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\KitPlatform.Packs.Survey.Application\KitPlatform.Packs.Survey.Application.csproj" />
     <ProjectReference Include="..\..\..\KitPlatform.Application\KitPlatform.Application.csproj" />
     <ProjectReference Include="..\..\..\KitPlatform.Infrastructure\KitPlatform.Infrastructure.csproj" />

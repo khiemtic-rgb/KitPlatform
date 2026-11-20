@@ -1,0 +1,314 @@
+{
+  "_note": "Cấu hình bối cảnh và dàn nhân vật cho EP01. scene_to_setting: bối cảnh mặc định của mỗi cảnh. row_setting_rules: đổi bối cảnh theo từng hàng (cảnh cắt xen). cast: nhân vật xuất hiện trong khung hình của bối cảnh đó. NARRATOR là giọng kể, không có hình riêng. Quy tắc theo ids phải cập nhật khi đánh số lại kịch bản.",
+  "chat_self": [
+    "Quân"
+  ],
+  "scene_to_setting": {
+    "S01 Sân khấu": "stage",
+    "S02 Xe ngoài nhà thi đấu": "car",
+    "S03 Bữa sáng": "kitchen_day",
+    "S04 Phòng tập": "band_room",
+    "S04b Phòng tập": "band_room",
+    "S05 Văn phòng bố": "office",
+    "S06 Tiệm may": "tailor_day",
+    "S06b Tiệm may tối": "tailor_night",
+    "S07 Hậu trường": "backstage",
+    "S08 Sân khấu và xe": "stage",
+    "S08b Cánh gà": "backstage",
+    "S09 Bếp ban đêm": "kitchen_night",
+    "S10 Quân về nhà": "living_night",
+    "S10 Phòng khách đêm": "living_dark",
+    "S11 Tập sau": "preview"
+  },
+  "row_setting_rules": [
+    {
+      "scene": "S08 Sân khấu và xe",
+      "cue_contains": [
+        "rain",
+        "radio",
+        "muffled",
+        "drive"
+      ],
+      "setting": "car"
+    },
+    {
+      "scene": "S08 Sân khấu và xe",
+      "speaker": "BO",
+      "setting": "car"
+    },
+    {
+      "scene": "S10 Quân về nhà",
+      "cue_contains": [
+        "phone_swipe",
+        "two_phones"
+      ],
+      "setting": "quan_room"
+    },
+    {
+      "scene": "S10 Quân về nhà",
+      "cue_contains": [
+        "hospital",
+        "phone_typing"
+      ],
+      "setting": "hospital"
+    },
+    {
+      "scene": "S10 Quân về nhà",
+      "ids": [
+        "E01_149"
+      ],
+      "setting": "quan_room"
+    },
+    {
+      "scene": "S10 Quân về nhà",
+      "ids": [
+        "E01_151",
+        "E01_152"
+      ],
+      "setting": "kitchen_night"
+    }
+  ],
+  "settings": {
+    "stage": {
+      "label_vi": "Sân khấu nhà thi đấu",
+      "palette": [
+        "#1b1035",
+        "#5b2a86",
+        "#f2c14e"
+      ],
+      "cast": [
+        "QUAN",
+        "MAI",
+        "TUNG"
+      ],
+      "light": "#C9A2FF",
+      "light_strength": 0.22
+    },
+    "car": {
+      "label_vi": "Trong xe của bố, trời mưa",
+      "palette": [
+        "#0d1b2a",
+        "#1b263b",
+        "#415a77"
+      ],
+      "cast": [
+        "BO"
+      ],
+      "light": "#6F86C9",
+      "light_strength": 0.5
+    },
+    "kitchen_day": {
+      "label_vi": "Bếp, buổi sáng",
+      "palette": [
+        "#fff1d6",
+        "#f4c98a",
+        "#c97b3b"
+      ],
+      "cast": [
+        "QUAN",
+        "BO",
+        "ME"
+      ],
+      "light": "#FFF1DA",
+      "light_strength": 0.08
+    },
+    "band_room": {
+      "label_vi": "Phòng tập ban nhạc",
+      "palette": [
+        "#2b2d42",
+        "#8d99ae",
+        "#ef8354"
+      ],
+      "cast": [
+        "QUAN",
+        "MAI",
+        "TUNG"
+      ],
+      "light": "#FFC98A",
+      "light_strength": 0.18
+    },
+    "office": {
+      "label_vi": "Văn phòng của bố",
+      "palette": [
+        "#e9ecef",
+        "#adb5bd",
+        "#495057"
+      ],
+      "cast": [
+        "BO",
+        "DONG_NGHIEP"
+      ],
+      "light": "#E6F0FF",
+      "light_strength": 0.1
+    },
+    "tailor_day": {
+      "label_vi": "Tiệm may của mẹ",
+      "palette": [
+        "#fdf0d5",
+        "#c1121f",
+        "#780000"
+      ],
+      "cast": [
+        "ME",
+        "KHACH"
+      ],
+      "light": "#FFF0D8",
+      "light_strength": 0.08
+    },
+    "tailor_night": {
+      "label_vi": "Tiệm may, tối",
+      "palette": [
+        "#14110f",
+        "#34312d",
+        "#7e7f83"
+      ],
+      "cast": [
+        "ME"
+      ],
+      "light": "#FFC070",
+      "light_strength": 0.32
+    },
+    "backstage": {
+      "label_vi": "Hậu trường",
+      "palette": [
+        "#10002b",
+        "#3c096c",
+        "#9d4edd"
+      ],
+      "cast": [
+        "QUAN",
+        "MAI",
+        "TUNG"
+      ],
+      "light": "#FFB070",
+      "light_strength": 0.22
+    },
+    "kitchen_night": {
+      "label_vi": "Bếp, ban đêm",
+      "palette": [
+        "#0b132b",
+        "#1c2541",
+        "#ffd166"
+      ],
+      "cast": [
+        "BO",
+        "ME"
+      ],
+      "light": "#6F86C9",
+      "light_strength": 0.45
+    },
+    "living_night": {
+      "label_vi": "Phòng khách, tối",
+      "palette": [
+        "#22223b",
+        "#4a4e69",
+        "#c9ada7"
+      ],
+      "cast": [
+        "QUAN",
+        "BO",
+        "ME"
+      ],
+      "light": "#FFC58A",
+      "light_strength": 0.22
+    },
+    "living_dark": {
+      "label_vi": "Phòng khách, nửa đêm",
+      "palette": [
+        "#03045e",
+        "#023e8a",
+        "#90e0ef"
+      ],
+      "cast": [
+        "BO"
+      ],
+      "light": "#5A6FA8",
+      "light_strength": 0.55
+    },
+    "hospital": {
+      "label_vi": "Hành lang bệnh viện, 22:10",
+      "palette": [
+        "#e0fbfc",
+        "#98c1d9",
+        "#3d5a80"
+      ],
+      "cast": [
+        "MAI"
+      ],
+      "light": "#D8F0FF",
+      "light_strength": 0.2
+    },
+    "quan_room": {
+      "label_vi": "Phòng của Quân",
+      "palette": [
+        "#2d00f7",
+        "#6a00f4",
+        "#f20089"
+      ],
+      "cast": [
+        "QUAN"
+      ],
+      "light": "#7D95D6",
+      "light_strength": 0.5
+    },
+    "preview": {
+      "label_vi": "Tập sau",
+      "palette": [
+        "#000000",
+        "#222222",
+        "#ffffff"
+      ],
+      "cast": [
+        "QUAN",
+        "BO",
+        "MAI"
+      ],
+      "light": "#9A7FD6",
+      "light_strength": 0.4
+    }
+  },
+  "characters": {
+    "QUAN": {
+      "name": "Quân",
+      "color": "#3a86ff",
+      "height": 0.62,
+      "faces": "right"
+    },
+    "BO": {
+      "name": "Bố",
+      "color": "#6c584c",
+      "height": 0.68,
+      "faces": "right"
+    },
+    "ME": {
+      "name": "Mẹ",
+      "color": "#e76f51",
+      "height": 0.6,
+      "faces": "left"
+    },
+    "MAI": {
+      "name": "Mai",
+      "color": "#2a9d8f",
+      "height": 0.58,
+      "faces": "left"
+    },
+    "TUNG": {
+      "name": "Tùng",
+      "color": "#f4a261",
+      "height": 0.63,
+      "faces": "left"
+    },
+    "KHACH": {
+      "name": "Khách",
+      "color": "#8338ec",
+      "height": 0.58,
+      "faces": "right"
+    },
+    "DONG_NGHIEP": {
+      "name": "Đồng nghiệp",
+      "color": "#8d99ae",
+      "height": 0.62,
+      "faces": "left"
+    }
+  }
+}

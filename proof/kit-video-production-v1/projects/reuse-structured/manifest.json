@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "reuse-structured-south",
+  "projectName": "South route — phim kiểm thử năm cảnh",
+  "brand": {"id": "kit-sample-south", "name": "KIT Sample South"},
+  "script": {
+    "version": "fixture-1",
+    "approvalStatus": "approved",
+    "sourcePath": "script-note.txt",
+    "notes": "Fixture thứ hai. Khác thời lượng, số cảnh, tỷ lệ và màu so với North."
+  },
+  "durationPolicy": {
+    "mode": "explicit_scenes",
+    "targetSeconds": null,
+    "notes": "Không dùng hint thời lượng. Tổng lấy từ năm cảnh."
+  },
+  "storyStructure": [
+    {"beatId": "enter", "summary": "Người bước vào và với tới đồ vật."},
+    {"beatId": "days", "summary": "Lịch lật."},
+    {"beatId": "link", "summary": "Ba nút được nối."},
+    {"beatId": "change", "summary": "Một khối biến dạng."},
+    {"beatId": "mark", "summary": "Tên SOUTH hiện, không có URL."}
+  ],
+  "voice": {
+    "profileId": "none",
+    "language": "vi",
+    "pronunciationNotes": "Dự án này không có lời đọc.",
+    "tracks": []
+  },
+  "assets": [
+    {
+      "assetId": "sfx-paper",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/paper.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng giấy tổng hợp"
+    },
+    {
+      "assetId": "sfx-thud",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/thud.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng đặt tổng hợp"
+    }
+  ],
+  "visualStyle": {
+    "profileId": "sample-south",
+    "palette": {
+      "background": [214, 226, 223],
+      "ink": [18, 48, 44],
+      "accent": [176, 84, 42],
+      "paper": [244, 250, 247],
+      "muted": [86, 110, 104],
+      "accentAlt": [36, 92, 120],
+      "weight": [22, 54, 62]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.07, "right": 0.08, "bottom": 0.08, "left": 0.08}
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.35,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {"aspectRatio": "9:16", "width": 540, "height": 960, "frameRate": 24},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 20,
+    "preset": "veryfast",
+    "allowPlaceholders": true,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "approved", "notes": "Fixture dọc, 5 cảnh."},
+    {"stage": "script_analysis", "automation": "automated", "status": "done", "notes": "Không có lời thoại."},
+    {"stage": "story_structure", "automation": "manual", "status": "approved", "notes": "Năm beat, khác North."},
+    {"stage": "shot_plan", "automation": "assisted", "status": "approved", "notes": "Fixture đã khóa cho lần chạy thử."},
+    {"stage": "asset_plan", "automation": "automated", "status": "done", "notes": "SFX placeholder."},
+    {"stage": "asset_creation", "automation": "automated", "status": "done", "notes": "Nhân vật và lịch do template vẽ."},
+    {"stage": "voiceover", "automation": "manual", "status": "done", "notes": "Cố ý không có lời."},
+    {"stage": "animation", "automation": "automated", "status": "done", "notes": "Năm template khác North."},
+    {"stage": "audio_mix", "automation": "automated", "status": "done", "notes": "Hai SFX."},
+    {"stage": "render", "automation": "automated", "status": "done", "notes": "Bản 25s: outputs/reuse-structured-south/20261023T021114Z-full."},
+    {"stage": "qa", "automation": "automated", "status": "needs_human", "notes": "QA kỹ thuật PASS. Tổng thể NEEDS HUMAN REVIEW."},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Không phát hành."}
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

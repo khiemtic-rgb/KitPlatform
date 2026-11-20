@@ -1,4 +1,7 @@
 using System.Text.Json;
+using Dapper;
+using KitPlatform.Application.Abstractions;
+using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.Content;
 using KitPlatform.Packs.LocalOs;
 using Microsoft.AspNetCore.Hosting;
@@ -12,17 +15,23 @@ public sealed class ContentLocalOsPublisher : IContentLocalOsPublisher
 
     private readonly ILocalOsListingService _listings;
     private readonly ILocalOsHomepagePush _homepage;
+    private readonly ITenantContext _tenant;
+    private readonly IDbConnectionFactory _db;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<ContentLocalOsPublisher> _log;
 
     public ContentLocalOsPublisher(
         ILocalOsListingService listings,
         ILocalOsHomepagePush homepage,
+        ITenantContext tenant,
+        IDbConnectionFactory db,
         IWebHostEnvironment env,
         ILogger<ContentLocalOsPublisher> log)
     {
         _listings = listings;
         _homepage = homepage;
+        _tenant = tenant;
+        _db = db;
         _env = env;
         _log = log;
     }
@@ -34,6 +43,19 @@ public sealed class ContentLocalOsPublisher : IContentLocalOsPublisher
         ContentLocalOsPublishRequest request,
         CancellationToken cancellationToken = default)
     {
+        await using (var conn = await _db.CreateOpenConnectionAsync(cancellationToken))
+        {
+            var code = await conn.QuerySingleOrDefaultAsync<string>(
+                """
+                SELECT tenant_code
+                FROM tenants
+                WHERE id = @Id AND deleted_at IS NULL
+                """,
+                new { Id = _tenant.TenantId });
+            if (!LocalOsTenantBoundary.IsAdminOperator(code))
+                throw new InvalidOperationException("Chỉ KIT_LOCAL hoặc KIT_MKT được xuất bản vào Thái Nguyên Life.");
+        }
+
         var title = (request.Title ?? "").Trim();
         if (title.Length < 4)
             throw new InvalidOperationException("Bài chưa có tiêu đề — không đẩy Thái Nguyên Life.");

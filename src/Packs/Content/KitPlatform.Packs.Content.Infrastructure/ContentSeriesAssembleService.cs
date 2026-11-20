@@ -5,7 +5,11 @@ using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
-/// <summary>Normalize takes + mix voice on a master timeline via FFmpeg. Does not invent cuts.</summary>
+/// <summary>
+/// AUTHORITY-STABILIZATION-01F. EXPORT_ONLY.
+/// Reads a legacy take or still, runs FFmpeg, and returns bytes.
+/// Does not write Production OS state.
+/// </summary>
 internal sealed class ContentSeriesAssembleService : IContentSeriesAssembleService
 {
     private const int MaxClips = 40;

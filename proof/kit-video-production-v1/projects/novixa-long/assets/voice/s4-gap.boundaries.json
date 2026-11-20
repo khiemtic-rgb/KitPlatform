@@ -1,0 +1,77 @@
+[
+  {
+    "text": "Chưa",
+    "start": 0.1,
+    "end": 0.4625
+  },
+  {
+    "text": "có",
+    "start": 0.4625,
+    "end": 0.625
+  },
+  {
+    "text": "ảnh",
+    "start": 0.625,
+    "end": 0.8375
+  },
+  {
+    "text": "hộp",
+    "start": 0.8375,
+    "end": 1.075
+  },
+  {
+    "text": "thuốc",
+    "start": 1.075,
+    "end": 1.3
+  },
+  {
+    "text": "đã",
+    "start": 1.3,
+    "end": 1.4875
+  },
+  {
+    "text": "duyệt",
+    "start": 1.4875,
+    "end": 1.7875
+  },
+  {
+    "text": "Không",
+    "start": 2.625,
+    "end": 2.95
+  },
+  {
+    "text": "lấy",
+    "start": 2.95,
+    "end": 3.175
+  },
+  {
+    "text": "ảnh",
+    "start": 3.175,
+    "end": 3.3875
+  },
+  {
+    "text": "khác",
+    "start": 3.3875,
+    "end": 3.6625
+  },
+  {
+    "text": "để",
+    "start": 3.6625,
+    "end": 3.85
+  },
+  {
+    "text": "lấp",
+    "start": 3.85,
+    "end": 4.075
+  },
+  {
+    "text": "chỗ",
+    "start": 4.075,
+    "end": 4.3
+  },
+  {
+    "text": "này",
+    "start": 4.3,
+    "end": 4.575
+  }
+]

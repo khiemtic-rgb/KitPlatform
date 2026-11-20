@@ -12,13 +12,14 @@ public sealed class CsdlDuocSandboxSmokeTests
     [Fact]
     public async Task Sandbox_connection_and_lookup_by_drug_id()
     {
+        // Calls the external CSDL Dược sandbox; opt in with CSDL_DUOC_SANDBOX_SMOKE=1.
+        if (Environment.GetEnvironmentVariable("CSDL_DUOC_SANDBOX_SMOKE") != "1")
+            return;
+
         var repoRoot = FindRepoRoot();
         var secrets = Path.Combine(repoRoot, ".dev", "national-drug.secrets.json");
         if (!File.Exists(secrets))
-        {
-            // Local-only smoke; skip on CI without secrets.
             return;
-        }
 
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>

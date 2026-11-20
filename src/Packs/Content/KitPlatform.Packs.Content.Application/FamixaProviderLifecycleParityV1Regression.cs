@@ -42,6 +42,10 @@ public static class FamixaProviderLifecycleParityV1Regression
         Ok(!FamixaProviderTaskIdentity.CanHandle(FamixaProviderIds.Wan, FamixaProviderCapability.Motion, "9ef1c551"), "Wan cannot handle UUID");
         Ok(FamixaProviderTaskIdentity.CanHandle(FamixaProviderIds.Fal, FamixaProviderCapability.LipSync, "lipsync_ls_1"), "Fal can handle lipsync");
         Ok(!FamixaProviderTaskIdentity.CanHandle(FamixaProviderIds.Fal, FamixaProviderCapability.LipSync, "wan_1"), "Fal cannot handle wan_");
+        Ok(FamixaProviderTaskIdentity.CanHandle(FamixaProviderIds.Google, FamixaProviderCapability.Motion, "veo_abc"), "Google can handle veo_");
+        Ok(!FamixaProviderTaskIdentity.CanHandle(FamixaProviderIds.Runway, FamixaProviderCapability.Motion, "veo_abc"), "Runway cannot handle veo_");
+        var veoTask = FamixaProviderTaskIdentity.Resolve("veo_abc");
+        Ok(veoTask.ProviderId == FamixaProviderIds.Google && veoTask.ModelId == "veo-3.1", "veo_ prefix → google");
 
         var result = new FamixaProviderResult(
             FamixaProviderIds.Wan, "wan-2.1", FamixaProviderStatus.Succeeded, ProviderRequestId: "wan_1", OutputUrl: "https://fal/x.mp4");

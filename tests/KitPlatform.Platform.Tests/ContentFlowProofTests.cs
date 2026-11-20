@@ -215,7 +215,7 @@ public sealed class ContentFlowProofTests
             "Giúp chủ nhà thuốc nhận ra hàng quá hạn là một dạng thất thoát tồn kho có thể nhìn thấy và đo được.";
         const string audience = "Chủ nhà thuốc / người vận hành nhà thuốc";
         var stamped = await packages.UpdateAsync(angleId, new UpsertContentPackageRequest(
-            before.BrandId,
+            before.BrandId!.Value,
             before.Title,
             before.Angle,
             audience,

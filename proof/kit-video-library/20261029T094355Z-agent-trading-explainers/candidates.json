@@ -1,0 +1,180 @@
+{
+  "assets": [
+    {
+      "assetId": "agtr-ill-chart-001",
+      "brand": "AgentTrading",
+      "kind": "image",
+      "category": "chart.candles",
+      "keywords": [
+        "biểu đồ nến",
+        "biểu",
+        "agent trading",
+        "minh họa",
+        "second brain"
+      ],
+      "style": "code-illustration",
+      "width": 1486,
+      "height": 1088,
+      "aspect": 1.3658,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp, không phải dữ liệu thị trường.",
+      "approval": "proposed",
+      "path": "proof/kit-video-library/20261029T093817Z-agent-trading-samples/agtr-ill-chart-001.png",
+      "pathBase": "repo",
+      "sha256": "43773216ceca04f0f97f62be3c6b2eb9b1e70fe29cce0cdf394c6472210a3421",
+      "averageHash": 72927734197092216,
+      "similarityGroup": "agtr-ill-chart",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ. Số liệu và đường giá là chuỗi giả lập có hạt giống cố định, không phải dữ liệu thị trường.",
+        "Chỉ dùng trong video kiến thức về Agent Trading. Video giao dịch thật phải dùng nến đọc từ file OHLCV đã kiểm.",
+        "Agent hiện chỉ chạy paper/demo. Không dùng hình này để gợi ý có lệnh thật, lợi nhuận hay khuyến nghị.",
+        "Giữ nhãn Dữ liệu minh họa và dòng Paper / Demo — không phải khuyến nghị khi đưa vào phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf."
+      ],
+      "label": "Biểu đồ nến minh họa, đường SMA 5 và SMA 20",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Biểu đồ nến minh họa, đường SMA 5 và SMA 20: hình vẽ bằng code do dự án tự tạo, dữ liệu giả lập, chỉ dùng minh họa. Chưa được duyệt.",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    },
+    {
+      "assetId": "agtr-ill-monitor-001",
+      "brand": "AgentTrading",
+      "kind": "image",
+      "category": "device.monitor",
+      "keywords": [
+        "màn hình",
+        "màn",
+        "agent trading",
+        "minh họa",
+        "second brain"
+      ],
+      "style": "code-illustration",
+      "width": 1620,
+      "height": 1278,
+      "aspect": 1.2676,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp, không phải dữ liệu thị trường.",
+      "approval": "proposed",
+      "path": "proof/kit-video-library/20261029T093817Z-agent-trading-samples/agtr-ill-monitor-001.png",
+      "pathBase": "repo",
+      "sha256": "f475be9f2ae97873b0376bab72f42ac9b4b2f24b0dbfd91bd3de4f7cc0cdd64d",
+      "averageHash": 1961145355362569484,
+      "similarityGroup": "agtr-ill-monitor",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ. Số liệu và đường giá là chuỗi giả lập có hạt giống cố định, không phải dữ liệu thị trường.",
+        "Chỉ dùng trong video kiến thức về Agent Trading. Video giao dịch thật phải dùng nến đọc từ file OHLCV đã kiểm.",
+        "Agent hiện chỉ chạy paper/demo. Không dùng hình này để gợi ý có lệnh thật, lợi nhuận hay khuyến nghị.",
+        "Giữ nhãn Dữ liệu minh họa và dòng Paper / Demo — không phải khuyến nghị khi đưa vào phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf."
+      ],
+      "label": "Màn hình theo dõi Agent Trading minh họa",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Màn hình theo dõi Agent Trading minh họa: hình vẽ bằng code do dự án tự tạo, dữ liệu giả lập, chỉ dùng minh họa. Chưa được duyệt.",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    },
+    {
+      "assetId": "agtr-ill-shield-001",
+      "brand": "AgentTrading",
+      "kind": "image",
+      "category": "badge.risk",
+      "keywords": [
+        "cổng rủi ro",
+        "cổng",
+        "agent trading",
+        "minh họa",
+        "second brain"
+      ],
+      "style": "code-illustration",
+      "width": 964,
+      "height": 1162,
+      "aspect": 0.8296,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp, không phải dữ liệu thị trường.",
+      "approval": "proposed",
+      "path": "proof/kit-video-library/20261029T093817Z-agent-trading-samples/agtr-ill-shield-001.png",
+      "pathBase": "repo",
+      "sha256": "0d338dbc20da5949c2be03711c3406dc661fad9f86b56fc018f8a374dd64761c",
+      "averageHash": 1098613391453204259,
+      "similarityGroup": "agtr-ill-shield",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ. Số liệu và đường giá là chuỗi giả lập có hạt giống cố định, không phải dữ liệu thị trường.",
+        "Chỉ dùng trong video kiến thức về Agent Trading. Video giao dịch thật phải dùng nến đọc từ file OHLCV đã kiểm.",
+        "Agent hiện chỉ chạy paper/demo. Không dùng hình này để gợi ý có lệnh thật, lợi nhuận hay khuyến nghị.",
+        "Giữ nhãn Dữ liệu minh họa và dòng Paper / Demo — không phải khuyến nghị khi đưa vào phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf."
+      ],
+      "label": "Huy hiệu cổng rủi ro minh họa",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Huy hiệu cổng rủi ro minh họa: hình vẽ bằng code do dự án tự tạo, dữ liệu giả lập, chỉ dùng minh họa. Chưa được duyệt.",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    },
+    {
+      "assetId": "agtr-ill-pipeline-001",
+      "brand": "AgentTrading",
+      "kind": "image",
+      "category": "diagram.pipeline",
+      "keywords": [
+        "chuỗi xử lý",
+        "chuỗi",
+        "agent trading",
+        "minh họa",
+        "second brain"
+      ],
+      "style": "code-illustration",
+      "width": 1800,
+      "height": 850,
+      "aspect": 2.1176,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp, không phải dữ liệu thị trường.",
+      "approval": "proposed",
+      "path": "proof/kit-video-library/20261029T093817Z-agent-trading-samples/agtr-ill-pipeline-001.png",
+      "pathBase": "repo",
+      "sha256": "27c4dcf0a5028d3aee565b487dd311a8a1d5f9b9b53c48562f116302f48fb526",
+      "averageHash": 4703789041252002056,
+      "similarityGroup": "agtr-ill-pipeline",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ. Số liệu và đường giá là chuỗi giả lập có hạt giống cố định, không phải dữ liệu thị trường.",
+        "Chỉ dùng trong video kiến thức về Agent Trading. Video giao dịch thật phải dùng nến đọc từ file OHLCV đã kiểm.",
+        "Agent hiện chỉ chạy paper/demo. Không dùng hình này để gợi ý có lệnh thật, lợi nhuận hay khuyến nghị.",
+        "Giữ nhãn Dữ liệu minh họa và dòng Paper / Demo — không phải khuyến nghị khi đưa vào phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf."
+      ],
+      "label": "Chuỗi xử lý của Agent Trading minh họa",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Chuỗi xử lý của Agent Trading minh họa: hình vẽ bằng code do dự án tự tạo, dữ liệu giả lập, chỉ dùng minh họa. Chưa được duyệt.",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    }
+  ]
+}

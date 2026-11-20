@@ -62,7 +62,9 @@ public sealed record UserDetailDto(
     IReadOnlyList<Guid> RoleIds,
     IReadOnlyList<string> RoleCodes,
     DateTimeOffset? LastLoginAt,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string? EmployeeJobTitle = null,
+    DateOnly? EmployeeHireDate = null);
 
 public sealed record CreateUserRequest(
     string Username,
@@ -74,7 +76,9 @@ public sealed record CreateUserRequest(
     string? EmployeeFullName = null,
     string? EmployeePhone = null,
     IReadOnlyList<Guid>? BranchIds = null,
-    Guid? PrimaryBranchId = null);
+    Guid? PrimaryBranchId = null,
+    string? EmployeeJobTitle = null,
+    DateOnly? EmployeeHireDate = null);
 
 public sealed record UpdateUserRequest(
     string Username,
@@ -86,7 +90,31 @@ public sealed record UpdateUserRequest(
     string? EmployeePhone = null,
     string? NewPassword = null,
     IReadOnlyList<Guid>? BranchIds = null,
-    Guid? PrimaryBranchId = null);
+    Guid? PrimaryBranchId = null,
+    string? EmployeeJobTitle = null,
+    DateOnly? EmployeeHireDate = null);
+
+/// <summary>
+/// Job title / hire date update rule shared by create and update user.
+/// Older clients omit <c>EmployeeJobTitle</c> (null) and leave both fields untouched;
+/// the current form always sends it ("" clears) together with the hire date (null clears).
+/// </summary>
+public static class EmployeeProfileRules
+{
+    public const int MaxJobTitleLength = 120;
+
+    public static bool ShouldApply(string? jobTitle) => jobTitle is not null;
+
+    public static string? NormalizeJobTitle(string? jobTitle)
+    {
+        var trimmed = jobTitle?.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return null;
+        if (trimmed.Length > MaxJobTitleLength)
+            throw new InvalidOperationException($"Chức danh tối đa {MaxJobTitleLength} ký tự.");
+        return trimmed;
+    }
+}
 
 public sealed record RoleAdminListItemDto(
     Guid Id,
@@ -145,7 +173,9 @@ public sealed record EmployeeDetailDto(
     string FullName,
     string? Phone,
     bool HasUserAccount,
-    IReadOnlyList<EmployeeBranchAssignmentDto> Branches);
+    IReadOnlyList<EmployeeBranchAssignmentDto> Branches,
+    string? JobTitle = null,
+    DateOnly? HireDate = null);
 
 public sealed record CreateEmployeeRequest(
     string FullName,

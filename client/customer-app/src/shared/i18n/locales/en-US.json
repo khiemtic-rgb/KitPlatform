@@ -1118,6 +1118,7 @@
     "productCount": "{{count}} product(s)",
     "viewingDetail": "Viewing — details above",
     "invoiceTitle": "Invoice {{number}}",
+    "saleTime": "Sale time",
     "returnedQty": "Returned {{qty}} {{unit}}",
     "totalPayment": "Total paid",
     "discount": "Discount",

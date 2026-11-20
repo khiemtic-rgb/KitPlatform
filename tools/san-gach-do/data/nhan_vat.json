@@ -1,0 +1,15 @@
+{
+  "_ghi_chu": "Thêm nhân vật: thêm một mục. Mặt: ảnh mẫu <thu_muc_anh>/<ma>_mat.png (6 ô). Thân: 'mo_hinh_3d' (đường dẫn .glb/.fbx đã gắn xương, tính từ data/) — chưa có thì dùng người mẫu tạm theo 'chieu_cao' (m) và 'mau_tam' (màu áo/quần tạm, 0..1). 'giong': giọng đọc đã chốt. 'dang', 'khung': tuỳ chỉnh cảnh mặt (không bắt buộc).",
+  "Minh": {"ten": "Minh", "chieu_cao": 1.68, "mau_tam": {"ao": [0.1, 0.14, 0.24], "quan": [0.22, 0.22, 0.24]}, "mo_hinh_3d": "mo_hinh/Minh.glb"},
+  "Tuan": {"ten": "Tuấn", "chieu_cao": 1.72, "mau_tam": {"ao": [0.08, 0.12, 0.25], "quan": [0.15, 0.15, 0.18]}, "mo_hinh_3d": "mo_hinh/Tuan.glb"},
+  "Duc": {"ten": "Đức", "chieu_cao": 1.7, "mau_tam": {"ao": [0.55, 0.2, 0.15], "quan": [0.2, 0.2, 0.25]}, "mo_hinh_3d": "mo_hinh/Duc.glb"},
+  "Lan": {"ten": "Lan", "chieu_cao": 1.56, "mau_tam": {"ao": [0.85, 0.85, 0.8], "quan": [0.15, 0.15, 0.3]}, "mo_hinh_3d": "mo_hinh/Lan.glb"},
+  "Huong": {"ten": "Hương", "chieu_cao": 1.55, "mau_tam": {"ao": [0.7, 0.45, 0.5], "quan": [0.2, 0.2, 0.25]}, "mo_hinh_3d": "mo_hinh/Huong.glb"},
+  "Thao": {"ten": "Thảo", "chieu_cao": 1.57, "mau_tam": {"ao": [0.6, 0.7, 0.8], "quan": [0.2, 0.2, 0.25]}, "mo_hinh_3d": "mo_hinh/Thao.glb"},
+  "Hoa": {"ten": "Chị Hoà", "chieu_cao": 1.55, "mau_tam": {"ao": [0.55, 0.35, 0.3], "quan": [0.1, 0.1, 0.1]}, "mo_hinh_3d": "mo_hinh/Hoa.glb"},
+  "Hung": {"ten": "Anh Hùng", "chieu_cao": 1.72, "mau_tam": {"ao": [0.35, 0.4, 0.3], "quan": [0.18, 0.18, 0.2]}, "mo_hinh_3d": "mo_hinh/Hung.glb"},
+  "Bo": {"ten": "Bố Minh", "giong": "ElevenLabs: Trung Dương - Expressive, Deep (Eleven v4); dự phòng: Anh - Warm, Calm and Deep", "chieu_cao": 1.65, "mau_tam": {"ao": [0.4, 0.38, 0.3], "quan": [0.18, 0.16, 0.14]}, "mo_hinh_3d": "mo_hinh/Bo.glb"},
+  "Di": {"ten": "Dì (mẹ kế Minh)", "chieu_cao": 1.55, "mau_tam": {"ao": [0.45, 0.3, 0.35], "quan": [0.12, 0.12, 0.12]}, "mo_hinh_3d": "mo_hinh/Di.glb"},
+  "Hue": {"ten": "Huệ", "chieu_cao": 1.25, "mau_tam": {"ao": [0.8, 0.55, 0.55], "quan": [0.25, 0.25, 0.3]}, "mo_hinh_3d": "mo_hinh/Hue.glb"},
+  "Bin": {"ten": "Bin", "chieu_cao": 1.05, "mau_tam": {"ao": [0.85, 0.7, 0.3], "quan": [0.25, 0.3, 0.45]}, "mo_hinh_3d": "mo_hinh/Bin.glb"}
+}

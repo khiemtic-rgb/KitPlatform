@@ -23,9 +23,11 @@ import {
   reviewCharacterAppearanceConsistency,
   scoreCharacterStudioIdentity,
   type CharacterMasterRevisionResult,
+  type CharacterScopeQuery,
   type CharacterStudioRow,
   type ProjectVisualStyleRow,
 } from '@/shared/api/content.api';
+import { characterDeskForFilm } from './video-pipeline';
 import { apiErrorMessage } from '@/shared/api/api-error';
 import { http } from '@/shared/api/http';
 import {
@@ -195,6 +197,7 @@ export function ContentFamixaCharacterStudio({
   voices,
   voiceById,
   onAssignVoice,
+  scope,
 }: {
   onBuildEpisode?: () => void;
   onBibleReady?: (ready: boolean) => void;
@@ -204,7 +207,9 @@ export function ContentFamixaCharacterStudio({
   voices?: { value: string; label: string; previewUrl?: string | null }[];
   voiceById?: Record<string, string>;
   onAssignVoice?: (characterId: string, voiceId: string, voiceName?: string) => void;
+  scope?: CharacterScopeQuery | null;
 } = {}) {
+  const famixaSet = characterDeskForFilm(scope) === 'famixa';
   const [items, setItems] = useState<CharacterStudioRow[]>([]);
   const [projectStyle, setProjectStyle] = useState<ProjectVisualStyleRow>();
   const [openId, setOpenId] = useState<string>();
@@ -266,7 +271,11 @@ export function ContentFamixaCharacterStudio({
   };
 
   const loadList = () => {
-    void Promise.all([fetchCharacterStudioList(), fetchProjectVisualStyle('FAMIXA')])
+    if (!famixaSet) {
+      setItems([]);
+      return;
+    }
+    void Promise.all([fetchCharacterStudioList(scope), fetchProjectVisualStyle('FAMIXA')])
       .then(([list, style]) => {
         setItems(list.items ?? []);
         setProjectStyle(style);
@@ -276,6 +285,7 @@ export function ContentFamixaCharacterStudio({
   };
 
   const loadDetail = (id: string) => {
+    if (!famixaSet) return;
     void fetchCharacterStudio(id)
       .then((row) => {
         setDetail(row);
@@ -286,15 +296,15 @@ export function ContentFamixaCharacterStudio({
 
   useEffect(() => {
     loadList();
-  }, []);
+  }, [famixaSet, scope?.seriesCode, scope?.workflowKey]);
 
   useEffect(() => {
-    if (!openId) {
+    if (!famixaSet || !openId) {
       setDetail(undefined);
       return;
     }
     loadDetail(openId);
-  }, [openId]);
+  }, [openId, famixaSet]);
 
   useEffect(() => {
     if (!error) return;
@@ -423,6 +433,17 @@ export function ContentFamixaCharacterStudio({
         break;
     }
   };
+
+  if (!famixaSet) {
+    return (
+      <section className="fx-desk" data-character-desk={characterDeskForFilm(scope)}>
+        <h2>Người</h2>
+        <p className="fx-desk__lead">
+          {characterDeskForFilm(scope) === 'unavailable' ? 'Chưa khả dụng.' : 'Chưa cấu hình.'} Phim này không dùng Character Studio.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="fx-cstudio">

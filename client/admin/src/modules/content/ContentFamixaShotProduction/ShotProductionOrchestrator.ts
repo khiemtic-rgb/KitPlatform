@@ -50,6 +50,7 @@ function executionAllowsMotionRemake(snap: ShotProductionSnapshot) {
   return true;
 }
 
+/** DERIVED / LEGACY command projection. Must not choose or bind CURRENT / VISIBLE / ACCEPTED artifacts. */
 export function nextShotProductionCommand(
   snap: ShotProductionSnapshot,
   opts?: { confirmedMotion?: boolean; confirmedLipsync?: boolean; lastFailHash?: string; nextHash?: string },
@@ -72,6 +73,16 @@ export function nextShotProductionCommand(
     return { type: 'BLOCK', kind: 'BLOCK', code: ORCH_GATE.NEEDS_VISUAL_REVIEW, retryStage: 'picture' };
   }
   if (snap.finalReady && snap.finalArtifactReady) return { type: 'READY_FINAL', kind: 'READY' };
+  if (
+    snap.actingBeatPendingMotion &&
+    snap.keyframeApproved &&
+    !snap.picturePendingApproval &&
+    !snap.pictureUnusable &&
+    !snap.motionBusy &&
+    snap.execution?.currentArtifacts.motion?.validity !== 'CURRENT'
+  ) {
+    return { type: 'CONFIRM_MOTION', kind: 'CONFIRM_REQUIRED', paid: true, code: ORCH_GATE.CONFIRM_MOTION, retryStage: 'motion' };
+  }
   if (!snap.isSilent && !snap.voiceReady) {
     return snap.stage === 'VOICE_REQUIRED'
       ? { type: 'ENSURE_VOICE', kind: 'ENSURE', retryStage: 'voice' }

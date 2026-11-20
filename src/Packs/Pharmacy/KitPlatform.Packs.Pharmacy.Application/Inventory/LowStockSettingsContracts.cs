@@ -19,6 +19,7 @@ public sealed record WarehouseLowStockSettingDto(
 public sealed record LowStockSettingsDto(
     decimal? DefaultMinStockQty,
     decimal SystemFallbackQty,
+    string? NotificationEmail,
     IReadOnlyList<CategoryLowStockSettingDto> Categories,
     IReadOnlyList<WarehouseLowStockSettingDto> Warehouses);
 
@@ -31,3 +32,5 @@ public sealed record ApplyLowStockResultDto(int UpdatedCount);
 public sealed record LowStockDefaultDto(decimal? DefaultMinStockQty);
 
 public sealed record UpdateLowStockDefaultRequest(decimal? DefaultMinStockQty);
+
+public sealed record UpdateLowStockNotificationEmailRequest(string? NotificationEmail);

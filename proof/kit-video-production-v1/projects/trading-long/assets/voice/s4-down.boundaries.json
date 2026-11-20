@@ -1,0 +1,112 @@
+[
+  {
+    "text": "Cùng",
+    "start": 0.1,
+    "end": 0.3625
+  },
+  {
+    "text": "mã",
+    "start": 0.3625,
+    "end": 0.7625
+  },
+  {
+    "text": "một",
+    "start": 0.9125,
+    "end": 1.1375
+  },
+  {
+    "text": "đoạn",
+    "start": 1.1375,
+    "end": 1.4
+  },
+  {
+    "text": "khác",
+    "start": 1.4,
+    "end": 1.625
+  },
+  {
+    "text": "giảm",
+    "start": 1.625,
+    "end": 1.8875
+  },
+  {
+    "text": "3,5",
+    "start": 1.8875,
+    "end": 2.5375
+  },
+  {
+    "text": "phần",
+    "start": 2.5375,
+    "end": 2.75
+  },
+  {
+    "text": "trăm",
+    "start": 2.75,
+    "end": 3.05
+  },
+  {
+    "text": "Vùng",
+    "start": 3.8875,
+    "end": 4.1875
+  },
+  {
+    "text": "tô",
+    "start": 4.1875,
+    "end": 4.4125
+  },
+  {
+    "text": "là",
+    "start": 4.4125,
+    "end": 4.5
+  },
+  {
+    "text": "mức",
+    "start": 4.5,
+    "end": 4.7
+  },
+  {
+    "text": "giảm",
+    "start": 4.7,
+    "end": 4.9875
+  },
+  {
+    "text": "của",
+    "start": 4.9875,
+    "end": 5.1375
+  },
+  {
+    "text": "giá",
+    "start": 5.1375,
+    "end": 5.55
+  },
+  {
+    "text": "không",
+    "start": 5.7,
+    "end": 5.975
+  },
+  {
+    "text": "phải",
+    "start": 5.975,
+    "end": 6.1375
+  },
+  {
+    "text": "lợi",
+    "start": 6.1375,
+    "end": 6.325
+  },
+  {
+    "text": "nhuận",
+    "start": 6.325,
+    "end": 6.6125
+  },
+  {
+    "text": "chiến",
+    "start": 6.6125,
+    "end": 6.85
+  },
+  {
+    "text": "lược",
+    "start": 6.85,
+    "end": 7.0875
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "mo_ta": "Tập 3, cảnh 8: Bố đuổi theo Minh ra bờ đê, dúi tiền, dặn con. Giọng ElevenLabs 'Trung Dương - Expressive, Deep' (Eleven v4), bản 1/2.",
+  "nhan_vat": "Bo",
+  "khung": "can_mat",
+  "nen": null,
+  "thoai": {
+    "file": "thoai/tap03_c08_bo_eleven.wav",
+    "bat_dau": 0.0,
+    "loi": [
+      "Cầm lấy mà tiêu. Tiền ăn tuần này.",
+      "Vay thì phải trả. Thế là phải.",
+      "Chuyện ấy để bố biết thôi, không phải nói với dì. Cầm lấy.",
+      "Đi đi con. Đường xa, đi sớm cho kịp lên đến nơi trước khi trời tối."
+    ]
+  },
+  "bieu_cam": [
+    {
+      "cau": 1,
+      "bieu_cam": "lo",
+      "chuyen": 0.5,
+      "lech": 0.15
+    },
+    {
+      "cau": 4,
+      "bieu_cam": "nghen",
+      "chuyen": 0.8,
+      "lech": -0.2
+    }
+  ],
+  "chop_mat": true,
+  "ra": "tap03/c08_bo"
+}

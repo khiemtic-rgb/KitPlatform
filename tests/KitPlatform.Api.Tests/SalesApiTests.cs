@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Npgsql;
 using Xunit;
 
 namespace KitPlatform.Api.Tests;
@@ -137,11 +138,12 @@ public sealed class SalesApiTests : IClassFixture<KitPlatformWebApplicationFacto
         Assert.Equal(2, order.GetProperty("status").GetInt16());
         Assert.Equal(unitPrice, order.GetProperty("totalAmount").GetDecimal());
 
-        var listResponse = await authed.GetAsync("/api/sales/orders");
+        var orderNumber = order.GetProperty("orderNumber").GetString();
+        var listResponse = await authed.GetAsync($"/api/sales/orders?search={Uri.EscapeDataString(orderNumber!)}");
         Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
         var list = await listResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Contains(
-            list.EnumerateArray(),
+            list.GetProperty("items").EnumerateArray(),
             row => row.GetProperty("id").GetGuid() == orderId);
 
         var stockAfter = await GetProductStockAsync(authed, warehouseId, productId);
@@ -394,6 +396,213 @@ public sealed class SalesApiTests : IClassFixture<KitPlatformWebApplicationFacto
         Assert.Equal(HttpStatusCode.NotFound, noShift.StatusCode);
     }
 
+    [Fact]
+    public async Task Sales_full_return_of_voucher_order_refunds_only_what_was_paid()
+    {
+        var token = await LoginAsync();
+        using var authed = CreateAuthedClient(token);
+        var warehouseId = await GetMainWarehouseIdAsync(authed);
+        await OpenShiftForWarehouseAsync(authed, warehouseId);
+
+        var saleResponse = await authed.PostAsJsonAsync("/api/sales/orders", new
+        {
+            warehouseId,
+            priceType = 1,
+            items = new[] { new { productId = ParaProductId, productUnitId = ParaUnitId, quantity = 2m } },
+        });
+        Assert.Equal(HttpStatusCode.Created, saleResponse.StatusCode);
+        var order = await saleResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var orderId = order.GetProperty("id").GetGuid();
+        var itemId = order.GetProperty("items").EnumerateArray().First().GetProperty("id").GetGuid();
+        Assert.Equal(1000m, order.GetProperty("totalAmount").GetDecimal());
+
+        await ExecuteSqlAsync(
+            """
+            UPDATE sales_orders
+            SET voucher_discount_amount = 100, loyalty_discount_amount = 50,
+                total_amount = 850, amount_paid = 850
+            WHERE id = @Id;
+            UPDATE sales_payments SET amount = 850 WHERE sales_order_id = @Id;
+            """,
+            ("Id", orderId));
+
+        var returnResponse = await authed.PostAsJsonAsync($"/api/sales/orders/{orderId}/returns", new
+        {
+            items = new[] { new { salesOrderItemId = itemId, quantity = 2m } },
+            payments = new[] { new { paymentMethod = 1, amount = 850m } },
+        });
+        Assert.Equal(HttpStatusCode.Created, returnResponse.StatusCode);
+        var ret = await returnResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(850m, ret.GetProperty("totalRefund").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Receivables_count_an_unlinked_collection_once()
+    {
+        var token = await LoginAsync();
+        using var authed = CreateAuthedClient(token);
+        var warehouseId = await GetMainWarehouseIdAsync(authed);
+        await OpenShiftForWarehouseAsync(authed, warehouseId);
+        var customerId = await InsertCreditCustomerAsync();
+
+        var saleResponse = await authed.PostAsJsonAsync("/api/sales/orders", new
+        {
+            warehouseId,
+            customerId,
+            priceType = 1,
+            items = new[] { new { productId = ParaProductId, productUnitId = ParaUnitId, quantity = 2m } },
+            payments = Array.Empty<object>(),
+        });
+        Assert.Equal(HttpStatusCode.Created, saleResponse.StatusCode);
+
+        await PostCollectionAsync(authed, customerId, salesOrderId: null, 300m);
+
+        var detail = await authed.GetFromJsonAsync<JsonElement>($"/api/sales/customer-receivables/{customerId}");
+        Assert.Equal(700m, detail.GetProperty("totalReceivable").GetDecimal());
+        Assert.Equal(0m, detail.GetProperty("unappliedCredit").GetDecimal());
+    }
+
+    [Fact]
+    public async Task Debt_collection_cash_lands_in_the_shift_that_received_it()
+    {
+        var token = await LoginAsync();
+        using var authed = CreateAuthedClient(token);
+        var warehouseId = await GetMainWarehouseIdAsync(authed);
+        var firstShiftId = await OpenShiftForWarehouseAsync(authed, warehouseId);
+        var customerId = await InsertCreditCustomerAsync();
+
+        var saleResponse = await authed.PostAsJsonAsync("/api/sales/orders", new
+        {
+            warehouseId,
+            customerId,
+            priceType = 1,
+            items = new[] { new { productId = ParaProductId, productUnitId = ParaUnitId, quantity = 2m } },
+            payments = Array.Empty<object>(),
+        });
+        Assert.Equal(HttpStatusCode.Created, saleResponse.StatusCode);
+        var orderId = (await saleResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        var closeResponse = await authed.PostAsJsonAsync($"/api/sales/shifts/{firstShiftId}/close", new { closingCash = 0m });
+        Assert.Equal(HttpStatusCode.OK, closeResponse.StatusCode);
+        var firstCashBefore = await GetShiftCashSalesAsync(authed, firstShiftId);
+
+        var secondShiftId = await OpenShiftForWarehouseAsync(authed, warehouseId);
+        await PostCollectionAsync(authed, customerId, orderId, 300m);
+
+        Assert.Equal(firstCashBefore, await GetShiftCashSalesAsync(authed, firstShiftId));
+        Assert.Equal(300m, await GetShiftCashSalesAsync(authed, secondShiftId));
+    }
+
+    [Fact]
+    public async Task Stock_count_keeps_sales_made_after_counting()
+    {
+        var token = await LoginAsync();
+        using var authed = CreateAuthedClient(token);
+        var warehouseId = await GetMainWarehouseIdAsync(authed);
+        await OpenShiftForWarehouseAsync(authed, warehouseId);
+
+        var stock = await authed.GetFromJsonAsync<JsonElement>(
+            $"/api/inventory/stock/batches?warehouseId={warehouseId}&productId={ParaProductId}&page=1&pageSize=50");
+        var batch = stock.GetProperty("items").EnumerateArray()
+            .First(row => row.GetProperty("quantityAvailable").GetDecimal() >= 5m);
+        var batchId = batch.GetProperty("id").GetGuid();
+        var batchNumber = batch.GetProperty("batchNumber").GetString();
+        var counted = batch.GetProperty("quantityAvailable").GetDecimal();
+
+        var sessionResponse = await authed.PostAsJsonAsync("/api/inventory/adjustments/counting-sessions", new
+        {
+            warehouseId,
+            reason = "Test đếm trong lúc bán",
+        });
+        Guid sessionId;
+        if (sessionResponse.StatusCode == HttpStatusCode.Created)
+        {
+            sessionId = (await sessionResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        }
+        else
+        {
+            var active = await authed.GetFromJsonAsync<JsonElement>(
+                $"/api/inventory/adjustments/active-counting?warehouseId={warehouseId}");
+            sessionId = active.GetProperty("id").GetGuid();
+        }
+
+        var entryResponse = await authed.PostAsJsonAsync($"/api/inventory/adjustments/{sessionId}/count-entries", new
+        {
+            entries = new[] { new { productId = ParaProductId, batchId, quantity = counted } },
+        });
+        Assert.Equal(HttpStatusCode.OK, entryResponse.StatusCode);
+
+        var saleResponse = await authed.PostAsJsonAsync("/api/sales/orders", new
+        {
+            warehouseId,
+            priceType = 1,
+            items = new[] { new { productId = ParaProductId, productUnitId = ParaUnitId, quantity = 2m, batchNumber } },
+        });
+        Assert.Equal(HttpStatusCode.Created, saleResponse.StatusCode);
+
+        var preview = await authed.GetFromJsonAsync<JsonElement>($"/api/inventory/adjustments/{sessionId}/count-preview");
+        var previewLine = preview.GetProperty("byBatch").EnumerateArray()
+            .First(row => row.GetProperty("batchId").GetGuid() == batchId);
+        Assert.Equal(0m, previewLine.GetProperty("differenceQuantity").GetDecimal());
+
+        var approve = await authed.PostAsync($"/api/inventory/adjustments/{sessionId}/approve", null);
+        Assert.Equal(HttpStatusCode.OK, approve.StatusCode);
+
+        var after = await authed.GetFromJsonAsync<JsonElement>(
+            $"/api/inventory/stock/batches?warehouseId={warehouseId}&productId={ParaProductId}&page=1&pageSize=50");
+        var batchAfter = after.GetProperty("items").EnumerateArray()
+            .First(row => row.GetProperty("id").GetGuid() == batchId);
+        Assert.Equal(counted - 2m, batchAfter.GetProperty("quantityAvailable").GetDecimal());
+    }
+
+    private static async Task<decimal> GetShiftCashSalesAsync(HttpClient authed, Guid shiftId)
+    {
+        var shift = await authed.GetFromJsonAsync<JsonElement>($"/api/sales/shifts/{shiftId}");
+        return shift.GetProperty("summary").GetProperty("cashSales").GetDecimal();
+    }
+
+    private static async Task PostCollectionAsync(HttpClient authed, Guid customerId, Guid? salesOrderId, decimal amount)
+    {
+        var create = await authed.PostAsJsonAsync("/api/sales/customer-payments", new
+        {
+            customerId,
+            salesOrderId,
+            amount,
+            paymentMethod = 1,
+        });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        var paymentId = (await create.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var post = await authed.PostAsync($"/api/sales/customer-payments/{paymentId}/post", null);
+        Assert.Equal(HttpStatusCode.OK, post.StatusCode);
+    }
+
+    private static async Task<Guid> InsertCreditCustomerAsync()
+    {
+        var id = Guid.NewGuid();
+        var suffix = id.ToString("N")[..10];
+        await ExecuteSqlAsync(
+            """
+            INSERT INTO customers (id, tenant_id, customer_code, full_name, phone, allow_credit)
+            SELECT @Id, id, @Code, @Name, @Phone, TRUE FROM tenants WHERE tenant_code = 'DEMO_PHARMACY'
+            """,
+            ("Id", id),
+            ("Code", "TST-" + suffix),
+            ("Name", "Khách test công nợ " + suffix),
+            ("Phone", "09" + Random.Shared.Next(10_000_000, 99_999_999)));
+        return id;
+    }
+
+    private static async Task ExecuteSqlAsync(string sql, params (string Name, object Value)[] parameters)
+    {
+        await using var conn = new NpgsqlConnection(
+            Environment.GetEnvironmentVariable(KitPlatformWebApplicationFactory.ConnectionEnvironmentVariable));
+        await conn.OpenAsync();
+        await using var command = new NpgsqlCommand(sql, conn);
+        foreach (var (name, value) in parameters)
+            command.Parameters.AddWithValue(name, value);
+        await command.ExecuteNonQueryAsync();
+    }
+
     private static async Task<Guid> GetWarehouseWithoutOpenShiftAsync(HttpClient authed)
     {
         var warehouses = await authed.GetFromJsonAsync<JsonElement>("/api/inventory/warehouses");
@@ -445,6 +654,7 @@ public sealed class SalesApiTests : IClassFixture<KitPlatformWebApplicationFacto
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new
         {
+            tenantCode = "DEMO_PHARMACY",
             username = "admin",
             password = "Admin@123",
         });

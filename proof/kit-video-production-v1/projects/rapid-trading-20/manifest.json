@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "rapid-trading-20",
+  "projectName": "Agent Trading — video nhanh 20 giây",
+  "brand": {"id": "agent-trading", "name": "Agent Trading"},
+  "script": {
+    "version": "rapid-1",
+    "approvalStatus": "approved",
+    "sourcePath": "script.md",
+    "notes": "Bản mẫu học tập. Số trên hình là giả định, không phải thị trường thật và không phải khuyến nghị."
+  },
+  "durationPolicy": {
+    "mode": "target",
+    "targetSeconds": 20,
+    "notes": "Tổng bốn cảnh khóa ở 20 giây."
+  },
+  "storyStructure": [
+    {"beatId": "open", "summary": "Tên và câu đọc thị trường trước."},
+    {"beatId": "session", "summary": "Giá, khối lượng và xu hướng trên một phiên mẫu."},
+    {"beatId": "chart", "summary": "Biểu đồ giả định, có câu không phải khuyến nghị."},
+    {"beatId": "close", "summary": "Quan sát, đánh giá, đứng ngoài."}
+  ],
+  "voice": {
+    "profileId": "vi-VN-NamMinhNeural",
+    "language": "vi",
+    "pronunciationNotes": "Đọc Agent Trading như tên riêng. Không tăng tốc giọng.",
+    "tracks": [
+      {"trackId": "vo-s1", "approval": "proposed", "text": "Đọc thị trường trước khi vào lệnh.", "path": "assets/voice/s1-open.wav", "pathBase": "project"},
+      {"trackId": "vo-s2", "approval": "proposed", "text": "Giá, khối lượng và xu hướng đi trên một phiên mẫu.", "path": "assets/voice/s2-session.wav", "pathBase": "project"},
+      {"trackId": "vo-s3", "approval": "proposed", "text": "Biểu đồ là phiên mẫu. Không phải khuyến nghị.", "path": "assets/voice/s3-chart.wav", "pathBase": "project"},
+      {"trackId": "vo-s4", "approval": "proposed", "text": "Quan sát. Đánh giá. Đứng ngoài.", "path": "assets/voice/s4-close.wav", "pathBase": "project"}
+    ]
+  },
+  "assets": [],
+  "visualStyle": {
+    "profileId": "agent-trading-rapid-20",
+    "artDirection": {
+      "audience": "người học đọc thị trường",
+      "objective": "tách quan sát khỏi khuyến nghị",
+      "language": "tiếng Việt",
+      "imagery": "motion-graphics",
+      "motion": "entrance-and-hold",
+      "light": "cool-paper",
+      "material": "paper",
+      "depth": "flat",
+      "principles": ["exact-copy"]
+    },
+    "palette": {
+      "background": [232, 236, 242],
+      "ink": [16, 28, 48],
+      "accent": [18, 122, 82],
+      "paper": [255, 252, 246],
+      "muted": [84, 94, 110],
+      "accentAlt": [164, 72, 64],
+      "weight": [28, 36, 52]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.06, "right": 0.06, "bottom": 0.06, "left": 0.06}
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.35,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {"aspectRatio": "16:9", "width": 1280, "height": 720, "frameRate": 24},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": false,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "approved", "notes": "Video Agent Trading 20 giây, cùng pipeline với Novixa."},
+    {"stage": "script_analysis", "automation": "assisted", "status": "done", "notes": "Bốn cảnh, dữ liệu giao dịch giả định."},
+    {"stage": "story_structure", "automation": "manual", "status": "approved", "notes": "Mở, phiên, biểu đồ, ba bước."},
+    {"stage": "shot_plan", "automation": "assisted", "status": "approved", "notes": "brand_reveal, lanes, dashboard, triptych."},
+    {"stage": "asset_plan", "automation": "automated", "status": "done", "notes": "Không dùng asset Novixa. Hình vẽ bằng code."},
+    {"stage": "asset_creation", "automation": "manual", "status": "done", "notes": "Không tạo file ảnh mới."},
+    {"stage": "voiceover", "automation": "automated", "status": "done", "notes": "edge-tts vi-VN-NamMinhNeural, tốc độ +0%. Track còn proposed."},
+    {"stage": "animation", "automation": "automated", "status": "done", "notes": "Chữ vào, nhãn trượt, cột mọc, cột rơi."},
+    {"stage": "audio_mix", "automation": "automated", "status": "not_started", "notes": ""},
+    {"stage": "render", "automation": "automated", "status": "in_progress", "notes": ""},
+    {"stage": "qa", "automation": "automated", "status": "not_started", "notes": ""},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Không phát hành. Không phải khuyến nghị."}
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

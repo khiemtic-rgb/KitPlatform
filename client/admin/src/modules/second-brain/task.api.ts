@@ -22,6 +22,6 @@ export type PaperTask = {
 };
 
 export const taskApi = {
-  list: () => http.get<PaperTask[]>('/personal-intelligence/paper-tasks').then((response) => response.data),
-  get: (taskId: string) => http.get<PaperTask>(`/personal-intelligence/paper-tasks/${taskId}`).then((response) => response.data),
+  list: () => http.get<PaperTask[]>('/personal-intelligence/tasks').then((response) => response.data),
+  get: (taskId: string) => http.get<PaperTask>(`/personal-intelligence/tasks/${taskId}`).then((response) => response.data),
 };

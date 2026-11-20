@@ -2,6 +2,11 @@ using KitPlatform.Packs.Content;
 
 namespace KitPlatform.Packs.Content.Infrastructure;
 
+/// <summary>
+/// AUTHORITY-STABILIZATION-01E-GAP-CLOSURE. LEGACY_EXECUTION.
+/// StartAsync and StartLipsyncAsync do not submit a provider job.
+/// GetAsync remains a history poll of an existing task.
+/// </summary>
 internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
 {
     private readonly ContentFalClient _fal;
@@ -31,12 +36,15 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         ContentSeriesTurboStartRequest request,
         CancellationToken cancellationToken = default)
     {
+        throw new InvalidOperationException(KitPlatform.Packs.Content.Production.ProductionExecutionAuthorityV1.LegacyProviderSubmitClosed);
+#pragma warning disable CS0162
         if (!request.Confirm)
             throw new InvalidOperationException(VideoVisualIngressV1Rules.GateConfirm);
 
         var decision = _selector.Select(FamixaRuntimeMaxCost.MotionRequirements(request));
+        var runway = decision.ProviderId == FamixaProviderIds.Runway;
         var wan = decision.ProviderId == FamixaProviderIds.Wan;
-        var seconds = request.Seconds >= 8 ? 10 : 5;
+        var seconds = runway ? (request.Seconds >= 8 ? 10 : 5) : request.Seconds;
         var ratio = MapRatio(request.Ratio);
         var image = NormalizeImage(request.ImageDataUrl);
         var usedPlaceholder = string.IsNullOrWhiteSpace(request.ImageDataUrl)
@@ -45,11 +53,11 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
             throw new InvalidOperationException("Thiếu KF cảnh — không gửi I2V (0 cr).");
 
         var prompt = await CompileBoundPromptAsync(request, cancellationToken);
-        if (!wan)
+        if (runway)
             image = GuardRunwayDataUri(image, ratio);
 
         string? lastImage = null;
-        if (!wan && !string.IsNullOrWhiteSpace(request.LastFrameFromUrl))
+        if (runway && !string.IsNullOrWhiteSpace(request.LastFrameFromUrl))
             lastImage = await ExtractLastFrameDataUriAsync(request.LastFrameFromUrl, cancellationToken);
 
         var started = await _providers.GetMotion(decision.ProviderId).StartAsync(
@@ -58,7 +66,7 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
                 prompt,
                 request.NegativePrompt,
                 seconds,
-                wan ? request.Ratio : ratio,
+                runway ? ratio : request.Ratio,
                 lastImage),
             cancellationToken);
         var taskId = started.ProviderRequestId
@@ -71,7 +79,7 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
                 null,
                 usedPlaceholder,
                 started.ModelId ?? decision.ModelId ?? "",
-                wan ? (seconds >= 8 ? 6 : 5) : seconds),
+                wan ? (request.Seconds >= 8 ? 6 : 5) : seconds),
             decision);
     }
 
@@ -94,13 +102,16 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         ContentSeriesLipsyncStartRequest request,
         CancellationToken cancellationToken = default)
     {
+        throw new InvalidOperationException(KitPlatform.Packs.Content.Production.ProductionExecutionAuthorityV1.LegacyProviderSubmitClosed);
+#pragma warning disable CS0162
         var video = (request.VideoUrl ?? "").Trim();
-        if (string.IsNullOrWhiteSpace(video))
+        var takeTask = (request.TakeTaskId ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(video)
+            && !FamixaVeoTakePlaybackV1.IsStoredTake(takeTask)
+            && !FamixaFalLipsyncPlaybackV1.IsStoredTake(takeTask))
             throw new InvalidOperationException("Thiếu URL take để khớp môi.");
-        if (!(video.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-              || video.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-              || video.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase)))
-            throw new InvalidOperationException("Take khớp môi phải là HTTPS hoặc data video.");
+        if (!IsAllowedLipsyncVideoRef(video, takeTask))
+            throw new InvalidOperationException("Take khớp môi phải là HTTPS, data video, hoặc file Veo / Fal đã lưu.");
 
         var voiceRows = (request.Voices ?? Array.Empty<ContentSeriesLipsyncVoiceDto>())
             .Where(v => !string.IsNullOrWhiteSpace(v.AudioBase64))
@@ -110,17 +121,24 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         var padToPerformance = request.PerformanceDurationSec is > 0
             ? request.PerformanceDurationSec
             : request.ProductionDurationSec;
-        var audioBytes = voiceRows.Count == 1 && padToPerformance is not > 0
+        var audioBytes = FamixaFalLipsyncAudioPrepV1.KeepFullVoiceBytes(voiceRows.Count)
             ? DecodeAudio(voiceRows[0].AudioBase64)
-            : MergeLipsyncVoices(voiceRows, cancellationToken, padToPerformance);
+            : MergeLipsyncVoices(
+                voiceRows,
+                cancellationToken,
+                FamixaFalLipsyncAudioPrepV1.MergePadDurationSec(voiceRows.Count, padToPerformance));
         if (audioBytes.Length is < 32 or > 8_000_000)
             throw new InvalidOperationException("File thoại khớp môi không đọc được.");
 
-        var takeBytes = await FetchTakeForLipsyncAsync(video, request.TakeTaskId, cancellationToken);
+        var takeBytes = await FetchTakeForLipsyncAsync(video, takeTask, cancellationToken);
         if (takeBytes.Length is < 800 or > 12_000_000)
             throw new InvalidOperationException("Take quá lớn hoặc trống — không gửi Fal.");
         // V3: Fal receives the full performance take. Editorial trim is assemble-only.
 
+        var takeFrameCount = FamixaFalLipsyncSpeakerPinV1.FrameCountFromTake(
+            takeBytes,
+            request.PerformanceDurationSec ?? request.ProductionDurationSec);
+        var takeDurationSec = KitVideoMotionRules.ReadMp4DurationSec(takeBytes);
         var videoCdn = await _fal.UploadAsync(takeBytes, "video/mp4", $"{request.ClipId}.mp4", cancellationToken);
         var audioMime = string.IsNullOrWhiteSpace(request.Mime) ? "audio/mpeg" : request.Mime.Trim();
         var audioExt = audioMime.Contains("wav", StringComparison.OrdinalIgnoreCase) ? "wav" : "mp3";
@@ -131,7 +149,18 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
             DurationSec: request.PerformanceDurationSec ?? request.ProductionDurationSec,
             LipsyncModel: request.Model));
         var created = await _providers.GetLipSync(decision.ProviderId).StartAsync(
-            new FamixaLipSyncStartRequest(videoCdn, audioCdn, request.SyncMode, decision.ModelId),
+            new FamixaLipSyncStartRequest(
+                videoCdn,
+                audioCdn,
+                request.SyncMode,
+                decision.ModelId,
+                request.SpeakerX,
+                request.SpeakerY,
+                request.SpeakerVideoWidth,
+                request.SpeakerVideoHeight,
+                request.SpeakerFrameNumber,
+                takeDurationSec > 0 ? takeDurationSec : request.PerformanceDurationSec ?? request.ProductionDurationSec,
+                takeFrameCount),
             cancellationToken);
         return FamixaExecutionProvenanceRules.StampTurbo(
             new ContentSeriesTurboTaskDto(
@@ -145,8 +174,31 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
             decision);
     }
 
+    private static bool IsAllowedLipsyncVideoRef(string video, string takeTask)
+    {
+        if (video.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || video.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            || video.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return FamixaVeoTakePlaybackV1.IsStoredTake(video)
+               || FamixaVeoTakePlaybackV1.IsStoredTake(takeTask)
+               || FamixaFalLipsyncPlaybackV1.IsStoredTake(video)
+               || FamixaFalLipsyncPlaybackV1.IsStoredTake(takeTask);
+    }
+
     private async Task<byte[]> FetchTakeForLipsyncAsync(string video, string? takeTaskId, CancellationToken cancellationToken)
     {
+        var stored = _takes.ReadVeoTake(video)
+            ?? _takes.ReadVeoTake(takeTaskId)
+            ?? _takes.ReadFalTake(video)
+            ?? _takes.ReadFalTake(takeTaskId);
+        if (stored is { Length: >= 32 })
+            return stored;
+        if (FamixaVeoTakePlaybackV1.IsStoredTake(video) || FamixaVeoTakePlaybackV1.IsStoredTake(takeTaskId))
+            throw new InvalidOperationException("File Veo take không còn trên máy. Không gửi Fal.");
+        if (FamixaFalLipsyncPlaybackV1.IsStoredTake(video) || FamixaFalLipsyncPlaybackV1.IsStoredTake(takeTaskId))
+            throw new InvalidOperationException("File Fal chưa có trên máy. Hỏi lại môi · 0$ — đừng Confirm job mới.");
+
         if (video.StartsWith("data:video/", StringComparison.OrdinalIgnoreCase))
             return DecodeAudio(video);
 
@@ -180,7 +232,20 @@ internal sealed class ContentSeriesTurboService : IContentSeriesTurboService
         long? bytes = null;
         string? mime = polled.MimeType;
         var verified = false;
-        if (probe && status == "SUCCEEDED" && !string.IsNullOrWhiteSpace(video))
+        if ((video ?? "").StartsWith("data:video", StringComparison.OrdinalIgnoreCase))
+        {
+            verified = status == "SUCCEEDED";
+            mime ??= "video/mp4";
+            var comma = video!.IndexOf(',');
+            if (comma > 0)
+                bytes = Math.Max(0, (video.Length - comma - 1) * 3 / 4);
+        }
+        else if (FamixaVeoTakePlaybackV1.FileIdFromUrl(video) is { Length: >= 8 })
+        {
+            verified = status == "SUCCEEDED";
+            mime ??= "video/mp4";
+        }
+        if (probe && status == "SUCCEEDED" && !string.IsNullOrWhiteSpace(video) && !verified)
         {
             var checkedTake = await _takes.ProbeAsync(video, cancellationToken);
             bytes = checkedTake.Bytes;

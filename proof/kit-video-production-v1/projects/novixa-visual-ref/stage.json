@@ -1,0 +1,66 @@
+{
+  "notes": "Sân khấu đọc bởi template reference_stage. Đổi nhãn, câu chữ và màu bằng params và palette. Không sửa hàm chuyển động.",
+  "plate": "assets/plate.jpg",
+  "occludeAfter": "pharmacist",
+  "occluders": [
+    {"rect": [0.0, 0.745, 0.52, 1.0]}
+  ],
+  "layers": [
+    {
+      "id": "bottle",
+      "asset": "assets/cutouts/bottle.png",
+      "anchor": "center",
+      "x": 0.63,
+      "y": 0.712,
+      "h": 0.12
+    },
+    {
+      "id": "pharmacist",
+      "asset": "assets/cutouts/pharmacist.png",
+      "anchor": "bottom",
+      "x": 0.18,
+      "y": 0.92,
+      "h": 0.62,
+      "flip": true,
+      "breath": true,
+      "motion": {"start": 1.15, "end": 2.35, "to": [0.22, 0.9], "lift": 0, "spin": 0}
+    },
+    {
+      "id": "blister",
+      "asset": "assets/cutouts/blister.png",
+      "anchor": "center",
+      "x": 0.23,
+      "y": 0.782,
+      "h": 0.078
+    },
+    {
+      "id": "box",
+      "asset": "assets/cutouts/box.png",
+      "anchor": "center",
+      "x": 0.66,
+      "y": 0.5,
+      "h": 0.155,
+      "shadow": true,
+      "callout": "{productLabel}",
+      "motion": {
+        "start": 2.35,
+        "end": 5.9,
+        "to": [0.36, 0.73],
+        "lift": 0.13,
+        "spin": -11,
+        "settle": 0.018
+      }
+    }
+  ],
+  "cards": [
+    {
+      "text": "{message}",
+      "sub": "{productLabel}",
+      "at": 6.55,
+      "in": 0.6,
+      "x": 0.5,
+      "y": 0.15,
+      "scale": 0.048
+    }
+  ]
+}

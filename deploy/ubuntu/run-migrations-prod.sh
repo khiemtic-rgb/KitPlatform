@@ -34,7 +34,7 @@ if ! command -v psql >/dev/null 2>&1; then
 fi
 
 echo "=== KitPlatform PRODUCTION migrations (no demo seed) ==="
-echo "Database: $CONN"
+echo "Database: (uri provided)"
 echo "Manifest: $MANIFEST"
 
 while IFS= read -r file || [[ -n "$file" ]]; do

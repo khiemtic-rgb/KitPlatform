@@ -98,10 +98,14 @@ internal sealed class TenantPlatformSettingsService : ITenantPlatformSettings
         // Do not UPDATE tenants.business_vertical here — DEMO_FAMILY keeps column=hybrid
         // until migration 192a; settings.platform.vertical may already be "family".
         var vertical = current.Vertical;
-        var (modules, ignored) = TenantPlatformSettingsValidator.NormalizeModules(
+        var (accepted, ignoredModules) = TenantPlatformSettingsValidator.NormalizeModules(
             request.EnabledModules,
             registryCodes,
             allowedCeiling);
+        var ignored = ignoredModules.ToList();
+        var modules = LocalOsDedicatedOperators.StripUnlessOperator(row.TenantCode, accepted, ignored);
+        if (modules.Count == 0)
+            throw new InvalidOperationException("Phải chọn ít nhất một module nền tảng.");
         var features = TenantPlatformSettingsValidator.MergeFeatures(current.Features, request.Features);
 
         var platformNode = new JsonObject
@@ -164,7 +168,7 @@ internal sealed class TenantPlatformSettingsService : ITenantPlatformSettings
             return false;
 
         var settings = await GetAsync(cancellationToken);
-        return settings.EnabledModules.Contains(moduleCode.Trim(), StringComparer.OrdinalIgnoreCase);
+        return CoreAuthority.IsModuleEnabled(settings.EnabledModules, moduleCode);
     }
 
     public async Task<bool> IsModuleEnabledForTenantCodeAsync(
@@ -180,7 +184,7 @@ internal sealed class TenantPlatformSettingsService : ITenantPlatformSettings
             return false;
 
         var settings = Parse(row);
-        return settings.EnabledModules.Contains(moduleCode.Trim(), StringComparer.OrdinalIgnoreCase);
+        return CoreAuthority.IsModuleEnabled(settings.EnabledModules, moduleCode);
     }
 
     public async Task<bool> IsFeatureEnabledAsync(string featureCode, CancellationToken cancellationToken = default)
@@ -291,6 +295,7 @@ internal sealed class TenantPlatformSettingsService : ITenantPlatformSettings
     {
         const string sql = """
             SELECT
+                tenant_code AS TenantCode,
                 business_vertical AS BusinessVertical,
                 country_code AS CountryCode,
                 settings AS SettingsJson
@@ -466,6 +471,7 @@ internal sealed class TenantPlatformSettingsService : ITenantPlatformSettings
 
     private sealed class PlatformSettingsRow
     {
+        public string? TenantCode { get; set; }
         public string? BusinessVertical { get; set; }
         public string? CountryCode { get; set; }
         public string? SettingsJson { get; set; }

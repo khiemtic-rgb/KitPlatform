@@ -1118,6 +1118,7 @@
     "productCount": "{{count}} sản phẩm",
     "viewingDetail": "Đang xem — chi tiết phía trên",
     "invoiceTitle": "Hóa đơn {{number}}",
+    "saleTime": "Giờ bán",
     "returnedQty": "Đã trả {{qty}} {{unit}}",
     "totalPayment": "Tổng thanh toán",
     "discount": "Giảm giá",

@@ -4,19 +4,26 @@ ALTER TABLE family_members
     ADD COLUMN IF NOT EXISTS status SMALLINT,
     ADD COLUMN IF NOT EXISTS gender SMALLINT;
 
-UPDATE family_members
-SET status = CASE
-        WHEN is_active = FALSE THEN 0
-        ELSE 1
-    END
-WHERE status IS NULL
-  AND EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name = 'family_members'
-        AND column_name = 'is_active'
-  );
+-- Dynamic SQL: PostgreSQL parses is_active even when the EXISTS guard is false.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'family_members'
+          AND column_name = 'is_active'
+    ) THEN
+        EXECUTE $sql$
+            UPDATE family_members
+            SET status = CASE
+                    WHEN is_active = FALSE THEN 0
+                    ELSE 1
+                END
+            WHERE status IS NULL
+        $sql$;
+    END IF;
+END $$;
 
 UPDATE family_members
 SET status = 1

@@ -1,4 +1,4 @@
-/** TTS blobs — same idea as KF IndexedDB. Survives F5 so Final can mux. */
+/** CACHE / RECOVERY only. kit-famixa-tts is NOT Production OS voice authority. */
 
 import { famixaMediaScope, famixaScopedKey } from './content-famixa-media-scope';
 

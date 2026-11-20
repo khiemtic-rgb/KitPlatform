@@ -5,6 +5,7 @@ import {
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/shared/auth/auth.store';
 import { operatorNotices } from './operator-notices';
+import { ResearchPanel } from './ResearchPanel';
 import {
   tradingApi,
   type DecisionDetail, type DecisionRow, type ImportPreview, type LoopResult, type OperationRow,
@@ -106,6 +107,7 @@ export function TradingOverviewPage() {
       </Card>
       </>
       )}
+      <ResearchPanel />
     </Space>
   );
 }

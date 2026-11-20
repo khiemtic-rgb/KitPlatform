@@ -22,6 +22,7 @@ import {
   nextWorkCopy,
   sceneListStatus,
   shotUserLabel,
+  type SeriesStaffTab,
 } from './kit-video-production-ux';
 import { episodeStoryLine, type ProductionProgressNode } from './kit-video-production-workflow';
 
@@ -59,7 +60,7 @@ export function ContentFamixaProductionOverview({
   onOpenShot: (shotId: string) => void;
   onFocusShot?: (shotId: string) => void;
   onFinish?: () => void;
-  onOpenTab?: (tab: 'script' | 'scenes' | 'characters' | 'images' | 'video' | 'finish' | 'publish') => void;
+  onOpenTab?: (tab: SeriesStaffTab) => void;
   embedded?: boolean;
   buildScope?: {
     characterLocked: boolean;

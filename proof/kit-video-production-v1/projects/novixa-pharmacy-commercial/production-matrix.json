@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "novixa-production-matrix/1",
+  "approval": "AWAITING_REVIEW",
+  "finalVideo": null,
+  "message": "Hàng tồn kho cũng là vốn.",
+  "durationSeconds": 25,
+  "classes": {
+    "file_ready": "Có file, đúng vai, đã có duyệt riêng.",
+    "file_needs_review": "Có file đúng hướng, chưa được duyệt.",
+    "file_wrong_style": "Có file nhưng không dùng vì bán hiện thực hoặc kiểu cũ.",
+    "file_needs_replacement": "Có file đúng kiểu nhưng sai tư thế.",
+    "graphics_code": "Pillow vẽ lại từ demoData khi cần.",
+    "external_image": "Cần công cụ tạo ảnh ngoài pipeline.",
+    "external_video": "Cần provider image-to-video sau khi duyệt."
+  },
+  "assets": [
+    {"id": "logo", "class": "file_ready", "path": "docs/novixa/assets/brand/novixa-logo.png"},
+    {"id": "character-v3", "class": "file_needs_review", "path": "assets/pharmacist-nova-cartoon-v3.jpg"},
+    {"id": "pharmacy-v7", "class": "file_needs_review", "path": "keyframes/v7/s01-pharmacy.jpg"},
+    {"id": "operations-v7", "class": "graphics_code", "path": "keyframes/v7/s04-operations.jpg"},
+    {"id": "inventory-v7", "class": "graphics_code", "path": "keyframes/v7/s05-inventory.jpg"},
+    {"id": "pkg-ampicillin-face", "class": "graphics_code", "path": "assets/labels/v5/pkg-ampicillin.png"},
+    {"id": "character-style-v2", "class": "file_wrong_style", "path": "assets/pharmacist-nova-style.jpg"},
+    {"id": "keyframe-v2-take", "class": "file_wrong_style", "path": "keyframes/v2/s02-take-box.jpg"},
+    {"id": "ref-v1-profile", "class": "file_needs_replacement", "path": "probes/character-reference-v1/f04-profile.jpg"},
+    {"id": "ref-v1-reach", "class": "file_needs_replacement", "path": "probes/character-reference-v1/f05-reach.jpg"},
+    {"id": "ref-v1-grasp", "class": "file_needs_replacement", "path": "probes/character-reference-v1/f06-grasp.jpg"},
+    {"id": "ref-v1-point", "class": "file_needs_replacement", "path": "probes/character-reference-v1/f08-point.jpg"},
+    {"id": "pose-profile-v2", "class": "external_image", "path": null},
+    {"id": "pose-reach-v2", "class": "external_image", "path": null},
+    {"id": "pose-grasp-v2", "class": "external_image", "path": null},
+    {"id": "pose-point-v2", "class": "external_image", "path": null}
+  ],
+  "scenes": [
+    {
+      "sceneId": "s01-pharmacy",
+      "seconds": 5,
+      "character": true,
+      "purpose": "Mở nhà thuốc và câu tồn kho là vốn.",
+      "dialogue": "Mỗi hộp trên kệ đều là vốn đang nằm chờ.",
+      "method": "image_to_video",
+      "implementNow": false,
+      "needs": ["pharmacy-v7"],
+      "blocker": "Keyframe v7 chưa duyệt và chưa có phép gửi provider."
+    },
+    {
+      "sceneId": "s02-take-box",
+      "seconds": 5,
+      "character": true,
+      "purpose": "Lấy hộp khỏi kệ.",
+      "dialogue": "",
+      "method": "external_video",
+      "implementNow": false,
+      "needs": ["pose-reach-v2", "pose-grasp-v2"],
+      "blocker": "Chưa có tư thế đưa tay và nắm. Không giữ ảnh tĩnh để giả lập."
+    },
+    {
+      "sceneId": "s03-label",
+      "seconds": 4,
+      "character": true,
+      "purpose": "Chỉ vào tên AMPICILLIN do graphics vẽ.",
+      "dialogue": "",
+      "method": "external_video",
+      "implementNow": false,
+      "needs": ["pose-point-v2", "pkg-ampicillin-face"],
+      "blocker": "Chưa có tư thế chỉ đúng vùng tên."
+    },
+    {
+      "sceneId": "s04-operations",
+      "seconds": 4,
+      "character": false,
+      "purpose": "Giờ, doanh thu và đơn.",
+      "dialogue": "Nhà thuốc mở bảy giờ, đóng mười giờ tối. Doanh thu mười hai triệu rưỡi mỗi ngày. Tám mươi sáu đơn.",
+      "method": "post_graphics",
+      "implementNow": true,
+      "needs": ["operations-v7"],
+      "blocker": null
+    },
+    {
+      "sceneId": "s05-inventory",
+      "seconds": 4,
+      "character": false,
+      "purpose": "Bảng tồn và câu đã chốt.",
+      "dialogue": "Hai trăm mười bốn mặt hàng. Hàng tồn kho cũng là vốn.",
+      "method": "post_graphics",
+      "implementNow": true,
+      "needs": ["inventory-v7"],
+      "blocker": null
+    },
+    {
+      "sceneId": "s06-logo",
+      "seconds": 3,
+      "character": false,
+      "purpose": "Logo và câu đã chốt. Không phải cả phim.",
+      "dialogue": "",
+      "method": "post_graphics",
+      "implementNow": true,
+      "needs": ["logo"],
+      "blocker": null
+    }
+  ],
+  "firstClipAfterApproval": {
+    "sceneId": "s02-take-box",
+    "provider": "runway",
+    "model": "gen4_turbo",
+    "requires": ["Keyframe đầu và cuối đã duyệt, có tay và hộp.", "Phép gửi request.", "RUNWAY_API_KEY"],
+    "notBefore": "Không gửi khi cảnh còn proposed."
+  }
+}

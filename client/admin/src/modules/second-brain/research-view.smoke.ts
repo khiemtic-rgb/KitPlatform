@@ -1,5 +1,5 @@
 /** Research publication view states. Run: npx tsx src/modules/second-brain/research-view.smoke.ts */
-import { classifyResearchError, researchPanelModel, type ResearchExperiment, type ResearchLoadResult } from './research-view.ts';
+import { classifyResearchError, evaluationComparisonModel, researchPanelModel, type ResearchExperiment, type ResearchLoadResult } from './research-view.ts';
 
 function fail(message: string): never {
   console.error(message);
@@ -92,5 +92,35 @@ if (researchPanelModel(classifyResearchError({ response: { status: 401 } })).tit
 if (researchPanelModel(classifyResearchError({ response: { status: 403 } })).showBodies) fail('403 showed a body');
 if (researchPanelModel({ kind: 'loading' }).title !== 'Đang đọc publication') fail('loading');
 if (summary.tradeCount !== 7 || summary.paperExecutionCount !== 1) fail('summary mutated');
+
+const split = evaluationComparisonModel({
+  availability: 'FRESH',
+  sameSnapshot: false,
+  verdict: 'INSUFFICIENT_DATA',
+  evaluations: [{ experimentId: 'EXP-ONE', verdict: 'NOT_SELECTABLE', development: { netPnl: '999' } }],
+});
+if (split.showRows || split.rows.length !== 0) fail('split snapshot showed rows');
+const compared = evaluationComparisonModel({
+  availability: 'FRESH',
+  sameSnapshot: true,
+  snapshotSha256: '126a733bc6b709fcc1f511e4fb01aff61bd47694bb3328918f8f32dad6ccb2c3',
+  verdict: 'NOT_SELECTABLE',
+  evaluations: [{
+    experimentId: 'EXP-TREND-SMA-10-30-V1',
+    verdict: 'NOT_SELECTABLE',
+    performanceClaim: 'NOT_A_PERFORMANCE_CLAIM',
+    evidenceStatus: 'INSUFFICIENT_EVIDENCE',
+    development: { tradeCount: 25, netPnl: 'NOT_A_PERFORMANCE_CLAIM' },
+    outOfSample: { tradeCount: 17 },
+    warnings: ['NOT_A_PERFORMANCE_CLAIM'],
+    metrics: { sharpeRatio: 'NOT_IN_SOURCE', equityCurve: 'NOT_IN_SOURCE' },
+  }],
+});
+if (!compared.showRows || compared.rows.length !== 1) fail('comparison missing');
+if (compared.rows[0].verdict !== 'NOT_SELECTABLE') fail('verdict changed');
+if (!compared.detail.includes('NOT_A_PERFORMANCE_CLAIM')) fail('claim warning dropped');
+if (compared.detail.includes('Sharpe') === false) fail('metric limit missing');
+const inconsistent = evaluationComparisonModel({ availability: 'INCONSISTENT', sameSnapshot: false, evaluations: [{ experimentId: 'SECRET_PNL_MARKER' }] });
+if (inconsistent.showRows || inconsistent.detail.includes('SECRET_PNL_MARKER')) fail('inconsistent evaluation leaked');
 
 console.log('research view ok');

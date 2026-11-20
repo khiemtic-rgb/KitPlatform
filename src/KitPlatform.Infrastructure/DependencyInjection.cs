@@ -181,9 +181,12 @@ public static class DependencyInjection
         services.AddScoped<Application.Success.IShiftChecklistService, Success.ShiftChecklistService>();
         services.AddScoped<Success.LossPreventionRepository>();
         services.AddScoped<Application.Success.ILossPreventionService, Success.LossPreventionService>();
+        services.AddScoped<Success.OwnerStaffTodayRepository>();
+        services.AddScoped<Application.Success.IOwnerStaffTodayService, Success.OwnerStaffTodayService>();
         services.AddScoped<Learning.LearningRepository>();
         services.AddScoped<Application.Learning.ILearningCatalogService, Learning.LearningCatalogService>();
         services.AddScoped<Application.Learning.ILearningProgressService, Learning.LearningProgressService>();
+        services.AddScoped<Learning.OperationalTaskService>();
 
         services.AddScoped<ReportsRepository>();
         services.AddScoped<IReportsService, ReportsService>();
@@ -214,12 +217,8 @@ public static class DependencyInjection
         services.AddScoped<AuditLogRepository>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IAuditLogQuery, AuditLogQueryService>();
-        // Core Engines (EA) — wrap existing pilot logic; additive, no behavior change.
-        services.AddScoped<IPricingEngine, PricingEngine>();
-        services.AddScoped<IPermissionEngine, PermissionEngine>();
         services.AddScoped<IAuditEngine, AuditEngine>();
         services.AddScoped<INotificationEngine, NotificationEngine>();
-        services.AddScoped<IWorkflowEngine, WorkflowEngine>();
         services.AddScoped<AiConversationRepository>();
         services.AddScoped<IAiConversationRepository>(sp => sp.GetRequiredService<AiConversationRepository>());
         services.AddScoped<IAiOrchestrator, AiOrchestrator>();

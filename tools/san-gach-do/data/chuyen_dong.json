@@ -1,0 +1,127 @@
+{
+ "_ghi_chu": "Thư viện chuyển động. Thêm động tác: đặt file .bvh/.fbx vào data/chuyen_dong/ rồi thêm một dòng. 'lap': true = động tác lặp được, cảnh dài bao nhiêu cũng nối liền và cộng dồn quãng đường. 'giay': thời lượng mặc định khi cảnh không ghi. 'cham_dat': 'ca_nguoi' (mặc định) = cả người hạ/nâng cho chân chạm đất; 'chan' = chỉ ghim bàn chân khi chạm đất (ngồi, chạy, nhảy). Bản Mixamo (data/chuyen_dong/mixamo/, quay từ người thật) dùng nội bộ để làm phim, KHÔNG phát tán file gốc. Bản '_mau' là bản dựng bằng công thức (tao_chuyen_dong_mau.py), giữ để dự phòng.",
+ "dung_tho": {
+  "file": "mixamo/dung_tho.fbx",
+  "lap": true,
+  "mo_ta": "Mixamo Breathing Idle: đứng yên thở"
+ },
+ "di": {
+  "file": "mixamo/di.fbx",
+  "lap": true,
+  "mo_ta": "Mixamo Male Standard Walk: đi bộ thường ~1,0 m/giây",
+  "chinh_dau": 9.0
+ },
+ "di_buon": {
+  "file": "mixamo/di_buon.fbx",
+  "lap": true,
+  "mo_ta": "Mixamo Sad Walk: đi buồn, mệt mỏi",
+  "chinh_dau": -30.0
+ },
+ "di_cham_gia": {
+  "file": "mixamo/di_cham_gia.fbx",
+  "lap": true,
+  "mo_ta": "Mixamo Old Man Walk: người già đi chậm, lê bước"
+ },
+ "chay": {
+  "file": "mixamo/chay.fbx",
+  "lap": true,
+  "cham_dat": "chan",
+  "mo_ta": "Mixamo Running: chạy nhanh"
+ },
+ "ngoi_xuong": {
+  "file": "mixamo/ngoi_xuong.fbx",
+  "lap": false,
+  "cham_dat": "chan",
+  "mo_ta": "Mixamo Stand To Sit: ngồi xuống ghế"
+ },
+ "ngoi_tho": {
+  "file": "mixamo/ngoi_tho.fbx",
+  "lap": true,
+  "cham_dat": "chan",
+  "mo_ta": "Mixamo Sitting Idle: ngồi yên thở (sau ngoi_xuong)"
+ },
+ "dung_day": {
+  "file": "mixamo/dung_day.fbx",
+  "lap": false,
+  "cham_dat": "chan",
+  "mo_ta": "Mixamo Sit To Stand: từ ghế đứng dậy"
+ },
+ "dua_tien": {
+  "file": "dua_tien.bvh",
+  "lap": false,
+  "mo_ta": "Tay phải đưa ra trước (dúi tiền, đưa đồ) rồi thu về (bản công thức)"
+ },
+ "vay_tay": {
+  "file": "mixamo/vay_tay.fbx",
+  "lap": true,
+  "giay": 2.0,
+  "mo_ta": "Mixamo Waving: vẫy tay (nhịp 0,54 giây, lặp)",
+  "chinh_dau": 20.0
+ },
+ "gat_dau": {
+  "file": "mixamo/gat_dau.fbx",
+  "lap": false,
+  "mo_ta": "Mixamo Nodding Head Yes: gật đầu",
+  "he_so_dau": -0.8
+ },
+ "cui_chao": {
+  "file": "mixamo/cui_chao.fbx",
+  "lap": false,
+  "mo_ta": "Mixamo Quick Formal Bow: cúi chào"
+ },
+ "nhay_tai_cho": {
+  "file": "mixamo/nhay_tai_cho.fbx",
+  "lap": false,
+  "cham_dat": "chan",
+  "mo_ta": "Mixamo Jump: nhảy tại chỗ"
+ },
+ "noi_chuyen": {
+  "file": "mixamo/noi_chuyen.fbx",
+  "lap": true,
+  "mo_ta": "Mixamo General Conversation: đứng nói chuyện, tay diễn tả",
+  "chinh_dau": 8.0
+ },
+ "dung_tho_mau": {
+  "file": "dung_tho.bvh",
+  "lap": true,
+  "mo_ta": "Bản công thức: đứng thở"
+ },
+ "di_mau": {
+  "file": "di.bvh",
+  "lap": true,
+  "mo_ta": "Bản công thức: đi bộ 1,22 m/giây"
+ },
+ "ngoi_xuong_mau": {
+  "file": "ngoi_xuong.bvh",
+  "lap": false,
+  "cham_dat": "chan",
+  "mo_ta": "Bản công thức: ngồi xuống"
+ },
+ "dung_day_mau": {
+  "file": "dung_day.bvh",
+  "lap": false,
+  "cham_dat": "chan",
+  "mo_ta": "Bản công thức: đứng dậy"
+ },
+ "vay_tay_mau": {
+  "file": "vay_tay.bvh",
+  "lap": false,
+  "mo_ta": "Bản công thức: vẫy tay"
+ },
+ "gat_dau_mau": {
+  "file": "gat_dau.bvh",
+  "lap": false,
+  "mo_ta": "Bản công thức: gật đầu"
+ },
+ "cui_chao_mau": {
+  "file": "cui_chao.bvh",
+  "lap": false,
+  "mo_ta": "Bản công thức: cúi chào"
+ },
+ "dung_cui_dau": {
+  "file": "mixamo/dung_tho.fbx",
+  "lap": true,
+  "chinh_dau": 16.0,
+  "mo_ta": "Đứng thở, cúi mặt (ngập ngừng, ngượng, nghe lời)"
+ }
+}

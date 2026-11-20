@@ -1,0 +1,455 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "novixa-intro-film",
+  "projectName": "NOVIXA Intro Film",
+  "brand": {
+    "id": "novixa",
+    "name": "NOVIXA"
+  },
+  "script": {
+    "version": "mission-2026-10-23",
+    "approvalStatus": "proposed",
+    "sourcePath": "script.md",
+    "notes": "Lời thoại giữ nguyên bản được giao. Chưa khóa. Ước lượng thời lượng nằm trong shot plan đề xuất."
+  },
+  "durationPolicy": {
+    "mode": "voice_driven",
+    "targetSeconds": 180,
+    "notes": "180 giây chỉ là gợi ý ban đầu của dự án này, không phải mặc định của hệ thống. Thời lượng khóa sau khi có lời đọc thật. Không ép giọng cho khớp 180 giây."
+  },
+  "storyStructure": [
+    {
+      "beatId": "s01-day-opens",
+      "summary": "Một ngày nhà thuốc bắt đầu."
+    },
+    {
+      "beatId": "s02-busy",
+      "summary": "Bận không có nghĩa là đang kiểm soát."
+    },
+    {
+      "beatId": "s03-stock-cash",
+      "summary": "Hàng nằm yên là vốn bị khóa."
+    },
+    {
+      "beatId": "s04-expiry",
+      "summary": "Hạn dùng không chờ trí nhớ."
+    },
+    {
+      "beatId": "s05-introduce",
+      "summary": "NOVIXA ra đời để việc được tổ chức rõ hơn."
+    },
+    {
+      "beatId": "s06-selling",
+      "summary": "Bán hàng và ghi nhận tại quầy, bằng UI thật."
+    },
+    {
+      "beatId": "s07-inventory",
+      "summary": "Tồn kho, giá trị và hàng sắp hết hạn, bằng UI thật."
+    },
+    {
+      "beatId": "s08-connected-data",
+      "summary": "Dữ liệu nối lại, phần mềm không quyết định thay người."
+    },
+    {
+      "beatId": "s09-people",
+      "summary": "Công nghệ lùi lại phía sau người."
+    },
+    {
+      "beatId": "s10-philosophy",
+      "summary": "Rõ, chủ động, có hệ thống. Không hứa hiệu quả thần kỳ."
+    },
+    {
+      "beatId": "s11-positioning",
+      "summary": "Định vị nền tảng vận hành nhà thuốc thông minh."
+    },
+    {
+      "beatId": "s12-cta",
+      "summary": "Mời tìm hiểu tại novixa.vn."
+    }
+  ],
+  "voice": {
+    "profileId": "vi-VN-NamMinhNeural",
+    "language": "vi",
+    "pronunciationNotes": "TTS đọc NOVIXA là Nôvixa. Địa chỉ đọc là novixa chấm vn. Chữ trên hình vẫn là NOVIXA và novixa.vn. Voice-read V3 đã được nghe duyệt. Hình phim chưa duyệt.",
+    "tracks": [
+      {
+        "trackId": "s01-day-opens",
+        "approval": "approved",
+        "text": "Mở cửa nhà thuốc. Khách vào, khách ra. Người lấy thuốc, người hỏi giá, điện thoại thì thỉnh thoảng lại reo. Một ngày cứ thế bắt đầu. Nhìn thì có vẻ đơn giản… nhưng ai làm nhà thuốc rồi mới biết, đằng sau quầy thuốc là cả một đống việc không tên.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s01-day-opens.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s02-busy",
+        "approval": "approved",
+        "text": "Khách đang chờ thì phải bán nhanh. Bán xong lại kiểm tra hàng. Nhân viên hỏi một câu, nhà cung cấp gọi một cuộc… Chưa kịp uống ngụm nước, đã có thêm việc mới. Mà lạ nhé, bận cả ngày như vậy, đôi khi vẫn chưa trả lời được một câu rất quan trọng: Nhà thuốc mình đang thực sự kinh doanh thế nào?",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s02-busy.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s03-stock-cash",
+        "approval": "approved",
+        "text": "Nhập thêm hàng thì sợ thiếu. Nhập nhiều quá lại sợ tồn. Có những mặt hàng bán vèo vèo, nhưng cũng có những hộp cứ nằm yên trên kệ hết ngày này sang ngày khác. Hàng thì vẫn ở đó… còn tiền thì đã đi trước một bước rồi.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s03-stock-cash.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s04-expiry",
+        "approval": "approved",
+        "text": "Rồi còn hạn dùng nữa. Hàng mới về phải kiểm tra, hàng trên kệ phải theo dõi, hàng sắp hết hạn phải chú ý. Mình có thể nhớ hôm nay rất nhiều việc… nhưng không thể bắt trí nhớ làm thay cả một hệ thống quản lý được, đúng không?",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s04-expiry.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s05-introduce",
+        "approval": "approved",
+        "text": "Và đó cũng là lý do NOVIXA ra đời. Không phải để biến người chủ nhà thuốc thành người ngồi nhìn màn hình cả ngày. Mà để những công việc quan trọng được tổ chức rõ ràng hơn, để người làm nhà thuốc bớt phải xoay xở bằng trí nhớ và những ghi chép rời rạc.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s05-introduce.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s06-selling",
+        "approval": "approved",
+        "text": "Bắt đầu từ những việc gần gũi nhất: bán hàng, ghi nhận thông tin và theo dõi hoạt động tại quầy. Bởi cuối cùng, phần mềm không phải để làm cho công việc trông có vẻ hiện đại hơn. Nó phải giúp công việc hằng ngày trở nên dễ theo dõi và có tổ chức hơn.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s06-selling.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s07-inventory",
+        "approval": "approved",
+        "text": "Với tồn kho, biết còn bao nhiêu hàng mới chỉ là bước đầu. Còn hàng nào sắp hết hạn? Giá trị hàng đang nằm trên kệ là bao nhiêu? Mặt hàng nào cần kiểm tra trước? Khi những thông tin ấy rõ ràng hơn, mình mới có cơ sở để xử lý đúng việc, đúng lúc.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s07-inventory.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s08-connected-data",
+        "approval": "approved",
+        "text": "Khi dữ liệu được tổ chức tốt, người chủ có thể nhìn công việc rõ hơn, thay vì mỗi vấn đề lại phải tìm một nơi để hỏi, một cuốn sổ để dò. Tất nhiên, phần mềm không thể quyết định thay mình mọi chuyện. Nhưng có thông tin tốt hơn, mình sẽ có cơ sở tốt hơn để quyết định.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s08-connected-data.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s09-people",
+        "approval": "approved",
+        "text": "Bởi nhà thuốc suy cho cùng đâu chỉ có hàng hóa với những con số. Còn có người dược sĩ cần tập trung tư vấn, có khách hàng cần được lắng nghe, có những việc phải làm cẩn thận mỗi ngày. Công nghệ chỉ thực sự có ý nghĩa khi nó phục vụ những con người ấy.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s09-people.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s10-philosophy",
+        "approval": "approved",
+        "text": "Một nhà thuốc vận hành tốt không nhất thiết phải thật lớn. Nhưng cần biết mình đang có gì, công việc đang diễn ra thế nào và điều gì cần được ưu tiên. NOVIXA hướng đến việc giúp nhà thuốc từng bước xây dựng cách vận hành rõ ràng, bài bản và phù hợp hơn với thực tế.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s10-philosophy.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s11-positioning",
+        "approval": "approved",
+        "text": "NOVIXA — nền tảng vận hành nhà thuốc thông minh. Được xây dựng từ những nhu cầu rất thực tế trong hoạt động nhà thuốc, với mong muốn đưa công nghệ đến gần hơn với công việc hằng ngày. Không xa vời, không chỉ để nhìn cho đẹp, mà phải có ích trong vận hành thực tế.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s11-positioning.wav",
+        "pathBase": "repo"
+      },
+      {
+        "trackId": "s12-cta",
+        "approval": "approved",
+        "text": "Nếu bạn cũng đang muốn việc vận hành nhà thuốc rõ ràng và bài bản hơn, hãy dành chút thời gian khám phá NOVIXA. Biết đâu, điều nhà thuốc cần tiếp theo không phải là làm nhiều hơn… mà là có một cách làm tốt hơn. NOVIXA. Nền tảng vận hành nhà thuốc thông minh. Tìm hiểu tại novixa chấm vn.",
+        "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261023T084726Z-voice-read/s12-cta.wav",
+        "pathBase": "repo"
+      }
+    ]
+  },
+  "assets": [
+    {
+      "assetId": "logo-novixa",
+      "kind": "logo",
+      "source": "library",
+      "path": "docs/novixa/assets/brand/novixa-logo.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "008501e96549b05af42af24b2b8e9e068ba8c031fa57920c61632a710b32e1f4",
+      "usageRights": "brand asset, use unmodified",
+      "approval": "approved",
+      "role": "brand_logo",
+      "label": "Logo NOVIXA gốc. Không sửa file."
+    },
+    {
+      "assetId": "ui-pos-staff",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/10-staff-pos.png",
+      "pathBase": "repo",
+      "version": "2026-07-04",
+      "usageRights": "internal product evidence",
+      "approval": "proposed",
+      "role": "reference",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa",
+      "label": "POS nhân viên. Chưa được gắn vào cảnh đã duyệt của phim này."
+    },
+    {
+      "assetId": "ui-pos-demo-cart",
+      "kind": "screenshot",
+      "source": "user_supplied",
+      "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261024T103014Z-pos-ux-evidence/pos-demo-cart.png",
+      "pathBase": "repo",
+      "version": "2026-10-24",
+      "sha256": "d1922d9b3771c977487cf7241965d6f3499d879eec6fd18552c2b5053e7cf0d0",
+      "usageRights": "DEMO_PHARMACY in-memory cart evidence only. Not commercial clearance and not an approved official UI.",
+      "approval": "proposed",
+      "role": "reference",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa",
+      "origin": "local POS http://localhost:5173/sales/pos, tenant DEMO_PHARMACY, user admin, Chrome 1440x900, no payment",
+      "label": "POS demo có giỏ 3 dòng. Không gắn vào s06-selling. Không thay ui-pos-staff."
+    },
+    {
+      "assetId": "ui-pos-demo-cart-v2",
+      "kind": "screenshot",
+      "source": "user_supplied",
+      "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261024T131500Z-pos-ux-refine/pos-demo-cart.png",
+      "pathBase": "repo",
+      "version": "2026-10-24",
+      "sha256": "8b2d6369bc619de4725fd3aa88003e7d9e18a4cc3f5a1981a8d3dd9aa847cbb2",
+      "usageRights": "DEMO_PHARMACY in-memory cart evidence only. Not commercial clearance and not an approved official UI.",
+      "approval": "proposed",
+      "role": "reference",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa",
+      "origin": "local POS http://localhost:5173/sales/pos, tenant DEMO_PHARMACY, user admin, Chrome 1600x900, sider collapsed, search popup closed, no payment",
+      "label": "POS demo giỏ 3 dòng, ô tìm đã đóng. Không gắn vào s06-selling. Không thay ui-pos-demo-cart."
+    },
+    {
+      "assetId": "ui-pos-demo-cart-v3",
+      "kind": "screenshot",
+      "source": "user_supplied",
+      "path": "proof/kit-video-production-v1/outputs/novixa-intro-film/20261024T143900Z-pos-s06-evidence/pos-demo-cart.png",
+      "pathBase": "repo",
+      "version": "2026-10-24",
+      "sha256": "b7b9b4eca173c6bb3f60351b26d60cbf2daed5879fa0c716f0e49f283c643c1a",
+      "usageRights": "Approved for NOVIXA Intro Film as POS interface evidence. Cart lines are DEMO_PHARMACY in-memory illustration only, not a production transaction.",
+      "approval": "approved",
+      "role": "reference",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa",
+      "origin": "local POS http://localhost:5173/sales/pos, tenant DEMO_PHARMACY, user admin, Chrome 1600x900, no payment",
+      "visualSource": "SOFTWARE_SCREENSHOT",
+      "label": "POS NOVIXA, giỏ DEMO_PHARMACY chỉ để minh họa. Đã được chấp nhận làm bằng chứng giao diện Intro Film. Pixel ảnh này được đặt vào s06-selling. Không phải đơn production."
+    },
+    {
+      "assetId": "ui-inventory",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/04-inventory-stock.png",
+      "pathBase": "repo",
+      "version": "2026-07-04",
+      "usageRights": "internal product evidence",
+      "approval": "proposed",
+      "role": "reference",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa",
+      "label": "Màn tồn kho. Chưa được gắn vào cảnh đã duyệt của phim này."
+    },
+    {
+      "assetId": "ui-reports",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/08-reports-home.png",
+      "pathBase": "repo",
+      "version": "2026-07-04",
+      "usageRights": "internal product evidence",
+      "approval": "proposed",
+      "role": "reference",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa",
+      "label": "Màn báo cáo. Chưa được gắn vào cảnh đã duyệt của phim này."
+    },
+    {
+      "assetId": "pharmacy-plate",
+      "kind": "image",
+      "source": "user_supplied",
+      "path": "proof/kit-video-production-v1/projects/novixa-pharmacy-commercial/keyframes/v3/s01-pharmacy.jpg",
+      "pathBase": "repo",
+      "version": "v3",
+      "sha256": "cac3abf98dde19ee4cd56d3bd0dd8708e51241ec1a4a9394d1cd6c9f5d46f9cd",
+      "usageRights": "Approved for NOVIXA Intro Film only. Not a visual-standard approval.",
+      "approval": "approved",
+      "role": "setting",
+      "label": "Ảnh quầy đã duyệt cho Intro Film. Không nhân sang dự án khác."
+    },
+    {
+      "assetId": "pharmacist-portrait",
+      "kind": "image",
+      "source": "user_supplied",
+      "path": "proof/kit-video-production-v1/projects/novixa-pharmacy-commercial/assets/pharmacist-nova-cartoon-v3.jpg",
+      "pathBase": "repo",
+      "version": "v3",
+      "sha256": "9f6bc1da98b24abd9adf3740667cb6b74f9b2c3d660cb690b3b89364729afb10",
+      "usageRights": "Approved for NOVIXA Intro Film only. Not a visual-standard approval.",
+      "approval": "approved",
+      "role": "character",
+      "label": "Chân dung đã duyệt cho Intro Film. Không nhân sang dự án khác."
+    }
+  ],
+  "visualStyle": {
+    "profileId": "novixa-story-v1",
+    "palette": {
+      "background": [
+        232,
+        226,
+        214
+      ],
+      "ink": [
+        0,
+        32,
+        96
+      ],
+      "accent": [
+        0,
+        144,
+        224
+      ],
+      "paper": [
+        250,
+        247,
+        240
+      ],
+      "muted": [
+        110,
+        102,
+        90
+      ],
+      "accentAlt": [
+        176,
+        92,
+        62
+      ],
+      "weight": [
+        24,
+        40,
+        72
+      ]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {
+      "top": 0.06,
+      "right": 0.06,
+      "bottom": 0.06,
+      "left": 0.06
+    },
+    "imagePolicy": "Một hệ màu trong cả phim. UI thật chỉ khi đã duyệt. Không trộn ảnh AI khác phong cách.",
+    "artDirection": {
+      "audience": "Chủ nhà thuốc",
+      "objective": "Kể một ngày vận hành, rồi cho thấy phần mềm ghi việc đó",
+      "language": "stylized-still-and-product-ui",
+      "imagery": "approved-stills-or-labeled-mockups",
+      "motion": "camera-on-approved-stills-and-graphic-arrival",
+      "light": "warm-paper",
+      "material": "paper",
+      "depth": "layered",
+      "principles": ["one-idea", "subject-before-chrome", "approved-imagery-only"]
+    }
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.35,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2,
+    "notes": "Chưa có nhạc được cấp quyền. musicPolicy=none cho đến khi có file."
+  },
+  "format": {
+    "aspectRatio": "16:9",
+    "width": 1280,
+    "height": 720,
+    "frameRate": 30,
+    "notes": "Candidate xem ở 1280x720, cùng khổ ảnh quầy đã duyệt. Tỷ lệ phát hành chưa khóa."
+  },
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": false,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {
+      "stage": "brief",
+      "automation": "manual",
+      "status": "proposed",
+      "notes": "Brief là mission ngày 2026-10-23. Chưa có biên bản duyệt riêng."
+    },
+    {
+      "stage": "script_analysis",
+      "automation": "automated",
+      "status": "proposed",
+      "notes": "Ước lượng theo 13 ký tự/giây cộng đầu và đuôi. Không phải thời lượng đã đo bằng giọng."
+    },
+    {
+      "stage": "story_structure",
+      "automation": "assisted",
+      "status": "proposed",
+      "notes": "Giữ 12 phân đoạn của kịch bản nguồn. Chưa khóa nhịp dựng."
+    },
+    {
+      "stage": "shot_plan",
+      "automation": "assisted",
+      "status": "proposed",
+      "notes": "shot-plan.candidate.json là style_proof. shot-plan.proposed.json giữ nguyên."
+    },
+    {
+      "stage": "asset_plan",
+      "automation": "automated",
+      "status": "blocked",
+      "notes": "Kế hoạch hình V1: docs/kit-video-production/novixa-intro-film-visual-production-plan-v1.md. Ảnh UI vẫn proposed. Chưa đủ footage chuyển động."
+    },
+    {
+      "stage": "asset_creation",
+      "automation": "manual",
+      "status": "not_started",
+      "notes": "Mở bài và các cảnh custom cần thiết kế riêng sau khi style proof được duyệt."
+    },
+    {
+      "stage": "voiceover",
+      "automation": "assisted",
+      "status": "done",
+      "notes": "Voice-read V3 đã duyệt tại outputs/novixa-intro-film/20261023T084726Z-voice-read. Không ép về 180 giây."
+    },
+    {
+      "stage": "animation",
+      "automation": "assisted",
+      "status": "needs_human",
+      "notes": "Scene proof dùng designed_board. Candidate 20261024T032731Z không qua cổng hình. Chưa ghép phim mới."
+    },
+    {
+      "stage": "audio_mix",
+      "automation": "automated",
+      "status": "needs_human",
+      "notes": "Candidate trộn 12 WAV V3. Không có nhạc được cấp quyền. Không ép tốc độ giọng."
+    },
+    {
+      "stage": "render",
+      "automation": "automated",
+      "status": "blocked",
+      "notes": "Chưa ghép phim. Cổng hình chưa cho phép assembly."
+    },
+    {
+      "stage": "qa",
+      "automation": "automated",
+      "status": "needs_human",
+      "notes": "QA kỹ thuật PASS. overallStatus NEEDS HUMAN REVIEW. Không tự nhận duyệt hình."
+    },
+    {
+      "stage": "delivery",
+      "automation": "manual",
+      "status": "not_started",
+      "notes": "Không phát hành."
+    }
+  ],
+  "shotPlan": "shot-plan.scene-proof.json",
+  "outputs": []
+}

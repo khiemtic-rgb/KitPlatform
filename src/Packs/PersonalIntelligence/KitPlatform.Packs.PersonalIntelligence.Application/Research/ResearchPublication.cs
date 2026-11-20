@@ -24,8 +24,17 @@ public sealed class ResearchPublicationOptions
     public const string SectionName = "PersonalIntelligence:ResearchPublication";
 
     public string? Root { get; set; }
+
+    public string? HistoryRoots { get; set; }
+
     public string SourceLabel { get; set; } = "";
 }
+
+public sealed record ResearchPublicationIndexEntry(string PublicationId, string Role);
+
+public sealed record ResearchPublicationIndex(
+    string? LatestPublicationId,
+    IReadOnlyList<ResearchPublicationIndexEntry> Publications);
 
 public sealed record ResearchReadError(string Code, string Message);
 
@@ -127,6 +136,31 @@ public sealed record ResearchPublicationRead(
 public interface IResearchPublicationReader
 {
     Task<ResearchPublicationRead> ReadAsync(CancellationToken cancellationToken = default);
+
+    Task<ResearchPublicationRead> ReadAsync(string? publicationId, CancellationToken cancellationToken = default) =>
+        ReadAsync(cancellationToken);
+
+    Task<ResearchPublicationIndex> ListAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new ResearchPublicationIndex(null, []));
+}
+
+public static class ResearchPublicationIds
+{
+    public static bool IsPublicationId(string? publicationId)
+    {
+        if (string.IsNullOrEmpty(publicationId) || publicationId.Length is < 12 or > 80)
+            return false;
+        if (!publicationId.StartsWith("pub-", StringComparison.Ordinal))
+            return false;
+        for (var i = 4; i < publicationId.Length; i++)
+        {
+            var c = publicationId[i];
+            if (c is not ((>= 'a' and <= 'z') or (>= '0' and <= '9')))
+                return false;
+        }
+
+        return true;
+    }
 }
 
 public static class ResearchExperimentIds

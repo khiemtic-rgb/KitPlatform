@@ -1,0 +1,7 @@
+{
+  "thu_muc_anh": "F:\\Noi_Com_Chung\\Nhan_Vat\\Bo_Chuan",
+  "thu_muc_ra": "E:\\KitPlatform\\.dev\\san-gach-do",
+  "ffmpeg": "C:\\Users\\Admin\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-8.1.2-full_build\\bin\\ffmpeg.exe",
+  "render": {"rong": 1280, "cao": 720, "mau": 8},
+  "_ghi_chu": "Biến môi trường SGD_THU_MUC_ANH / SGD_THU_MUC_RA / SGD_FFMPEG ghi đè các đường dẫn trên."
+}

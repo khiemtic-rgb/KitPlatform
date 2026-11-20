@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { ConfigProvider, App as AntApp } from 'antd';
+import { ConfigProvider, App as AntApp, message } from 'antd';
+import { deskToastContent } from '@/shared/api/api-error';
 import viVN from 'antd/locale/vi_VN';
 import enUS from 'antd/locale/en_US';
 import dayjs from 'dayjs';
@@ -12,6 +13,20 @@ import { AppErrorBoundary } from '@/app/AppErrorBoundary';
 import { AuthHydrationGate } from '@/shared/auth/AuthHydrationGate';
 import { TenantPlatformHydrator } from '@/shared/platform/TenantPlatformHydrator';
 import i18n from '@/shared/i18n';
+
+message.config({ maxCount: 2, duration: 4 });
+const staticError = message.error.bind(message);
+message.error = ((content: unknown, ...rest: unknown[]) => {
+  const text = deskToastContent(content);
+  if (content && typeof content === 'object' && 'content' in (content as object)) {
+    return staticError({
+      ...(content as { content?: unknown; key?: string }),
+      content: text,
+      key: (content as { key?: string }).key || 'famixa-desk-err',
+    });
+  }
+  return staticError({ content: text, key: 'famixa-desk-err' }, ...(rest as []));
+}) as typeof message.error;
 
 const theme = {
   token: {
@@ -31,7 +46,7 @@ function AntdLocaleBridge({ children }: { children: ReactNode }) {
 
   return (
     <ConfigProvider locale={antdLocale} theme={theme}>
-      <AntApp>{children}</AntApp>
+      <AntApp message={{ maxCount: 2 }}>{children}</AntApp>
     </ConfigProvider>
   );
 }

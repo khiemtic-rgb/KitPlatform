@@ -90,6 +90,31 @@ public static class FamixaProviderRoutingFoundationV1Regression
         var compat = FamixaProviderResolver.Resolve(FamixaProviderCapability.Motion, new FamixaProviderSelection(Engine: "wan"));
         Ok(compat.ProviderId == FamixaProviderIds.Wan, "legacy Resolve wraps Foundation");
 
+        var t20 = FamixaProviderSelectionFoundation.Select(new FamixaProviderSelectionRequirements(
+            FamixaProviderCapability.Motion,
+            Engine: "veo"));
+        Ok(t20.SelectionMode == FamixaProviderSelectionMode.Routed
+           && t20.ProviderId == FamixaProviderIds.Google
+           && t20.ModelId == "veo-3.1", "T20 engine veo → google, 0 Runway");
+
+        var noJoin = new FamixaProviderConfiguredSnapshot(true, true, true, true, false);
+        var t21 = FamixaProviderSelectionFoundation.Route(
+            new FamixaProviderSelectionRequirements(FamixaProviderCapability.Motion, Engine: "veo"),
+            new FamixaProviderRouterContext(noJoin));
+        Ok(t21.Outcome == FamixaProviderRouterOutcomes.NoProvider
+           && t21.Decision is null
+           && t21.Diagnostic.PrimaryRejectionReason == FamixaProviderRejectCodes.NotConfigured,
+            "T21 engine veo + no Join → NO_PROVIDER, 0 Runway");
+
+        var withJoin = new FamixaProviderConfiguredSnapshot(true, true, true, true, true);
+        var t22 = FamixaProviderSelectionFoundation.Select(
+            new FamixaProviderSelectionRequirements(FamixaProviderCapability.Motion, Engine: "veo"),
+            new FamixaProviderRouterContext(withJoin));
+        Ok(t22.ProviderId == FamixaProviderIds.Google && t22.ModelId == "veo-3.1", "T22 engine veo + Join → google");
+
+        Ok(FamixaProviderRouterPriority.Motion.All(id => id != FamixaProviderIds.Google),
+            "Google is not on default Motion priority");
+
         return fail;
     }
 }

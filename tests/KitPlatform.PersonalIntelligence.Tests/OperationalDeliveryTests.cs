@@ -84,8 +84,27 @@ public sealed class OperationalDeliveryTests : IClassFixture<PiValidationDatabas
         var root = doc.RootElement;
 
         Assert.True(root.GetProperty("riskAllowed").GetBoolean());
-        Assert.True(root.GetProperty("paperExecuted").GetBoolean());
-        Assert.Equal("PAPER", root.GetProperty("executionMode").GetString());
+        Assert.False(root.GetProperty("paperExecuted").GetBoolean());
+        var decisionId = root.GetProperty("decisionId").GetGuid();
+        var approve = new HttpRequestMessage(HttpMethod.Post, $"/api/personal-intelligence/trading/decisions/{decisionId}/paper");
+        approve.Headers.Add("X-Test-User", _db.UserA.ToString());
+        approve.Headers.Add("X-Test-Tenant", _db.TenantA.ToString());
+        approve.Headers.Add("X-Test-Permission", PersonalIntelligencePolicies.Permission);
+        approve.Headers.Add("X-Test-Permission", PersonalIntelligencePolicies.ApprovePermission);
+        var approvedResponse = await host.Client.SendAsync(approve);
+        var approvedText = await approvedResponse.Content.ReadAsStringAsync();
+        Assert.True(approvedResponse.IsSuccessStatusCode, approvedText);
+        var approved = JsonDocument.Parse(approvedText).RootElement;
+        Assert.Equal("PAPER", approved.GetProperty("mode").GetString());
+        Assert.False(approved.GetProperty("alreadyRecorded").GetBoolean());
+        var again = new HttpRequestMessage(HttpMethod.Post, $"/api/personal-intelligence/trading/decisions/{decisionId}/paper");
+        again.Headers.Add("X-Test-User", _db.UserA.ToString());
+        again.Headers.Add("X-Test-Tenant", _db.TenantA.ToString());
+        again.Headers.Add("X-Test-Permission", PersonalIntelligencePolicies.ApprovePermission);
+        var againResponse = await host.Client.SendAsync(again);
+        var againText = await againResponse.Content.ReadAsStringAsync();
+        Assert.True(againResponse.IsSuccessStatusCode, againText);
+        Assert.True(JsonDocument.Parse(againText).RootElement.GetProperty("alreadyRecorded").GetBoolean());
         Assert.Equal("proposed", root.GetProperty("policyStatus").GetString());
         Assert.Equal("recommend_only", root.GetProperty("autonomy").GetString());
         Assert.Equal("Fixture", root.GetProperty("evidenceBasis").GetString());
@@ -100,7 +119,6 @@ public sealed class OperationalDeliveryTests : IClassFixture<PiValidationDatabas
         Assert.Contains("ExperienceDerived", events);
         Assert.Contains("PolicyProposed", events);
 
-        var decisionId = root.GetProperty("decisionId").GetGuid();
         await using var conn = await _db.OpenAsync();
         var mode = await conn.ExecuteScalarAsync<string>(
             """
@@ -268,7 +286,7 @@ public sealed class OperationalDeliveryTests : IClassFixture<PiValidationDatabas
             "SELECT COUNT(*) FROM pack_personal_intelligence.pi_events WHERE correlation_id = @DecisionId AND event_type = 'DecisionMade'",
             new { DecisionId = first.GetProperty("decisionId").GetGuid() });
         Assert.Equal(1, decisions);
-        Assert.Equal(1, executions);
+        Assert.Equal(0, executions);
         Assert.Equal(1, events);
     }
 
@@ -422,7 +440,11 @@ public sealed class OperationalDeliveryTests : IClassFixture<PiValidationDatabas
             WHERE o.decision_id = @DecisionId
             """,
             new { DecisionId = docs[0].GetProperty("decisionId").GetGuid() });
-        Assert.Equal(1, executions);
+        var decisions = await conn.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM pack_personal_intelligence.pi_decision WHERE thesis = @Thesis",
+            new { body.Thesis });
+        Assert.Equal(0, executions);
+        Assert.Equal(1, decisions);
     }
 
     private static string ExternalId(TradingLoopRequest request, int index) =>

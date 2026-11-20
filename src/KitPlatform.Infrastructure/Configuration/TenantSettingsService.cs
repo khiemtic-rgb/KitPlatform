@@ -414,17 +414,12 @@ internal sealed class TenantSettingsService : ITenantSettingsService
                          || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"));
         var envFallback = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GEMINI_API_KEY"))
                           || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(secretRef));
-        var contentKey = await ContentParkGeminiKeyResolver.ResolveAsync(_db, _configuration, cancellationToken);
-        var contentFallback = !string.IsNullOrWhiteSpace(contentKey);
-        if (contentFallback)
-            configured = true;
-
         return new TenantPharmacyConsultationAiSettingsDto(
             secretRef,
             configured,
             textModel,
             envFallback,
-            contentFallback && string.IsNullOrWhiteSpace(row.GeminiApiKey));
+            false);
     }
 
     public async Task<TenantPharmacyConsultationAiSettingsDto> UpdatePharmacyConsultationAiSettingsAsync(

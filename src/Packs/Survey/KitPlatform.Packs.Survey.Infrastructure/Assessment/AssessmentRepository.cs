@@ -103,7 +103,6 @@ internal sealed class AssessmentRepository
                 s.respondent_org_name AS RespondentOrgName,
                 s.respondent_note AS RespondentNote,
                 s.consent_marketing AS ConsentMarketing,
-                s.metadata::text AS Metadata,
                 t.code AS TemplateCode
             FROM assessment_submission s
             JOIN assessment_template t ON t.id = s.template_id
@@ -1111,7 +1110,6 @@ internal sealed class AssessmentSubmissionRow
     public string? RespondentOrgName { get; set; }
     public string? RespondentNote { get; set; }
     public bool ConsentMarketing { get; set; }
-    public string? Metadata { get; set; }
     public string TemplateCode { get; set; } = "";
 }
 

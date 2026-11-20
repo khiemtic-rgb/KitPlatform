@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "rapid-novixa-20",
+  "approvalStatus": "approved",
+  "scenes": [
+    {
+      "sceneId": "s1-open",
+      "approvalStatus": "approved",
+      "storyGoal": "Mở bằng dấu Novixa và một câu việc nhà thuốc.",
+      "durationSeconds": 4,
+      "voiceLeadSeconds": 0.4,
+      "durationSource": "fixed",
+      "dialogue": "Nhà thuốc, một nhịp làm việc.",
+      "action": "Logo nở vào khung, rồi dòng phụ hiện.",
+      "visualMetaphor": null,
+      "subjects": ["dấu Novixa"],
+      "onScreenText": ["Nhà thuốc, một nhịp làm việc"],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "brand_center",
+        "logoAssetId": "logo-novixa",
+        "logoScale": 0.34,
+        "line": "Nhà thuốc, một nhịp làm việc",
+        "intent": {
+          "idea": "Mở bằng dấu Novixa",
+          "subject": "mark",
+          "emotion": "clarity",
+          "focal": "logo"
+        }
+      },
+      "assets": ["logo-novixa"],
+      "audio": {
+        "voiceTrackId": "vo-s1",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 2.1, "end": 4, "reason": "Câu mở hết lúc logo đã đứng. Giữ hình đến hết cảnh, không có nhạc."}],
+        "syncNotes": "Lời vào sau 0,4 giây và hết khoảng giây 2,2."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang nhịp trong ngày khi logo đã đứng."},
+      "acceptance": ["Logo Novixa đã duyệt, không vẽ lại.", "Dòng phụ nằm trong vùng an toàn."],
+      "previewFractions": [0.12, 0.4, 0.85]
+    },
+    {
+      "sceneId": "s2-day",
+      "approvalStatus": "approved",
+      "storyGoal": "Cho thấy khách, kho và hạn dùng đi trên cùng một nhịp.",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "voiceLeadSeconds": 0.2,
+      "dialogue": "Khách đến quầy, kho lấy đúng hộp, và hạn dùng được nhìn thấy.",
+      "action": "Ba việc trượt dọc đường ray tới vị trí của mình.",
+      "visualMetaphor": "Quầy, kho và hạn dùng là một nhịp, không phải ba việc rời.",
+      "subjects": ["quầy", "kho", "hạn dùng"],
+      "onScreenText": ["Một ngày tại quầy", "Dữ liệu mô phỏng", "Khách", "Lấy hộp", "Xem hạn"],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "lanes",
+        "title": "Một ngày tại quầy",
+        "dataLabel": "Dữ liệu mô phỏng",
+        "lanes": [
+          {"label": "Quầy", "events": [{"text": "Khách", "at": 0.78}]},
+          {"label": "Kho", "events": [{"text": "Lấy hộp", "at": 0.52}]},
+          {"label": "Hạn", "events": [{"text": "Xem hạn", "at": 0.3}]}
+        ],
+        "intent": {
+          "idea": "Ba việc nhà thuốc đi trên một nhịp",
+          "emotion": "clarity",
+          "focal": "đường ray"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s2",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {"start": 0, "end": 0.55, "reason": "Cắt cảnh xong mới vào lời. Khoảng đầu là hình đang trượt."},
+          {"start": 3.85, "end": 5, "reason": "Lời cảnh ngày hết trước khi cắt sang màn hình."}
+        ],
+        "syncNotes": "Lời vào sau 0,2 giây và hết trước giây thứ 4 của cảnh."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang màn hình khi ba việc đã vào chỗ."},
+      "acceptance": ["Ba nhãn việc di chuyển rồi dừng.", "Có nhãn dữ liệu mô phỏng."],
+      "previewFractions": [0.12, 0.28, 0.55, 0.92]
+    },
+    {
+      "sceneId": "s3-desk",
+      "approvalStatus": "approved",
+      "storyGoal": "Mô phỏng màn hình gom đơn, tồn và hạn, không lấy số cửa hàng thật.",
+      "durationSeconds": 6,
+      "durationSource": "fixed",
+      "dialogue": "Đơn, tồn và hạn trên một màn. Số trên hình là dữ liệu mô phỏng.",
+      "voiceLeadSeconds": 0.05,
+      "action": "Cột biểu đồ mọc từ đáy. Nhãn mô phỏng đứng từ đầu.",
+      "visualMetaphor": null,
+      "subjects": ["màn hình mô phỏng"],
+      "onScreenText": ["Đơn trong ngày", "Dữ liệu mô phỏng", "Không phải số liệu cửa hàng thật."],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "dashboard",
+        "title": "Đơn trong ngày",
+        "subtitle": "Bán, tồn và hạn trên một màn",
+        "dataLabel": "Dữ liệu mô phỏng",
+        "metrics": [
+          {"label": "Đơn bán", "value": "18", "note": "trong ngày"},
+          {"label": "Hạn gần", "value": "3", "note": "cần xem"},
+          {"label": "Tồn thấp", "value": "2", "note": "cần nhập"}
+        ],
+        "chart": {
+          "title": "Đơn theo ngày",
+          "confirmed": true,
+          "bars": [
+            {"label": "T2", "amount": 0.46},
+            {"label": "T3", "amount": 0.62},
+            {"label": "T4", "amount": 0.4},
+            {"label": "T5", "amount": 0.74},
+            {"label": "T6", "amount": 0.55}
+          ]
+        },
+        "notes": [
+          {"label": "Tồn kho", "body": "Hai mặt hàng dưới mức theo dõi."},
+          {"label": "Hạn dùng", "body": "Ba lô cần xem trước cuối tuần."}
+        ],
+        "callout": "Không phải số liệu cửa hàng thật."
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s3",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 0.45, "reason": "Cột bắt đầu mọc trước khi câu nói vào."}],
+        "syncNotes": "Cột mọc trong khoảng 0,6 đến 2,4 giây, trong lúc lời đang đọc."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang ba lời kết khi biểu đồ đã đứng."},
+      "acceptance": ["Biểu đồ mọc có easing.", "Nhãn mô phỏng và câu không phải số thật đều hiện."],
+      "previewFractions": [0.08, 0.22, 0.45, 0.92]
+    },
+    {
+      "sceneId": "s4-close",
+      "approvalStatus": "approved",
+      "storyGoal": "Kết bằng ba việc nhà thuốc nhớ được.",
+      "durationSeconds": 5,
+      "durationSource": "fixed",
+      "dialogue": "Bán đúng. Theo dõi hạn. Giao rõ.",
+      "action": "Ba cột lần lượt rơi vào chỗ.",
+      "visualMetaphor": null,
+      "subjects": ["ba việc"],
+      "onScreenText": ["Bán đúng", "Novixa"],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "triptych",
+        "note": "Novixa",
+        "columns": [
+          {"index": "01", "title": "Bán đúng", "body": "Đúng hàng cho đúng khách", "points": ["Ghi đơn"]},
+          {"index": "02", "title": "Theo dõi hạn", "body": "Thấy lô gần hết hạn", "points": ["Xem trước"]},
+          {"index": "03", "title": "Giao rõ", "body": "Khách ra về đủ thông tin", "points": ["Nhắc lại"]}
+        ],
+        "intent": {
+          "idea": "Ba việc kết thúc một nhịp",
+          "emotion": "resolve",
+          "focal": "ba cột"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s4",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Ba lời kết khớp ba cột. Không có khoảng đệm vì lời gần bằng cảnh."
+      },
+      "transitionOut": null,
+      "acceptance": ["Ba tiêu đề hiện lần lượt.", "Chữ Novixa ở cuối cảnh."],
+      "previewFractions": [0.08, 0.28, 0.5, 0.92]
+    }
+  ]
+}

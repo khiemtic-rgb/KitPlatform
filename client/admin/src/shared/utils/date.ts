@@ -8,6 +8,13 @@ export function formatDisplayDate(iso?: string | null): string {
   return parsed.isValid() ? parsed.format('DD-MM-YYYY') : normalized;
 }
 
+/** Giờ bán rồi ngày, cho cột đơn bán: 09:17 16-11-2026 */
+export function formatDisplaySaleStamp(iso?: string | null): string {
+  if (!iso) return '—';
+  const parsed = dayjs(iso);
+  return parsed.isValid() ? parsed.format('HH:mm DD-MM-YYYY') : iso;
+}
+
 /** ISO datetime → dd/mm/yyyy hh:mm */
 export function formatDisplayDateTime(iso?: string | null): string {
   if (!iso) return '—';

@@ -1,0 +1,77 @@
+[
+  {
+    "text": "Ethereum",
+    "start": 0.1,
+    "end": 0.8125
+  },
+  {
+    "text": "khung",
+    "start": 0.8125,
+    "end": 1.0625
+  },
+  {
+    "text": "một",
+    "start": 1.0625,
+    "end": 1.2375
+  },
+  {
+    "text": "giờ",
+    "start": 1.2375,
+    "end": 1.5125
+  },
+  {
+    "text": "nằm",
+    "start": 1.5125,
+    "end": 1.775
+  },
+  {
+    "text": "trong",
+    "start": 1.775,
+    "end": 1.9875
+  },
+  {
+    "text": "biên",
+    "start": 1.9875,
+    "end": 2.1625
+  },
+  {
+    "text": "hẹp",
+    "start": 2.1625,
+    "end": 2.3875
+  },
+  {
+    "text": "RSI",
+    "start": 3.225,
+    "end": 4.2375
+  },
+  {
+    "text": "được",
+    "start": 4.2375,
+    "end": 4.45
+  },
+  {
+    "text": "tính",
+    "start": 4.45,
+    "end": 4.6875
+  },
+  {
+    "text": "từ",
+    "start": 4.6875,
+    "end": 4.8625
+  },
+  {
+    "text": "giá",
+    "start": 4.8625,
+    "end": 5.1125
+  },
+  {
+    "text": "đóng",
+    "start": 5.1125,
+    "end": 5.325
+  },
+  {
+    "text": "cửa",
+    "start": 5.325,
+    "end": 5.7375
+  }
+]

@@ -39,6 +39,7 @@ public static class VideoAudioLipsyncPipelineV1Rules
     public const string GatePreviewOnly = "PREVIEW_ONLY";
     public const string GateNotEligible = "NOT_ELIGIBLE_FOR_FINAL";
     public const string GateSpeaker = "SPEAKER_REQUIRED";
+    public const string FinalSourceVoiceOverStill = "VOICE_OVER_STILL";
 
     public sealed record DialogueCue(
         string DialogueId,
@@ -65,7 +66,11 @@ public static class VideoAudioLipsyncPipelineV1Rules
         bool LegacyPhotorealAttached = false,
         bool OverlayPreview = false,
         double TakeDurationSec = 0,
-        bool DirectorApproved = false);
+        bool DirectorApproved = false,
+        bool VoiceOverStill = false,
+        string PictureStrategy = "",
+        string SpeechDelivery = "",
+        bool StrategyConfirmed = false);
 
     public sealed record PreflightResult(
         bool Allowed,
@@ -176,6 +181,9 @@ public static class VideoAudioLipsyncPipelineV1Rules
 
     public static PreflightResult Preflight(ShotProductionInput input)
     {
+        input = WithConfirmedStill(input);
+        if (input.VoiceOverStill)
+            return PreflightVoiceOverStill(input);
         var blockers = new List<string>();
         var kind = ClassifyShot(input.Cues);
         var spoken = kind is "SINGLE_SPEAKER_SHOT" or "MULTI_SPEAKER_SHOT";
@@ -269,6 +277,70 @@ public static class VideoAudioLipsyncPipelineV1Rules
             video,
             audio,
             finalDur);
+    }
+
+    static ShotProductionInput WithConfirmedStill(ShotProductionInput input)
+    {
+        if (input.VoiceOverStill || !input.StrategyConfirmed) return input;
+        if (!string.Equals((input.PictureStrategy ?? "").Trim(), "STATIC", StringComparison.OrdinalIgnoreCase))
+            return input;
+        if (!string.Equals((input.SpeechDelivery ?? "").Trim(), "VOICE_OVER", StringComparison.OrdinalIgnoreCase))
+            return input;
+        return input with { VoiceOverStill = true };
+    }
+
+    static PreflightResult PreflightVoiceOverStill(ShotProductionInput input)
+    {
+        var blockers = new List<string>();
+        var kind = ClassifyShot(input.Cues);
+        var spoken = kind is "SINGLE_SPEAKER_SHOT" or "MULTI_SPEAKER_SHOT";
+        var lastEnd = input.Cues.Count == 0
+            ? 0
+            : input.Cues.Max(c => Math.Max(c.EndSec, c.StartSec + c.AudioDurationSec));
+        if (input.LegacyPhotorealAttached) blockers.Add(GateLegacyPhotoreal);
+        if (!SameProjectMode(input.KfVisualMode, input.ProjectVisualMode)) blockers.Add(GateVisualMode);
+        if (input.Cues.Any(c => string.IsNullOrWhiteSpace(c.SpeakerCharacterId))) blockers.Add(GateSpeaker);
+        if (!input.HasCanonicalKf) blockers.Add("MISSING_CANONICAL_KEYFRAME");
+        var voiceReady = spoken && VoiceReadyOf(input.Cues) && lastEnd > 0;
+        if (!voiceReady) blockers.Add(GateVoiceRequired);
+        if (input.OverlayPreview)
+        {
+            blockers.Add(GatePreviewOnly);
+            blockers.Add(GateNotEligible);
+        }
+        var mixReady = voiceReady && input.MixReady && input.HasCanonicalKf;
+        var finalSource = "NONE";
+        var finalReady =
+            voiceReady
+            && input.HasCanonicalKf
+            && mixReady
+            && !input.OverlayPreview
+            && !blockers.Contains(GateLegacyPhotoreal)
+            && !blockers.Contains(GateVisualMode)
+            && !blockers.Contains(GateSpeaker);
+        if (finalReady) finalSource = FinalSourceVoiceOverStill;
+        var stage = "DRAFT";
+        if (input.HasCanonicalKf) stage = "VISUAL_READY";
+        if (input.HasCanonicalKf && voiceReady) stage = "VOICE_READY";
+        if (mixReady && !finalReady) stage = "MIX_READY";
+        if (finalReady) stage = input.DirectorApproved ? "APPROVED" : "DIRECTOR_REVIEW";
+        if (!finalReady && blockers.Count > 0 && input.HasCanonicalKf) stage = "BLOCKED";
+        var hold = voiceReady ? lastEnd : 0;
+        return new PreflightResult(
+            finalReady,
+            blockers.Distinct().ToArray(),
+            kind,
+            stage,
+            finalSource,
+            voiceReady,
+            false,
+            false,
+            mixReady,
+            finalReady,
+            AvSyncStatus(hold, hold),
+            hold,
+            hold,
+            hold);
     }
 
     public static bool OverlayCannotFinalize(ShotProductionInput input) =>

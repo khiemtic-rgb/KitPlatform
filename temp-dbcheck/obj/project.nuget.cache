@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "eu9DoXI6mS4=",
+  "success": true,
+  "projectFilePath": "E:\\KitPlatform\\temp-dbcheck\\DbCheck.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Admin\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cff594ddd0b1a853fa03c2131a8c27f1\\nuget\\dapper\\2.1.89\\dapper.2.1.89.nupkg.sha512",
+    "C:\\Users\\Admin\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cff594ddd0b1a853fa03c2131a8c27f1\\nuget\\microsoft.extensions.dependencyinjection.abstractions\\10.0.0\\microsoft.extensions.dependencyinjection.abstractions.10.0.0.nupkg.sha512",
+    "C:\\Users\\Admin\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cff594ddd0b1a853fa03c2131a8c27f1\\nuget\\microsoft.extensions.logging.abstractions\\10.0.0\\microsoft.extensions.logging.abstractions.10.0.0.nupkg.sha512",
+    "C:\\Users\\Admin\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cff594ddd0b1a853fa03c2131a8c27f1\\nuget\\npgsql\\10.0.3\\npgsql.10.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

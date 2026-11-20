@@ -27,7 +27,7 @@ import {
   type ShiftChecklistRun,
   type ShiftChecklistToday,
 } from '@/shared/api/success.api';
-import { useCanAccessOwnerCockpit } from '@/shared/auth/usePermission';
+import { useCanAccessOwnerCockpit, useCanMutateShiftChecklist } from '@/shared/auth/usePermission';
 function statusTag(status: string, t: (k: string) => string) {
   if (status === 'completed') return <Tag color="success">{t('checklist.status.completed')}</Tag>;
   if (status === 'in_progress') return <Tag color="processing">{t('checklist.status.inProgress')}</Tag>;
@@ -39,6 +39,8 @@ function KindPanel({
   status,
   run,
   loading,
+  canMutate,
+  canStart,
   onStart,
   onToggle,
   onComplete,
@@ -47,6 +49,8 @@ function KindPanel({
   status: ShiftChecklistKindStatus;
   run: ShiftChecklistRun | null;
   loading: boolean;
+  canMutate: boolean;
+  canStart: boolean;
   onStart: () => void;
   onToggle: (itemId: string, checked: boolean) => void;
   onComplete: () => void;
@@ -69,13 +73,17 @@ function KindPanel({
         </Typography.Text>
       }
     >
-      {status.status === 'missing' ? (
-        <Button type="primary" onClick={onStart} loading={loading}>
+      {!canMutate && status.status !== 'completed' ? (
+        <Alert type="info" showIcon message={t('checklist.readOnly')} />
+      ) : null}
+
+      {canMutate && status.status === 'missing' ? (
+        <Button type="primary" onClick={onStart} loading={loading} disabled={!canStart}>
           {t('checklist.start')}
         </Button>
       ) : null}
 
-      {status.status === 'in_progress' && !showItems ? (
+      {canMutate && status.status === 'in_progress' && !showItems ? (
         <Button onClick={onStart} loading={loading}>
           {t('checklist.continue')}
         </Button>
@@ -87,10 +95,15 @@ function KindPanel({
             <Checkbox
               key={item.id}
               checked={item.isChecked}
-              disabled={run.status === 'completed' || loading}
+              disabled={!canMutate || run.status === 'completed' || loading}
               onChange={(e) => onToggle(item.id, e.target.checked)}
             >
               {item.label}
+              {item.isChecked ? (
+                <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                  {[item.checkedByUserId, item.checkedAt].filter(Boolean).join(' · ')}
+                </Typography.Text>
+              ) : null}
               {item.isRequired ? (
                 <Typography.Text type="danger" style={{ marginLeft: 6 }}>
                   *
@@ -98,7 +111,7 @@ function KindPanel({
               ) : null}
             </Checkbox>
           ))}
-          {run.status === 'in_progress' ? (
+          {canMutate && run.status === 'in_progress' ? (
             <Button
               type="primary"
               icon={<CheckCircleOutlined />}
@@ -108,9 +121,10 @@ function KindPanel({
             >
               {t('checklist.complete')}
             </Button>
-          ) : (
+          ) : null}
+          {run.status === 'completed' ? (
             <Alert type="success" showIcon message={t('checklist.completedHint')} />
-          )}
+          ) : null}
         </div>
       ) : null}
 
@@ -124,19 +138,24 @@ function KindPanel({
 export function ShiftChecklistPage() {
   const { t } = useTranslation('success');
   const canOwnerCockpit = useCanAccessOwnerCockpit();
+  const canMutate = useCanMutateShiftChecklist();
   const [today, setToday] = useState<ShiftChecklistToday | null>(null);
   const [branchId, setBranchId] = useState<string | undefined>();
+  const [salesShiftId, setSalesShiftId] = useState<string | undefined>();
   const [openRun, setOpenRun] = useState<ShiftChecklistRun | null>(null);
   const [closeRun, setCloseRun] = useState<ShiftChecklistRun | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (selected?: string) => {
+  const load = useCallback(async (selected?: string, shiftId?: string) => {
     setLoading(true);
     try {
-      const data = await fetchShiftChecklistToday(selected);
+      const data = await fetchShiftChecklistToday(selected, shiftId);
       setToday(data);
       setBranchId(data.branchId ?? data.branches[0]?.id);
+      const shifts = data.openShifts ?? [];
+      const stillThere = shiftId && shifts.some((shift) => shift.id === shiftId);
+      setSalesShiftId(stillThere ? shiftId : shifts.length === 1 ? shifts[0].id : undefined);
       setOpenRun(null);
       setCloseRun(null);
     } catch (error) {
@@ -154,10 +173,10 @@ export function ShiftChecklistPage() {
     if (!branchId) return;
     setBusy(true);
     try {
-      const run = await startShiftChecklistRun(branchId, kind);
+      const run = await startShiftChecklistRun(branchId, kind, salesShiftId);
       if (kind === 'open') setOpenRun(run);
       else setCloseRun(run);
-      await load(branchId);
+      await load(branchId, salesShiftId);
       if (kind === 'open') setOpenRun(run);
       else setCloseRun(run);
     } catch (error) {
@@ -175,7 +194,7 @@ export function ShiftChecklistPage() {
       const next = await setShiftChecklistItem(run.id, itemId, checked);
       if (kind === 'open') setOpenRun(next);
       else setCloseRun(next);
-      await load(branchId);
+      await load(branchId, salesShiftId);
       if (kind === 'open') setOpenRun(next);
       else setCloseRun(next);
     } catch (error) {
@@ -194,7 +213,7 @@ export function ShiftChecklistPage() {
       if (kind === 'open') setOpenRun(next);
       else setCloseRun(next);
       message.success(t('checklist.completeSuccess'));
-      await load(branchId);
+      await load(branchId, salesShiftId);
       if (kind === 'open') setOpenRun(next);
       else setCloseRun(next);
     } catch (error) {
@@ -227,7 +246,7 @@ export function ShiftChecklistPage() {
           {canOwnerCockpit ? (
             <Link to="/success/cockpit">{t('checklist.backCockpit')}</Link>
           ) : null}
-          <Button icon={<ReloadOutlined />} onClick={() => void load(branchId)} loading={loading}>
+          <Button icon={<ReloadOutlined />} onClick={() => void load(branchId, salesShiftId)} loading={loading}>
             {t('refresh')}
           </Button>
         </Space>
@@ -246,10 +265,32 @@ export function ShiftChecklistPage() {
           }))}
           onChange={(value) => {
             setBranchId(value);
+            setSalesShiftId(undefined);
             void load(value);
           }}
         />
+        {(today?.openShifts.length ?? 0) > 1 ? (
+          <>
+            <Typography.Text style={{ display: 'block', margin: '12px 0 6px' }}>{t('checklist.shift')}</Typography.Text>
+            <Select
+              style={{ width: '100%' }}
+              value={salesShiftId}
+              placeholder={t('checklist.chooseShift')}
+              options={today?.openShifts.map((shift) => ({
+                value: shift.id,
+                label: `${shift.shiftNumber} · ${shift.warehouseName}`,
+              }))}
+              onChange={(value) => {
+                setSalesShiftId(value);
+                void load(branchId, value);
+              }}
+            />
+          </>
+        ) : null}
       </div>
+      {(today?.openShifts.length ?? 0) > 1 && !salesShiftId ? (
+        <Alert type="warning" showIcon style={{ marginTop: 12 }} message={t('checklist.chooseShift')} />
+      ) : null}
 
       <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
         <Col xs={24} lg={12}>
@@ -258,6 +299,8 @@ export function ShiftChecklistPage() {
             status={today?.open ?? { kind: 'open', status: 'missing', checkedCount: 0, totalCount: 0, requiredMissingCount: 0 }}
             run={openRun}
             loading={busy}
+            canMutate={canMutate}
+            canStart={!((today?.openShifts.length ?? 0) > 1 && !salesShiftId)}
             onStart={() => void start('open')}
             onToggle={(id, checked) => void toggle('open', id, checked)}
             onComplete={() => void complete('open')}
@@ -269,6 +312,8 @@ export function ShiftChecklistPage() {
             status={today?.close ?? { kind: 'close', status: 'missing', checkedCount: 0, totalCount: 0, requiredMissingCount: 0 }}
             run={closeRun}
             loading={busy}
+            canMutate={canMutate}
+            canStart={!((today?.openShifts.length ?? 0) > 1 && !salesShiftId)}
             onStart={() => void start('close')}
             onToggle={(id, checked) => void toggle('close', id, checked)}
             onComplete={() => void complete('close')}

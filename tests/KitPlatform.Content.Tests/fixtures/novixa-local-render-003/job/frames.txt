@@ -1,0 +1,12 @@
+ffconcat version 1.0
+file 'e:/KitPlatform/tests/KitPlatform.Content.Tests/fixtures/novixa-local-render-003/job/frame-01.png'
+duration 3.000
+file 'e:/KitPlatform/tests/KitPlatform.Content.Tests/fixtures/novixa-local-render-003/job/frame-02.png'
+duration 3.000
+file 'e:/KitPlatform/tests/KitPlatform.Content.Tests/fixtures/novixa-local-render-003/job/frame-03.png'
+duration 3.000
+file 'e:/KitPlatform/tests/KitPlatform.Content.Tests/fixtures/novixa-local-render-003/job/frame-04.png'
+duration 3.000
+file 'e:/KitPlatform/tests/KitPlatform.Content.Tests/fixtures/novixa-local-render-003/job/frame-05.png'
+duration 3.000
+file 'e:/KitPlatform/tests/KitPlatform.Content.Tests/fixtures/novixa-local-render-003/job/frame-05.png'

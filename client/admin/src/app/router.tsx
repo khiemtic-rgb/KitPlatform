@@ -38,6 +38,30 @@ const ShiftChecklistPage = lazy(() =>
 const LossCashVariancePage = lazy(() =>
   import('@/modules/success/LossCashVariancePage').then((m) => ({ default: m.LossCashVariancePage })),
 );
+const KnowledgePublishPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgePublishPage').then((m) => ({ default: m.KnowledgePublishPage })),
+);
+const KnowledgePublishPreviewPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgePublishPage').then((m) => ({ default: m.KnowledgePublishPreviewPage })),
+);
+const KnowledgeApprovalPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgeApprovalPage').then((m) => ({ default: m.KnowledgeApprovalPage })),
+);
+const KnowledgeApprovalPreviewPage = lazy(() =>
+  import('@/modules/pharmacy/KnowledgeApprovalPage').then((m) => ({ default: m.KnowledgeApprovalPreviewPage })),
+);
+const PharmacyOwnedKnowledgePage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyOwnedKnowledgePage').then((m) => ({ default: m.PharmacyOwnedKnowledgePage })),
+);
+const PharmacyKnowledgeInUsePage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyKnowledgeInUsePage').then((m) => ({ default: m.PharmacyKnowledgeInUsePage })),
+);
+const PharmacyLocalRegimenPage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyLocalRegimenPage').then((m) => ({ default: m.PharmacyLocalRegimenPage })),
+);
+const PharmacyOwnedKnowledgePreviewPage = lazy(() =>
+  import('@/modules/pharmacy/PharmacyOwnedKnowledgePage').then((m) => ({ default: m.PharmacyOwnedKnowledgePreviewPage })),
+);
 const LearningLayout = lazy(() =>
   import('@/modules/learning/LearningLayout').then((m) => ({ default: m.LearningLayout })),
 );
@@ -47,6 +71,11 @@ const LearningWriteGuard = lazy(() =>
 const LearningProgramsPage = lazy(() =>
   import('@/modules/learning/LearningProgramsPage').then((m) => ({
     default: m.default ?? m.LearningProgramsPage,
+  })),
+);
+const LearningTasksPage = lazy(() =>
+  import('@/modules/learning/LearningTasksPage').then((m) => ({
+    default: m.LearningTasksPage,
   })),
 );
 const LearningProgramDetailPage = lazy(() =>
@@ -419,17 +448,17 @@ const KapCampaignsPage = lazy(() =>
 const KapPartnersPage = lazy(() =>
   import('@/modules/kap/KapPartnersPage').then((m) => ({ default: m.KapPartnersPage })),
 );
-const ResearchReadPage = lazy(() =>
-  import('@/modules/second-brain/ResearchReadPage').then((m) => ({ default: m.ResearchReadPage })),
+const ContentLayout = lazy(() =>
+  import('@/modules/content/ContentLayout').then((m) => ({ default: m.ContentLayout })),
 );
 const TradingLayout = lazy(() =>
   import('@/modules/second-brain/TradingLayout').then((m) => ({ default: m.TradingLayout })),
 );
-const TradingSessionPage = lazy(() =>
-  import('@/modules/second-brain/SessionPage').then((m) => ({ default: m.TradingSessionPage })),
-);
 const IntentWorkspacePage = lazy(() =>
   import('@/modules/second-brain/IntentWorkspacePage').then((m) => ({ default: m.IntentWorkspacePage })),
+);
+const TradingSessionPage = lazy(() =>
+  import('@/modules/second-brain/SessionPage').then((m) => ({ default: m.TradingSessionPage })),
 );
 const TradingOverviewPage = lazy(() =>
   import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingOverviewPage })),
@@ -452,9 +481,6 @@ const TradingJournalPage = lazy(() =>
 const TradingAgentPage = lazy(() =>
   import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingAgentPage })),
 );
-const TradingResearchDeskPage = lazy(() =>
-  import('@/modules/second-brain/TradingResearchDeskPage').then((m) => ({ default: m.TradingResearchDeskPage })),
-);
 const TradingRiskPage = lazy(() =>
   import('@/modules/second-brain/TradingPages').then((m) => ({ default: m.TradingRiskPage })),
 );
@@ -463,9 +489,6 @@ const TradingExchangePage = lazy(() =>
 );
 const TradingExchangeAccountPage = lazy(() =>
   import('@/modules/second-brain/ExchangePages').then((m) => ({ default: m.TradingExchangeAccountPage })),
-);
-const ContentLayout = lazy(() =>
-  import('@/modules/content/ContentLayout').then((m) => ({ default: m.ContentLayout })),
 );
 const KitSalesLayout = lazy(() =>
   import('@/modules/kit-sales/KitSalesLayout').then((m) => ({ default: m.KitSalesLayout })),
@@ -484,6 +507,9 @@ const KitSalesLeadWorkspacePage = lazy(() =>
 const KitSalesPipelinePage = lazy(() =>
   import('@/modules/kit-sales/KitSalesPipelinePage').then((m) => ({ default: m.KitSalesPipelinePage })),
 );
+const KitSalesQueuePage = lazy(() =>
+  import('@/modules/kit-sales/KitSalesQueuePage').then((m) => ({ default: m.KitSalesQueuePage })),
+);
 const KitSalesCampaignsPage = lazy(() =>
   import('@/modules/kit-sales/KitSalesCampaignsPage').then((m) => ({ default: m.KitSalesCampaignsPage })),
 );
@@ -501,14 +527,29 @@ const KitSalesSettingsPage = lazy(() =>
 const ContentOpsPage = lazy(() =>
   import('@/modules/content/ContentOpsPage').then((m) => ({ default: m.ContentOpsPage })),
 );
-const ContentCalendarPage = lazy(() =>
-  import('@/modules/content/ContentCalendarPage').then((m) => ({ default: m.ContentCalendarPage })),
+const ContentPublishingPage = lazy(() =>
+  import('@/modules/content/ContentPublishingPage').then((m) => ({ default: m.ContentPublishingPage })),
 );
-const ContentBudgetPage = lazy(() =>
-  import('@/modules/content/ContentBudgetPage').then((m) => ({ default: m.ContentBudgetPage })),
+const ContentChannelsPage = lazy(() =>
+  import('@/modules/content/ContentChannelsPage').then((m) => ({ default: m.ContentChannelsPage })),
 );
-const ContentSettingsPage = lazy(() =>
-  import('@/modules/content/ContentSettingsPage').then((m) => ({ default: m.ContentSettingsPage })),
+const ContentCostPage = lazy(() =>
+  import('@/modules/content/ContentCostPage').then((m) => ({ default: m.ContentCostPage })),
+);
+const ContentMarketingAiSettingsPage = lazy(() =>
+  import('@/modules/content/ContentMarketingAiSettingsPage').then((m) => ({ default: m.ContentMarketingAiSettingsPage })),
+);
+const ContentAgentRedirect = lazy(() =>
+  import('@/modules/content/ContentPublishingPage').then((m) => ({ default: m.ContentAgentRedirect })),
+);
+const ContentImportPage = lazy(() =>
+  import('@/modules/content/ContentImportPage').then((m) => ({ default: m.ContentImportPage })),
+);
+const ContentYoutubeCallbackPage = lazy(() =>
+  import('@/modules/content/ContentYoutubePage').then((m) => ({ default: m.ContentYoutubeCallbackPage })),
+);
+const ContentTiktokCallbackPage = lazy(() =>
+  import('@/modules/content/ContentTiktokPage').then((m) => ({ default: m.ContentTiktokCallbackPage })),
 );
 const ContentAiSettingsPage = lazy(() =>
   import('@/modules/content/ContentAiSettingsPage').then((m) => ({ default: m.ContentAiSettingsPage })),
@@ -524,14 +565,46 @@ const ContentFacebookCallbackPage = lazy(() =>
 const ContentTopicsPage = lazy(() =>
   import('@/modules/content/ContentTopicsPage').then((m) => ({ default: m.ContentTopicsPage })),
 );
+const ContentTopicWorkspacePage = lazy(() =>
+  import('@/modules/content/ContentTopicWorkspacePage').then((m) => ({ default: m.ContentTopicWorkspacePage })),
+);
 const ContentPackagesPage = lazy(() =>
   import('@/modules/content/ContentPackagesPage').then((m) => ({ default: m.ContentPackagesPage })),
 );
 const ContentIdeaPoolPage = lazy(() =>
   import('@/modules/content/ContentIdeaPoolPage').then((m) => ({ default: m.ContentIdeaPoolPage })),
 );
+const ContentTopicScoutPage = lazy(() =>
+  import('@/modules/content/ContentTopicScoutPage').then((m) => ({ default: m.ContentTopicScoutPage })),
+);
+const ContentArticleSeriesPage = lazy(() =>
+  import('@/modules/content/ContentArticleSeriesPage').then((m) => ({ default: m.ContentArticleSeriesPage })),
+);
+const ContentArticleSeriesDetailPage = lazy(() =>
+  import('@/modules/content/ContentArticleSeriesDetailPage').then((m) => ({
+    default: m.ContentArticleSeriesDetailPage,
+  })),
+);
+const ContentArticleEpisodePage = lazy(() =>
+  import('@/modules/content/ContentArticleEpisodePage').then((m) => ({ default: m.ContentArticleEpisodePage })),
+);
 const ContentVideosPage = lazy(() =>
-  import('@/modules/content/ContentVideosPage').then((m) => ({ default: m.ContentVideosPage })),
+  import('@/modules/content/ContentVideosRoute').then((m) => ({ default: m.ContentVideosRoute })),
+);
+const ContentWorkEntry = lazy(() =>
+  import('@/modules/content/ContentWorkEntry').then((m) => ({ default: m.ContentWorkEntry })),
+);
+const ContentStudioPage = lazy(() =>
+  import('@/modules/content/ContentStudioPage').then((m) => ({ default: m.ContentStudioPage })),
+);
+const ContentFamixaLinesheetPage = lazy(() =>
+  import('@/modules/content/ContentFamixaLinesheetPage').then((m) => ({ default: m.ContentFamixaLinesheetPage })),
+);
+const ContentSanGachDoPage = lazy(() =>
+  import('@/modules/content/ContentSanGachDoPage').then((m) => ({ default: m.ContentSanGachDoPage })),
+);
+const ContentFilmTypesPage = lazy(() =>
+  import('@/modules/content/ContentFilmTypesPage').then((m) => ({ default: m.ContentFilmTypesPage })),
 );
 const ContentFamixaDirectorReviewPage = lazy(() =>
   import('@/modules/content/ContentFamixaDirectorReviewPage').then((m) => ({
@@ -641,6 +714,37 @@ export function AppRouter() {
             }
           />
 
+          {import.meta.env.DEV ? (
+            <Route
+              path="/k1-ui-preview"
+              element={
+                <SuspenseRoute>
+                  <KnowledgePublishPreviewPage />
+                </SuspenseRoute>
+              }
+            />
+          ) : null}
+          {import.meta.env.DEV ? (
+            <Route
+              path="/k2a-ui-preview"
+              element={
+                <SuspenseRoute>
+                  <KnowledgeApprovalPreviewPage />
+                </SuspenseRoute>
+              }
+            />
+          ) : null}
+          {import.meta.env.DEV ? (
+            <Route
+              path="/m1-ui-preview"
+              element={
+                <SuspenseRoute>
+                  <PharmacyOwnedKnowledgePreviewPage />
+                </SuspenseRoute>
+              }
+            />
+          ) : null}
+
           <Route element={<GuestGuard />}>
             <Route
               path="/login"
@@ -701,6 +805,54 @@ export function AppRouter() {
                 }
               />
               <Route
+                path="platform/pharmacy-knowledge"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgePublishPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="platform/pharmacy-knowledge/xu-ly"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgePublishPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/knowledge"
+                element={
+                  <SuspenseRoute>
+                    <KnowledgeApprovalPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/owned-knowledge"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyOwnedKnowledgePage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/local-regimens"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyLocalRegimenPage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
+                path="pharmacy/knowledge-in-use"
+                element={
+                  <SuspenseRoute>
+                    <PharmacyKnowledgeInUsePage />
+                  </SuspenseRoute>
+                }
+              />
+              <Route
                 path="people"
                 element={
                   <SuspenseRoute>
@@ -710,6 +862,7 @@ export function AppRouter() {
               >
                 <Route index element={<LearningProgramsPage />} />
                 <Route path="learn" element={<LearningTakePage />} />
+                <Route path="tasks" element={<LearningTasksPage />} />
                 <Route path="learn/modules/:id" element={<LearningTakeModulePage />} />
                 <Route path="dashboard" element={<Navigate to="/people" replace />} />
                 <Route path="programs/:id" element={<LearningProgramDetailPage />} />
@@ -1041,6 +1194,14 @@ export function AppRouter() {
                   }
                 />
                 <Route
+                  path="queue"
+                  element={
+                    <SuspenseRoute>
+                      <KitSalesQueuePage />
+                    </SuspenseRoute>
+                  }
+                />
+                <Route
                   path="pipeline"
                   element={
                     <SuspenseRoute>
@@ -1082,14 +1243,6 @@ export function AppRouter() {
                 />
               </Route>
               <Route
-                path="second-brain/research"
-                element={
-                  <SuspenseRoute>
-                    <ResearchReadPage />
-                  </SuspenseRoute>
-                }
-              />
-              <Route
                 path="second-brain"
                 element={
                   <SuspenseRoute>
@@ -1097,7 +1250,7 @@ export function AppRouter() {
                   </SuspenseRoute>
                 }
               >
-                <Route index element={<Navigate to="/second-brain/agent" replace />} />
+                <Route index element={<Navigate to="/second-brain/session" replace />} />
                 <Route path="workspace" element={<SuspenseRoute><IntentWorkspacePage /></SuspenseRoute>} />
                 <Route path="session" element={<SuspenseRoute><TradingSessionPage /></SuspenseRoute>} />
                 <Route path="overview" element={<SuspenseRoute><TradingOverviewPage /></SuspenseRoute>} />
@@ -1106,8 +1259,7 @@ export function AppRouter() {
                 <Route path="futures" element={<SuspenseRoute><TradingFuturesPage /></SuspenseRoute>} />
                 <Route path="import" element={<SuspenseRoute><TradingImportPage /></SuspenseRoute>} />
                 <Route path="journal" element={<SuspenseRoute><TradingJournalPage /></SuspenseRoute>} />
-                <Route path="agent" element={<SuspenseRoute><TradingResearchDeskPage /></SuspenseRoute>} />
-                <Route path="agent-loop" element={<SuspenseRoute><TradingAgentPage /></SuspenseRoute>} />
+                <Route path="agent" element={<SuspenseRoute><TradingAgentPage /></SuspenseRoute>} />
                 <Route path="risk" element={<SuspenseRoute><TradingRiskPage /></SuspenseRoute>} />
                 <Route path="exchange" element={<SuspenseRoute><TradingExchangePage /></SuspenseRoute>} />
                 <Route path="account" element={<SuspenseRoute><TradingExchangeAccountPage /></SuspenseRoute>} />
@@ -1120,19 +1272,43 @@ export function AppRouter() {
                   </Suspense>
                 }
               >
-                <Route index element={<Navigate to="/content/ops" replace />} />
-                <Route path="ops" element={<ContentOpsPage />} />
-                <Route path="calendar" element={<ContentCalendarPage />} />
-                <Route path="budget" element={<ContentBudgetPage />} />
-                <Route path="ai" element={<ContentAiSettingsPage />} />
-                <Route path="settings" element={<ContentSettingsPage />} />
-                <Route path="brands" element={<ContentBrandsPage />} />
+              <Route index element={<Navigate to="/content/overview" replace />} />
+              <Route path="overview" element={<ContentOpsPage />} />
+              <Route path="ops" element={<RedirectPreserveSearch to="/content/overview" />} />
+              <Route path="work" element={<ContentWorkEntry />} />
+              <Route path="studio" element={<ContentStudioPage />} />
+              <Route path="studio/linesheet" element={<ContentFamixaLinesheetPage />} />
+              <Route path="studio/san-gach-do" element={<ContentSanGachDoPage />} />
+              <Route path="calendar" element={<ContentPublishingPage />} />
+              <Route path="channels" element={<ContentChannelsPage />} />
+              <Route path="budget" element={<ContentCostPage />} />
+              <Route path="ai-text" element={<ContentMarketingAiSettingsPage />} />
+              <Route path="agent" element={<ContentAgentRedirect />} />
+              <Route path="import" element={<ContentImportPage />} />
+              <Route path="youtube" element={<RedirectPreserveSearch to="/content/channels" />} />
+              <Route path="youtube/callback" element={<ContentYoutubeCallbackPage />} />
+              <Route path="tiktok" element={<RedirectPreserveSearch to="/content/channels" />} />
+              <Route path="tiktok/callback" element={<ContentTiktokCallbackPage />} />
+              <Route path="ai" element={<ContentAiSettingsPage />}>
+                <Route path="credential-security" element={<></>} />
+              </Route>
+              <Route path="settings" element={<RedirectPreserveSearch to="/content/brands" />} />
+              <Route path="settings/film-types" element={<ContentFilmTypesPage />} />
+              <Route path="brands" element={<ContentBrandsPage />} />
+              <Route path="brand-view" element={<RedirectPreserveSearch to="/content/article-series" />} />
                 <Route
                   path="facebook/callback"
                   element={<ContentFacebookCallbackPage />}
                 />
                 <Route path="packages" element={<ContentPackagesPage />} />
                 <Route path="pool" element={<ContentIdeaPoolPage />} />
+                <Route path="topic-scout" element={<ContentTopicScoutPage />} />
+                <Route path="article-series" element={<ContentArticleSeriesPage />} />
+                <Route path="article-series/:id" element={<ContentArticleSeriesDetailPage />} />
+                <Route
+                  path="article-series/:seriesId/episodes/:episodeId"
+                  element={<ContentArticleEpisodePage />}
+                />
                 <Route
                   path="videos"
                   element={
@@ -1158,6 +1334,7 @@ export function AppRouter() {
                   }
                 />
                 <Route path="topics" element={<ContentTopicsPage />} />
+                <Route path="topics/:id" element={<ContentTopicWorkspacePage />} />
               </Route>
               <Route
                 path="local-os/duyet"

@@ -1,4 +1,4 @@
-import { applyDialogueMap, coverageOf, linesForShot, proposeDialogueMap } from './content-famixa-dialogue-map';
+import { applyDialogueMap, coverageOf, linesForShot, lipsyncNeedsSpeakerPick, lipsyncSpeakerSidePreset, proposeDialogueMap } from './content-famixa-dialogue-map';
 import type { FamixaSeriesShot, SeriesPilotState } from './content-famixa-series';
 
 function shot(partial: Partial<FamixaSeriesShot> & { id: string }): FamixaSeriesShot {
@@ -136,6 +136,29 @@ const leftover = {
 const homeLines = linesForShot(leftover, leftover.episode!.shots[0]!);
 if (homeLines.some((l) => /gỡ được 9 điểm/i.test(l.text))) fail.push('old 9-point line must not appear on this pack');
 if (!homeLines.some((l) => /không tốt/i.test(l.text))) fail.push('this-pack line must stay');
+
+const twoFace = shot({
+  id: 'SH01-01',
+  story: 'Linh đón Minh về nhà.',
+  action: 'Linh hỏi Minh về cái túi.',
+  characters: ['Linh', 'Minh'],
+  characterIds: ['CHAR-LINH', 'CHAR-MINH'],
+});
+const chars = [
+  { id: 'CHAR-LINH', name: 'Linh' },
+  { id: 'CHAR-MINH', name: 'Minh' },
+];
+if (
+  !lipsyncNeedsSpeakerPick(twoFace, [{ characterId: 'CHAR-LINH', name: 'Linh' }], chars)
+) {
+  fail.push('two-face Linh line needs speaker pick');
+}
+if (lipsyncNeedsSpeakerPick(twoFace, [{ characterId: 'CHAR-LINH', name: 'Linh' }, { characterId: 'CHAR-MINH', name: 'Minh' }], chars)) {
+  fail.push('two speakers stay blocked as multi-speaker, not pick');
+}
+if (lipsyncSpeakerSidePreset('right').x <= 0.5 || lipsyncSpeakerSidePreset('left').x >= 0.5) {
+  fail.push('Linh preset is the right face');
+}
 
 if (fail.length) {
   console.error('DIALOGUE MAP FAIL');

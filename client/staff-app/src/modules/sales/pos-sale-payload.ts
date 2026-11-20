@@ -39,6 +39,7 @@ export function buildCreateSalePayload(
   customerVoucherId?: string,
   prescriptionId?: string,
   orderReminder?: { label?: string; daysSupply?: number },
+  clientSaleId?: string,
 ) {
   return {
     warehouseId,
@@ -50,6 +51,7 @@ export function buildCreateSalePayload(
     ...(loyaltyDiscountAmount != null && loyaltyDiscountAmount > 0 ? { loyaltyDiscountAmount } : {}),
     ...(customerVoucherId ? { customerVoucherId } : {}),
     ...(prescriptionId ? { prescriptionId } : {}),
+    ...(!saveAsDraft && clientSaleId ? { clientSaleId } : {}),
     ...(orderReminder?.daysSupply != null && orderReminder.daysSupply >= 1
       ? {
           orderReminderLabel: orderReminder.label ?? null,

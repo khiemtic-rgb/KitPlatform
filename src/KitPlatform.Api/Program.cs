@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using KitPlatform.Api.Authorization;
-using KitPlatform.Api.Controllers.PersonalIntelligence;
 using KitPlatform.Application.Configuration;
 using KitPlatform.Application.CustomerApp;
 using KitPlatform.Packs.Pharmacy.Rx;
@@ -21,6 +20,7 @@ using KitPlatform.Packs.Care.Infrastructure;
 using KitPlatform.Packs.Content.Infrastructure;
 using KitPlatform.Packs.LocalOs.Infrastructure;
 using KitPlatform.Packs.Sales.Infrastructure;
+using KitPlatform.Packs.TestPack.Infrastructure;
 using KitPlatform.Packs.PersonalIntelligence.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,10 +31,13 @@ if (File.Exists(repoRootDevSecrets))
     builder.Configuration.AddJsonFile(repoRootDevSecrets, optional: true, reloadOnChange: true);
 }
 
+// Khoá kết nối YouTube / TikTok cho máy dev (gitignored, .dev/content.secrets.json). Đọc lại khi file đổi,
+// nên API chạy nền (Ensure-ApiDev) vẫn có khoá mà không phụ thuộc biến môi trường của cửa sổ đã mở API.
+var repoRootContentSecrets = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", ".dev", "content.secrets.json"));
+builder.Configuration.AddJsonFile(repoRootContentSecrets, optional: true, reloadOnChange: true);
+
 builder.Services.AddControllers()
-    .AddApplicationPart(typeof(KitPlatform.Api.Controllers.PersonalIntelligence.ResearchPublicationController).Assembly)
-    .AddMvcOptions(options => options.Conventions.Add(new KitPlatform.Api.Authorization.ResearchOnlyControllerConvention(
-        builder.Configuration.GetValue("PersonalIntelligence:ExposeExchangeRead", false))))
+    .AddApplicationPart(typeof(KitPlatform.Api.Controllers.PersonalIntelligence.TradingLoopController).Assembly)
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
@@ -89,19 +92,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
             ClockSkew = TimeSpan.FromMinutes(1),
         };
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                var accessToken = context.Request.Query["access_token"];
-                if (!string.IsNullOrEmpty(accessToken))
-                    context.Token = accessToken;
-                return Task.CompletedTask;
-            },
-        };
     });
 
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<KitPlatform.Api.Authorization.LoginAttemptGuard>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Authentication.IClaimsTransformation, DbPermissionsClaimsTransformation>();
 
 builder.Services.AddAuthorization(options =>
@@ -118,11 +112,13 @@ builder.Services.AddAuthorization(options =>
     options.AddDashboardAuthorization();
     options.AddSuccessAuthorization();
     options.AddLearningAuthorization();
+    options.AddPharmacyKnowledgeAuthorization();
     options.AddReportsAuthorization();
     options.AddIdentityAuthorization();
     options.AddClinicAuthorization();
     options.AddPaymentAuthorization();
     options.AddKitSalesAuthorization();
+    options.AddTestPackAuthorization();
     options.AddPersonalIntelligenceAuthorization();
 });
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
@@ -146,18 +142,22 @@ catch (Exception ex) when (
         $"[dev] Care pack skipped (Application Control blocked DLL): {ex.GetBaseException().Message}");
 }
 builder.Services.AddContentPack(builder.Configuration);
-builder.Services.AddPersonalIntelligenceResearch();
-builder.Services.AddAgentTasks(builder.Configuration);
-builder.Services.AddPersonalIntelligencePack(startBackfillWorker: false);
-builder.Services.AddHttpClient<KitPlatform.Packs.PersonalIntelligence.Intent.IBusinessIntentInterpreter, KitPlatform.Packs.PersonalIntelligence.Infrastructure.Intent.CatalogGroundedIntentInterpreter>(client =>
+builder.Services.AddPersonalIntelligencePack();
+builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions>(
+    builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions.SectionName));
+builder.Services.PostConfigure<KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions>(options =>
 {
-    client.Timeout = TimeSpan.FromMinutes(3);
+    if (string.IsNullOrWhiteSpace(options.Root) || Path.IsPathRooted(options.Root))
+        return;
+    options.Root = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, options.Root));
 });
 builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Intent.BusinessIntentModelOptions>(
     builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Intent.BusinessIntentModelOptions.SectionName));
-builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions>(
-    builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Research.ResearchPublicationOptions.SectionName));
+builder.Services.Configure<KitPlatform.Packs.PersonalIntelligence.Trading.ExchangeBackfillOptions>(
+    builder.Configuration.GetSection(KitPlatform.Packs.PersonalIntelligence.Trading.ExchangeBackfillOptions.SectionName));
+builder.Services.AddScoped<KitPlatform.Api.Controllers.Content.ProductionTenantActionFilter>();
 builder.Services.AddLocalOsPack();
+builder.Services.AddTestPack();
 builder.Services.AddKitSalesPack(builder.Configuration);
 builder.Services.AddHostedService<KitPlatform.Api.KitSales.KitSalesJourneyWorker>();
 builder.Services.Configure<KitPlatform.Api.LocalOs.LocalOsHomepageFeedOptions>(
@@ -192,6 +192,33 @@ builder.Services.AddRateLimiter(options =>
             _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
             {
                 PermitLimit = builder.Configuration.GetValue("FamilyOs:PublicRequestsPerMinutePerIp", 10),
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.AddPolicy(KitPlatform.Api.Authorization.AuthRateLimitPolicies.Login, httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("Auth:LoginRequestsPerMinutePerIp", 30),
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.AddPolicy(KitPlatform.Api.Authorization.AuthRateLimitPolicies.Refresh, httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("Auth:RefreshRequestsPerMinutePerIp", 120),
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+    options.AddPolicy(KitPlatform.Api.Authorization.AuthRateLimitPolicies.PublicOtp, httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue("Auth:PublicOtpRequestsPerMinutePerIp", 10),
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0,
             }));
@@ -276,10 +303,14 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Unset in production. A Research Safe Host process sets this to remove background writers.
-ResearchSafeHostWorkerIsolation.Apply(builder.Configuration, builder.Services);
-
 var app = builder.Build();
+
+// nginx on loopback sets X-Forwarded-For/Proto; default KnownProxies trusts loopback only.
+app.UseForwardedHeaders(new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+        | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto,
+});
 
 if (app.Environment.IsDevelopment())
 {

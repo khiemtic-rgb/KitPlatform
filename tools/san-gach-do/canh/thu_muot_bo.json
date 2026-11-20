@@ -1,0 +1,66 @@
+{
+ "_ghi_chu": "Cảnh thử độ mượt: Bố làm lần lượt mọi động tác trong thư viện (đi, dừng, đưa tiền, gật đầu, đi, ngồi, đứng dậy, vẫy tay, cúi chào).",
+ "loai": "than",
+ "ma": "thu_muot_bo",
+ "ra": "thu/muot_bo",
+ "khung": "toan",
+ "goc_may_do": 0,
+ "dien_vien": [
+  {
+   "nhan_vat": "Bo",
+   "vi_tri": [
+    -2.3,
+    0
+   ],
+   "huong_do": 90,
+   "chuyen_dong": [
+    {
+     "ten": "dung_tho",
+     "giay": 1.0
+    },
+    {
+     "ten": "di",
+     "giay": 3.0
+    },
+    {
+     "ten": "dung_tho",
+     "giay": 1.0
+    },
+    {
+     "ten": "dua_tien"
+    },
+    {
+     "ten": "gat_dau"
+    },
+    {
+     "ten": "di",
+     "giay": 1.6
+    },
+    {
+     "ten": "ngoi_xuong"
+    },
+    {
+     "ten": "dung_day"
+    },
+    {
+     "ten": "vay_tay"
+    },
+    {
+     "ten": "cui_chao"
+    },
+    {
+     "ten": "dung_tho",
+     "giay": 1.0
+    }
+   ]
+  }
+ ],
+ "diem_nhin": [
+  0.2,
+  0
+ ],
+ "may": {
+  "xa": 8.5,
+  "tieu_cu": 35
+ }
+}
