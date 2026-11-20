@@ -1,0 +1,1997 @@
+{
+  "id": "38c527c2-8c96-58d7-8699-b893ac606c78",
+  "code": "PHARMACY_V2",
+  "name": "Soát nhanh nhà thuốc",
+  "version": "2.0",
+  "categories": [
+    {
+      "code": "PROFILE",
+      "name": "Bắt đầu",
+      "sortOrder": 0,
+      "weight": 0,
+      "dimensions": [
+        {
+          "code": "PROFILE_OVERALL",
+          "name": "Bắt đầu (tổng)",
+          "questions": [
+            {
+              "id": "91972416-83f6-54e3-927a-d3cfa6e1a6fb",
+              "code": "P2",
+              "title": "Nhà thuốc của anh/chị có mấy cơ sở?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 1,
+              "options": [
+                {
+                  "id": "9e54d47d-f93c-5a6c-ac80-aa6f33f088d5",
+                  "code": "SITES_1",
+                  "label": "1 cơ sở",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "84d4b222-ffe4-561b-940c-e0e8d9540aee",
+                  "code": "SITES_2_3",
+                  "label": "2–3 cơ sở",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "74b0b868-9a09-5e27-bf85-29c220e6567a",
+                  "code": "SITES_4_5",
+                  "label": "4–5 cơ sở",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "671c7ff4-d05b-5bfa-bdc4-15c16dddbba6",
+                  "code": "SITES_6P",
+                  "label": "Trên 5 cơ sở",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "role": "segment"
+              }
+            },
+            {
+              "id": "3e7e0768-ae76-59ca-b1e0-0cd2215c1d61",
+              "code": "P3",
+              "title": "Việc nào đang làm anh/chị đau đầu nhất lúc này?",
+              "helpText": "Chọn một việc. Phần sau sẽ hỏi kỹ hơn đúng việc này.",
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 2,
+              "options": [
+                {
+                  "id": "46d35c94-a2fa-5890-9ece-c9bf5fe73b9b",
+                  "code": "PAIN_CUSTOMER",
+                  "label": "Khách ít quay lại",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {
+                    "tag": "pain_retention"
+                  }
+                },
+                {
+                  "id": "ada746d0-aadb-5ebf-b0d0-eecb84cc4628",
+                  "code": "PAIN_INVENTORY",
+                  "label": "Hàng tồn, cận hạn, hết hàng",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {
+                    "tag": "pain_inventory"
+                  }
+                },
+                {
+                  "id": "dc4877cb-a55a-59ce-832c-0b4135da498b",
+                  "code": "PAIN_STAFF",
+                  "label": "Nhân viên làm không đều tay",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {
+                    "tag": "pain_staff"
+                  }
+                },
+                {
+                  "id": "aa2bbd42-3ad3-5c53-952c-7ee994f92d34",
+                  "code": "PAIN_NUMBERS",
+                  "label": "Không nắm rõ lãi lỗ",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {
+                    "tag": "pain_numbers"
+                  }
+                },
+                {
+                  "id": "c0471d4e-74ac-5817-b634-ef66b0f1542f",
+                  "code": "PAIN_COMPLIANCE",
+                  "label": "Sổ sách, lo khi có kiểm tra",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {
+                    "tag": "pain_compliance"
+                  }
+                },
+                {
+                  "id": "404bb442-1990-50aa-8a03-07d2d331ade3",
+                  "code": "PAIN_GROWTH",
+                  "label": "Muốn mở thêm nhưng chưa sẵn sàng",
+                  "score": null,
+                  "sortOrder": 6,
+                  "metadata": {
+                    "tag": "pain_growth"
+                  }
+                }
+              ],
+              "metadata": {
+                "leadTag": "pain_point"
+              }
+            },
+            {
+              "id": "946a1f0a-8fde-5be3-872e-cc0d3cb13797",
+              "code": "P5",
+              "title": "Mỗi đơn khách trả trung bình khoảng bao nhiêu?",
+              "helpText": "Ước lượng là được.",
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 3,
+              "options": [
+                {
+                  "id": "ddd4e004-7585-5a1b-b9ec-08b16e5a29ef",
+                  "code": "AOV_LT80",
+                  "label": "Dưới 80.000đ",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "37498fe0-c358-5bd4-b3aa-1b0489782dbb",
+                  "code": "AOV_80_150",
+                  "label": "80.000–150.000đ",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "1ecc0d8e-4af8-5c0e-a7f3-10c95353f17d",
+                  "code": "AOV_150_300",
+                  "label": "150.000–300.000đ",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "8029906b-538f-54ef-b505-2287e30401d7",
+                  "code": "AOV_GT300",
+                  "label": "Trên 300.000đ",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "36646433-3a4f-5369-86ad-0e81746eac15",
+                  "code": "UNKNOWN",
+                  "label": "Không rõ",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "role": "input"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "CUSTOMER",
+      "name": "Khách hàng",
+      "sortOrder": 1,
+      "weight": 1,
+      "dimensions": [
+        {
+          "code": "CUSTOMER_OVERALL",
+          "name": "Khách hàng (tổng)",
+          "questions": [
+            {
+              "id": "aac03077-b3b6-5f97-9367-3b9c577a3086",
+              "code": "C1",
+              "title": "Trong 10 khách gần nhất, khoảng mấy người là khách quen?",
+              "helpText": "Không có đáp án đúng sai. Nhà thuốc gần bệnh viện thường ít khách quen hơn nhà thuốc trong khu dân cư.",
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 1,
+              "options": [
+                {
+                  "id": "b868218d-5b2f-548a-94d6-b1f400293207",
+                  "code": "REG_0_2",
+                  "label": "0–2 người",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "497bf07c-73aa-5928-9437-108f28007c6e",
+                  "code": "REG_3_5",
+                  "label": "3–5 người",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "18bec6c0-270a-5941-b4ce-e971a9b88f1a",
+                  "code": "REG_6_8",
+                  "label": "6–8 người",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "46503a86-e0c5-5e9f-b09a-3e72d0396f2b",
+                  "code": "REG_9_10",
+                  "label": "9–10 người",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "44713c26-c565-5aa8-b0b3-4075de3021c8",
+                  "code": "UNKNOWN",
+                  "label": "Không để ý",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "role": "input"
+              }
+            },
+            {
+              "id": "6445a1b2-e5d5-5929-9560-20ee84612bf7",
+              "code": "C2",
+              "title": "Khách quen quay lại, nhân viên biết lần trước họ mua gì bằng cách nào?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 2,
+              "options": [
+                {
+                  "id": "f983e51b-a788-5667-8820-057fe9be96c8",
+                  "code": "OPT1",
+                  "label": "Không biết — phải hỏi lại khách",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "27e5f12a-33a2-5a46-954b-d352a9ea45c8",
+                  "code": "OPT2",
+                  "label": "Nhân viên nhớ mặt, nhớ thuốc",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "c3f38157-903d-56e3-bc35-2e8e4552081d",
+                  "code": "OPT3",
+                  "label": "Tra sổ hoặc tìm trong máy, mất vài phút",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "3eb8e603-119f-56e2-91db-8a4301243c44",
+                  "code": "OPT4",
+                  "label": "Nhập số điện thoại là thấy ngay",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 1.0
+              }
+            },
+            {
+              "id": "7069cdf7-0d51-5387-b961-a2413e32e995",
+              "code": "C3",
+              "title": "Khách dùng thuốc lâu dài (huyết áp, tiểu đường…) sắp hết thuốc, nhà thuốc có nhắc không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 3,
+              "options": [
+                {
+                  "id": "b88cf6cd-f3fa-58da-8953-a2ab0211daac",
+                  "code": "OPT1",
+                  "label": "Không nhắc",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "0f077d7a-a149-5c4d-9b98-80fd696bde58",
+                  "code": "OPT2",
+                  "label": "Chỉ khi khách nhờ",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "c889ed32-5792-5d5d-a877-6281a9855a37",
+                  "code": "OPT3",
+                  "label": "Nhắc vài khách quen qua điện thoại, Zalo",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "ea08a43b-de78-5659-a028-29ffe72d99a0",
+                  "code": "OPT4",
+                  "label": "Có danh sách, nhắc đều theo lịch",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 1.3
+              }
+            },
+            {
+              "id": "e12aa262-a8e6-56e4-a008-26aacb98d43a",
+              "code": "C4",
+              "title": "Tháng trước, nhà thuốc chủ động hỏi thăm lại khoảng bao nhiêu khách sau khi bán?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 4,
+              "options": [
+                {
+                  "id": "4ebf6257-42f3-55b9-8b5f-85d6ef31a429",
+                  "code": "OPT1",
+                  "label": "Không ai",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "a4423034-7a31-5c6d-a287-869195a36a83",
+                  "code": "OPT2",
+                  "label": "Vài khách",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "28f73044-74ee-5e8b-be6c-9d9f4e1a6599",
+                  "code": "OPT3",
+                  "label": "Khoảng 10–30 khách",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "5c1cbd99-eabc-5b41-a2b8-8baf384ff567",
+                  "code": "OPT4",
+                  "label": "Trên 30 khách",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "de722eaa-4a33-551e-9664-c38a2c79cf05",
+                  "code": "UNKNOWN",
+                  "label": "Không theo dõi",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.9
+              }
+            },
+            {
+              "id": "244c03d2-2253-5663-8943-9722d24fbcf9",
+              "code": "C5",
+              "title": "Anh/chị có biết tháng này bao nhiêu khách mới, bao nhiêu khách cũ quay lại không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 5,
+              "options": [
+                {
+                  "id": "221eb28f-a75b-50a8-80e1-0113a599a67e",
+                  "code": "OPT1",
+                  "label": "Không biết",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "fb87acab-336d-5696-92d7-b95a79d6d673",
+                  "code": "OPT2",
+                  "label": "Chỉ có cảm giác chung",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "80158c70-8b67-5ba9-bf0a-f0de6a99fb73",
+                  "code": "OPT3",
+                  "label": "Đếm được nếu ngồi lục sổ",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "2123033a-1c63-512f-9ab9-b07fa8d663cd",
+                  "code": "OPT4",
+                  "label": "Xem được con số ngay",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.8
+              }
+            },
+            {
+              "id": "9985c77b-00ad-5957-ac3d-9642343bb414",
+              "code": "C6",
+              "title": "Theo anh/chị, khách không quay lại chủ yếu vì sao?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 6,
+              "options": [
+                {
+                  "id": "cda3a6d8-28e3-5e68-8d90-73aa3bb6f6eb",
+                  "code": "WHY_PRICE",
+                  "label": "Giá cao hơn chỗ khác",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "27c9eb16-9c34-554a-b034-c77b65e54c0a",
+                  "code": "WHY_CONVENIENCE",
+                  "label": "Chỗ khác tiện đường hơn",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "f0f0166c-99de-56d3-9f7c-99901b625146",
+                  "code": "WHY_FORGET",
+                  "label": "Không được nhắc nên quên",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "32a0ef8c-3946-5ada-9d88-0ea8f9342323",
+                  "code": "WHY_STOCKOUT",
+                  "label": "Lúc cần thì nhà thuốc hết hàng",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "a12c5165-6ba4-53c1-a907-03dce88c6bae",
+                  "code": "UNKNOWN",
+                  "label": "Không rõ",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "showIf": {
+                  "questionCode": "P3",
+                  "optionCode": "PAIN_CUSTOMER"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "INVENTORY",
+      "name": "Kho",
+      "sortOrder": 2,
+      "weight": 1,
+      "dimensions": [
+        {
+          "code": "INVENTORY_OVERALL",
+          "name": "Kho (tổng)",
+          "questions": [
+            {
+              "id": "cb42cbf5-6850-5fef-9dab-4b399d9322e9",
+              "code": "I1",
+              "title": "Lần gần nhất anh/chị phát hiện một lô sắp hết hạn là nhờ đâu?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 1,
+              "options": [
+                {
+                  "id": "66b81502-e0bb-53d4-98c6-bcfa658b07c3",
+                  "code": "OPT1",
+                  "label": "Tình cờ lúc lấy hàng cho khách",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "ed7ed8e3-f7c9-5b34-b2d9-9bb080ace951",
+                  "code": "OPT2",
+                  "label": "Lúc kiểm kê",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "b31523c7-f66d-5392-8cb1-047c394bf88f",
+                  "code": "OPT3",
+                  "label": "Rà sổ theo lịch định kỳ",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "db1f5f8d-8c46-5cc5-945d-47c3f47e1aba",
+                  "code": "OPT4",
+                  "label": "Phần mềm báo trước",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "577a6d46-67be-531c-93c8-85de4485de8b",
+                  "code": "UNKNOWN",
+                  "label": "Chưa gặp trường hợp này",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 1.2
+              }
+            },
+            {
+              "id": "d8bafad9-dd78-5f1e-a97d-99e254b3dc33",
+              "code": "I2",
+              "title": "Tháng trước, tiền hàng hết hạn phải hủy hoặc trả lại khoảng bao nhiêu?",
+              "helpText": "Ước lượng là được.",
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 2,
+              "options": [
+                {
+                  "id": "9658ff11-4175-5191-b8e2-193a89b58c15",
+                  "code": "EXP_0",
+                  "label": "Gần như không có",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "958fdbc2-096e-5fd2-8b1d-471e5d8c5fa4",
+                  "code": "EXP_LT1M",
+                  "label": "Dưới 1 triệu",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "a2f1bbb8-dc8f-50b8-8fea-a9078ecdf8a8",
+                  "code": "EXP_1_3M",
+                  "label": "1–3 triệu",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "43f3260e-e74e-5921-a93a-a92d9d25b669",
+                  "code": "EXP_3_7M",
+                  "label": "3–7 triệu",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "202c5005-1a58-5eec-bd63-15d60ac64dc7",
+                  "code": "EXP_GT7M",
+                  "label": "Trên 7 triệu",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                },
+                {
+                  "id": "1ee6bf3b-9cfb-598c-8476-aacc504d276d",
+                  "code": "UNKNOWN",
+                  "label": "Không rõ",
+                  "score": null,
+                  "sortOrder": 6,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "role": "input"
+              }
+            },
+            {
+              "id": "da3732dc-083d-5a32-bf0b-36aa43b56250",
+              "code": "I3",
+              "title": "Tuần trước, khoảng bao nhiêu lần khách hỏi mua mà nhà thuốc hết hàng?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 3,
+              "options": [
+                {
+                  "id": "a30efdf5-9848-5161-b274-188870932060",
+                  "code": "OPT1",
+                  "label": "Trên 15 lần",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "3499df93-3faf-5fd3-a439-c2b7db0b2ced",
+                  "code": "OPT2",
+                  "label": "6–15 lần",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "ab042247-480a-5814-9d50-d8d6bdf50ff2",
+                  "code": "OPT3",
+                  "label": "2–5 lần",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "4022cb7e-98cd-5450-bae9-18b620b39c4e",
+                  "code": "OPT4",
+                  "label": "0–1 lần",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "116f74f5-f786-5037-914a-b2ec292e27af",
+                  "code": "UNKNOWN",
+                  "label": "Không để ý",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 1.2
+              }
+            },
+            {
+              "id": "b780be2c-8fdc-5c6b-a0f3-878e1d4bbf29",
+              "code": "I4",
+              "title": "Khi đặt hàng, anh/chị quyết định số lượng dựa vào đâu?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 4,
+              "options": [
+                {
+                  "id": "4fbd50f9-69b4-5adc-8706-a259ded881b4",
+                  "code": "OPT1",
+                  "label": "Thấy vơi thì nhập",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "f9b0051f-25eb-5416-ab1b-234a74db79fd",
+                  "code": "OPT2",
+                  "label": "Theo kinh nghiệm và gợi ý của trình dược viên",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "74183e82-dc24-5ca7-afb6-6de0e0abfb08",
+                  "code": "OPT3",
+                  "label": "Xem lại lượng bán tháng trước",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "aa5c9fd7-c07a-54ae-a7d4-e4495ac9d8f2",
+                  "code": "OPT4",
+                  "label": "Có mức tồn tối thiểu cho từng mặt hàng",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 1.0
+              }
+            },
+            {
+              "id": "c81ea547-93d5-55a7-9196-9be1f0186fcb",
+              "code": "I5",
+              "title": "Lần kiểm kê toàn bộ kho gần nhất là khi nào?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 5,
+              "options": [
+                {
+                  "id": "4b2682f9-f320-5c35-84a0-2210b0461442",
+                  "code": "OPT1",
+                  "label": "Chưa bao giờ hoặc không nhớ",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "be3b3d79-46e7-5c06-b124-2996f2efab12",
+                  "code": "OPT2",
+                  "label": "Hơn 6 tháng trước",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "1871092b-9d82-5d5d-8e20-75ca2c84fa42",
+                  "code": "OPT3",
+                  "label": "Trong 1–6 tháng qua",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "b59a0dee-7dc2-5ced-8632-b1bb47b855eb",
+                  "code": "OPT4",
+                  "label": "Trong tháng này, hoặc kiểm từng nhóm hàng đều đặn",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.8
+              }
+            },
+            {
+              "id": "cdfb44c7-878e-5df1-a6af-947dd4ea1852",
+              "code": "I6",
+              "title": "Anh/chị có kể ngay được 5 mặt hàng bán chậm nhất đang giữ vốn không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 6,
+              "options": [
+                {
+                  "id": "77e0c1d6-87f4-5a95-af94-c59bc1f1e81b",
+                  "code": "OPT1",
+                  "label": "Không",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "cddee7b6-6e4e-5be1-a0e4-5c90f54c6536",
+                  "code": "OPT2",
+                  "label": "Đoán được",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "8f3751b8-b439-5f1b-a28f-5ad297ab0bdf",
+                  "code": "OPT3",
+                  "label": "Có, nhưng phải lục sổ",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "7a1518bf-891f-5ad5-8593-899a2a2ad46d",
+                  "code": "OPT4",
+                  "label": "Có, xem được ngay",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.9
+              }
+            },
+            {
+              "id": "aadd62e5-fc3d-5d50-95c9-8431a3c59d43",
+              "code": "I7",
+              "title": "Hàng cận hạn hiện được xử lý thế nào?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 7,
+              "options": [
+                {
+                  "id": "0a9f72d0-ea61-5897-9941-1f76de379b3b",
+                  "code": "NEAR_WAIT",
+                  "label": "Để đến khi hết hạn rồi hủy",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "e45b23f7-782b-5fb0-9b5a-d8d3e0a731fd",
+                  "code": "NEAR_RETURN",
+                  "label": "Trả nhà cung cấp nếu được",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "1cb5c45d-8196-59ff-b47b-c168fe69893d",
+                  "code": "NEAR_PUSH",
+                  "label": "Giảm giá, ưu tiên bán trước",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "89d729a7-f8a8-5123-9028-61e4cfdce89f",
+                  "code": "NEAR_NONE",
+                  "label": "Chưa có cách làm thống nhất",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "showIf": {
+                  "questionCode": "P3",
+                  "optionCode": "PAIN_INVENTORY"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "OPERATIONS",
+      "name": "Vận hành",
+      "sortOrder": 3,
+      "weight": 1,
+      "dimensions": [
+        {
+          "code": "OPERATIONS_OVERALL",
+          "name": "Vận hành (tổng)",
+          "questions": [
+            {
+              "id": "e6d6bf76-6cfc-5210-92e0-34da23f6516a",
+              "code": "O1",
+              "title": "Nếu anh/chị nghỉ 3 ngày, nhà thuốc chạy thế nào?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 1,
+              "options": [
+                {
+                  "id": "f1b4d432-41a5-5192-b9ae-417bcbeda513",
+                  "code": "OPT1",
+                  "label": "Phải đóng cửa hoặc bán rất hạn chế",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "03233640-a013-57fe-a7ea-73eb83088f55",
+                  "code": "OPT2",
+                  "label": "Vẫn mở nhưng nhân viên gọi hỏi liên tục",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "f775bc73-c1a2-515e-bb71-3fcf4f570e9a",
+                  "code": "OPT3",
+                  "label": "Chạy được, vài việc phải chờ anh/chị về",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "bcbed341-8259-5c5b-b38e-41d580c5c429",
+                  "code": "OPT4",
+                  "label": "Chạy bình thường",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 1.1
+              }
+            },
+            {
+              "id": "50fe8082-699b-5889-bc82-71d35a0bf39c",
+              "code": "O2",
+              "title": "Nhân viên mới mất bao lâu thì tự đứng quầy được?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 2,
+              "options": [
+                {
+                  "id": "1872b1fe-6f5a-5a29-b691-d0a8235d92db",
+                  "code": "OPT1",
+                  "label": "Trên 2 tháng",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "e8861c29-9144-5dd7-a3e5-64344fe01b64",
+                  "code": "OPT2",
+                  "label": "1–2 tháng",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "6095b1ab-9111-5abd-9b6b-23b7fa88af0e",
+                  "code": "OPT3",
+                  "label": "2–4 tuần",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "70550e2a-cc51-5520-8a3b-2a1ef88f24fa",
+                  "code": "OPT4",
+                  "label": "Dưới 2 tuần — có tài liệu và người kèm",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "92a579ee-8856-57e7-9caa-10600a3f66e8",
+                  "code": "UNKNOWN",
+                  "label": "Chưa từng tuyển nhân viên",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.8
+              }
+            },
+            {
+              "id": "e69f62dd-551f-5620-bc3f-9a5dbac30c84",
+              "code": "O3",
+              "title": "Cùng một bệnh thông thường như cảm cúm, các nhân viên có tư vấn giống nhau không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 3,
+              "options": [
+                {
+                  "id": "f94b3f21-729b-51a6-982a-72dd6b84027f",
+                  "code": "OPT1",
+                  "label": "Mỗi người một kiểu",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "42ff8a0a-7536-5fd2-9a85-4324b1fd7d50",
+                  "code": "OPT2",
+                  "label": "Gần giống nhau, do quen tay",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "3e8e52b9-da3c-5ca5-9ab9-4150bb8ef4c9",
+                  "code": "OPT3",
+                  "label": "Có hướng dẫn chung nhưng chưa đủ",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "1a37f549-a0db-525e-a877-2559ddc63403",
+                  "code": "OPT4",
+                  "label": "Có hướng dẫn cho các bệnh hay gặp",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "9bc93f8b-a4cf-5e78-a8c8-c61883fabf94",
+                  "code": "UNKNOWN",
+                  "label": "Chỉ mình tôi đứng quầy",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.9
+              }
+            },
+            {
+              "id": "3838beac-50f7-55d4-aeb5-fdeeee07b478",
+              "code": "O4",
+              "title": "Cuối ngày, tiền thu có khớp với số đã bán không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 4,
+              "options": [
+                {
+                  "id": "9a139764-fbbd-5f48-b526-aa5bcce40282",
+                  "code": "OPT1",
+                  "label": "Thường lệch, không rõ vì sao",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "293cc2db-4180-5338-8c4e-16458a6e2ba8",
+                  "code": "OPT2",
+                  "label": "Đôi khi lệch",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "63db7610-7cc8-52d4-b874-82400ad69a35",
+                  "code": "OPT3",
+                  "label": "Ít lệch, tìm được nguyên nhân",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "400c291c-36cd-5a53-8104-0a7490db77c7",
+                  "code": "OPT4",
+                  "label": "Khớp, có đối chiếu hằng ngày",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 1.0
+              }
+            },
+            {
+              "id": "9c7ec7f1-abe7-5d64-bdb8-934821e93028",
+              "code": "O5",
+              "title": "Các việc định kỳ (ghi nhiệt độ, độ ẩm, vệ sinh, sổ sách) có người phụ trách và ghi lại không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 5,
+              "options": [
+                {
+                  "id": "7d1d47aa-c726-560e-9477-4d723523bf75",
+                  "code": "OPT1",
+                  "label": "Chưa làm đều",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "e6bc7d29-0ca5-58cb-a75f-41fecac3a27f",
+                  "code": "OPT2",
+                  "label": "Làm khi sắp có kiểm tra",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "7ca38196-1f98-5497-a954-d4a08ec8e02d",
+                  "code": "OPT3",
+                  "label": "Làm đều nhưng hay thiếu sổ",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "7e902b9e-7347-5a95-9b58-014d369c9720",
+                  "code": "OPT4",
+                  "label": "Có người phụ trách, ghi đủ hằng ngày",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "review": "pharmacist",
+                "impact": 1.1
+              }
+            },
+            {
+              "id": "a1f0586b-258a-59a5-a6a6-93cbbf32469e",
+              "code": "O6",
+              "title": "Lần kiểm tra gần nhất, nhà thuốc bị nhắc ở phần nào?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 6,
+              "options": [
+                {
+                  "id": "aa9fc86c-47f7-5dfa-b23d-868b30d79fd1",
+                  "code": "INSP_NONE_YET",
+                  "label": "Chưa bị kiểm tra lần nào",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "59f01f4f-1635-5406-8747-fb6dac3e340c",
+                  "code": "INSP_RECORDS",
+                  "label": "Sổ sách, ghi chép",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "0a54f993-9eed-5d26-adbf-28307a3568d4",
+                  "code": "INSP_STORAGE",
+                  "label": "Bảo quản, sắp xếp thuốc",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "0f8c50d2-135a-50f1-a34c-a5d25e81983f",
+                  "code": "INSP_STAFF",
+                  "label": "Hồ sơ nhân sự, bằng cấp",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "8ff55f33-5eed-5d1d-8ed3-d9ce16800e77",
+                  "code": "INSP_OK",
+                  "label": "Không bị nhắc gì",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "showIf": {
+                  "questionCode": "P3",
+                  "optionCode": "PAIN_COMPLIANCE"
+                },
+                "review": "pharmacist"
+              }
+            },
+            {
+              "id": "9a0724ed-dea8-5c7d-a578-bbc21e747d2e",
+              "code": "O7",
+              "title": "Việc nào với nhân viên làm anh/chị mệt nhất?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 7,
+              "options": [
+                {
+                  "id": "14a5ce7f-e837-5945-87b2-aaa8035a9902",
+                  "code": "STAFF_TURNOVER",
+                  "label": "Nghỉ việc nhiều, phải tuyển lại",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "ce57b5d8-da6d-52ed-afbf-e264c2b0869d",
+                  "code": "STAFF_ADVICE",
+                  "label": "Tư vấn chưa tốt",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "f4ddbc3b-712c-5f57-a3ce-f70b100cf06e",
+                  "code": "STAFF_PASSIVE",
+                  "label": "Không chủ động, phải nhắc từng việc",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "7b3494b1-7e7a-5fe2-ab84-4d2074a406ab",
+                  "code": "STAFF_CONTROL",
+                  "label": "Khó kiểm soát tiền, hàng",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "showIf": {
+                  "questionCode": "P3",
+                  "optionCode": "PAIN_STAFF"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "BUSINESS",
+      "name": "Kinh doanh",
+      "sortOrder": 4,
+      "weight": 1,
+      "dimensions": [
+        {
+          "code": "BUSINESS_OVERALL",
+          "name": "Kinh doanh (tổng)",
+          "questions": [
+            {
+              "id": "12a3cc89-7d63-5b84-8cd5-05310eef8597",
+              "code": "B1",
+              "title": "Anh/chị có biết tháng trước nhà thuốc lãi bao nhiêu không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 1,
+              "options": [
+                {
+                  "id": "50c48262-a557-5937-b2c8-335ac1df9344",
+                  "code": "OPT1",
+                  "label": "Không — chỉ biết khi tổng kết cuối năm",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "4a323945-ed5d-5713-bda9-091eb53681b7",
+                  "code": "OPT2",
+                  "label": "Đoán theo tiền còn trong két",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "ef948c9c-1049-5764-84d3-478234e3dfb7",
+                  "code": "OPT3",
+                  "label": "Tính được nhưng mất công",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "4a51465c-a56b-5508-a375-6cfc3fe41866",
+                  "code": "OPT4",
+                  "label": "Biết rõ con số hằng tháng",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 1.2
+              }
+            },
+            {
+              "id": "fea3c563-f113-5129-b673-75784eb903fd",
+              "code": "B2",
+              "title": "Anh/chị có biết nhóm hàng nào lãi nhiều nhất (không phải bán nhiều nhất)?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 2,
+              "options": [
+                {
+                  "id": "9d8fbbe8-05a6-5133-9618-db7771c4d76d",
+                  "code": "OPT1",
+                  "label": "Không",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "dfbe605a-259e-5c1e-9666-143dbbe5ffdc",
+                  "code": "OPT2",
+                  "label": "Đoán được",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "e4b31b9f-5155-56ba-ae9c-adedacee23ea",
+                  "code": "OPT3",
+                  "label": "Biết, nhờ tính tay",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "661804e4-307e-52d2-9433-e070bb0dd1c9",
+                  "code": "OPT4",
+                  "label": "Có số liệu rõ ràng",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.9
+              }
+            },
+            {
+              "id": "382cc7ca-ab0e-5cf7-84d8-f6622511f6b2",
+              "code": "B3",
+              "title": "Lần khuyến mại gần nhất, anh/chị có biết nó lời hay lỗ không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 3,
+              "options": [
+                {
+                  "id": "62faeb43-272b-52fd-b360-ae0f357b2e46",
+                  "code": "OPT1",
+                  "label": "Không biết",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "ccea9597-5d79-58f9-91fb-7079a6575714",
+                  "code": "OPT2",
+                  "label": "Chỉ thấy đông khách hơn",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "252d1364-6668-52ae-ac09-ae815fc03135",
+                  "code": "OPT3",
+                  "label": "So được số bán trước và sau",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "0f515d93-d44c-542c-8710-3300743aa88d",
+                  "code": "OPT4",
+                  "label": "Tính được phần lãi thêm sau khi trừ giảm giá",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "54d290b9-7711-520b-ac60-8f8c15f314e4",
+                  "code": "UNKNOWN",
+                  "label": "Chưa làm khuyến mại",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.7
+              }
+            },
+            {
+              "id": "f5bed43f-b3fd-519c-92dc-dadd79edd32b",
+              "code": "B4",
+              "title": "Tháng nào bán chậm hẳn, việc đầu tiên anh/chị làm là gì?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 4,
+              "options": [
+                {
+                  "id": "0d86faa0-b337-5116-be69-7e12975ffd69",
+                  "code": "OPT1",
+                  "label": "Chờ xem tháng sau",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "69aa7256-7b12-545a-88f0-15a4b11cf2f7",
+                  "code": "OPT2",
+                  "label": "Đoán nguyên nhân, thử giảm giá",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "ee2a07ff-9ee2-5180-85d8-f6b185ae82b1",
+                  "code": "OPT3",
+                  "label": "Lục sổ xem chậm ở đâu",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "d24f9d4e-568a-547d-9fb1-6265cbfdabff",
+                  "code": "OPT4",
+                  "label": "Xem số theo nhóm hàng, nhóm khách để tìm chỗ chậm",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.9
+              }
+            },
+            {
+              "id": "0b0f8a80-2c3f-55d0-b454-4faaf2050fb5",
+              "code": "B5",
+              "title": "Anh/chị muốn mỗi ngày nhìn thấy con số nào nhất?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 5,
+              "options": [
+                {
+                  "id": "4830b98b-9d44-5e11-bf00-81ee3dde136f",
+                  "code": "NUM_MARGIN",
+                  "label": "Lãi trong ngày",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "c58606d9-998e-592d-9ef4-7ce2227a6c5e",
+                  "code": "NUM_STOCK",
+                  "label": "Hàng sắp hết, hàng sắp hết hạn",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "4432a8e8-4e7b-5784-a274-a7fd2f4a7c7a",
+                  "code": "NUM_CUSTOMER",
+                  "label": "Khách mới, khách quay lại",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "bce1aa87-8d11-5a06-b420-bace4d3556f5",
+                  "code": "NUM_STAFF",
+                  "label": "Kết quả của từng nhân viên",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "showIf": {
+                  "questionCode": "P3",
+                  "optionCode": "PAIN_NUMBERS"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "TECH",
+      "name": "Dữ liệu & Công nghệ",
+      "sortOrder": 5,
+      "weight": 1,
+      "dimensions": [
+        {
+          "code": "TECH_OVERALL",
+          "name": "Dữ liệu & Công nghệ (tổng)",
+          "questions": [
+            {
+              "id": "bf8580dc-bd12-525b-a470-3e83356b0789",
+              "code": "T1",
+              "title": "Việc bán hàng hiện được ghi lại bằng gì?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 1,
+              "options": [
+                {
+                  "id": "6f0f2427-987f-5ea7-b7e1-0085d3b69e89",
+                  "code": "OPT1",
+                  "label": "Sổ tay, hoặc không ghi",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "43bd99ee-54c2-5787-8953-6c44103b9b1e",
+                  "code": "OPT2",
+                  "label": "Excel",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "a21878bf-ee53-50b4-a616-318b22763a5e",
+                  "code": "OPT3",
+                  "label": "Phần mềm trên một máy tại quầy",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "a8f77e65-a3ad-5b58-b900-be22cdaa1ea3",
+                  "code": "OPT4",
+                  "label": "Phần mềm, xem được cả trên điện thoại",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.9
+              }
+            },
+            {
+              "id": "a865c1c1-cc2f-52c3-abd2-dd951188542b",
+              "code": "T2",
+              "title": "Khi không ở nhà thuốc, anh/chị biết hôm nay bán được bao nhiêu bằng cách nào?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 2,
+              "options": [
+                {
+                  "id": "7eba6088-a3d9-5604-acfb-4814c7e7e1b3",
+                  "code": "OPT1",
+                  "label": "Không biết đến khi về",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "4f7c6d1f-13f6-58fa-80a6-c73216abcd0f",
+                  "code": "OPT2",
+                  "label": "Gọi điện hỏi",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "564ef903-28d0-5909-83de-b01620398bab",
+                  "code": "OPT3",
+                  "label": "Nhân viên chụp sổ gửi qua Zalo",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "49f7e5a9-2a96-5c2f-8786-0da755dcfe45",
+                  "code": "OPT4",
+                  "label": "Tự xem trên điện thoại",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.8
+              }
+            },
+            {
+              "id": "4af84b0d-6c60-568d-9ff4-c02f603fad15",
+              "code": "T3",
+              "title": "Thông tin bán hàng, kho và khách hàng đang nằm ở đâu?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 3,
+              "options": [
+                {
+                  "id": "23c3d1a8-668f-53fb-83b5-031d1600973d",
+                  "code": "OPT1",
+                  "label": "Chưa ghi đủ cả ba",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "9beb76ca-4005-5280-a234-20f682a19247",
+                  "code": "OPT2",
+                  "label": "Mỗi thứ một nơi",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "848d6de3-286f-52f6-b5ce-2c26d162a232",
+                  "code": "OPT3",
+                  "label": "Cùng một phần mềm nhưng ít dùng phần kho hoặc khách",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "3cb08299-74af-57c5-b16d-24e28c209f8c",
+                  "code": "OPT4",
+                  "label": "Cùng một phần mềm, dùng đủ cả ba",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.8
+              }
+            },
+            {
+              "id": "70d8d788-7842-54a8-8d74-6d8e391bea51",
+              "code": "T4",
+              "title": "Việc kết nối liên thông dữ liệu bán thuốc theo yêu cầu của ngành dược đang thế nào?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 4,
+              "options": [
+                {
+                  "id": "bed8b2a3-6d62-5e9c-8f17-4c703fb332f7",
+                  "code": "OPT1",
+                  "label": "Chưa kết nối",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "b5f22a56-3d73-59f8-a88f-e8e6f4d346a8",
+                  "code": "OPT2",
+                  "label": "Đang làm, chưa ổn định",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "57558686-91da-570c-9504-2d78edd380b0",
+                  "code": "OPT3",
+                  "label": "Có kết nối nhưng nhập tay nhiều",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "fd2de43f-ea42-59bc-8ef4-9c128dfb538f",
+                  "code": "OPT4",
+                  "label": "Kết nối tự động từ phần mềm bán hàng",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "6546a758-c95d-5693-aec8-2c9cc8c04ba0",
+                  "code": "UNKNOWN",
+                  "label": "Không rõ yêu cầu này",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "review": "pharmacist",
+                "impact": 1.0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "GROWTH",
+      "name": "Phát triển",
+      "sortOrder": 6,
+      "weight": 1,
+      "dimensions": [
+        {
+          "code": "GROWTH_OVERALL",
+          "name": "Phát triển (tổng)",
+          "questions": [
+            {
+              "id": "859a0bd0-cd93-5621-bf80-3072b49b192f",
+              "code": "G1",
+              "title": "Anh/chị đã có mục tiêu cụ thể cho 12 tháng tới chưa?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 1,
+              "options": [
+                {
+                  "id": "8b1bb78c-c371-5a2c-9414-42179eeb0e84",
+                  "code": "OPT1",
+                  "label": "Chưa nghĩ tới",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "c5248854-f37e-5b16-9e50-fe276cfb1379",
+                  "code": "OPT2",
+                  "label": "Có ý định chung",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "7793053f-1c2e-5096-a0a2-7f4d41b210a1",
+                  "code": "OPT3",
+                  "label": "Có mục tiêu, chưa có kế hoạch",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "40e74cba-dcea-51a0-b298-d7aa09565808",
+                  "code": "OPT4",
+                  "label": "Có mục tiêu, kế hoạch và theo dõi hằng tháng",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.6
+              }
+            },
+            {
+              "id": "d27d9584-cada-5ba9-9b18-a2ed8bbda858",
+              "code": "G2",
+              "title": "Nếu mở thêm một cơ sở, cách làm hiện nay có áp dụng được ngay không?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": true,
+              "required": true,
+              "sortOrder": 2,
+              "options": [
+                {
+                  "id": "4ec4fc2d-e687-523e-af4d-067972bc86c6",
+                  "code": "OPT1",
+                  "label": "Phải làm lại từ đầu",
+                  "score": 1,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "51b3c15e-0e0e-50c0-a021-b86aeca7a926",
+                  "code": "OPT2",
+                  "label": "Chỉ áp dụng được một phần, phụ thuộc vào người",
+                  "score": 2,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "f1143312-7629-5244-90ac-bee350e61035",
+                  "code": "OPT3",
+                  "label": "Được, nếu anh/chị trực tiếp kèm",
+                  "score": 3,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "2b5a31e8-9830-5fd3-94a1-aa4fbe027ce1",
+                  "code": "OPT4",
+                  "label": "Được — đã có quy trình và phần mềm dùng chung",
+                  "score": 4,
+                  "sortOrder": 4,
+                  "metadata": {}
+                },
+                {
+                  "id": "babbf800-ee35-52b6-bbd2-b1a7f736d730",
+                  "code": "UNKNOWN",
+                  "label": "Chưa có ý định mở thêm",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "impact": 0.6
+              }
+            },
+            {
+              "id": "9cdc9218-ecb6-56d0-b58b-7ef7c68b2012",
+              "code": "G3",
+              "title": "Anh/chị dự định mở thêm trong bao lâu?",
+              "helpText": null,
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 3,
+              "options": [
+                {
+                  "id": "201ac733-0eb5-5bcd-ac71-909587d1a5d2",
+                  "code": "OPEN_6M",
+                  "label": "Trong 6 tháng",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {}
+                },
+                {
+                  "id": "4a1fd8f2-dd10-5ebd-9c89-5d3aa74bf7ab",
+                  "code": "OPEN_12M",
+                  "label": "6–12 tháng",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {}
+                },
+                {
+                  "id": "6f22dd50-7ecf-58d0-b394-73619611d2cd",
+                  "code": "OPEN_LATER",
+                  "label": "Sau 1 năm",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {}
+                },
+                {
+                  "id": "cbba73d3-fde4-545c-bb3e-4b46f15fe5f8",
+                  "code": "OPEN_UNSURE",
+                  "label": "Chưa chắc",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "showIf": {
+                  "questionCode": "P3",
+                  "optionCode": "PAIN_GROWTH"
+                }
+              }
+            },
+            {
+              "id": "fd417b97-a021-5d43-b5ce-c89057cac60e",
+              "code": "G5",
+              "title": "Nếu chỉ chọn một việc để cải thiện trong 30 ngày tới, anh/chị chọn việc nào?",
+              "helpText": "Báo cáo sẽ đặt việc này lên đầu.",
+              "questionType": "single_choice",
+              "scorable": false,
+              "required": true,
+              "sortOrder": 4,
+              "options": [
+                {
+                  "id": "0471968f-9a73-5bdc-8cdd-e0f13204ee64",
+                  "code": "PRI_RETENTION",
+                  "label": "Giữ chân khách quen",
+                  "score": null,
+                  "sortOrder": 1,
+                  "metadata": {
+                    "tag": "need_crm"
+                  }
+                },
+                {
+                  "id": "9388dddf-e0b2-5a16-b44d-95a114c7a97d",
+                  "code": "PRI_STOCK",
+                  "label": "Giảm hàng tồn, hàng cận hạn",
+                  "score": null,
+                  "sortOrder": 2,
+                  "metadata": {
+                    "tag": "need_inventory"
+                  }
+                },
+                {
+                  "id": "a6a7f674-a349-5b71-8e53-7a69a4ce54a6",
+                  "code": "PRI_STAFF",
+                  "label": "Nhân viên làm đều tay",
+                  "score": null,
+                  "sortOrder": 3,
+                  "metadata": {
+                    "tag": "need_ops"
+                  }
+                },
+                {
+                  "id": "6a49994a-e703-5da5-bcc9-b86df0707347",
+                  "code": "PRI_PROFIT",
+                  "label": "Nắm rõ lãi lỗ",
+                  "score": null,
+                  "sortOrder": 4,
+                  "metadata": {
+                    "tag": "need_profit"
+                  }
+                },
+                {
+                  "id": "aa6f145c-66d0-5d4f-b9bb-a7448715b532",
+                  "code": "PRI_COMPLIANCE",
+                  "label": "Sổ sách gọn, sẵn sàng khi kiểm tra",
+                  "score": null,
+                  "sortOrder": 5,
+                  "metadata": {
+                    "tag": "need_compliance"
+                  }
+                },
+                {
+                  "id": "7a32db00-3247-5a73-97ae-4a85b77a7411",
+                  "code": "PRI_DOCTOR",
+                  "label": "Kết nối bác sĩ, đơn thuốc online",
+                  "score": null,
+                  "sortOrder": 6,
+                  "metadata": {
+                    "tag": "need_telemed"
+                  }
+                },
+                {
+                  "id": "9b9f67be-eef9-59b9-a754-3b49b70fe112",
+                  "code": "PRI_OTHER",
+                  "label": "Việc khác",
+                  "score": null,
+                  "sortOrder": 7,
+                  "metadata": {
+                    "tag": "need_other"
+                  }
+                }
+              ],
+              "metadata": {
+                "leadTag": "priority_need"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

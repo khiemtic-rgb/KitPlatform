@@ -1,0 +1,831 @@
+{
+  "concern": {
+    "PAIN_CUSTOMER": {
+      "WHY_PRICE": "Anh/chị nghĩ khách đi vì giá cao hơn chỗ khác. Khách thường chỉ so giá ở vài chục thuốc quen. Thử so giá 20 thuốc bán chạy nhất với 2 nhà thuốc gần nhất: chênh nhiều thì chỉnh riêng những thuốc đó. Nếu chênh ít, lý do chính thường là khách không được nhớ và không được nhắc, việc này làm được ngay mà không phải giảm giá.",
+      "WHY_CONVENIENCE": "Anh/chị nghĩ khách đi vì chỗ khác tiện đường hơn. Có thể bù bằng cách nhận đặt thuốc qua Zalo, chuẩn bị sẵn để khách ghé lấy nhanh, hoặc giao cho khách quen ở gần.",
+      "WHY_FORGET": "Anh/chị nghĩ khách không quay lại vì không được nhắc nên quên. Đúng vậy: nhắc đúng lúc là cách giữ khách rẻ nhất, nhất là với khách dùng thuốc huyết áp, tiểu đường.",
+      "WHY_STOCKOUT": "Anh/chị nghĩ khách đi vì lúc cần thì nhà thuốc hết hàng. Vậy giữ khách bắt đầu từ việc không để hết các thuốc khách quen hay mua: ghi lại mỗi lần khách hỏi mà không có, cuối tuần nhập bổ sung."
+    },
+    "PAIN_INVENTORY": {
+      "NEAR_WAIT": "Hiện hàng cận hạn đang để tới khi hết hạn rồi hủy. Chỉ cần thấy sớm 2–3 tháng là có thể giảm giá bán trước hoặc trả nhà cung cấp, thay vì mất trắng.",
+      "NEAR_RETURN": "Anh/chị đang trả nhà cung cấp khi được. Phần còn lại là thấy hàng cận hạn đủ sớm, trước hạn mà nhà cung cấp còn nhận trả.",
+      "NEAR_PUSH": "Anh/chị đã giảm giá và ưu tiên bán trước hàng cận hạn, đó là cách đúng. Việc còn lại là thấy sớm hơn, và nhập vừa đủ để ít hàng rơi vào cận hạn.",
+      "NEAR_NONE": "Hiện chưa có cách làm thống nhất cho hàng cận hạn. Nên chốt một quy tắc chung: còn 3 tháng thì dán nhãn và bán trước, còn 2 tháng thì hỏi trả nhà cung cấp."
+    },
+    "PAIN_STAFF": {
+      "STAFF_TURNOVER": "Nhân viên nghỉ nhiều thì mỗi lần tuyển lại là kèm lại từ đầu. Viết sẵn việc tuần đầu và cách tư vấn các bệnh hay gặp giúp người mới quen việc nhanh, anh/chị đỡ phải kèm.",
+      "STAFF_ADVICE": "Muốn nhân viên tư vấn tốt và giống nhau, cần một tờ hướng dẫn chung cho các bệnh hay gặp, không chỉ dựa vào kinh nghiệm từng người.",
+      "STAFF_PASSIVE": "Nhân viên phải nhắc từng việc thường là vì việc chưa được viết ra. Một bảng việc đầu ca, cuối ca có ghi tên người làm sẽ đỡ phải nhắc.",
+      "STAFF_CONTROL": "Khó kiểm soát tiền và hàng thì bắt đầu từ hai việc: chốt tiền cuối mỗi ca, và mỗi tuần kiểm kê một nhóm thuốc."
+    },
+    "PAIN_NUMBERS": {
+      "NUM_MARGIN": "Anh/chị muốn mỗi ngày thấy tiền lãi. Bước đầu là tính được lãi theo tháng bằng 4 con số; quen rồi thì làm theo tuần, theo ngày.",
+      "NUM_STOCK": "Anh/chị muốn mỗi ngày thấy hàng sắp hết và hàng sắp hết hạn. Bước đầu là mức tồn tối thiểu cho 30 thuốc bán chạy và lịch rà cận hạn mỗi tuần.",
+      "NUM_CUSTOMER": "Anh/chị muốn mỗi ngày thấy khách mới, khách quay lại. Bước đầu là ghi số điện thoại khách cùng đơn bán, rồi đếm theo tuần.",
+      "NUM_STAFF": "Anh/chị muốn thấy kết quả của từng nhân viên. Bước đầu là mỗi ca ghi rõ ai đứng quầy và tiền bán của ca đó, cuối tuần so giữa các ca."
+    },
+    "PAIN_GROWTH": {
+      "OPEN_6M": "Anh/chị định mở thêm trong 6 tháng tới. Trước khi mở nên có đủ ba thứ: 3 quy trình chính viết ra giấy, một người làm được việc của anh/chị ở cơ sở cũ, và cách xem số bán của cả hai nơi mà không phải có mặt.",
+      "OPEN_12M": "Anh/chị định mở thêm trong 6–12 tháng. Còn đủ thời gian để mỗi tháng viết ra một việc: nhập hàng, bán và tư vấn, chốt tiền cuối ngày.",
+      "OPEN_LATER": "Anh/chị định mở thêm sau 1 năm. Năm nay là lúc làm cho cơ sở hiện tại chạy được khi anh/chị vắng mặt, vì đó là điều kiện để mở thêm.",
+      "OPEN_UNSURE": "Anh/chị chưa chắc khi nào mở thêm. Dù mở hay không, làm cho nhà thuốc chạy được khi anh/chị vắng mặt vẫn là việc nên làm trước."
+    },
+    "complianceByO6": {
+      "INSP_NONE_YET": "Nhà thuốc chưa bị kiểm tra lần nào. Phần hay bị nhắc nhất là sổ nhiệt độ, độ ẩm, sổ thuốc kê đơn và cách xếp thuốc, nên chuẩn bị trước từ những phần này.",
+      "INSP_RECORDS": "Lần trước nhà thuốc bị nhắc về sổ sách, ghi chép. Cách chắc nhất là mỗi sổ có người ghi và giờ ghi cố định, không để dồn tới lúc kiểm tra.",
+      "INSP_STORAGE": "Lần trước nhà thuốc bị nhắc về bảo quản, sắp xếp thuốc. Nên xem lại ba chỗ: nhiệt độ, độ ẩm có ghi đủ 2 lần mỗi ngày không; thuốc có xếp theo nhóm, tránh nắng trực tiếp không; hàng cận hạn và hàng chờ hủy có để riêng không.",
+      "INSP_STAFF": "Lần trước nhà thuốc bị nhắc về hồ sơ nhân sự, bằng cấp. Nên lập một danh sách: mỗi người có bản sao bằng cấp, hợp đồng, giấy khám sức khỏe còn hạn, kèm ngày hết hạn để nhắc.",
+      "INSP_OK": "Lần trước nhà thuốc không bị nhắc gì. Giữ nếp đó bằng cách ghi sổ đều hằng ngày, không làm dồn."
+    },
+    "complianceT4": " Liên thông dữ liệu bán thuốc đang phải nhập tay nhiều: hỏi bên bán phần mềm xem có gửi dữ liệu tự động được không."
+  },
+  "copy": [
+    {
+      "code": "C2",
+      "area": "CUSTOMER",
+      "finding": "Chưa tra được khách quen hay mua gì",
+      "problem": "chưa tra được khách quen hay mua gì",
+      "said": {
+        "OPT1": "khách quen quay lại thì không biết lần trước họ mua gì, phải hỏi lại khách",
+        "OPT2": "khách quen quay lại thì dựa vào nhân viên nhớ mặt, nhớ thuốc"
+      },
+      "why": "Người nhớ mà nghỉ hoặc bận thì khách phải kể lại từ đầu. Không biết khách hay mua gì thì khó tư vấn tiếp và khó nhắc mua lại.",
+      "whyKind": null,
+      "title": "Ghi lại thuốc hay mua của 20 khách quen nhất",
+      "steps": [
+        "Lấy một cuốn sổ hoặc một trang Excel, ghi 20 khách quen nhất: tên, số điện thoại, thuốc hay mua.",
+        "Mỗi lần bán cho các khách này, ghi thêm ngày mua và thuốc đã mua."
+      ],
+      "stepsKind": null,
+      "who": "Người đứng quầy",
+      "whoKind": null,
+      "time": "10 phút mỗi ngày",
+      "check": "Đủ 20 khách có ghi chép, ai đứng quầy cũng tra được.",
+      "app": "Mỗi đơn bán nhập số điện thoại khách vào phần mềm, lần sau gõ số điện thoại là thấy khách đã mua gì.",
+      "novixa": "hồ sơ khách gắn với từng đơn bán, tra bằng số điện thoại",
+      "strength": {
+        "OPT4": "Gõ số điện thoại là thấy khách quen đã mua gì",
+        "OPT3": "Tra được khách quen đã mua gì"
+      },
+      "solo": null
+    },
+    {
+      "code": "C3",
+      "area": "CUSTOMER",
+      "finding": "Khách dùng thuốc lâu dài chưa được nhắc",
+      "problem": "khách dùng thuốc lâu dài chưa được nhắc mua lại",
+      "said": {
+        "OPT1": "khách dùng thuốc huyết áp, tiểu đường sắp hết thuốc thì nhà thuốc không nhắc",
+        "OPT2": "khách dùng thuốc huyết áp, tiểu đường sắp hết thuốc thì nhà thuốc chỉ nhắc khi khách nhờ"
+      },
+      "why": "Đây là nhóm khách mua đều đặn mỗi tháng. Không được nhắc, lúc hết thuốc họ dễ mua luôn ở chỗ gần nhất.",
+      "whyKind": null,
+      "title": "Nhắn Zalo cho khách sắp hết thuốc huyết áp, tiểu đường",
+      "steps": [
+        "Lập danh sách khách mua thuốc huyết áp, tiểu đường, mỡ máu trong tháng: tên, số điện thoại, ngày mua, thuốc dùng được bao nhiêu ngày.",
+        "Mỗi sáng xem danh sách, nhắn Zalo cho khách sẽ hết thuốc trong 3 ngày tới."
+      ],
+      "stepsKind": null,
+      "who": "Người đứng quầy ca sáng",
+      "whoKind": null,
+      "time": "10 phút mỗi sáng",
+      "check": "Trong số khách được nhắc, bao nhiêu người quay lại mua.",
+      "app": "Lọc trên phần mềm những khách mua thuốc huyết áp, tiểu đường trong 30 ngày qua để lập danh sách cho nhanh.",
+      "novixa": "nhắc khách mua lại tự động theo đơn trước",
+      "strength": {
+        "OPT4": "Có danh sách và nhắc đều khách dùng thuốc lâu dài",
+        "OPT3": "Có nhắc khách quen dùng thuốc lâu dài"
+      },
+      "solo": null
+    },
+    {
+      "code": "C4",
+      "area": "CUSTOMER",
+      "finding": "Chưa hỏi thăm khách sau khi bán",
+      "problem": "chưa hỏi thăm khách sau khi bán",
+      "said": {
+        "OPT1": "tháng trước nhà thuốc không hỏi thăm lại khách nào sau khi bán",
+        "OPT2": "tháng trước nhà thuốc chỉ hỏi thăm lại vài khách sau khi bán"
+      },
+      "why": "Một tin nhắn hỏi thuốc có đỡ không giúp khách nhớ tới nhà thuốc, và là lý do để họ quay lại lần sau.",
+      "whyKind": null,
+      "title": "Hỏi thăm 3 khách mỗi ngày",
+      "steps": [
+        "Mỗi ngày chọn 3 khách đã mua thuốc cảm, đau dạ dày hoặc thuốc cho trẻ từ 2–3 ngày trước.",
+        "Nhắn Zalo hỏi thuốc có đỡ không, có cần dặn thêm gì không."
+      ],
+      "stepsKind": null,
+      "who": "Người đứng quầy",
+      "whoKind": null,
+      "time": "5 phút mỗi ngày",
+      "check": "Khoảng 60 khách đã được hỏi thăm, bao nhiêu người quay lại.",
+      "app": "Xem trên phần mềm các đơn 2–3 ngày trước có số điện thoại để chọn khách hỏi thăm.",
+      "novixa": "danh sách khách cần hỏi thăm tự lập theo đơn bán",
+      "strength": {
+        "OPT4": "Hỏi thăm lại nhiều khách sau khi bán",
+        "OPT3": "Có hỏi thăm khách sau khi bán"
+      },
+      "solo": null
+    },
+    {
+      "code": "C5",
+      "area": "CUSTOMER",
+      "finding": "Chưa biết khách quen đang tăng hay giảm",
+      "problem": "chưa biết khách quen đang tăng hay giảm",
+      "said": {
+        "OPT1": "anh/chị không biết tháng này bao nhiêu khách mới, bao nhiêu khách cũ quay lại",
+        "OPT2": "số khách mới, khách cũ quay lại anh/chị chỉ có cảm giác chung"
+      },
+      "why": "Không có con số thì khách quen bỏ đi cũng không ai biết, cho tới khi tiền bán giảm.",
+      "whyKind": null,
+      "title": "Đếm khách mới và khách quen trong 1 tuần",
+      "steps": [
+        "Để một tờ giấy ở quầy, chia hai cột: khách mới, khách quen. Mỗi khách gạch một vạch.",
+        "Cuối tuần cộng lại. Tuần đầu mỗi tháng làm lại để so với tháng trước."
+      ],
+      "stepsKind": null,
+      "who": "Người đứng quầy",
+      "whoKind": null,
+      "time": "Vài giây mỗi khách, trong 1 tuần",
+      "check": "Có con số khách quen trên tổng số khách, so được tháng sau với tháng này.",
+      "app": "Xem trên phần mềm số khách mua lần đầu và số khách mua lại trong tháng (tính theo số điện thoại).",
+      "novixa": "báo cáo khách mới và khách quay lại theo tháng",
+      "strength": {
+        "OPT4": "Biết ngay tháng này bao nhiêu khách mới, khách quay lại"
+      },
+      "solo": null
+    },
+    {
+      "code": "I1",
+      "area": "INVENTORY",
+      "finding": "Hàng cận hạn được phát hiện muộn",
+      "problem": "hàng cận hạn được phát hiện muộn",
+      "said": {
+        "OPT1": "lần gần nhất anh/chị thấy một lô sắp hết hạn là tình cờ, lúc lấy hàng cho khách",
+        "OPT2": "lần gần nhất anh/chị thấy một lô sắp hết hạn là lúc kiểm kê"
+      },
+      "why": null,
+      "whyKind": "I1",
+      "title": "Rà hàng cận hạn mỗi sáng thứ Hai",
+      "steps": [
+        "Sáng thứ Hai, rà các lô hết hạn trong 3 tháng tới. Mỗi tuần rà vài kệ cho nhẹ việc.",
+        "Dán nhãn màu lên hộp, xếp ra trước để bán trước. Lô khó bán thì hỏi nhà cung cấp đổi trả sớm."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc hoặc người giữ kho",
+      "whoKind": null,
+      "time": "15–20 phút mỗi tuần",
+      "check": "Tiền hàng phải hủy hoặc trả lại giảm so với tháng này.",
+      "app": "Nếu phần mềm có nhập hạn dùng theo lô, mở danh sách lô hết hạn trong 90 ngày thay cho việc rà kệ.",
+      "novixa": "báo trước lô sắp hết hạn",
+      "strength": {
+        "OPT4": "Phần mềm báo trước hàng cận hạn",
+        "OPT3": "Rà hàng cận hạn theo lịch"
+      },
+      "solo": null
+    },
+    {
+      "code": "I3",
+      "area": "INVENTORY",
+      "finding": "Hết hàng khi khách hỏi mua",
+      "problem": "đang mất đơn vì hết hàng",
+      "said": {
+        "OPT1": "tuần trước có hơn 15 lần khách hỏi mua mà nhà thuốc không có",
+        "OPT2": "tuần trước có khoảng 6–15 lần khách hỏi mua mà nhà thuốc không có"
+      },
+      "why": "Mỗi lần như vậy là một đơn có thể mất. Khách quen gặp vài lần sẽ quen mua chỗ khác.",
+      "whyKind": null,
+      "title": "Ghi lại mỗi lần khách hỏi mà không có thuốc",
+      "steps": [
+        "Để một tờ giấy ở quầy. Khách hỏi mà không có thì ghi tên thuốc.",
+        "Cuối tuần, thuốc nào bị ghi từ 2 lần trở lên thì nhập thêm."
+      ],
+      "stepsKind": null,
+      "who": "Người đứng quầy",
+      "whoKind": null,
+      "time": "Vài giây mỗi lần, 10 phút cuối tuần",
+      "check": "Số lần khách hỏi mà không có thuốc mỗi tuần đã giảm.",
+      "app": "Xem phần mềm có báo thuốc sắp hết không. Có thì bật cho các thuốc bán chạy.",
+      "novixa": "báo thuốc sắp hết và gợi ý số lượng đặt",
+      "strength": {
+        "OPT4": "Ít khi hết hàng lúc khách hỏi"
+      },
+      "solo": null
+    },
+    {
+      "code": "I4",
+      "area": "INVENTORY",
+      "finding": "Đặt hàng còn theo cảm giác",
+      "problem": "nhập hàng còn theo cảm giác",
+      "said": {
+        "OPT1": "anh/chị nhập hàng khi thấy vơi",
+        "OPT2": "anh/chị nhập hàng theo kinh nghiệm và gợi ý của trình dược viên"
+      },
+      "why": "Nhập theo cảm giác thì dễ vừa thiếu thuốc bán chạy vừa dư thuốc bán chậm.",
+      "whyKind": null,
+      "title": "Đặt mức tồn tối thiểu cho 30 thuốc bán chạy nhất",
+      "steps": [
+        "Chọn 30 thuốc bán chạy nhất. Mỗi thuốc ghi một con số \"còn dưới mức này thì đặt\", khoảng bằng lượng bán 1 tuần.",
+        "Mỗi lần đặt hàng, xem 30 thuốc này trước."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "1 buổi để lập, sau đó 10 phút mỗi lần đặt hàng",
+      "check": "30 thuốc này không còn bị hết hàng.",
+      "app": "Lấy từ báo cáo bán hàng của phần mềm: 30 thuốc bán chạy nhất tháng trước và lượng bán mỗi tuần.",
+      "novixa": "mức tồn tối thiểu và gợi ý số lượng đặt",
+      "strength": {
+        "OPT4": "Có mức tồn tối thiểu cho từng thuốc",
+        "OPT3": "Nhập hàng dựa vào lượng bán tháng trước"
+      },
+      "solo": null
+    },
+    {
+      "code": "I5",
+      "area": "INVENTORY",
+      "finding": "Lâu chưa kiểm kê kho",
+      "problem": "lâu chưa kiểm kê kho",
+      "said": {
+        "OPT1": "nhà thuốc chưa kiểm kê toàn bộ kho lần nào, hoặc không nhớ lần gần nhất",
+        "OPT2": "lần kiểm kê toàn bộ kho gần nhất là hơn 6 tháng trước"
+      },
+      "why": "Lâu không kiểm thì số trong sổ hoặc phần mềm lệch với hàng trên kệ. Thất thoát hay hàng hỏng đều không ai biết.",
+      "whyKind": null,
+      "title": "Kiểm kê xoay vòng, mỗi tuần một nhóm thuốc",
+      "steps": [
+        "Chia kho thành 4 nhóm, ví dụ: kháng sinh, giảm đau hạ sốt, thực phẩm chức năng, còn lại.",
+        "Mỗi tuần đếm một nhóm, so với sổ hoặc phần mềm, ghi lại chỗ lệch."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc cùng một người phụ",
+      "whoKind": null,
+      "time": "30–45 phút mỗi tuần",
+      "check": "Cả kho đã được đếm một lượt, biết chỗ nào lệch.",
+      "app": "In danh sách tồn theo từng nhóm từ phần mềm để đếm, rồi nhập lại số lệch.",
+      "novixa": "kiểm kê theo nhóm hàng trên điện thoại",
+      "strength": {
+        "OPT4": "Kiểm kê kho đều đặn"
+      },
+      "solo": null
+    },
+    {
+      "code": "I6",
+      "area": "INVENTORY",
+      "finding": "Chưa biết thuốc nào bán chậm đang giữ vốn",
+      "problem": "chưa biết thuốc nào bán chậm đang giữ vốn",
+      "said": {
+        "OPT1": "anh/chị chưa kể ngay được 5 thuốc bán chậm nhất đang giữ vốn",
+        "OPT2": "anh/chị chỉ đoán được 5 thuốc bán chậm nhất đang giữ vốn"
+      },
+      "why": "Thuốc nằm lâu trên kệ là tiền nằm im, để lâu lại thành hàng cận hạn.",
+      "whyKind": null,
+      "title": "Lập danh sách 10 thuốc bán chậm nhất",
+      "steps": [
+        "Đi một vòng kệ, đánh dấu những hộp còn nguyên và bám bụi.",
+        "Ghi lại 10 thuốc đó. Ngừng nhập thêm, ưu tiên giới thiệu cho khách hoặc trả nhà cung cấp."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "1 buổi",
+      "check": "Tiền hàng nằm trong 10 thuốc này đã giảm.",
+      "app": "Xem trên phần mềm những thuốc không bán được trong 60 ngày, sắp theo tiền tồn.",
+      "novixa": "báo cáo thuốc chậm bán theo tiền vốn",
+      "strength": {
+        "OPT4": "Biết ngay thuốc nào bán chậm",
+        "OPT3": "Biết thuốc nào bán chậm"
+      },
+      "solo": null
+    },
+    {
+      "code": "O1",
+      "area": "OPERATIONS",
+      "finding": "Nhà thuốc còn phụ thuộc vào anh/chị",
+      "problem": "nhà thuốc còn phụ thuộc vào anh/chị",
+      "said": {
+        "OPT1": "nếu anh/chị nghỉ 3 ngày thì nhà thuốc phải đóng cửa hoặc bán rất hạn chế",
+        "OPT2": "nếu anh/chị nghỉ 3 ngày thì nhà thuốc vẫn mở nhưng nhân viên gọi hỏi liên tục"
+      },
+      "why": "Nhà thuốc chạy được hay không đang dựa vào anh/chị, nên anh/chị khó nghỉ, khó đi lấy hàng hay lo việc khác.",
+      "whyKind": null,
+      "title": "Viết sẵn 10 câu nhân viên hay hỏi, kèm câu trả lời",
+      "steps": [
+        "Trong 1 tuần, mỗi lần nhân viên gọi hoặc hỏi anh/chị, ghi lại câu hỏi.",
+        "Viết câu trả lời cho 10 câu hay gặp nhất, để ở quầy."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "1 tuần ghi lại, 1 buổi viết",
+      "check": "Số lần nhân viên phải gọi hỏi anh/chị đã giảm.",
+      "app": "Cho nhân viên tự tra giá và tồn kho trên phần mềm thay vì hỏi anh/chị.",
+      "novixa": null,
+      "strength": {
+        "OPT4": "Anh/chị vắng vài ngày, nhà thuốc vẫn chạy bình thường",
+        "OPT3": "Anh/chị vắng vài ngày, nhà thuốc vẫn chạy được"
+      },
+      "solo": {
+        "finding": "Anh/chị nghỉ là nhà thuốc phải đóng cửa",
+        "problem": "anh/chị nghỉ là nhà thuốc phải đóng cửa",
+        "why": "Nhà thuốc chỉ có anh/chị đứng quầy, nên ốm hay có việc là mất cả ngày bán.",
+        "title": "Chuẩn bị để có người đứng thay 1–2 ngày",
+        "steps": [
+          "Ghi sẵn: giá 50 thuốc bán chạy, số điện thoại nhà cung cấp, cách mở phần mềm hoặc sổ bán hàng.",
+          "Tìm một dược sĩ quen có thể đứng thay khi anh/chị bận, mời đứng cùng 1 buổi cho quen."
+        ],
+        "check": "Có người đứng thay được 1 ngày mà không phải gọi anh/chị.",
+        "time": "2–3 buổi",
+        "app": "Viết sẵn vài dòng cách tra giá, tồn kho trên phần mềm để người đứng thay tự làm được."
+      }
+    },
+    {
+      "code": "O2",
+      "area": "OPERATIONS",
+      "finding": "Nhân viên mới lâu mới quen việc",
+      "problem": "nhân viên mới lâu mới quen việc",
+      "said": {
+        "OPT1": "nhân viên mới mất trên 2 tháng mới tự đứng quầy được",
+        "OPT2": "nhân viên mới mất 1–2 tháng mới tự đứng quầy được"
+      },
+      "why": "Người mới lâu quen việc thì anh/chị phải kèm lâu, và trong thời gian đó dễ bán sai.",
+      "whyKind": null,
+      "title": "Viết danh sách việc tuần đầu cho nhân viên mới",
+      "steps": [
+        "Ghi ra những gì người mới cần biết trong tuần đầu: chỗ để thuốc, giá thuốc hay bán, cách ghi đơn, việc đầu ca và cuối ca.",
+        "Mỗi ngày người cũ kèm và đánh dấu việc người mới đã làm được."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "1 buổi để viết",
+      "check": "Người mới tiếp theo tự đứng quầy được trong chưa tới 1 tháng.",
+      "app": "Cho người mới tập tra giá và chỗ để thuốc trên phần mềm ngay tuần đầu.",
+      "novixa": null,
+      "strength": {
+        "OPT4": "Nhân viên mới quen việc nhanh",
+        "OPT3": "Nhân viên mới quen việc trong vài tuần"
+      },
+      "solo": null
+    },
+    {
+      "code": "O3",
+      "area": "OPERATIONS",
+      "finding": "Mỗi nhân viên tư vấn một kiểu",
+      "problem": "nhân viên tư vấn chưa giống nhau",
+      "said": {
+        "OPT1": "cùng một bệnh như cảm cúm, mỗi nhân viên tư vấn một kiểu",
+        "OPT2": "cùng một bệnh như cảm cúm, nhân viên tư vấn gần giống nhau nhưng là do quen tay"
+      },
+      "why": "Khách quay lại gặp người khác mà được bán khác thì dễ mất tin. Tư vấn theo trí nhớ cũng dễ sót câu hỏi quan trọng.",
+      "whyKind": null,
+      "title": "Thống nhất cách tư vấn 5 bệnh hay gặp",
+      "steps": [
+        "Chọn 5 bệnh hay gặp nhất, ví dụ: cảm cúm, ho, đau dạ dày, tiêu chảy, dị ứng.",
+        "Mỗi bệnh viết 1 trang: câu cần hỏi khách, thuốc nên dùng, khi nào khuyên đi khám. Để ở quầy."
+      ],
+      "stepsKind": null,
+      "who": "Dược sĩ phụ trách chuyên môn",
+      "whoKind": null,
+      "time": "2–3 buổi",
+      "check": "Hỏi thử từng nhân viên cùng một bệnh, mọi người tư vấn giống nhau.",
+      "app": null,
+      "novixa": null,
+      "strength": {
+        "OPT4": "Có hướng dẫn tư vấn chung cho các bệnh hay gặp"
+      },
+      "solo": null
+    },
+    {
+      "code": "O4",
+      "area": "OPERATIONS",
+      "finding": "Tiền cuối ngày hay lệch",
+      "problem": "tiền cuối ngày hay lệch",
+      "said": {
+        "OPT1": "cuối ngày tiền thu thường lệch với số đã bán mà không rõ vì sao",
+        "OPT2": "cuối ngày tiền thu đôi khi lệch với số đã bán"
+      },
+      "why": "Lệch ít mỗi ngày cộng lại thành khoản lớn, và khó biết là do quên ghi, thối nhầm hay mất.",
+      "whyKind": null,
+      "title": "Đối chiếu tiền cuối mỗi ca",
+      "steps": [
+        "Cuối mỗi ca, người đứng quầy đếm tiền, so với số đã bán, ghi số lệch và lý do nếu biết.",
+        "Cuối tuần anh/chị xem lại: lệch hay rơi vào ca nào, ngày nào."
+      ],
+      "stepsKind": null,
+      "who": "Người đứng quầy, anh/chị xem lại cuối tuần",
+      "whoKind": null,
+      "time": "5 phút mỗi ca",
+      "check": "Số ngày lệch đã giảm, và biết lệch do đâu.",
+      "app": "Nếu phần mềm có chốt ca theo từng người, dùng luôn để so tiền với số bán của từng ca.",
+      "novixa": "chốt ca theo từng nhân viên",
+      "strength": {
+        "OPT4": "Tiền cuối ngày khớp, có đối chiếu hằng ngày",
+        "OPT3": "Tiền cuối ngày ít lệch"
+      },
+      "solo": null
+    },
+    {
+      "code": "O5",
+      "area": "OPERATIONS",
+      "finding": "Sổ sách định kỳ chưa ghi đều",
+      "problem": "sổ sách định kỳ chưa ghi đều",
+      "said": {
+        "OPT1": "các việc định kỳ như ghi nhiệt độ, độ ẩm, vệ sinh, sổ sách chưa làm đều",
+        "OPT2": "các việc định kỳ như ghi nhiệt độ, độ ẩm, vệ sinh, sổ sách chỉ làm khi sắp có kiểm tra"
+      },
+      "why": "Đây là phần hay bị nhắc khi có kiểm tra. Làm dồn trước đợt kiểm tra vừa mệt vừa dễ sót.",
+      "whyKind": null,
+      "title": "Giao người và giờ cố định cho từng sổ",
+      "steps": null,
+      "stepsKind": "O5",
+      "who": null,
+      "whoKind": "O5",
+      "time": "5–10 phút mỗi ngày",
+      "check": "Các sổ không còn ngày bỏ trống.",
+      "app": null,
+      "novixa": null,
+      "strength": {
+        "OPT4": "Sổ sách định kỳ có người phụ trách, ghi đủ hằng ngày",
+        "OPT3": "Việc định kỳ được làm đều"
+      },
+      "solo": {
+        "title": "Đặt giờ cố định cho từng sổ"
+      }
+    },
+    {
+      "code": "B1",
+      "area": "BUSINESS",
+      "finding": "Chưa biết rõ mỗi tháng lãi bao nhiêu",
+      "problem": "chưa biết rõ mỗi tháng lãi bao nhiêu",
+      "said": {
+        "OPT1": "anh/chị chỉ biết nhà thuốc lãi bao nhiêu khi tổng kết cuối năm",
+        "OPT2": "anh/chị đoán lãi theo tiền còn trong két"
+      },
+      "why": "Tiền trong két chưa trừ tiền hàng còn nợ, lương, mặt bằng, hàng hủy, nên dễ tưởng có lãi mà thực ra không.",
+      "whyKind": null,
+      "title": "Tính con số lãi của tháng này",
+      "steps": [
+        "Cuối tháng ghi 4 con số: tiền bán, tiền vốn của hàng đã bán, chi phí (lương, mặt bằng, điện nước), tiền hàng hủy.",
+        "Lãi = tiền bán − tiền vốn − chi phí − hàng hủy. Làm 3 tháng liền để so."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "1–2 giờ cuối tháng",
+      "check": "Có con số lãi của tháng này, tháng sau so được.",
+      "app": "Lấy tiền bán và tiền vốn hàng đã bán từ báo cáo lãi của phần mềm, nếu phần mềm có.",
+      "novixa": "báo cáo lãi theo ngày và theo tháng",
+      "strength": {
+        "OPT4": "Biết rõ lãi hằng tháng",
+        "OPT3": "Tính được lãi hằng tháng"
+      },
+      "solo": null
+    },
+    {
+      "code": "B2",
+      "area": "BUSINESS",
+      "finding": "Chưa biết nhóm hàng nào lãi nhất",
+      "problem": "chưa biết nhóm hàng nào lãi nhất",
+      "said": {
+        "OPT1": "anh/chị chưa biết nhóm hàng nào lãi nhiều nhất",
+        "OPT2": "anh/chị chỉ đoán được nhóm hàng nào lãi nhiều nhất"
+      },
+      "why": "Thuốc bán nhiều chưa chắc lãi nhiều. Không biết nhóm nào lãi thì khó quyết nhập gì, giảm giá gì.",
+      "whyKind": null,
+      "title": "Xếp 20 thuốc bán chạy nhất theo tiền lãi",
+      "steps": [
+        "Lấy 20 thuốc bán chạy nhất tháng trước, ghi giá bán và giá nhập.",
+        "Tiền lãi mỗi thuốc = (giá bán − giá nhập) × số đã bán. Xếp từ cao xuống thấp."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "1 buổi",
+      "check": "Biết 5 thuốc mang lại nhiều tiền lãi nhất, và không để chúng hết hàng.",
+      "app": "Nếu phần mềm có báo cáo lãi theo mặt hàng, dùng luôn, không cần tính tay.",
+      "novixa": "lãi theo từng mặt hàng và nhóm hàng",
+      "strength": {
+        "OPT4": "Có số liệu nhóm hàng nào lãi nhất",
+        "OPT3": "Biết nhóm hàng nào lãi nhất"
+      },
+      "solo": null
+    },
+    {
+      "code": "B3",
+      "area": "BUSINESS",
+      "finding": "Chưa biết khuyến mại lời hay lỗ",
+      "problem": "chưa biết khuyến mại lời hay lỗ",
+      "said": {
+        "OPT1": "lần khuyến mại gần nhất anh/chị không biết lời hay lỗ",
+        "OPT2": "lần khuyến mại gần nhất anh/chị chỉ thấy đông khách hơn"
+      },
+      "why": "Đông khách chưa chắc có lãi, vì phần giảm giá có thể ăn hết tiền lời.",
+      "whyKind": null,
+      "title": "Tính lời lỗ cho đợt khuyến mại tới",
+      "steps": [
+        "Trước đợt khuyến mại, ghi số bán 2 tuần trước của các thuốc sẽ giảm giá.",
+        "Sau đợt, so số bán và tiền lãi (đã trừ phần giảm) với 2 tuần trước."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "1 giờ trước và 1 giờ sau đợt",
+      "check": "Biết đợt khuyến mại vừa rồi lời hay lỗ bao nhiêu.",
+      "app": "So báo cáo bán hàng trên phần mềm của các thuốc khuyến mại, trước và sau đợt.",
+      "novixa": null,
+      "strength": {
+        "OPT4": "Tính được khuyến mại lời hay lỗ",
+        "OPT3": "So được số bán trước và sau khuyến mại"
+      },
+      "solo": null
+    },
+    {
+      "code": "B4",
+      "area": "BUSINESS",
+      "finding": "Tháng bán chậm chưa biết chậm ở đâu",
+      "problem": "chưa biết tháng bán chậm là chậm ở đâu",
+      "said": {
+        "OPT1": "tháng nào bán chậm thì anh/chị thường chờ xem tháng sau",
+        "OPT2": "tháng nào bán chậm thì anh/chị thường đoán nguyên nhân rồi thử giảm giá"
+      },
+      "why": "Không biết chậm ở nhóm thuốc nào thì giảm giá dễ mất lãi mà không trúng chỗ.",
+      "whyKind": null,
+      "title": "Ghi tiền bán theo 5 nhóm hàng mỗi tuần",
+      "steps": [
+        "Chia hàng thành 5 nhóm, ví dụ: thuốc kê đơn, thuốc không kê đơn, thực phẩm chức năng, mỹ phẩm, vật tư y tế.",
+        "Cuối tuần ghi tiền bán của từng nhóm. Tháng nào chậm thì xem nhóm nào giảm."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "15 phút mỗi tuần",
+      "check": "Có bảng tiền bán 4 tuần của 5 nhóm hàng.",
+      "app": "Xem báo cáo bán hàng theo nhóm hàng trên phần mềm.",
+      "novixa": "số bán theo nhóm hàng, nhóm khách",
+      "strength": {
+        "OPT4": "Tìm được chỗ bán chậm theo nhóm hàng, nhóm khách",
+        "OPT3": "Tìm được chỗ bán chậm khi cần"
+      },
+      "solo": null
+    },
+    {
+      "code": "T1",
+      "area": "TECH",
+      "finding": "Việc bán hàng chưa ghi để tra lại được",
+      "problem": "việc bán hàng chưa ghi để tra lại được",
+      "said": {
+        "OPT1": "việc bán hàng đang ghi bằng sổ tay, hoặc không ghi",
+        "OPT2": "việc bán hàng đang ghi bằng Excel"
+      },
+      "why": null,
+      "whyKind": "T1",
+      "title": "Ghi bán hàng theo một mẫu cố định",
+      "steps": null,
+      "stepsKind": "T1",
+      "who": "Người đứng quầy",
+      "whoKind": null,
+      "time": "Vài giây mỗi đơn",
+      "check": "Tra lại được đã bán gì, cho ai, trong tuần qua.",
+      "app": null,
+      "novixa": "phần mềm bán hàng cho nhà thuốc",
+      "strength": {
+        "OPT4": "Bán hàng trên phần mềm, xem được trên điện thoại",
+        "OPT3": "Bán hàng trên phần mềm"
+      },
+      "solo": null
+    },
+    {
+      "code": "T2",
+      "area": "TECH",
+      "finding": "Không nắm tình hình khi vắng mặt",
+      "problem": "không nắm tình hình khi vắng mặt",
+      "said": {
+        "OPT1": "khi không ở nhà thuốc, anh/chị không biết hôm nay bán được bao nhiêu cho đến khi về",
+        "OPT2": "khi không ở nhà thuốc, anh/chị phải gọi điện hỏi mới biết hôm nay bán được bao nhiêu"
+      },
+      "why": "Không nắm được tình hình khi vắng mặt thì khó yên tâm đi đâu, và có chuyện gì cũng biết muộn.",
+      "whyKind": null,
+      "title": "Nhân viên nhắn 3 con số cuối mỗi ca",
+      "steps": [
+        "Cuối ca, nhân viên nhắn Zalo cho anh/chị: tiền bán, số đơn, thuốc nào hết hàng.",
+        "Anh/chị trả lời \"đã xem\" để nhân viên biết số được đọc."
+      ],
+      "stepsKind": null,
+      "who": "Người đứng quầy",
+      "whoKind": null,
+      "time": "2 phút mỗi ca",
+      "check": "Ngày nào anh/chị cũng biết số bán mà không phải gọi.",
+      "app": "Hỏi bên bán phần mềm có bản trên điện thoại không. Có thì cài để anh/chị tự xem số bán.",
+      "novixa": "xem số bán trên điện thoại",
+      "strength": {
+        "OPT4": "Tự xem số bán trên điện thoại khi vắng mặt"
+      },
+      "solo": null
+    },
+    {
+      "code": "T3",
+      "area": "TECH",
+      "finding": "Bán hàng, kho, khách mỗi thứ một nơi",
+      "problem": "bán hàng, kho và khách mỗi thứ một nơi",
+      "said": {
+        "OPT1": "thông tin bán hàng, kho và khách hàng chưa được ghi đủ cả ba",
+        "OPT2": "thông tin bán hàng, kho và khách hàng mỗi thứ nằm một nơi"
+      },
+      "why": "Mỗi thứ một nơi thì khó trả lời những câu đơn giản như: khách này hay mua gì, thuốc nào sắp hết.",
+      "whyKind": null,
+      "title": "Ghi số điện thoại khách cùng với đơn bán",
+      "steps": [
+        "Từ tuần này, đơn nào của khách quen cũng ghi kèm số điện thoại.",
+        "Nhập hàng thì ghi vào cùng chỗ đang ghi bán hàng, không ghi riêng một sổ khác."
+      ],
+      "stepsKind": null,
+      "who": "Người đứng quầy",
+      "whoKind": null,
+      "time": "Vài giây mỗi đơn",
+      "check": "Tra số điện thoại khách là thấy họ đã mua gì.",
+      "app": "Dùng luôn phần kho và phần khách hàng của phần mềm, không ghi thêm sổ hay Excel riêng.",
+      "novixa": "bán hàng, kho và khách hàng trên cùng một phần mềm",
+      "strength": {
+        "OPT4": "Bán hàng, kho, khách hàng cùng một phần mềm"
+      },
+      "solo": null
+    },
+    {
+      "code": "T4",
+      "area": "TECH",
+      "finding": "Liên thông dữ liệu bán thuốc chưa ổn định",
+      "problem": "liên thông dữ liệu bán thuốc chưa ổn định",
+      "said": {
+        "OPT1": "nhà thuốc chưa kết nối liên thông dữ liệu bán thuốc",
+        "OPT2": "nhà thuốc đang làm liên thông dữ liệu bán thuốc nhưng chưa ổn định"
+      },
+      "why": "Liên thông dữ liệu bán thuốc là yêu cầu của ngành dược, chưa xong thì dễ bị nhắc khi kiểm tra.",
+      "whyKind": null,
+      "title": "Hỏi rõ nhà thuốc còn thiếu bước liên thông nào",
+      "steps": [
+        "Gọi bên bán phần mềm hoặc Sở Y tế, hỏi nhà thuốc đã có tài khoản liên thông chưa và còn thiếu bước nào.",
+        "Ghi lại các bước còn thiếu và hẹn ngày làm xong."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "1–2 cuộc gọi",
+      "check": "Biết rõ còn thiếu bước nào và ngày nào xong.",
+      "app": null,
+      "novixa": null,
+      "strength": {
+        "OPT4": "Liên thông dữ liệu tự động từ phần mềm"
+      },
+      "solo": null
+    },
+    {
+      "code": "G1",
+      "area": "GROWTH",
+      "finding": "Chưa có mục tiêu cho năm tới",
+      "problem": "chưa có mục tiêu cho năm tới",
+      "said": {
+        "OPT1": "anh/chị chưa nghĩ tới mục tiêu cho 12 tháng tới",
+        "OPT2": "cho 12 tháng tới anh/chị mới có ý định chung"
+      },
+      "why": "Không có một con số để nhắm thì khó biết năm nay có làm tốt hơn năm ngoái không.",
+      "whyKind": null,
+      "title": "Chọn 1 con số làm mục tiêu cho 90 ngày tới",
+      "steps": [
+        "Chọn một con số, ví dụ: tiền hàng hủy dưới 1 triệu mỗi tháng, hoặc 50 khách dùng thuốc lâu dài được nhắc.",
+        "Viết con số đó ở chỗ dễ thấy, cuối mỗi tháng xem lại."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "30 phút",
+      "check": "Sau 90 ngày, biết đã đạt con số đó hay chưa.",
+      "app": null,
+      "novixa": null,
+      "strength": {
+        "OPT4": "Có mục tiêu, kế hoạch và theo dõi hằng tháng",
+        "OPT3": "Có mục tiêu cho năm tới"
+      },
+      "solo": null
+    },
+    {
+      "code": "G2",
+      "area": "GROWTH",
+      "finding": "Cách làm còn phụ thuộc vào người",
+      "problem": "cách làm còn nằm trong đầu từng người",
+      "said": {
+        "OPT1": "nếu mở thêm cơ sở, cách làm hiện nay phải làm lại từ đầu",
+        "OPT2": "nếu mở thêm cơ sở, cách làm hiện nay chỉ áp dụng được một phần vì còn phụ thuộc vào người"
+      },
+      "why": "Cách làm còn nằm trong đầu người cũ thì cơ sở mới dễ lặp lại lỗi cũ, và anh/chị phải chạy qua lại cả hai nơi.",
+      "whyKind": null,
+      "title": "Viết ra 3 quy trình chính",
+      "steps": [
+        "Chọn 3 việc quan trọng nhất: nhập hàng, bán và tư vấn, chốt tiền cuối ngày.",
+        "Mỗi việc viết thành các bước ngắn. Nhờ một nhân viên làm thử đúng theo giấy để sửa chỗ còn thiếu."
+      ],
+      "stepsKind": null,
+      "who": "Chủ nhà thuốc",
+      "whoKind": null,
+      "time": "3 buổi",
+      "check": "Một nhân viên làm đúng 3 việc này chỉ cần nhìn giấy, không phải hỏi.",
+      "app": "Nếu mở thêm cơ sở, hỏi bên bán phần mềm có dùng chung cho nhiều cơ sở được không.",
+      "novixa": "phần mềm dùng chung cho nhiều cơ sở",
+      "strength": {
+        "OPT4": "Có quy trình và phần mềm dùng chung, mở thêm cơ sở được",
+        "OPT3": "Mở thêm cơ sở được nếu anh/chị trực tiếp kèm"
+      },
+      "solo": null
+    }
+  ],
+  "pain": {
+    "PAIN_CUSTOMER": [
+      "C2",
+      "C3",
+      "C4",
+      "C5"
+    ],
+    "PAIN_INVENTORY": [
+      "I1",
+      "I3",
+      "I4",
+      "I5",
+      "I6"
+    ],
+    "PAIN_STAFF": [
+      "O1",
+      "O2",
+      "O3",
+      "O4"
+    ],
+    "PAIN_NUMBERS": [
+      "B1",
+      "B2",
+      "B3",
+      "B4"
+    ],
+    "PAIN_COMPLIANCE": [
+      "O5",
+      "T4"
+    ],
+    "PAIN_GROWTH": [
+      "G1",
+      "G2",
+      "O1",
+      "O2"
+    ]
+  },
+  "priority": {
+    "PRI_RETENTION": "CUSTOMER",
+    "PRI_STOCK": "INVENTORY",
+    "PRI_STAFF": "OPERATIONS",
+    "PRI_PROFIT": "BUSINESS",
+    "PRI_COMPLIANCE": "OPERATIONS",
+    "PRI_DOCTOR": null,
+    "PRI_OTHER": null
+  },
+  "staffOnly": [
+    "O2",
+    "O3"
+  ],
+  "areas": {
+    "CUSTOMER": "Khách hàng",
+    "INVENTORY": "Kho và hạn dùng",
+    "OPERATIONS": "Vận hành, nhân viên",
+    "BUSINESS": "Lãi lỗ",
+    "TECH": "Ghi chép, phần mềm",
+    "GROWTH": "Sẵn sàng mở rộng"
+  },
+  "aovMid": {
+    "AOV_LT80": 60000,
+    "AOV_80_150": 115000,
+    "AOV_150_300": 225000,
+    "AOV_GT300": 350000
+  },
+  "aovLabel": {
+    "AOV_LT80": "dưới 80.000đ",
+    "AOV_80_150": "80.000–150.000đ",
+    "AOV_150_300": "150.000–300.000đ",
+    "AOV_GT300": "trên 300.000đ"
+  },
+  "stockoutPerWeek": {
+    "OPT1": 18,
+    "OPT2": 10,
+    "OPT3": 3.5
+  },
+  "stockoutLabel": {
+    "OPT1": "hơn 15 lần",
+    "OPT2": "khoảng 6–15 lần",
+    "OPT3": "khoảng 2–5 lần"
+  },
+  "expiredMonth": {
+    "EXP_1_3M": 2000000,
+    "EXP_3_7M": 5000000,
+    "EXP_GT7M": 8000000
+  },
+  "expiredLabel": {
+    "EXP_1_3M": "1–3 triệu",
+    "EXP_3_7M": "3–7 triệu",
+    "EXP_GT7M": "trên 7 triệu"
+  }
+}

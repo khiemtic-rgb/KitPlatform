@@ -167,7 +167,7 @@ internal static class KapVietnameseText
         (new Regex(@"\bNCC\b", RegexOptions.Compiled), "nhà cung cấp"),
         (new Regex(@"\bHSD\b", RegexOptions.Compiled), "hạn sử dụng"),
         (new Regex(@"\bFEFO\b", RegexOptions.Compiled), "xuất kho theo hạn dùng (FEFO)"),
-        (new Regex(@"\bGPP\b", RegexOptions.Compiled), "Thực hành tốt nhà thuốc (GPP)"),
+        (new Regex(@"(?<!\()\bGPP\b", RegexOptions.Compiled), "Thực hành tốt nhà thuốc (GPP)"),
         (new Regex(@"\bSOP\b", RegexOptions.Compiled), "quy trình chuẩn (SOP)"),
         (new Regex(@"\bCRM\b", RegexOptions.Compiled), "quản trị khách hàng"),
         (new Regex(@"\bPOS\b", RegexOptions.Compiled), "bán hàng (POS)"),
