@@ -26,7 +26,7 @@ export const xuanhoa: PharmacyTenantConfig = {
     email: 'hientn85@gmail.com',
     notifyEmail: 'khiemtic@gmail.com',
     social: {
-      facebook: 'https://www.facebook.com/nhathuocxuanhoa',
+      facebook: 'https://www.facebook.com/xuanhoapharma',
       zalo: 'https://zalo.me/0914960069',
     },
     branches: [
