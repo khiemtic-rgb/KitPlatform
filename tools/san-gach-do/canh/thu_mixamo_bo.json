@@ -1,0 +1,10 @@
+{
+ "_ghi_chu": "Cảnh thử thư viện động tác Mixamo trên mô hình Bố: đứng thở, đi buồn, chạy, nhảy, đi chậm, ngồi xuống, ngồi thở, đứng dậy, nói chuyện, vẫy tay, gật đầu, cúi chào.",
+ "loai": "than", "ma": "thu_mixamo_bo", "ra": "thu/mixamo_bo", "khung": "toan", "goc_may_do": 0,
+ "diem_nhin": [0.2, 0], "may": {"xa": 10.5, "tieu_cu": 35, "nhin": 0.9, "cao": 1.1},
+ "dien_vien": [{"nhan_vat": "Bo", "vi_tri": [-3.6, 0], "huong_do": 90,
+   "chuyen_dong": [{"ten": "dung_tho", "giay": 1.0}, {"ten": "di_buon", "giay": 2.0}, {"ten": "chay", "giay": 1.0},
+                   {"ten": "dung_tho", "giay": 0.8}, {"ten": "nhay_tai_cho"}, {"ten": "di_cham_gia", "giay": 1.6},
+                   {"ten": "ngoi_xuong"}, {"ten": "ngoi_tho", "giay": 1.2}, {"ten": "dung_day"},
+                   {"ten": "noi_chuyen", "giay": 2.5}, {"ten": "vay_tay", "giay": 1.6}, {"ten": "gat_dau"}, {"ten": "cui_chao"}]}]
+}

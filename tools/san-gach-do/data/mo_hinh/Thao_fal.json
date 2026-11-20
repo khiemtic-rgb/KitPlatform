@@ -1,0 +1,118 @@
+{
+ "endpoint": "fal-ai/meshy/v6/multi-image-to-3d",
+ "request_id": "01a1df37-40ca-72d1-ba90-4a443ef0884a",
+ "ket_qua": {
+  "animation_glb": null,
+  "animation_fbx": null,
+  "model_glb": {
+   "url": "https://v3b.fal.media/files/b/0ab2910b/6gWATDfJoYMTuAjRfAJ2c_model.glb",
+   "content_type": "model/gltf-binary",
+   "file_name": "model.glb",
+   "file_size": 5324828
+  },
+  "thumbnail": {
+   "url": "https://v3b.fal.media/files/b/0ab2910b/yS-g4PSBq3SINus0r9ZkO_preview.png",
+   "content_type": "image/png",
+   "file_name": "preview.png",
+   "file_size": 58260
+  },
+  "model_urls": {
+   "glb": {
+    "url": "https://v3b.fal.media/files/b/0ab2910b/6gWATDfJoYMTuAjRfAJ2c_model.glb",
+    "content_type": "model/gltf-binary",
+    "file_name": "model.glb",
+    "file_size": 5324828
+   },
+   "fbx": {
+    "url": "https://v3b.fal.media/files/b/0ab2910b/wChrWyZqWTKaKIE34C6dT_model.fbx",
+    "content_type": "application/vnd.autodesk.fbx",
+    "file_name": "model.fbx",
+    "file_size": 4991548
+   },
+   "obj": {
+    "url": "https://v3b.fal.media/files/b/0ab2910b/kIeboQZ6v-kaN7VRX98Ax_model.obj",
+    "content_type": "model/obj",
+    "file_name": "model.obj",
+    "file_size": 5022128
+   },
+   "usdz": {
+    "url": "https://v3b.fal.media/files/b/0ab2910b/1ZQd0lLAKabSSCjtITb-J_model.usdz",
+    "content_type": "model/vnd.usdz+zip",
+    "file_name": "model.usdz",
+    "file_size": 5856705
+   },
+   "blend": null,
+   "stl": {
+    "url": "https://v3b.fal.media/files/b/0ab2910b/drUDZusye3yeuLT71_lwq_model.stl",
+    "content_type": "model/stl",
+    "file_name": "model.stl",
+    "file_size": 2595384
+   }
+  },
+  "texture_urls": [
+   {
+    "base_color": {
+     "url": "https://v3b.fal.media/files/b/0ab2910b/8iQwTHgnNlJwPe7xnLeXD_texture_0.png",
+     "content_type": "image/png",
+     "file_name": "texture_0.png",
+     "file_size": 6018660
+    },
+    "metallic": null,
+    "normal": null,
+    "roughness": null
+   }
+  ],
+  "seed": 656172627,
+  "rigged_character_glb": {
+   "url": "https://v3b.fal.media/files/b/0ab2910e/KTuWf9BoJfk6yxmpbJ4_Q_rigged_character.glb",
+   "content_type": "model/gltf-binary",
+   "file_name": "rigged_character.glb",
+   "file_size": 7085856
+  },
+  "rigged_character_fbx": {
+   "url": "https://v3b.fal.media/files/b/0ab2910e/KCaSA86Xlw9LTC3OQCTm__rigged_character.fbx",
+   "content_type": "application/vnd.autodesk.fbx",
+   "file_name": "rigged_character.fbx",
+   "file_size": 5864172
+  },
+  "basic_animations": {
+   "walking_glb": {
+    "url": "https://v3b.fal.media/files/b/0ab2910e/eU-Cns250VmWoDaNzrc23_walking.glb",
+    "content_type": "model/gltf-binary",
+    "file_name": "walking.glb",
+    "file_size": 7065892
+   },
+   "walking_fbx": {
+    "url": "https://v3b.fal.media/files/b/0ab2910e/dbs2ZuLd8Jm6ucKDDKLD0_walking.fbx",
+    "content_type": "application/vnd.autodesk.fbx",
+    "file_name": "walking.fbx",
+    "file_size": 5900268
+   },
+   "walking_armature_glb": {
+    "url": "https://v3b.fal.media/files/b/0ab2910e/_J3vOL5-UWOsSyYC87SWA_walking_armature.glb",
+    "content_type": "model/gltf-binary",
+    "file_name": "walking_armature.glb",
+    "file_size": 90288
+   },
+   "running_glb": {
+    "url": "https://v3b.fal.media/files/b/0ab2910f/256ojuAjvk3vHoEvrBb9p_running.glb",
+    "content_type": "model/gltf-binary",
+    "file_name": "running.glb",
+    "file_size": 7055264
+   },
+   "running_fbx": {
+    "url": "https://v3b.fal.media/files/b/0ab2910e/qU4qboUo0eiW8WfKatIhQ_running.fbx",
+    "content_type": "application/vnd.autodesk.fbx",
+    "file_name": "running.fbx",
+    "file_size": 5883276
+   },
+   "running_armature_glb": {
+    "url": "https://v3b.fal.media/files/b/0ab2910e/Juo1w1wLgGbMlnQmiOUjg_running_armature.glb",
+    "content_type": "model/gltf-binary",
+    "file_name": "running_armature.glb",
+    "file_size": 79648
+   }
+  },
+  "rig_task_id": "01a1df41-e313-701f-8170-1a4cdb868c4b"
+ }
+}

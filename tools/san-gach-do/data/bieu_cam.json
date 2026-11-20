@@ -1,0 +1,48 @@
+{
+ "_ghi_chu": "Mỗi biểu cảm là trọng số các dáng có sẵn trên mặt. Lông mày: Nhuong (nhướn cả dải), Lo (đầu trong nâng, chụm vào). Miệng (mặt 3D): MepHa (hai khoé trễ xuống). Thêm biểu cảm mới = thêm một dòng.",
+ "thuong": {
+  "mo_ta": "Bình thường",
+  "may": {}
+ },
+ "lo": {
+  "mo_ta": "Lo lắng, buồn, thương",
+  "may": {
+   "Lo": 1.0,
+   "MepHa": 0.6
+  }
+ },
+ "lo_nhe": {
+  "mo_ta": "Hơi lo, ngập ngừng",
+  "may": {
+   "Lo": 0.5,
+   "MepHa": 0.3
+  }
+ },
+ "nhuong": {
+  "mo_ta": "Ngạc nhiên, chú ý",
+  "may": {
+   "Nhuong": 1.0
+  }
+ },
+ "nhuong_nhe": {
+  "mo_ta": "Hỏi lại, để ý",
+  "may": {
+   "Nhuong": 0.5
+  }
+ },
+ "nghen": {
+  "mo_ta": "Xúc động, cố nén",
+  "may": {
+   "Lo": 0.8,
+   "Nhuong": 0.3,
+   "MepHa": 1.0
+  }
+ },
+ "buon": {
+  "mo_ta": "Buồn lặng, trầm",
+  "may": {
+   "Lo": 0.6,
+   "MepHa": 0.8
+  }
+ }
+}

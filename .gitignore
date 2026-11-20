@@ -59,3 +59,16 @@ _famixa_m1_test/
 client/admin/public/_m1tmp/
 *.log
 tmp/
+
+# Mo hinh 3D San gach do. Ban du nam trong bundle o F, snapshot 7b0061da. 2026-11-20.
+*.glb
+*.gltf
+*.fbx
+*.obj
+*.blend
+*.usdz
+*.ktx2
+*.stl
+textures/
+tools/san-gach-do/data/mo_hinh/**/*.png
+tools/san-gach-do/data/mo_hinh/**/*.webp

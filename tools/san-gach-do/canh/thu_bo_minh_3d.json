@@ -1,0 +1,86 @@
+{
+ "mo_ta": "Thử hai mô hình 3D thật trong cùng khung: Bố đi tới, nói 4 câu (khẩu hình theo âm), câu 1 đưa tiền; Minh đứng nghe, gật đầu ở câu 2.",
+ "loai": "than",
+ "khung": "toan",
+ "goc_may_do": 15,
+ "thoai": {
+  "file": "thoai/tap03_c08_bo_eleven.wav",
+  "bat_dau": 1.8,
+  "loi": [
+   "Cầm lấy mà tiêu. Tiền ăn tuần này.",
+   "Vay thì phải trả. Thế là phải.",
+   "Chuyện ấy để bố biết thôi, không phải nói với dì. Cầm lấy.",
+   "Đi đi con. Đường xa, đi sớm cho kịp lên đến nơi trước khi trời tối."
+  ]
+ },
+ "dien_vien": [
+  {
+   "nhan_vat": "Bo",
+   "vi_tri": [
+    2.3,
+    0.0
+   ],
+   "huong_do": -90,
+   "chuyen_dong": [
+    {
+     "ten": "di",
+     "giay": 1.2
+    },
+    {
+     "ten": "dung_tho",
+     "giay": 0.6
+    },
+    {
+     "ten": "dua_tien",
+     "cau": 1,
+     "lech": -0.1
+    },
+    {
+     "ten": "dung_tho",
+     "giay": 2.0
+    },
+    {
+     "ten": "gat_dau",
+     "cau": 4
+    }
+   ],
+   "noi": true,
+   "bieu_cam": [
+    {
+     "cau": 1,
+     "bieu_cam": "lo",
+     "chuyen": 0.5,
+     "lech": 0.15
+    },
+    {
+     "cau": 4,
+     "bieu_cam": "nghen",
+     "chuyen": 0.8,
+     "lech": -0.2
+    }
+   ]
+  },
+  {
+   "nhan_vat": "Minh",
+   "vi_tri": [
+    -0.45,
+    0.0
+   ],
+   "huong_do": 90,
+   "chuyen_dong": [
+    {
+     "ten": "dung_tho",
+     "giay": 3.0
+    },
+    {
+     "ten": "gat_dau",
+     "cau": 2,
+     "lech": 0.3
+    }
+   ],
+   "noi": false
+  }
+ ],
+ "ra": "thu/bo_minh_3d",
+ "ma": "thu_bo_minh_3d"
+}

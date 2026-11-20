@@ -1,0 +1,76 @@
+{
+ "ma": "Duc",
+ "nguon": "meshy",
+ "anh_goc": "F:\\Noi_Com_Chung\\Nhan_Vat\\Bo_Chuan\\Duc_goc.png",
+ "anh_gui": {
+  "chinh_dien": "E:\\KitPlatform\\tools\\san-gach-do\\data\\mo_hinh\\anh_vao\\Duc_chinh_dien.png",
+  "ba_phan_tu": "E:\\KitPlatform\\tools\\san-gach-do\\data\\mo_hinh\\anh_vao\\Duc_ba_phan_tu.png",
+  "nghieng_trai": "E:\\KitPlatform\\tools\\san-gach-do\\data\\mo_hinh\\anh_vao\\Duc_nghieng_trai.png",
+  "phia_sau": "E:\\KitPlatform\\tools\\san-gach-do\\data\\mo_hinh\\anh_vao\\Duc_phia_sau.png"
+ },
+ "kiem_tra": {
+  "xuong": 24,
+  "ten_khop": [
+   "Hips",
+   "Spine02",
+   "Spine01",
+   "Spine",
+   "neck",
+   "Head",
+   "head_end",
+   "headfront",
+   "LeftShoulder",
+   "LeftArm",
+   "LeftForeArm",
+   "LeftHand",
+   "RightShoulder",
+   "RightArm",
+   "RightForeArm",
+   "RightHand",
+   "LeftUpLeg",
+   "LeftLeg",
+   "LeftFoot",
+   "LeftToeBase",
+   "RightUpLeg",
+   "RightLeg",
+   "RightFoot",
+   "RightToeBase"
+  ],
+  "khop_chuan_nhan_duoc": [
+   "chest",
+   "foot.L",
+   "foot.R",
+   "forearm.L",
+   "forearm.R",
+   "hand.L",
+   "hand.R",
+   "head",
+   "hips",
+   "neck",
+   "shin.L",
+   "shin.R",
+   "shoulder.L",
+   "shoulder.R",
+   "spine",
+   "thigh.L",
+   "thigh.R",
+   "toe.L",
+   "toe.R",
+   "upper_arm.L",
+   "upper_arm.R"
+  ],
+  "khop_chuan_thieu": [],
+  "luoi_gan_xuong": [
+   "char1"
+  ],
+  "cao_m": 1.7,
+  "cao_hong_m": 0.895,
+  "ti_le_dung": true,
+  "dat": true
+ },
+ "xem_truoc": [
+  "E:\\KitPlatform\\tools\\san-gach-do\\data\\mo_hinh\\Duc_xem_truoc_khung_1.png",
+  "E:\\KitPlatform\\tools\\san-gach-do\\data\\mo_hinh\\Duc_xem_truoc_khung_40.png",
+  "E:\\KitPlatform\\tools\\san-gach-do\\data\\mo_hinh\\Duc_xem_truoc_khung_80.png"
+ ]
+}

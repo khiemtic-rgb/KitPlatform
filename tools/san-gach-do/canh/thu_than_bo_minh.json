@@ -1,0 +1,32 @@
+{
+  "mo_ta": "Thử lớp thân người (người mẫu tạm): Bố đi tới, nói, đến câu 1 thì đưa tiền; Minh gật đầu ở câu 2.",
+  "loai": "than",
+  "khung": "toan",
+  "goc_may_do": 15,
+  "thoai": {
+    "file": "thoai/tap03_c08_bo_eleven.wav",
+    "bat_dau": 1.8,
+    "loi": [
+      "Cầm lấy mà tiêu. Tiền ăn tuần này.",
+      "Vay thì phải trả. Thế là phải.",
+      "Chuyện ấy để bố biết thôi, không phải nói với dì. Cầm lấy.",
+      "Đi đi con. Đường xa, đi sớm cho kịp lên đến nơi trước khi trời tối."
+    ]
+  },
+  "dien_vien": [
+    {"nhan_vat": "Bo", "vi_tri": [2.3, 0.0], "huong_do": -90,
+     "chuyen_dong": [
+       {"ten": "di", "giay": 1.2},
+       {"ten": "dung_tho", "giay": 0.6},
+       {"ten": "dua_tien", "cau": 1, "lech": -0.1},
+       {"ten": "dung_tho", "giay": 2.0},
+       {"ten": "gat_dau", "cau": 4}
+     ]},
+    {"nhan_vat": "Minh", "vi_tri": [-0.45, 0.0], "huong_do": 90,
+     "chuyen_dong": [
+       {"ten": "dung_tho", "giay": 3.0},
+       {"ten": "gat_dau", "cau": 2, "lech": 0.3}
+     ]}
+  ],
+  "ra": "thu/than_bo_minh"
+}

@@ -1,0 +1,24 @@
+{
+ "endpoint": "fal-ai/hyper3d/rodin/v2.5",
+ "request_id": "01a1e319-6aab-7521-9a96-4802aa1a4ad5",
+ "ket_qua": {
+  "model_mesh": {
+   "url": "https://v3b.fal.media/files/b/0ab2aa45/vTkf3E32e-oKjzoMrxdiZ_base_basic_shaded.glb",
+   "content_type": "model/gltf-binary",
+   "file_name": "base_basic_shaded.glb",
+   "file_size": 10186600
+  },
+  "model_meshes": [],
+  "seed": 53735,
+  "textures": [
+   {
+    "url": "https://v3b.fal.media/files/b/0ab2aa45/Csg__-Ej62bXio3KcPW61_preview.webp",
+    "content_type": "application/octet-stream",
+    "file_name": "preview.webp",
+    "file_size": 5794,
+    "width": null,
+    "height": null
+   }
+  ]
+ }
+}
