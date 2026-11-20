@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "novixa-style-proof-v2",
+  "approvalStatus": "proposed",
+  "scenes": [
+    {
+      "sceneId": "s03-style-v2",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Hàng bán nhanh rời kệ vì có người đẩy, hàng nằm yên thành vốn trong két, tiền đi trước.",
+      "durationSeconds": 17,
+      "durationSource": "voice_track",
+      "voiceLeadSeconds": 2.4,
+      "voiceTailSeconds": 2.2,
+      "dialogue": "Có những mặt hàng bán vèo vèo. Nhưng cũng có những hộp cứ nằm yên trên kệ, hết ngày này sang ngày khác. Hàng thì vẫn ở đó. Còn tiền thì đã đi trước một bước rồi.",
+      "action": "Thùng lớn vào kệ. Người rút tay rồi với tới. Hai thùng xanh bay lên và ra khỏi khung, thùng còn lại lắc theo. Lịch lật. Ba thùng nặng lại, nhấc lên rồi rơi xuống két. Đồng không ghi số lăn ra trước. Mặt khóa xoay.",
+      "visualMetaphor": "Hàng tồn là vốn nằm trong két. Tiền đi trước, hàng ở lại.",
+      "subjects": ["người đứng quầy", "thùng hàng", "kệ", "lịch", "két", "đồng không mệnh giá"],
+      "onScreenText": ["Hàng tồn kho cũng là vốn"],
+      "templateId": "stock_story",
+      "params": {
+        "mode": "hybrid",
+        "headline": "Hàng tồn kho cũng là vốn",
+        "boxCount": 5,
+        "fastCount": 2,
+        "headlineAt": 13.15,
+        "beats": {
+          "intro": [0.15, 2.5],
+          "fast": [3.35, 4.7],
+          "calendar": [7.25, 8.85],
+          "transform": [9.35, 10.85],
+          "drop": [11.15, 12.85],
+          "lock": [12.7, 14.6]
+        }
+      },
+      "assets": ["stage-stock"],
+      "audio": {
+        "voiceTrackId": "vo-style-v2",
+        "musicAssetId": null,
+        "sfx": [
+          {"assetId": "sfx-whoosh", "atSeconds": 3.75, "gain": 0.9},
+          {"assetId": "sfx-whoosh", "atSeconds": 4.05, "gain": 0.7},
+          {"assetId": "sfx-paper", "atSeconds": 7.45, "gain": 0.65},
+          {"assetId": "sfx-paper", "atSeconds": 8.0, "gain": 0.65},
+          {"assetId": "sfx-paper", "atSeconds": 8.5, "gain": 0.65},
+          {"assetId": "sfx-whoosh", "atSeconds": 9.7, "gain": 0.45},
+          {"assetId": "sfx-thud", "atSeconds": 12.48, "gain": 1},
+          {"assetId": "sfx-lock", "atSeconds": 13.05, "gain": 0.75}
+        ],
+        "intentionalSilences": [
+          {"start": 0, "end": 2.8, "reason": "Mở hình trước lời. Âm đầu của chữ Có còn nhỏ nên máy đo lặng đến khoảng 2.66s."},
+          {"start": 13.4, "end": 18, "reason": "Giữ hình khóa két sau khi lời kết thúc. Không có nhạc nền."}
+        ],
+        "syncNotes": "Whoosh lúc với tay và lúc 'vèo'. Giấy lúc lịch lật theo 'hết ngày này sang ngày khác'. Whoosh nhỏ lúc đồng bắt đầu lăn, trước chữ 'tiền'. Thud lúc thùng chạm két. Khóa sau câu thoại. Toàn bộ SFX là placeholder."
+      },
+      "transitionOut": {"type": "hold", "note": "Giữ câu chữ và két. Cảnh sau của phim chưa được dựng."},
+      "acceptance": [
+        "Có nhịp lấy đà, bay theo cung, và phản ứng của người.",
+        "Ẩn dụ vốn khóa đọc được: hàng ở lại trong két, tiền đi trước.",
+        "Chữ trong vùng an toàn.",
+        "Không có số liệu doanh thu và không có UI giả.",
+        "SFX là placeholder. Không có nhạc."
+      ],
+      "previewFractions": [0.03, 0.25, 0.46, 0.6, 0.72, 0.82, 0.9, 0.97]
+    }
+  ]
+}

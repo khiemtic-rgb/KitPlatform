@@ -1,0 +1,922 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "novixa-long",
+  "approvalStatus": "approved",
+  "source": "script-analysis",
+  "warnings": [],
+  "scenes": [
+    {
+      "sceneId": "s1-open",
+      "approvalStatus": "approved",
+      "storyGoal": "Novixa giữ bán hàng, tồn kho và hạn dùng trên một nhịp.",
+      "durationSeconds": 10,
+      "durationSource": "fixed",
+      "dialogue": "Novixa giữ bán hàng, tồn kho và hạn dùng trên một nhịp.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Novixa giữ bán hàng, tồn kho và hạn dùng trên một nhịp."
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "brand_center",
+        "line": "Novixa giữ bán hàng, tồn kho và hạn dùng trên một nhịp.",
+        "logoAssetId": "logo-novixa",
+        "logoScale": 0.42
+      },
+      "assets": [
+        "logo-novixa"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s1-open",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 3.7,
+            "end": 10,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 4.23
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s2-dash",
+      "approvalStatus": "approved",
+      "storyGoal": "Màn tổng quan nhà thuốc",
+      "durationSeconds": 14,
+      "durationSource": "fixed",
+      "dialogue": "Màn tổng quan cho thấy nhịp của nhà thuốc.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Màn tổng quan nhà thuốc",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "push_in",
+        "amount": 0.06,
+        "caption": "Màn tổng quan nhà thuốc",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-doc008-dashboard"
+      },
+      "assets": [
+        "nvx-doc008-dashboard"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s2-dash",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 2.438,
+            "end": 14,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 3.23
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s3-pos",
+      "approvalStatus": "approved",
+      "storyGoal": "Màn bán hàng tại quầy",
+      "durationSeconds": 14,
+      "durationSource": "fixed",
+      "dialogue": "Bán hàng nằm trên màn hình quầy.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Màn bán hàng tại quầy",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "pan",
+        "amount": 0.06,
+        "caption": "Màn bán hàng tại quầy",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-doc008-pos"
+      },
+      "assets": [
+        "nvx-doc008-pos"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s3-pos",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 1.938,
+            "end": 14,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.46
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s4-gap",
+      "approvalStatus": "approved",
+      "storyGoal": "Báo thiếu ảnh hộp thuốc",
+      "durationSeconds": 10,
+      "durationSource": "fixed",
+      "dialogue": "Chưa có ảnh hộp thuốc đã duyệt. Không lấy ảnh khác để lấp chỗ này.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Chưa có ảnh hộp thuốc",
+        "Không lấy ảnh khác để lấp"
+      ],
+      "templateId": "kinetic_type",
+      "params": {
+        "lines": [
+          {
+            "text": "Chưa có ảnh hộp thuốc",
+            "at": 0.2,
+            "scale": 0.055,
+            "bold": true
+          },
+          {
+            "text": "Không lấy ảnh khác để lấp",
+            "at": 0.7,
+            "scale": 0.04,
+            "bold": false
+          }
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s4-gap",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 4.675,
+            "end": 10,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 5.08
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s5-catalog",
+      "approvalStatus": "approved",
+      "storyGoal": "Danh mục trên phần mềm",
+      "durationSeconds": 14,
+      "durationSource": "fixed",
+      "dialogue": "Danh mục sản phẩm là danh sách trên phần mềm, chưa phải ảnh hộp thuốc.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Danh mục trên phần mềm",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "pan",
+        "amount": 0.06,
+        "caption": "Danh mục trên phần mềm",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-doc008-catalog"
+      },
+      "assets": [
+        "nvx-doc008-catalog"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s5-catalog",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 3.875,
+            "end": 14,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 5.38
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s6-stock",
+      "approvalStatus": "approved",
+      "storyGoal": "Màn tồn kho",
+      "durationSeconds": 14,
+      "durationSource": "fixed",
+      "dialogue": "Tồn kho và hạn dùng được nhìn trên màn tồn.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Màn tồn kho",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "push_in",
+        "amount": 0.06,
+        "caption": "Màn tồn kho",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-doc008-stock"
+      },
+      "assets": [
+        "nvx-doc008-stock"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s6-stock",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 2.513,
+            "end": 14,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 3.31
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s7-flow",
+      "approvalStatus": "approved",
+      "storyGoal": "Sơ đồ một nhịp tại quầy",
+      "durationSeconds": 12,
+      "durationSource": "fixed",
+      "dialogue": "Một nhịp: bán, trừ tồn, rồi nhắc hạn.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Một nhịp tại quầy",
+        "Sơ đồ nghiệp vụ",
+        "Bán",
+        "Kho",
+        "Hạn"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "lanes",
+        "title": "Một nhịp tại quầy",
+        "dataLabel": "Sơ đồ nghiệp vụ",
+        "lanes": [
+          {
+            "label": "Bán",
+            "events": [
+              {
+                "text": "Ghi đơn",
+                "at": 0.72
+              }
+            ]
+          },
+          {
+            "label": "Kho",
+            "events": [
+              {
+                "text": "Trừ tồn",
+                "at": 0.5
+              }
+            ]
+          },
+          {
+            "label": "Hạn",
+            "events": [
+              {
+                "text": "Nhắc",
+                "at": 0.3
+              }
+            ]
+          }
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s7-flow",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 3.5,
+            "end": 12,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.85
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s8-grn",
+      "approvalStatus": "approved",
+      "storyGoal": "Màn nhập hàng",
+      "durationSeconds": 14,
+      "durationSource": "fixed",
+      "dialogue": "Nhập hàng có một màn riêng.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Màn nhập hàng",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "pan",
+        "amount": 0.06,
+        "caption": "Màn nhập hàng",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-doc008-grn"
+      },
+      "assets": [
+        "nvx-doc008-grn"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s8-grn",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 1.688,
+            "end": 14,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.08
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s9-crm",
+      "approvalStatus": "approved",
+      "storyGoal": "Hồ sơ khách hàng",
+      "durationSeconds": 14,
+      "durationSource": "fixed",
+      "dialogue": "Hồ sơ khách nằm trong phần mềm.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Hồ sơ khách hàng",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "pan",
+        "amount": 0.06,
+        "caption": "Hồ sơ khách hàng",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-doc008-crm"
+      },
+      "assets": [
+        "nvx-doc008-crm"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s9-crm",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 1.925,
+            "end": 14,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.38
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s10-report",
+      "approvalStatus": "approved",
+      "storyGoal": "Màn báo cáo",
+      "durationSeconds": 14,
+      "durationSource": "fixed",
+      "dialogue": "Báo cáo mở từ màn báo cáo.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Màn báo cáo",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "push_in",
+        "amount": 0.06,
+        "caption": "Màn báo cáo",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-doc008-reports"
+      },
+      "assets": [
+        "nvx-doc008-reports"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s10-report",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 2.087,
+            "end": 14,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.0
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s11-nxt",
+      "approvalStatus": "approved",
+      "storyGoal": "Báo cáo xuất nhập tồn",
+      "durationSeconds": 14,
+      "durationSource": "fixed",
+      "dialogue": "Xuất nhập tồn là một báo cáo khác, không dùng lại màn tổng quan.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Báo cáo xuất nhập tồn",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "pan",
+        "amount": 0.06,
+        "caption": "Báo cáo xuất nhập tồn",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-qld-nxt"
+      },
+      "assets": [
+        "nvx-qld-nxt"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s11-nxt",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 3.738,
+            "end": 14,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 4.92
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s12-app",
+      "approvalStatus": "approved",
+      "storyGoal": "Ứng dụng khách hàng",
+      "durationSeconds": 12,
+      "durationSource": "fixed",
+      "dialogue": "Khách có một màn ứng dụng riêng.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Ứng dụng khách hàng",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "push_in",
+        "amount": 0.06,
+        "caption": "Ứng dụng khách hàng",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-doc008-app"
+      },
+      "assets": [
+        "nvx-doc008-app"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s12-app",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 1.812,
+            "end": 12,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.46
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s13-link",
+      "approvalStatus": "approved",
+      "storyGoal": "Liên thông dữ liệu thuốc",
+      "durationSeconds": 12,
+      "durationSource": "fixed",
+      "dialogue": "Liên thông dữ liệu thuốc là một màn cấu hình và theo dõi.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Liên thông dữ liệu thuốc",
+        "Số trên hình là dữ liệu demo."
+      ],
+      "templateId": "annotated_plate",
+      "params": {
+        "preset": "pan",
+        "amount": 0.06,
+        "caption": "Liên thông dữ liệu thuốc",
+        "note": "Số trên hình là dữ liệu demo.",
+        "assetId": "nvx-qld-connect"
+      },
+      "assets": [
+        "nvx-qld-connect"
+      ],
+      "audio": {
+        "voiceTrackId": "vo-s13-link",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 3.325,
+            "end": 12,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 4.38
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s14-close",
+      "approvalStatus": "approved",
+      "storyGoal": "Novixa",
+      "durationSeconds": 12,
+      "durationSource": "fixed",
+      "dialogue": "Bán đúng. Theo dõi hạn. Giao rõ.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Bán đúng",
+        "Novixa"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "triptych",
+        "note": "Novixa",
+        "columns": [
+          {
+            "index": "01",
+            "title": "Bán đúng",
+            "body": ""
+          },
+          {
+            "index": "02",
+            "title": "Theo dõi hạn",
+            "body": ""
+          },
+          {
+            "index": "03",
+            "title": "Giao rõ",
+            "body": ""
+          }
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s14-close",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 4.25,
+            "end": 12,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.46
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    }
+  ]
+}

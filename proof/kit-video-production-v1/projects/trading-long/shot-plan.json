@@ -1,0 +1,662 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "trading-long",
+  "approvalStatus": "approved",
+  "source": "script-analysis",
+  "warnings": [],
+  "scenes": [
+    {
+      "sceneId": "s1-open",
+      "approvalStatus": "approved",
+      "storyGoal": "Đọc giá trước khi nói về lệnh.",
+      "durationSeconds": 12,
+      "durationSource": "fixed",
+      "dialogue": "Đọc giá trước khi nói về lệnh.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Agent Trading",
+        "Đọc giá trước khi nói về lệnh."
+      ],
+      "templateId": "brand_reveal",
+      "params": {
+        "wordmark": "Agent Trading",
+        "line": "Đọc giá trước khi nói về lệnh."
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s1-open",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 1.9,
+            "end": 12,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.31
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s2-up",
+      "approvalStatus": "approved",
+      "storyGoal": "BTCUSDT tăng 7,4% · khung 1 giờ",
+      "durationSeconds": 26,
+      "durationSource": "fixed",
+      "dialogue": "Bitcoin khung một giờ, đoạn này tăng 7,4 phần trăm. Đường trung bình được tính từ giá đóng cửa.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Khối lượng",
+        "BTCUSDT tăng 7,4% · khung 1 giờ",
+        "Không phải khuyến nghị",
+        "SMA 20",
+        "Đoạn tăng"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "headline": "BTCUSDT tăng 7,4% · khung 1 giờ",
+        "disclosure": "Không phải khuyến nghị",
+        "start": 70,
+        "count": 48,
+        "panBars": 0,
+        "indicators": [
+          "sma20"
+        ],
+        "focus": {
+          "start": 4,
+          "end": 32,
+          "label": "Đoạn tăng"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s2-up",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 6.562,
+            "end": 26,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 7.31
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s3-pull",
+      "approvalStatus": "approved",
+      "storyGoal": "BTCUSDT có nhịp hồi trong đoạn tăng",
+      "durationSeconds": 20,
+      "durationSource": "fixed",
+      "dialogue": "Trong đoạn tăng có một nhịp hồi. Nhịp này lấy từ chính các nến, không phải hình vẽ thêm.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Khối lượng",
+        "BTCUSDT có nhịp hồi trong đoạn tăng",
+        "Không phải khuyến nghị",
+        "SMA 20",
+        "Nhịp hồi"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "headline": "BTCUSDT có nhịp hồi trong đoạn tăng",
+        "disclosure": "Không phải khuyến nghị",
+        "start": 86,
+        "count": 32,
+        "panBars": 0,
+        "indicators": [
+          "sma20"
+        ],
+        "focus": {
+          "start": 22,
+          "end": 31,
+          "label": "Nhịp hồi"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s3-pull",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 5.775,
+            "end": 20,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 6.77
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s4-down",
+      "approvalStatus": "approved",
+      "storyGoal": "BTCUSDT giảm 3,5% · khung 1 giờ",
+      "durationSeconds": 26,
+      "durationSource": "fixed",
+      "dialogue": "Cùng mã, một đoạn khác giảm 3,5 phần trăm. Vùng tô là mức giảm của giá, không phải lợi nhuận chiến lược.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Khối lượng",
+        "BTCUSDT giảm 3,5% · khung 1 giờ",
+        "Không phải khuyến nghị",
+        "SMA 20",
+        "Mức giảm của giá"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "headline": "BTCUSDT giảm 3,5% · khung 1 giờ",
+        "disclosure": "Không phải khuyến nghị",
+        "start": 438,
+        "count": 48,
+        "panBars": 12,
+        "indicators": [
+          "sma20"
+        ],
+        "focus": {
+          "start": 21,
+          "end": 58,
+          "label": "Mức giảm của giá"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s4-down",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 7.188,
+            "end": 26,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 8.0
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s5-range",
+      "approvalStatus": "approved",
+      "storyGoal": "ETHUSDT biên hẹp · RSI 14",
+      "durationSeconds": 22,
+      "durationSource": "fixed",
+      "dialogue": "Ethereum khung một giờ nằm trong biên hẹp. RSI được tính từ giá đóng cửa.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Khối lượng",
+        "ETHUSDT biên hẹp · RSI 14",
+        "Không phải khuyến nghị",
+        "RSI 14"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/ETHUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "ETHUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "headline": "ETHUSDT biên hẹp · RSI 14",
+        "disclosure": "Không phải khuyến nghị",
+        "start": 519,
+        "count": 48,
+        "panBars": 0,
+        "indicators": [
+          "rsi14"
+        ],
+        "focus": null
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s5-range",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 5.837,
+            "end": 22,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 5.62
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s6-macd",
+      "approvalStatus": "approved",
+      "storyGoal": "BTCUSDT · MACD âm cuối cửa sổ",
+      "durationSeconds": 20,
+      "durationSource": "fixed",
+      "dialogue": "MACD của một đoạn Bitcoin khác, tính từ giá đóng cửa. Không phải tín hiệu vào lệnh.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Khối lượng",
+        "BTCUSDT · MACD âm cuối cửa sổ",
+        "Không phải khuyến nghị",
+        "MACD"
+      ],
+      "templateId": "market_chart",
+      "params": {
+        "dataFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json",
+        "dataBase": "repo",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "mode": "historical",
+        "sourceName": "binance-public-klines",
+        "headline": "BTCUSDT · MACD âm cuối cửa sổ",
+        "disclosure": "Không phải khuyến nghị",
+        "start": 144,
+        "count": 48,
+        "panBars": 12,
+        "indicators": [
+          "macd"
+        ],
+        "focus": null
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s6-macd",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 6.137,
+            "end": 20,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 6.38
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s7-agent",
+      "approvalStatus": "approved",
+      "storyGoal": "Một nhịp của agent",
+      "durationSeconds": 16,
+      "durationSource": "fixed",
+      "dialogue": "Agent đọc dữ liệu, xét điều kiện, rồi mới nói tới rủi ro.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Việc agent làm",
+        "Sơ đồ, không phải lệnh",
+        "Nguồn",
+        "Xét",
+        "Rủi ro"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "lanes",
+        "title": "Việc agent làm",
+        "dataLabel": "Sơ đồ, không phải lệnh",
+        "lanes": [
+          {
+            "label": "Nguồn",
+            "events": [
+              {
+                "text": "Giá",
+                "at": 0.7
+              }
+            ]
+          },
+          {
+            "label": "Xét",
+            "events": [
+              {
+                "text": "Điều kiện",
+                "at": 0.48
+              }
+            ]
+          },
+          {
+            "label": "Rủi ro",
+            "events": [
+              {
+                "text": "Giới hạn",
+                "at": 0.32
+              }
+            ]
+          }
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s7-agent",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 4.013,
+            "end": 16,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 4.38
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s8-risk",
+      "approvalStatus": "approved",
+      "storyGoal": "Agent Trading",
+      "durationSeconds": 18,
+      "durationSource": "fixed",
+      "dialogue": "Quan sát. Đánh giá. Đứng ngoài khi chưa đủ.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Quan sát",
+        "Agent Trading"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "triptych",
+        "note": "Agent Trading",
+        "columns": [
+          {
+            "index": "01",
+            "title": "Quan sát",
+            "body": ""
+          },
+          {
+            "index": "02",
+            "title": "Đánh giá",
+            "body": ""
+          },
+          {
+            "index": "03",
+            "title": "Đứng ngoài",
+            "body": ""
+          }
+        ]
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s8-risk",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 4.587,
+            "end": 18,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 3.31
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    },
+    {
+      "sceneId": "s9-close",
+      "approvalStatus": "approved",
+      "storyGoal": "Lịch sử giá. Không phải khuyến nghị.",
+      "durationSeconds": 20,
+      "durationSource": "fixed",
+      "dialogue": "Lịch sử giá. Không phải khuyến nghị.",
+      "action": "",
+      "visualMetaphor": null,
+      "subjects": [],
+      "onScreenText": [
+        "Agent Trading",
+        "Lịch sử giá. Không phải khuyến nghị."
+      ],
+      "templateId": "brand_reveal",
+      "params": {
+        "wordmark": "Agent Trading",
+        "line": "Lịch sử giá. Không phải khuyến nghị."
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "vo-s9-close",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0,
+            "end": 0.75,
+            "reason": "Hình vào trước lời."
+          },
+          {
+            "start": 3.2,
+            "end": 20,
+            "reason": "Lời đã hết. Giữ hình đến hết cảnh, không có nhạc."
+          }
+        ],
+        "syncNotes": "Lời vào sau 0,35 giây."
+      },
+      "transitionOut": {
+        "type": "cut",
+        "note": "Cắt khi câu đã rõ."
+      },
+      "acceptance": [
+        "Chữ đúng câu đã khai.",
+        "Không dùng ảnh khác nội dung."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 2.77
+      },
+      "voiceLeadSeconds": 0.35,
+      "previewFractions": [
+        0.15,
+        0.55,
+        0.9
+      ]
+    }
+  ]
+}

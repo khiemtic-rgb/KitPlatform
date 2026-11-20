@@ -1,0 +1,249 @@
+{
+  "independent": {
+    "NOVIXA": 26,
+    "AgentTrading": 0,
+    "Shared": 0,
+    "other": 0,
+    "total": 26
+  },
+  "added": [
+    {
+      "assetId": "ref-blister-foil",
+      "category": "medicine.packaging",
+      "license": "CC BY-SA 4.0",
+      "author": "Tarasna0922",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Blister_of_tablets.jpg"
+    },
+    {
+      "assetId": "ref-pack-still",
+      "category": "medicine.packaging",
+      "license": "CC BY-SA 4.0",
+      "author": "BuhaM",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Pills_and_medicines_02.jpg"
+    },
+    {
+      "assetId": "ref-pharmacy-floor",
+      "category": "environment.pharmacy",
+      "license": "CC BY-SA 3.0",
+      "author": "Mike1979 Russia",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Brest_Greenberg_Pharmacy_Interior_2024-09-20_3798.jpg"
+    },
+    {
+      "assetId": "ref-hands-blister",
+      "category": "people.handling",
+      "license": "CC BY 2.0",
+      "author": "Shixart1985",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Person_holds_a_blister_pack_of_pills_while_sitting_at_a_table.jpg"
+    },
+    {
+      "assetId": "ref-pharmacy-wait",
+      "category": "environment.pharmacy.wait",
+      "license": "CC BY-SA 4.0",
+      "author": "YipshaiukOWL",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:HK_%E5%B1%AF%E9%96%80%E9%86%AB%E9%99%A2_Tuen_Mun_Hospital_ground_floor_Pharmacy_service_counter_window_n_waiting_room_plastic_seats_July_2016_DSC.jpg"
+    }
+  ],
+  "rejected": [
+    "pkg-vitamin-c",
+    "s01-pharmacy",
+    "ref-branded-blisters",
+    "ref-counter-credential",
+    "ref-pharmacy-brochure",
+    "ref-gaming-monitors"
+  ],
+  "stillMissing": [
+    "Hộp thuốc bán lẻ đủ các mặt, chai và vỉ mang nhãn riêng.",
+    "Kho, quầy tư vấn, dược sĩ và khách tại quầy.",
+    "Bàn giao dịch, màn hình đang có biểu đồ, thiết bị phân tích."
+  ],
+  "chart": {
+    "symbol": "BTCUSDT",
+    "timeframe": "1h",
+    "source": "binance-public-klines",
+    "mode": "historical",
+    "rows": 1000,
+    "ohlcvErrors": [],
+    "window": {
+      "start": 70,
+      "count": 48,
+      "change": 0.0739,
+      "percentText": "7,4"
+    },
+    "notes": {
+      "change": 0.0739,
+      "peakAt": 34,
+      "troughAt": 43,
+      "priceDrop": 0.0261,
+      "pullback": {
+        "at": 42,
+        "dip": 0.0261
+      },
+      "breakout": {
+        "at": 34,
+        "prior": 12
+      },
+      "volumeSurgeAt": 22
+    },
+    "highlight": {
+      "localIndex": 22,
+      "open": 81720.01,
+      "close": 83760.0
+    },
+    "region": {
+      "start": 86,
+      "count": 16,
+      "focus": 6
+    },
+    "sma20": {
+      "length": 20,
+      "atBar": 70,
+      "value": 80915.0065,
+      "warmup": 19
+    },
+    "rsi": "Wilder, độ dài 14, tính từ giá đóng cửa. Bản proof này không vẽ RSI.",
+    "macd": "EMA 12 và 26, signal EMA 9. Bản proof này không vẽ MACD.",
+    "unchangedFile": "proof/kit-video-production-v1/library/market/BTCUSDT-1h.json"
+  },
+  "timelineBefore": {
+    "novixa-long": {
+      "findings": [
+        {
+          "sceneId": "s8-grn",
+          "code": "same_frame",
+          "template": "annotated_plate",
+          "sceneIds": [
+            "s8-grn",
+            "s9-crm",
+            "s10-report",
+            "s11-nxt",
+            "s12-app",
+            "s13-link"
+          ],
+          "subjectsDiffer": true,
+          "statesDiffer": true,
+          "reason": "Cùng một kiểu khung xuất hiện liên tiếp."
+        }
+      ],
+      "intentional": []
+    },
+    "trading-long": {
+      "findings": [
+        {
+          "sceneId": "s2-up",
+          "code": "static_hold",
+          "reason": "Cảnh dài mà không chia thành các nhịp nhìn khác nhau."
+        },
+        {
+          "sceneId": "s3-pull",
+          "code": "static_hold",
+          "reason": "Cảnh dài mà không chia thành các nhịp nhìn khác nhau."
+        },
+        {
+          "sceneId": "s4-down",
+          "code": "static_hold",
+          "reason": "Cảnh dài mà không chia thành các nhịp nhìn khác nhau."
+        },
+        {
+          "sceneId": "s5-range",
+          "code": "static_hold",
+          "reason": "Cảnh dài mà không chia thành các nhịp nhìn khác nhau."
+        },
+        {
+          "sceneId": "s6-macd",
+          "code": "static_hold",
+          "reason": "Cảnh dài mà không chia thành các nhịp nhìn khác nhau."
+        },
+        {
+          "sceneId": "s7-agent",
+          "code": "static_hold",
+          "reason": "Cảnh dài mà không chia thành các nhịp nhìn khác nhau."
+        },
+        {
+          "sceneId": "s2-up",
+          "code": "same_frame",
+          "template": "market_chart",
+          "sceneIds": [
+            "s2-up",
+            "s3-pull",
+            "s4-down",
+            "s5-range",
+            "s6-macd"
+          ],
+          "subjectsDiffer": false,
+          "statesDiffer": true,
+          "reason": "Cùng một kiểu khung xuất hiện liên tiếp."
+        },
+        {
+          "sceneId": "s8-risk",
+          "code": "static_hold",
+          "reason": "Cảnh dài mà không chia thành các nhịp nhìn khác nhau."
+        },
+        {
+          "sceneId": "s9-close",
+          "code": "static_hold",
+          "reason": "Cảnh dài mà không chia thành các nhịp nhìn khác nhau."
+        }
+      ],
+      "intentional": []
+    }
+  },
+  "timelineAfter": {
+    "novixa-asset-proof": {
+      "findings": [
+        {
+          "sceneId": "s1-pack",
+          "code": "same_frame",
+          "template": "annotated_plate",
+          "sceneIds": [
+            "s1-pack",
+            "s2-action",
+            "s3-place",
+            "s4-ui"
+          ],
+          "subjectsDiffer": true,
+          "statesDiffer": true,
+          "reason": "Cùng một kiểu khung xuất hiện liên tiếp."
+        }
+      ],
+      "intentional": [
+        {
+          "sceneId": "s5-join",
+          "code": "hero_reused",
+          "assetId": "nvx-doc008-stock",
+          "reason": "Dùng lại có chủ đích để câu chuyện còn nối."
+        },
+        {
+          "sceneId": "s5-join",
+          "code": "hero_reused",
+          "assetId": "ref-blister-foil",
+          "reason": "Dùng lại có chủ đích để câu chuyện còn nối."
+        }
+      ]
+    },
+    "trading-beat-proof": {
+      "findings": [
+        {
+          "sceneId": "s1-wide",
+          "code": "same_frame",
+          "template": "market_chart",
+          "sceneIds": [
+            "s1-wide",
+            "s2-region",
+            "s3-highlight",
+            "s4-sma"
+          ],
+          "subjectsDiffer": false,
+          "statesDiffer": true,
+          "reason": "Cùng một kiểu khung xuất hiện liên tiếp."
+        }
+      ],
+      "intentional": []
+    }
+  },
+  "target": {
+    "NOVIXA": 80,
+    "AgentTrading": 80,
+    "Shared": 40
+  },
+  "targetMet": false
+}

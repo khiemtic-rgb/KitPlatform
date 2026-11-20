@@ -1,0 +1,168 @@
+[
+  {
+    "brief": {
+      "narration_segment": "Bitcoin khung một giờ có một đoạn tăng rõ. Khoanh nến tăng mạnh nhất. Vẽ SMA 20 từ giá đóng cửa.",
+      "time_range": [
+        0.0,
+        22.0
+      ],
+      "brand_scope": "AgentTrading",
+      "topic": "market.rise",
+      "entities": [
+        "bitcoin"
+      ],
+      "actions": [
+        "tăng"
+      ],
+      "key_message": "Bitcoin khung một giờ có một đoạn tăng rõ. Khoanh nến tăng mạnh nhất. Vẽ SMA 20 từ giá đóng cửa.",
+      "visual_intent": "chart",
+      "required_asset_types": [],
+      "required_categories": [],
+      "preferred_tags": [],
+      "forbidden_tags": [],
+      "forbidden_categories": [],
+      "visual_role": "chart",
+      "chart_requirements": {
+        "situation": "rise",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "source": "binance-public-klines",
+        "mode": "historical",
+        "count": 48,
+        "min_change": 0.03,
+        "indicators": [
+          "sma20"
+        ],
+        "annotate": "largest_up"
+      },
+      "desired_duration_range": [
+        16.5,
+        25.3
+      ],
+      "continuity_constraints": [],
+      "selected_assets": [],
+      "selection_reasons": [
+        "Đoạn này thỏa điều kiện trên chính các nến được vẽ."
+      ],
+      "briefId": "btc-rise"
+    },
+    "selected": {
+      "status": "chosen",
+      "assets": [],
+      "reasons": [
+        "Đoạn này thỏa điều kiện trên chính các nến được vẽ."
+      ]
+    },
+    "beats": [
+      {
+        "beatId": "wide",
+        "start": 0.0,
+        "end": 5.057,
+        "emphasis": "Cả đoạn giá",
+        "layout": "chart-plate",
+        "events": [
+          {
+            "at": 0.0,
+            "kind": "wide",
+            "text": "Cả đoạn giá"
+          }
+        ],
+        "transition": "Chuyển khi ý này đã hiện và câu thoại sang ý sau.",
+        "new_information": "Người xem thấy hướng của cả cửa sổ.",
+        "hold_reason": ""
+      },
+      {
+        "beatId": "highlight",
+        "start": 5.057,
+        "end": 11.885,
+        "emphasis": "Nến tăng mạnh nhất",
+        "layout": "chart-plate",
+        "events": [
+          {
+            "at": 5.057,
+            "kind": "highlight",
+            "text": "Nến tăng mạnh nhất"
+          }
+        ],
+        "transition": "Chuyển khi ý này đã hiện và câu thoại sang ý sau.",
+        "new_information": "Người xem thấy nến tạo đà, không phải một vùng tô ngẫu nhiên.",
+        "hold_reason": ""
+      },
+      {
+        "beatId": "sma",
+        "start": 11.885,
+        "end": 17.954,
+        "emphasis": "SMA 20",
+        "layout": "chart-plate",
+        "events": [
+          {
+            "at": 11.885,
+            "kind": "sma",
+            "text": "SMA 20"
+          }
+        ],
+        "transition": "Chuyển khi ý này đã hiện và câu thoại sang ý sau.",
+        "new_information": "Đường trung bình được tính từ giá đóng cửa của chuỗi.",
+        "hold_reason": ""
+      },
+      {
+        "beatId": "conclusion",
+        "start": 17.954,
+        "end": 22.0,
+        "emphasis": "Con số của đoạn",
+        "layout": "chart-plate",
+        "events": [
+          {
+            "at": 17.954,
+            "kind": "conclusion",
+            "text": "Con số của đoạn"
+          }
+        ],
+        "transition": "Chuyển khi ý này đã hiện và câu thoại sang ý sau.",
+        "new_information": "Phần trăm là change của đúng cửa sổ được vẽ.",
+        "hold_reason": ""
+      }
+    ],
+    "chart": {
+      "status": "chosen",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "source": "binance-public-klines",
+      "mode": "historical",
+      "start": 70,
+      "count": 48,
+      "notes": {
+        "change": 0.0739,
+        "peakAt": 34,
+        "troughAt": 43,
+        "priceDrop": 0.0261,
+        "pullback": {
+          "at": 42,
+          "dip": 0.0261
+        },
+        "breakout": {
+          "at": 34,
+          "prior": 12
+        },
+        "volumeSurgeAt": 22
+      },
+      "indicators": {
+        "requested": [
+          "sma20"
+        ],
+        "sma20_at_start": 80915.0065,
+        "sma20_manual": 80915.0065,
+        "sma20_matches": true
+      },
+      "highlight": {
+        "index": 22,
+        "body": 0.02496316385668584,
+        "open": 81720.01,
+        "close": 83760.0
+      },
+      "reason": "Đoạn này thỏa điều kiện trên chính các nến được vẽ."
+    },
+    "accepted": [],
+    "rejected": []
+  }
+]

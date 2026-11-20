@@ -1,0 +1,20 @@
+{
+  "generator": "trading_props.py",
+  "createdUtc": "2026-10-29T09:38:24+00:00",
+  "pillow": "12.3.0",
+  "chartSeed": 2,
+  "pairwiseHamming": {
+    "agtr-ill-chart-001 / agtr-ill-monitor-001": 27,
+    "agtr-ill-chart-001 / agtr-ill-shield-001": 25,
+    "agtr-ill-chart-001 / agtr-ill-pipeline-001": 21,
+    "agtr-ill-monitor-001 / agtr-ill-shield-001": 22,
+    "agtr-ill-monitor-001 / agtr-ill-pipeline-001": 28,
+    "agtr-ill-shield-001 / agtr-ill-pipeline-001": 30
+  },
+  "minToCatalog": {
+    "agtr-ill-chart-001": 17,
+    "agtr-ill-monitor-001": 20,
+    "agtr-ill-shield-001": 16,
+    "agtr-ill-pipeline-001": 19
+  }
+}

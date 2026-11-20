@@ -1,0 +1,334 @@
+{
+  "independentApproved": {
+    "NOVIXA": 21
+  },
+  "independentApprovedTotal": 21,
+  "catalogCounts": {
+    "NOVIXA": 21,
+    "AgentTrading": 0,
+    "Shared": 0,
+    "other": 0,
+    "total": 21
+  },
+  "rejected": [
+    "pkg-vitamin-c",
+    "s01-pharmacy"
+  ],
+  "derived": [
+    "nvx-qld-stock",
+    "nvx-qld-sync"
+  ],
+  "novixa": {
+    "plates": [
+      {
+        "sceneId": "s2-dash",
+        "status": "chosen",
+        "assetId": "nvx-doc008-dashboard",
+        "reason": null
+      },
+      {
+        "sceneId": "s3-pos",
+        "status": "chosen",
+        "assetId": "nvx-doc008-pos",
+        "reason": null
+      },
+      {
+        "sceneId": "s5-catalog",
+        "status": "chosen",
+        "assetId": "nvx-doc008-catalog",
+        "reason": null
+      },
+      {
+        "sceneId": "s6-stock",
+        "status": "chosen",
+        "assetId": "nvx-doc008-stock",
+        "reason": null
+      },
+      {
+        "sceneId": "s8-grn",
+        "status": "chosen",
+        "assetId": "nvx-doc008-grn",
+        "reason": null
+      },
+      {
+        "sceneId": "s9-crm",
+        "status": "chosen",
+        "assetId": "nvx-doc008-crm",
+        "reason": null
+      },
+      {
+        "sceneId": "s10-report",
+        "status": "chosen",
+        "assetId": "nvx-doc008-reports",
+        "reason": null
+      },
+      {
+        "sceneId": "s11-nxt",
+        "status": "chosen",
+        "assetId": "nvx-qld-nxt",
+        "reason": null
+      },
+      {
+        "sceneId": "s12-app",
+        "status": "chosen",
+        "assetId": "nvx-doc008-app",
+        "reason": null
+      },
+      {
+        "sceneId": "s13-link",
+        "status": "chosen",
+        "assetId": "nvx-qld-connect",
+        "reason": null
+      }
+    ],
+    "gap": {
+      "status": "gap",
+      "asset": null,
+      "reason": "Không có ảnh đã duyệt, đúng ý, và chưa dùng trong video này.",
+      "need": {
+        "brand": "NOVIXA",
+        "category": "medicine.packaging",
+        "keywords": [
+          "hộp thuốc",
+          "vỉ thuốc"
+        ]
+      }
+    },
+    "probes": {
+      "choices": [
+        {
+          "sceneId": "probe-box",
+          "status": "gap",
+          "reason": "Không có ảnh đã duyệt, đúng ý, và chưa dùng trong video này.",
+          "need": {
+            "brand": "NOVIXA",
+            "category": "medicine.packaging",
+            "keywords": [
+              "hộp thuốc",
+              "vỉ thuốc"
+            ]
+          },
+          "assetId": null
+        },
+        {
+          "sceneId": "probe-person",
+          "status": "gap",
+          "reason": "Không có ảnh đã duyệt, đúng ý, và chưa dùng trong video này.",
+          "need": {
+            "brand": "NOVIXA",
+            "category": "people.consult",
+            "keywords": [
+              "dược sĩ",
+              "tư vấn"
+            ]
+          },
+          "assetId": null
+        },
+        {
+          "sceneId": "probe-desk",
+          "status": "gap",
+          "reason": "Không có ảnh đã duyệt, đúng ý, và chưa dùng trong video này.",
+          "need": {
+            "brand": "AgentTrading",
+            "category": "environment.desk",
+            "keywords": [
+              "bàn giao dịch",
+              "nhiều màn hình"
+            ]
+          },
+          "assetId": null
+        }
+      ],
+      "gaps": [
+        {
+          "sceneId": "probe-box",
+          "reason": "Không có ảnh đã duyệt, đúng ý, và chưa dùng trong video này.",
+          "need": {
+            "brand": "NOVIXA",
+            "category": "medicine.packaging",
+            "keywords": [
+              "hộp thuốc",
+              "vỉ thuốc"
+            ]
+          }
+        },
+        {
+          "sceneId": "probe-person",
+          "reason": "Không có ảnh đã duyệt, đúng ý, và chưa dùng trong video này.",
+          "need": {
+            "brand": "NOVIXA",
+            "category": "people.consult",
+            "keywords": [
+              "dược sĩ",
+              "tư vấn"
+            ]
+          }
+        },
+        {
+          "sceneId": "probe-desk",
+          "reason": "Không có ảnh đã duyệt, đúng ý, và chưa dùng trong video này.",
+          "need": {
+            "brand": "AgentTrading",
+            "category": "environment.desk",
+            "keywords": [
+              "bàn giao dịch",
+              "nhiều màn hình"
+            ]
+          }
+        }
+      ],
+      "nearDuplicates": [
+        {
+          "left": "nvx-doc008-pos",
+          "right": "nvx-qld-pos",
+          "distance": 6
+        }
+      ],
+      "used": []
+    }
+  },
+  "trading": {
+    "btc": {
+      "up": {
+        "start": 24,
+        "count": 72,
+        "change": 0.0876961463990864,
+        "span": 0.09389131212223593
+      },
+      "down": {
+        "start": 438,
+        "count": 72,
+        "change": -0.057218087653886474,
+        "span": 0.07361930312435137
+      },
+      "range": {
+        "start": 606,
+        "count": 72,
+        "change": -0.00010066951290510495,
+        "span": 0.05297884727343295
+      }
+    },
+    "eth": {
+      "up": {
+        "start": 13,
+        "count": 72,
+        "change": 0.09422530741123536,
+        "span": 0.106566515571976
+      },
+      "down": {
+        "start": 438,
+        "count": 72,
+        "change": -0.10784118410955668,
+        "span": 0.11769523640871259
+      },
+      "range": {
+        "start": 769,
+        "count": 72,
+        "change": 0.0,
+        "span": 0.06414475054356428
+      }
+    },
+    "ohlcv": {
+      "BTCUSDT": {
+        "rows": 1000,
+        "errors": [],
+        "first": 1789646400000,
+        "last": 1793242800000,
+        "source": "binance-public-klines",
+        "mode": "historical",
+        "timeframe": "1h"
+      },
+      "ETHUSDT": {
+        "rows": 1000,
+        "errors": [],
+        "first": 1789646400000,
+        "last": 1793242800000,
+        "source": "binance-public-klines",
+        "mode": "historical",
+        "timeframe": "1h"
+      }
+    },
+    "windows": {
+      "up": {
+        "start": 70,
+        "count": 48,
+        "pan": 0,
+        "change": 0.07388497300409202,
+        "notes": {
+          "change": 0.0739,
+          "peakAt": 34,
+          "troughAt": 43,
+          "priceDrop": 0.0261,
+          "pullback": {
+            "at": 42,
+            "dip": 0.0261
+          },
+          "breakout": {
+            "at": 34,
+            "prior": 12
+          },
+          "volumeSurgeAt": 22
+        }
+      },
+      "pullback": {
+        "at": 42,
+        "dip": 0.0261
+      },
+      "down": {
+        "start": 438,
+        "count": 48,
+        "pan": 12,
+        "change": -0.057218087653886474,
+        "notes": {
+          "change": -0.0346,
+          "peakAt": 21,
+          "troughAt": 58,
+          "priceDrop": 0.0516,
+          "pullback": {
+            "at": 29,
+            "dip": 0.036
+          },
+          "breakout": {
+            "at": 20,
+            "prior": 12
+          },
+          "volumeSurgeAt": 32
+        },
+        "volumeSurgeAt": 32
+      },
+      "range": {
+        "symbol": "ETHUSDT",
+        "start": 519,
+        "count": 48,
+        "pan": 0,
+        "change": 0.007001672220684929,
+        "notes": {
+          "change": 0.007,
+          "peakAt": 8,
+          "troughAt": 16,
+          "priceDrop": 0.0183,
+          "pullback": {
+            "at": 16,
+            "dip": 0.0183
+          },
+          "breakout": {
+            "at": 35,
+            "prior": 12
+          },
+          "volumeSurgeAt": 10
+        }
+      },
+      "macd": {
+        "start": 144,
+        "last": -89.55130045069382,
+        "title": "MACD âm cuối cửa sổ"
+      }
+    }
+  },
+  "target": {
+    "NOVIXA": 80,
+    "AgentTrading": 80,
+    "Shared": 40
+  },
+  "gapReason": "Repository không có bộ ảnh nhà thuốc, bao bì, người thật hoặc bàn giao dịch kèm giấy phép. Không tải ảnh stock và không gọi API ảnh trả phí."
+}

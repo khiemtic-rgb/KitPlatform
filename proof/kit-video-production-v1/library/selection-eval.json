@@ -1,0 +1,467 @@
+{
+  "scenes": 39,
+  "appropriate": 39,
+  "appropriateRate": 1.0,
+  "gaps": 8,
+  "gapRate": 0.20512820512820512,
+  "exactRepeatPairs": [],
+  "nearRepeatPairs": [],
+  "unintendedLayoutRuns": [],
+  "hardViolations": [],
+  "chartsMet": 5,
+  "charts": 5,
+  "baseline": {
+    "scenes": 34,
+    "appropriate": 23,
+    "appropriateRate": 0.6764705882352942
+  },
+  "jaccard": {
+    "scenes": 34,
+    "appropriate": 30,
+    "appropriateRate": 0.8823529411764706,
+    "adopted": false
+  },
+  "embedding": {
+    "available": false,
+    "used": false,
+    "reason": "Máy không có torch, CLIP hay sentence-transformers. Không gọi API embedding trả phí."
+  },
+  "weights": {
+    "semantic_relevance": 0.4,
+    "scene_role_fit": 0.2,
+    "asset_quality": 0.15,
+    "composition_fit": 0.1,
+    "underuse_bonus": 0.15
+  },
+  "stillScenes": 34,
+  "sceneResults": [
+    {
+      "sceneId": "dashboard",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-dashboard"
+      ],
+      "chartOk": null,
+      "note": "Tổng quan nhà thuốc, không phải màn liên thông."
+    },
+    {
+      "sceneId": "pos",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-pos"
+      ],
+      "chartOk": null,
+      "note": "Màn bán tại quầy."
+    },
+    {
+      "sceneId": "stock",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-stock"
+      ],
+      "chartOk": null,
+      "note": "Màn tồn. Bản liên thông đang ở trạng thái review."
+    },
+    {
+      "sceneId": "catalog",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-catalog"
+      ],
+      "chartOk": null,
+      "note": "Danh sách phần mềm, không phải ảnh vỉ."
+    },
+    {
+      "sceneId": "grn",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-grn"
+      ],
+      "chartOk": null,
+      "note": "Màn nhập, không phải liên thông."
+    },
+    {
+      "sceneId": "crm",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-crm"
+      ],
+      "chartOk": null,
+      "note": "Hồ sơ khách."
+    },
+    {
+      "sceneId": "reports",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-reports"
+      ],
+      "chartOk": null,
+      "note": "Màn báo cáo chung, không phải doanh thu hay xuất nhập tồn."
+    },
+    {
+      "sceneId": "nxt",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-qld-nxt"
+      ],
+      "chartOk": null,
+      "note": "Đúng báo cáo xuất nhập tồn."
+    },
+    {
+      "sceneId": "revenue",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-qld-revenue"
+      ],
+      "chartOk": null,
+      "note": "Đúng báo cáo doanh thu."
+    },
+    {
+      "sceneId": "app",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-app"
+      ],
+      "chartOk": null,
+      "note": "Ứng dụng khách."
+    },
+    {
+      "sceneId": "connect",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-qld-connect"
+      ],
+      "chartOk": null,
+      "note": "Màn liên thông đã duyệt. Nhật ký đồng bộ đang review."
+    },
+    {
+      "sceneId": "login",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-qld-login"
+      ],
+      "chartOk": null,
+      "note": "Màn đăng nhập."
+    },
+    {
+      "sceneId": "draft",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-draft"
+      ],
+      "chartOk": null,
+      "note": "Màn đơn nháp."
+    },
+    {
+      "sceneId": "invoice",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-qld-sale"
+      ],
+      "chartOk": null,
+      "note": "Màn hóa đơn."
+    },
+    {
+      "sceneId": "staff-pos",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-staff-pos"
+      ],
+      "chartOk": null,
+      "note": "Màn của nhân viên, không phải màn quầy chung."
+    },
+    {
+      "sceneId": "drug-master",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-qld-drug"
+      ],
+      "chartOk": null,
+      "note": "Danh mục thuốc liên thông."
+    },
+    {
+      "sceneId": "blister",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "ref-blister-foil"
+      ],
+      "chartOk": null,
+      "note": "Ảnh vỉ. Không lấy màn hình hay ảnh chai."
+    },
+    {
+      "sceneId": "bottle",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "ref-pack-still"
+      ],
+      "chartOk": null,
+      "note": "Ảnh chai và lọ."
+    },
+    {
+      "sceneId": "floor",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "ref-pharmacy-floor"
+      ],
+      "chartOk": null,
+      "note": "Nhà thuốc bán lẻ, không phải phòng chờ hay ảnh bị từ chối."
+    },
+    {
+      "sceneId": "waiting",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "ref-pharmacy-wait"
+      ],
+      "chartOk": null,
+      "note": "Phòng chờ."
+    },
+    {
+      "sceneId": "hands",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "ref-hands-blister"
+      ],
+      "chartOk": null,
+      "note": "Thao tác kiểm vỉ, không phải ảnh vỉ không có người."
+    },
+    {
+      "sceneId": "pharmacist",
+      "appropriate": true,
+      "gap": true,
+      "status": "gap",
+      "assets": [],
+      "chartOk": null,
+      "note": "Không có ảnh dược sĩ đã duyệt."
+    },
+    {
+      "sceneId": "warehouse",
+      "appropriate": true,
+      "gap": true,
+      "status": "gap",
+      "assets": [],
+      "chartOk": null,
+      "note": "Màn nhập không phải ảnh kho."
+    },
+    {
+      "sceneId": "retail-box",
+      "appropriate": true,
+      "gap": true,
+      "status": "gap",
+      "assets": [],
+      "chartOk": null,
+      "note": "Vỉ không thay cho hộp đủ mặt. Thẻ mockup đã bị từ chối."
+    },
+    {
+      "sceneId": "desk",
+      "appropriate": true,
+      "gap": true,
+      "status": "gap",
+      "assets": [],
+      "chartOk": null,
+      "note": "Không có ảnh bàn giao dịch đã duyệt."
+    },
+    {
+      "sceneId": "logo",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "logo-novixa"
+      ],
+      "chartOk": null,
+      "note": "Logo gốc."
+    },
+    {
+      "sceneId": "wrong-brand",
+      "appropriate": true,
+      "gap": true,
+      "status": "gap",
+      "assets": [],
+      "chartOk": null,
+      "note": "Ảnh nhà thuốc thuộc NOVIXA, không đưa sang Agent Trading."
+    },
+    {
+      "sceneId": "no-subject",
+      "appropriate": true,
+      "gap": true,
+      "status": "gap",
+      "assets": [],
+      "chartOk": null,
+      "note": "Câu không có chủ thể hình. Không lấy ảnh ngẫu nhiên."
+    },
+    {
+      "sceneId": "btc-rise",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [],
+      "chartOk": true,
+      "note": "Cửa sổ phải tăng thật trên file BTC."
+    },
+    {
+      "sceneId": "eth-narrow",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [],
+      "chartOk": true,
+      "note": "Biên hẹp trên file ETH."
+    },
+    {
+      "sceneId": "btc-drop",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [],
+      "chartOk": true,
+      "note": "Đoạn giảm trên file BTC."
+    },
+    {
+      "sceneId": "btc-impossible",
+      "appropriate": true,
+      "gap": true,
+      "status": "gap",
+      "assets": [],
+      "chartOk": true,
+      "note": "File không có đoạn tăng 80 phần trăm."
+    },
+    {
+      "sceneId": "strategy",
+      "appropriate": true,
+      "gap": false,
+      "status": "refused",
+      "assets": [],
+      "chartOk": true,
+      "note": "Không vẽ lợi nhuận chiến lược."
+    },
+    {
+      "sceneId": "seq-pos",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-pos"
+      ],
+      "chartOk": null,
+      "note": "Màn quầy trước."
+    },
+    {
+      "sceneId": "seq-staff",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-staff-pos"
+      ],
+      "chartOk": null,
+      "note": "Màn nhân viên, không lặp màn quầy."
+    },
+    {
+      "sceneId": "seq-blister",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "ref-blister-foil"
+      ],
+      "chartOk": null,
+      "note": "Ảnh vỉ."
+    },
+    {
+      "sceneId": "seq-compare",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-stock",
+        "ref-blister-foil"
+      ],
+      "chartOk": null,
+      "note": "Được dùng lại vỉ vì câu nói giữ nó cạnh màn tồn."
+    },
+    {
+      "sceneId": "seq-stock",
+      "appropriate": true,
+      "gap": false,
+      "status": "chosen",
+      "assets": [
+        "nvx-doc008-stock"
+      ],
+      "chartOk": null,
+      "note": "Màn tồn."
+    },
+    {
+      "sceneId": "seq-other-stock",
+      "appropriate": true,
+      "gap": true,
+      "status": "gap",
+      "assets": [],
+      "chartOk": null,
+      "note": "Bản liên thông chưa được duyệt. Không dùng lại màn vừa chọn."
+    }
+  ],
+  "hashProfile": {
+    "perceptualSame": 3,
+    "perceptualNear": 6,
+    "nearestApproved": {
+      "distance": 6,
+      "left": "nvx-doc008-pos",
+      "right": "nvx-qld-pos"
+    },
+    "derived": [
+      {
+        "assetId": "nvx-qld-stock",
+        "parentId": "nvx-doc008-stock",
+        "distance": 1
+      },
+      {
+        "assetId": "nvx-qld-sync",
+        "parentId": "nvx-qld-connect",
+        "distance": 0
+      }
+    ]
+  },
+  "reviewCriterion": "Phù hợp khi ảnh được chọn đúng chủ thể của câu, hoặc khi thư viện không có ảnh đã duyệt cho chủ thể đó và kết quả là gap. Ảnh giao diện không thay cho không gian, bao bì hoặc người. Asset bị từ chối hoặc sai thương hiệu không được chọn. Chart phù hợp khi cửa sổ trả về thỏa điều kiện trên file nến, hoặc khi không có cửa sổ nào và bộ chọn nói rõ thiếu."
+}

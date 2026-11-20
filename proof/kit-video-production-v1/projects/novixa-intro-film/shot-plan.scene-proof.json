@@ -1,0 +1,1105 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "novixa-intro-film",
+  "approvalStatus": "proposed",
+  "source": "scene-proof",
+  "warnings": [
+    {
+      "sceneId": "s01-day-opens",
+      "message": "Candidate dùng template chung. Cảnh style_proof chưa phải cảnh đã duyệt."
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "s01-day-opens",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Mở đầu gần gũi, tạo cảm giác đây là câu chuyện về một nhà thuốc thực sự.",
+      "durationSeconds": 20.15,
+      "durationSource": "voice_track",
+      "dialogue": "Mở cửa nhà thuốc. Khách vào, khách ra. Người lấy thuốc, người hỏi giá, điện thoại thì thỉnh thoảng lại reo. Một ngày cứ thế bắt đầu. Nhìn thì có vẻ đơn giản… nhưng ai làm nhà thuốc rồi mới biết, đằng sau quầy thuốc là cả một đống việc không tên.",
+      "action": "Ảnh quầy đã duyệt, chữ dưới, camera đẩy 10% trên chính ảnh đó.",
+      "visualMetaphor": null,
+      "subjects": [
+        "chủ nhà thuốc",
+        "khách",
+        "nhân viên"
+      ],
+      "onScreenText": [
+        "Một ngày ở nhà thuốc"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "hero_still",
+        "assetId": "pharmacy-plate",
+        "preset": "push_in",
+        "amount": 0.1,
+        "title": "Một ngày ở nhà thuốc",
+        "intent": {
+          "idea": "Ảnh đã duyệt là chủ thể, chữ chỉ là tấm giấy đặt lên",
+          "subject": "still",
+          "emotion": "warmth",
+          "focal": "image"
+        }
+      },
+      "assets": [
+        "pharmacy-plate"
+      ],
+      "audio": {
+        "voiceTrackId": "s01-day-opens",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Một hộp thuốc chiếm khung hình, dẫn vào cảnh tiếp theo."
+      },
+      "acceptance": [
+        "Lời giữ nguyên câu đã giao.",
+        "Có nhịp việc tăng, không phải một ảnh đứng.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 18.85
+      },
+      "previewFractions": [
+        0.12,
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s02-busy",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Tạo sự đồng cảm, có chút hài hước.",
+      "durationSeconds": 23.76,
+      "durationSource": "voice_track",
+      "dialogue": "Khách đang chờ thì phải bán nhanh. Bán xong lại kiểm tra hàng. Nhân viên hỏi một câu, nhà cung cấp gọi một cuộc… Chưa kịp uống ngụm nước, đã có thêm việc mới. Mà lạ nhé, bận cả ngày như vậy, đôi khi vẫn chưa trả lời được một câu rất quan trọng: Nhà thuốc mình đang thực sự kinh doanh thế nào?",
+      "action": "Bảng nhịp việc có thứ tự. Không có nhân vật xoay giữa các việc.",
+      "visualMetaphor": null,
+      "subjects": [
+        "chủ nhà thuốc"
+      ],
+      "onScreenText": [
+        "Bán hàng",
+        "Tồn kho",
+        "Nhân sự",
+        "Khách hàng"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "lanes",
+        "title": "Nhà thuốc mình đang thực sự kinh doanh thế nào?",
+        "disclosure": "Mockup — chưa phải giao diện chính thức",
+        "dataLabel": "Dữ liệu minh họa",
+        "marks": [
+          "Sáng",
+          "Giữa ngày",
+          "Chưa kịp nghỉ"
+        ],
+        "lanes": [
+          {
+            "label": "Quầy",
+            "events": [
+              {
+                "text": "Khách hàng",
+                "at": 0.12
+              },
+              {
+                "text": "Bán hàng",
+                "at": 0.48
+              },
+              {
+                "text": "Thêm việc",
+                "at": 0.82
+              }
+            ]
+          },
+          {
+            "label": "Kho",
+            "events": [
+              {
+                "text": "Kiểm tra",
+                "at": 0.28
+              },
+              {
+                "text": "Tồn kho",
+                "at": 0.7
+              }
+            ]
+          },
+          {
+            "label": "Người",
+            "events": [
+              {
+                "text": "Nhân sự",
+                "at": 0.2
+              },
+              {
+                "text": "Nhà cung cấp",
+                "at": 0.58
+              }
+            ]
+          }
+        ],
+        "intent": {
+          "idea": "Câu hỏi chiếm một phía, ngày làm việc chạy dọc một trục",
+          "subject": "schedule",
+          "emotion": "pressure",
+          "focal": "moment"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "s02-busy",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Một hộp thuốc trượt khỏi chồng hàng và dẫn vào ẩn dụ tồn kho."
+      },
+      "acceptance": [
+        "Câu hỏi cuối có khoảng nghỉ.",
+        "Không biến bận rộn thành một danh sách tính năng.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 22.46
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s03-stock-cash",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Tạo visual metaphor dễ nhớ.",
+      "durationSeconds": 17.92,
+      "durationSource": "voice_track",
+      "dialogue": "Nhập thêm hàng thì sợ thiếu. Nhập nhiều quá lại sợ tồn. Có những mặt hàng bán vèo vèo, nhưng cũng có những hộp cứ nằm yên trên kệ hết ngày này sang ngày khác. Hàng thì vẫn ở đó… còn tiền thì đã đi trước một bước rồi.",
+      "action": "Hai nhóm hàng mẫu. Không có số tiền.",
+      "visualMetaphor": "Hàng nằm yên là vốn bị khóa.",
+      "subjects": [
+        "hộp thuốc",
+        "két",
+        "lịch"
+      ],
+      "onScreenText": [
+        "Hàng tồn kho cũng là vốn"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "catalog",
+        "title": "Hàng tồn kho cũng là vốn",
+        "disclosure": "Mockup — chưa phải giao diện chính thức",
+        "dataLabel": "Dữ liệu minh họa",
+        "tiles": [
+          {
+            "name": "Hàng mẫu 01",
+            "state": "Bán nhanh",
+            "tone": "accent"
+          },
+          {
+            "name": "Hàng mẫu 02",
+            "state": "Bán nhanh",
+            "tone": "accent"
+          },
+          {
+            "name": "Hàng mẫu 03",
+            "state": "Nằm yên",
+            "tone": "alt"
+          },
+          {
+            "name": "Hàng mẫu 04",
+            "state": "Nằm yên",
+            "tone": "alt"
+          },
+          {
+            "name": "Hàng mẫu 05",
+            "state": "Nằm yên",
+            "tone": "alt"
+          },
+          {
+            "name": "Hàng mẫu 06",
+            "state": "Nằm yên",
+            "tone": "alt"
+          }
+        ],
+        "summary": "Bốn mặt hàng mẫu nằm yên. Tiền đã đi trước. Không có số doanh thu.",
+        "intent": {
+          "idea": "Nhóm hàng nằm yên là khối nặng, nhóm bán nhanh chỉ là phần nhỏ",
+          "subject": "goods",
+          "emotion": "clarity",
+          "focal": "contrast"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "s03-stock-cash",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Khóa két xoay thành vòng tròn, dẫn sang lịch hạn dùng."
+      },
+      "acceptance": [
+        "Ẩn dụ vốn bị khóa đọc được mà không cần số liệu doanh thu.",
+        "Không bịa phần trăm tiết kiệm.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 16.62
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s04-expiry",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Diễn tả sự cần thiết của việc kiểm tra và theo dõi.",
+      "durationSeconds": 18.53,
+      "durationSource": "voice_track",
+      "dialogue": "Rồi còn hạn dùng nữa. Hàng mới về phải kiểm tra, hàng trên kệ phải theo dõi, hàng sắp hết hạn phải chú ý. Mình có thể nhớ hôm nay rất nhiều việc… nhưng không thể bắt trí nhớ làm thay cả một hệ thống quản lý được, đúng không?",
+      "action": "Bảng lô và hạn dùng mẫu, có nhãn minh họa. Không có lịch và không có số lô thật.",
+      "visualMetaphor": "Lịch lật là thời gian cần theo dõi, không phải lời hứa tự động.",
+      "subjects": [
+        "lịch",
+        "hộp thuốc"
+      ],
+      "onScreenText": [
+        "Theo dõi tồn kho · Chú ý hạn dùng"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "workspace",
+        "title": "Theo dõi tồn kho · Chú ý hạn dùng",
+        "titleScale": 0.028,
+        "disclosure": "Mockup — chưa phải giao diện chính thức",
+        "dataLabel": "Dữ liệu minh họa",
+        "emphasis": [
+          "Chú ý"
+        ],
+        "nav": [
+          {
+            "label": "Tổng quan"
+          },
+          {
+            "label": "Bán hàng"
+          },
+          {
+            "label": "Kho hàng",
+            "active": true
+          },
+          {
+            "label": "Báo cáo"
+          }
+        ],
+        "fields": [
+          "Tìm theo mã mẫu hoặc lô mẫu"
+        ],
+        "table": {
+          "columns": [
+            "Mã mẫu",
+            "Lô",
+            "Hạn mẫu",
+            "Việc"
+          ],
+          "rows": [
+            [
+              "MH-01",
+              "Lô A-mẫu",
+              "03/2027",
+              "Kiểm tra"
+            ],
+            [
+              "MH-02",
+              "Lô B-mẫu",
+              "06/2027",
+              "Theo dõi"
+            ],
+            [
+              "MH-03",
+              "Lô C-mẫu",
+              "01/2027",
+              "Chú ý"
+            ],
+            [
+              "MH-04",
+              "Lô D-mẫu",
+              "11/2026",
+              "Chú ý"
+            ],
+            [
+              "MH-05",
+              "Lô E-mẫu",
+              "09/2027",
+              "Theo dõi"
+            ],
+            [
+              "MH-06",
+              "Lô F-mẫu",
+              "04/2027",
+              "Kiểm tra"
+            ]
+          ]
+        },
+        "activity": [
+          "Hàng mới về: kiểm tra trước khi lên kệ",
+          "Hàng trên kệ: theo dõi hạn mẫu",
+          "Sắp hết hạn: chú ý, không phải số thật",
+          "Trí nhớ không thay cho một bảng việc"
+        ],
+        "aside": {
+          "title": "Việc cần làm",
+          "lines": [
+            {
+              "label": "Chú ý",
+              "value": "2 mẫu"
+            },
+            {
+              "label": "Theo dõi",
+              "value": "2 mẫu"
+            },
+            {
+              "label": "Kiểm tra",
+              "value": "2 mẫu"
+            }
+          ]
+        },
+        "intent": {
+          "idea": "Dòng cần chú ý tách ra phía trước sổ",
+          "subject": "record",
+          "emotion": "pressure",
+          "focal": "attention"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "s04-expiry",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Vòng quét mở rộng thành khung giao diện NOVIXA thật."
+      },
+      "acceptance": [
+        "Không bịa số lô hay hạn dùng thật.",
+        "Câu hỏi cuối không bị đọc gấp.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 17.23
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s05-introduce",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Chuyển từ vấn đề sang giải pháp.",
+      "durationSeconds": 20.68,
+      "durationSource": "voice_track",
+      "dialogue": "Và đó cũng là lý do NOVIXA ra đời. Không phải để biến người chủ nhà thuốc thành người ngồi nhìn màn hình cả ngày. Mà để những công việc quan trọng được tổ chức rõ ràng hơn, để người làm nhà thuốc bớt phải xoay xở bằng trí nhớ và những ghi chép rời rạc.",
+      "action": "Logo gốc lớn trên nền giấy. Không có màn POS.",
+      "visualMetaphor": null,
+      "subjects": [
+        "logo"
+      ],
+      "onScreenText": [
+        "Nền tảng vận hành nhà thuốc thông minh"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "brand_center",
+        "logoAssetId": "logo-novixa",
+        "logoScale": 0.5,
+        "line": "Nền tảng vận hành nhà thuốc thông minh",
+        "intent": {
+          "idea": "Dấu hiệu đặt trên mặt giấy có chiều sâu",
+          "subject": "mark",
+          "emotion": "clarity",
+          "focal": "mark"
+        }
+      },
+      "assets": [
+        "logo-novixa"
+      ],
+      "audio": {
+        "voiceTrackId": "s05-introduce",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Giữ logo rồi mở vào thao tác bán hàng."
+      },
+      "acceptance": [
+        "Logo không bị méo.",
+        "Giọng đọc Nô-vi-xa, chữ trên hình là NOVIXA.",
+        "Không phóng đại sản phẩm.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 19.38
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s06-selling",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Thể hiện sản phẩm thật, không chỉ nói về lợi ích.",
+      "durationSeconds": 20.53,
+      "durationSource": "voice_track",
+      "dialogue": "Bắt đầu từ những việc gần gũi nhất: bán hàng, ghi nhận thông tin và theo dõi hoạt động tại quầy. Bởi cuối cùng, phần mềm không phải để làm cho công việc trông có vẻ hiện đại hơn. Nó phải giúp công việc hằng ngày trở nên dễ theo dõi và có tổ chức hơn.",
+      "action": "Ảnh POS minh họa đã duyệt. Ba dòng giỏ demo, không phải doanh thu production.",
+      "visualMetaphor": null,
+      "subjects": [
+        "POS"
+      ],
+      "onScreenText": [
+        "Bán hàng",
+        "Ghi nhận dữ liệu"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "workspace",
+        "title": "Bán hàng",
+        "subtitle": "Ghi nhận dữ liệu",
+        "dataLabel": "Dữ liệu minh họa",
+        "fields": [
+          "Tìm tên hoặc mã",
+          "Quét mã vạch"
+        ],
+        "table": {
+          "columns": [
+            "Hàng",
+            "SL",
+            "Đơn giá",
+            "Thành tiền"
+          ],
+          "rows": [
+            [
+              "ACC 200mg",
+              "2",
+              "60500",
+              "121000"
+            ],
+            [
+              "12B",
+              "1",
+              "10000",
+              "10000"
+            ],
+            [
+              "Acemuc 200mg",
+              "3",
+              "2800",
+              "8400"
+            ]
+          ]
+        },
+        "evidence": {
+          "lines": [
+            {"qty": 2, "price": 60500, "amount": 121000},
+            {"qty": 1, "price": 10000, "amount": 10000},
+            {"qty": 3, "price": 2800, "amount": 8400}
+          ],
+          "total": 139400,
+          "note": "Giỏ DEMO_PHARMACY minh họa. Không phải đơn production."
+        },
+        "foot": "Dữ liệu minh họa. Tổng 139400. Không phải doanh thu production.",
+        "activity": [
+          "Tìm tên hoặc mã, rồi quét mã vạch",
+          "Giỏ minh họa ba dòng",
+          "Thành tiền là minh họa, không phải doanh thu"
+        ],
+        "aside": {
+          "title": "Thanh toán",
+          "lines": [
+            {
+              "label": "Khách",
+              "value": "Khách mẫu"
+            },
+            {
+              "label": "Tạm tính",
+              "value": "139400"
+            },
+            {
+              "label": "Trạng thái",
+              "value": "Đã ghi nhận"
+            }
+          ],
+          "action": "Thanh toán"
+        },
+        "intent": {
+          "idea": "Một đơn là một tờ ghi nhận, không phải bảng quản trị",
+          "subject": "transaction",
+          "emotion": "clarity",
+          "focal": "ticket"
+        }
+      },
+      "assets": [
+        "ui-pos-demo-cart-v3"
+      ],
+      "audio": {
+        "voiceTrackId": "s06-selling",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Từ quầy sang kệ hàng."
+      },
+      "acceptance": [
+        "Chỉ dùng UI đã xác minh.",
+        "Nếu là dữ liệu demo, nhãn Dữ liệu minh họa hiện suốt lúc UI có mặt.",
+        "Không tự tạo số liệu.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 19.23
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s07-inventory",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Chuyển tính năng thành lợi ích dễ hiểu.",
+      "durationSeconds": 20.07,
+      "durationSource": "voice_track",
+      "dialogue": "Với tồn kho, biết còn bao nhiêu hàng mới chỉ là bước đầu. Còn hàng nào sắp hết hạn? Giá trị hàng đang nằm trên kệ là bao nhiêu? Mặt hàng nào cần kiểm tra trước? Khi những thông tin ấy rõ ràng hơn, mình mới có cơ sở để xử lý đúng việc, đúng lúc.",
+      "action": "Mockup tồn kho. Cột giá trị ghi minh họa, không có số tiền.",
+      "visualMetaphor": null,
+      "subjects": [
+        "kệ",
+        "màn tồn kho"
+      ],
+      "onScreenText": [
+        "Tồn kho",
+        "Giá trị hàng hóa",
+        "Sắp hết hạn"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "workspace",
+        "title": "Tồn kho",
+        "disclosure": "Mockup — chưa phải giao diện chính thức",
+        "dataLabel": "Dữ liệu minh họa",
+        "emphasis": [
+          "Sắp hết hạn",
+          "Chú ý"
+        ],
+        "nav": [
+          {
+            "label": "Tổng quan"
+          },
+          {
+            "label": "Bán hàng"
+          },
+          {
+            "label": "Kho hàng",
+            "active": true
+          },
+          {
+            "label": "Báo cáo"
+          }
+        ],
+        "fields": [
+          "Tìm hàng mẫu"
+        ],
+        "table": {
+          "columns": [
+            "Tên mẫu",
+            "Tồn",
+            "Hạn mẫu",
+            "Việc"
+          ],
+          "rows": [
+            [
+              "Hàng mẫu A",
+              "12",
+              "08/2027",
+              "Ổn"
+            ],
+            [
+              "Hàng mẫu B",
+              "3",
+              "01/2027",
+              "Sắp hết hạn"
+            ],
+            [
+              "Hàng mẫu C",
+              "20",
+              "05/2027",
+              "Ổn"
+            ],
+            [
+              "Hàng mẫu D",
+              "6",
+              "12/2026",
+              "Chú ý"
+            ],
+            [
+              "Hàng mẫu E",
+              "15",
+              "03/2027",
+              "Ổn"
+            ]
+          ]
+        },
+        "activity": [
+          "Tồn mẫu nằm cùng hạn mẫu",
+          "Hàng mẫu B: Sắp hết hạn",
+          "Giá trị hàng hóa là minh họa",
+          "Không dùng số liệu nhà thuốc thật"
+        ],
+        "aside": {
+          "title": "Giá trị hàng hóa",
+          "lines": [
+            {
+              "label": "Cách đọc",
+              "value": "minh họa"
+            },
+            {
+              "label": "Nguồn",
+              "value": "không phải số thật"
+            }
+          ]
+        },
+        "intent": {
+          "idea": "Một mặt hàng cần xem trước, giá trị chỉ được ghi là minh họa",
+          "subject": "stock",
+          "emotion": "pressure",
+          "focal": "quantity"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "s07-inventory",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Từ màn tồn kho sang ba nút dữ liệu."
+      },
+      "acceptance": [
+        "Từng vùng UI phải được xác minh trước khi dựng.",
+        "Không bịa giá trị hàng.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 18.77
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s08-connected-data",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Thể hiện góc nhìn tổng thể mà không phóng đại khả năng tự động hóa.",
+      "durationSeconds": 21.84,
+      "durationSource": "voice_track",
+      "dialogue": "Khi dữ liệu được tổ chức tốt, người chủ có thể nhìn công việc rõ hơn, thay vì mỗi vấn đề lại phải tìm một nơi để hỏi, một cuốn sổ để dò. Tất nhiên, phần mềm không thể quyết định thay mình mọi chuyện. Nhưng có thông tin tốt hơn, mình sẽ có cơ sở tốt hơn để quyết định.",
+      "action": "Ba nhãn Bán hàng, Tồn kho, Báo cáo nối về một trung tâm. Không cột, không số.",
+      "visualMetaphor": "Việc rời được nối thành một sơ đồ.",
+      "subjects": [
+        "bán hàng",
+        "tồn kho",
+        "báo cáo"
+      ],
+      "onScreenText": [
+        "Từ thao tác rời rạc đến vận hành có hệ thống"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "dashboard",
+        "title": "Nhìn việc ở cùng một nơi",
+        "subtitle": "Phần mềm không quyết định thay người.",
+        "disclosure": "Mockup — chưa phải giao diện chính thức",
+        "dataLabel": "Dữ liệu minh họa",
+        "notes": [
+          {
+            "label": "Bán hàng",
+            "body": "Việc tại quầy được ghi lại"
+          },
+          {
+            "label": "Tồn kho",
+            "body": "Hàng ở cùng một nơi"
+          },
+          {
+            "label": "Báo cáo",
+            "body": "Cùng một nơi"
+          }
+        ],
+        "callout": "Từ thao tác rời rạc đến vận hành có hệ thống",
+        "intent": {
+          "idea": "Ba nhóm việc nối về một trung tâm",
+          "subject": "relation",
+          "emotion": "clarity",
+          "focal": "connection"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "s08-connected-data",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Đồ họa lùi, nhường người."
+      },
+      "acceptance": [
+        "Không nói phần mềm tự quyết định thay người.",
+        "Màn báo cáo nếu dùng phải là màn đã xác minh.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 20.54
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s09-people",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Tạo khoảng lặng cảm xúc, tránh biến phim thành bản demo kỹ thuật.",
+      "durationSeconds": 20.61,
+      "durationSource": "voice_track",
+      "dialogue": "Bởi nhà thuốc suy cho cùng đâu chỉ có hàng hóa với những con số. Còn có người dược sĩ cần tập trung tư vấn, có khách hàng cần được lắng nghe, có những việc phải làm cẩn thận mỗi ngày. Công nghệ chỉ thực sự có ý nghĩa khi nó phục vụ những con người ấy.",
+      "action": "Chân dung đã duyệt trong cột chữ, camera đẩy nhẹ trên chính chân dung.",
+      "visualMetaphor": null,
+      "subjects": [
+        "dược sĩ",
+        "khách"
+      ],
+      "onScreenText": [
+        "Vận hành tốt hơn.",
+        "Phục vụ tốt hơn."
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "portrait_split",
+        "assetId": "pharmacist-portrait",
+        "preset": "push_in",
+        "amount": 0.06,
+        "lines": [
+          {
+            "text": "Vận hành tốt hơn.",
+            "scale": 0.042,
+            "bold": true
+          },
+          {
+            "text": "Phục vụ tốt hơn.",
+            "scale": 0.042,
+            "bold": true
+          },
+          {
+            "text": "Dược sĩ cần tập trung tư vấn.",
+            "scale": 0.024
+          },
+          {
+            "text": "Việc mỗi ngày cần làm cẩn thận.",
+            "scale": 0.024
+          }
+        ],
+        "intent": {
+          "idea": "Chân dung là vật thể trên cùng mặt giấy với câu chữ",
+          "subject": "portrait",
+          "emotion": "warmth",
+          "focal": "image"
+        }
+      },
+      "assets": [
+        "pharmacist-portrait"
+      ],
+      "audio": {
+        "voiceTrackId": "s09-people",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 14.07,
+            "end": 14.933,
+            "reason": "Đuôi khoảng nghỉ của WAV V3 đã duyệt, nối với đầu cảnh sau."
+          }
+        ],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Mở ra toàn cảnh nhà thuốc."
+      },
+      "acceptance": [
+        "Người ở phía trước, đồ họa việc lùi lại.",
+        "Không biến cảnh này thành demo tính năng.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 19.31
+      },
+      "previewFractions": [
+        0.12,
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s10-philosophy",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Nâng câu chuyện từ tính năng lên giá trị vận hành.",
+      "durationSeconds": 21.68,
+      "durationSource": "voice_track",
+      "dialogue": "Một nhà thuốc vận hành tốt không nhất thiết phải thật lớn. Nhưng cần biết mình đang có gì, công việc đang diễn ra thế nào và điều gì cần được ưu tiên. NOVIXA hướng đến việc giúp nhà thuốc từng bước xây dựng cách vận hành rõ ràng, bài bản và phù hợp hơn với thực tế.",
+      "action": "Trang chữ trên nền mực. Không lặp ảnh quầy.",
+      "visualMetaphor": null,
+      "subjects": [
+        "nhà thuốc"
+      ],
+      "onScreenText": [
+        "Rõ ràng hơn",
+        "Chủ động hơn",
+        "Có hệ thống hơn"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "triptych",
+        "columns": [
+          {
+            "index": "01",
+            "title": "Rõ ràng hơn",
+            "body": "Biết mình đang có gì",
+            "points": [
+              "Người nhìn thấy việc",
+              "Hàng có tên và hạn",
+              "Không đoán trong đầu"
+            ]
+          },
+          {
+            "index": "02",
+            "title": "Chủ động hơn",
+            "body": "Biết việc cần ưu tiên",
+            "points": [
+              "Việc nào làm trước",
+              "Việc nào cần theo dõi",
+              "Người vẫn quyết định"
+            ]
+          },
+          {
+            "index": "03",
+            "title": "Có hệ thống hơn",
+            "body": "Khớp với thực tế",
+            "points": [
+              "Quầy, kho, báo cáo",
+              "Cùng một cách ghi",
+              "Không phải số tăng trưởng"
+            ]
+          }
+        ],
+        "note": "Không có số liệu tăng trưởng.",
+        "intent": {
+          "idea": "Ba câu thành một chuỗi dọc, câu đầu dẫn",
+          "subject": "statement",
+          "emotion": "resolve",
+          "focal": "line"
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": "s10-philosophy",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0.0,
+            "end": 0.4,
+            "reason": "Đầu WAV V3 đã duyệt, nối với đuôi cảnh trước."
+          }
+        ],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Gom về logo."
+      },
+      "acceptance": [
+        "Không dùng từ hiệu quả thần kỳ và không có số liệu tăng trưởng.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 20.38
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s11-positioning",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Tạo niềm tin, không phóng đại.",
+      "durationSeconds": 21.53,
+      "durationSource": "voice_track",
+      "dialogue": "NOVIXA — nền tảng vận hành nhà thuốc thông minh. Được xây dựng từ những nhu cầu rất thực tế trong hoạt động nhà thuốc, với mong muốn đưa công nghệ đến gần hơn với công việc hằng ngày. Không xa vời, không chỉ để nhìn cho đẹp, mà phải có ích trong vận hành thực tế.",
+      "action": "Logo trên dải mực, câu định vị ở cột giấy. Khác bố cục S05.",
+      "visualMetaphor": null,
+      "subjects": [
+        "logo"
+      ],
+      "onScreenText": [
+        "Nền tảng vận hành nhà thuốc thông minh"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "brand_split",
+        "logoAssetId": "logo-novixa",
+        "lines": [
+          {
+            "text": "Nền tảng vận hành nhà thuốc thông minh",
+            "scale": 0.036,
+            "bold": true
+          },
+          {
+            "text": "Có ích trong vận hành thực tế.",
+            "scale": 0.026
+          }
+        ],
+        "intent": {
+          "idea": "Câu định vị là chủ thể, dấu hiệu chỉ neo một góc",
+          "subject": "mark",
+          "emotion": "resolve",
+          "focal": "line"
+        }
+      },
+      "assets": [
+        "logo-novixa"
+      ],
+      "audio": {
+        "voiceTrackId": "s11-positioning",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 15.07,
+            "end": 15.9,
+            "reason": "Đuôi khoảng nghỉ của WAV V3 đã duyệt, nối với đầu cảnh sau."
+          }
+        ],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Chậm lại để vào thẻ kết."
+      },
+      "acceptance": [
+        "Đúng câu định vị đã giao.",
+        "Logo không bị vẽ lại.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 20.23
+      },
+      "previewFractions": [
+        0.85
+      ]
+    },
+    {
+      "sceneId": "s12-cta",
+      "approvalStatus": "style_proof",
+      "storyGoal": "Kết gọn, để lại thương hiệu và việc tiếp theo.",
+      "durationSeconds": 23.38,
+      "durationSource": "voice_track",
+      "dialogue": "Nếu bạn cũng đang muốn việc vận hành nhà thuốc rõ ràng và bài bản hơn, hãy dành chút thời gian khám phá NOVIXA. Biết đâu, điều nhà thuốc cần tiếp theo không phải là làm nhiều hơn… mà là có một cách làm tốt hơn. NOVIXA. Nền tảng vận hành nhà thuốc thông minh. Tìm hiểu tại novixa chấm vn.",
+      "action": "Logo, câu định vị và novixa.vn. Không có nhạc.",
+      "visualMetaphor": null,
+      "subjects": [
+        "logo"
+      ],
+      "onScreenText": [
+        "Nền tảng vận hành nhà thuốc thông minh",
+        "novixa.vn"
+      ],
+      "templateId": "designed_board",
+      "params": {
+        "kind": "end_lockup",
+        "logoAssetId": "logo-novixa",
+        "line": "Nền tảng vận hành nhà thuốc thông minh",
+        "url": "novixa.vn",
+        "intent": {
+          "idea": "Dấu hiệu, câu và địa chỉ khóa lại trên cùng một mặt",
+          "subject": "lockup",
+          "emotion": "resolve",
+          "focal": "lockup"
+        }
+      },
+      "assets": [
+        "logo-novixa"
+      ],
+      "audio": {
+        "voiceTrackId": "s12-cta",
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {
+            "start": 0.0,
+            "end": 0.45,
+            "reason": "Đầu WAV V3 đã duyệt, nối với đuôi cảnh trước."
+          }
+        ],
+        "syncNotes": "Thời lượng bằng WAV V3 đã duyệt. Không ép tốc độ giọng."
+      },
+      "transitionOut": {
+        "type": "described",
+        "note": "Không có cảnh sau."
+      },
+      "acceptance": [
+        "novixa.vn đọc được và nằm trong vùng an toàn.",
+        "Khung cuối giữ sau khi lời kết thúc.",
+        "Không thêm số điện thoại, giải thưởng hay cam kết chưa có.",
+        "Candidate style_proof. Người xem quyết định, máy không tự đánh dấu đã duyệt."
+      ],
+      "timing": {
+        "status": "estimated",
+        "spokenEstimateSeconds": 22.08
+      },
+      "previewFractions": [
+        0.85
+      ]
+    }
+  ]
+}

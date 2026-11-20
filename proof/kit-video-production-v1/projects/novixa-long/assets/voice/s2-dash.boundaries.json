@@ -1,0 +1,47 @@
+[
+  {
+    "text": "Màn",
+    "start": 0.1,
+    "end": 0.5625
+  },
+  {
+    "text": "tổng",
+    "start": 0.5625,
+    "end": 0.8125
+  },
+  {
+    "text": "quan",
+    "start": 0.8125,
+    "end": 1.0875
+  },
+  {
+    "text": "cho",
+    "start": 1.0875,
+    "end": 1.2375
+  },
+  {
+    "text": "thấy",
+    "start": 1.2375,
+    "end": 1.4375
+  },
+  {
+    "text": "nhịp",
+    "start": 1.4375,
+    "end": 1.7
+  },
+  {
+    "text": "của",
+    "start": 1.7,
+    "end": 1.8375
+  },
+  {
+    "text": "nhà",
+    "start": 1.8375,
+    "end": 2.05
+  },
+  {
+    "text": "thuốc",
+    "start": 2.05,
+    "end": 2.3375
+  }
+]

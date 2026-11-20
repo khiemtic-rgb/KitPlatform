@@ -1,0 +1,499 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "novixa-long",
+  "projectName": "Novixa — video dài",
+  "brand": {
+    "id": "novixa",
+    "name": "Novixa — video dài"
+  },
+  "script": {
+    "version": "v2",
+    "approvalStatus": "approved",
+    "sourcePath": "script.md",
+    "notes": "Giải thích nhịp nhà thuốc bằng giao diện thật và nói rõ chỗ thiếu ảnh."
+  },
+  "durationPolicy": {
+    "mode": "target",
+    "targetSeconds": 180,
+    "notes": "Tổng các cảnh khóa ở ba phút."
+  },
+  "storyStructure": [
+    {
+      "beatId": "s1-open",
+      "summary": "Novixa giữ bán hàng, tồn kho và hạn dùng trên một nhịp."
+    },
+    {
+      "beatId": "s2-dash",
+      "summary": "Màn tổng quan nhà thuốc"
+    },
+    {
+      "beatId": "s3-pos",
+      "summary": "Màn bán hàng tại quầy"
+    },
+    {
+      "beatId": "s4-gap",
+      "summary": "Báo thiếu ảnh hộp thuốc"
+    },
+    {
+      "beatId": "s5-catalog",
+      "summary": "Danh mục trên phần mềm"
+    },
+    {
+      "beatId": "s6-stock",
+      "summary": "Màn tồn kho"
+    },
+    {
+      "beatId": "s7-flow",
+      "summary": "Sơ đồ một nhịp tại quầy"
+    },
+    {
+      "beatId": "s8-grn",
+      "summary": "Màn nhập hàng"
+    },
+    {
+      "beatId": "s9-crm",
+      "summary": "Hồ sơ khách hàng"
+    },
+    {
+      "beatId": "s10-report",
+      "summary": "Màn báo cáo"
+    },
+    {
+      "beatId": "s11-nxt",
+      "summary": "Báo cáo xuất nhập tồn"
+    },
+    {
+      "beatId": "s12-app",
+      "summary": "Ứng dụng khách hàng"
+    },
+    {
+      "beatId": "s13-link",
+      "summary": "Liên thông dữ liệu thuốc"
+    },
+    {
+      "beatId": "s14-close",
+      "summary": "Novixa"
+    }
+  ],
+  "voice": {
+    "profileId": "vi-VN-NamMinhNeural",
+    "language": "vi",
+    "pronunciationNotes": "Không tăng tốc giọng.",
+    "tracks": [
+      {
+        "trackId": "vo-s1-open",
+        "approval": "proposed",
+        "text": "Novixa giữ bán hàng, tồn kho và hạn dùng trên một nhịp.",
+        "path": "assets/voice/s1-open.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s2-dash",
+        "approval": "proposed",
+        "text": "Màn tổng quan cho thấy nhịp của nhà thuốc.",
+        "path": "assets/voice/s2-dash.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s3-pos",
+        "approval": "proposed",
+        "text": "Bán hàng nằm trên màn hình quầy.",
+        "path": "assets/voice/s3-pos.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s4-gap",
+        "approval": "proposed",
+        "text": "Chưa có ảnh hộp thuốc đã duyệt. Không lấy ảnh khác để lấp chỗ này.",
+        "path": "assets/voice/s4-gap.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s5-catalog",
+        "approval": "proposed",
+        "text": "Danh mục sản phẩm là danh sách trên phần mềm, chưa phải ảnh hộp thuốc.",
+        "path": "assets/voice/s5-catalog.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s6-stock",
+        "approval": "proposed",
+        "text": "Tồn kho và hạn dùng được nhìn trên màn tồn.",
+        "path": "assets/voice/s6-stock.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s7-flow",
+        "approval": "proposed",
+        "text": "Một nhịp: bán, trừ tồn, rồi nhắc hạn.",
+        "path": "assets/voice/s7-flow.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s8-grn",
+        "approval": "proposed",
+        "text": "Nhập hàng có một màn riêng.",
+        "path": "assets/voice/s8-grn.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s9-crm",
+        "approval": "proposed",
+        "text": "Hồ sơ khách nằm trong phần mềm.",
+        "path": "assets/voice/s9-crm.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s10-report",
+        "approval": "proposed",
+        "text": "Báo cáo mở từ màn báo cáo.",
+        "path": "assets/voice/s10-report.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s11-nxt",
+        "approval": "proposed",
+        "text": "Xuất nhập tồn là một báo cáo khác, không dùng lại màn tổng quan.",
+        "path": "assets/voice/s11-nxt.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s12-app",
+        "approval": "proposed",
+        "text": "Khách có một màn ứng dụng riêng.",
+        "path": "assets/voice/s12-app.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s13-link",
+        "approval": "proposed",
+        "text": "Liên thông dữ liệu thuốc là một màn cấu hình và theo dõi.",
+        "path": "assets/voice/s13-link.wav",
+        "pathBase": "project"
+      },
+      {
+        "trackId": "vo-s14-close",
+        "approval": "proposed",
+        "text": "Bán đúng. Theo dõi hạn. Giao rõ.",
+        "path": "assets/voice/s14-close.wav",
+        "pathBase": "project"
+      }
+    ]
+  },
+  "assets": [
+    {
+      "assetId": "nvx-doc008-dashboard",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/01-dashboard.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "94c726755cdfaa2b38691e3c089e92a1d39eb98325f5d12ed222b39382e544e9",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Màn tổng quan Novixa",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-doc008-catalog",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/02-catalog-products.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "4cdacdc58a73fd31d06ac5bcde19db0b0b60e2605f570f51fa5138317f19ad4e",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Danh mục sản phẩm trên phần mềm",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-doc008-grn",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/03-procurement-grn.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "4a4dc7975a1d6505e727514c9d9a88f7dc95a3bc3fe91efe28f01efaaa255aa4",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Màn nhập hàng",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-doc008-stock",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/04-inventory-stock.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "572a90cb61cd8bc1b1de4ef726a9f6bc4c744564dfa7d56b35445bb475a6e6f2",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Màn tồn kho",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-doc008-pos",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/05-sales-pos.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "8044bb9cd92c3567f54edfccacedc29fc21c69d5b1dff7815471b7e6214b81b3",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Màn bán hàng tại quầy",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-doc008-crm",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/06-customer-crm.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "a48656e4f3de8e78ea95349a811ef931aa74ff8a700bf0f3dec6122b150e8646",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Hồ sơ khách hàng",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-doc008-reports",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/08-reports-home.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "8b67dba78b22651d302ef23ef6c3c1ade5a24f0373bb0a6bf8015e9612290961",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Màn báo cáo",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-doc008-app",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/09-customer-app-home.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "b444ec56ef15894fb1d41d67a0d75a178d1b2099733a460b3a33188e298fc36e",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Ứng dụng khách hàng",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-qld-nxt",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/08-report-nxt.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "d15a4628a4b077d35a3e8531b8fcbde3a1dd9563bbfed8dbc8d9ac4c76333f80",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Báo cáo xuất nhập tồn",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "nvx-qld-connect",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/06-compliance/cuc-qld-lien-thong/assets/screenshots/10-drug-connectivity.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "8d8db1d553d74cb9ae63e1c5335718fe5534e7f285df6196a85f1f346c191349",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Liên thông dữ liệu thuốc",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "logo-novixa",
+      "kind": "logo",
+      "source": "library",
+      "path": "docs/novixa/assets/brand/novixa-logo.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "008501e96549b05af42af24b2b8e9e068ba8c031fa57920c61632a710b32e1f4",
+      "usageRights": "brand asset, use unmodified",
+      "approval": "approved",
+      "role": "brand_logo",
+      "label": "Logo Novixa gốc"
+    }
+  ],
+  "visualStyle": {
+    "profileId": "novixa-v2",
+    "artDirection": {
+      "audience": "người xem giải thích sản phẩm",
+      "objective": "Giải thích nhịp nhà thuốc bằng giao diện thật và nói rõ chỗ thiếu ảnh.",
+      "language": "tiếng Việt",
+      "imagery": "screenshot-and-type",
+      "motion": "camera-and-chart",
+      "light": "warm-paper",
+      "material": "paper",
+      "depth": "flat",
+      "principles": [
+        "exact-copy"
+      ]
+    },
+    "palette": {
+      "background": [
+        247,
+        249,
+        247
+      ],
+      "ink": [
+        0,
+        32,
+        96
+      ],
+      "accent": [
+        22,
+        140,
+        136
+      ],
+      "paper": [
+        255,
+        255,
+        255
+      ],
+      "muted": [
+        90,
+        104,
+        112
+      ],
+      "accentAlt": [
+        176,
+        96,
+        42
+      ],
+      "weight": [
+        24,
+        40,
+        72
+      ]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {
+      "top": 0.06,
+      "right": 0.06,
+      "bottom": 0.06,
+      "left": 0.06
+    }
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.35,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {
+    "aspectRatio": "16:9",
+    "width": 1280,
+    "height": 720,
+    "frameRate": 24
+  },
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": false,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {
+      "stage": "brief",
+      "automation": "manual",
+      "status": "approved",
+      "notes": "Giải thích nhịp nhà thuốc bằng giao diện thật và nói rõ chỗ thiếu ảnh."
+    },
+    {
+      "stage": "script_analysis",
+      "automation": "assisted",
+      "status": "done",
+      "notes": "propose_shot_plan từ script.md."
+    },
+    {
+      "stage": "story_structure",
+      "automation": "manual",
+      "status": "approved",
+      "notes": "Các cảnh khóa đủ ba phút."
+    },
+    {
+      "stage": "shot_plan",
+      "automation": "assisted",
+      "status": "approved",
+      "notes": "Ảnh chọn bằng library.choose_asset. Biểu đồ từ file nến."
+    },
+    {
+      "stage": "asset_plan",
+      "automation": "automated",
+      "status": "done",
+      "notes": "Thiếu ảnh thì ghi gap, không thế ảnh khác."
+    },
+    {
+      "stage": "asset_creation",
+      "automation": "manual",
+      "status": "done",
+      "notes": "Không tạo ảnh stock. Dùng ảnh tài liệu và nến công khai."
+    },
+    {
+      "stage": "voiceover",
+      "automation": "automated",
+      "status": "done",
+      "notes": "edge-tts, tốc độ +0%. Track còn proposed cho đến khi có người nghe."
+    },
+    {
+      "stage": "animation",
+      "automation": "automated",
+      "status": "done",
+      "notes": "Máy quay nhẹ, nến và chỉ báo tính từ dữ liệu."
+    },
+    {
+      "stage": "audio_mix",
+      "automation": "automated",
+      "status": "not_started",
+      "notes": ""
+    },
+    {
+      "stage": "render",
+      "automation": "automated",
+      "status": "in_progress",
+      "notes": ""
+    },
+    {
+      "stage": "qa",
+      "automation": "automated",
+      "status": "not_started",
+      "notes": ""
+    },
+    {
+      "stage": "delivery",
+      "automation": "manual",
+      "status": "not_started",
+      "notes": "Không phát hành."
+    }
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

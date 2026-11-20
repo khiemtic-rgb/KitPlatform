@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "novixa-style-proof-v2",
+  "projectName": "NOVIXA style proof V2 — hàng tồn là vốn",
+  "brand": {"id": "novixa", "name": "NOVIXA"},
+  "script": {
+    "version": "excerpt-s03-paced-2026-10-23",
+    "approvalStatus": "proposed",
+    "sourcePath": "../novixa-intro-film/script.md",
+    "notes": "Cùng ý với proof V1. Lời đọc được tách câu để có nhịp thở. Không đổi nghĩa kinh doanh và không khóa kịch bản phim."
+  },
+  "durationPolicy": {
+    "mode": "voice_driven",
+    "targetSeconds": null,
+    "notes": "Độ dài bằng lead hình + file lời +0% + đuôi hình. Không dùng atempo. Mục tiêu khoảng 15–25 giây."
+  },
+  "storyStructure": [
+    {"beatId": "open", "summary": "Một thùng vào kệ, người đứng quầy nhìn theo."},
+    {"beatId": "fast-leave", "summary": "Người với tay, hai thùng bán nhanh bay khỏi kệ."},
+    {"beatId": "days", "summary": "Lịch lật trong lúc hàng nằm yên."},
+    {"beatId": "locked", "summary": "Thùng còn lại nặng lên, rơi vào két. Đồng tiền đã đi trước."}
+  ],
+  "voice": {
+    "profileId": "vi-VN-NamMinhNeural",
+    "language": "vi",
+    "pronunciationNotes": "Tốc độ +0%. Cùng giọng với V1, thêm dấu chấm để ngắt bốn nhịp. Đoạn không chứa NOVIXA. Chưa có người nghe duyệt. Mẫu vi-VN-HoaiMyNeural ngắn nằm cạnh file, không dùng trong hình.",
+    "tracks": [
+      {
+        "trackId": "vo-style-v2",
+        "path": "assets/voice/v2-paced.wav",
+        "pathBase": "project",
+        "approval": "proposed",
+        "text": "Có những mặt hàng bán vèo vèo. Nhưng cũng có những hộp cứ nằm yên trên kệ, hết ngày này sang ngày khác. Hàng thì vẫn ở đó. Còn tiền thì đã đi trước một bước rồi."
+      }
+    ]
+  },
+  "assets": [
+    {
+      "assetId": "stage-stock",
+      "kind": "vector_generated",
+      "source": "generated",
+      "path": null,
+      "pathBase": "project",
+      "version": "2",
+      "usageRights": "drawn by template stock_story from palette and params",
+      "approval": "proposed",
+      "role": "illustration",
+      "label": "Sân khấu, người và đạo cụ do template vẽ. Chưa phải thiết kế minh họa cuối."
+    },
+    {
+      "assetId": "sfx-whoosh",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/whoosh.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — whoosh tổng hợp"
+    },
+    {
+      "assetId": "sfx-paper",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/paper.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng giấy tổng hợp"
+    },
+    {
+      "assetId": "sfx-thud",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/thud.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng đặt tổng hợp"
+    },
+    {
+      "assetId": "sfx-lock",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/lock.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng khóa tổng hợp"
+    }
+  ],
+  "visualStyle": {
+    "profileId": "novixa-story-v2",
+    "palette": {
+      "background": [232, 226, 214],
+      "ink": [0, 32, 96],
+      "accent": [0, 144, 224],
+      "paper": [250, 247, 240],
+      "muted": [110, 102, 90],
+      "accentAlt": [176, 92, 62],
+      "weight": [24, 40, 72],
+      "skin": [222, 184, 156],
+      "wood": [166, 122, 78],
+      "wall": [236, 232, 224],
+      "floor": [214, 206, 192],
+      "cloth": [0, 144, 224],
+      "shirt": [232, 236, 242],
+      "pants": [36, 48, 78],
+      "hair": [24, 28, 40],
+      "coin": [206, 164, 72]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.06, "right": 0.06, "bottom": 0.06, "left": 0.06}
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.32,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {"aspectRatio": "16:9", "width": 1920, "height": 1080, "frameRate": 30},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": true,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "proposed", "notes": "Style proof V2 của cùng đoạn lời. Chờ người xem."},
+    {"stage": "script_analysis", "automation": "assisted", "status": "done", "notes": "Tách câu, không đổi nghĩa."},
+    {"stage": "story_structure", "automation": "assisted", "status": "proposed", "notes": "Ba hướng đã vẽ storyboard. Chốt hybrid."},
+    {"stage": "shot_plan", "automation": "assisted", "status": "proposed", "notes": "Một cảnh style_proof. Không duyệt shot plan phim."},
+    {"stage": "asset_plan", "automation": "automated", "status": "done", "notes": "Hình do template. SFX placeholder. Không nhạc. Không UI."},
+    {"stage": "asset_creation", "automation": "automated", "status": "proposed", "notes": "Người và đạo cụ vẽ bằng code, chưa phải minh họa cuối."},
+    {"stage": "voiceover", "automation": "automated", "status": "needs_human", "notes": "NamMinh +0%, file v2-paced.wav. Chưa được nghe duyệt."},
+    {"stage": "animation", "automation": "automated", "status": "needs_human", "notes": "Template stock_story, mode hybrid."},
+    {"stage": "audio_mix", "automation": "automated", "status": "proposed", "notes": "Lời thật, SFX placeholder, không nhạc."},
+    {"stage": "render", "automation": "automated", "status": "done", "notes": "Bản xem: outputs/novixa-style-proof-v2/20261023T025435Z-style-proof-v2/video.mp4. 16.633s, 1920x1080, 30fps. Thư mục 20261023T025100Z là lần rơi quá muộn, không dùng để duyệt."},
+    {"stage": "qa", "automation": "automated", "status": "needs_human", "notes": "QA kỹ thuật PASS sau khi nới khoảng lặng mở đến 2.8s. Hình và giọng vẫn cần người xem, người nghe."},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Không phát hành. Dừng để duyệt phong cách."}
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

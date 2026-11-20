@@ -1,0 +1,264 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "novixa-asset-proof",
+  "projectName": "Novixa — proof tài nguyên",
+  "brand": {
+    "id": "novixa",
+    "name": "Novixa — proof tài nguyên"
+  },
+  "script": {
+    "version": "v2",
+    "approvalStatus": "approved",
+    "sourcePath": "script.md",
+    "notes": "Vỉ thuốc, thao tác kiểm vỉ, không gian nhà thuốc, giao diện, và một cảnh ghép."
+  },
+  "durationPolicy": {
+    "mode": "target",
+    "targetSeconds": 25,
+    "notes": "Bản proof ngắn, không phải video ba phút."
+  },
+  "storyStructure": [
+    {
+      "beatId": "s1-pack",
+      "summary": "Vỉ thuốc tham chiếu"
+    },
+    {
+      "beatId": "s2-action",
+      "summary": "Người kiểm vỉ thuốc"
+    },
+    {
+      "beatId": "s3-place",
+      "summary": "Không gian nhà thuốc"
+    },
+    {
+      "beatId": "s4-ui",
+      "summary": "Màn tồn kho trên phần mềm"
+    },
+    {
+      "beatId": "s5-join",
+      "summary": "Ghép giao diện với ảnh vỉ"
+    }
+  ],
+  "voice": {
+    "profileId": "vi-VN-NamMinhNeural",
+    "language": "vi",
+    "pronunciationNotes": "Không tăng tốc giọng.",
+    "tracks": []
+  },
+  "assets": [
+    {
+      "assetId": "nvx-doc008-stock",
+      "kind": "screenshot",
+      "source": "library",
+      "path": "docs/novixa/launch/DOC-008/assets/screenshots/04-inventory-stock.png",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "572a90cb61cd8bc1b1de4ef726a9f6bc4c744564dfa7d56b35445bb475a6e6f2",
+      "usageRights": "Ảnh chụp giao diện Novixa trong tài liệu nội bộ của repository. Dùng cho video giải thích sản phẩm. Số trên màn là dữ liệu demo và phải được ghi chú trên hình.",
+      "approval": "approved",
+      "role": "reference",
+      "label": "Màn tồn kho",
+      "visualSource": "SOFTWARE_SCREENSHOT"
+    },
+    {
+      "assetId": "ref-blister-foil",
+      "kind": "photo",
+      "source": "library",
+      "path": "proof/kit-video-production-v1/library/stills/ref-blister-foil.jpg",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "3fdb061b5ae609cb7a34b7857ccf6f644a4ad3067c32b3d9169281839b2a2f29",
+      "usageRights": "Wikimedia Commons File:Blister of tablets.jpg, Tarasna0922, CC BY-SA 4.0. Ảnh tham chiếu, không phải sản phẩm Novixa.",
+      "approval": "approved",
+      "role": "illustration",
+      "label": "Vỉ thuốc tham chiếu"
+    },
+    {
+      "assetId": "ref-pharmacy-floor",
+      "kind": "photo",
+      "source": "library",
+      "path": "proof/kit-video-production-v1/library/stills/ref-pharmacy-floor.jpg",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "ed071eab6af8c101f59a73d70b499bc99f5a27394d7e72851bde91b61abd9c71",
+      "usageRights": "Wikimedia Commons File:Brest Greenberg Pharmacy Interior 2024-09-20 3798.jpg, Mike1979 Russia, CC BY-SA 3.0. Không phải cửa hàng Novixa.",
+      "approval": "approved",
+      "role": "illustration",
+      "label": "Không gian nhà thuốc bán lẻ"
+    },
+    {
+      "assetId": "ref-hands-blister",
+      "kind": "photo",
+      "source": "library",
+      "path": "proof/kit-video-production-v1/library/stills/ref-hands-blister.jpg",
+      "pathBase": "repo",
+      "version": "repository",
+      "sha256": "50c50f49fc0ebc294ab34736e1faf152d2afd15f2cc5197d07bd9f089f28d0d8",
+      "usageRights": "Wikimedia Commons File:Person holds a blister pack of pills while sitting at a table.jpg, Shixart1985, CC BY 2.0. Không phải dược sĩ tại quầy.",
+      "approval": "approved",
+      "role": "illustration",
+      "label": "Người kiểm vỉ thuốc"
+    }
+  ],
+  "visualStyle": {
+    "profileId": "novixa-proof",
+    "artDirection": {
+      "audience": "người xem giải thích sản phẩm",
+      "objective": "Giải thích nhịp nhà thuốc bằng giao diện thật và nói rõ chỗ thiếu ảnh.",
+      "language": "tiếng Việt",
+      "imagery": "screenshot-and-type",
+      "motion": "camera-and-chart",
+      "light": "warm-paper",
+      "material": "paper",
+      "depth": "flat",
+      "principles": [
+        "exact-copy"
+      ]
+    },
+    "palette": {
+      "background": [
+        247,
+        249,
+        247
+      ],
+      "ink": [
+        0,
+        32,
+        96
+      ],
+      "accent": [
+        22,
+        140,
+        136
+      ],
+      "paper": [
+        255,
+        255,
+        255
+      ],
+      "muted": [
+        90,
+        104,
+        112
+      ],
+      "accentAlt": [
+        176,
+        96,
+        42
+      ],
+      "weight": [
+        24,
+        40,
+        72
+      ]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {
+      "top": 0.06,
+      "right": 0.06,
+      "bottom": 0.06,
+      "left": 0.06
+    }
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.35,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {
+    "aspectRatio": "16:9",
+    "width": 1280,
+    "height": 720,
+    "frameRate": 24
+  },
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": false,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {
+      "stage": "brief",
+      "automation": "manual",
+      "status": "approved",
+      "notes": "Giải thích nhịp nhà thuốc bằng giao diện thật và nói rõ chỗ thiếu ảnh."
+    },
+    {
+      "stage": "script_analysis",
+      "automation": "assisted",
+      "status": "done",
+      "notes": "propose_shot_plan từ script.md."
+    },
+    {
+      "stage": "story_structure",
+      "automation": "manual",
+      "status": "approved",
+      "notes": "Các cảnh khóa đủ ba phút."
+    },
+    {
+      "stage": "shot_plan",
+      "automation": "assisted",
+      "status": "approved",
+      "notes": "Ảnh chọn bằng library.choose_asset. Biểu đồ từ file nến."
+    },
+    {
+      "stage": "asset_plan",
+      "automation": "automated",
+      "status": "done",
+      "notes": "Thiếu ảnh thì ghi gap, không thế ảnh khác."
+    },
+    {
+      "stage": "asset_creation",
+      "automation": "manual",
+      "status": "done",
+      "notes": "Ảnh tham chiếu lấy từ Wikimedia Commons, có ghi giấy phép. Không gọi API trả phí."
+    },
+    {
+      "stage": "voiceover",
+      "automation": "automated",
+      "status": "done",
+      "notes": "edge-tts, tốc độ +0%. Track còn proposed cho đến khi có người nghe."
+    },
+    {
+      "stage": "animation",
+      "automation": "automated",
+      "status": "done",
+      "notes": "Máy quay nhẹ, nến và chỉ báo tính từ dữ liệu."
+    },
+    {
+      "stage": "audio_mix",
+      "automation": "automated",
+      "status": "not_started",
+      "notes": ""
+    },
+    {
+      "stage": "render",
+      "automation": "automated",
+      "status": "in_progress",
+      "notes": ""
+    },
+    {
+      "stage": "qa",
+      "automation": "automated",
+      "status": "not_started",
+      "notes": ""
+    },
+    {
+      "stage": "delivery",
+      "automation": "manual",
+      "status": "not_started",
+      "notes": "Không phát hành."
+    }
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

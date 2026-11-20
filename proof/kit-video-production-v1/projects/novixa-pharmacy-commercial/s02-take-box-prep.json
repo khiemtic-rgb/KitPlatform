@@ -1,0 +1,38 @@
+{
+  "sceneId": "s02-take-box",
+  "status": "SPEC_ONLY",
+  "approval": "AWAITING_REVIEW",
+  "requestSent": false,
+  "durationSeconds": 5,
+  "provider": {
+    "id": "runway",
+    "model": "gen4_turbo",
+    "mode": "image_to_video",
+    "ratio": "1280:720"
+  },
+  "cost": null,
+  "costNote": "Repository không ghi đơn giá Runway. Không ước lượng và không gửi request.",
+  "identityReference": "assets/pharmacist-nova-cartoon-v3.jpg",
+  "startKeyframe": null,
+  "endKeyframe": null,
+  "doNotUse": [
+    "keyframes/v2/s02-take-box.jpg",
+    "keyframes/s02-take-box.jpg",
+    "probes/character-reference-v1/f05-reach.jpg",
+    "probes/character-reference-v1/f06-grasp.jpg"
+  ],
+  "label": {
+    "asset": "assets/labels/v5/pkg-ampicillin.png",
+    "name": "AMPICILLIN",
+    "rule": "Ghép sau bằng graphics. Không để model viết chữ hoặc hàm lượng."
+  },
+  "action": "Đưa tay tới hộp, ngón còn cách hộp một khoảng, rồi nắm và nhấc khỏi kệ.",
+  "prompt": "Keep this stylized 3D cartoon pharmacist: large brown eyes with catchlights, raised brows, an open smile, a chunky brown bun, a white short-sleeve coat, a mint shirt, and a blank badge. She reaches toward one plain box on the shelf, with a visible gap between her fingers and the box, then closes her hand around it and lifts it off the shelf. The box stays rigid. Do not write letters, numbers, or a dose. Do not shift toward a photograph. The other packages stay still. Light stays white, not yellow.",
+  "acceptance": [
+    "Cùng mặt, búi tóc, áo trắng và áo mint với chân dung v3.",
+    "Có khoảng cách giữa ngón và hộp trước khi nắm.",
+    "Hộp rời kệ, không biến dạng.",
+    "Không có chữ do model viết trên hộp."
+  ],
+  "minimumToUnblock": "Một keyframe đầu đã duyệt, đúng nhân vật v3, tay chưa chạm hộp. Rồi phép gửi và RUNWAY_API_KEY."
+}

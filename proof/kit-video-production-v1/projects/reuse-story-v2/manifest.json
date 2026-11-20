@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "reuse-story-v2",
+  "projectName": "Reuse — stock story, brand khác",
+  "brand": {"id": "sample-east", "name": "KIT Sample East"},
+  "script": {
+    "version": "reuse-1",
+    "approvalStatus": "approved",
+    "sourcePath": "script.txt",
+    "notes": "Fixture chứng minh template stock_story nhận headline, số thùng, màu và thời lượng khác. Không phải nội dung NOVIXA."
+  },
+  "durationPolicy": {"mode": "explicit_scenes", "targetSeconds": null, "notes": "Bốn giây, một cảnh."},
+  "storyStructure": [{"beatId": "only", "summary": "Cùng template, dữ liệu khác."}],
+  "voice": {"profileId": "none", "language": "vi", "pronunciationNotes": "Không có lời.", "tracks": []},
+  "assets": [],
+  "visualStyle": {
+    "profileId": "sample-east",
+    "palette": {
+      "background": [226, 232, 224],
+      "ink": [24, 48, 36],
+      "accent": [36, 122, 92],
+      "paper": [248, 246, 238],
+      "muted": [90, 104, 94],
+      "accentAlt": [184, 112, 48],
+      "weight": [28, 48, 40],
+      "skin": [206, 164, 132],
+      "wood": [132, 96, 64],
+      "wall": [236, 240, 232],
+      "floor": [206, 214, 204],
+      "cloth": [36, 122, 92],
+      "coin": [196, 154, 64]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.06, "right": 0.06, "bottom": 0.06, "left": 0.06}
+  },
+  "audioProfile": {"ducking": false, "voiceGain": 1, "sfxGain": 0.2, "musicPolicy": "none", "silenceMinSeconds": 1.2},
+  "format": {"aspectRatio": "16:9", "width": 640, "height": 360, "frameRate": 12},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 28,
+    "preset": "veryfast",
+    "allowPlaceholders": true,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "approved", "notes": "Fixture tái sử dụng."},
+    {"stage": "script_analysis", "automation": "manual", "status": "approved", "notes": ""},
+    {"stage": "story_structure", "automation": "manual", "status": "approved", "notes": ""},
+    {"stage": "shot_plan", "automation": "manual", "status": "approved", "notes": ""},
+    {"stage": "asset_plan", "automation": "manual", "status": "approved", "notes": "Không asset file."},
+    {"stage": "asset_creation", "automation": "automated", "status": "approved", "notes": ""},
+    {"stage": "voiceover", "automation": "manual", "status": "approved", "notes": "Không lời."},
+    {"stage": "animation", "automation": "automated", "status": "approved", "notes": ""},
+    {"stage": "audio_mix", "automation": "automated", "status": "approved", "notes": "Im có chủ đích."},
+    {"stage": "render", "automation": "automated", "status": "not_started", "notes": ""},
+    {"stage": "qa", "automation": "automated", "status": "not_started", "notes": ""},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Không phát hành."}
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

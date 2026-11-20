@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "novixa-character-reference/2",
+  "approval": "AWAITING_REVIEW",
+  "integratedIntoProduction": false,
+  "previous": "probes/character-reference-v1/reference.json",
+  "blocker": "Pipeline không có công cụ tạo ảnh mới. Bốn khung không được vẽ bằng Pillow, không được lật hoặc kéo giãn.",
+  "labelPolicy": "Prompt yêu cầu mặt hộp trống. Tên AMPICILLIN sẽ do graphics vẽ sau, không lấy chữ trong ảnh.",
+  "keptFromV1": ["f01-near-front", "f02-three-quarter-left", "f03-three-quarter-right", "f07-lift"],
+  "items": [
+    {
+      "id": "f04-profile",
+      "title": "Nghiêng",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "path": null,
+      "replaces": "probes/character-reference-v1/f04-profile.jpg",
+      "reason": "Khung V1 vẫn thấy hai mắt.",
+      "prompt": "Cùng dược sĩ hoạt hình 3D: mắt nâu lớn có điểm sáng, lông mày nhướng, nụ cười mở, búi tóc khối, áo blouse trắng tay ngắn, áo mint, thẻ tên trống. Góc nghiêng thật, nhìn ngang sang phải. Chỉ thấy một mắt. Sống mũi và đường nét mặt cho thấy hướng nhìn ngang. Nền ngà, không chữ."
+    },
+    {
+      "id": "f05-reach",
+      "title": "Đưa tay tới hộp",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "path": null,
+      "replaces": "probes/character-reference-v1/f05-reach.jpg",
+      "reason": "Khung V1 tay đã đặt lên hộp.",
+      "prompt": "Cùng nhân vật trong nhà thuốc sáng. Một cánh tay đang đưa tới hộp thuốc trắng trên kệ. Các ngón còn cách hộp một khoảng nhìn rõ. Hộp chưa rời kệ. Mặt hộp trống, không chữ, không hàm lượng. Giữ búi tóc, mắt lớn, áo trắng và áo mint."
+    },
+    {
+      "id": "f06-grasp",
+      "title": "Nắm hộp",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "path": null,
+      "replaces": "probes/character-reference-v1/f06-grasp.jpg",
+      "reason": "Khung V1 bàn tay mở, chưa khép quanh hộp.",
+      "prompt": "Cùng nhân vật. Lòng bàn tay và các ngón ôm kín hộp trắng. Hộp vẫn nằm trên kệ, chưa được nhấc lên. Mặt hộp trống, không chữ, không hàm lượng. Giữ nhận diện hoạt hình 3D."
+    },
+    {
+      "id": "f08-point",
+      "title": "Chỉ vào nhãn",
+      "status": "BLOCKED",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "not-created",
+      "path": null,
+      "replaces": "probes/character-reference-v1/f08-point.jpg",
+      "reason": "Khung V1 ngón chỉ vào hộp, chưa khóa vào vùng tên.",
+      "prompt": "Cùng nhân vật. Một tay giữ hộp trắng ổn định. Ngón trỏ tay kia chỉ đúng vùng nhãn trống ở giữa mặt hộp, nơi tên sản phẩm sẽ được vẽ sau. Không viết chữ hoặc số lên hộp. Giữ búi tóc, mắt lớn, áo trắng và áo mint."
+    }
+  ]
+}

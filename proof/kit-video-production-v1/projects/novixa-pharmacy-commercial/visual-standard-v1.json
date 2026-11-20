@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "novixa-visual-standard/1",
+  "baseline": "v7",
+  "approval": "AWAITING_REVIEW",
+  "characterId": "pharmacist-nova",
+  "verifiedViews": [
+    {
+      "id": "bust-cartoon-v3",
+      "path": "assets/pharmacist-nova-cartoon-v3.jpg",
+      "view": "near-front",
+      "note": "Một góc gần chính diện. Không phải bộ bốn góc."
+    },
+    {
+      "id": "pharmacy-plate-v3",
+      "path": "keyframes/v3/s01-pharmacy.jpg",
+      "view": "near-front-in-shop",
+      "note": "Cùng nhân vật, cùng kiểu góc, đứng sau quầy."
+    }
+  ],
+  "specifiedOnlyViews": ["front", "three-quarter-left", "three-quarter-right", "profile-left", "profile-right"],
+  "specifiedOnlyExpressions": ["attention", "mild-surprise", "friendly-advice"],
+  "verifiedExpression": "open-smile",
+  "products": [
+    {"id": "pkg-ampicillin", "name": "AMPICILLIN", "group": "rx"},
+    {"id": "pkg-hoat-huyet", "name": "HOẠT HUYẾT", "group": "otc"},
+    {"id": "pkg-vitamin-c", "name": "VITAMIN C", "group": "supplement"}
+  ],
+  "kpiCards": [
+    {"label": "Giờ mở cửa"},
+    {"label": "Giờ đóng cửa"},
+    {"label": "Doanh thu"},
+    {"label": "Đơn hàng"},
+    {"label": "Tồn kho"}
+  ],
+  "assets": [
+    {"id": "pharmacist-nova-cartoon-v3", "role": "character", "group": "character", "version": "v3", "source": "generated", "approval": "AWAITING_REVIEW", "state": "file", "path": "assets/pharmacist-nova-cartoon-v3.jpg", "use": "Chuẩn mặt hiện tại. Một góc."},
+    {"id": "character-contact-v1", "role": "contact", "group": "character", "version": "v1", "source": "composite", "approval": "AWAITING_REVIEW", "state": "file", "path": "visual-standard-v1/character-contact.jpg", "use": "Ghép các file đã có. Ô trống không phải góc mới."},
+    {"id": "pharmacy-plate-v3", "role": "environment", "group": "set", "version": "v3", "source": "generated", "approval": "AWAITING_REVIEW", "state": "file", "path": "keyframes/v3/s01-pharmacy.jpg", "use": "Tấm nhân vật trong quầy. Chữ không lấy từ tấm này."},
+    {"id": "pharmacy-composite-v7", "role": "keyframe", "group": "scene", "version": "v7", "source": "composite", "approval": "AWAITING_REVIEW", "state": "file", "path": "keyframes/v7/s01-pharmacy.jpg", "use": "Baseline bố cục. Chưa phải video."},
+    {"id": "operations-v7", "role": "kpi", "group": "graphics", "version": "v7", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "keyframes/v7/s04-operations.jpg", "use": "Năm thẻ lấy từ demoData."},
+    {"id": "inventory-v7", "role": "table", "group": "graphics", "version": "v7", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "keyframes/v7/s05-inventory.jpg", "use": "Bảng ba cột lấy từ demoData."},
+    {"id": "transition-v7", "role": "storyboard", "group": "graphics", "version": "v7", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "keyframes/v7/s00-transition.jpg", "use": "Thứ tự kể chuyện. Ảnh tĩnh."},
+    {"id": "shelf-rx", "role": "shelf-sign", "group": "label", "version": "v5", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "assets/labels/v5/shelf-rx.png", "use": "THUỐC KÊ ĐƠN."},
+    {"id": "shelf-otc", "role": "shelf-sign", "group": "label", "version": "v5", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "assets/labels/v5/shelf-otc.png", "use": "THUỐC KHÔNG KÊ ĐƠN."},
+    {"id": "shelf-supplement", "role": "shelf-sign", "group": "label", "version": "v5", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "assets/labels/v5/shelf-supplement.png", "use": "THỰC PHẨM BẢO VỆ SỨC KHỎE."},
+    {"id": "pkg-ampicillin-face", "role": "package", "group": "product", "version": "v5", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "assets/labels/v5/pkg-ampicillin.png", "use": "Mặt hộp mockup. Không phải nhãn thương mại."},
+    {"id": "pkg-hoat-huyet-face", "role": "package", "group": "product", "version": "v5", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "assets/labels/v5/pkg-hoat-huyet.png", "use": "Mặt chai hoặc hộp mockup."},
+    {"id": "pkg-vitamin-c-face", "role": "package", "group": "product", "version": "v5", "source": "code", "approval": "AWAITING_REVIEW", "state": "file", "path": "assets/labels/v5/pkg-vitamin-c.png", "use": "Mặt hộp mockup."},
+    {"id": "logo", "role": "logo", "group": "brand", "version": "brand", "source": "brand_file", "approval": "approved", "state": "file", "path": "docs/novixa/assets/brand/novixa-logo.png", "use": "File logo gốc. Không vẽ lại."},
+    {"id": "pose-reach", "role": "pose", "group": "character", "version": "none", "source": "spec", "approval": "AWAITING_REVIEW", "state": "spec-only", "path": "", "use": "Chưa có tư thế đưa tay."},
+    {"id": "pose-grasp", "role": "pose", "group": "character", "version": "none", "source": "spec", "approval": "AWAITING_REVIEW", "state": "spec-only", "path": "", "use": "Chưa có tư thế nắm hộp."},
+    {"id": "pose-lift", "role": "pose", "group": "character", "version": "none", "source": "spec", "approval": "AWAITING_REVIEW", "state": "spec-only", "path": "", "use": "Chưa có tư thế nhấc hộp."},
+    {"id": "pose-point", "role": "pose", "group": "character", "version": "none", "source": "spec", "approval": "AWAITING_REVIEW", "state": "spec-only", "path": "", "use": "Chưa có tư thế chỉ nhãn."},
+    {"id": "blister-pack", "role": "package", "group": "product", "version": "none", "source": "spec", "approval": "AWAITING_REVIEW", "state": "spec-only", "path": "", "use": "Vỉ thuốc mới được mô tả, chưa có asset chữ kiểm soát."}
+  ],
+  "preserved": [
+    "keyframes/s01-pharmacy.jpg",
+    "keyframes/s02-take-box.jpg",
+    "keyframes/s03-show-pack.jpg",
+    "keyframes/s04-advise.jpg",
+    "keyframes/v2/s01-pharmacy.jpg",
+    "keyframes/v2/s02-take-box.jpg",
+    "keyframes/v2/s03-show-pack.jpg",
+    "keyframes/v2/s04-advise.jpg",
+    "keyframes/v3/s01-pharmacy.jpg",
+    "keyframes/v4/s01-pharmacy.jpg",
+    "keyframes/v5/s01-pharmacy.jpg",
+    "keyframes/v6/s01-pharmacy.jpg",
+    "keyframes/v7/s01-pharmacy.jpg",
+    "assets/pharmacist-nova-style.jpg",
+    "assets/pharmacist-nova-cartoon-v3.jpg"
+  ],
+  "characterProbe": "probes/character-consistency-v1/probe.json",
+  "sceneProbe": {
+    "id": "s02-take-box-probe",
+    "status": "SPEC_ONLY",
+    "video": null,
+    "productId": "pkg-ampicillin",
+    "reason": "Chưa có tư thế tay đã kiểm chứng. Không dịch chuyển ảnh tĩnh và không gọi provider."
+  }
+}

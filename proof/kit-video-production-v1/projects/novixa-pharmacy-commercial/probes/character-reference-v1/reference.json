@@ -1,0 +1,216 @@
+{
+  "schemaVersion": "novixa-character-reference/1",
+  "approval": "AWAITING_REVIEW",
+  "integratedIntoProduction": false,
+  "sourceSha256": "865b475eb9ccbb7dfa571bc5a206df8e57fd765f08ce3d82d8b5565a132da478",
+  "sourceCopy": "probes/character-reference-v1/source-storyboard.jpg",
+  "origin": "user-supplied storyboard, 8 frames",
+  "successor": "probes/character-reference-v2/reference.json",
+  "method": "Gutter crop from measured near-white bands. No scale, flip, or redraw.",
+  "labelPolicy": "Chữ trên hộp và kệ trong ảnh là chữ do ảnh tạo ra. Không dùng làm dữ liệu. Nhãn chính thức vẫn render từ demoData.",
+  "items": [
+    {
+      "id": "f01-near-front",
+      "title": "Gần chính diện",
+      "view": "near-front",
+      "status": "AWAITING_REVIEW",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "rectangular-crop",
+      "box": [
+        8,
+        10,
+        255,
+        346
+      ],
+      "size": [
+        248,
+        337
+      ],
+      "path": "f01-near-front.jpg",
+      "source": "probes/character-reference-v1/source-storyboard.jpg",
+      "frame": 1,
+      "needsRegeneration": false,
+      "note": "Góc gần chính diện đọc được. Cùng nhận diện với chân dung v3.",
+      "officialLabel": false
+    },
+    {
+      "id": "f02-three-quarter-left",
+      "title": "3/4 trái",
+      "view": "three-quarter-left",
+      "status": "AWAITING_REVIEW",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "rectangular-crop",
+      "box": [
+        262,
+        10,
+        509,
+        346
+      ],
+      "size": [
+        248,
+        337
+      ],
+      "path": "f02-three-quarter-left.jpg",
+      "source": "probes/character-reference-v1/source-storyboard.jpg",
+      "frame": 2,
+      "needsRegeneration": false,
+      "note": "3/4 một phía. Không phải ảnh lật của khung bên cạnh.",
+      "officialLabel": false
+    },
+    {
+      "id": "f03-three-quarter-right",
+      "title": "3/4 phải",
+      "view": "three-quarter-right",
+      "status": "AWAITING_REVIEW",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "rectangular-crop",
+      "box": [
+        515,
+        10,
+        763,
+        346
+      ],
+      "size": [
+        249,
+        337
+      ],
+      "path": "f03-three-quarter-right.jpg",
+      "source": "probes/character-reference-v1/source-storyboard.jpg",
+      "frame": 3,
+      "needsRegeneration": false,
+      "note": "3/4 phía đối diện. Không phải ảnh lật của khung bên cạnh.",
+      "officialLabel": false
+    },
+    {
+      "id": "f04-profile",
+      "title": "Nghiêng",
+      "view": "profile",
+      "status": "AWAITING_REVIEW",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "rectangular-crop",
+      "box": [
+        770,
+        10,
+        1017,
+        346
+      ],
+      "size": [
+        248,
+        337
+      ],
+      "path": "f04-profile.jpg",
+      "source": "probes/character-reference-v1/source-storyboard.jpg",
+      "frame": 4,
+      "needsRegeneration": true,
+      "note": "Vẫn thấy hai mắt. Chưa phải góc nghiêng thật.",
+      "officialLabel": false
+    },
+    {
+      "id": "f05-reach",
+      "title": "Đưa tay tới hộp",
+      "view": "reach",
+      "status": "AWAITING_REVIEW",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "rectangular-crop",
+      "box": [
+        8,
+        354,
+        255,
+        670
+      ],
+      "size": [
+        248,
+        317
+      ],
+      "path": "f05-reach.jpg",
+      "source": "probes/character-reference-v1/source-storyboard.jpg",
+      "frame": 5,
+      "needsRegeneration": true,
+      "note": "Tay đã đặt lên hộp. Chưa phải tư thế đưa tay trước khi chạm.",
+      "officialLabel": false
+    },
+    {
+      "id": "f06-grasp",
+      "title": "Nắm hộp",
+      "view": "grasp",
+      "status": "AWAITING_REVIEW",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "rectangular-crop",
+      "box": [
+        262,
+        354,
+        509,
+        670
+      ],
+      "size": [
+        248,
+        317
+      ],
+      "path": "f06-grasp.jpg",
+      "source": "probes/character-reference-v1/source-storyboard.jpg",
+      "frame": 6,
+      "needsRegeneration": true,
+      "note": "Bàn tay mở, ngón chạm mặt hộp. Chưa phải nắm khép. Chữ trên hộp bị sai.",
+      "officialLabel": false
+    },
+    {
+      "id": "f07-lift",
+      "title": "Nhấc hộp",
+      "view": "lift",
+      "status": "AWAITING_REVIEW",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "rectangular-crop",
+      "box": [
+        515,
+        354,
+        763,
+        670
+      ],
+      "size": [
+        249,
+        317
+      ],
+      "path": "f07-lift.jpg",
+      "source": "probes/character-reference-v1/source-storyboard.jpg",
+      "frame": 7,
+      "needsRegeneration": false,
+      "note": "Hộp đã rời kệ và được hai tay đỡ. Chữ 500 mg trên hộp không được dùng.",
+      "officialLabel": false
+    },
+    {
+      "id": "f08-point",
+      "title": "Chỉ vào nhãn",
+      "view": "point",
+      "status": "AWAITING_REVIEW",
+      "review": "VISUAL_REVIEW_REQUIRED",
+      "approval": "AWAITING_REVIEW",
+      "method": "rectangular-crop",
+      "box": [
+        770,
+        354,
+        1017,
+        670
+      ],
+      "size": [
+        248,
+        317
+      ],
+      "path": "f08-point.jpg",
+      "source": "probes/character-reference-v1/source-storyboard.jpg",
+      "frame": 8,
+      "needsRegeneration": true,
+      "note": "Ngón chỉ vào hộp, chưa khóa vào tên sản phẩm. Dòng 500 mg không được dùng.",
+      "officialLabel": false
+    }
+  ],
+  "resolution": "Mỗi ô khoảng 248 pixel ngang. Không phóng to. Chưa dùng làm keyframe 1280x720.",
+  "identity": "Tám ô cùng búi tóc, mắt lớn có điểm sáng, áo trắng và áo mint. Khác ảnh bán hiện thực.",
+  "labelReplacement": "Khi được duyệt, che chữ trên hộp bằng mặt pkg-ampicillin do code vẽ: tên AMPICILLIN, không có hàm lượng. Biển kệ dùng đúng danh mục trong demoData."
+}

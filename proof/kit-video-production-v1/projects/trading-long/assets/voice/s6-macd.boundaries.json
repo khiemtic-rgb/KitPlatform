@@ -1,0 +1,87 @@
+[
+  {
+    "text": "MACD",
+    "start": 0.1,
+    "end": 0.8625
+  },
+  {
+    "text": "của",
+    "start": 0.8625,
+    "end": 1.0
+  },
+  {
+    "text": "một",
+    "start": 1.0,
+    "end": 1.1875
+  },
+  {
+    "text": "đoạn",
+    "start": 1.1875,
+    "end": 1.4625
+  },
+  {
+    "text": "Bitcoin",
+    "start": 1.4625,
+    "end": 1.825
+  },
+  {
+    "text": "khác",
+    "start": 1.825,
+    "end": 2.1375
+  },
+  {
+    "text": "tính",
+    "start": 2.35,
+    "end": 2.575
+  },
+  {
+    "text": "từ",
+    "start": 2.575,
+    "end": 2.7625
+  },
+  {
+    "text": "giá",
+    "start": 2.7625,
+    "end": 3.0
+  },
+  {
+    "text": "đóng",
+    "start": 3.0,
+    "end": 3.2125
+  },
+  {
+    "text": "cửa",
+    "start": 3.2125,
+    "end": 3.625
+  },
+  {
+    "text": "Không",
+    "start": 4.4625,
+    "end": 4.7875
+  },
+  {
+    "text": "phải",
+    "start": 4.7875,
+    "end": 5.0125
+  },
+  {
+    "text": "tín",
+    "start": 5.0125,
+    "end": 5.275
+  },
+  {
+    "text": "hiệu",
+    "start": 5.275,
+    "end": 5.4875
+  },
+  {
+    "text": "vào",
+    "start": 5.4875,
+    "end": 5.6875
+  },
+  {
+    "text": "lệnh",
+    "start": 5.6875,
+    "end": 6.0375
+  }
+]

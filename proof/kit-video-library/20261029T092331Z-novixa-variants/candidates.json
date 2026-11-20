@@ -1,0 +1,138 @@
+{
+  "assets": [
+    {
+      "assetId": "novixa-ill-box-001",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "medicine.packaging",
+      "keywords": [
+        "hộp thuốc",
+        "hộp",
+        "bao bì",
+        "minh họa",
+        "novixa"
+      ],
+      "style": "code-illustration",
+      "width": 1238,
+      "height": 1152,
+      "aspect": 1.0747,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp.",
+      "approval": "proposed",
+      "path": "proof/kit-video-library/20261029T090851Z-novixa-samples/novixa-ill-box-001.png",
+      "pathBase": "repo",
+      "sha256": "d2b6b7a75b21ecc40de19fabcfc3d834938e46106817d438d2a9b66cbf07a857",
+      "averageHash": 2179318145017138963,
+      "similarityGroup": "novixa-ill-box",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ, sản phẩm hư cấu. Không phải ảnh chụp sản phẩm thật.",
+        "NOVIXA không phải nhà sản xuất thuốc. Không ghi hoạt chất, liều dùng hay công dụng.",
+        "Phải giữ dòng SẢN PHẨM MINH HỌA — KHÔNG PHẢI THUỐC THẬT trên bao bì khi dùng trong phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf.",
+        "Không dùng làm asset role product và không dùng để thay ảnh sản phẩm thật."
+      ],
+      "label": "Hộp thuốc minh họa NOVIXA",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Hộp thuốc minh họa NOVIXA: hình vẽ bằng code do dự án NOVIXA tự tạo, sản phẩm hư cấu, chỉ dùng minh họa trong video NOVIXA. Không phải ảnh sản phẩm thật. Chưa được duyệt.",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    },
+    {
+      "assetId": "novixa-ill-bottle-001",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "medicine.packaging",
+      "keywords": [
+        "lọ thuốc",
+        "lọ",
+        "chai",
+        "bao bì",
+        "minh họa",
+        "novixa"
+      ],
+      "style": "code-illustration",
+      "width": 697,
+      "height": 1208,
+      "aspect": 0.577,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp.",
+      "approval": "proposed",
+      "path": "proof/kit-video-library/20261029T090851Z-novixa-samples/novixa-ill-bottle-001.png",
+      "pathBase": "repo",
+      "sha256": "49ece8c94f40892085e20a09158af686780a528713249e7499b893c0d7e96003",
+      "averageHash": 4340412577931345691,
+      "similarityGroup": "novixa-ill-bottle",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ, sản phẩm hư cấu. Không phải ảnh chụp sản phẩm thật.",
+        "NOVIXA không phải nhà sản xuất thuốc. Không ghi hoạt chất, liều dùng hay công dụng.",
+        "Phải giữ dòng SẢN PHẨM MINH HỌA — KHÔNG PHẢI THUỐC THẬT trên bao bì khi dùng trong phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf.",
+        "Không dùng làm asset role product và không dùng để thay ảnh sản phẩm thật."
+      ],
+      "label": "Lọ thuốc minh họa NOVIXA",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Lọ thuốc minh họa NOVIXA: hình vẽ bằng code do dự án NOVIXA tự tạo, sản phẩm hư cấu, chỉ dùng minh họa trong video NOVIXA. Không phải ảnh sản phẩm thật. Chưa được duyệt.",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    },
+    {
+      "assetId": "novixa-ill-blister-001",
+      "brand": "NOVIXA",
+      "kind": "image",
+      "category": "medicine.packaging",
+      "keywords": [
+        "vỉ thuốc",
+        "vỉ",
+        "viên nang",
+        "bao bì",
+        "minh họa",
+        "novixa"
+      ],
+      "style": "code-illustration",
+      "width": 1695,
+      "height": 1068,
+      "aspect": 1.5871,
+      "source": "first-party",
+      "license": "Dự án tự vẽ bằng code (Pillow). Không phải ảnh chụp.",
+      "approval": "proposed",
+      "path": "proof/kit-video-library/20261029T090851Z-novixa-samples/novixa-ill-blister-001.png",
+      "pathBase": "repo",
+      "sha256": "fa8e226b0d33a7bf87da5d3e02fc3670e610fe9adb98adaa1fcdd79c15421ecf",
+      "averageHash": 73035401081618272,
+      "similarityGroup": "novixa-ill-blister",
+      "parentId": null,
+      "derived": false,
+      "usage": [],
+      "allow": [
+        "explainer"
+      ],
+      "limits": [
+        "Hình minh họa do code vẽ, sản phẩm hư cấu. Không phải ảnh chụp sản phẩm thật.",
+        "NOVIXA không phải nhà sản xuất thuốc. Không ghi hoạt chất, liều dùng hay công dụng.",
+        "Phải giữ dòng SẢN PHẨM MINH HỌA — KHÔNG PHẢI THUỐC THẬT trên bao bì khi dùng trong phim.",
+        "Chữ vẽ bằng font Inter-Bold.otf / Inter-Medium.otf.",
+        "Không dùng làm asset role product và không dùng để thay ảnh sản phẩm thật."
+      ],
+      "label": "Vỉ thuốc minh họa NOVIXA",
+      "role": "illustration",
+      "visualSource": "",
+      "usageRights": "Vỉ thuốc minh họa NOVIXA: hình vẽ bằng code do dự án NOVIXA tự tạo, sản phẩm hư cấu, chỉ dùng minh họa trong video NOVIXA. Không phải ảnh sản phẩm thật. Chưa được duyệt.",
+      "demoData": true,
+      "demoLabel": "Dữ liệu minh họa"
+    }
+  ]
+}

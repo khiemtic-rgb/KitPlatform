@@ -1,0 +1,77 @@
+[
+  {
+    "text": "Danh",
+    "start": 0.1,
+    "end": 0.35
+  },
+  {
+    "text": "mục",
+    "start": 0.35,
+    "end": 0.4875
+  },
+  {
+    "text": "sản",
+    "start": 0.4875,
+    "end": 0.7375
+  },
+  {
+    "text": "phẩm",
+    "start": 0.7375,
+    "end": 1.025
+  },
+  {
+    "text": "là",
+    "start": 1.025,
+    "end": 1.2
+  },
+  {
+    "text": "danh",
+    "start": 1.2,
+    "end": 1.4
+  },
+  {
+    "text": "sách",
+    "start": 1.4,
+    "end": 1.6
+  },
+  {
+    "text": "trên",
+    "start": 1.6,
+    "end": 1.825
+  },
+  {
+    "text": "phần",
+    "start": 1.825,
+    "end": 2.025
+  },
+  {
+    "text": "mềm",
+    "start": 2.025,
+    "end": 2.325
+  },
+  {
+    "text": "chưa",
+    "start": 2.5,
+    "end": 2.825
+  },
+  {
+    "text": "phải",
+    "start": 2.825,
+    "end": 3.075
+  },
+  {
+    "text": "ảnh",
+    "start": 3.075,
+    "end": 3.2875
+  },
+  {
+    "text": "hộp",
+    "start": 3.2875,
+    "end": 3.5
+  },
+  {
+    "text": "thuốc",
+    "start": 3.5,
+    "end": 3.775
+  }
+]

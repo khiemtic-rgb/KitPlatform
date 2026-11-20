@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "reuse-short-north",
+  "projectName": "North counter — phim kiểm thử ngắn",
+  "brand": {"id": "kit-sample-north", "name": "KIT Sample North"},
+  "script": {
+    "version": "fixture-1",
+    "approvalStatus": "approved",
+    "sourcePath": "script-note.txt",
+    "notes": "Fixture kiểm thử pipeline. Không phải phim thương hiệu."
+  },
+  "durationPolicy": {
+    "mode": "explicit_scenes",
+    "targetSeconds": null,
+    "notes": "Thời lượng là tổng các cảnh trong shot plan."
+  },
+  "storyStructure": [
+    {"beatId": "name", "summary": "Nêu ba việc trong một nhịp."},
+    {"beatId": "move", "summary": "Một vật đi từ chỗ này sang chỗ khác."},
+    {"beatId": "close", "summary": "Thẻ kết có tên dự án thử."}
+  ],
+  "voice": {
+    "profileId": "none",
+    "language": "vi",
+    "pronunciationNotes": "Dự án này không có lời đọc.",
+    "tracks": []
+  },
+  "assets": [
+    {
+      "assetId": "shape-box",
+      "kind": "vector_generated",
+      "source": "generated",
+      "path": null,
+      "pathBase": "project",
+      "version": "1",
+      "usageRights": "generated for pipeline test",
+      "approval": "placeholder",
+      "role": "illustration",
+      "label": "PLACEHOLDER — hình khối do code vẽ, không phải tài sản hoàn thiện"
+    },
+    {
+      "assetId": "sfx-whoosh",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/whoosh.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — whoosh tổng hợp"
+    },
+    {
+      "assetId": "sfx-thud",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/thud.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng đặt tổng hợp"
+    },
+    {
+      "assetId": "sfx-lock",
+      "kind": "sfx",
+      "source": "placeholder",
+      "path": "proof/kit-video-production-v1/library/sfx/lock.wav",
+      "pathBase": "repo",
+      "version": "1",
+      "usageRights": "synthesized placeholder",
+      "approval": "placeholder",
+      "role": "sfx",
+      "label": "PLACEHOLDER — tiếng khóa tổng hợp"
+    }
+  ],
+  "visualStyle": {
+    "profileId": "sample-north",
+    "palette": {
+      "background": [232, 226, 214],
+      "ink": [18, 34, 58],
+      "accent": [0, 122, 140],
+      "paper": [250, 247, 240],
+      "muted": [110, 102, 90],
+      "accentAlt": [176, 92, 62],
+      "weight": [28, 42, 74]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.06, "right": 0.06, "bottom": 0.06, "left": 0.06}
+  },
+  "audioProfile": {
+    "ducking": true,
+    "voiceGain": 1,
+    "sfxGain": 0.4,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {"aspectRatio": "16:9", "width": 960, "height": 540, "frameRate": 24},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 20,
+    "preset": "veryfast",
+    "allowPlaceholders": true,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "approved", "notes": "Fixture ngắn, 3 cảnh, 16:9."},
+    {"stage": "script_analysis", "automation": "automated", "status": "done", "notes": "Không có lời thoại cần ước lượng."},
+    {"stage": "story_structure", "automation": "manual", "status": "approved", "notes": "Ba beat."},
+    {"stage": "shot_plan", "automation": "assisted", "status": "approved", "notes": "Fixture đã khóa cho lần chạy thử."},
+    {"stage": "asset_plan", "automation": "automated", "status": "done", "notes": "Chỉ placeholder."},
+    {"stage": "asset_creation", "automation": "automated", "status": "done", "notes": "Hình khối do template vẽ. SFX tổng hợp."},
+    {"stage": "voiceover", "automation": "manual", "status": "done", "notes": "Cố ý không có lời."},
+    {"stage": "animation", "automation": "automated", "status": "done", "notes": "kinetic_type, object_move, end_card."},
+    {"stage": "audio_mix", "automation": "automated", "status": "done", "notes": "SFX và khoảng lặng đã khai."},
+    {"stage": "render", "automation": "automated", "status": "done", "notes": "Bản 30s: outputs/reuse-short-north/20261023T021023Z-full. Bản dựng lại cảnh n2: 20261023T021119Z-scene-n2. File cũ còn nguyên."},
+    {"stage": "qa", "automation": "automated", "status": "needs_human", "notes": "QA kỹ thuật PASS. Tổng thể NEEDS HUMAN REVIEW vì máy không chấm hình và không nghe tiếng."},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Không phát hành."}
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

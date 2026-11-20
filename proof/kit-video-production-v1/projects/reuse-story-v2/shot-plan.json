@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "reuse-story-v2",
+  "approvalStatus": "approved",
+  "scenes": [
+    {
+      "sceneId": "east-shelf",
+      "approvalStatus": "approved",
+      "storyGoal": "Chứng minh cùng template với dữ liệu khác.",
+      "durationSeconds": 4,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Ba thùng, một thùng rời, hai thùng thành khối.",
+      "visualMetaphor": "Hàng nằm lại.",
+      "subjects": ["thùng", "kệ"],
+      "onScreenText": ["Hàng nằm lại"],
+      "templateId": "stock_story",
+      "params": {
+        "mode": "hybrid",
+        "headline": "Hàng nằm lại",
+        "boxCount": 3,
+        "fastCount": 1,
+        "headlineAt": 3.2,
+        "pipelineTestLabel": "DỰ ÁN KIỂM THỬ",
+        "beats": {
+          "intro": [0.1, 0.7],
+          "fast": [0.8, 1.5],
+          "calendar": [1.55, 2.1],
+          "transform": [2.15, 2.7],
+          "drop": [2.75, 3.35],
+          "lock": [3.4, 3.9]
+        }
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [{"start": 0, "end": 4.2, "reason": "Fixture không có lời và không có nhạc."}],
+        "syncNotes": ""
+      },
+      "transitionOut": null,
+      "acceptance": ["Template chạy với headline và số thùng khác."],
+      "previewFractions": [0.5]
+    }
+  ]
+}

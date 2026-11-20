@@ -1,0 +1,26 @@
+{
+  "generator": "trading_props.py",
+  "createdUtc": "2026-10-29T09:44:01+00:00",
+  "pillow": "12.3.0",
+  "chartSeed": 2,
+  "only": "agtr-exp",
+  "pairwiseHamming": {
+    "agtr-exp-chart-001 / agtr-exp-signal-001": 7,
+    "agtr-exp-chart-001 / agtr-exp-candle-001": 16,
+    "agtr-exp-chart-001 / agtr-exp-pipeline-001": 29,
+    "agtr-exp-chart-001 / agtr-exp-shield-001": 27,
+    "agtr-exp-signal-001 / agtr-exp-candle-001": 17,
+    "agtr-exp-signal-001 / agtr-exp-pipeline-001": 26,
+    "agtr-exp-signal-001 / agtr-exp-shield-001": 32,
+    "agtr-exp-candle-001 / agtr-exp-pipeline-001": 25,
+    "agtr-exp-candle-001 / agtr-exp-shield-001": 23,
+    "agtr-exp-pipeline-001 / agtr-exp-shield-001": 30
+  },
+  "minToCatalog": {
+    "agtr-exp-chart-001": 19,
+    "agtr-exp-signal-001": 17,
+    "agtr-exp-candle-001": 15,
+    "agtr-exp-pipeline-001": 20,
+    "agtr-exp-shield-001": 15
+  }
+}

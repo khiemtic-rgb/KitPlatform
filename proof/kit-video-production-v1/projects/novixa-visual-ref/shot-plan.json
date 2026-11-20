@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "novixa-visual-ref",
+  "approvalStatus": "approved",
+  "scenes": [
+    {
+      "sceneId": "shelf-lift",
+      "approvalStatus": "approved",
+      "storyGoal": "Một hộp rời kệ, dừng trên quầy, rồi câu chữ và ngày hiện ra.",
+      "durationSeconds": 12,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Dược sĩ nghiêng về kệ. Hộp thuốc nhấc theo cung, đáp xuống quầy cạnh vỉ thuốc. Lọ ở kệ dưới không đi theo.",
+      "visualMetaphor": "Hàng nằm lại là vốn.",
+      "subjects": ["dược sĩ", "hộp thuốc", "lọ thuốc", "vỉ thuốc", "kệ"],
+      "onScreenText": ["08/2026", "Hàng nằm lại là vốn"],
+      "templateId": "reference_stage",
+      "params": {
+        "stageFile": "stage.json",
+        "productLabel": "08/2026",
+        "message": "Hàng nằm lại là vốn"
+      },
+      "assets": ["plate", "pharmacist", "box", "bottle", "blister"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [],
+        "intentionalSilences": [
+          {"start": 0, "end": 12.3, "reason": "Prototype hình không có lời và không có nhạc."}
+        ],
+        "syncNotes": "Nhãn đi cùng hộp từ đầu. Câu chữ hiện sau khi hộp đã dừng, khoảng giây 6.6."
+      },
+      "transitionOut": null,
+      "acceptance": [
+        "Hộp rời kệ theo cung và dừng trên quầy.",
+        "Chữ trên hình khớp productLabel và message."
+      ],
+      "previewFractions": [0.08, 0.16, 0.32, 0.46, 0.58, 0.72, 0.86, 0.96]
+    }
+  ]
+}

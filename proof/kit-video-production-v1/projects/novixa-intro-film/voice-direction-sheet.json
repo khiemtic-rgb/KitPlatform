@@ -1,0 +1,340 @@
+{
+  "schemaVersion": "kit-voice-direction-sheet/1",
+  "standard": "docs/kit-video-production/voice-direction-standard-v1.json",
+  "projectId": "novixa-intro-film",
+  "approval": "PROPOSED",
+  "script": "script.md",
+  "baselineRead": "outputs/novixa-intro-film/20261023T064424Z-voice-read",
+  "note": "Hai quyết định đã duyệt là cách đọc NOVIXA và nghỉ câu hỏi ở s04. Cả sheet và bản đọc mới vẫn là PROPOSED.",
+  "cast": [
+    {
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "approval": "PROPOSED"
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "s01-day-opens",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Mở cửa nhà thuốc. Khách vào, khách ra. Người lấy thuốc, người hỏi giá, điện thoại thì thỉnh thoảng lại reo. Một ngày cứ thế bắt đầu. Nhìn thì có vẻ đơn giản… nhưng ai làm nhà thuốc rồi mới biết, đằng sau quầy thuốc là cả một đống việc không tên.",
+      "ttsTextStatus": "UNSUBSTITUTED",
+      "phrases": [
+        "Mở cửa nhà thuốc.",
+        "Khách vào, khách ra.",
+        "điện thoại thì thỉnh thoảng lại reo.",
+        "Một ngày cứ thế bắt đầu.",
+        "đống việc không tên."
+      ],
+      "emphasis": [
+        "đống việc không tên"
+      ],
+      "pace": "Mở vừa. Câu điện thoại nhịp hơn. Câu cuối chậm lại.",
+      "emotion": "Gần gũi. Adapter không có nút cảm xúc; đây là chỉ dẫn nghe.",
+      "rests": "Nghỉ giữa câu trong bản đo khoảng 1 giây. Không cộng lặng cuối file.",
+      "pronunciation": [],
+      "listen": "Nghe câu cuối có bị đọc đều không.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s02-busy",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Khách đang chờ thì phải bán nhanh. Bán xong lại kiểm tra hàng. Nhân viên hỏi một câu, nhà cung cấp gọi một cuộc… Chưa kịp uống ngụm nước, đã có thêm việc mới. Mà lạ nhé, bận cả ngày như vậy, đôi khi vẫn chưa trả lời được một câu rất quan trọng: Nhà thuốc mình đang thực sự kinh doanh thế nào?",
+      "ttsTextStatus": "UNSUBSTITUTED",
+      "phrases": [
+        "Khách đang chờ thì phải bán nhanh.",
+        "Chưa kịp uống ngụm nước",
+        "Nhà thuốc mình đang thực sự kinh doanh thế nào?"
+      ],
+      "emphasis": [
+        "kinh doanh thế nào?"
+      ],
+      "pace": "Dồn ở các câu đầu. Dừng trước câu hỏi.",
+      "emotion": "Đồng cảm, hơi hài. Không có nút cảm xúc trên adapter.",
+      "rests": "Bản đo nghỉ khoảng 1,1 giây trước câu hỏi, cùng cỡ các dấu chấm khác.",
+      "pronunciation": [],
+      "listen": "Quyết định nghỉ câu hỏi có đủ chưa. Chưa tự chèn lặng.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s03-stock-cash",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Nhập thêm hàng thì sợ thiếu. Nhập nhiều quá lại sợ tồn. Có những mặt hàng bán vèo vèo, nhưng cũng có những hộp cứ nằm yên trên kệ hết ngày này sang ngày khác. Hàng thì vẫn ở đó… còn tiền thì đã đi trước một bước rồi.",
+      "ttsTextStatus": "UNSUBSTITUTED",
+      "phrases": [
+        "Nhập thêm hàng thì sợ thiếu.",
+        "bán vèo vèo",
+        "Hàng thì vẫn ở đó… còn tiền thì đã đi trước một bước rồi."
+      ],
+      "emphasis": [
+        "tiền thì đã đi trước"
+      ],
+      "pace": "Đều, rõ ở câu đối lập cuối.",
+      "emotion": "Điềm. Không phóng đại.",
+      "rests": "Trong cả đoạn, nghỉ ở dấu ba chấm đo được khoảng 0,36 giây.",
+      "pronunciation": [],
+      "listen": "So nghỉ dấu ba chấm với câu đọc riêng.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s04-expiry",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Rồi còn hạn dùng nữa. Hàng mới về phải kiểm tra, hàng trên kệ phải theo dõi, hàng sắp hết hạn phải chú ý. Mình có thể nhớ hôm nay rất nhiều việc… nhưng không thể bắt trí nhớ làm thay cả một hệ thống quản lý được, đúng không?",
+      "ttsTextStatus": "UNSUBSTITUTED",
+      "phrases": [
+        "Rồi còn hạn dùng nữa.",
+        "hàng sắp hết hạn phải chú ý.",
+        "đúng không?"
+      ],
+      "emphasis": [
+        "đúng không?"
+      ],
+      "pace": "Không đọc gấp câu hỏi cuối.",
+      "emotion": "Nhắc việc, không dọa.",
+      "rests": "Đã duyệt cách nghỉ của s04-rest-clean.wav: bỏ khoảng nghỉ tự nhiên trước đúng không? và chèn 0,60 giây. Không áp cho cảnh khác.",
+      "pronunciation": [],
+      "listen": "Nghe đúng không? có bị nuốt vào câu trước không.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s05-introduce",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Và đó cũng là lý do NOVIXA ra đời. Không phải để biến người chủ nhà thuốc thành người ngồi nhìn màn hình cả ngày. Mà để những công việc quan trọng được tổ chức rõ ràng hơn, để người làm nhà thuốc bớt phải xoay xở bằng trí nhớ và những ghi chép rời rạc.",
+      "ttsTextStatus": "SUBSTITUTED",
+      "phrases": [
+        "Và đó cũng là lý do NOVIXA ra đời.",
+        "Không phải để biến người chủ nhà thuốc thành người ngồi nhìn màn hình cả ngày."
+      ],
+      "emphasis": [
+        "NOVIXA"
+      ],
+      "pace": "Chậm hơn các cảnh bận. Logo có thể vào trước lời.",
+      "emotion": "Chuyển sang giải pháp, không hô khẩu hiệu.",
+      "rests": "Nghỉ câu đã có trong bản đo. 1,2 giây logo trước lời là hình, không phải file đọc.",
+      "pronunciation": [
+        "brand-novixa"
+      ],
+      "listen": "NOVIXA phải là Nô-vi-xa, không đánh vần, không đổi cách đọc ở cảnh sau.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s06-selling",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Bắt đầu từ những việc gần gũi nhất: bán hàng, ghi nhận thông tin và theo dõi hoạt động tại quầy. Bởi cuối cùng, phần mềm không phải để làm cho công việc trông có vẻ hiện đại hơn. Nó phải giúp công việc hằng ngày trở nên dễ theo dõi và có tổ chức hơn.",
+      "ttsTextStatus": "UNSUBSTITUTED",
+      "phrases": [
+        "bán hàng, ghi nhận thông tin và theo dõi hoạt động tại quầy.",
+        "dễ theo dõi và có tổ chức hơn."
+      ],
+      "emphasis": [
+        "dễ theo dõi"
+      ],
+      "pace": "Giải thích, rõ từng cụm.",
+      "emotion": "Thẳng. Không quảng cáo tính năng.",
+      "rests": "Hai nghỉ câu khoảng 1,0 và 1,2 giây trong bản đo.",
+      "pronunciation": [],
+      "listen": "Không thêm số liệu.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s07-inventory",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Với tồn kho, biết còn bao nhiêu hàng mới chỉ là bước đầu. Còn hàng nào sắp hết hạn? Giá trị hàng đang nằm trên kệ là bao nhiêu? Mặt hàng nào cần kiểm tra trước? Khi những thông tin ấy rõ ràng hơn, mình mới có cơ sở để xử lý đúng việc, đúng lúc.",
+      "ttsTextStatus": "UNSUBSTITUTED",
+      "phrases": [
+        "biết còn bao nhiêu hàng mới chỉ là bước đầu.",
+        "Còn hàng nào sắp hết hạn?",
+        "Giá trị hàng đang nằm trên kệ là bao nhiêu?",
+        "Mặt hàng nào cần kiểm tra trước?"
+      ],
+      "emphasis": [
+        "sắp hết hạn"
+      ],
+      "pace": "Mỗi câu hỏi là một nhịp.",
+      "emotion": "Hỏi rõ, không bịa giá trị.",
+      "rests": "Bốn nghỉ câu khoảng 1,0 đến 1,1 giây trong bản đo.",
+      "pronunciation": [],
+      "listen": "Ba câu hỏi có tách nhau không.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s08-connected-data",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Khi dữ liệu được tổ chức tốt, người chủ có thể nhìn công việc rõ hơn, thay vì mỗi vấn đề lại phải tìm một nơi để hỏi, một cuốn sổ để dò. Tất nhiên, phần mềm không thể quyết định thay mình mọi chuyện. Nhưng có thông tin tốt hơn, mình sẽ có cơ sở tốt hơn để quyết định.",
+      "ttsTextStatus": "UNSUBSTITUTED",
+      "phrases": [
+        "Khi dữ liệu được tổ chức tốt",
+        "phần mềm không thể quyết định thay mình mọi chuyện."
+      ],
+      "emphasis": [
+        "không thể quyết định thay mình"
+      ],
+      "pace": "Đều. Câu giới hạn không được đọc như lời hứa.",
+      "emotion": "Điềm tĩnh.",
+      "rests": "Hai nghỉ câu khoảng 1 giây trong bản đo.",
+      "pronunciation": [],
+      "listen": "Câu phần mềm không quyết định thay người phải còn nguyên.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s09-people",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Bởi nhà thuốc suy cho cùng đâu chỉ có hàng hóa với những con số. Còn có người dược sĩ cần tập trung tư vấn, có khách hàng cần được lắng nghe, có những việc phải làm cẩn thận mỗi ngày. Công nghệ chỉ thực sự có ý nghĩa khi nó phục vụ những con người ấy.",
+      "ttsTextStatus": "UNSUBSTITUTED",
+      "phrases": [
+        "đâu chỉ có hàng hóa với những con số.",
+        "có khách hàng cần được lắng nghe",
+        "phục vụ những con người ấy."
+      ],
+      "emphasis": [
+        "những con người ấy"
+      ],
+      "pace": "Chậm hơn cảnh số liệu. Adapter không hạ tốc độ trừ khi chọn preset slower.",
+      "emotion": "Ấm. Chỉ là chỉ dẫn; adapter không có nút cảm xúc.",
+      "rests": "Hai nghỉ câu khoảng 1 giây. 0,8 giây sau lời là hình đề xuất.",
+      "pronunciation": [],
+      "listen": "Không biến cảnh thành danh sách tính năng.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s10-philosophy",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Một nhà thuốc vận hành tốt không nhất thiết phải thật lớn. Nhưng cần biết mình đang có gì, công việc đang diễn ra thế nào và điều gì cần được ưu tiên. NOVIXA hướng đến việc giúp nhà thuốc từng bước xây dựng cách vận hành rõ ràng, bài bản và phù hợp hơn với thực tế.",
+      "ttsTextStatus": "SUBSTITUTED",
+      "phrases": [
+        "không nhất thiết phải thật lớn.",
+        "NOVIXA hướng đến việc giúp nhà thuốc"
+      ],
+      "emphasis": [
+        "NOVIXA"
+      ],
+      "pace": "Rõ, không dồn.",
+      "emotion": "Định hướng, không hô tăng trưởng.",
+      "rests": "Hai nghỉ câu khoảng 1 giây trong bản đo.",
+      "pronunciation": [
+        "brand-novixa"
+      ],
+      "listen": "Cùng một cách đọc NOVIXA với cảnh 5, 11 và 12.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s11-positioning",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "NOVIXA — nền tảng vận hành nhà thuốc thông minh. Được xây dựng từ những nhu cầu rất thực tế trong hoạt động nhà thuốc, với mong muốn đưa công nghệ đến gần hơn với công việc hằng ngày. Không xa vời, không chỉ để nhìn cho đẹp, mà phải có ích trong vận hành thực tế.",
+      "ttsTextStatus": "SUBSTITUTED",
+      "phrases": [
+        "NOVIXA — nền tảng vận hành nhà thuốc thông minh.",
+        "Không xa vời, không chỉ để nhìn cho đẹp"
+      ],
+      "emphasis": [
+        "nền tảng vận hành nhà thuốc thông minh"
+      ],
+      "pace": "Câu định vị đọc liền, không tách thương hiệu thành từng chữ.",
+      "emotion": "Chắc, không phóng đại.",
+      "rests": "Nghỉ sau câu định vị khoảng 1 giây trong bản đo.",
+      "pronunciation": [
+        "brand-novixa"
+      ],
+      "listen": "Gạch ngang sau NOVIXA không được thành một nhịp đánh vần.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    },
+    {
+      "sceneId": "s12-cta",
+      "speakerId": "narrator",
+      "roleId": "narrator",
+      "profileId": "vi-narrator-namminh-v1",
+      "presetId": "narration-clear-v1",
+      "dialogue": "Nếu bạn cũng đang muốn việc vận hành nhà thuốc rõ ràng và bài bản hơn, hãy dành chút thời gian khám phá NOVIXA. Biết đâu, điều nhà thuốc cần tiếp theo không phải là làm nhiều hơn… mà là có một cách làm tốt hơn. NOVIXA. Nền tảng vận hành nhà thuốc thông minh. Tìm hiểu tại novixa chấm vn.",
+      "ttsTextStatus": "SUBSTITUTED",
+      "phrases": [
+        "hãy dành chút thời gian khám phá NOVIXA.",
+        "NOVIXA.",
+        "Nền tảng vận hành nhà thuốc thông minh.",
+        "novixa chấm vn."
+      ],
+      "emphasis": [
+        "novixa chấm vn"
+      ],
+      "pace": "Chậm ở ba câu cuối để kịp thẻ kết.",
+      "emotion": "Mời, không thúc.",
+      "rests": "Các câu cuối đã nghỉ khoảng 1 giây. 3 giây giữ hình sau lời là đề xuất, không lấy lặng file.",
+      "pronunciation": [
+        "brand-novixa"
+      ],
+      "listen": "NOVIXA thống nhất. URL đọc là novixa chấm vn, chữ trên hình vẫn là novixa.vn.",
+      "gapAfterSeconds": 0,
+      "approval": "PROPOSED"
+    }
+  ],
+  "decisions": {
+    "pronunciation": {
+      "approval": "APPROVED",
+      "reference": "outputs/novixa-intro-film/20261023T083501Z-pronunciation-probe-v2/novixa-closed.wav",
+      "tts": "Nôvixa",
+      "approvedTtsText": "Và đó cũng là lý do Nôvixa ra đời.",
+      "supersededTts": "Nô vi xa",
+      "display": "NOVIXA",
+      "scope": "Chuỗi TTS. Logo và chữ trên hình giữ NOVIXA."
+    },
+    "s04Pause": {
+      "approval": "APPROVED",
+      "reference": "outputs/novixa-intro-film/20261023T070505Z-voice-probes/s04-rest-clean.wav",
+      "insertSeconds": 0.6,
+      "scope": "trước đúng không?",
+      "appliesTo": [
+        "s04-expiry"
+      ]
+    },
+    "urlReading": {
+      "approval": "APPROVED",
+      "reference": "outputs/novixa-intro-film/20261023T084726Z-voice-read/s12-cta.wav",
+      "spoken": "novixa chấm vn",
+      "display": "novixa.vn"
+    }
+  }
+}

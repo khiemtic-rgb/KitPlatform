@@ -43,3 +43,15 @@ local-os-site/.astro/
 local-os-site/dist/
 local-os-site/.wrangler/
 local-os-site/src/data/public-feed.json
+# proof media and renders. Ban du nam trong bundle o F. 2026-11-20.
+proof/**/*.png
+proof/**/*.jpg
+proof/**/*.webp
+proof/**/*.wav
+proof/**/*.mp3
+proof/**/*.mov
+proof/**/*.mp4
+proof/**/*.zip
+proof/**/outputs/
+proof/**/frames/
+proof/**/renders/

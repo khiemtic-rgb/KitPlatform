@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "kit-video-shot-plan/1",
+  "projectId": "reuse-short-north",
+  "approvalStatus": "approved",
+  "scenes": [
+    {
+      "sceneId": "n1-words",
+      "approvalStatus": "approved",
+      "storyGoal": "Cho thấy chữ xuất hiện theo nhịp, không phải một ảnh đứng.",
+      "durationSeconds": 8,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Hai dòng chữ lần lượt trượt lên.",
+      "visualMetaphor": null,
+      "subjects": ["chữ"],
+      "onScreenText": ["Ba việc, một nhịp", "Số cảnh không gắn cứng"],
+      "templateId": "kinetic_type",
+      "params": {
+        "pipelineTestLabel": "DỰ ÁN KIỂM THỬ",
+        "lines": [
+          {"text": "Ba việc, một nhịp", "at": 0.4, "scale": 0.08},
+          {"text": "Số cảnh không gắn cứng", "at": 3.2, "scale": 0.06}
+        ]
+      },
+      "assets": ["shape-box"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [{"assetId": "sfx-whoosh", "atSeconds": 0.45, "gain": 0.8}],
+        "intentionalSilences": [{"start": 0, "end": 8, "reason": "Dự án kiểm thử không có lời thoại. Khoảng lặng giữa các SFX là có chủ đích."}],
+        "syncNotes": "Whoosh lúc dòng chữ đầu xuất hiện."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang vật chuyển động."},
+      "acceptance": ["Hai dòng chữ nằm trong vùng an toàn.", "Có một SFX đúng lúc dòng đầu."],
+      "previewFractions": [0.15, 0.55, 0.85]
+    },
+    {
+      "sceneId": "n2-move",
+      "approvalStatus": "approved",
+      "storyGoal": "Một vật đi từ trái sang phải và một vật rơi xuống.",
+      "durationSeconds": 12,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Hộp trượt trên mặt phẳng, rồi một hộp thứ hai rơi.",
+      "visualMetaphor": null,
+      "subjects": ["hộp"],
+      "onScreenText": ["Hộp đổi chỗ"],
+      "templateId": "object_move",
+      "params": {
+        "pipelineTestLabel": "DỰ ÁN KIỂM THỬ",
+        "caption": {"text": "Hộp đổi chỗ", "at": 8.2},
+        "objects": [
+          {"from": [0.18, 0.62], "to": [0.78, 0.62], "start": 0.6, "end": 4.2, "w": 0.12, "h": 0.16, "color": "accent", "label": "A", "ease": "in"},
+          {"from": [0.42, 0.2], "to": [0.42, 0.62], "start": 5.0, "end": 7.4, "w": 0.1, "h": 0.14, "color": "accentAlt", "label": "B", "ease": "in"}
+        ]
+      },
+      "assets": ["shape-box"],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [
+          {"assetId": "sfx-whoosh", "atSeconds": 0.7, "gain": 0.7},
+          {"assetId": "sfx-thud", "atSeconds": 7.2, "gain": 0.9}
+        ],
+        "intentionalSilences": [{"start": 0, "end": 12, "reason": "Dự án kiểm thử không có lời thoại. Khoảng lặng giữa các SFX là có chủ đích."}],
+        "syncNotes": "Whoosh khi hộp trượt. Thud khi hộp chạm mặt phẳng."
+      },
+      "transitionOut": {"type": "cut", "note": "Cắt sang thẻ kết."},
+      "acceptance": ["Hộp A đổi vị trí ngang.", "Hộp B rơi và có tiếng chạm."],
+      "previewFractions": [0.2, 0.5, 0.75]
+    },
+    {
+      "sceneId": "n3-end",
+      "approvalStatus": "approved",
+      "storyGoal": "Kết bằng tên dự án thử, không dùng thương hiệu NOVIXA.",
+      "durationSeconds": 10,
+      "durationSource": "fixed",
+      "dialogue": "",
+      "action": "Tên NORTH, dòng phụ và địa chỉ thử hiện lần lượt.",
+      "visualMetaphor": null,
+      "subjects": ["tên dự án"],
+      "onScreenText": ["NORTH", "Dự án kiểm thử", "example.local"],
+      "templateId": "end_card",
+      "params": {
+        "pipelineTestLabel": "DỰ ÁN KIỂM THỬ",
+        "wordmark": "NORTH",
+        "line": "Dự án kiểm thử",
+        "url": "example.local"
+      },
+      "assets": [],
+      "audio": {
+        "voiceTrackId": null,
+        "musicAssetId": null,
+        "sfx": [{"assetId": "sfx-lock", "atSeconds": 0.8, "gain": 0.6}],
+        "intentionalSilences": [{"start": 0, "end": 10, "reason": "Dự án kiểm thử không có lời thoại. Khoảng lặng là có chủ đích."}],
+        "syncNotes": "Một tiếng khóa lúc tên hiện."
+      },
+      "transitionOut": null,
+      "acceptance": ["Có đủ ba dòng chữ đã khai.", "Không có logo NOVIXA."],
+      "previewFractions": [0.2, 0.6, 0.9]
+    }
+  ]
+}

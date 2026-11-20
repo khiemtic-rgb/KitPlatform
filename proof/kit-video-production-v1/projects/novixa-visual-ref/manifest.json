@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "kit-video-project/1",
+  "projectId": "novixa-visual-ref",
+  "projectName": "NOVIXA visual reference prototype — hàng tồn và dòng tiền",
+  "brand": {"id": "novixa", "name": "NOVIXA"},
+  "script": {
+    "version": "visual-ref-2026-10-23",
+    "approvalStatus": "approved",
+    "sourcePath": "script.txt",
+    "notes": "Prototype hình 12 giây. Không khóa kịch bản phim dài. Shot plan phim NOVIXA vẫn proposed."
+  },
+  "durationPolicy": {
+    "mode": "explicit_scenes",
+    "targetSeconds": null,
+    "notes": "Một cảnh 12 giây. Không có lời đọc."
+  },
+  "storyStructure": [
+    {"beatId": "look", "summary": "Dược sĩ đứng sau quầy, nhìn về kệ."},
+    {"beatId": "lift", "summary": "Hộp thuốc rời kệ theo cung và dừng trên quầy."},
+    {"beatId": "read", "summary": "Nhãn ngày và câu hàng nằm lại hiện khi hộp đã dừng."}
+  ],
+  "voice": {
+    "profileId": "none",
+    "language": "vi",
+    "pronunciationNotes": "Prototype này không có lời. Chữ nằm trên hình.",
+    "tracks": []
+  },
+  "assets": [
+    {
+      "assetId": "plate",
+      "kind": "raster",
+      "source": "generated",
+      "path": "assets/plate.jpg",
+      "pathBase": "project",
+      "version": "1",
+      "usageRights": "Ảnh nền tạo trong phiên làm việc này từ reference nhà thuốc đã có. Chưa phải asset cuối.",
+      "approval": "proposed",
+      "role": "background",
+      "label": "Nền nhà thuốc, không người"
+    },
+    {
+      "assetId": "pharmacist",
+      "kind": "raster",
+      "source": "generated",
+      "path": "assets/cutouts/pharmacist.png",
+      "pathBase": "project",
+      "version": "1",
+      "usageRights": "Chân dung tách nền. Không phải rig xương. Chưa duyệt làm nhân vật cuối.",
+      "approval": "proposed",
+      "role": "character",
+      "label": "Dược sĩ, bán thân"
+    },
+    {
+      "assetId": "box",
+      "kind": "raster",
+      "source": "generated",
+      "path": "assets/cutouts/box.png",
+      "pathBase": "project",
+      "version": "1",
+      "usageRights": "Hộp thuốc tách nền, mặt trước để trống để chữ do engine vẽ.",
+      "approval": "proposed",
+      "role": "prop",
+      "label": "Hộp thuốc"
+    },
+    {
+      "assetId": "bottle",
+      "kind": "raster",
+      "source": "generated",
+      "path": "assets/cutouts/bottle.png",
+      "pathBase": "project",
+      "version": "1",
+      "usageRights": "Lọ thuốc tách nền.",
+      "approval": "proposed",
+      "role": "prop",
+      "label": "Lọ thuốc"
+    },
+    {
+      "assetId": "blister",
+      "kind": "raster",
+      "source": "generated",
+      "path": "assets/cutouts/blister.png",
+      "pathBase": "project",
+      "version": "1",
+      "usageRights": "Vỉ thuốc tách nền.",
+      "approval": "proposed",
+      "role": "prop",
+      "label": "Vỉ thuốc"
+    }
+  ],
+  "visualStyle": {
+    "profileId": "novixa-pharmacy",
+    "palette": {
+      "background": [236, 228, 214],
+      "ink": [0, 32, 96],
+      "accent": [0, 144, 224],
+      "paper": [255, 250, 244],
+      "muted": [90, 98, 110]
+    },
+    "typography": {
+      "fontRegular": "C:/Windows/Fonts/segoeui.ttf",
+      "fontBold": "C:/Windows/Fonts/segoeuib.ttf"
+    },
+    "safeArea": {"top": 0.06, "right": 0.06, "bottom": 0.06, "left": 0.06}
+  },
+  "audioProfile": {
+    "ducking": false,
+    "voiceGain": 1,
+    "sfxGain": 0.2,
+    "musicPolicy": "none",
+    "silenceMinSeconds": 1.2
+  },
+  "format": {"aspectRatio": "16:9", "width": 1280, "height": 720, "frameRate": 30},
+  "render": {
+    "videoCodec": "libx264",
+    "audioCodec": "aac",
+    "crf": 18,
+    "preset": "veryfast",
+    "allowPlaceholders": true,
+    "versioned": true,
+    "outputRoot": "../../outputs"
+  },
+  "pipeline": [
+    {"stage": "brief", "automation": "manual", "status": "approved", "notes": "Prototype đối chiếu reference nhà thuốc. Không phải phim dài."},
+    {"stage": "script_analysis", "automation": "manual", "status": "approved", "notes": "Một câu. Không có lời đọc."},
+    {"stage": "story_structure", "automation": "manual", "status": "approved", "notes": "Nhìn, nhấc, đọc."},
+    {"stage": "shot_plan", "automation": "manual", "status": "approved", "notes": "Một cảnh. Không đổi trạng thái shot plan phim NOVIXA."},
+    {"stage": "asset_plan", "automation": "manual", "status": "approved", "notes": "Nền, người, hộp, lọ, vỉ."},
+    {"stage": "asset_creation", "automation": "assisted", "status": "approved", "notes": "Ảnh tạo trong editor rồi tách nền. Chưa phải rig."},
+    {"stage": "voiceover", "automation": "manual", "status": "approved", "notes": "Không lời trong prototype này."},
+    {"stage": "animation", "automation": "automated", "status": "approved", "notes": "Lớp cắt, easing, không xương."},
+    {"stage": "audio_mix", "automation": "automated", "status": "approved", "notes": "Im có chủ đích."},
+    {"stage": "render", "automation": "automated", "status": "not_started", "notes": ""},
+    {"stage": "qa", "automation": "automated", "status": "not_started", "notes": ""},
+    {"stage": "delivery", "automation": "manual", "status": "not_started", "notes": "Chờ người xem hình."}
+  ],
+  "shotPlan": "shot-plan.json",
+  "outputs": []
+}

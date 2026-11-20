@@ -1,0 +1,1 @@
+Fixture kiểm thử. Ba cảnh, 16:9, không lời thoại. Không dùng cho phát hành.

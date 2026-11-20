@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "kit-video-motion-plan/1",
+  "projectId": "novixa-intro-film",
+  "approvalStatus": "proposed",
+  "finalVideo": null,
+  "durationLocked": false,
+  "budget": {
+    "provider": "runway",
+    "model": "gen4_turbo",
+    "usdPerSecond": 0.05,
+    "capUsd": 5,
+    "spentUsd": 0,
+    "calls": 0,
+    "credentialEnv": "RUNWAY_API_KEY",
+    "credential": "absent",
+    "note": "Không mua credit, không đổi model đắt hơn. Logo, chữ, URL, số liệu, POS, tồn kho, báo cáo và CTA không gọi Runway."
+  },
+  "scenes": [
+    {
+      "sceneId": "s01-day-opens",
+      "meaning": "Một ngày nhà thuốc bắt đầu.",
+      "wantedAction": "Cửa mở, khách vào, nhịp việc tăng.",
+      "approved": ["pharmacy-plate"],
+      "missing": ["footage khách vào cửa", "pose với tay"],
+      "method": "internal plate_camera push_in 0.06",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "RUNWAY_API_KEY trống. Một clip với tay 5 giây sẽ là 0,25 USD nếu có key, và vẫn không tạo được khách.",
+      "acceptance": "Thấy đúng người và quầy đã duyệt. Không nhận đây là cảnh khách vào cửa."
+    },
+    {
+      "sceneId": "s02-busy",
+      "meaning": "Bận không đồng nghĩa với đang kiểm soát.",
+      "wantedAction": "Nhân vật xoay giữa nhiều việc rồi dừng ở câu hỏi.",
+      "approved": [],
+      "missing": ["pose xoay giữa các việc"],
+      "method": "internal object_move",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Không có ảnh tư thế đã duyệt để gửi. Không gọi API để bịa người xoay.",
+      "acceptance": "Bốn việc hiện bằng chữ rồi dừng. Không phải danh sách tính năng và không phải người hình học."
+    },
+    {
+      "sceneId": "s03-stock-cash",
+      "meaning": "Hàng nằm yên là vốn bị khóa.",
+      "wantedAction": "Hộp thành khối nặng. Không cần người.",
+      "approved": [],
+      "missing": [],
+      "method": "internal object_move",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Ẩn dụ đồ họa. Không phải hành động nhân vật.",
+      "acceptance": "Đọc được ý vốn bị khóa. Không có phần trăm hay doanh thu."
+    },
+    {
+      "sceneId": "s04-expiry",
+      "meaning": "Hạn dùng không chờ trí nhớ.",
+      "wantedAction": "Lịch lật. Không bịa lô hay hạn.",
+      "approved": [],
+      "missing": [],
+      "method": "internal calendar_flip",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Đồ họa lịch. Khoảng nghỉ nằm trong WAV V3.",
+      "acceptance": "Không có số lô. Lời không bị ép tốc độ."
+    },
+    {
+      "sceneId": "s05-introduce",
+      "meaning": "Giới thiệu NOVIXA.",
+      "wantedAction": "Logo nguyên vẹn. Không có POS chưa duyệt.",
+      "approved": ["logo-novixa"],
+      "missing": ["POS đã duyệt"],
+      "method": "internal brand_reveal",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Logo và chữ không gọi video AI.",
+      "acceptance": "Logo là file gốc. Chữ NOVIXA nằm trong file logo, không vẽ thêm một dòng nữa. Dòng định vị là chữ máy."
+    },
+    {
+      "sceneId": "s06-selling",
+      "meaning": "Bán hàng và ghi nhận.",
+      "wantedAction": "Màn POS đã xác minh.",
+      "approved": [],
+      "missing": ["ui-pos-staff còn proposed"],
+      "method": "internal kinetic_type",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Không tạo giao diện bằng video AI và không dùng ảnh UI chưa duyệt.",
+      "acceptance": "Không có số liệu bán hàng."
+    },
+    {
+      "sceneId": "s07-inventory",
+      "meaning": "Tồn, giá trị, hạn dùng là câu hỏi, chưa phải số.",
+      "wantedAction": "Màn tồn kho đã xác minh.",
+      "approved": [],
+      "missing": ["ui-inventory còn proposed"],
+      "method": "internal kinetic_type",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Không tạo số liệu bằng video AI.",
+      "acceptance": "Không có giá trị hàng bịa."
+    },
+    {
+      "sceneId": "s08-connected-data",
+      "meaning": "Việc rời được nối lại. Phần mềm không quyết định thay người.",
+      "wantedAction": "Sơ đồ rồi nhường cho báo cáo đã xác minh.",
+      "approved": [],
+      "missing": ["ui-reports còn proposed"],
+      "method": "internal data_connection",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Sơ đồ đồ họa. Không có màn báo cáo được duyệt.",
+      "acceptance": "Không nói phần mềm tự quyết định."
+    },
+    {
+      "sceneId": "s09-people",
+      "meaning": "Công nghệ phục vụ người.",
+      "wantedAction": "Dược sĩ lắng nghe khách.",
+      "approved": ["pharmacist-portrait"],
+      "missing": ["ảnh khách đã duyệt"],
+      "method": "internal plate_camera hold",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Không có ảnh khách. Gửi chân dung lên video AI sẽ bịa người thứ hai.",
+      "acceptance": "Đúng chân dung đã duyệt. Không có khách bịa và không lặp ảnh quầy của S01."
+    },
+    {
+      "sceneId": "s10-philosophy",
+      "meaning": "Rõ, chủ động, có hệ thống.",
+      "wantedAction": "Toàn cảnh nhà thuốc được xếp gọn.",
+      "approved": [],
+      "missing": ["một ảnh toàn cảnh khác ảnh S01"],
+      "method": "internal kinetic_type",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Không có ảnh nguồn thứ hai. Không lặp ảnh S01 để lấp thời lượng.",
+      "acceptance": "Không có số tăng trưởng."
+    },
+    {
+      "sceneId": "s11-positioning",
+      "meaning": "Định vị nền tảng.",
+      "wantedAction": "Logo và câu định vị.",
+      "approved": ["logo-novixa"],
+      "missing": [],
+      "method": "internal brand_reveal",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "Logo và chữ không gọi video AI.",
+      "acceptance": "Logo không bị vẽ lại."
+    },
+    {
+      "sceneId": "s12-cta",
+      "meaning": "Mời xem novixa.vn.",
+      "wantedAction": "Logo, câu định vị, URL.",
+      "approved": ["logo-novixa"],
+      "missing": [],
+      "method": "internal end_card",
+      "generatedFootageSeconds": 0,
+      "whyNotRunway": "URL phải là chữ kiểm soát được. Lời đọc vẫn là novixa chấm vn trong WAV.",
+      "acceptance": "URL hiển thị novixa.vn. Không thêm số điện thoại."
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+# ---------------------------------------------------------------- người dẫn chuyện (bản phác, chờ chủ kênh duyệt)
+def host(w, h, a):
+    """Người dẫn chuyện 2D phẳng, ẩn danh: thở, chớp mắt, miệng nhép khi `talk`. mood: smile|wink|curious|surprise|think|serious.
+    pose: point|hold|shrug|wave|think. prop: alarm_clock (khi pose hold)."""
+    t = float(a.get("_t", 2.0))
+    mood = str(a.get("mood", "smile"))
+    pose = str(a.get("pose", "hold"))
+    talk = bool(a.get("talk", False)) and a.get("_pos") is not None
+    cv = Cv(w, h)
+    breathe = 1 + 0.012 * math.sin(t * math.tau / 4)
+    cx = w * 0.55
+    # thân
+    top = h * 0.52
+    shirt, skin, hair = JADE, (238, 196, 160), INK
+    cv.poly([(cx - w * .36, h), (cx - w * .3, top + h * .08), (cx - w * .12, top), (cx + w * .12, top), (cx + w * .3, top + h * .08), (cx + w * .36, h)], fill=shirt)
+    cv.poly([(cx - w * .1, top), (cx, top + h * .09), (cx + w * .1, top)], fill=PAPER)
+    cv.rect((cx - w * .06, top - h * .06, cx + w * .06, top + h * .02), fill=skin)
+    # tay
+    if pose == "point":
+        cv.line([(cx - w * .26, top + h * .1), (cx - w * .46, top - h * .02), (cx - w * .62, top - h * .1)], shirt, w * .1)
+        cv.ell((cx - w * .7, top - h * .15, cx - w * .56, top - h * .05), fill=skin)
+        cv.line([(cx - w * .66, top - h * .12), (cx - w * .8, top - h * .17)], skin, w * .035)
+    elif pose == "hold":
+        cv.line([(cx - w * .26, top + h * .12), (cx - w * .2, top + h * .3), (cx + w * .02, top + h * .27)], shirt, w * .1)
+        if str(a.get("prop", "")) == "alarm_clock":
+            pr = w * .13
+            px, py = cx + w * .02, top + h * .2
+            for sx in (-1, 1):
+                cv.ell((px + sx * pr * .6 - pr * .32, py - pr * 1.12, px + sx * pr * .6 + pr * .32, py - pr * .62), fill=VERM)
+            cv.ell((px - pr, py - pr, px + pr, py + pr), fill=VERM)
+            cv.ell((px - pr * .8, py - pr * .8, px + pr * .8, py + pr * .8), fill=PAPER)
+            cv.line([(px, py), (px, py - pr * .55)], INK, pr * .1)
+            cv.line([(px, py), (px + pr * .4, py + pr * .1)], INK, pr * .1)
+        cv.ell((cx - w * .04, top + h * .23, cx + w * .08, top + h * .31), fill=skin)
+    elif pose == "wave":
+        wv = math.sin(t * 6) * w * .03
+        cv.line([(cx + w * .26, top + h * .1), (cx + w * .44, top - h * .02), (cx + w * .5 + wv, top - h * .14)], shirt, w * .1)
+        cv.ell((cx + w * .44 + wv, top - h * .22, cx + w * .58 + wv, top - h * .1), fill=skin)
+    elif pose == "shrug":
+        for sx in (-1, 1):
+            cv.line([(cx + sx * w * .26, top + h * .1), (cx + sx * w * .42, top + h * .2), (cx + sx * w * .5, top + h * .08)], shirt, w * .1)
+            cv.ell((cx + sx * w * .5 - w * .06, top + h * .02, cx + sx * w * .5 + w * .06, top + h * .1), fill=skin)
+    # đầu
+    hr = w * .2 * breathe
+    hx, hy = cx, top - h * .2
+    cv.ell((hx - hr * 1.12, hy - hr * 1.2, hx + hr * 1.12, hy + hr * .9), fill=hair)
+    cv.rect((hx - hr * 1.12, hy - hr * .2, hx + hr * 1.12, hy + hr * 1.35), fill=hair, r=hr * .5)
+    cv.ell((hx - hr * .86, hy - hr * .95, hx + hr * .86, hy + hr * 1.0), fill=skin)
+    cv.poly([(hx - hr * .9, hy - hr * .35), (hx - hr * .2, hy - hr * 1.05), (hx + hr * .95, hy - hr * .55), (hx + hr * .9, hy - hr * 1.1), (hx - hr * .9, hy - hr * 1.15)], fill=hair)
+    # mắt: chớp ngẫu nhiên 3–5 giây
+    blink = (t % 4.2) < 0.14
+    ey = hy + hr * .05
+    for sx in (-1, 1):
+        ex = hx + sx * hr * .36
+        if blink or (mood == "wink" and sx > 0):
+            cv.arc((ex - hr * .14, ey - hr * .08, ex + hr * .14, ey + hr * .12), 200, 340, INK, hr * .07)
+        else:
+            er = hr * (0.13 if mood == "surprise" else 0.1)
+            cv.ell((ex - er, ey - er * 1.2, ex + er, ey + er * 1.2), fill=INK)
+            cv.ell((ex - er * .3, ey - er * .9, ex + er * .2, ey - er * .3), fill=WHITE)
+    for sx in (-1, 1):
+        bx = hx + sx * hr * .36
+        lift = hr * (0.12 if mood in ("surprise", "curious") else 0)
+        cv.line([(bx - hr * .16, ey - hr * .28 - lift), (bx + hr * .16, ey - hr * .3 - lift - (hr * .05 if mood == "curious" and sx > 0 else 0))], INK, hr * .06)
+    cv.ell((hx - hr * .62, hy + hr * .28, hx - hr * .36, hy + hr * .44), fill=(*VERM, 60))
+    cv.ell((hx + hr * .36, hy + hr * .28, hx + hr * .62, hy + hr * .44), fill=(*VERM, 60))
+    # miệng: 3 hình theo nhịp nói
+    my = hy + hr * .52
+    shape = 0
+    if talk:
+        shape = int((math.sin(t * 13.0) + math.sin(t * 7.3 + 1)) * 1.2 + 1.5) % 3
+    if shape == 0 and not talk and mood in ("smile", "wink"):
+        cv.arc((hx - hr * .26, my - hr * .2, hx + hr * .26, my + hr * .16), 15, 165, INK, hr * .07)
+    elif shape == 0:
+        cv.line([(hx - hr * .16, my), (hx + hr * .16, my)], INK, hr * .07)
+    else:
+        op = hr * (.1 if shape == 1 else .2)
+        cv.ell((hx - hr * .16, my - op * .5, hx + hr * .16, my + op), fill=(120, 40, 40), outline=INK, width=hr * .05)
+    return cv.out()
+
+
