@@ -25,7 +25,9 @@ public sealed record LossCashVarianceShiftDto(
     decimal AbsCashVariance,
     bool IsAlert,
     DateTime OpenedAt,
-    DateTime? ClosedAt);
+    DateTime? ClosedAt,
+    string? OpenedByName = null,
+    string? ClosedByName = null);
 
 /// <summary>EP01 additive risk strip — optional for older clients if null.</summary>
 public sealed record OwnerCockpitRiskStripDto(
@@ -51,7 +53,8 @@ public sealed record LossEmployeeReportsDto(
     string AttributionNotes,
     IReadOnlyList<LossEmployeeCancelRowDto> Cancellations,
     IReadOnlyList<LossEmployeeDiscountRowDto> Discounts,
-    IReadOnlyList<LossEmployeeAdjustmentRowDto> Adjustments);
+    IReadOnlyList<LossEmployeeAdjustmentRowDto> Adjustments,
+    IReadOnlyList<LossCashVarianceByCloserRowDto>? CashVarianceByCloser = null);
 
 public sealed record LossEmployeeCancelRowDto(
     Guid? EmployeeId,
