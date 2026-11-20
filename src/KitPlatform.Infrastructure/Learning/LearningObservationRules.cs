@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace KitPlatform.Infrastructure.Learning;
 
-/// <summary>Rubric quan sát tại quầy theo level (soft, ≥80%).</summary>
+/// <summary>Rubric quan sát tại quầy theo level (soft, ≥80% là đạt; lần chưa đạt vẫn lưu lịch sử).</summary>
 internal static class LearningObservationRules
 {
     public const int PassPct = 80;
@@ -68,25 +68,21 @@ internal static class LearningObservationRules
         return GenericKeys;
     }
 
-    /// <summary>Trả lỗi nếu chưa đạt ngưỡng; null nếu OK.</summary>
-    public static string? ValidateOrError(
+    public static LearningObservationScore Evaluate(
         string? levelCode,
-        IReadOnlyDictionary<string, bool> criteria)
+        IReadOnlyDictionary<string, bool>? criteria)
     {
         var keys = KeysForLevel(levelCode);
-        var passed = 0;
+        var met = 0;
         foreach (var key in keys)
         {
-            if (criteria.TryGetValue(key, out var ok) && ok)
-                passed++;
+            if (criteria is not null && criteria.TryGetValue(key, out var ok) && ok)
+                met++;
         }
 
-        var pct = keys.Count == 0 ? 0 : (int)Math.Round(100.0 * passed / keys.Count);
-        if (pct < PassPct)
-        {
-            return $"Cần đạt ≥ {PassPct}% tiêu chí quan sát (hiện {passed}/{keys.Count} = {pct}%).";
-        }
-
-        return null;
+        var pct = keys.Count == 0 ? 0 : (int)Math.Round(100.0 * met / keys.Count);
+        return new LearningObservationScore(met, keys.Count, pct, pct >= PassPct);
     }
 }
+
+internal sealed record LearningObservationScore(int Met, int Total, int Pct, bool Passed);

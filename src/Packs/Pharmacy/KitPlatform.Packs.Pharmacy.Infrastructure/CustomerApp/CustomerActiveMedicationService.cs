@@ -70,7 +70,8 @@ internal sealed class CustomerActiveMedicationService : ICustomerActiveMedicatio
                     ? new DateTimeOffset(DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc))
                     : null,
                 repurchaseRows.Count,
-                timeline));
+                timeline,
+                order?.DaysSupply));
         }
 
         items.Sort((a, b) =>

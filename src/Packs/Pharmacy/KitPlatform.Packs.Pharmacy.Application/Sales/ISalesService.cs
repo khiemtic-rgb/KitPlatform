@@ -48,7 +48,15 @@ public interface ISalesService
         SalesOrderListFilter? filter = null,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<SalesSellerLookupDto>> ListSalesSellersAsync(
+        CancellationToken cancellationToken = default);
+
     Task<SalesOrderDetailDto?> GetOrderAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Đơn đã ghi của tenant hiện tại theo khóa client. Null nếu chưa commit hoặc khóa thuộc tenant khác.</summary>
+    Task<SalesOrderDetailDto?> FindSaleByClientSaleIdAsync(
+        string? clientSaleId,
+        CancellationToken cancellationToken = default);
 
     Task<SalesOrderDetailDto> CreateSaleAsync(
         CreateSaleRequest request,

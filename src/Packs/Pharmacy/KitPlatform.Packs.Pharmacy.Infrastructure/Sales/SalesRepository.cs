@@ -1,8 +1,9 @@
 using System.Data;
 using Dapper;
+using Npgsql;
 using KitPlatform.Application.Abstractions;
 using KitPlatform.Application.Configuration;
-using KitPlatform.Application.Core.Engines;
+using KitPlatform.Packs.Pharmacy.Workflow;
 using KitPlatform.Application.Integration;
 using KitPlatform.Application.Platform.Events;
 using KitPlatform.Packs.Pharmacy;
@@ -15,13 +16,23 @@ using KitPlatform.Infrastructure.Loyalty;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
+internal readonly record struct CompletedSaleCreateResult(Guid OrderId, bool Replayed);
+
+internal readonly record struct SaleReturnCreateResult(Guid ReturnId, bool Replayed);
+
+internal enum DraftCompletionOutcome
+{
+    NotFound,
+    CompletedNow,
+    AlreadyCompleted,
+}
+
 internal sealed class SalesRepository
 {
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
     private readonly InventoryRepository _inventory;
-    private readonly IInventoryEngine _inventoryEngine;
-    private readonly IPricingEngine _pricing;
+    private readonly IBatchResolver _batchResolver;
     private readonly ITenantSettingsService _tenantSettings;
     private readonly IIntegrationOutboxWriter _outbox;
     private readonly IPlatformEventWriter _platformEvents;
@@ -34,8 +45,7 @@ internal sealed class SalesRepository
         IDbConnectionFactory db,
         ITenantContext tenant,
         InventoryRepository inventory,
-        IInventoryEngine inventoryEngine,
-        IPricingEngine pricing,
+        IBatchResolver batchResolver,
         ITenantSettingsService tenantSettings,
         IIntegrationOutboxWriter outbox,
         IPlatformEventWriter platformEvents,
@@ -47,8 +57,7 @@ internal sealed class SalesRepository
         _db = db;
         _tenant = tenant;
         _inventory = inventory;
-        _inventoryEngine = inventoryEngine;
-        _pricing = pricing;
+        _batchResolver = batchResolver;
         _tenantSettings = tenantSettings;
         _outbox = outbox;
         _platformEvents = platformEvents;
@@ -86,6 +95,11 @@ internal sealed class SalesRepository
         var conditions = new List<string> { "c.tenant_id = @TenantId", "c.deleted_at IS NULL" };
         var param = new DynamicParameters();
         param.Add("TenantId", TenantId);
+        var exact = search?.Trim() ?? string.Empty;
+        param.Add("Exact", exact);
+        // Phone match only when the whole query is a phone. Digits inside a code or name stay out of this predicate.
+        var phoneDigits = PosCustomerPhoneDigits(exact);
+        param.Add("SearchDigits", phoneDigits);
         if (!string.IsNullOrWhiteSpace(search))
         {
             conditions.Add("""
@@ -93,11 +107,10 @@ internal sealed class SalesRepository
                     c.full_name ILIKE @Search
                     OR c.phone ILIKE @Search
                     OR c.customer_code ILIKE @Search
-                    OR (@SearchDigits <> '' AND regexp_replace(COALESCE(c.phone, ''), '\D', '', 'g') ILIKE @SearchDigitsPattern)
+                    OR (@SearchDigits <> '' AND regexp_replace(COALESCE(c.phone, ''), '\D', '', 'g') = @SearchDigits)
                 )
                 """);
-            param.Add("Search", $"%{search.Trim()}%");
-            AddPhoneDigitSearchParams(param, search, "Search");
+            param.Add("Search", $"%{exact}%");
         }
 
         var whereSql = string.Join(" AND ", conditions);
@@ -131,7 +144,14 @@ internal sealed class SalesRepository
                AND cg.deleted_at IS NULL
                AND cg.status = 1
             WHERE {whereSql}
-            ORDER BY c.full_name
+            ORDER BY
+                CASE
+                    WHEN lower(btrim(c.customer_code)) = lower(@Exact) THEN 0
+                    WHEN lower(btrim(c.full_name)) = lower(@Exact) THEN 1
+                    WHEN @SearchDigits <> '' AND regexp_replace(COALESCE(c.phone, ''), '\D', '', 'g') = @SearchDigits THEN 2
+                    ELSE 3
+                END,
+                c.full_name
             LIMIT @PageSize OFFSET @Offset
             """;
         param.Add("Completed", SalesOrderStatuses.Completed);
@@ -212,7 +232,7 @@ internal sealed class SalesRepository
             };
         }
 
-        var batches = await _inventoryEngine.GetAvailableBatchesAsync(
+        var batches = await _batchResolver.GetAvailableBatchesAsync(
             conn, warehouseId, lookup.ProductId, cancellationToken);
         var hints = batches
             .Select((b, index) => new PosBatchHintDto(
@@ -290,6 +310,7 @@ internal sealed class SalesRepository
                     FROM inventory_batches b
                     WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                       AND b.product_id = p.id AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) AS StockAvailable
             """;
 
@@ -360,6 +381,7 @@ internal sealed class SalesRepository
                     FROM inventory_batches b
                     WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                       AND b.product_id = p.id AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) AS StockAvailable
             FROM product_units u
             INNER JOIN products p ON p.id = u.product_id
@@ -409,6 +431,7 @@ internal sealed class SalesRepository
                     FROM inventory_batches b
                     WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                       AND b.product_id = p.id AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) AS StockAvailable
             FROM product_units u
             INNER JOIN products p ON p.id = u.product_id
@@ -469,6 +492,7 @@ internal sealed class SalesRepository
                     FROM inventory_batches b
                     WHERE b.tenant_id = @TenantId AND b.warehouse_id = @WarehouseId
                       AND b.product_id = p.id AND b.quantity_available > 0
+                      AND (b.expiry_date IS NULL OR b.expiry_date >= CURRENT_DATE)
                 ), 0) AS StockAvailable
             FROM products p
             INNER JOIN LATERAL (
@@ -570,13 +594,13 @@ internal sealed class SalesRepository
                     "Đơn vị bán không còn hiệu lực. Xóa dòng lỗi và chọn lại sản phẩm trên POS.");
             }
 
-            var batches = await _inventoryEngine.GetAvailableBatchesAsync(
+            var batches = await _batchResolver.GetAvailableBatchesAsync(
                 conn, request.WarehouseId, item.ProductId, cancellationToken);
             var baseNeeded = item.Quantity * unit.ConversionFactor;
             IReadOnlyList<FifoAllocationResult> allocations;
             try
             {
-                allocations = _inventoryEngine.AllocateFromBatches(batches, baseNeeded);
+                allocations = _batchResolver.AllocateFromBatches(batches, baseNeeded);
             }
             catch (InvalidOperationException)
             {
@@ -648,10 +672,22 @@ internal sealed class SalesRepository
                     ? "AND o.order_date < @To"
                     : string.Empty;
         var searchFilter = BuildSalesOrderSearchFilter(filter);
+        var selectedWarehouseFilter = filter.WarehouseId is Guid
+            ? "AND o.warehouse_id = @SelectedWarehouseId"
+            : string.Empty;
+        var employeeFilter = filter.EmployeeId is Guid
+            ? "AND o.employee_id = @EmployeeId"
+            : string.Empty;
+        var shiftFilter = filter.SalesShiftId is Guid
+            ? "AND o.sales_shift_id = @SalesShiftId"
+            : string.Empty;
 
         var where = $"""
             o.tenant_id = @TenantId
               {warehouseFilter}
+              {selectedWarehouseFilter}
+              {employeeFilter}
+              {shiftFilter}
               {statusFilter}
               {dateFilter}
               {searchFilter}
@@ -697,6 +733,9 @@ internal sealed class SalesRepository
         {
             TenantId,
             AllowedWarehouseIds = allowedWarehouseIds,
+            SelectedWarehouseId = filter.WarehouseId,
+            EmployeeId = filter.EmployeeId,
+            SalesShiftId = filter.SalesShiftId,
             ReturnCompleted = SalesReturnStatuses.Completed,
             Status = filter.Status,
             From = filter.From,
@@ -714,6 +753,226 @@ internal sealed class SalesRepository
         var total = await conn.ExecuteScalarAsync<int>(countSql, args);
         var items = (await conn.QueryAsync<SalesOrderListItemDto>(sql, args)).ToList();
         return (items, total);
+    }
+
+    public async Task<IReadOnlyList<SalesSellerLookupDto>> ListSalesSellersAsync(
+        Guid[]? allowedWarehouseIds,
+        CancellationToken cancellationToken)
+    {
+        var warehouseFilter = allowedWarehouseIds is { Length: > 0 }
+            ? "AND o.warehouse_id = ANY(@AllowedWarehouseIds)"
+            : string.Empty;
+        var sql = $"""
+            SELECT e.id AS Id, e.full_name AS FullName
+            FROM employees e
+            WHERE e.tenant_id = @TenantId
+              AND EXISTS (
+                SELECT 1
+                FROM sales_orders o
+                WHERE o.tenant_id = @TenantId
+                  AND o.employee_id = e.id
+                  {warehouseFilter}
+              )
+            ORDER BY e.full_name
+            """;
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<SalesSellerLookupDto>(sql, new
+        {
+            TenantId,
+            AllowedWarehouseIds = allowedWarehouseIds,
+        });
+        return rows.ToList();
+    }
+
+    // DTO for recent orders with products (POS customer context)
+    private sealed record CustomerOrderWithProductsRow
+    {
+        public Guid OrderId { get; init; }
+        public DateTimeOffset OrderDate { get; init; }
+        public string OrderNumber { get; init; } = "";
+        public decimal TotalAmount { get; init; }
+        public int ItemCount { get; init; }
+        public string? TopProductsJson { get; init; }
+    }
+
+    private sealed record CustomerPrescriptionHistoryRow
+    {
+        public string PrescriptionCode { get; init; } = "";
+        public DateTime CreatedAt { get; init; }
+        public string Status { get; init; } = "";
+        public string? PrescriberName { get; init; }
+        public string? ProductNames { get; init; }
+    }
+
+    private sealed record CustomerFrequentPurchaseRow
+    {
+        public string ProductName { get; init; } = "";
+        public int OrderCount { get; init; }
+        public DateTime LastPurchaseDate { get; init; }
+    }
+
+    /// <summary>
+    /// Get recent completed orders with top N products per order for POS customer context display.
+    /// Sales module owns sales_orders and sales_order_items — internal query within same module.
+    /// </summary>
+    public async Task<IReadOnlyList<CustomerPosOrderDto>> GetRecentOrdersWithProductsAsync(
+        Guid tenantId,
+        Guid customerId,
+        int limit = 5,
+        int topProductsPerOrder = 5,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            WITH order_products AS (
+                SELECT
+                    so.id AS order_id,
+                    so.order_date,
+                    so.order_number,
+                    so.total_amount,
+                    (SELECT COUNT(*)::int FROM sales_order_items WHERE sales_order_id = so.id) AS item_count,
+                    soi.product_id,
+                    p.product_name,
+                    soi.quantity,
+                    soi.line_total,
+                    ROW_NUMBER() OVER (PARTITION BY so.id ORDER BY soi.line_total DESC) AS rn
+                FROM sales_orders so
+                LEFT JOIN sales_order_items soi ON soi.sales_order_id = so.id
+                LEFT JOIN products p ON p.id = soi.product_id
+                WHERE so.tenant_id = @TenantId
+                  AND so.customer_id = @CustomerId
+                  AND so.status = 2
+                  AND so.order_date >= NOW() - INTERVAL '90 days'
+            )
+            SELECT
+                order_id AS OrderId,
+                order_date AS OrderDate,
+                order_number AS OrderNumber,
+                total_amount AS TotalAmount,
+                item_count AS ItemCount,
+                jsonb_agg(
+                    jsonb_build_object('productName', product_name, 'quantity', quantity)
+                    ORDER BY line_total DESC
+                ) FILTER (WHERE product_name IS NOT NULL AND rn <= @TopProductsPerOrder) AS TopProductsJson
+            FROM order_products
+            GROUP BY order_id, order_date, order_number, total_amount, item_count
+            ORDER BY order_date DESC
+            LIMIT @Limit
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<CustomerOrderWithProductsRow>(
+            sql,
+            new { TenantId = tenantId, CustomerId = customerId, Limit = limit, TopProductsPerOrder = topProductsPerOrder });
+
+        var result = new List<CustomerPosOrderDto>();
+        foreach (var row in rows)
+        {
+            var topProducts = new List<CustomerPosOrderProductDto>();
+            if (!string.IsNullOrWhiteSpace(row.TopProductsJson))
+            {
+                var productsArray = System.Text.Json.JsonSerializer.Deserialize<List<System.Text.Json.JsonElement>>(row.TopProductsJson);
+                if (productsArray is not null)
+                {
+                    foreach (var prod in productsArray)
+                    {
+                        var name = prod.GetProperty("productName").GetString() ?? "";
+                        var qty = prod.GetProperty("quantity").GetDecimal();
+                        topProducts.Add(new CustomerPosOrderProductDto(name, qty));
+                    }
+                }
+            }
+
+            result.Add(new CustomerPosOrderDto(
+                row.OrderDate,
+                row.OrderNumber,
+                row.TotalAmount,
+                topProducts));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Recorded prescriptions for this customer. Display only; an old prescription is not the current sale.
+    /// </summary>
+    public async Task<IReadOnlyList<CustomerPosPrescriptionDto>> GetRecentPrescriptionsAsync(
+        Guid tenantId,
+        Guid customerId,
+        int limit = 5,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT
+                ep.prescription_code AS PrescriptionCode,
+                ep.created_at AS CreatedAt,
+                ep.status AS Status,
+                lp.full_name AS PrescriberName,
+                (
+                    SELECT string_agg(lines.product_name, ', ' ORDER BY lines.sort_order)
+                    FROM (
+                        SELECT p.product_name, l.sort_order
+                        FROM pack_pharmacy.electronic_prescription_lines l
+                        INNER JOIN products p ON p.id = l.product_id
+                        WHERE l.prescription_id = ep.id
+                          AND l.tenant_id = ep.tenant_id
+                        ORDER BY l.sort_order
+                        LIMIT 3
+                    ) lines
+                ) AS ProductNames
+            FROM pack_pharmacy.electronic_prescriptions ep
+            LEFT JOIN pack_pharmacy.linked_prescribers lp
+                ON lp.id = ep.linked_prescriber_id
+            WHERE ep.tenant_id = @TenantId
+              AND ep.customer_id = @CustomerId
+            ORDER BY ep.created_at DESC
+            LIMIT @Limit
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<CustomerPrescriptionHistoryRow>(
+            sql,
+            new { TenantId = tenantId, CustomerId = customerId, Limit = limit });
+        return rows.Select(row => new CustomerPosPrescriptionDto(
+            row.PrescriptionCode,
+            new DateTimeOffset(DateTime.SpecifyKind(row.CreatedAt, DateTimeKind.Utc)),
+            row.Status,
+            row.PrescriberName,
+            row.ProductNames)).ToList();
+    }
+
+    /// <summary>
+    /// Products that show up on more than one completed sale. This is purchase frequency, not use.
+    /// </summary>
+    public async Task<IReadOnlyList<CustomerPosFrequentProductDto>> GetFrequentPurchasesAsync(
+        Guid tenantId,
+        Guid customerId,
+        int limit = 5,
+        CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT p.product_name AS ProductName,
+                   COUNT(DISTINCT so.id)::int AS OrderCount,
+                   MAX(so.order_date) AS LastPurchaseDate
+            FROM sales_orders so
+            JOIN sales_order_items soi ON soi.sales_order_id = so.id
+            JOIN products p ON p.id = soi.product_id
+            WHERE so.tenant_id = @TenantId
+              AND so.customer_id = @CustomerId
+              AND so.status = 2
+            GROUP BY p.product_name
+            HAVING COUNT(DISTINCT so.id) >= 2
+            ORDER BY COUNT(DISTINCT so.id) DESC, MAX(so.order_date) DESC
+            LIMIT @Limit
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<CustomerFrequentPurchaseRow>(
+            sql,
+            new { TenantId = tenantId, CustomerId = customerId, Limit = limit });
+        return rows.Select(row => new CustomerPosFrequentProductDto(
+            row.ProductName,
+            row.OrderCount,
+            new DateTimeOffset(DateTime.SpecifyKind(row.LastPurchaseDate, DateTimeKind.Utc)))).ToList();
     }
 
     public async Task<SalesOrderDetailDto?> GetSalesOrderAsync(
@@ -864,17 +1123,57 @@ internal sealed class SalesRepository
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, items, priceType, allowPriceOverride, cancellationToken);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(pricing, discountPolicy, cancellationToken: cancellationToken);
         await tx.CommitAsync(cancellationToken);
         return pricing;
     }
 
-    public async Task<Guid> CreateCompletedSaleAsync(
+    public async Task<CompletedSaleCreateResult> CreateCompletedSaleAsync(
         CreateSaleRequest request,
         Guid userId,
         SalesDiscountPolicy discountPolicy,
         bool allowPriceOverride,
+        CancellationToken cancellationToken)
+    {
+        var clientSaleId = NormalizeClientSaleId(request.ClientSaleId);
+        if (clientSaleId is not null)
+        {
+            var alreadyCommitted = await FindCommittedOrderIdByClientSaleIdAsync(clientSaleId, cancellationToken);
+            if (alreadyCommitted is Guid existing)
+                return new CompletedSaleCreateResult(existing, true);
+        }
+
+        try
+        {
+            var orderId = await InsertNewCompletedSaleAsync(
+                request, userId, discountPolicy, allowPriceOverride, clientSaleId, cancellationToken);
+            return new CompletedSaleCreateResult(orderId, false);
+        }
+        catch (Exception ex) when (clientSaleId is not null && IsClientSaleIdUniqueViolation(ex))
+        {
+            // InsertNewCompletedSaleAsync đã dispose transaction thua trước khi exception ra khỏi method.
+            var existingId = await FindCommittedOrderIdByClientSaleIdAsync(clientSaleId, cancellationToken);
+            if (existingId is not Guid found)
+                throw;
+            return new CompletedSaleCreateResult(found, true);
+        }
+        catch (Exception) when (clientSaleId is not null)
+        {
+            // Voucher hoặc loyalty có thể từ chối request thua sau khi request thắng đã commit.
+            var existingId = await FindCommittedOrderIdByClientSaleIdAsync(clientSaleId, cancellationToken);
+            if (existingId is not Guid found)
+                throw;
+            return new CompletedSaleCreateResult(found, true);
+        }
+    }
+
+    private async Task<Guid> InsertNewCompletedSaleAsync(
+        CreateSaleRequest request,
+        Guid userId,
+        SalesDiscountPolicy discountPolicy,
+        bool allowPriceOverride,
+        string? clientSaleId,
         CancellationToken cancellationToken)
     {
         if (request.Items.Count == 0)
@@ -893,7 +1192,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -938,6 +1237,19 @@ internal sealed class SalesRepository
 
         var paymentResolution = await NormalizeAndValidatePaymentsAsync(
             conn, tx, request.CustomerId, request.Payments, redeem.FinalTotal, cancellationToken);
+        var orderReminder = SalesOrderReminderNormalizer.Normalize(
+            request.OrderReminderLabel,
+            request.OrderReminderDaysSupply);
+
+        // Ghi khóa trước khi khóa lô, để request trùng fail trước khi trừ tồn.
+        var orderId = await InsertSaleHeaderAsync(
+            conn, tx, orderNumber, branchId, request.WarehouseId, request.CustomerId, employeeId,
+            SalesOrderStatuses.Completed, request.PriceType, pricing.SubtotalGross, pricing.OrderDiscountAmount,
+            orderDiscountType, orderDiscountValue ?? 0, redeem.FinalTotal,
+            paymentResolution.AmountPaid, paymentResolution.Outstanding, request.Notes,
+            shiftId, voucher.VoucherId, voucher.DiscountAmount, redeem.PointsRedeemed, redeem.DiscountAmount,
+            orderReminder.Label, orderReminder.DaysSupply, request.PrescriptionId, request.ConnectRxHandoffId,
+            clientSaleId);
         var linePlans = await BuildFifoPlansAsync(
             conn,
             tx,
@@ -945,17 +1257,6 @@ internal sealed class SalesRepository
             pricing.Lines,
             pricedInputs,
             cancellationToken);
-        var orderReminder = SalesOrderReminderNormalizer.Normalize(
-            request.OrderReminderLabel,
-            request.OrderReminderDaysSupply);
-
-        var orderId = await InsertSaleHeaderAsync(
-            conn, tx, orderNumber, branchId, request.WarehouseId, request.CustomerId, employeeId,
-            SalesOrderStatuses.Completed, request.PriceType, pricing.SubtotalGross, pricing.OrderDiscountAmount,
-            orderDiscountType, orderDiscountValue ?? 0, redeem.FinalTotal,
-            paymentResolution.AmountPaid, paymentResolution.Outstanding, request.Notes,
-            shiftId, voucher.VoucherId, voucher.DiscountAmount, redeem.PointsRedeemed, redeem.DiscountAmount,
-            orderReminder.Label, orderReminder.DaysSupply, request.PrescriptionId, request.ConnectRxHandoffId);
 
         var insertedLines = await InsertCompletedLinesAsync(
             conn,
@@ -1092,7 +1393,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1144,7 +1445,7 @@ internal sealed class SalesRepository
         var (orderDiscountType, orderDiscountValue) = await ResolveCustomerGroupOrderDiscountAsync(
             conn, tx, request.CustomerId, request.OrderDiscountType, request.OrderDiscountValue);
         var orderDiscount = new SaleDiscountInput(orderDiscountType, orderDiscountValue);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1192,7 +1493,7 @@ internal sealed class SalesRepository
         return true;
     }
 
-    public async Task<bool> CompleteDraftSaleAsync(
+    public async Task<DraftCompletionOutcome> CompleteDraftSaleAsync(
         Guid id,
         CompleteDraftSaleRequest? request,
         SalesDiscountPolicy discountPolicy,
@@ -1206,16 +1507,32 @@ internal sealed class SalesRepository
             SELECT
                 warehouse_id AS WarehouseId, customer_id AS CustomerId, price_type AS PriceType,
                 subtotal AS Subtotal, discount_amount AS OrderDiscountAmount, total_amount AS TotalAmount,
-                order_discount_type AS OrderDiscountType, order_discount_value AS OrderDiscountValue
+                order_discount_type AS OrderDiscountType, order_discount_value AS OrderDiscountValue,
+                status AS Status
             FROM sales_orders
-            WHERE id = @Id AND tenant_id = @TenantId AND status = @Draft
+            WHERE id = @Id AND tenant_id = @TenantId
+            FOR UPDATE
             """;
         var header = await conn.QuerySingleOrDefaultAsync<DraftHeaderRow>(headerSql, new
         {
             Id = id,
             TenantId,
-            Draft = SalesOrderStatuses.Draft,
-        }, tx) ?? throw new InvalidOperationException("Đơn nháp không tồn tại.");
+        }, tx);
+        if (header is null)
+        {
+            await tx.RollbackAsync(cancellationToken);
+            return DraftCompletionOutcome.NotFound;
+        }
+        if (header.Status == SalesOrderStatuses.Completed)
+        {
+            await tx.RollbackAsync(cancellationToken);
+            return DraftCompletionOutcome.AlreadyCompleted;
+        }
+        if (header.Status != SalesOrderStatuses.Draft)
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw new InvalidOperationException("Chỉ hoàn tất được đơn ở trạng thái Nháp.");
+        }
 
         await EnsureOpenShiftAsync(conn, tx, header.WarehouseId);
         var shiftId = await ResolveOpenShiftIdAsync(conn, tx, header.WarehouseId);
@@ -1258,7 +1575,7 @@ internal sealed class SalesRepository
             ? new SaleDiscountInput(request!.OrderDiscountType, request.OrderDiscountValue)
             : new SaleDiscountInput(header.OrderDiscountType, header.OrderDiscountValue);
         var pricedInputs = await ResolveSaleLineInputsAsync(conn, tx, saleItems, header.PriceType, allowPriceOverride, cancellationToken);
-        var pricing = _pricing.PriceSaleOrder(ForPricingEngine(pricedInputs), orderDiscount);
+        var pricing = SalesPricing.PriceOrder(ToSalePricingLines(pricedInputs), orderDiscount);
         await EnforceSaleDiscountPolicyAsync(
             pricing,
             discountPolicy,
@@ -1318,7 +1635,7 @@ internal sealed class SalesRepository
             request?.OrderReminderLabel,
             request?.OrderReminderDaysSupply);
 
-        await conn.ExecuteAsync("""
+        var transitioned = await conn.ExecuteAsync("""
             UPDATE sales_orders SET
                 status = @Completed, customer_id = @CustomerId, subtotal = @Subtotal,
                 discount_amount = @OrderDiscountAmount, order_discount_type = @OrderDiscountType,
@@ -1333,11 +1650,12 @@ internal sealed class SalesRepository
                 reminder_days_supply = @ReminderDaysSupply,
                 prescription_id = @PrescriptionId,
                 connect_rx_handoff_id = COALESCE(@ConnectRxHandoffId, connect_rx_handoff_id)
-            WHERE id = @Id AND tenant_id = @TenantId
+            WHERE id = @Id AND tenant_id = @TenantId AND status = @Draft
             """, new
         {
             Id = id,
             TenantId,
+            Draft = SalesOrderStatuses.Draft,
             CustomerId = customerId,
             Completed = SalesOrderStatuses.Completed,
             Subtotal = pricing.SubtotalGross,
@@ -1358,6 +1676,8 @@ internal sealed class SalesRepository
             PrescriptionId = request?.PrescriptionId,
             ConnectRxHandoffId = request?.ConnectRxHandoffId,
         }, tx);
+        if (transitioned == 0)
+            throw new InvalidOperationException("Đơn nháp không còn ở trạng thái Nháp.");
 
         var insertedLines = await InsertCompletedLinesAsync(
             conn,
@@ -1480,7 +1800,7 @@ internal sealed class SalesRepository
         await TryAutoCreateDrinkRemindersFromOrderAsync(conn, tx, id);
 
         await tx.CommitAsync(cancellationToken);
-        return true;
+        return DraftCompletionOutcome.CompletedNow;
     }
 
     public async Task<bool> CancelDraftSaleAsync(Guid id, CancellationToken cancellationToken)
@@ -1569,7 +1889,7 @@ internal sealed class SalesRepository
         return rows.ToList();
     }
 
-    public async Task<Guid> CreateSaleReturnAsync(
+    public async Task<SaleReturnCreateResult> CreateSaleReturnAsync(
         Guid salesOrderId,
         CreateSaleReturnRequest request,
         CancellationToken cancellationToken)
@@ -1577,12 +1897,47 @@ internal sealed class SalesRepository
         if (request.Items.Count == 0)
             throw new InvalidOperationException("Thêm ít nhất một dòng trả.");
 
+        var clientReturnId = NormalizeClientReturnId(request.ClientReturnId);
+        if (clientReturnId is not null)
+        {
+            var already = await FindReturnByClientReturnIdAsync(clientReturnId, cancellationToken);
+            if (already is not null)
+                return ReplaySameOrder(already, salesOrderId);
+        }
+
+        try
+        {
+            var returnId = await InsertSaleReturnAsync(salesOrderId, request, clientReturnId, cancellationToken);
+            return new SaleReturnCreateResult(returnId, false);
+        }
+        catch (Exception ex) when (clientReturnId is not null && IsClientReturnIdUniqueViolation(ex))
+        {
+            var already = await FindReturnByClientReturnIdAsync(clientReturnId, cancellationToken);
+            if (already is null)
+                throw;
+            return ReplaySameOrder(already, salesOrderId);
+        }
+    }
+
+    private static SaleReturnCreateResult ReplaySameOrder(ExistingReturnRow existing, Guid requestedOrderId)
+    {
+        SaleReturnIdempotency.EnsureSameOrder(existing.SalesOrderId, requestedOrderId);
+        return new SaleReturnCreateResult(existing.Id, true);
+    }
+
+    private async Task<Guid> InsertSaleReturnAsync(
+        Guid salesOrderId,
+        CreateSaleReturnRequest request,
+        string? clientReturnId,
+        CancellationToken cancellationToken)
+    {
         await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         await using var tx = await conn.BeginTransactionAsync(cancellationToken);
 
         const string orderSql = """
             SELECT id AS Id, warehouse_id AS WarehouseId, status AS Status,
-                   discount_amount AS OrderDiscountAmount,
+                   discount_amount + COALESCE(voucher_discount_amount, 0) + COALESCE(loyalty_discount_amount, 0)
+                       AS OrderDiscountAmount,
                    total_amount AS TotalAmount, amount_paid AS AmountPaid, outstanding AS Outstanding
             FROM sales_orders WHERE id = @Id AND tenant_id = @TenantId
             FOR UPDATE
@@ -1603,8 +1958,10 @@ internal sealed class SalesRepository
         decimal totalRefund = 0;
 
         const string returnInsert = """
-            INSERT INTO sales_returns (tenant_id, return_number, sales_order_id, reason, status, sales_shift_id)
-            VALUES (@TenantId, @ReturnNumber, @SalesOrderId, @Reason, @Status, @ShiftId)
+            INSERT INTO sales_returns (
+                tenant_id, return_number, sales_order_id, reason, status, sales_shift_id, client_return_id)
+            VALUES (
+                @TenantId, @ReturnNumber, @SalesOrderId, @Reason, @Status, @ShiftId, @ClientReturnId)
             RETURNING id
             """;
         var returnId = await conn.QuerySingleAsync<Guid>(returnInsert, new
@@ -1613,6 +1970,7 @@ internal sealed class SalesRepository
             ReturnNumber = returnNumber,
             SalesOrderId = salesOrderId,
             request.Reason,
+            ClientReturnId = clientReturnId,
             Status = SalesReturnStatuses.Completed,
             ShiftId = shiftId,
         }, tx);
@@ -1660,7 +2018,7 @@ internal sealed class SalesRepository
                 "SELECT unit_cost FROM inventory_batches WHERE id = @BatchId AND tenant_id = @TenantId",
                 new { item.BatchId, TenantId }, tx);
 
-            var refundAmount = _pricing.ComputeSaleLineRefundAmount(
+            var refundAmount = SalesPricing.ComputeLineRefundAmount(
                 item.LineTotal,
                 item.SoldQuantity,
                 line.Quantity,
@@ -2148,15 +2506,23 @@ internal sealed class SalesRepository
         Guid? shiftId,
         Guid? warehouseId)
     {
-        // Ca mở/đóng: cộng theo sales_shift_id (đúng nghiệp vụ quầy).
+        // Ca: tiền thu của đơn bán trong ca (tới lúc đóng ca) + tiền thu nợ đơn quầy cùng kho trong khung giờ ca
+        // (giờ DB; mỗi kho chỉ một ca mở) — thu nợ vào ca nhận tiền, không vào ca của đơn gốc. Hoàn tiền theo sales_shift_id.
         // Báo cáo theo ngày: lọc paid_at + (tuỳ chọn) warehouse.
         var salesSql = shiftId is not null
             ? """
             SELECT sp.payment_method AS PaymentMethod, COALESCE(SUM(sp.amount), 0) AS Amount
             FROM sales_payments sp
             INNER JOIN sales_orders o ON o.id = sp.sales_order_id
+            INNER JOIN sales_shifts s ON s.id = @ShiftId AND s.tenant_id = o.tenant_id
             WHERE o.tenant_id = @TenantId
-              AND o.sales_shift_id = @ShiftId
+              AND sp.paid_at <= COALESCE(s.closed_at, 'infinity'::timestamptz)
+              AND (
+                  o.sales_shift_id = s.id
+                  OR (o.sales_shift_id IS NOT NULL
+                      AND o.warehouse_id = s.warehouse_id
+                      AND sp.paid_at >= s.opened_at)
+              )
             GROUP BY sp.payment_method
             """
             : """
@@ -2286,6 +2652,7 @@ internal sealed class SalesRepository
                AND b_earlier.warehouse_id = o.warehouse_id
                AND b_earlier.tenant_id = o.tenant_id
                AND b_earlier.quantity_available > 0
+               AND (b_earlier.expiry_date IS NULL OR b_earlier.expiry_date >= CURRENT_DATE)
                AND b_earlier.id <> b_sold.id
                AND (
                     b_earlier.expiry_date < b_sold.expiry_date
@@ -2378,7 +2745,7 @@ internal sealed class SalesRepository
         return result;
     }
 
-    private static List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)> ForPricingEngine(
+    private static List<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ConversionFactor)> ToSalePricingLines(
         IReadOnlyList<(CreateSaleLineRequest Request, decimal UnitPrice, decimal ListUnitPrice, decimal ConversionFactor)> inputs)
         => inputs.Select(x => (x.Request, x.UnitPrice, x.ConversionFactor)).ToList();
 
@@ -2508,7 +2875,10 @@ internal sealed class SalesRepository
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT id AS Id, quantity_available AS QuantityAvailable, unit_cost AS UnitCost
+            SELECT id AS Id,
+                   quantity_available AS QuantityAvailable,
+                   unit_cost AS UnitCost,
+                   (expiry_date IS NOT NULL AND expiry_date < CURRENT_DATE) AS IsExpired
             FROM inventory_batches
             WHERE tenant_id = @TenantId AND warehouse_id = @WarehouseId
               AND product_id = @ProductId AND batch_number = @BatchNumber
@@ -2557,6 +2927,10 @@ internal sealed class SalesRepository
                     ?? throw new InvalidOperationException(
                         $"Số lô \"{labelBatch}\" không có tồn khả dụng.");
 
+                if (batch.IsExpired)
+                    throw new InvalidOperationException(
+                        $"Lô \"{labelBatch}\" đã hết hạn, không được bán.");
+
                 if (batch.QuantityAvailable + 0.0001m < baseQtyNeeded)
                 {
                     var productCode = await conn.QuerySingleOrDefaultAsync<string>(
@@ -2574,7 +2948,7 @@ internal sealed class SalesRepository
             {
                 try
                 {
-                    allocations = await _inventoryEngine.AllocateFifoAsync(
+                    allocations = await _batchResolver.AllocateFifoAsync(
                         conn, tx, warehouseId, pricedLine.ProductId, baseQtyNeeded, cancellationToken);
                 }
                 catch (InvalidOperationException)
@@ -2588,7 +2962,7 @@ internal sealed class SalesRepository
                         WHERE u.id = @UnitId AND u.tenant_id = @TenantId
                         """,
                         new { UnitId = pricedLine.ProductUnitId, TenantId }, tx);
-                    var batches = await _inventoryEngine.GetAvailableBatchesAsync(
+                    var batches = await _batchResolver.GetAvailableBatchesAsync(
                         conn, warehouseId, pricedLine.ProductId, cancellationToken);
                     var availableSale = SumSaleStock(batches, pricedLine.ConversionFactor);
                     var code = unit?.ProductCode ?? pricedLine.ProductId.ToString();
@@ -2736,7 +3110,8 @@ internal sealed class SalesRepository
         string? reminderLabel = null,
         int? reminderDaysSupply = null,
         Guid? prescriptionId = null,
-        Guid? connectRxHandoffId = null)
+        Guid? connectRxHandoffId = null,
+        string? clientSaleId = null)
     {
         const string sql = """
             INSERT INTO sales_orders (
@@ -2744,14 +3119,14 @@ internal sealed class SalesRepository
                 status, price_type, subtotal, discount_amount, order_discount_type, order_discount_value,
                 total_amount, amount_paid, outstanding, notes, sales_shift_id, voucher_id, voucher_discount_amount,
                 loyalty_points_redeemed, loyalty_discount_amount, reminder_label, reminder_days_supply, prescription_id,
-                connect_rx_handoff_id
+                connect_rx_handoff_id, client_sale_id
             )
             VALUES (
                 @TenantId, @OrderNumber, @BranchId, @WarehouseId, @CustomerId, @EmployeeId,
                 @Status, @PriceType, @Subtotal, @OrderDiscountAmount, @OrderDiscountType, @OrderDiscountValue,
                 @TotalAmount, @AmountPaid, @Outstanding, @Notes, @SalesShiftId, @VoucherId, @VoucherDiscountAmount,
                 @LoyaltyPointsRedeemed, @LoyaltyDiscountAmount, @ReminderLabel, @ReminderDaysSupply, @PrescriptionId,
-                @ConnectRxHandoffId
+                @ConnectRxHandoffId, @ClientSaleId
             )
             RETURNING id
             """;
@@ -2782,7 +3157,98 @@ internal sealed class SalesRepository
             ReminderDaysSupply = reminderDaysSupply,
             PrescriptionId = prescriptionId,
             ConnectRxHandoffId = connectRxHandoffId,
+            ClientSaleId = clientSaleId,
         }, tx);
+    }
+
+    private static string? NormalizeClientSaleId(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+        var trimmed = value.Trim();
+        if (trimmed.Length > 64)
+            throw new InvalidOperationException("clientSaleId vượt quá 64 ký tự.");
+        return trimmed;
+    }
+
+    private static string? NormalizeClientReturnId(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+        var trimmed = value.Trim();
+        if (trimmed.Length > 64)
+            throw new InvalidOperationException("clientReturnId vượt quá 64 ký tự.");
+        return trimmed;
+    }
+
+    private static bool IsClientReturnIdUniqueViolation(Exception ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            if (current is PostgresException pg
+                && pg.SqlState == PostgresErrorCodes.UniqueViolation
+                && string.Equals(pg.ConstraintName, "uq_sales_returns_tenant_client_return_id", StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    private async Task<ExistingReturnRow?> FindReturnByClientReturnIdAsync(
+        string clientReturnId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<ExistingReturnRow>(
+            """
+            SELECT id AS Id, sales_order_id AS SalesOrderId
+            FROM sales_returns
+            WHERE tenant_id = @TenantId AND client_return_id = @ClientReturnId
+            """,
+            new { TenantId, ClientReturnId = clientReturnId });
+    }
+
+    private sealed class ExistingReturnRow
+    {
+        public Guid Id { get; set; }
+        public Guid SalesOrderId { get; set; }
+    }
+
+    private static bool IsClientSaleIdUniqueViolation(Exception ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            if (current is PostgresException pg
+                && pg.SqlState == PostgresErrorCodes.UniqueViolation
+                && string.Equals(pg.ConstraintName, "uq_sales_orders_tenant_client_sale_id", StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    public async Task<Guid?> FindCommittedSaleIdByClientSaleIdAsync(
+        string? clientSaleId,
+        CancellationToken cancellationToken)
+    {
+        var normalized = NormalizeClientSaleId(clientSaleId);
+        if (normalized is null)
+            return null;
+        return await FindCommittedOrderIdByClientSaleIdAsync(normalized, cancellationToken);
+    }
+
+    private async Task<Guid?> FindCommittedOrderIdByClientSaleIdAsync(
+        string clientSaleId,
+        CancellationToken cancellationToken)
+    {
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        return await conn.QuerySingleOrDefaultAsync<Guid?>(
+            """
+            SELECT id
+            FROM sales_orders
+            WHERE tenant_id = @TenantId AND client_sale_id = @ClientSaleId
+            """,
+            new { TenantId, ClientSaleId = clientSaleId });
     }
 
     private async Task TryMarkConnectHandoffConsumedAsync(
@@ -3189,6 +3655,7 @@ internal sealed class SalesRepository
         public Guid Id { get; init; }
         public decimal QuantityAvailable { get; init; }
         public decimal UnitCost { get; init; }
+        public bool IsExpired { get; init; }
     }
 
     private sealed class DraftHeaderRow
@@ -3201,6 +3668,7 @@ internal sealed class SalesRepository
         public decimal TotalAmount { get; init; }
         public short? OrderDiscountType { get; init; }
         public decimal OrderDiscountValue { get; init; }
+        public short Status { get; init; }
     }
 
     private sealed class ReturnOrderRow
@@ -3775,34 +4243,6 @@ internal sealed class SalesRepository
         })).ToList();
     }
 
-    public async Task<IReadOnlyDictionary<Guid, decimal>> GetUnlinkedCustomerPaymentTotalsAsync(
-        Guid[]? allowedWarehouseIds,
-        CancellationToken cancellationToken)
-    {
-        var warehouseFilter = allowedWarehouseIds is { Length: > 0 }
-            ? "AND so.id IS NOT NULL AND so.warehouse_id = ANY(@AllowedWarehouseIds)"
-            : string.Empty;
-        var sql = $"""
-            SELECT cp.customer_id AS CustomerId, COALESCE(SUM(cp.amount), 0) AS TotalPaid
-            FROM customer_payments cp
-            LEFT JOIN sales_orders so ON so.id = cp.sales_order_id AND so.tenant_id = cp.tenant_id
-            WHERE cp.tenant_id = @TenantId
-              AND cp.status = @PaymentPosted
-              AND cp.sales_order_id IS NULL
-              {warehouseFilter}
-            GROUP BY cp.customer_id
-            """;
-
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var rows = await conn.QueryAsync<(Guid CustomerId, decimal TotalPaid)>(sql, new
-        {
-            TenantId,
-            PaymentPosted = CustomerPaymentStatuses.Posted,
-            AllowedWarehouseIds = allowedWarehouseIds,
-        });
-        return rows.ToDictionary(x => x.CustomerId, x => x.TotalPaid);
-    }
-
     private async Task ApplyCustomerCollectionToOrderAsync(
         IDbConnection conn,
         IDbTransaction tx,
@@ -3857,6 +4297,10 @@ internal sealed class SalesRepository
         IDbTransaction tx,
         CancellationToken cancellationToken)
     {
+        await conn.ExecuteAsync(
+            "SELECT pg_advisory_xact_lock(hashtext(@LockKey)::bigint)",
+            new { LockKey = $"{TenantId:N}:customer_payments" },
+            tx);
         const string sql = """
             SELECT COUNT(*)::int + 1 FROM customer_payments WHERE tenant_id = @TenantId
             """;
@@ -3956,6 +4400,23 @@ internal sealed class SalesRepository
         }
 
         return parts.Count == 0 ? string.Empty : $"AND {string.Join(" AND ", parts)}";
+    }
+
+    private static string PosCustomerPhoneDigits(string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return string.Empty;
+        var trimmed = search.Trim();
+        if (trimmed.Any(char.IsLetter))
+            return string.Empty;
+        var compact = new string(trimmed.Where(ch => ch is not (' ' or '.' or '-' or '(' or ')' or '/')).ToArray());
+        if (compact.StartsWith('+'))
+            compact = compact[1..];
+        if (compact.Length is < 8 or > 13 || compact.Any(ch => !char.IsDigit(ch)))
+            return string.Empty;
+        if (!compact.StartsWith('0') && !compact.StartsWith("84", StringComparison.Ordinal))
+            return string.Empty;
+        return compact;
     }
 
     private static string ExtractPhoneDigits(string? value) =>

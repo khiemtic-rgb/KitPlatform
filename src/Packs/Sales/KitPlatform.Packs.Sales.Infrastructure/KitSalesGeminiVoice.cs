@@ -1,17 +1,17 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using KitPlatform.Infrastructure.Configuration;
+using KitPlatform.Packs.Sales;
 using Microsoft.Extensions.Logging;
 
 namespace KitPlatform.Packs.Sales.Infrastructure;
 
 /// <summary>
 /// Gemini restyles KIT Sales copy. Facts stay locked — no new features, prices, or promises.
+/// One configured model, no fallback chain; every call passes the weekly budget gate first.
 /// </summary>
 internal sealed class KitSalesGeminiVoice
 {
     private const string ApiBase = "https://generativelanguage.googleapis.com/v1beta";
-    private static readonly string[] FallbackModels = ["gemini-3.6-flash", "gemini-flash-latest", "gemini-2.5-flash"];
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -19,16 +19,16 @@ internal sealed class KitSalesGeminiVoice
     };
 
     private readonly HttpClient _http;
-    private readonly KitSalesAiSettingsService _ai;
+    private readonly IKitSalesAiGate _gate;
     private readonly ILogger<KitSalesGeminiVoice> _log;
 
     public KitSalesGeminiVoice(
         HttpClient http,
-        KitSalesAiSettingsService ai,
+        IKitSalesAiGate gate,
         ILogger<KitSalesGeminiVoice> log)
     {
         _http = http;
-        _ai = ai;
+        _gate = gate;
         _log = log;
     }
 
@@ -41,14 +41,10 @@ internal sealed class KitSalesGeminiVoice
         if (string.IsNullOrWhiteSpace(lockedReply))
             return lockedReply;
 
-        var settings = await ResolveAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(settings.ApiKey))
-            return lockedReply;
-
         try
         {
             var json = await GenerateAsync(
-                settings,
+                "inbound_restyle",
                 """
                 Bạn viết lại tin nhắn Facebook cho nhân viên sales Novixa nói với chủ nhà thuốc Việt Nam.
                 Giọng ngoài đời: ngắn, dễ nghe, xưng em, gọi anh/chị. Không văn công ty.
@@ -79,11 +75,6 @@ internal sealed class KitSalesGeminiVoice
         string catalogDraft,
         CancellationToken cancellationToken)
     {
-        var settings = await ResolveAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(settings.ApiKey))
-            throw new InvalidOperationException(
-                "Chưa có key Gemini. Vào KIT Sales → Cài đặt, dán Gemini API key.");
-
         var hookOnly = string.IsNullOrWhiteSpace(step) || step == "hook";
         var system = hookOnly
             ? """
@@ -114,7 +105,7 @@ internal sealed class KitSalesGeminiVoice
 
         try
         {
-            var json = await GenerateAsync(settings, system, user, cancellationToken);
+            var json = await GenerateAsync("outbound_restyle", system, user, cancellationToken);
             var parsed = JsonSerializer.Deserialize<OutboundDraft>(json, JsonOpts);
             if (hookOnly)
             {
@@ -128,6 +119,10 @@ internal sealed class KitSalesGeminiVoice
             var draft = First(parsed?.Draft) ?? catalogDraft;
             return new KitSalesOutboundVoice(pain.Hook, pain.Outreach, pain.Question, draft, true);
         }
+        catch (KitSalesAiDeniedException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "KIT Sales Gemini outbound restyle failed");
@@ -135,50 +130,43 @@ internal sealed class KitSalesGeminiVoice
         }
     }
 
-    private async Task<ContentParkGeminiKeyResolver.ResolvedSettings> ResolveAsync(
-        CancellationToken cancellationToken)
-    {
-        var (key, model) = await _ai.GetEffectiveAsync(cancellationToken);
-        return new ContentParkGeminiKeyResolver.ResolvedSettings(key, model);
-    }
-
     private async Task<string> GenerateAsync(
-        ContentParkGeminiKeyResolver.ResolvedSettings settings,
+        string purpose,
         string system,
         string user,
         CancellationToken cancellationToken)
     {
-        var key = settings.ApiKey
-            ?? throw new InvalidOperationException(
-                "Chưa có key Gemini. Vào KIT Sales → Cài đặt, dán Gemini API key.");
+        var ticket = await _gate.AcquireAsync(purpose, SalesAiBudget.Reserve(system, user), cancellationToken);
+        if (!ticket.Granted)
+            throw new KitSalesAiDeniedException(ticket.DenyReason ?? "denied");
 
-        var models = new List<string>();
-        if (!string.IsNullOrWhiteSpace(settings.TextModel))
-            models.Add(settings.TextModel.Trim());
-        foreach (var model in FallbackModels)
+        var usage = new KitSalesAiUsage(false, null, null, null, "not_completed");
+        try
         {
-            if (!models.Contains(model, StringComparer.OrdinalIgnoreCase))
-                models.Add(model);
+            var (text, reported) = await CallAsync(ticket.ApiKey!, ticket.Model, system, user, cancellationToken);
+            usage = reported;
+            return text;
         }
-
-        Exception? last = null;
-        foreach (var model in models)
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "KIT Sales Gemini model {Model} failed; no fallback model is tried", ticket.Model);
+            usage = usage with { Ok = false, Error = ex.GetType().Name };
+            throw;
+        }
+        finally
         {
             try
             {
-                return await CallAsync(key, model, system, user, cancellationToken);
+                await _gate.SettleAsync(ticket, usage, CancellationToken.None);
             }
             catch (Exception ex)
             {
-                last = ex;
-                _log.LogWarning(ex, "KIT Sales Gemini model {Model} failed", model);
+                _log.LogWarning(ex, "KIT Sales AI usage settle failed; reserve stays charged");
             }
         }
-
-        throw last ?? new InvalidOperationException("Gemini không viết lại được.");
     }
 
-    private async Task<string> CallAsync(
+    private async Task<(string Text, KitSalesAiUsage Usage)> CallAsync(
         string apiKey,
         string model,
         string system,
@@ -211,8 +199,23 @@ internal sealed class KitSalesGeminiVoice
             .GetString();
         if (string.IsNullOrWhiteSpace(text))
             throw new InvalidOperationException("Gemini returned empty text");
-        return text;
+        return (text, ReadUsage(doc.RootElement));
     }
+
+    private static KitSalesAiUsage ReadUsage(JsonElement root)
+    {
+        if (!root.TryGetProperty("usageMetadata", out var meta) || meta.ValueKind != JsonValueKind.Object)
+            return new KitSalesAiUsage(true, null, null, null, null);
+        return new KitSalesAiUsage(
+            true,
+            Count(meta, "promptTokenCount"),
+            Count(meta, "candidatesTokenCount"),
+            Count(meta, "totalTokenCount"),
+            null);
+    }
+
+    private static long? Count(JsonElement meta, string name) =>
+        meta.TryGetProperty(name, out var value) && value.TryGetInt64(out var n) ? n : null;
 
     private static string? First(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -229,6 +232,18 @@ internal sealed class KitSalesGeminiVoice
         public string? Question { get; init; }
         public string? Draft { get; init; }
     }
+}
+
+internal sealed class KitSalesAiDeniedException(string reason)
+    : InvalidOperationException(reason switch
+    {
+        "no_key" => "Chưa có key Gemini. Vào KIT Sales → Cài đặt, dán Gemini API key.",
+        "budget_zero" => "AI KIT Sales đang tắt (trần token tuần = 0).",
+        "budget_exhausted" => "Đã hết trần token AI tuần này.",
+        _ => "AI KIT Sales bị từ chối.",
+    })
+{
+    public string Reason { get; } = reason;
 }
 
 internal sealed record KitSalesOutboundVoice(

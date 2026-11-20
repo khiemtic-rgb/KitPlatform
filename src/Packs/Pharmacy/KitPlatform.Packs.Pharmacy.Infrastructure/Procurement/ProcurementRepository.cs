@@ -1,7 +1,6 @@
 using System.Data;
 using Dapper;
 using KitPlatform.Application.Abstractions;
-using KitPlatform.Application.Core.Engines;
 using KitPlatform.Packs.Pharmacy.Inventory;
 using KitPlatform.Packs.Pharmacy.Procurement;
 using KitPlatform.Infrastructure.Data;
@@ -14,18 +13,15 @@ internal sealed class ProcurementRepository
     private readonly IDbConnectionFactory _db;
     private readonly ITenantContext _tenant;
     private readonly InventoryRepository _inventory;
-    private readonly IPricingEngine _pricing;
 
     public ProcurementRepository(
         IDbConnectionFactory db,
         ITenantContext tenant,
-        InventoryRepository inventory,
-        IPricingEngine pricing)
+        InventoryRepository inventory)
     {
         _db = db;
         _tenant = tenant;
         _inventory = inventory;
-        _pricing = pricing;
     }
 
     private Guid TenantId => _tenant.TenantId;
@@ -236,8 +232,24 @@ internal sealed class ProcurementRepository
         string tableName,
         CancellationToken cancellationToken)
     {
-        var sql = $"SELECT COUNT(*)::int + 1 FROM {tableName} WHERE tenant_id = @TenantId";
-        var seq = await conn.QuerySingleAsync<int>(sql, new { TenantId }, tx);
+        var column = tableName switch
+        {
+            "purchase_orders" => "po_number",
+            "goods_receipts" => "grn_number",
+            "supplier_payments" => "payment_number",
+            _ => throw new ArgumentOutOfRangeException(nameof(tableName)),
+        };
+        // Numbers must stay unique per tenant after purges and under concurrent creates.
+        await conn.ExecuteAsync(
+            "SELECT pg_advisory_xact_lock(hashtext(@Key))",
+            new { Key = $"doc-number:{TenantId}:{tableName}" },
+            tx);
+        var sql = $"""
+            SELECT COALESCE(MAX(CAST(substring({column} FROM @Pattern) AS bigint)), 0) + 1
+            FROM {tableName}
+            WHERE tenant_id = @TenantId
+            """;
+        var seq = await conn.QuerySingleAsync<long>(sql, new { TenantId, Pattern = $"^{prefix}-(\\d+)$" }, tx);
         return $"{prefix}-{seq:D6}";
     }
 
@@ -294,6 +306,7 @@ internal sealed class ProcurementRepository
             """;
         foreach (var item in request.Items)
         {
+            await EnsureBaseUnitAsync(conn, tx, item.ProductId, item.ProductUnitId, cancellationToken);
             await conn.ExecuteAsync(itemSql, new
             {
                 TenantId,
@@ -413,12 +426,13 @@ internal sealed class ProcurementRepository
                     UPDATE purchase_order_items SET
                         product_id = @ProductId, product_unit_id = @ProductUnitId,
                         ordered_qty = @OrderedQty, unit_price = @UnitPrice, line_total = @LineTotal
-                    WHERE id = @Id AND purchase_order_id = @PoId
+                    WHERE id = @Id AND purchase_order_id = @PoId AND tenant_id = @TenantId
                     """;
                 await conn.ExecuteAsync(updateItemSql, new
                 {
                     Id = itemId,
                     PoId = id,
+                    TenantId,
                     item.ProductId,
                     item.ProductUnitId,
                     item.OrderedQty,
@@ -428,6 +442,7 @@ internal sealed class ProcurementRepository
             }
             else
             {
+                await EnsureBaseUnitAsync(conn, tx, item.ProductId, item.ProductUnitId, cancellationToken);
                 const string insertItemSql = """
                     INSERT INTO purchase_order_items (
                         tenant_id, purchase_order_id, product_id, product_unit_id,
@@ -806,7 +821,7 @@ internal sealed class ProcurementRepository
                 i.UnitCost,
                 new ProcurementDiscountInput(i.DiscountType, i.DiscountValue)))
             .ToList();
-        var pricing = _pricing.PriceGoodsReceipt(
+        var pricing = ProcurementPricing.PriceReceipt(
             pricingLines,
             new ProcurementDiscountInput(request.OrderDiscountType, request.OrderDiscountValue),
             treatment.RatePercent,
@@ -873,15 +888,10 @@ internal sealed class ProcurementRepository
         {
             var item = request.Items[index];
             var priced = pricing.Lines[index];
+            await EnsureBaseUnitAsync(conn, tx, item.ProductId, item.ProductUnitId, cancellationToken);
             if (item.PurchaseOrderItemId is Guid poItemId)
             {
-                const string poItemSql = """
-                    SELECT ordered_qty AS OrderedQty, received_qty AS ReceivedQty
-                    FROM purchase_order_items WHERE id = @Id
-                    """;
-                var poItem = await conn.QuerySingleOrDefaultAsync<PoItemQtyRow>(
-                    poItemSql, new { Id = poItemId }, tx)
-                    ?? throw new InvalidOperationException("Dòng PO không tồn tại.");
+                var poItem = await GetPurchaseOrderItemQtyAsync(conn, tx, request.PurchaseOrderId, poItemId, cancellationToken);
                 if (poItem.ReceivedQty + item.Quantity > poItem.OrderedQty)
                     throw new InvalidOperationException("Số lượng nhận vượt quá PO.");
             }
@@ -962,7 +972,7 @@ internal sealed class ProcurementRepository
                 i.UnitCost,
                 new ProcurementDiscountInput(i.DiscountType, i.DiscountValue)))
             .ToList();
-        var pricing = _pricing.PriceGoodsReceipt(
+        var pricing = ProcurementPricing.PriceReceipt(
             pricingLines,
             new ProcurementDiscountInput(request.OrderDiscountType, request.OrderDiscountValue),
             treatment.RatePercent,
@@ -1034,15 +1044,10 @@ internal sealed class ProcurementRepository
         {
             var item = request.Items[index];
             var priced = pricing.Lines[index];
+            await EnsureBaseUnitAsync(conn, tx, item.ProductId, item.ProductUnitId, cancellationToken);
             if (item.PurchaseOrderItemId is Guid poItemId)
             {
-                const string poItemSql = """
-                    SELECT ordered_qty AS OrderedQty, received_qty AS ReceivedQty
-                    FROM purchase_order_items WHERE id = @Id
-                    """;
-                var poItem = await conn.QuerySingleOrDefaultAsync<PoItemQtyRow>(
-                    poItemSql, new { Id = poItemId }, tx)
-                    ?? throw new InvalidOperationException("Dòng PO không tồn tại.");
+                var poItem = await GetPurchaseOrderItemQtyAsync(conn, tx, header.PurchaseOrderId, poItemId, cancellationToken);
                 if (poItem.ReceivedQty + item.Quantity > poItem.OrderedQty)
                     throw new InvalidOperationException("Số lượng nhận vượt quá PO.");
             }
@@ -1105,13 +1110,21 @@ internal sealed class ProcurementRepository
         const string itemsSql = """
             SELECT
                 id AS Id, purchase_order_item_id AS PurchaseOrderItemId, product_id AS ProductId,
+                product_unit_id AS ProductUnitId,
                 batch_number AS BatchNumber, manufacture_date AS ManufactureDate, expiry_date AS ExpiryDate,
                 quantity AS Quantity, unit_cost AS UnitCost, inventory_unit_cost AS InventoryUnitCost
-            FROM goods_receipt_items WHERE goods_receipt_id = @GrnId
+            FROM goods_receipt_items WHERE goods_receipt_id = @GrnId AND tenant_id = @TenantId
             """;
-        var items = (await conn.QueryAsync<GrnItemRow>(itemsSql, new { GrnId = grnId }, tx)).ToList();
+        var items = (await conn.QueryAsync<GrnItemRow>(itemsSql, new { GrnId = grnId, TenantId }, tx)).ToList();
         if (items.Count == 0)
             throw new InvalidOperationException("Phiếu không có dòng hàng.");
+
+        foreach (var item in items)
+        {
+            await EnsureBaseUnitAsync(conn, tx, item.ProductId, item.ProductUnitId, cancellationToken);
+            if (item.PurchaseOrderItemId is Guid linkedPoItemId)
+                await GetPurchaseOrderItemQtyAsync(conn, tx, header.PurchaseOrderId, linkedPoItemId, cancellationToken);
+        }
 
         foreach (var item in items)
         {
@@ -1147,8 +1160,11 @@ internal sealed class ProcurementRepository
             if (item.PurchaseOrderItemId is Guid poItemId)
             {
                 await conn.ExecuteAsync(
-                    "UPDATE purchase_order_items SET received_qty = received_qty + @Qty WHERE id = @Id",
-                    new { Qty = item.Quantity, Id = poItemId }, tx);
+                    """
+                    UPDATE purchase_order_items SET received_qty = received_qty + @Qty
+                    WHERE id = @Id AND tenant_id = @TenantId AND purchase_order_id = @PoId
+                    """,
+                    new { Qty = item.Quantity, Id = poItemId, TenantId, PoId = header.PurchaseOrderId }, tx);
             }
         }
 
@@ -1608,22 +1624,62 @@ internal sealed class ProcurementRepository
 
     public async Task<bool> PostSupplierPaymentAsync(Guid id, Guid postedBy, CancellationToken cancellationToken)
     {
-        const string sql = """
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await using var tx = await conn.BeginTransactionAsync(cancellationToken);
+
+        var payment = await conn.QuerySingleOrDefaultAsync<(Guid? GoodsReceiptId, decimal Amount)>(
+            """
+            SELECT goods_receipt_id AS GoodsReceiptId, amount AS Amount
+            FROM supplier_payments
+            WHERE id = @Id AND tenant_id = @TenantId AND status = @Draft AND deleted_at IS NULL
+            FOR UPDATE
+            """,
+            new { Id = id, TenantId, Draft = SupplierPaymentStatuses.Draft },
+            tx);
+        if (payment == default)
+            return false;
+
+        if (payment.GoodsReceiptId is Guid grnId)
+        {
+            // Payables clamp GRN outstanding at zero, so an overpayment linked to a GRN would vanish from reports.
+            var grn = await conn.QuerySingleAsync<(string GrnNumber, decimal GrnTotal, decimal Paid)>(
+                """
+                SELECT gr.grn_number AS GrnNumber,
+                       CASE WHEN gr.total_amount > 0 THEN gr.total_amount
+                            ELSE (SELECT COALESCE(SUM(line_total), 0) FROM goods_receipt_items WHERE goods_receipt_id = gr.id)
+                       END AS GrnTotal,
+                       (SELECT COALESCE(SUM(amount), 0) FROM supplier_payments
+                        WHERE tenant_id = gr.tenant_id AND goods_receipt_id = gr.id AND status = @Posted) AS Paid
+                FROM goods_receipts gr
+                WHERE gr.id = @GrnId AND gr.tenant_id = @TenantId
+                FOR UPDATE OF gr
+                """,
+                new { GrnId = grnId, TenantId, Posted = SupplierPaymentStatuses.Posted },
+                tx);
+            var remaining = Math.Max(0, grn.GrnTotal - grn.Paid);
+            if (payment.Amount > remaining + 0.009m)
+                throw new InvalidOperationException(
+                    $"Số tiền trả vượt số còn nợ của phiếu nhập {grn.GrnNumber} (còn {remaining:N0}đ).");
+        }
+
+        var rows = await conn.ExecuteAsync(
+            """
             UPDATE supplier_payments SET
                 status = @Posted,
                 posted_at = NOW(),
                 posted_by = @PostedBy
             WHERE id = @Id AND tenant_id = @TenantId AND status = @Draft AND deleted_at IS NULL
-            """;
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
-        var rows = await conn.ExecuteAsync(sql, new
-        {
-            Id = id,
-            TenantId,
-            Draft = SupplierPaymentStatuses.Draft,
-            Posted = SupplierPaymentStatuses.Posted,
-            PostedBy = postedBy,
-        });
+            """,
+            new
+            {
+                Id = id,
+                TenantId,
+                Draft = SupplierPaymentStatuses.Draft,
+                Posted = SupplierPaymentStatuses.Posted,
+                PostedBy = postedBy,
+            },
+            tx);
+        await tx.CommitAsync(cancellationToken);
         return rows > 0;
     }
 
@@ -1916,6 +1972,49 @@ internal sealed class ProcurementRepository
         public bool IsActive { get; init; }
     }
 
+    // Stock and inventory unit cost are kept in the base unit; receipts carry no conversion step.
+    private async Task EnsureBaseUnitAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid productId,
+        Guid productUnitId,
+        CancellationToken cancellationToken)
+    {
+        var unit = await conn.QuerySingleOrDefaultAsync<(string UnitName, decimal ConversionFactor)>(
+            """
+            SELECT unit_name AS UnitName, conversion_factor AS ConversionFactor
+            FROM product_units
+            WHERE id = @Id AND product_id = @ProductId AND tenant_id = @TenantId
+            """,
+            new { Id = productUnitId, ProductId = productId, TenantId },
+            tx);
+        if (unit.UnitName is null)
+            throw new InvalidOperationException("Đơn vị tính không thuộc sản phẩm này.");
+        if (unit.ConversionFactor != 1m)
+            throw new InvalidOperationException(
+                $"Phiếu nhập chỉ nhận theo đơn vị gốc. Đổi số lượng và đơn giá của \"{unit.UnitName}\" (×{unit.ConversionFactor:0.##}) sang đơn vị gốc.");
+    }
+
+    private async Task<PoItemQtyRow> GetPurchaseOrderItemQtyAsync(
+        IDbConnection conn,
+        IDbTransaction tx,
+        Guid? purchaseOrderId,
+        Guid purchaseOrderItemId,
+        CancellationToken cancellationToken)
+    {
+        if (purchaseOrderId is null)
+            throw new InvalidOperationException("Dòng PO chỉ dùng được với phiếu nhập gắn PO.");
+        return await conn.QuerySingleOrDefaultAsync<PoItemQtyRow>(
+            """
+            SELECT ordered_qty AS OrderedQty, received_qty AS ReceivedQty
+            FROM purchase_order_items
+            WHERE id = @Id AND tenant_id = @TenantId AND purchase_order_id = @PoId
+            """,
+            new { Id = purchaseOrderItemId, TenantId, PoId = purchaseOrderId },
+            tx)
+            ?? throw new InvalidOperationException("Dòng PO không tồn tại.");
+    }
+
     private async Task<VatTreatmentCalcRow> ResolveVatTreatmentAsync(
         IDbConnection conn,
         IDbTransaction tx,
@@ -2032,6 +2131,7 @@ internal sealed class ProcurementRepository
         public Guid Id { get; init; }
         public Guid? PurchaseOrderItemId { get; init; }
         public Guid ProductId { get; init; }
+        public Guid ProductUnitId { get; init; }
         public string BatchNumber { get; init; } = "";
         public DateOnly? ManufactureDate { get; init; }
         public DateOnly ExpiryDate { get; init; }

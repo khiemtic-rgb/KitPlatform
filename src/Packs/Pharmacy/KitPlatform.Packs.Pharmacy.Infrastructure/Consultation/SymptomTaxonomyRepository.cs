@@ -1,6 +1,7 @@
 using Dapper;
 using KitPlatform.Infrastructure.Data;
 using KitPlatform.Packs.Pharmacy.Consultation;
+using KitPlatform.Packs.Pharmacy.Knowledge;
 using Npgsql;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure.Consultation;
@@ -31,6 +32,8 @@ internal sealed class SymptomTaxonomyRepository
         public string[] ExcludeKeywords { get; set; } = [];
         public string ReasonVi { get; set; } = "";
         public int Priority { get; set; }
+        public bool ProductMatchingEnabled { get; set; } = true;
+        public string[] ExtraExcludeKeywords { get; set; } = [];
     }
 
     public sealed class SymptomRiskRow
@@ -135,13 +138,19 @@ internal sealed class SymptomTaxonomyRepository
                 rf.safety_level AS SafetyLevel,
                 rf.severity AS Severity
             FROM pharmacy_consultation_risk_flag rf
-            WHERE rf.is_active = TRUE
+            WHERE rf.publication_status = 'PUBLISHED'
               AND rf.id IN (
                   SELECT DISTINCT sr.risk_flag_id
                   FROM pharmacy_symptom s
                   INNER JOIN pharmacy_symptom_risk_rule sr
-                      ON sr.symptom_id = s.id AND sr.is_active = TRUE
-                  WHERE s.is_active = TRUE AND s.code = ANY(@Codes)
+                      ON sr.symptom_id = s.id
+                  WHERE s.is_active = TRUE
+                    AND s.code = ANY(@Codes)
+                    AND sr.risk_flag_id IN (
+                        SELECT id
+                        FROM pharmacy_consultation_risk_flag
+                        WHERE publication_status = 'PUBLISHED'
+                    )
               )
             ORDER BY rf.sort_order
             """;
@@ -159,33 +168,102 @@ internal sealed class SymptomTaxonomyRepository
     }
 
     public async Task<IReadOnlyList<KnowledgeRuleRow>> GetKnowledgeRulesAsync(
+        Guid tenantId,
         IReadOnlyList<string> symptomCodes,
         CancellationToken ct)
     {
-        if (symptomCodes.Count == 0)
+        if (tenantId == Guid.Empty || symptomCodes.Count == 0)
             return [];
 
-        const string sql = """
+        var sql = """
             SELECT
-                kr.rule_code AS RuleCode,
+                v.rule_code AS RuleCode,
                 s.code AS SymptomCode,
-                kr.category_codes AS CategoryCodes,
-                kr.keywords AS Keywords,
-                kr.exclude_keywords AS ExcludeKeywords,
-                kr.reason_vi AS ReasonVi,
-                kr.priority AS Priority
-            FROM pharmacy_knowledge_rule kr
-            LEFT JOIN pharmacy_symptom s ON s.id = kr.symptom_id
-            WHERE kr.is_active = TRUE
-              AND (kr.effective_to IS NULL OR kr.effective_to >= CURRENT_DATE)
-              AND kr.effective_from <= CURRENT_DATE
+                v.category_codes AS CategoryCodes,
+                v.keywords AS Keywords,
+                v.exclude_keywords AS ExcludeKeywords,
+                v.reason_vi AS ReasonVi,
+                GREATEST(
+                    v.priority,
+                    CASE
+                        WHEN p.rule_version = a.rule_version THEN COALESCE(p.priority_override, v.priority)
+                        ELSE v.priority
+                    END
+                ) AS Priority,
+                CASE
+                    WHEN p.rule_version = a.rule_version THEN COALESCE(p.product_matching_enabled, TRUE)
+                    ELSE TRUE
+                END AS ProductMatchingEnabled,
+                CASE
+                    WHEN p.rule_version = a.rule_version THEN COALESCE(p.extra_exclude_keywords, '{}')
+                    ELSE '{}'::text[]
+                END AS ExtraExcludeKeywords
+            FROM pharmacy_knowledge_adoption a
+            INNER JOIN pharmacy_knowledge_rule_version v
+                ON v.rule_code = a.rule_code AND v.version = a.rule_version
+            LEFT JOIN pharmacy_symptom s ON s.id = v.symptom_id
+            LEFT JOIN pharmacy_tenant_knowledge_policy p ON p.adoption_id = a.id
+            WHERE 
+            """ + PharmacyKnowledgeCopilotQuery.TenantPublishedPin + """
+              AND 
+            """ + PharmacyKnowledgeCopilotQuery.ExcludeUnverifiedCatchAll + """
+              AND (v.effective_to IS NULL OR v.effective_to >= CURRENT_DATE)
+              AND v.effective_from <= CURRENT_DATE
               AND (s.code IS NULL OR s.code = ANY(@Codes))
-            ORDER BY kr.priority, kr.rule_code
+            ORDER BY 7, v.rule_code
             """;
 
-        await using var conn = await _db.CreateOpenConnectionAsync(ct);
-        var rows = await conn.QueryAsync<KnowledgeRuleRow>(sql, new { Codes = symptomCodes.ToArray() });
-        return rows.ToList();
+        try
+        {
+            await using var conn = await _db.CreateOpenConnectionAsync(ct);
+            var rows = await conn.QueryAsync<KnowledgeRuleRow>(sql, new
+            {
+                TenantId = tenantId,
+                Codes = symptomCodes.ToArray(),
+            });
+            var pinned = rows.ToList();
+            var covered = pinned
+                .Select(row => row.SymptomCode)
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var missing = symptomCodes
+                .Where(code => !string.IsNullOrWhiteSpace(code) && !covered.Contains(code))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (missing.Length == 0)
+                return pinned;
+
+            var baseline = await conn.QueryAsync<KnowledgeRuleRow>(
+                """
+                SELECT
+                    r.rule_code AS RuleCode,
+                    s.code AS SymptomCode,
+                    r.category_codes AS CategoryCodes,
+                    r.keywords AS Keywords,
+                    r.exclude_keywords AS ExcludeKeywords,
+                    r.reason_vi AS ReasonVi,
+                    r.priority AS Priority,
+                    TRUE AS ProductMatchingEnabled,
+                    '{}'::text[] AS ExtraExcludeKeywords
+                FROM pharmacy_knowledge_rule r
+                INNER JOIN pharmacy_symptom s ON s.id = r.symptom_id
+                WHERE r.is_active = TRUE
+                  AND r.approval_status = 'APPROVED'
+                  AND r.rule_code <> 'KR_OTHER'
+                  AND cardinality(r.keywords) > 0
+                  AND (r.effective_to IS NULL OR r.effective_to >= CURRENT_DATE)
+                  AND r.effective_from <= CURRENT_DATE
+                  AND s.code = ANY(@Missing)
+                ORDER BY r.priority, r.rule_code
+                """,
+                new { Missing = missing });
+            pinned.AddRange(baseline);
+            return pinned;
+        }
+        catch (PostgresException ex) when (ex.SqlState is PostgresErrorCodes.UndefinedColumn or PostgresErrorCodes.UndefinedTable)
+        {
+            return [];
+        }
     }
 
     public async Task<IReadOnlyList<string>> GetOtcAssistSymptomCodesAsync(

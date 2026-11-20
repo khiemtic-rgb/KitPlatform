@@ -14,7 +14,6 @@ internal sealed class SalesService : ISalesService
     private readonly ICurrentUserAccessor _user;
     private readonly IAuditEngine _audit;
     private readonly IBranchAccessService _branchAccess;
-    private readonly IPermissionEngine _permissions;
 
     public SalesService(
         SalesRepository repository,
@@ -23,8 +22,7 @@ internal sealed class SalesService : ISalesService
         ITenantContext tenant,
         ICurrentUserAccessor user,
         IAuditEngine audit,
-        IBranchAccessService branchAccess,
-        IPermissionEngine permissions)
+        IBranchAccessService branchAccess)
     {
         _repository = repository;
         _loyaltyPos = loyaltyPos;
@@ -33,11 +31,16 @@ internal sealed class SalesService : ISalesService
         _user = user;
         _audit = audit;
         _branchAccess = branchAccess;
-        _permissions = permissions;
     }
 
-    private SalesDiscountPolicy DiscountPolicy => _permissions.GetSalesDiscountPolicy();
-    private bool AllowPriceOverride => _permissions.GetSalesPriceOverridePolicy().CanOverride;
+    private SalesDiscountPolicy DiscountPolicy =>
+        SalesDiscountPolicy.FromPermissions(_user.Permissions, _user.IsInRole("ADMIN"));
+
+    private bool AllowPriceOverride =>
+        SalesPriceOverridePolicy.FromPermissions(
+            _user.Permissions,
+            _user.IsInRole("ADMIN"),
+            _user.IsInRole("MANAGER")).CanOverride;
 
     public Task<PagedCustomerSearchResult> SearchCustomersAsync(
         string? search = null,
@@ -125,10 +128,17 @@ internal sealed class SalesService : ISalesService
         CancellationToken cancellationToken = default)
     {
         filter ??= new SalesOrderListFilter();
-        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
+        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(filter.WarehouseId, cancellationToken);
         var (items, total) = await _repository.GetSalesOrdersAsync(filter, allowed, cancellationToken);
         return new SalesOrderPagedListResult(
             items, total, Math.Max(1, filter.Page), Math.Clamp(filter.PageSize, 1, 100));
+    }
+
+    public async Task<IReadOnlyList<SalesSellerLookupDto>> ListSalesSellersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var (_, allowed) = await _branchAccess.ResolveWarehouseQueryAsync(null, cancellationToken);
+        return await _repository.ListSalesSellersAsync(allowed, cancellationToken);
     }
 
     public async Task<SalesOrderDetailDto?> GetOrderAsync(Guid id, CancellationToken cancellationToken = default)
@@ -139,20 +149,48 @@ internal sealed class SalesService : ISalesService
         return order;
     }
 
+    public async Task<SalesOrderDetailDto?> FindSaleByClientSaleIdAsync(
+        string? clientSaleId,
+        CancellationToken cancellationToken = default)
+    {
+        var orderId = await _repository.FindCommittedSaleIdByClientSaleIdAsync(clientSaleId, cancellationToken);
+        if (orderId is null)
+            return null;
+        return await GetOrderAsync(orderId.Value, cancellationToken);
+    }
+
     public async Task<SalesOrderDetailDto> CreateSaleAsync(
         CreateSaleRequest request,
         CancellationToken cancellationToken = default)
     {
         await _branchAccess.EnsureWarehouseAccessAsync(request.WarehouseId, cancellationToken);
-        var id = request.SaveAsDraft
-            ? await _repository.CreateDraftSaleAsync(request, _tenant.UserId, DiscountPolicy, AllowPriceOverride, cancellationToken)
-            : await _repository.CreateCompletedSaleAsync(request, _tenant.UserId, DiscountPolicy, AllowPriceOverride, cancellationToken);
-        var order = (await _repository.GetSalesOrderAsync(id, cancellationToken, freshSale: !request.SaveAsDraft))!;
+        if (request.SaveAsDraft)
+        {
+            var draftId = await _repository.CreateDraftSaleAsync(
+                request, _tenant.UserId, DiscountPolicy, AllowPriceOverride, cancellationToken);
+            var draft = (await _repository.GetSalesOrderAsync(draftId, cancellationToken))!;
+            await _audit.WriteAsync(
+                "sales_order",
+                draftId,
+                "draft_create",
+                new { draft.OrderNumber, draft.TotalAmount, draft = true, warehouseId = draft.WarehouseId },
+                cancellationToken);
+            await WritePosDiscountAuditIfNeededAsync(draft, cancellationToken);
+            return draft;
+        }
+
+        var created = await _repository.CreateCompletedSaleAsync(
+            request, _tenant.UserId, DiscountPolicy, AllowPriceOverride, cancellationToken);
+        var order = await _repository.GetSalesOrderAsync(created.OrderId, cancellationToken, freshSale: true)
+            ?? throw new InvalidOperationException("Không đọc lại được đơn bán vừa tạo.");
+        if (created.Replayed)
+            return order with { IdempotentReplay = true };
+
         await _audit.WriteAsync(
             "sales_order",
-            id,
-            request.SaveAsDraft ? "draft_create" : "complete",
-            new { order.OrderNumber, order.TotalAmount, draft = request.SaveAsDraft, warehouseId = order.WarehouseId },
+            created.OrderId,
+            "complete",
+            new { order.OrderNumber, order.TotalAmount, draft = false, warehouseId = order.WarehouseId },
             cancellationToken);
         await WritePosDiscountAuditIfNeededAsync(order, cancellationToken);
         return order;
@@ -191,9 +229,12 @@ internal sealed class SalesService : ISalesService
         if (existing is null) return null;
         await _branchAccess.EnsureWarehouseAccessAsync(existing.WarehouseId, cancellationToken);
         var completed = await _repository.CompleteDraftSaleAsync(id, request, DiscountPolicy, AllowPriceOverride, cancellationToken);
-        if (!completed) return null;
+        if (completed == DraftCompletionOutcome.NotFound)
+            return null;
         var order = await _repository.GetSalesOrderAsync(id, cancellationToken, freshSale: true);
-        if (order is not null)
+        if (order is null)
+            return null;
+        if (completed == DraftCompletionOutcome.CompletedNow)
         {
             await _audit.WriteAsync(
                 "sales_order",
@@ -230,22 +271,26 @@ internal sealed class SalesService : ISalesService
         var order = await _repository.GetSalesOrderAsync(salesOrderId, cancellationToken)
             ?? throw new InvalidOperationException("Đơn bán không tồn tại.");
         await _branchAccess.EnsureWarehouseAccessAsync(order.WarehouseId, cancellationToken);
-        var returnId = await _repository.CreateSaleReturnAsync(salesOrderId, request, cancellationToken);
-        var detail = (await _repository.GetSaleReturnAsync(returnId, cancellationToken))!;
-        await _audit.WriteAsync(
-            "sales_return",
-            returnId,
-            "complete",
-            new
-            {
-                detail.ReturnNumber,
-                detail.OrderNumber,
-                detail.TotalRefund,
-                salesOrderId,
-                warehouseId = order.WarehouseId,
-            },
-            cancellationToken);
-        return detail;
+        var created = await _repository.CreateSaleReturnAsync(salesOrderId, request, cancellationToken);
+        var detail = (await _repository.GetSaleReturnAsync(created.ReturnId, cancellationToken))!;
+        if (!created.Replayed)
+        {
+            await _audit.WriteAsync(
+                "sales_return",
+                created.ReturnId,
+                "complete",
+                new
+                {
+                    detail.ReturnNumber,
+                    detail.OrderNumber,
+                    detail.TotalRefund,
+                    salesOrderId,
+                    warehouseId = order.WarehouseId,
+                },
+                cancellationToken);
+        }
+
+        return detail with { Replayed = created.Replayed };
     }
 
     public async Task<SalesReturnDetailDto?> GetSaleReturnAsync(Guid id, CancellationToken cancellationToken = default)

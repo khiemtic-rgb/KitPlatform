@@ -241,7 +241,9 @@ public sealed class LearningController : ControllerBase
             || string.Equals(scope, "mine", StringComparison.OrdinalIgnoreCase);
         try
         {
-            return Ok(await _progress.ListRecognitionsAsync(take, mineOnly, cancellationToken));
+            var canSeePrivate = User.IsInRole("ADMIN")
+                || User.HasClaim("permission", "learning.write");
+            return Ok(await _progress.ListRecognitionsAsync(take, mineOnly, cancellationToken, canSeePrivate));
         }
         catch (InvalidOperationException ex)
         {
@@ -403,8 +405,22 @@ public sealed class LearningController : ControllerBase
         CancellationToken cancellationToken)
     {
         var item = await _progress.GetEmployeeEvidenceAsync(employeeId, cancellationToken);
-        return item is null ? NotFound() : Ok(item);
+        if (item is null)
+            return NotFound();
+        // Revenue follows the reports gate, not learning.write.
+        var canSeeRevenue = User.IsInRole("ADMIN")
+            || User.HasClaim("permission", "reports.read")
+            || User.HasClaim("permission", "reports.export");
+        return Ok(canSeeRevenue ? item : item with { SalesNetThisMonth = null });
     }
+
+    [HttpGet("gaps")]
+    [Authorize(Policy = LearningPolicies.Write)]
+    [ProducesResponseType(typeof(LearningGapReportDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<LearningGapReportDto>> GapReport(
+        [FromQuery] int? days,
+        CancellationToken cancellationToken) =>
+        Ok(await _progress.GetGapReportAsync(days, cancellationToken));
 
     [HttpPost("modules/{id:guid}/start")]
     [Authorize(Policy = LearningPolicies.Read)]

@@ -17,7 +17,8 @@ export type ClassifiedBadge = LearningBadge & {
 export type StriveGoal = {
   key: string;
   title: string;
-  pct: number;
+  /** Điểm quiz lần gần nhất (thật); null = chưa có dữ liệu. */
+  pct: number | null;
   hint: string;
 };
 
@@ -107,9 +108,9 @@ export function buildCompetencyProfile(
   const currentLevel =
     passedLevels.length > 0 ? passedLevels[passedLevels.length - 1] : modules[0]?.levelCode?.toUpperCase() ?? '—';
 
-  const total = modules.length || 1;
   const passed = modules.filter((m) => m.status === 'passed').length;
-  const competencyScore = Math.round((100 * passed) / total);
+  /** % bài đã đạt trong lộ trình được giao; null khi chưa có lộ trình. */
+  const competencyScore = modules.length ? Math.round((100 * passed) / modules.length) : null;
 
   const striving: StriveGoal[] = modules
     .filter((m) => m.status !== 'passed')
@@ -120,15 +121,15 @@ export function buildCompetencyProfile(
         levelCode: m.levelCode,
         title: m.title,
       });
-      let pct = 10;
-      if (m.status === 'in_progress') pct = 55;
-      if (m.status === 'failed') pct = Math.max(25, Math.min(70, m.scorePct ?? 35));
-      if (m.acknowledgedAt && m.status !== 'passed') pct = Math.max(pct, 40);
+      const lastScore = m.quizAttempts > 0 && m.scorePct != null ? m.scorePct : null;
       return {
         key: m.moduleId,
         title: `${m.levelCode} · ${m.title}`,
-        pct,
-        hint: `Còn ~${meta.minutes} phút`,
+        pct: lastScore,
+        hint:
+          lastScore != null
+            ? `Điểm lần gần nhất · còn ~${meta.minutes} phút`
+            : `Chưa có dữ liệu · còn ~${meta.minutes} phút`,
       };
     });
 

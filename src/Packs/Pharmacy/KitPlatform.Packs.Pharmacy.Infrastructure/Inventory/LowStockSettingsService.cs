@@ -36,6 +36,15 @@ internal sealed class LowStockSettingsService : ILowStockSettingsService
         var tenantDefault = await _tenantSettings.GetDefaultMinStockAsync(cancellationToken);
         var scope = await _branchAccess.GetScopeAsync(cancellationToken);
 
+        const string emailSql = """
+            SELECT NULLIF(settings->>'low_stock_notification_email', '')
+            FROM tenants
+            WHERE id = @TenantId
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var notificationEmail = await conn.QuerySingleOrDefaultAsync<string?>(emailSql, new { TenantId = _tenant.TenantId });
+
         const string sql = """
             SELECT
                 c.id AS Id,
@@ -49,7 +58,6 @@ internal sealed class LowStockSettingsService : ILowStockSettingsService
             ORDER BY c.sort_order, c.category_name
             """;
 
-        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
         var categories = (await conn.QueryAsync<CategoryLowStockSettingDto>(sql, new { TenantId = _tenant.TenantId })).ToList();
 
         const string warehouseSql = """
@@ -75,6 +83,7 @@ internal sealed class LowStockSettingsService : ILowStockSettingsService
         return new LowStockSettingsDto(
             tenantDefault.DefaultMinStockQty,
             LowStockThresholdSql.SystemFallback,
+            notificationEmail,
             categories,
             warehouses);
     }
@@ -230,6 +239,33 @@ internal sealed class LowStockSettingsService : ILowStockSettingsService
         {
             WarehouseId = warehouseId,
             TenantId = _tenant.TenantId,
+        });
+    }
+
+    public async Task UpdateNotificationEmailAsync(
+        UpdateLowStockNotificationEmailRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var email = LowStockNotificationEmail.Normalize(request.NotificationEmail);
+        const string sql = """
+            UPDATE tenants
+            SET settings = CASE
+                WHEN @Email IS NULL THEN COALESCE(settings, '{}'::jsonb) - 'low_stock_notification_email'
+                ELSE jsonb_set(
+                    COALESCE(settings, '{}'::jsonb),
+                    '{low_stock_notification_email}',
+                    to_jsonb(@Email::text),
+                    true)
+            END,
+            updated_at = NOW()
+            WHERE id = @TenantId
+            """;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        await conn.ExecuteAsync(sql, new
+        {
+            TenantId = _tenant.TenantId,
+            Email = email,
         });
     }
 }
