@@ -11,7 +11,7 @@ internal sealed class PurchaseOrderService : IPurchaseOrderService
     private readonly ITenantContext _tenant;
     private readonly IAuditEngine _audit;
     private readonly IBranchAccessService _branchAccess;
-    private readonly IWorkflowEngine _workflow;
+    private readonly KitPlatform.Packs.Pharmacy.Workflow.IWorkflowEngine _workflow;
     private readonly ICurrentUserAccessor _user;
 
     public PurchaseOrderService(
@@ -19,7 +19,7 @@ internal sealed class PurchaseOrderService : IPurchaseOrderService
         ITenantContext tenant,
         IAuditEngine audit,
         IBranchAccessService branchAccess,
-        IWorkflowEngine workflow,
+        KitPlatform.Packs.Pharmacy.Workflow.IWorkflowEngine workflow,
         ICurrentUserAccessor user)
     {
         _repository = repository;

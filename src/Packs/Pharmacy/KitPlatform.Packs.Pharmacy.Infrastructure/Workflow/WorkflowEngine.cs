@@ -8,7 +8,7 @@ using KitPlatform.Infrastructure.Data;
 
 namespace KitPlatform.Packs.Pharmacy.Infrastructure;
 
-internal sealed class WorkflowEngine : IWorkflowEngine
+internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWorkflowEngine
 {
     private const string PosDiscountOverrideCode = "pos_discount_override";
     private const string PurchaseOrderApproveCode = "purchase_order_approve";

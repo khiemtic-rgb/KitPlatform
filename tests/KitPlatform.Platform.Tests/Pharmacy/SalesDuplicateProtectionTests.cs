@@ -708,7 +708,7 @@ public sealed class SalesDuplicateProtectionTests
                 .ReturnsAsync(TenantBatchMode.Off);
             settings.Setup(s => s.GetRxSettingsAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TenantRxSettingsDto("off", false));
-            var workflow = new Mock<IWorkflowEngine>();
+            var workflow = new Mock<KitPlatform.Packs.Pharmacy.Workflow.IWorkflowEngine>();
             workflow.Setup(w => w.EnforcePosDiscountApprovalAsync(
                     It.IsAny<SaleOrderPricingResult>(),
                     It.IsAny<SalesDiscountPolicy>(),
