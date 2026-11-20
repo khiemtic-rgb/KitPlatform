@@ -626,6 +626,28 @@ const PRIORITY_AREA: Record<string, string | null> = {
 
 const STAFF_ONLY = new Set(['O2', 'O3']);
 
+/** Câu trả lời rẽ nhánh (điều anh/chị lo nhất) kéo việc tương ứng lên trước. */
+const CONCERN_QUESTIONS: Record<string, string[]> = {
+  WHY_STOCKOUT: ['I3', 'I4'],
+  WHY_FORGET: ['C3', 'C4'],
+  NEAR_WAIT: ['I1'],
+  NEAR_NONE: ['I1'],
+  NEAR_RETURN: ['I1'],
+  STAFF_TURNOVER: ['O2'],
+  STAFF_ADVICE: ['O3'],
+  STAFF_PASSIVE: ['O1'],
+  STAFF_CONTROL: ['O4', 'I5'],
+  NUM_MARGIN: ['B1'],
+  NUM_STOCK: ['I3', 'I4'],
+  NUM_CUSTOMER: ['C5'],
+  NUM_STAFF: ['O4'],
+  INSP_RECORDS: ['O5'],
+  INSP_STORAGE: ['O5'],
+  INSP_NONE_YET: ['O5'],
+  OPEN_6M: ['G2', 'O1'],
+  OPEN_12M: ['G2'],
+};
+
 const AREA_NAMES: Record<string, string> = {
   CUSTOMER: 'Khách hàng',
   INVENTORY: 'Kho và hạn dùng',
@@ -755,7 +777,7 @@ const CONCERN: Record<string, (a: Answers) => string | null> = {
       NEAR_WAIT:
         'Hiện hàng cận hạn đang để tới khi hết hạn rồi hủy. Chỉ cần thấy sớm 2–3 tháng là có thể giảm giá bán trước hoặc trả nhà cung cấp, thay vì mất trắng.',
       NEAR_RETURN:
-        'Anh/chị đang trả nhà cung cấp khi được. Phần còn lại là thấy hàng cận hạn đủ sớm, trước hạn mà nhà cung cấp còn nhận trả.',
+        'Hiện anh/chị đang trả nhà cung cấp khi được. Phần còn lại là thấy hàng cận hạn đủ sớm, trước hạn mà nhà cung cấp còn nhận trả.',
       NEAR_PUSH:
         'Anh/chị đã giảm giá và ưu tiên bán trước hàng cận hạn, đó là cách đúng. Việc còn lại là thấy sớm hơn, và nhập vừa đủ để ít hàng rơi vào cận hạn.',
       NEAR_NONE:
@@ -764,13 +786,13 @@ const CONCERN: Record<string, (a: Answers) => string | null> = {
   PAIN_STAFF: (a) =>
     ({
       STAFF_TURNOVER:
-        'Nhân viên nghỉ nhiều thì mỗi lần tuyển lại là kèm lại từ đầu. Viết sẵn việc tuần đầu và cách tư vấn các bệnh hay gặp giúp người mới quen việc nhanh, anh/chị đỡ phải kèm.',
+        'Anh/chị cho biết khó nhất là nhân viên hay nghỉ việc. Nhân viên nghỉ nhiều thì mỗi lần tuyển lại là kèm lại từ đầu. Viết sẵn việc tuần đầu và cách tư vấn các bệnh hay gặp giúp người mới quen việc nhanh, anh/chị đỡ phải kèm.',
       STAFF_ADVICE:
-        'Muốn nhân viên tư vấn tốt và giống nhau, cần một tờ hướng dẫn chung cho các bệnh hay gặp, không chỉ dựa vào kinh nghiệm từng người.',
+        'Anh/chị cho biết khó nhất là nhân viên tư vấn chưa tốt. Muốn nhân viên tư vấn tốt và giống nhau, cần một tờ hướng dẫn chung cho các bệnh hay gặp, không chỉ dựa vào kinh nghiệm từng người.',
       STAFF_PASSIVE:
-        'Nhân viên phải nhắc từng việc thường là vì việc chưa được viết ra. Một bảng việc đầu ca, cuối ca có ghi tên người làm sẽ đỡ phải nhắc.',
+        'Anh/chị cho biết khó nhất là nhân viên phải nhắc từng việc. Nhân viên phải nhắc từng việc thường là vì việc chưa được viết ra. Một bảng việc đầu ca, cuối ca có ghi tên người làm sẽ đỡ phải nhắc.',
       STAFF_CONTROL:
-        'Khó kiểm soát tiền và hàng thì bắt đầu từ hai việc: chốt tiền cuối mỗi ca, và mỗi tuần kiểm kê một nhóm thuốc.',
+        'Anh/chị cho biết khó nhất là kiểm soát tiền và hàng. Nên bắt đầu từ hai việc: chốt tiền cuối mỗi ca, và mỗi tuần kiểm kê một nhóm thuốc.',
     })[a.O7 ?? ''] ?? null,
   PAIN_NUMBERS: (a) =>
     ({
@@ -849,6 +871,8 @@ export function buildOwnerReport(
   const hasSoftware = a.T1 === 'OPT3' || a.T1 === 'OPT4';
   const ctx: Ctx = { a, solo, hasSoftware };
   const painQs = new Set(PAIN_QUESTIONS[a.P3 ?? ''] ?? []);
+  const branch = ({ PAIN_CUSTOMER: a.C6, PAIN_INVENTORY: a.I7, PAIN_STAFF: a.O7, PAIN_NUMBERS: a.B5, PAIN_COMPLIANCE: a.O6, PAIN_GROWTH: a.G3 } as Record<string, string | undefined>)[a.P3 ?? ''];
+  const concernQs = new Set(CONCERN_QUESTIONS[branch ?? ''] ?? []);
   const priorityArea = PRIORITY_AREA[a.G5 ?? ''] ?? null;
   const painLeak = (l: OwnerLeak) => painQs.has(LEAK_QUESTION[l.code]) || (priorityArea === 'INVENTORY');
   const leaks = buildLeaks(a).sort((x, y) => Number(painLeak(y)) - Number(painLeak(x)) || y.amount - x.amount);
@@ -865,6 +889,7 @@ export function buildOwnerReport(
       if (painQs.has(code)) p *= 1.6;
       if (copy.area === priorityArea) p *= 1.25;
       if (bigLeak.has(code)) p *= 1.3;
+      if (concernQs.has(code)) p *= 1.5;
       return { code, copy, opt: opt as Opt, p, order };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null)

@@ -8,15 +8,15 @@
     },
     "PAIN_INVENTORY": {
       "NEAR_WAIT": "Hiện hàng cận hạn đang để tới khi hết hạn rồi hủy. Chỉ cần thấy sớm 2–3 tháng là có thể giảm giá bán trước hoặc trả nhà cung cấp, thay vì mất trắng.",
-      "NEAR_RETURN": "Anh/chị đang trả nhà cung cấp khi được. Phần còn lại là thấy hàng cận hạn đủ sớm, trước hạn mà nhà cung cấp còn nhận trả.",
+      "NEAR_RETURN": "Hiện anh/chị đang trả nhà cung cấp khi được. Phần còn lại là thấy hàng cận hạn đủ sớm, trước hạn mà nhà cung cấp còn nhận trả.",
       "NEAR_PUSH": "Anh/chị đã giảm giá và ưu tiên bán trước hàng cận hạn, đó là cách đúng. Việc còn lại là thấy sớm hơn, và nhập vừa đủ để ít hàng rơi vào cận hạn.",
       "NEAR_NONE": "Hiện chưa có cách làm thống nhất cho hàng cận hạn. Nên chốt một quy tắc chung: còn 3 tháng thì dán nhãn và bán trước, còn 2 tháng thì hỏi trả nhà cung cấp."
     },
     "PAIN_STAFF": {
-      "STAFF_TURNOVER": "Nhân viên nghỉ nhiều thì mỗi lần tuyển lại là kèm lại từ đầu. Viết sẵn việc tuần đầu và cách tư vấn các bệnh hay gặp giúp người mới quen việc nhanh, anh/chị đỡ phải kèm.",
-      "STAFF_ADVICE": "Muốn nhân viên tư vấn tốt và giống nhau, cần một tờ hướng dẫn chung cho các bệnh hay gặp, không chỉ dựa vào kinh nghiệm từng người.",
-      "STAFF_PASSIVE": "Nhân viên phải nhắc từng việc thường là vì việc chưa được viết ra. Một bảng việc đầu ca, cuối ca có ghi tên người làm sẽ đỡ phải nhắc.",
-      "STAFF_CONTROL": "Khó kiểm soát tiền và hàng thì bắt đầu từ hai việc: chốt tiền cuối mỗi ca, và mỗi tuần kiểm kê một nhóm thuốc."
+      "STAFF_TURNOVER": "Anh/chị cho biết khó nhất là nhân viên hay nghỉ việc. Nhân viên nghỉ nhiều thì mỗi lần tuyển lại là kèm lại từ đầu. Viết sẵn việc tuần đầu và cách tư vấn các bệnh hay gặp giúp người mới quen việc nhanh, anh/chị đỡ phải kèm.",
+      "STAFF_ADVICE": "Anh/chị cho biết khó nhất là nhân viên tư vấn chưa tốt. Muốn nhân viên tư vấn tốt và giống nhau, cần một tờ hướng dẫn chung cho các bệnh hay gặp, không chỉ dựa vào kinh nghiệm từng người.",
+      "STAFF_PASSIVE": "Anh/chị cho biết khó nhất là nhân viên phải nhắc từng việc. Nhân viên phải nhắc từng việc thường là vì việc chưa được viết ra. Một bảng việc đầu ca, cuối ca có ghi tên người làm sẽ đỡ phải nhắc.",
+      "STAFF_CONTROL": "Anh/chị cho biết khó nhất là kiểm soát tiền và hàng. Nên bắt đầu từ hai việc: chốt tiền cuối mỗi ca, và mỗi tuần kiểm kê một nhóm thuốc."
     },
     "PAIN_NUMBERS": {
       "NUM_MARGIN": "Anh/chị muốn mỗi ngày thấy tiền lãi. Bước đầu là tính được lãi theo tháng bằng 4 con số; quen rồi thì làm theo tuần, theo ngày.",

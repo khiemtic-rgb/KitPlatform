@@ -139,6 +139,27 @@ public static class KapV2OwnerReportBuilder
     private static readonly Catalog Data = Load();
     private static readonly HashSet<string> StaffOnly = new(Data.StaffOnly, StringComparer.Ordinal);
     private static readonly string[] AreaOrder = ["CUSTOMER", "INVENTORY", "OPERATIONS", "BUSINESS", "TECH", "GROWTH"];
+    private static readonly Dictionary<string, string[]> ConcernQuestions = new(StringComparer.Ordinal)
+    {
+        ["WHY_STOCKOUT"] = ["I3", "I4"],
+        ["WHY_FORGET"] = ["C3", "C4"],
+        ["NEAR_WAIT"] = ["I1"],
+        ["NEAR_NONE"] = ["I1"],
+        ["NEAR_RETURN"] = ["I1"],
+        ["STAFF_TURNOVER"] = ["O2"],
+        ["STAFF_ADVICE"] = ["O3"],
+        ["STAFF_PASSIVE"] = ["O1"],
+        ["STAFF_CONTROL"] = ["O4", "I5"],
+        ["NUM_MARGIN"] = ["B1"],
+        ["NUM_STOCK"] = ["I3", "I4"],
+        ["NUM_CUSTOMER"] = ["C5"],
+        ["NUM_STAFF"] = ["O4"],
+        ["INSP_RECORDS"] = ["O5"],
+        ["INSP_STORAGE"] = ["O5"],
+        ["INSP_NONE_YET"] = ["O5"],
+        ["OPEN_6M"] = ["G2", "O1"],
+        ["OPEN_12M"] = ["G2"],
+    };
 
     public static KapV2OwnerReport Build(
         IReadOnlyDictionary<string, string> answers,
@@ -152,6 +173,9 @@ public static class KapV2OwnerReportBuilder
         if (Data.Pain.TryGetValue(Get(answers, "P3") ?? "", out var painList))
             foreach (var q in painList) painQs.Add(q);
         Data.Priority.TryGetValue(Get(answers, "G5") ?? "", out var priorityArea);
+        var concernQs = new HashSet<string>(StringComparer.Ordinal);
+        if (ConcernBranch(answers) is { } branch && ConcernQuestions.TryGetValue(branch, out var concernList))
+            foreach (var q in concernList) concernQs.Add(q);
 
         bool PainLeak(LeakWork l) =>
             painQs.Contains(LeakQuestion(l.Code)) || priorityArea == "INVENTORY";
@@ -176,6 +200,7 @@ public static class KapV2OwnerReportBuilder
             if (painQs.Contains(copy.Code)) p *= 1.6;
             if (copy.Area == priorityArea) p *= 1.25;
             if (bigLeak.Contains(copy.Code)) p *= 1.3;
+            if (concernQs.Contains(copy.Code)) p *= 1.5;
             ranked.Add(new Ranked(copy, opt!, p, order));
         }
         ranked.Sort((x, y) =>
@@ -396,6 +421,18 @@ public static class KapV2OwnerReportBuilder
         }
         return leaks;
     }
+
+    private static string? ConcernBranch(IReadOnlyDictionary<string, string> answers) =>
+        Get(answers, "P3") switch
+        {
+            "PAIN_CUSTOMER" => Get(answers, "C6"),
+            "PAIN_INVENTORY" => Get(answers, "I7"),
+            "PAIN_STAFF" => Get(answers, "O7"),
+            "PAIN_NUMBERS" => Get(answers, "B5"),
+            "PAIN_COMPLIANCE" => Get(answers, "O6"),
+            "PAIN_GROWTH" => Get(answers, "G3"),
+            _ => null,
+        };
 
     private static string? ConcernText(IReadOnlyDictionary<string, string> a)
     {
