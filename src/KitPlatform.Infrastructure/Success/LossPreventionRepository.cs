@@ -48,7 +48,9 @@ internal sealed class LossPreventionRepository
             decimal? ExpectedCash,
             decimal? CashVariance,
             DateTime OpenedAt,
-            DateTime? ClosedAt)>(
+            DateTime? ClosedAt,
+            string? OpenedByName,
+            string? ClosedByName)>(
             $"""
             SELECT
                 s.id AS ShiftId,
@@ -63,10 +65,13 @@ internal sealed class LossPreventionRepository
                 s.expected_cash AS ExpectedCash,
                 s.cash_variance AS CashVariance,
                 s.opened_at AS OpenedAt,
-                s.closed_at AS ClosedAt
+                s.closed_at AS ClosedAt,
+                COALESCE(eo.full_name, uo.username) AS OpenedByName,
+                COALESCE(ec.full_name, uc.username) AS ClosedByName
             FROM sales_shifts s
             INNER JOIN warehouses w ON w.id = s.warehouse_id AND w.tenant_id = s.tenant_id
             INNER JOIN branches b ON b.id = w.branch_id AND b.tenant_id = s.tenant_id
+            {ShiftActorJoins}
             WHERE s.tenant_id = @TenantId
               AND (
                     s.status = @Open
@@ -110,9 +115,65 @@ internal sealed class LossPreventionRepository
                 abs,
                 isAlert,
                 r.OpenedAt,
-                r.ClosedAt);
+                r.ClosedAt,
+                r.OpenedByName,
+                r.ClosedByName);
         }).ToList();
     }
+
+    /// <summary>Closed shifts in [from, to) by closed_at, with closer display name (for per-closer grouping).</summary>
+    public async Task<IReadOnlyList<CashVarianceShiftSample>> ListClosedShiftVarianceSamplesAsync(
+        DateTime fromUtc,
+        DateTime toUtc,
+        Guid? branchId,
+        Guid[]? allowedWarehouseIds,
+        CancellationToken cancellationToken)
+    {
+        var branchFilter = branchId is not null ? "AND w.branch_id = @BranchId" : string.Empty;
+        var warehouseFilter = allowedWarehouseIds is { Length: > 0 }
+            ? "AND s.warehouse_id = ANY(@AllowedWarehouseIds)"
+            : string.Empty;
+
+        await using var conn = await _db.CreateOpenConnectionAsync(cancellationToken);
+        var rows = await conn.QueryAsync<(Guid? CloserUserId, string? CloserName, decimal? CashVariance)>(
+            $"""
+            SELECT
+                s.closed_by AS CloserUserId,
+                COALESCE(ec.full_name, uc.username) AS CloserName,
+                s.cash_variance AS CashVariance
+            FROM sales_shifts s
+            INNER JOIN warehouses w ON w.id = s.warehouse_id AND w.tenant_id = s.tenant_id
+            {ShiftActorJoins}
+            WHERE s.tenant_id = @TenantId
+              AND s.status = @Closed
+              AND s.closed_at >= @FromUtc AND s.closed_at < @ToUtc
+              AND s.cash_variance IS NOT NULL
+              {branchFilter}
+              {warehouseFilter}
+            """,
+            new
+            {
+                TenantId,
+                Closed = SalesShiftStatuses.Closed,
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+                BranchId = branchId,
+                AllowedWarehouseIds = allowedWarehouseIds,
+            });
+        return rows
+            .Select(r => new CashVarianceShiftSample(
+                r.CloserUserId,
+                r.CloserName ?? CashVarianceAccountability.UnknownCloserName,
+                r.CashVariance))
+            .ToList();
+    }
+
+    private const string ShiftActorJoins = """
+        LEFT JOIN users uo ON uo.id = s.opened_by AND uo.tenant_id = s.tenant_id
+        LEFT JOIN employees eo ON eo.id = uo.employee_id AND eo.tenant_id = s.tenant_id
+        LEFT JOIN users uc ON uc.id = s.closed_by AND uc.tenant_id = s.tenant_id
+        LEFT JOIN employees ec ON ec.id = uc.employee_id AND ec.tenant_id = s.tenant_id
+        """;
 
     public async Task<IReadOnlyList<LossEmployeeCancelRowDto>> ListCancellationsByEmployeeAsync(
         DateTime fromUtc,
