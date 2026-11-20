@@ -224,7 +224,7 @@ internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWork
         return taskId;
     }
 
-    public async Task<WorkflowTaskDecisionDto> ApprovePosDiscountTaskAsync(
+    public async Task<KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskDecisionDto> ApprovePosDiscountTaskAsync(
         Guid taskId,
         bool approved,
         string? notes = null,
@@ -320,10 +320,10 @@ internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWork
             new { workflowCode = PosDiscountOverrideCode, decision, notes },
             cancellationToken);
 
-        return new WorkflowTaskDecisionDto(taskId, newTaskStatus, decision, DateTime.UtcNow);
+        return new KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskDecisionDto(taskId, newTaskStatus, decision, DateTime.UtcNow);
     }
 
-    public async Task<IReadOnlyList<WorkflowTaskListItemDto>> ListPendingPosDiscountTasksAsync(
+    public async Task<IReadOnlyList<KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskListItemDto>> ListPendingPosDiscountTasksAsync(
         CancellationToken cancellationToken = default)
     {
         const string sql = """
@@ -363,7 +363,7 @@ internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWork
                     : null;
             }
 
-            return new WorkflowTaskListItemDto(
+            return new KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskListItemDto(
                 r.TaskId, r.InstanceId, r.TaskStatus, r.Decision, r.CreatedAt, summary);
         }).ToList();
     }
@@ -445,14 +445,14 @@ internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWork
         });
     }
 
-    public Task<WorkflowTaskDecisionDto> DecidePurchaseOrderTaskAsync(
+    public Task<KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskDecisionDto> DecidePurchaseOrderTaskAsync(
         Guid taskId,
         bool approved,
         string? notes = null,
         CancellationToken cancellationToken = default) =>
         DecideWorkflowTaskAsync(PurchaseOrderApproveCode, taskId, approved, notes, cancellationToken);
 
-    public Task<IReadOnlyList<WorkflowTaskListItemDto>> ListPendingPurchaseOrderTasksAsync(
+    public Task<IReadOnlyList<KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskListItemDto>> ListPendingPurchaseOrderTasksAsync(
         CancellationToken cancellationToken = default) =>
         ListPendingTasksAsync(PurchaseOrderApproveCode, "poNumber", cancellationToken);
 
@@ -565,7 +565,7 @@ internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWork
         return taskId;
     }
 
-    private async Task<WorkflowTaskDecisionDto> DecideWorkflowTaskAsync(
+    private async Task<KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskDecisionDto> DecideWorkflowTaskAsync(
         string workflowCode,
         Guid taskId,
         bool approved,
@@ -655,10 +655,10 @@ internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWork
 
         await tx.CommitAsync(cancellationToken);
 
-        return new WorkflowTaskDecisionDto(taskId, newTaskStatus, decision, DateTime.UtcNow);
+        return new KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskDecisionDto(taskId, newTaskStatus, decision, DateTime.UtcNow);
     }
 
-    private async Task<IReadOnlyList<WorkflowTaskListItemDto>> ListPendingTasksAsync(
+    private async Task<IReadOnlyList<KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskListItemDto>> ListPendingTasksAsync(
         string workflowCode,
         string summaryField,
         CancellationToken cancellationToken)
@@ -702,7 +702,7 @@ internal sealed class WorkflowEngine : KitPlatform.Packs.Pharmacy.Workflow.IWork
                         : null;
             }
 
-            return new WorkflowTaskListItemDto(
+            return new KitPlatform.Packs.Pharmacy.Workflow.WorkflowTaskListItemDto(
                 r.TaskId, r.InstanceId, r.TaskStatus, r.Decision, r.CreatedAt, summary);
         }).ToList();
     }
