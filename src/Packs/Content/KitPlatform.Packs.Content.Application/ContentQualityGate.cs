@@ -83,7 +83,7 @@ public static class ContentQualityGate
 
             if (kind == "tiktok_script" && len < 80)
                 issues.Add("tiktok_script: quá ngắn");
-            if (kind == "web_long")
+            if (kind == "web_long" && !IsLegalPage(v.Body))
             {
                 if (len < 2200)
                     issues.Add("web_long: quá mỏng — cần bài một luận điểm, khoảng 800–1400 từ");
@@ -95,6 +95,28 @@ public static class ContentQualityGate
         }
 
         return Finalize(issues);
+    }
+
+    private static readonly string[] LegalTitlePrefixes =
+    [
+        "điều khoản", "chính sách quyền riêng tư", "chính sách bảo mật", "terms of service", "privacy policy",
+    ];
+
+    /// <summary>
+    /// Trang pháp lý (Điều khoản / Chính sách quyền riêng tư) là văn bản nguyên văn, ngắn theo bản chất —
+    /// không áp ngưỡng 800–1400 từ và số H2 của bài blog. Nhận diện qua tiêu đề H1 đầu bài.
+    /// </summary>
+    public static bool IsLegalPage(string? body)
+    {
+        foreach (var raw in (body ?? "").Replace("\r\n", "\n").Split('\n'))
+        {
+            var t = raw.Trim();
+            if (t.Length == 0) continue;
+            if (!t.StartsWith("# ", StringComparison.Ordinal)) return false;
+            var title = t[2..].Trim();
+            return LegalTitlePrefixes.Any(p => title.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+        }
+        return false;
     }
 
     public static ContentQualityGateDto Normalize(ContentQualityGateDto gate) =>
