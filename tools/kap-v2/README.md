@@ -55,6 +55,16 @@ python gen_sql.py    # sinh 447_kap_pharmacy_v2.sql -> copy vào migrations/
 
 ## Deploy
 
+Chưa được deploy cả API từ main cho tới khi nhánh `integration-check` đạt đủ ba điều:
+
+1. build solution Release và `client/admin` qua;
+2. test qua;
+3. **0 route thiếu** so với lõi đang chạy trên VPS (`134d7834`).
+
+Trong thời gian đó chỉ thay riêng DLL Survey như đã làm.
+
+Khi được phép deploy cả API, giữ các bước sau:
+
 1. Chỉ build để deploy từ commit đã push lên origin/main. Không build từ cây làm việc có file chưa commit.
 2. Trước khi deploy: chạy `scripts/check-survey-sync.ps1`. Có dòng LOCAL lệch thì commit và push trước.
 3. Deploy xong: ghi VERSION.txt, rồi chạy lại `check-survey-sync.ps1`. Tất cả phải khớp.
