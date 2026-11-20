@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Layout, Menu, Dropdown, Avatar, Space, Typography, Tabs } from 'antd';
+import type { MenuProps } from 'antd';
 
 import {
 
@@ -13,6 +14,8 @@ import {
   UserOutlined,
 
   LogoutOutlined,
+
+  BookOutlined,
 
 } from '@ant-design/icons';
 
@@ -28,6 +31,7 @@ import {
 import type { ModuleKey } from '@/modules/registry';
 
 import { useTenantPlatformStore } from '@/shared/platform/tenant-platform.store';
+import { knowledgeMenuGroups } from '@/modules/pharmacy/knowledge-experience';
 import { useAuditSlimNav } from '@/shared/platform/audit-slim-nav';
 
 import { ApiHealthBanner } from '@/shared/components/ApiHealthBanner';
@@ -52,6 +56,9 @@ import {
   useCanRxRead,
   useCanSalesRead,
   useCanSystemRead,
+  useCanApproveTenantKnowledge,
+  useHasExplicitPermission,
+  useIsAdmin,
 } from '@/shared/auth/usePermission';
 import { useKapAdminAccess } from '@/shared/hooks/useKapAdminAccess';
 
@@ -63,7 +70,6 @@ import { resolveLoginBrandByTenantCode, resolveShellBrand } from '@/shared/confi
 import {
   CONTENT_NAV_ITEMS,
   CONTENT_NAV_OUTSIDE,
-  CONTENT_NAV_SETUP,
   CONTENT_NAV_WORK,
   resolveContentNavKey,
   resolveContentNavLabel,
@@ -77,6 +83,13 @@ function resolveActiveModuleKey(pathname: string): string {
   if (contentKey) return contentKey;
   const localKey = resolveLocalOsNavKey(pathname);
   if (localKey) return localKey;
+
+  if (pathname.startsWith('/platform/pharmacy-knowledge/xu-ly')) return 'platform-knowledge-governance';
+  if (pathname.startsWith('/platform/pharmacy-knowledge')) return 'platform-knowledge';
+  if (pathname.startsWith('/pharmacy/local-regimens')) return 'pharmacy-local-regimen';
+  if (pathname.startsWith('/pharmacy/owned-knowledge')) return 'pharmacy-owned-knowledge';
+  if (pathname.startsWith('/pharmacy/knowledge-in-use')) return 'pharmacy-knowledge-in-use';
+  if (pathname.startsWith('/pharmacy/knowledge')) return 'pharmacy-knowledge';
 
   if (pathname === '/') return 'dashboard';
 
@@ -137,6 +150,11 @@ function AppLayoutShell() {
   const canAccessSystem = useCanSystemRead();
   const canAccessSuccess = useCanAccessSuccessModule();
   const canAccessOwnerCockpit = useCanAccessOwnerCockpit();
+  const canPublishKnowledge = useHasExplicitPermission('platform.knowledge.publish');
+  const canReviewKnowledge = useHasExplicitPermission('pharmacy.knowledge.review');
+  const canVerifyKnowledgeSource = useHasExplicitPermission('pharmacy.knowledge.verify-source');
+  const canApproveKnowledge = useCanApproveTenantKnowledge();
+  const isTenantAdmin = useIsAdmin();
   const canAccessRx = useCanRxRead();
   const canAccessConnect = useCanConnectRead();
   const canAccessCustomer = useCanCustomerModule();
@@ -208,7 +226,7 @@ function AppLayoutShell() {
 
   const menuItems = useMemo(
     () => {
-      const items = moduleRegistry
+      const items: NonNullable<MenuProps['items']> = moduleRegistry
         .filter((module) => !TEMP_HIDDEN_MODULE_KEYS.includes(module.key))
         .filter((module) => {
           // Trước khi biết vertical tenant: chỉ hiện module dùng chung (dashboard, connect, system…).
@@ -230,11 +248,10 @@ function AppLayoutShell() {
           if (!navEnabled) return [];
           if (adminVertical === 'marketing' && module.key === 'dashboard') return [];
           if (adminVertical === 'marketing' && module.key === 'content') {
-            return [
-              ...CONTENT_NAV_WORK.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
-              { type: 'divider' as const },
-              ...CONTENT_NAV_SETUP.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
-            ];
+            return CONTENT_NAV_WORK.map((i) => ({ key: i.key, icon: i.icon, label: i.label }));
+          }
+          if (adminVertical === 'marketing' && module.key === 'system') {
+            return [{ key: module.key, icon: module.icon, label: 'Hệ thống' }];
           }
           if (adminVertical === 'marketing' && module.key === 'localOs') {
             return [
@@ -251,14 +268,33 @@ function AppLayoutShell() {
             },
           ];
         });
-      if (
-        adminVertical === 'marketing' &&
-        !items.some((item) => item && 'key' in item && item.key === 'content-videos')
-      ) {
-        items.push(
-          { type: 'divider' as const },
-          ...CONTENT_NAV_OUTSIDE.map((i) => ({ key: i.key, icon: i.icon, label: i.label })),
-        );
+      const knowledgeGroups = knowledgeMenuGroups({
+        loaded: platformLoaded,
+        vertical: platformVertical,
+        review: canReviewKnowledge,
+        verify: canVerifyKnowledgeSource,
+        publish: canPublishKnowledge,
+        canPin: canApproveKnowledge,
+        isTenantAdmin,
+      });
+      if (knowledgeGroups.length > 0) {
+        items.push({
+          key: 'knowledge',
+          icon: <BookOutlined />,
+          label: 'Tri thức',
+          children: knowledgeGroups.flatMap((group) => {
+            const sameName = group.children.length === 1 && group.children[0].label === group.label;
+            if (sameName) {
+              return group.children.map((child) => ({ key: child.key, label: child.label }));
+            }
+            return [{
+              type: 'group' as const,
+              key: group.key,
+              label: group.label,
+              children: group.children.map((child) => ({ key: child.key, label: child.label })),
+            }];
+          }),
+        });
       }
       return items;
     },
@@ -270,6 +306,12 @@ function AppLayoutShell() {
       kapAccessChecked,
       kapEnabled,
       modulePermissionOk,
+      canPublishKnowledge,
+      canReviewKnowledge,
+      canVerifyKnowledgeSource,
+      canApproveKnowledge,
+      isTenantAdmin,
+      platformVertical,
     ],
   );
 
@@ -411,9 +453,29 @@ function AppLayoutShell() {
           items={menuItems}
 
           onClick={({ key }) => {
+            const knowledgeTarget = knowledgeMenuGroups({
+              loaded: platformLoaded,
+              vertical: platformVertical,
+              review: canReviewKnowledge,
+              verify: canVerifyKnowledgeSource,
+              publish: canPublishKnowledge,
+              canPin: canApproveKnowledge,
+              isTenantAdmin,
+            }).flatMap((group) => group.children).find((item) => item.key === key);
+            if (knowledgeTarget) {
+              navigate(knowledgeTarget.path);
+              return;
+            }
             const contentItem = CONTENT_NAV_ITEMS.find((i) => i.key === key);
             if (contentItem) {
-              navigate(contentItem.path);
+              const current = new URLSearchParams(location.search);
+              const keep = new URLSearchParams();
+              const brand = current.get('brand');
+              const film = current.get('film');
+              if (brand) keep.set('brand', brand);
+              if (film) keep.set('film', film);
+              const query = keep.toString();
+              navigate(query ? `${contentItem.path}?${query}` : contentItem.path);
               return;
             }
             const localItem = LOCAL_OS_NAV.find((i) => i.key === key);

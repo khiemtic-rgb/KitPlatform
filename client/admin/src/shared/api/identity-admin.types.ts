@@ -52,6 +52,9 @@ export type UserDetail = {
   employeeId?: string;
   employeeName?: string;
   employeePhone?: string;
+  employeeJobTitle?: string;
+  /** YYYY-MM-DD */
+  employeeHireDate?: string;
   roleIds: string[];
   roleCodes: string[];
   lastLoginAt?: string;
@@ -69,6 +72,10 @@ export type CreateUserPayload = {
   employeePhone?: string;
   branchIds?: string[];
   primaryBranchId?: string;
+  /** "" clears; omit to leave job title and hire date untouched. */
+  employeeJobTitle?: string;
+  /** YYYY-MM-DD, null clears (only applied when employeeJobTitle is sent). */
+  employeeHireDate?: string | null;
 };
 
 export type UpdateUserPayload = {
@@ -82,6 +89,8 @@ export type UpdateUserPayload = {
   newPassword?: string;
   branchIds?: string[];
   primaryBranchId?: string;
+  employeeJobTitle?: string;
+  employeeHireDate?: string | null;
 };
 
 export type RoleListItem = {
@@ -147,6 +156,9 @@ export type EmployeeDetail = {
   phone?: string;
   hasUserAccount: boolean;
   branches: EmployeeBranchAssignment[];
+  jobTitle?: string;
+  /** YYYY-MM-DD */
+  hireDate?: string;
 };
 
 export type PagedUsersResult = {
