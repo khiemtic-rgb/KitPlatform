@@ -52,3 +52,13 @@ python gen_sql.py    # sinh 447_kap_pharmacy_v2.sql -> copy vào migrations/
 - **Root cause KB** (`assessment_root_cause_kb`) chưa có cho V2, nên phần "nguyên nhân gốc" trong báo cáo đầy đủ sẽ trống cho đến khi được viết.
 - **Số phút trên trang đầu** (`DURATION_LABEL` trong `LandingPage.tsx`) cần cập nhật theo thời gian làm bài trung vị đo được từ bài thật.
 - **Trang novixa.vn/vi/health-check/** nằm ngoài repo này, cần sửa theo cùng nội dung: 6 nhóm và bỏ các câu hứa chưa có căn cứ.
+
+## Deploy
+
+1. Chỉ build để deploy từ commit đã push lên origin/main. Không build từ cây làm việc có file chưa commit.
+2. Trước khi deploy: chạy `scripts/check-survey-sync.ps1`. Có dòng LOCAL lệch thì commit và push trước.
+3. Deploy xong: ghi VERSION.txt, rồi chạy lại `check-survey-sync.ps1`. Tất cả phải khớp.
+4. Sửa nóng trực tiếp trên VPS là không được. Nếu bắt buộc, phải commit lại vào git ngay trong ngày.
+5. Mỗi việc giao Cursor là một file `CURSOR_TASK_<số>.md` mới. Không sửa file cũ.
+
+Lõi API trên VPS và mã Survey là hai việc khác nhau. Bản đang chạy: lõi `134d7834`, Survey `6df6a9ce` build trên lõi đó. Không thay `KitPlatform.Application.dll`, `KitPlatform.Infrastructure.dll`, `KitPlatform.Domain.dll` hay Pharmacy khi chỉ cập nhật Survey.
