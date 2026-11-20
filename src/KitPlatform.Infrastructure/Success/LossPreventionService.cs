@@ -11,7 +11,8 @@ internal sealed class LossPreventionService : ILossPreventionService
     private const string AttributionNotes =
         "Hủy HĐ: chỉ draft→cancelled; gán theo employee_id lúc tạo (không có cancelled_by). " +
         "Giảm giá: POS order+line trên đơn Completed; gán seller employee_id (không gồm loyalty/voucher). " +
-        "Điều chỉnh tồn: approved adjustments; gán theo approved_by→employee; giá trị = |ΔSL|×unit_cost.";
+        "Điều chỉnh tồn: approved adjustments; gán theo approved_by→employee; giá trị = |ΔSL|×unit_cost. " +
+        "Chênh tiền theo người đóng ca: ca đã đóng trong kỳ (theo giờ đóng), cộng |chênh| theo người đóng ca.";
 
     private const string AuditFeedNotes =
         "Nguồn: kit_audit.activity_log (dual-write từ audit_logs). " +
@@ -92,8 +93,17 @@ internal sealed class LossPreventionService : ILossPreventionService
         var cancellations = await _repo.ListCancellationsByEmployeeAsync(from, to, branchId, allowed, cancellationToken);
         var discounts = await _repo.ListDiscountsByEmployeeAsync(from, to, branchId, allowed, cancellationToken);
         var adjustments = await _repo.ListAdjustmentsByEmployeeAsync(from, to, branchId, allowed, cancellationToken);
+        var closerSamples = await _repo.ListClosedShiftVarianceSamplesAsync(from, to, branchId, allowed, cancellationToken);
 
-        return new LossEmployeeReportsDto(from, to, branchId, AttributionNotes, cancellations, discounts, adjustments);
+        return new LossEmployeeReportsDto(
+            from,
+            to,
+            branchId,
+            AttributionNotes,
+            cancellations,
+            discounts,
+            adjustments,
+            CashVarianceAccountability.GroupByCloser(closerSamples));
     }
 
     public async Task<LossAuditFeedDto> GetAuditFeedAsync(
