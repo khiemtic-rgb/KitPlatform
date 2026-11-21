@@ -1,4 +1,5 @@
 import { Container } from '@/components/ui/Container';
+import { FilmPlay } from '@/components/sections/FilmPlay';
 import { latestLongVideo } from '@/lib/youtube-latest';
 import type { AppLocale } from '@/lib/cms/getLanding';
 
@@ -10,7 +11,7 @@ export async function LatestFilm({ locale }: { locale: AppLocale }) {
   const vi = locale === 'vi';
 
   return (
-    <section id="phim" className="scroll-mt-24 bg-[#FBF8F1] pb-4 pt-8 md:pt-10">
+    <section id="phim" className="scroll-mt-24 bg-[#FBF8F1] pb-2 pt-1 md:pb-4">
       <Container>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -31,14 +32,7 @@ export async function LatestFilm({ locale }: { locale: AppLocale }) {
           </a>
         </div>
         <div className="overflow-hidden rounded-[24px] bg-[#08241C] shadow-[0_12px_40px_rgba(16,59,43,0.12)]">
-          <iframe
-            className="aspect-video w-full"
-            src={`https://www.youtube-nocookie.com/embed/${video.id}`}
-            title={video.title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allowFullScreen
-          />
+          <FilmPlay videoId={video.id} title={video.title} />
         </div>
       </Container>
     </section>

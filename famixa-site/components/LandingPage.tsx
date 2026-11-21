@@ -57,6 +57,7 @@ export async function LandingPage({ locale }: { locale: AppLocale }) {
       <Navbar content={c.nav} brand={c.brand} appUrl={c.appUrl} locale={locale} />
       <main>
         <Hero content={c.hero} appUrl={c.appUrl} locale={locale} />
+        <LatestFilm locale={locale} />
         <Chapters123
           chapter1={c.chapter1}
           chapter2={c.chapter2}
@@ -73,7 +74,6 @@ export async function LandingPage({ locale }: { locale: AppLocale }) {
         <Testimonials content={c.chapter7} locale={locale} />
         <Pricing content={c.chapter8} appUrl={c.appUrl} locale={locale} />
         <FAQ content={c.faq} locale={locale} />
-        <LatestFilm locale={locale} />
         <FinalCTA content={c.finalCta} brand={c.brand} appUrl={c.appUrl} />
       </main>
       <Footer content={c.footer} brand={c.brand} appUrl={c.appUrl} locale={locale} />
