@@ -10,7 +10,8 @@ import LandingEcosystem from '../../components/landing/LandingEcosystem.astro';
 import LandingKnowledge from '../../components/landing/LandingKnowledge.astro';
 import LandingCta from '../../components/landing/LandingCta.astro';
 import { getCollection } from 'astro:content';
-import { filterPublishedPosts } from '../../lib/publishedNews';
+import { sortPublishedNews } from '../../lib/newsDate';
+import { getNewsCategory } from '../../lib/news-categories';
 import { t } from '../../i18n';
 import { buildSiteGraphStructuredData } from '../../lib/site-structured-data';
 import '../../styles/global.css';
@@ -18,16 +19,9 @@ import '../../styles/home-landing.css';
 
 const m = t('vi');
 const jsonLd = buildSiteGraphStructuredData();
-const homeArticleIds = [
-  'mot-khach-quay-lai-nhieu-lan-dang-gia-hon-mot-khach-mua-mot-lan',
-  'cach-giam-thuoc-can-han',
-  'nha-thuoc-ban-kha-tot-nhung-chu-van-phai-co-mat-o-quay-ca-ngay',
-];
-const published = filterPublishedPosts(await getCollection('tinTuc'));
-const homeArticles = homeArticleIds.flatMap((id) => {
-  const post = published.find((item) => item.id === id);
-  return post ? [post] : [];
-});
+const homeArticles = sortPublishedNews(await getCollection('tinTuc'))
+  .filter((post) => getNewsCategory(post.data.category).navGroup === 'knowledge')
+  .slice(0, 3);
 ---
 
 <BaseLayout

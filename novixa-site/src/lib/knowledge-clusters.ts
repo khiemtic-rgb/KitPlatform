@@ -25,7 +25,7 @@ export type KnowledgeClusterId = (typeof KNOWLEDGE_CLUSTERS)[number]['id'];
 
 type ClusterPost = {
   id: string;
-  data: { title: string; description?: string; category?: string };
+  data: { title: string; description?: string; category?: string; pubDate?: Date };
 };
 
 function fold(value: string): string {
@@ -68,8 +68,11 @@ export function groupKnowledgePosts<T extends ClusterPost>(posts: T[]) {
   }
   return KNOWLEDGE_CLUSTERS.map((cluster) => {
     const items = buckets.get(cluster.id) ?? [];
-    const lead = items.find((post) => post.id === cluster.leadSlug);
-    const rest = items.filter((post) => post.id !== cluster.leadSlug);
-    return { ...cluster, posts: lead ? [lead, ...rest] : rest };
-  }).filter((group) => group.posts.length > 0);
+    return { ...cluster, posts: items };
+  })
+    .filter((group) => group.posts.length > 0)
+    .sort((a, b) => {
+      const newest = (group: { posts: T[] }) => group.posts[0]?.data.pubDate?.valueOf() ?? 0;
+      return newest(b) - newest(a);
+    });
 }
