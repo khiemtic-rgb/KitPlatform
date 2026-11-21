@@ -1,71 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-21T07:29:51.801Z",
+  "generatedAt": "2026-11-21T19:35:13.730Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 62,
-    "todayPageViews": 68,
-    "todayRequests": 173,
-    "last24hVisitors": 124,
-    "last24hPageViews": 101,
-    "last24hRequests": 1587
+    "todayVisitors": 9,
+    "todayPageViews": 6,
+    "todayRequests": 18,
+    "last24hVisitors": 163,
+    "last24hPageViews": 132,
+    "last24hRequests": 1094
   },
   "hourly": [
-    {
-      "time": "2026-11-20T08:00:00Z",
-      "visitors": 7,
-      "requests": 12
-    },
-    {
-      "time": "2026-11-20T09:00:00Z",
-      "visitors": 9,
-      "requests": 636
-    },
-    {
-      "time": "2026-11-20T10:00:00Z",
-      "visitors": 3,
-      "requests": 7
-    },
-    {
-      "time": "2026-11-20T11:00:00Z",
-      "visitors": 7,
-      "requests": 654
-    },
-    {
-      "time": "2026-11-20T12:00:00Z",
-      "visitors": 2,
-      "requests": 6
-    },
-    {
-      "time": "2026-11-20T13:00:00Z",
-      "visitors": 6,
-      "requests": 32
-    },
-    {
-      "time": "2026-11-20T15:00:00Z",
-      "visitors": 3,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-20T16:00:00Z",
-      "visitors": 2,
-      "requests": 2
-    },
-    {
-      "time": "2026-11-20T17:00:00Z",
-      "visitors": 4,
-      "requests": 10
-    },
-    {
-      "time": "2026-11-20T18:00:00Z",
-      "visitors": 4,
-      "requests": 8
-    },
-    {
-      "time": "2026-11-20T19:00:00Z",
-      "visitors": 2,
-      "requests": 6
-    },
     {
       "time": "2026-11-20T20:00:00Z",
       "visitors": 11,
@@ -118,17 +63,71 @@
     },
     {
       "time": "2026-11-21T07:00:00Z",
+      "visitors": 10,
+      "requests": 34
+    },
+    {
+      "time": "2026-11-21T08:00:00Z",
+      "visitors": 8,
+      "requests": 12
+    },
+    {
+      "time": "2026-11-21T09:00:00Z",
       "visitors": 6,
-      "requests": 10
+      "requests": 8
+    },
+    {
+      "time": "2026-11-21T10:00:00Z",
+      "visitors": 9,
+      "requests": 13
+    },
+    {
+      "time": "2026-11-21T11:00:00Z",
+      "visitors": 24,
+      "requests": 664
+    },
+    {
+      "time": "2026-11-21T12:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-21T13:00:00Z",
+      "visitors": 9,
+      "requests": 13
+    },
+    {
+      "time": "2026-11-21T14:00:00Z",
+      "visitors": 2,
+      "requests": 41
+    },
+    {
+      "time": "2026-11-21T15:00:00Z",
+      "visitors": 6,
+      "requests": 46
+    },
+    {
+      "time": "2026-11-21T16:00:00Z",
+      "visitors": 8,
+      "requests": 44
+    },
+    {
+      "time": "2026-11-21T17:00:00Z",
+      "visitors": 1,
+      "requests": 1
+    },
+    {
+      "time": "2026-11-21T18:00:00Z",
+      "visitors": 7,
+      "requests": 14
+    },
+    {
+      "time": "2026-11-21T19:00:00Z",
+      "visitors": 1,
+      "requests": 3
     }
   ],
   "daily": [
-    {
-      "date": "2026-11-15",
-      "visitors": 87,
-      "pageViews": 42,
-      "requests": 618
-    },
     {
       "date": "2026-11-16",
       "visitors": 99,
@@ -161,71 +160,77 @@
     },
     {
       "date": "2026-11-21",
-      "visitors": 91,
-      "pageViews": 79,
-      "requests": 230
+      "visitors": 150,
+      "pageViews": 128,
+      "requests": 1061
+    },
+    {
+      "date": "2026-11-22",
+      "visitors": 9,
+      "pageViews": 6,
+      "requests": 18
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 95
+      "views": 88
     },
     {
       "path": "/vi/",
-      "views": 55
+      "views": 57
     },
     {
       "path": "/robots.txt",
       "views": 20
     },
     {
-      "path": "/.m2/settings.xml",
+      "path": "/vi/goi-cha-me/cha-me-ban-ron-van-co-the-dong-hanh-cung-con-bi-quyet-tu-thoi-gian-chat-luong/",
+      "views": 15
+    },
+    {
+      "path": "/vi/goi-cha-me/dong-hanh-cung-con-dung-chi-kiem-tra-khi-con-lam-sai/",
       "views": 13
     },
     {
-      "path": "/dump.sql",
-      "views": 12
+      "path": "/vi/goi-cha-me/",
+      "views": 13
     },
     {
-      "path": "/env.txt",
-      "views": 12
+      "path": "/cdn-cgi/rum",
+      "views": 10
     },
     {
-      "path": "/secrets.yaml",
-      "views": 11
+      "path": "/feed.json",
+      "views": 10
     },
     {
-      "path": "/_profiler/phpinfo",
-      "views": 11
-    },
-    {
-      "path": "/config/custom-environment-variables.json",
+      "path": "/vi/goi-cha-me/loi-tu-doi-om-het-viec-nha-va-bai-hoc-chia-se-lich-chung/",
       "views": 9
     },
     {
-      "path": "/info.php",
+      "path": "/wp-config.php.bak",
       "views": 9
     },
     {
-      "path": "/vercel.json",
-      "views": 9
+      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
+      "views": 8
     },
     {
-      "path": "/etc/dovecot/dovecot-sql.conf",
-      "views": 9
+      "path": "/_next/static/chunks/172-3a6b8d7e623dbc38.js",
+      "views": 8
     },
     {
-      "path": "/api/v3/.env",
-      "views": 9
+      "path": "/_next/static/chunks/718-c7a6f5b83d985c4e.js",
+      "views": 8
     },
     {
-      "path": "/actuator/configprops",
-      "views": 9
+      "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "views": 8
     },
     {
-      "path": "/.config/doctl/config.yaml",
-      "views": 9
+      "path": "/database.sql",
+      "views": 8
     }
   ]
 }
