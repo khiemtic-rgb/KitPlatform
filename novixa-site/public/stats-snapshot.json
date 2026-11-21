@@ -1,21 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-21T06:42:26.994Z",
+  "generatedAt": "2026-11-21T07:13:22.901Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 189,
-    "todayPageViews": 113,
-    "todayRequests": 340,
-    "last24hVisitors": 296,
-    "last24hPageViews": 166,
-    "last24hRequests": 870
+    "todayVisitors": 195,
+    "todayPageViews": 123,
+    "todayRequests": 379,
+    "last24hVisitors": 295,
+    "last24hPageViews": 173,
+    "last24hRequests": 898
   },
   "hourly": [
-    {
-      "time": "2026-11-20T07:00:00Z",
-      "visitors": 10,
-      "requests": 12
-    },
     {
       "time": "2026-11-20T08:00:00Z",
       "visitors": 9,
@@ -123,8 +118,13 @@
     },
     {
       "time": "2026-11-21T06:00:00Z",
-      "visitors": 14,
-      "requests": 86
+      "visitors": 18,
+      "requests": 123
+    },
+    {
+      "time": "2026-11-21T07:00:00Z",
+      "visitors": 3,
+      "requests": 3
     }
   ],
   "daily": [
@@ -166,15 +166,15 @@
     },
     {
       "date": "2026-11-21",
-      "visitors": 189,
-      "pageViews": 113,
-      "requests": 340
+      "visitors": 195,
+      "pageViews": 123,
+      "requests": 379
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 130
+      "views": 131
     },
     {
       "path": "/vi/",
@@ -182,7 +182,7 @@
     },
     {
       "path": "/cdn-cgi/rum",
-      "views": 28
+      "views": 30
     },
     {
       "path": "/robots.txt",
@@ -193,20 +193,20 @@
       "views": 14
     },
     {
-      "path": "/favicon.ico",
-      "views": 9
-    },
-    {
       "path": "/og-novixa.svg",
       "views": 9
     },
     {
-      "path": "/cdn-cgi/l/email-protection",
+      "path": "/favicon.ico",
+      "views": 9
+    },
+    {
+      "path": "/vi/tin-tuc/quy-tac-fefo-va-cai-gia-cua-vai-hop-thuoc-het-han-nam-goc-khuat/",
       "views": 8
     },
     {
-      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
-      "views": 7
+      "path": "/cdn-cgi/l/email-protection",
+      "views": 8
     },
     {
       "path": "/api/session/properties",
@@ -217,19 +217,19 @@
       "views": 7
     },
     {
-      "path": "/_astro/index.CoQXk_KI.css",
-      "views": 6
+      "path": "/brand/xuanhoa-hero.png",
+      "views": 7
     },
     {
-      "path": "/vi/tin-tuc/quy-tac-fefo-va-cai-gia-cua-vai-hop-thuoc-het-han-nam-goc-khuat/",
-      "views": 6
+      "path": "/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js",
+      "views": 7
+    },
+    {
+      "path": "/brand/articles/gap-duoc-si.jpg",
+      "views": 7
     },
     {
       "path": "/feed.json",
-      "views": 6
-    },
-    {
-      "path": "/images/logo.png",
       "views": 6
     }
   ]
