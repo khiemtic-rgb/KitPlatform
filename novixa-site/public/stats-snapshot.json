@@ -1,96 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-23T07:43:45.479Z",
+  "generatedAt": "2026-11-23T23:56:34.888Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 77,
-    "todayPageViews": 61,
-    "todayRequests": 7169,
-    "last24hVisitors": 288,
-    "last24hPageViews": 979,
-    "last24hRequests": 40330
+    "todayVisitors": 0,
+    "todayPageViews": 0,
+    "todayRequests": 0,
+    "last24hVisitors": 224,
+    "last24hPageViews": 409,
+    "last24hRequests": 25713
   },
   "hourly": [
-    {
-      "time": "2026-11-22T08:00:00Z",
-      "visitors": 14,
-      "requests": 296
-    },
-    {
-      "time": "2026-11-22T09:00:00Z",
-      "visitors": 25,
-      "requests": 1491
-    },
-    {
-      "time": "2026-11-22T10:00:00Z",
-      "visitors": 17,
-      "requests": 4289
-    },
-    {
-      "time": "2026-11-22T11:00:00Z",
-      "visitors": 9,
-      "requests": 988
-    },
-    {
-      "time": "2026-11-22T12:00:00Z",
-      "visitors": 25,
-      "requests": 5405
-    },
-    {
-      "time": "2026-11-22T13:00:00Z",
-      "visitors": 16,
-      "requests": 3823
-    },
-    {
-      "time": "2026-11-22T14:00:00Z",
-      "visitors": 12,
-      "requests": 4913
-    },
-    {
-      "time": "2026-11-22T15:00:00Z",
-      "visitors": 16,
-      "requests": 1985
-    },
-    {
-      "time": "2026-11-22T16:00:00Z",
-      "visitors": 26,
-      "requests": 1021
-    },
-    {
-      "time": "2026-11-22T17:00:00Z",
-      "visitors": 72,
-      "requests": 669
-    },
-    {
-      "time": "2026-11-22T18:00:00Z",
-      "visitors": 11,
-      "requests": 991
-    },
-    {
-      "time": "2026-11-22T19:00:00Z",
-      "visitors": 7,
-      "requests": 1472
-    },
-    {
-      "time": "2026-11-22T20:00:00Z",
-      "visitors": 26,
-      "requests": 1497
-    },
-    {
-      "time": "2026-11-22T21:00:00Z",
-      "visitors": 19,
-      "requests": 1488
-    },
-    {
-      "time": "2026-11-22T22:00:00Z",
-      "visitors": 7,
-      "requests": 509
-    },
-    {
-      "time": "2026-11-22T23:00:00Z",
-      "visitors": 6,
-      "requests": 2452
-    },
     {
       "time": "2026-11-23T00:00:00Z",
       "visitors": 12,
@@ -128,17 +48,91 @@
     },
     {
       "time": "2026-11-23T07:00:00Z",
+      "visitors": 5,
+      "requests": 983
+    },
+    {
+      "time": "2026-11-23T08:00:00Z",
+      "visitors": 21,
+      "requests": 29
+    },
+    {
+      "time": "2026-11-23T09:00:00Z",
+      "visitors": 19,
+      "requests": 511
+    },
+    {
+      "time": "2026-11-23T10:00:00Z",
+      "visitors": 14,
+      "requests": 509
+    },
+    {
+      "time": "2026-11-23T11:00:00Z",
+      "visitors": 5,
+      "requests": 1961
+    },
+    {
+      "time": "2026-11-23T12:00:00Z",
+      "visitors": 22,
+      "requests": 2938
+    },
+    {
+      "time": "2026-11-23T13:00:00Z",
+      "visitors": 8,
+      "requests": 500
+    },
+    {
+      "time": "2026-11-23T14:00:00Z",
       "visitors": 4,
-      "requests": 507
+      "requests": 1460
+    },
+    {
+      "time": "2026-11-23T15:00:00Z",
+      "visitors": 11,
+      "requests": 504
+    },
+    {
+      "time": "2026-11-23T16:00:00Z",
+      "visitors": 25,
+      "requests": 31
+    },
+    {
+      "time": "2026-11-23T17:00:00Z",
+      "visitors": 3,
+      "requests": 979
+    },
+    {
+      "time": "2026-11-23T18:00:00Z",
+      "visitors": 8,
+      "requests": 499
+    },
+    {
+      "time": "2026-11-23T19:00:00Z",
+      "visitors": 3,
+      "requests": 1958
+    },
+    {
+      "time": "2026-11-23T20:00:00Z",
+      "visitors": 12,
+      "requests": 1456
+    },
+    {
+      "time": "2026-11-23T21:00:00Z",
+      "visitors": 9,
+      "requests": 1409
+    },
+    {
+      "time": "2026-11-23T22:00:00Z",
+      "visitors": 7,
+      "requests": 905
+    },
+    {
+      "time": "2026-11-23T23:00:00Z",
+      "visitors": 15,
+      "requests": 2547
     }
   ],
   "daily": [
-    {
-      "date": "2026-11-17",
-      "visitors": 314,
-      "pageViews": 137,
-      "requests": 974
-    },
     {
       "date": "2026-11-18",
       "visitors": 112,
@@ -171,71 +165,71 @@
     },
     {
       "date": "2026-11-23",
-      "visitors": 77,
-      "pageViews": 61,
-      "requests": 7169
+      "visitors": 224,
+      "pageViews": 409,
+      "requests": 25713
     }
   ],
   "topPages": [
     {
-      "path": "/userfiles",
-      "views": 342
+      "path": "/",
+      "views": 255
     },
     {
-      "path": "/",
-      "views": 289
+      "path": "/userfiles",
+      "views": 196
     },
     {
       "path": "/api/config",
-      "views": 243
-    },
-    {
-      "path": "/api/fs/read",
-      "views": 189
-    },
-    {
-      "path": "/api/graphql",
-      "views": 189
-    },
-    {
-      "path": "/api/system/fileView",
-      "views": 185
-    },
-    {
-      "path": "/graphql",
-      "views": 183
-    },
-    {
-      "path": "/_debugbar/open",
-      "views": 181
+      "views": 141
     },
     {
       "path": "/index.php",
-      "views": 177
+      "views": 117
     },
     {
-      "path": "/cgi-bin/php",
-      "views": 163
-    },
-    {
-      "path": "/console",
-      "views": 151
-    },
-    {
-      "path": "/telescope/requests",
-      "views": 150
-    },
-    {
-      "path": "/openapi.json",
-      "views": 145
+      "path": "/api/system/fileView",
+      "views": 117
     },
     {
       "path": "/v1/graphql",
-      "views": 142
+      "views": 105
     },
     {
-      "path": "/.env.example",
-      "views": 141
+      "path": "/openapi.json",
+      "views": 104
+    },
+    {
+      "path": "/telescope/requests",
+      "views": 102
+    },
+    {
+      "path": "/api/console/api_server",
+      "views": 100
+    },
+    {
+      "path": "/graphql",
+      "views": 98
+    },
+    {
+      "path": "/_debugbar/open",
+      "views": 97
+    },
+    {
+      "path": "/userfiles/x",
+      "views": 95
+    },
+    {
+      "path": "/console",
+      "views": 95
+    },
+    {
+      "path": "/cgi-bin/php",
+      "views": 88
+    },
+    {
+      "path": "/api/graphql",
+      "views": 88
     }
   ]
 }
