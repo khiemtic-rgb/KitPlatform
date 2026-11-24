@@ -1,66 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-23T23:56:34.888Z",
+  "generatedAt": "2026-11-24T09:57:46.215Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 0,
-    "todayPageViews": 0,
-    "todayRequests": 0,
-    "last24hVisitors": 224,
-    "last24hPageViews": 409,
-    "last24hRequests": 25713
+    "todayVisitors": 141,
+    "todayPageViews": 355,
+    "todayRequests": 15937,
+    "last24hVisitors": 254,
+    "last24hPageViews": 690,
+    "last24hRequests": 33594
   },
   "hourly": [
-    {
-      "time": "2026-11-23T00:00:00Z",
-      "visitors": 12,
-      "requests": 1057
-    },
-    {
-      "time": "2026-11-23T01:00:00Z",
-      "visitors": 9,
-      "requests": 501
-    },
-    {
-      "time": "2026-11-23T02:00:00Z",
-      "visitors": 7,
-      "requests": 986
-    },
-    {
-      "time": "2026-11-23T03:00:00Z",
-      "visitors": 18,
-      "requests": 1491
-    },
-    {
-      "time": "2026-11-23T04:00:00Z",
-      "visitors": 14,
-      "requests": 997
-    },
-    {
-      "time": "2026-11-23T05:00:00Z",
-      "visitors": 11,
-      "requests": 1002
-    },
-    {
-      "time": "2026-11-23T06:00:00Z",
-      "visitors": 12,
-      "requests": 500
-    },
-    {
-      "time": "2026-11-23T07:00:00Z",
-      "visitors": 5,
-      "requests": 983
-    },
-    {
-      "time": "2026-11-23T08:00:00Z",
-      "visitors": 21,
-      "requests": 29
-    },
-    {
-      "time": "2026-11-23T09:00:00Z",
-      "visitors": 19,
-      "requests": 511
-    },
     {
       "time": "2026-11-23T10:00:00Z",
       "visitors": 14,
@@ -128,8 +78,58 @@
     },
     {
       "time": "2026-11-23T23:00:00Z",
+      "visitors": 16,
+      "requests": 2548
+    },
+    {
+      "time": "2026-11-24T00:00:00Z",
+      "visitors": 60,
+      "requests": 1537
+    },
+    {
+      "time": "2026-11-24T01:00:00Z",
       "visitors": 15,
-      "requests": 2547
+      "requests": 1272
+    },
+    {
+      "time": "2026-11-24T02:00:00Z",
+      "visitors": 6,
+      "requests": 497
+    },
+    {
+      "time": "2026-11-24T03:00:00Z",
+      "visitors": 16,
+      "requests": 1003
+    },
+    {
+      "time": "2026-11-24T04:00:00Z",
+      "visitors": 11,
+      "requests": 2458
+    },
+    {
+      "time": "2026-11-24T05:00:00Z",
+      "visitors": 18,
+      "requests": 518
+    },
+    {
+      "time": "2026-11-24T06:00:00Z",
+      "visitors": 6,
+      "requests": 982
+    },
+    {
+      "time": "2026-11-24T07:00:00Z",
+      "visitors": 9,
+      "requests": 2240
+    },
+    {
+      "time": "2026-11-24T08:00:00Z",
+      "visitors": 21,
+      "requests": 2470
+    },
+    {
+      "time": "2026-11-24T09:00:00Z",
+      "visitors": 6,
+      "requests": 2960
     }
   ],
   "daily": [
@@ -165,71 +165,77 @@
     },
     {
       "date": "2026-11-23",
-      "visitors": 224,
+      "visitors": 225,
       "pageViews": 409,
-      "requests": 25713
+      "requests": 25714
+    },
+    {
+      "date": "2026-11-24",
+      "visitors": 141,
+      "pageViews": 355,
+      "requests": 15937
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 255
+      "views": 307
     },
     {
       "path": "/userfiles",
-      "views": 196
+      "views": 226
     },
     {
       "path": "/api/config",
-      "views": 141
-    },
-    {
-      "path": "/index.php",
-      "views": 117
-    },
-    {
-      "path": "/api/system/fileView",
-      "views": 117
-    },
-    {
-      "path": "/v1/graphql",
-      "views": 105
-    },
-    {
-      "path": "/openapi.json",
-      "views": 104
-    },
-    {
-      "path": "/telescope/requests",
-      "views": 102
-    },
-    {
-      "path": "/api/console/api_server",
-      "views": 100
-    },
-    {
-      "path": "/graphql",
-      "views": 98
+      "views": 194
     },
     {
       "path": "/_debugbar/open",
-      "views": 97
+      "views": 150
+    },
+    {
+      "path": "/index.php",
+      "views": 149
     },
     {
       "path": "/userfiles/x",
-      "views": 95
+      "views": 144
     },
     {
       "path": "/console",
-      "views": 95
+      "views": 137
     },
     {
-      "path": "/cgi-bin/php",
-      "views": 88
+      "path": "/telescope/requests",
+      "views": 136
     },
     {
-      "path": "/api/graphql",
-      "views": 88
+      "path": "/v1/graphql",
+      "views": 136
+    },
+    {
+      "path": "/api/system/fileView",
+      "views": 133
+    },
+    {
+      "path": "/graphql",
+      "views": 125
+    },
+    {
+      "path": "/api/console/api_server",
+      "views": 125
+    },
+    {
+      "path": "/openapi.json",
+      "views": 124
+    },
+    {
+      "path": "/api/fs/read",
+      "views": 118
+    },
+    {
+      "path": "/server/.env",
+      "views": 114
     }
   ]
 }
