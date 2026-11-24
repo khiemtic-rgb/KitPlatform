@@ -1,76 +1,16 @@
 {
   "ok": true,
-  "generatedAt": "2026-11-24T10:10:36.376Z",
+  "generatedAt": "2026-11-24T22:38:58.217Z",
   "timezone": "Asia/Ho_Chi_Minh",
   "summary": {
-    "todayVisitors": 91,
-    "todayPageViews": 151,
-    "todayRequests": 1468,
-    "last24hVisitors": 263,
-    "last24hPageViews": 621,
-    "last24hRequests": 3468
+    "todayVisitors": 35,
+    "todayPageViews": 15,
+    "todayRequests": 1443,
+    "last24hVisitors": 178,
+    "last24hPageViews": 227,
+    "last24hRequests": 3589
   },
   "hourly": [
-    {
-      "time": "2026-11-23T11:00:00Z",
-      "visitors": 18,
-      "requests": 245
-    },
-    {
-      "time": "2026-11-23T12:00:00Z",
-      "visitors": 9,
-      "requests": 85
-    },
-    {
-      "time": "2026-11-23T13:00:00Z",
-      "visitors": 8,
-      "requests": 36
-    },
-    {
-      "time": "2026-11-23T14:00:00Z",
-      "visitors": 12,
-      "requests": 112
-    },
-    {
-      "time": "2026-11-23T15:00:00Z",
-      "visitors": 8,
-      "requests": 15
-    },
-    {
-      "time": "2026-11-23T16:00:00Z",
-      "visitors": 2,
-      "requests": 3
-    },
-    {
-      "time": "2026-11-23T17:00:00Z",
-      "visitors": 66,
-      "requests": 414
-    },
-    {
-      "time": "2026-11-23T18:00:00Z",
-      "visitors": 9,
-      "requests": 111
-    },
-    {
-      "time": "2026-11-23T19:00:00Z",
-      "visitors": 46,
-      "requests": 602
-    },
-    {
-      "time": "2026-11-23T20:00:00Z",
-      "visitors": 19,
-      "requests": 88
-    },
-    {
-      "time": "2026-11-23T21:00:00Z",
-      "visitors": 18,
-      "requests": 45
-    },
-    {
-      "time": "2026-11-23T22:00:00Z",
-      "visitors": 6,
-      "requests": 101
-    },
     {
       "time": "2026-11-23T23:00:00Z",
       "visitors": 4,
@@ -128,17 +68,71 @@
     },
     {
       "time": "2026-11-24T10:00:00Z",
-      "visitors": 1,
-      "requests": 313
+      "visitors": 10,
+      "requests": 337
+    },
+    {
+      "time": "2026-11-24T11:00:00Z",
+      "visitors": 8,
+      "requests": 39
+    },
+    {
+      "time": "2026-11-24T12:00:00Z",
+      "visitors": 20,
+      "requests": 390
+    },
+    {
+      "time": "2026-11-24T13:00:00Z",
+      "visitors": 7,
+      "requests": 33
+    },
+    {
+      "time": "2026-11-24T14:00:00Z",
+      "visitors": 5,
+      "requests": 11
+    },
+    {
+      "time": "2026-11-24T15:00:00Z",
+      "visitors": 8,
+      "requests": 20
+    },
+    {
+      "time": "2026-11-24T16:00:00Z",
+      "visitors": 5,
+      "requests": 18
+    },
+    {
+      "time": "2026-11-24T17:00:00Z",
+      "visitors": 7,
+      "requests": 24
+    },
+    {
+      "time": "2026-11-24T18:00:00Z",
+      "visitors": 5,
+      "requests": 1284
+    },
+    {
+      "time": "2026-11-24T19:00:00Z",
+      "visitors": 9,
+      "requests": 72
+    },
+    {
+      "time": "2026-11-24T20:00:00Z",
+      "visitors": 7,
+      "requests": 51
+    },
+    {
+      "time": "2026-11-24T21:00:00Z",
+      "visitors": 3,
+      "requests": 5
+    },
+    {
+      "time": "2026-11-24T22:00:00Z",
+      "visitors": 4,
+      "requests": 7
     }
   ],
   "daily": [
-    {
-      "date": "2026-11-18",
-      "visitors": 208,
-      "pageViews": 173,
-      "requests": 1795
-    },
     {
       "date": "2026-11-19",
       "visitors": 118,
@@ -171,71 +165,77 @@
     },
     {
       "date": "2026-11-24",
-      "visitors": 268,
-      "pageViews": 453,
-      "requests": 2972
+      "visitors": 176,
+      "pageViews": 202,
+      "requests": 3502
+    },
+    {
+      "date": "2026-11-25",
+      "visitors": 35,
+      "pageViews": 15,
+      "requests": 1443
     }
   ],
   "topPages": [
     {
       "path": "/",
-      "views": 466
+      "views": 231
     },
     {
       "path": "/vi/",
-      "views": 279
+      "views": 132
     },
     {
-      "path": "/_next/static/chunks/172-3a6b8d7e623dbc38.js",
-      "views": 48
+      "path": "/config.json",
+      "views": 23
     },
     {
-      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
-      "views": 47
+      "path": "/robots.txt",
+      "views": 21
+    },
+    {
+      "path": "/.well-known/acme-challenge/Pt8e2UT8J0iAfCYEqV2rNRnG0ObvFnI75b95I_NK1C6rkswA3F5451qsUqPaSKaw",
+      "views": 17
+    },
+    {
+      "path": "/config/aws.yml",
+      "views": 15
     },
     {
       "path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
-      "views": 46
+      "views": 14
     },
     {
-      "path": "/_next/static/chunks/webpack-fddcf5b4cf83a013.js",
-      "views": 45
+      "path": "/_next/static/chunks/255-2b334ff5c2ee7a81.js",
+      "views": 14
     },
     {
       "path": "/_next/static/chunks/app/vi/page-7ff7539ff3a26fd8.js",
-      "views": 45
-    },
-    {
-      "path": "/_next/static/chunks/718-c7a6f5b83d985c4e.js",
-      "views": 45
-    },
-    {
-      "path": "/_next/static/chunks/344-fe0ae2682969a3c2.js",
-      "views": 44
-    },
-    {
-      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
-      "views": 44
+      "views": 14
     },
     {
       "path": "/_next/static/chunks/main-app-b08cd05910a2be73.js",
-      "views": 44
+      "views": 14
     },
     {
-      "path": "/_next/static/chunks/polyfills-42372ed130431b0a.js",
-      "views": 36
+      "path": "/.git/config",
+      "views": 13
     },
     {
-      "path": "/en/",
-      "views": 29
+      "path": "/_next/static/chunks/app/layout-61d844beb350cbce.js",
+      "views": 13
     },
     {
-      "path": "/.well-known/acme-challenge/x6KaTnlCUFfABarO_Wfqs9_4qoBB66hxwFAXf5gpwNVAsnlkATw_mXsuQpvAOk6Y",
-      "views": 26
+      "path": "/appsettings.Production.json",
+      "views": 13
     },
     {
-      "path": "/images/hero-family.png%5C",
-      "views": 26
+      "path": "/_next/static/chunks/344-fe0ae2682969a3c2.js",
+      "views": 13
+    },
+    {
+      "path": "/_next/static/chunks/172-3a6b8d7e623dbc38.js",
+      "views": 13
     }
   ]
 }
